@@ -14,14 +14,14 @@ const copy={
     statusOff:"Avatar API render is held until the owner’s budget and server switch are verified; free/manual Kling Studio remains available.",
     noKey:"The Kling API key is missing. Use Kling Web for a manual test.",
     probe:"Verify Kling key (free GET)",probeBusy:"Checking API…",probeOk:"Kling accepted the API key. No video generated.",probeNoPack:"No active video package confirmed. Cash balance and pricing are not checked.",probeFail:"Kling has not confirmed this API key; check provider access.",
-    photo:"Your own JPG or PNG portrait",voice:"Your original voice (WAV, MP3, M4A, AAC)",tip:"Use a clear solo portrait. Only a 2–20 second voice excerpt; other formats are converted locally to mono WAV, never archived here.",
+    photo:"Your own JPG or PNG portrait",voice:"Your original voice (WAV, MP3, M4A, AAC)",tip:"Use a clear solo portrait. Only a 2–5 second voice excerpt; other formats are converted locally to mono WAV, never archived here.",
     prompt:"Performance direction",consent:"This is my own face and voice. No client, private report or other person's image/audio.",
     privacy:"I approve sending these two specific media files to Kling for this render only.",
-    cost:"I approve ONE potentially paid Kling Avatar Standard 720p job (up to 20 seconds). I have checked the current provider price and remaining balance; the site cannot guarantee the final charge.",
+    cost:"I approve ONE potentially paid Kling Avatar Standard 720p job (maximum 5 seconds). I have checked the current provider price and remaining balance; the site cannot guarantee the final charge.",
     generate:"Create private test preview",busy:"Preparing and submitting…",inspect:"Check existing task",task:"Kling task ID (keep it)",
     result:"Private preview — not published",archive:"Check lip sync, voice, face, hands and commercial rights; download and archive the MP4 before the provider removes it. Publishing is a separate decision.",
     manual:"Open Kling Avatar web",google:"Connect Google / YouTube",none:"No generation has been submitted.",
-    errors:{disabled:"Avatar generation is disabled server-side.",not_configured:"The API key is not configured.",approval:"Confirm consent and the single-render cost.",validation:"Use one approved portrait and a voice clip between 2 and 20 seconds.",origin:"The request must come from the admin website.",unauthorized:"Your admin session has expired.",provider_unavailable:"No definitive response from Kling. Check provider history before any retry.",local:"The selected files cannot be prepared on this device.",unknown:"Unable to complete the request."},
+    errors:{disabled:"Avatar generation is disabled server-side.",not_configured:"The API key is not configured.",approval:"Confirm consent and the single-render cost.",validation:"Use one approved portrait and a voice clip between 2 and 5 seconds.",origin:"The request must come from the admin website.",unauthorized:"Your admin session has expired.",provider_unavailable:"No definitive response from Kling. Check provider history before any retry.",local:"The selected files cannot be prepared on this device.",unknown:"Unable to complete the request."},
   },
   ru:{
     title:"Kling · моё лицо и голос",intro:"Приватный тест цифрового двойника: твой собственный портрет и настоящая запись голоса. Без стоковых голосов и клиентских данных.",
@@ -29,14 +29,14 @@ const copy={
     statusOff:"Рендер аватара выключен до проверки бюджета и серверного переключателя. Ручная студия Kling доступна.",
     noKey:"Ключ Kling API отсутствует. Используйте веб-редактор Kling для пробного ролика.",
     probe:"Проверить Kling API (без рендера)",probeBusy:"Проверка подключения…",probeOk:"Kling подтвердил ключ. Рендер не запускался.",probeNoPack:"Активный пакет видео не подтверждён. Денежный баланс и цена не проверены.",probeFail:"Подключение к Kling не подтверждено; проверьте ключ и доступ.",
-    photo:"Мой портрет JPG или PNG",voice:"Моя оригинальная речь (WAV, MP3, M4A, AAC)",tip:"Портрет — один человек, лицо видно. Речь — от 2 до 20 секунд; конвертация в WAV выполняется локально в браузере.",
+    photo:"Мой портрет JPG или PNG",voice:"Моя оригинальная речь (WAV, MP3, M4A, AAC)",tip:"Портрет — один человек, лицо видно. Речь — от 2 до 5 секунд; конвертация в WAV выполняется локально в браузере.",
     prompt:"Мимика и движения",consent:"Это моё лицо и мой голос; здесь нет клиентов, частных отчётов или записей других людей.",
     privacy:"Я разрешаю передать два выбранных файла Kling только для этой генерации.",
-    cost:"Я разрешаю ОДИН потенциально платный рендер Kling Avatar Standard 720p (до 20 секунд). Я проверил актуальную цену и остаток средств у Kling; сайт не гарантирует итоговую стоимость.",
+    cost:"Я разрешаю ОДИН потенциально платный рендер Kling Avatar Standard 720p (не более 5 секунд). Я проверил актуальную цену и остаток средств у Kling; сайт не гарантирует итоговую стоимость.",
     generate:"Создать приватный тест",busy:"Подготовка и отправка…",inspect:"Проверить задачу",task:"ID задачи Kling (сохраните)",
     result:"Приватное превью — не опубликовано",archive:"Проверьте лицо, голос, lip-sync и жесты. Сохраните MP4 в архив до удаления у провайдера. Публикация — отдельное разрешение.",
     manual:"Открыть Kling Avatar",google:"Подключить Google / YouTube",none:"Новых генераций пока нет.",
-    errors:{disabled:"Генерация аватара выключена на сервере.",not_configured:"Ключ Kling API не настроен.",approval:"Подтвердите права и стоимость одного рендера.",validation:"Выберите свой портрет и голос длиной 2–20 секунд.",origin:"Запрос допускается только из админки сайта.",unauthorized:"Сессия администратора закончилась.",provider_unavailable:"Kling не подтвердил результат запроса. Проверьте историю провайдера до повторного запуска.",local:"Не удалось обработать выбранные файлы на устройстве.",unknown:"Не удалось выполнить операцию."},
+    errors:{disabled:"Генерация аватара выключена на сервере.",not_configured:"Ключ Kling API не настроен.",approval:"Подтвердите права и стоимость одного рендера.",validation:"Выберите свой портрет и голос длиной 2–5 секунд.",origin:"Запрос допускается только из админки сайта.",unauthorized:"Сессия администратора закончилась.",provider_unavailable:"Kling не подтвердил результат запроса. Проверьте историю провайдера до повторного запуска.",local:"Не удалось обработать выбранные файлы на устройстве.",unknown:"Не удалось выполнить операцию."},
   },
   es:{
     title:"Kling · mi rostro y voz",intro:"Prueba privada: tu foto y tu voz auténtica. Sin voces genéricas ni datos de clientes.",
@@ -44,14 +44,14 @@ const copy={
     statusOff:"El render está bloqueado hasta confirmar el presupuesto y activar el servidor. Kling Web sigue disponible.",
     noKey:"No se ha configurado la clave API. Utiliza la versión web.",
     probe:"Comprobar clave Kling (sin generar)",probeBusy:"Comprobando…",probeOk:"Kling confirmó la clave. No se generó ningún vídeo.",probeNoPack:"No se confirmó paquete activo. No se verificó el saldo ni el precio.",probeFail:"Kling no ha confirmado la clave; revisa el acceso.",
-    photo:"Mi retrato JPG o PNG",voice:"Mi grabación WAV, MP3, M4A o AAC",tip:"Una cara visible; audio original de 2–20 segundos, convertido a WAV en el navegador.",
+    photo:"Mi retrato JPG o PNG",voice:"Mi grabación WAV, MP3, M4A o AAC",tip:"Una cara visible; audio original de 2–5 segundos, convertido a WAV en el navegador.",
     prompt:"Expresión y movimiento",consent:"Esta es mi cara y mi voz; no incluye clientes ni datos privados.",
     privacy:"Autorizo enviar estos dos archivos a Kling para esta generación.",
-    cost:"Apruebo UNA generación de pago Avatar Standard 720p (hasta 20 segundos). He comprobado el precio y el saldo vigentes; el sitio no garantiza el cobro final.",
+    cost:"Apruebo UNA generación de pago Avatar Standard 720p (máximo 5 segundos). He comprobado el precio y el saldo vigentes; el sitio no garantiza el cobro final.",
     generate:"Crear vista previa privada",busy:"Preparando y enviando…",inspect:"Consultar tarea",task:"ID de tarea Kling",
     result:"Vista previa privada — sin publicar",archive:"Revisa los labios, el rostro y la voz. Guarda el MP4 antes de su eliminación; publicación por separado.",
     manual:"Abrir Kling Avatar",google:"Conectar Google / YouTube",none:"No se ha enviado una generación.",
-    errors:{disabled:"La generación está deshabilitada en el servidor.",not_configured:"Falta la clave API.",approval:"Confirma tu consentimiento y el coste.",validation:"Usa un retrato propio y audio de 2–20 segundos.",origin:"Solicita la operación desde la web de administración.",unauthorized:"La sesión ha caducado.",provider_unavailable:"Kling no confirmó. Comprueba su historial antes de repetir.",local:"No se pueden preparar estos archivos.",unknown:"La solicitud no se pudo completar."},
+    errors:{disabled:"La generación está deshabilitada en el servidor.",not_configured:"Falta la clave API.",approval:"Confirma tu consentimiento y el coste.",validation:"Usa un retrato propio y audio de 2–5 segundos.",origin:"Solicita la operación desde la web de administración.",unauthorized:"La sesión ha caducado.",provider_unavailable:"Kling no confirmó. Comprueba su historial antes de repetir.",local:"No se pueden preparar estos archivos.",unknown:"La solicitud no se pudo completar."},
   },
 } as const;
 const DEFAULT_PROMPT="Calm experienced therapist speaking directly to the camera. Natural breathing, steady eyes, subtle head movement, hands mostly still, realistic warm room and original appearance.";
@@ -82,7 +82,7 @@ async function toPcmWav(file:File):Promise<File>{
   let rendered:AudioBuffer;
   try{
     const buffer=await audio.decodeAudioData(await file.arrayBuffer());
-    if(buffer.duration<2||buffer.duration>20)throw Error("local");
+    if(buffer.duration<2||buffer.duration>5)throw Error("local");
     const offline=new OfflineAudioContext(1,Math.ceil(buffer.duration*16000),16000);
     const src=offline.createBufferSource();src.buffer=buffer;src.connect(offline.destination);src.start();
     rendered=await offline.startRendering();
