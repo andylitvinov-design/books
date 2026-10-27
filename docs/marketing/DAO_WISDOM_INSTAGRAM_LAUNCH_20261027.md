@@ -8,11 +8,11 @@
 This is educational/self-reflective content. Neither Taoist five-element categories nor a short dialogue establish medical conditions, psychological diagnoses, or experimentally validated test scores.
 
 ## 2. Accounts / brand / compliance
-- One IG account. Working handle candidate **@dao.wisdom.house**; *Instagram availability and account ownership not verified*. Alternative candidates `@dao.wisdom.path`, `@dao.wisdom.holistichouse`, also unverified.
-- Display name **Даосская мудрость | Dao Wisdom**. Brand association **by Holistic House / Andrey** must be visible.
+- **ONE EXISTING Instagram account, specified by owner on 27 October 2026: [@tao.ideas](https://www.instagram.com/tao.ideas/).** Do NOT create/rename any additional account. User confirms it exists; API ownership, account type (Creator/Business), publication scopes and profile bio edit remain unverified. The earlier `@dao.wisdom.house` candidate is retired.
+- Proposed display name for existing account **Даосская мудрость | Dao Wisdom**, only after actual profile-owner sign-in and review; preserve existing username **@tao.ideas**. Brand association **by Holistic House / Andrey** must be visible.
 - Editorial audience: adults seeking reflection around everyday decisions, relationships, purpose and work. Avoid targeting people by mental/physical health or diagnoses.
 - RU pilot voice/captions first; EN/ES landing mirrors are ready. Do not mix narration languages inside every single Reel. Make additional language versions only after demand, editorial review and voice QA.
-- Exactly one first CTA in Instagram bio. Candidate working URL (verify route publicly and actual Telegram link before use):
+- Exactly one first CTA in [@tao.ideas](https://www.instagram.com/tao.ideas/) bio. Proposed existing public route (HTTP 200 on EN/RU/ES verified 27 October, actual user bio link and provider E2E not verified):
   `https://holistichouse.vercel.app/ru/services/dao-health-profile?utm_source=instagram&utm_medium=organic_social&utm_campaign=dao_wisdom_launch`
   These params are public campaign codes, contain no identifying or sensitive data. Do **not** put client responses or private token in the URL.
 - Bio draft (RU):
@@ -130,8 +130,8 @@ No guaranteed «you are Water/Fire» personal classification from watching conte
 - [ ] Product branch PR exact-head CI + Next build + scoped bot policy tests.
 - [ ] Exact production Vercel READY+SHA/alias and real mobile CTA.
 - [ ] Public bot token/rollout / provider webhook E2E and consented Telegram→CRM→form correlation.
-- [ ] Instagram owned Creator/Business handle, verified connection and native bio link.
+- [x] Instagram handle chosen by owner: [@tao.ideas](https://www.instagram.com/tao.ideas/); [ ] authenticated owner/Creator/Business status, OAuth and native bio link readback.
 - [ ] Human content/voice/video QA, explicit post approval and exact provider post receipts.
 - [ ] Only then mark completed, update issue and declare actual confirmed leads.
 
-Owner actions only after engineering gates: **reserve/confirm Instagram account handle**, **connect approved IG account to platform/Metricool if automatic posting desired**, **approve specific renders/posts**. No ad spend or credit spend assumed.
+Owner actions only after engineering gates: **sign into already-created @tao.ideas in the Meta/Metricool connection flow, verify it is Creator/Business and grant publishing permissions**, **review or set that profile's bio link**, **approve specific renders/posts**. No account creation, ad spend or credit spend assumed.
