@@ -24,7 +24,7 @@ const PORTRAIT_RADAR_RADIUS = 146
 // No minimum offset: 0 maps to the centre and a half-scale value to half the ring.
 const proportionalRadius = (value, maximum) => PORTRAIT_RADAR_RADIUS * value / maximum
 
-export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null, portraitTab = 'goals' }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
