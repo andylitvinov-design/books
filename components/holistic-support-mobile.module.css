@@ -144,86 +144,154 @@
   .toolGrid { grid-template-rows: auto; min-height: auto; }
   .toolButton { min-height: 96px; }
 }
+
+/* The alternative screen is a single app workspace, not a long marketing page. */
+.compactAppHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 53px; padding: 5px 4px 10px; }
+.compactBrand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; color: #223c30; text-decoration: none; }
+.compactBrand strong { font: 500 clamp(24px, 2.7vw, 31px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.035em; }
+.compactBrand span { font-size: 13px; font-weight: 750; color: #30755c; }
+.compactLocale { display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex: none; min-width: 57px; min-height: 44px; padding: 7px 10px; border: 1px solid #d8d6c8; border-radius: 14px; background: #fffdfa; color: #395c4e; font-size: 14px; font-weight: 800; }
+.filterValue { display: none; }
 @media (max-width: 640px) {
-  .container { width: calc(100% - 18px); padding-top: 3px; }
-  .pageEyebrow { margin: 3px 5px 7px; font-size: 11px; }
-  .topGrid { display: grid; grid-template-columns: 1fr; gap: 9px; }
-  .assessment, .tools { grid-column: 1; padding: 15px; border-radius: 19px; }
-  .assessment h1, .tools h2 { font-size: 21px; }
-  .subText { margin-bottom: 8px; font-size: 15px; }
-  .scaleList { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-  .scaleRow { gap: 6px; min-height: 67px; }
-  .scaleIcon { flex-basis: 34px; height: 34px; }
-  .scaleIcon svg { width: 20px; height: 20px; }
-  .scaleValue { flex-basis: 30px; height: 36px; font-size: 18px; }
-  .scaleLabel { font-size: 15px; }
-  .profile { grid-column: 1; display: grid; grid-template-columns: 108px minmax(0,1fr); grid-template-rows: auto auto; gap: 7px 12px; padding: 4px 11px; }
-  .photo { grid-row: 1 / 3; width: 102px; height: 102px; padding: 4px; }
-  .photoPlaceholder svg { width: 43px; height: 43px; }
-  .photoPlaceholder strong { font-size: 12px; }
-  .camera { right: 1px; bottom: 3px; width: 32px; height: 32px; }
-  .focusSelector, .recommendButton { width: 100%; max-width: none; }
-  .focusSelector { padding: 6px 11px; }
-  .focusValue select { font-size: 17px; }
-  .recommendButton { min-height: 46px; padding: 6px; font-size: 15px; }
-  .tools h2 { margin-bottom: 12px; }
-  .toolGrid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
-  .toolButton { min-height: 91px; gap: 6px; padding: 10px 6px; border-radius: 14px; font-size: 17px; }
-  .toolButton svg { width: 27px; height: 27px; }
-  .hero { min-height: 495px; padding: 13px 12px 20px; border-radius: 19px; }
-  .heroFilters { gap: 6px; }
-  .heroMode, .heroFilter { min-height: 43px; padding: 5px 8px; font-size: 14px; }
-  .heroFilters { flex-wrap: nowrap; gap: 8px; overflow-x: auto; }
-  .heroMode { flex: 0 0 auto; justify-content: flex-start; }
-  .heroFilter { flex: 0 0 auto; min-width: 0; gap: 5px; }
-  .heroFilter span { font-size: 14px; }
-  .heroFilter svg { width: 16px; height: 16px; }
-  .heroFilter select { max-width: 98px; min-width: 42px; font-size: 14px; }
-  .heroBody { padding: 45px 3px 0; }
-  .heroBody h2 { font-size: clamp(33px, 8.7vw, 47px); }
-  .heroDescription { font-size: 18px; }
-  .playButton { min-height: 61px; padding: 11px; border-radius: 17px; font-size: 20px; }
-  .videoSection { padding: 17px 12px 14px; }
-  .videoHeading { display: block; }
-  .videoHeading h3 { font-size: 21px; }
-  .videoHeading .videoLanguage { display: block; margin-top: 6px; }
-  .videoGrid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
-  .videoCard { min-height: 152px; padding: 8px; border-width: 2px; border-radius: 13px; }
-  .videoTitle { font-size: 16px; }
-  .progressPanel { padding: 17px 14px 12px; }
-  .progressPanel h2 { font-size: 22px; }
-  .progressGrid { grid-template-columns: auto minmax(0,1fr) minmax(0,1fr); gap: 8px; padding: 10px; }
-  .progressRing { width: 70px; height: 70px; }
-  .progressRing::before { width: 53px; height: 53px; }
-  .progressRing strong { font-size: 17px; }
-  .progressGrid > div:not(:first-child) { font-size: 14px; }
-  .progressGrid > div:not(:first-child) span { font-size: 12px; }
-  .progressFocus { padding-left: 7px; }
-  .disclaimer { display: block; }
-  .disclaimer a { margin-top: 7px; }
-  .bottomNav > :is(a,button) { font-size: 12px; }
-  .insetPanel { padding: 14px 11px; }
+  /* Two compact columns bring the activity into the first iPhone viewport.
+     A three-column literal reduction of the mock makes the text unreadable at 320px. */
+  .container { width: calc(100% - 14px); padding: 0 0 calc(91px + env(safe-area-inset-bottom)); }
+  .compactAppHeader { min-height: 44px; padding: 1px 4px 7px; }
+  .compactBrand { gap: 5px; flex-direction: column; }
+  .compactBrand strong { font-size: 23px; line-height: 1.02; }
+  .compactBrand span { font-size: 11px; line-height: 1.1; }
+  .compactLocale { min-height: 41px; font-size: 13px; }
+  .pageEyebrow { display: none; }
+  .topGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
+    grid-template-areas: "assessment tools" "profile profile";
+    align-items: stretch;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+  .assessment, .tools { min-width: 0; border-radius: 17px; padding: 10px 8px; }
+  .assessment { grid-area: assessment; }
+  .tools { grid-area: tools; }
+  .assessment h1, .tools h2 { font-size: clamp(15px, 4.05vw, 18px); min-height: 39px; line-height: 1.1; letter-spacing: -.025em; margin: 0 0 4px; }
+  .subText { margin: 0 0 5px; font-size: 12px; line-height: 1.2; }
+  .scaleList { grid-template-columns: 1fr; gap: 4px; margin-top: 0; }
+  .scaleRow { display: grid; grid-template-columns: 25px minmax(0, 1fr) 28px; gap: 4px; min-height: 43px; }
+  .scaleIcon { flex: none; width: 25px; height: 25px; }
+  .scaleIcon svg { width: 17px; height: 17px; }
+  .scaleDetail { gap: 0; }
+  .scaleLabel { font-size: clamp(12px, 3.45vw, 14px); line-height: 1.16; font-weight: 800; }
+  .scaleRow input { height: 24px; min-width: 0; }
+  .scaleValue { flex: none; height: 30px; min-width: 0; font-size: 15px; border-radius: 9px; }
+  .toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); min-height: 0; gap: 6px; }
+  .tools h2 { margin-bottom: 6px; }
+  .toolButton { min-width: 0; min-height: 91px; padding: 7px 3px; gap: 5px; border-radius: 13px; font-size: clamp(12px, 3.45vw, 15px); line-height: 1.15; font-weight: 800; }
+  .toolButton svg { width: 25px; height: 25px; }
+  .profile {
+    grid-area: profile;
+    display: grid; grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-rows: auto auto; gap: 5px 9px;
+    justify-content: stretch; align-content: center; align-items: center;
+    min-width: 0; padding: 5px 8px; border: 1px solid #e7e6da;
+    border-radius: 17px; background: #fffcf5d9;
+  }
+  .photo { grid-row: 1 / 3; grid-column: 1; width: 75px; height: 75px; padding: 2px; border-width: 3px; box-shadow: 0 0 0 2px #8bbec8, 0 5px 16px #19554523; }
+  .photoPlaceholder { gap: 1px; padding: 5px; }
+  .photoPlaceholder svg { width: 36px; height: 36px; }
+  .photoPlaceholder strong { font-size: 10px; line-height: 1.08; }
+  .camera { right: 0; bottom: 0; width: 28px; height: 28px; border-width: 1px; }
+  .camera svg { width: 15px; height: 15px; }
+  .focusSelector, .recommendButton { width: 100%; max-width: none; min-width: 0; }
+  .focusSelector { grid-row: 1; grid-column: 2; padding: 5px 9px; border-radius: 12px; }
+  .focusCaption { font-size: 11px; line-height: 1; }
+  .focusValue { gap: 4px; }
+  .focusValue select { font-size: 16px; line-height: 1.15; }
+  .focusValue svg { width: 19px; height: 19px; flex: none; }
+  .recommendButton { grid-row: 2; grid-column: 2; min-height: 43px; border-radius: 12px; font-size: clamp(13px, 3.7vw, 16px); padding: 7px 8px; gap: 5px; }
+  .recommendButton svg { width: 19px; height: 19px; flex: none; }
+  .photoError { grid-column: 1 / -1; grid-row: 3; font-size: 12px; }
+  .experience { border-radius: 18px; }
+  .hero { min-height: 397px; padding: 10px 9px 15px; border-radius: 17px; }
+  .heroBackdrop { object-position: 61% center; filter: saturate(1.16) sepia(.09); }
+  .heroShade { background: linear-gradient(90deg, rgb(9 35 32 / 91%), rgb(17 48 39 / 69%) 59%, rgb(23 41 29 / 20%)), linear-gradient(0deg, rgb(8 25 23 / 54%), transparent 68%); }
+  .heroFilters { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); width: 100%; gap: 6px; flex-wrap: nowrap; overflow: visible; }
+  .heroMode { display: none; }
+  .heroFilter {
+    display: flex; position: relative; flex-direction: column; justify-content: center; align-items: center;
+    gap: 3px; min-width: 0; min-height: 57px; padding: 6px 4px;
+    border: 1px solid #f8fff274; border-radius: 13px; background: #203f389e; text-align: center;
+    cursor: pointer; overflow: hidden;
+  }
+  .heroFilter span { display: block; min-width: 0; max-width: 100%; color: #fff; font-size: clamp(13px, 3.5vw, 15px); line-height: 1.13; font-weight: 800; white-space: nowrap; }
+  .filterValue { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; line-height: 1.12; color: #dcefe1; font-weight: 650; }
+  .heroFilter svg { display: none; }
+  .heroFilter select {
+    position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%;
+    max-width: none; min-width: 0; padding: 0; margin: 0; opacity: 0; cursor: pointer;
+  }
+  .heroFilter:focus-within { outline: 3px solid #ffe6a5; outline-offset: 2px; }
+  .hero[data-playing="true"] .heroFilters { padding: 8px 9px; background: #143d35; }
+  .heroBody { padding: 28px 9px 2px; }
+  .videoOriginal { padding: 7px 9px; font-size: 12px; }
+  .heroBody h2 { margin: 12px 0 8px; font-size: clamp(30px, 8.3vw, 40px); line-height: 1.06; }
+  .heroDescription { max-width: 330px; margin: 0 0 17px; font-size: 17px; line-height: 1.33; }
+  .playButton { min-height: 57px; width: min(100%, 375px); padding: 10px; border-radius: 14px; font-size: clamp(18px, 5vw, 21px); gap: 9px; }
+  .playButton svg { width: 23px; height: 23px; flex: none; }
+  .videoSection { padding: 14px 11px 12px; }
+  .videoHeading { display: flex; gap: 6px; align-items: baseline; margin-bottom: 11px; }
+  .videoHeading h3 { font-size: 19px; line-height: 1.16; }
+  .videoHeading .videoLanguage { display: none; }
+  .videoGrid {
+    display: grid; grid-template-columns: none; grid-template-rows: 1fr;
+    grid-auto-flow: column; grid-auto-columns: minmax(156px, 45%);
+    gap: 9px; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    padding: 3px 3px 10px; scrollbar-width: thin;
+  }
+  .videoCard { scroll-snap-align: start; min-width: 0; min-height: 155px; border-width: 2px; border-radius: 14px; padding: 9px; }
+  .thumbnailPlay { top: 8px; left: 8px; width: 35px; height: 35px; }
+  .videoTitle { font-size: 16px; line-height: 1.2; }
+  .videoHint { font-size: 12px; margin: 8px 0 1px; }
+  .youtubeLink { min-height: 43px; font-size: 14px; }
+  .progressPanel { margin-top: 10px; padding: 13px 12px 10px; border-radius: 17px; }
+  .progressPanel h2 { margin-bottom: 9px; font-size: 20px; }
+  .progressGrid { grid-template-columns: 58px minmax(0,1fr) minmax(0,1fr); gap: 7px; padding: 10px; border-radius: 15px; }
+  .progressRing { width: 57px; height: 57px; }
+  .progressRing::before { width: 44px; height: 44px; }
+  .progressRing strong { font-size: 15px; }
+  .progressGrid > div:not(:first-child) { gap: 3px; font-size: 13px; }
+  .progressGrid > div:not(:first-child) span { font-size: 11px; }
+  .progressFocus { padding-left: 6px; }
+  .progressFocus svg { width: 20px; height: 20px; }
+  .privacyNote { font-size: 12px; }
+  .disclaimer { display: block; margin: 13px 5px; }
+  .disclaimer a { margin-top: 6px; }
+  .bottomNav > :is(a,button) { min-height: 52px; font-size: 12px; }
+  .insetPanel { padding: 15px 11px; }
   .insetIntro h2 { font-size: 24px; }
   .insetIntro p { font-size: 15px; }
   .consultOptions { grid-template-columns: 1fr; }
-  .consultOptions a { min-height: 78px; font-size: 18px; }
+  .consultOptions a { min-height: 76px; font-size: 17px; }
 }
 @media (max-width: 375px) {
-  .assessment, .tools { padding: 12px; }
-  .scaleList { grid-template-columns: 1fr; gap: 2px; }
-  .scaleRow { min-height: 48px; }
-  .scaleIcon { flex-basis: 35px; }
-  .scaleLabel { font-size: 16px; }
-  .scaleValue { flex-basis: 36px; }
-  .hero { min-height: 510px; }
-  .heroFilter { padding: 5px; }
-  .heroFilter span { font-size: 14px; }
-  .heroFilter select { max-width: 90px; font-size: 14px; }
-  .heroBody h2 { font-size: 34px; }
-  .videoCard { min-height: 144px; }
-  .videoTitle { font-size: 15px; }
-  .progressGrid { grid-template-columns: 65px 1fr; }
-  .progressFocus { grid-column: 2; border: 0; padding: 0; }
+  .assessment,.tools { padding: 9px 6px; }
+  .topGrid { grid-template-columns: minmax(0, 1.09fr) minmax(0, .91fr); }
+  .scaleRow { grid-template-columns: 23px minmax(0,1fr) 26px; gap: 3px; }
+  .scaleIcon { width: 23px; height: 23px; }
+  .scaleLabel { font-size: 12px; }
+  .scaleValue { height: 28px; font-size: 14px; }
+  .toolGrid { gap: 4px; }
+  .toolButton { min-height: 99px; font-size: 12px; padding: 5px 1px; }
+  .toolButton svg { width: 23px; height: 23px; }
+  .heroFilters { gap: 4px; }
+  .heroFilter { min-height: 56px; padding: 6px 2px; }
+  .heroFilter span { font-size: 13px; }
+  .filterValue { font-size: 11px; }
+  .heroBody h2 { font-size: 31px; }
+  .videoGrid { grid-auto-columns: minmax(145px, 48%); }
+  .progressGrid { grid-template-columns: 52px minmax(0,1fr) minmax(0,1fr); gap: 6px; padding: 9px 7px; }
+  .progressRing { width: 52px; height: 52px; }
+  .progressRing::before { width: 40px; height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }

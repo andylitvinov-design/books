@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PublicSiteHeader } from "@/components/public-site-header";
+
 import { HolisticSupportMobile, type SupportMobileVideo } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
@@ -71,9 +71,6 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
       }));
 
   return (
-    <>
-      <PublicSiteHeader locale={locale} />
-      <HolisticSupportMobile locale={locale} videos={videos} />
-    </>
+    <HolisticSupportMobile locale={locale} videos={videos} />
   );
 }
