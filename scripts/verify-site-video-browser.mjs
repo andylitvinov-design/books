@@ -186,7 +186,10 @@ try {
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      const locator = route.endsWith('/free-situation-review')
+        ? '[data-free-review-intro-video]'
+        : topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`
+      const block = page.locator(locator)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
