@@ -26,7 +26,7 @@ for (const engine of [chromium, webkit]) {
         page.on("pageerror", error => errors.push(error.message));
         // Synthetic public catalog only: proves UI without using personal accounts,
         // posting enquiries, charging, or assuming real provider availability.
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        await page.route(/\/api\/public\/remote-energy-support-masters(?:\?|$)/, async route => {
           const requestUrl = new URL(route.request().url());
           const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
           const consultations = [
