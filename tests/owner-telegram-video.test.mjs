@@ -183,6 +183,7 @@ test('Google RU ownership and Unlisted are checked before and after upload',asyn
  })
  assert.equal(data.channelId,VIDEO_RU_CHANNEL_ID)
  assert.equal(data.privacy,'unlisted')
+ assert.equal(data.uploadStatus,'processed')
  assert.equal(begin,1)
  assert.equal(uploaded,1)
  assert.equal(calls.filter(c=>c.method==='PUT').length,1)
@@ -199,8 +200,8 @@ test('Google fails closed on wrong channel, missing authorization and wrong visi
   status:{privacyStatus:'private'}}]})
  await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),privateVideo),/PRIVACY_HOLD/)
 })
-test('YouTube readback rejects failed, rejected, deleted and unconfirmed uploads',async()=>{
- for(const uploadStatus of ['failed','rejected','deleted',undefined,'unknown']){
+test('YouTube readback requires complete processing, and reports confirmed status',async()=>{
+ for(const uploadStatus of ['uploaded','failed','rejected','deleted',undefined,'unknown']){
   const fetcher=async()=>Response.json({items:[{
    id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
    status:{privacyStatus:'unlisted',uploadStatus}
@@ -208,13 +209,14 @@ test('YouTube readback rejects failed, rejected, deleted and unconfirmed uploads
   await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher),
    /VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
  }
- for(const uploadStatus of ['uploaded','processed']){
-  const fetcher=async()=>Response.json({items:[{
-   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
-   status:{privacyStatus:'unlisted',uploadStatus}
-  }]})
-  assert.equal((await verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher)).id,'Yt123456abc')
- }
+ const fetcher=async()=>Response.json({items:[{
+  id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+  status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+ }]})
+ assert.deepEqual(await verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher),{
+  id:'Yt123456abc',channelId:VIDEO_RU_CHANNEL_ID,privacy:'unlisted',
+  uploadStatus:'processed',title:''
+ })
 })
 test('failed YouTube processing preserves the uploaded ID without another media request',async()=>{
  let puts=0,inits=0;const saved=[]
