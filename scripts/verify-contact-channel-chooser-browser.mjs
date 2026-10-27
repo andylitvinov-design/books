@@ -85,7 +85,19 @@ async function submitSyntheticForm(page, chooser, locale, submissions, receiptMo
     await textarea.fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
-  await form.locator('input[type="checkbox"]').check();
+  // The full consent label is the real mobile tap target. Hosted WebKit
+  // returned a click on the 19px input without checking it; do not bypass
+  // consent with script, force, or a retry. Require one genuine label tap.
+  const consentBox = form.locator('input[type="checkbox"][required]');
+  const consentLabel = form.locator("label").filter({ has: consentBox });
+  assert.equal(await consentLabel.count(), 1, "Consent has one accessible tap label");
+  await consentLabel.scrollIntoViewIfNeeded();
+  await consentLabel.click({ trial: true, timeout: 8000 });
+  await consentLabel.click();
+  assert.equal(await consentBox.isChecked(), true,
+    "One genuine consent-label tap must check consent");
+  assert.equal(await button.isEnabled(), true,
+    "A valid contact and explicit consent enable the request");
   const priorCount=submissions.length;
   await button.click();
   if (receiptMode === "thank-you") {
