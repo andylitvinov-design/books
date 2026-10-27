@@ -64,7 +64,7 @@
 .hero { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: 442px; padding: 21px 26px 27px; overflow: hidden; border-radius: 22px; background: #24433e; color: white; }
 .heroBackdrop { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 63% center; }
 .heroShade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgb(8 39 37 / 94%), rgb(17 52 44 / 63%) 50%, rgb(26 41 30 / 17%) 100%), linear-gradient(0deg, rgb(4 35 30 / 65%), transparent 50%); }
-.heroFilters { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.heroFilters { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; overflow-x: auto; scrollbar-width: thin; }
 .heroMode, .heroFilter { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 45px; padding: 6px 11px; border: 1px solid #ffffff66; border-radius: 30px; background: #284b4188; color: white; font-size: 15px; font-weight: 750; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
 .heroMode { background: #068969; border-color: #36a984; }
 .heroFilter { position: relative; padding-right: 6px; }
@@ -78,7 +78,9 @@
 .heroDescription { margin: 0 0 19px; color: #fff5e9; font-size: clamp(17px, 2vw, 23px); font-weight: 650; line-height: 1.4; }
 .playButton { display: flex; align-items: center; justify-content: center; gap: 13px; width: min(440px, 100%); min-height: 68px; padding: 12px 20px; border: 2px solid #c5f3b3; border-radius: 20px; background: linear-gradient(105deg, #078a60, #21b781); color: white; box-shadow: 0 0 17px #d4ef8590, 0 6px 20px #053e2833; font-size: clamp(19px, 2.5vw, 26px); font-weight: 850; }
 .playButton:hover { background: #057553; }
-.iframeWrap { position: absolute; z-index: 4; inset: 0; background: #0b1817; }
+.hero[data-playing="true"] { min-height: 0; padding: 0; background: #082a25; }
+.hero[data-playing="true"] .heroFilters { padding: 12px; background: #123d35; }
+.iframeWrap { position: relative; z-index: 1; width: 100%; aspect-ratio: 16 / 9; background: #0b1817; }
 .iframeWrap iframe { display: block; width: 100%; height: 100%; border: 0; }
 .noVideo { padding: 14px; border-radius: 12px; background: #123f38; font-size: 16px; }
 .videoSection { min-width: 0; padding: 21px 22px 20px; }
@@ -171,11 +173,12 @@
   .hero { min-height: 495px; padding: 13px 12px 20px; border-radius: 19px; }
   .heroFilters { gap: 6px; }
   .heroMode, .heroFilter { min-height: 43px; padding: 5px 8px; font-size: 14px; }
-  .heroMode { flex: 1 0 100%; justify-content: flex-start; }
-  .heroFilter { flex: 1 1 auto; min-width: 0; gap: 4px; }
-  .heroFilter span { font-size: 13px; }
+  .heroFilters { flex-wrap: nowrap; gap: 8px; overflow-x: auto; }
+  .heroMode { flex: 0 0 auto; justify-content: flex-start; }
+  .heroFilter { flex: 0 0 auto; min-width: 0; gap: 5px; }
+  .heroFilter span { font-size: 14px; }
   .heroFilter svg { width: 16px; height: 16px; }
-  .heroFilter select { max-width: 100px; min-width: 25px; font-size: 13px; }
+  .heroFilter select { max-width: 98px; min-width: 42px; font-size: 14px; }
   .heroBody { padding: 45px 3px 0; }
   .heroBody h2 { font-size: clamp(33px, 8.7vw, 47px); }
   .heroDescription { font-size: 18px; }
@@ -214,8 +217,8 @@
   .scaleValue { flex-basis: 36px; }
   .hero { min-height: 510px; }
   .heroFilter { padding: 5px; }
-  .heroFilter span { font-size: 12px; }
-  .heroFilter select { max-width: 77px; font-size: 12px; }
+  .heroFilter span { font-size: 14px; }
+  .heroFilter select { max-width: 90px; font-size: 14px; }
   .heroBody h2 { font-size: 34px; }
   .videoCard { min-height: 144px; }
   .videoTitle { font-size: 15px; }
