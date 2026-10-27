@@ -6,7 +6,8 @@ import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
-import { promisify } from 'node:util'
+import { promisify, types as nodeTypes } from 'node:util'
+import { performance as nodePerformance } from 'node:perf_hooks'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
@@ -22,6 +23,186 @@ let server, app, browser
 const exec = promisify(execFile)
 const testToken = 'synthetic-video-browser-test-only'
 const namespace = 'holistic-house:site-videos:v1'
+
+// BEGIN bounded About overflow diagnostics (passive, failure-only, no DOM content).
+function aboutOverflowDiagnosticSnapshot() {
+  const number = value => typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(Math.max(-100000, Math.min(100000, value)) * 10) / 10 : null
+  const count = (value, cap) => typeof value === 'number' && Number.isInteger(value) && value >= 0 ? Math.min(value, cap) : 0
+  const viewportWidth = number(innerWidth)
+  const known = new Set()
+  const styleValues = {
+    display: ['none', 'block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid', 'contents', 'flow-root', 'table'],
+    position: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
+    boxSizing: ['border-box', 'content-box'],
+    overflowX: ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    overflowY: ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    flexWrap: ['nowrap', 'wrap', 'wrap-reverse'],
+    whiteSpace: ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces'],
+    overflowWrap: ['normal', 'anywhere', 'break-word'],
+  }
+  const rect = value => Object.fromEntries(['left', 'right', 'top', 'bottom', 'width', 'height'].map(key => [key, number(value[key])]))
+  const measure = element => {
+    if (!element) return { present: false }
+    known.add(element)
+    const style = getComputedStyle(element)
+    return { present: true, rect: rect(element.getBoundingClientRect()),
+      clientWidth: number(element.clientWidth), scrollWidth: number(element.scrollWidth),
+      styles: Object.fromEntries(Object.entries(styleValues).map(([key, values]) => {
+        const observed = style[key]
+        return [key, values.find(value => value === observed) ?? 'other']
+      })) }
+  }
+  const sections = [
+    ['about-shell', 'main.about-shell'],
+    ['about-header', 'main.about-shell > .section-site-header'],
+    ['about-intro-video', 'main.about-shell > #psychic-alchemy-video'],
+    ['about-intro-slot', 'main.about-shell > [data-video-slot="about-intro"]'],
+    ['about-introduction', 'main.about-shell > .about-introduction'],
+    ['about-portrait', 'main.about-shell > .about-introduction > .about-portrait'],
+    ['about-introduction-copy', 'main.about-shell > .about-introduction > .about-introduction-copy'],
+    ['about-biography', 'main.about-shell > .about-biography'],
+    ['about-explore', 'main.about-shell > .about-explore'],
+    ['about-gallery', 'main.about-shell > #about-testimonials[data-personal-testimonials="about"]'],
+    ['about-gallery-row', 'main.about-shell > #about-testimonials > [role="region"]'],
+    ['about-consultation-video', 'main.about-shell > [data-video-slot="consultation"]'],
+    ['about-consultation', 'main.about-shell > .about-consultation'],
+    ['about-consultation-capture', 'main.about-shell > .about-consultation > [data-consultation-capture]'],
+    ['about-cabinet-entry', 'main.about-shell > .about-client-cabinet'],
+  ].map(([alias, selector]) => {
+    const elements = document.querySelectorAll(selector)
+    return { alias, count: count(elements.length, 2), ...measure(elements[0]) }
+  })
+  const indexed = (elements, prefix, cap) => Array.from({ length: cap }, (_, index) => ({
+    alias: `${prefix}-${String(index + 1).padStart(2, '0')}`, ...measure(elements[index]),
+  }))
+  const shellChildren = document.querySelector('main.about-shell')?.children ?? []
+  const bodyChildren = document.body?.children ?? []
+  const cards = document.querySelectorAll('main.about-shell > #about-testimonials [data-testimonial-video-id]')
+  const snapshot = { status: 'captured', viewportWidth,
+    roots: [{ alias: 'document-root', ...measure(document.documentElement) }, { alias: 'body-root', ...measure(document.body) }],
+    sections, shellChildCount: count(shellChildren.length, 13), shellChildren: indexed(shellChildren, 'shell-child', 12),
+    bodyChildCount: count(bodyChildren.length, 13), bodyChildren: indexed(bodyChildren, 'body-child', 12),
+    cardCount: count(cards.length, 11), cards: indexed(cards, 'gallery-card', 10) }
+  // Unknown wide nodes have no selectors, tag/class/id, content, attributes or URLs.
+  // Rectangles may include descendants clipped by a scroll container: not a cause verdict.
+  const walker = document.body ? document.createTreeWalker(document.body, 1) : null
+  let wideCount = 0, scanned = 0
+  const wideRects = []
+  while (scanned < 2048) {
+    const element = walker?.nextNode()
+    if (!element) break
+    scanned++
+    if (known.has(element)) continue
+    const bounds = rect(element.getBoundingClientRect())
+    if (bounds.width !== null && bounds.width > 0 && viewportWidth !== null &&
+        ((bounds.right !== null && bounds.right > viewportWidth + 2) || (bounds.left !== null && bounds.left < -2))) {
+      wideCount = Math.min(wideCount + 1, 33)
+      if (wideRects.length < 12) wideRects.push(bounds)
+    }
+  }
+  const scanLimited = scanned === 2048 && Boolean(walker?.nextNode())
+  return { ...snapshot, unknown: { elementCount: scanned + (scanLimited ? 1 : 0), scanned,
+    scanLimited, wideCount, wideRects } }
+}
+
+// Independent Node boundary: page data is untrusted even when the reader above
+// produced it. Only own data descriptors are read; aliases are never read from DOM.
+function canonicalAboutOverflowDiagnostic(raw, path) {
+  const caseAlias = path === '/en/about' ? 'about-en-overflow' : path === '/ru/about' ? 'about-ru-overflow' : null
+  if (!caseAlias) return null
+  const invalid = () => { throw new Error('Invalid bounded observation') }
+  const own = (value, key) => {
+    if (!value || typeof value !== 'object' || nodeTypes.isProxy(value)) return invalid()
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) return invalid()
+    return descriptor.value
+  }
+  const boolean = value => typeof value === 'boolean' ? value : invalid()
+  const numeric = value => value === null ? null : typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(Math.max(-100000, Math.min(100000, value)) * 10) / 10 : invalid()
+  const count = (value, cap) => typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? Math.min(value, cap) : invalid()
+  const arrayLength = value => {
+    if (nodeTypes.isProxy(value) || !Array.isArray(value)) return invalid()
+    return count(own(value, 'length'), 4294967295)
+  }
+  const rect = value => Object.fromEntries(['left', 'right', 'top', 'bottom', 'width', 'height'].map(key => [key, numeric(own(value, key))]))
+  const styleValues = {
+    display: ['none', 'block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid', 'contents', 'flow-root', 'table', 'other'],
+    position: ['static', 'relative', 'absolute', 'fixed', 'sticky', 'other'],
+    boxSizing: ['border-box', 'content-box', 'other'],
+    overflowX: ['visible', 'hidden', 'clip', 'scroll', 'auto', 'other'],
+    overflowY: ['visible', 'hidden', 'clip', 'scroll', 'auto', 'other'],
+    flexWrap: ['nowrap', 'wrap', 'wrap-reverse', 'other'],
+    whiteSpace: ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces', 'other'],
+    overflowWrap: ['normal', 'anywhere', 'break-word', 'other'],
+  }
+  const styles = value => Object.fromEntries(Object.entries(styleValues).map(([key, values]) => {
+    const observed = own(value, key)
+    const canonical = values.find(value => value === observed)
+    if (canonical === undefined) return invalid()
+    return [key, canonical]
+  }))
+  const row = (value, alias, section = false) => {
+    const result = { alias, present: boolean(own(value, 'present')) }
+    if (section) result.count = count(own(value, 'count'), 2)
+    if (result.present) {
+      result.rect = rect(own(value, 'rect'))
+      result.clientWidth = numeric(own(value, 'clientWidth'))
+      result.scrollWidth = numeric(own(value, 'scrollWidth'))
+      result.styles = styles(own(value, 'styles'))
+    }
+    return result
+  }
+  const rows = (value, aliases, section = false) => {
+    if (arrayLength(value) < aliases.length) return invalid()
+    return aliases.map((alias, index) => row(own(value, String(index)), alias, section))
+  }
+  const aliases = (prefix, length) => Array.from({ length }, (_, index) => `${prefix}-${String(index + 1).padStart(2, '0')}`)
+  let measurement = { status: 'unavailable' }
+  try {
+    if (own(raw, 'status') !== 'captured') return { schemaVersion: 1, caseAlias, measurement }
+    const unknown = own(raw, 'unknown')
+    const wideRects = own(unknown, 'wideRects')
+    const rectCount = Math.min(arrayLength(wideRects), 12)
+    measurement = {
+      status: 'captured', viewportWidth: numeric(own(raw, 'viewportWidth')),
+      roots: rows(own(raw, 'roots'), ['document-root', 'body-root']),
+      sections: rows(own(raw, 'sections'), ['about-shell', 'about-header', 'about-intro-video', 'about-intro-slot',
+        'about-introduction', 'about-portrait', 'about-introduction-copy', 'about-biography', 'about-explore',
+        'about-gallery', 'about-gallery-row', 'about-consultation-video', 'about-consultation', 'about-consultation-capture', 'about-cabinet-entry'], true),
+      shellChildCount: count(own(raw, 'shellChildCount'), 13), shellChildren: rows(own(raw, 'shellChildren'), aliases('shell-child', 12)),
+      bodyChildCount: count(own(raw, 'bodyChildCount'), 13), bodyChildren: rows(own(raw, 'bodyChildren'), aliases('body-child', 12)),
+      cardCount: count(own(raw, 'cardCount'), 11), cards: rows(own(raw, 'cards'), aliases('gallery-card', 10)),
+      unknown: { elementCount: count(own(unknown, 'elementCount'), 2049), scanned: count(own(unknown, 'scanned'), 2048),
+        scanLimited: boolean(own(unknown, 'scanLimited')), wideCount: count(own(unknown, 'wideCount'), 33),
+        wideRects: Array.from({ length: rectCount }, (_, index) => rect(own(wideRects, String(index)))) },
+    }
+  } catch { /* Malformed/accessor/proxy observations have no reportable payload. */ }
+  return { schemaVersion: 1, caseAlias, measurement }
+}
+
+async function withAboutOverflowDiagnostic(operation, diagnose) {
+  try { return await operation() }
+  catch (error) {
+    let active = true, timer
+    try {
+      const deadline = nodePerformance.now() + 1000
+      const isActive = () => active && nodePerformance.now() < deadline
+      await Promise.race([
+        Promise.resolve().then(() => diagnose(isActive)),
+        new Promise(resolve => { timer = setTimeout(resolve, 1000) }),
+      ])
+    } catch { /* Diagnostics must never replace the original failure. */ }
+    finally {
+      active = false
+      try { if (timer !== undefined) clearTimeout(timer) } catch { /* Preserve the original failure. */ }
+    }
+    throw error
+  }
+}
+// END bounded About overflow diagnostics.
 
 // BEGIN bounded public detail-video contract (source-tested, no browser/provider calls).
 // These literals are independent of the renderer and registry. Update only with
@@ -217,6 +398,21 @@ try {
     // Archived source books may contain a nested main landmark of their own.
     // Readiness concerns the outer application page, not imported source markup.
     await expect(page.locator('main').first()).toBeVisible()
+  }
+  async function recordAboutOverflowDiagnostic(path, isActive) {
+    if (path !== '/en/about' && path !== '/ru/about') return
+    if (typeof isActive !== 'function' || !isActive()) return
+    let observed = null
+    try { observed = await page.evaluate(aboutOverflowDiagnosticSnapshot) }
+    catch { /* No error details or DOM content are emitted. */ }
+    if (!isActive()) return
+    const diagnostic = canonicalAboutOverflowDiagnostic(observed, path)
+    const serialized = JSON.stringify(diagnostic)
+    if (!isActive()) return
+    try { writeFileSync(`${evidence}/about-overflow-diagnostic.json`, serialized) }
+    catch { /* The original overflow assertion remains primary if writing fails. */ }
+    if (!isActive()) return
+    console.error('OBSERVATION: about-overflow', serialized)
   }
   async function recordAboutPosterDiagnostic() {
     let measurement = { status: 'unavailable' }
@@ -423,7 +619,9 @@ try {
     for (const path of paths) {
       await navigate(path)
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
+      await withAboutOverflowDiagnostic(async () => {
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
+      }, isActive => recordAboutOverflowDiagnostic(path, isActive))
     }
     pass(`${live ? 'Production' : 'Local'}: ${paths.length} routes, HTTP 200 and no overflow at ${width}px`)
   }

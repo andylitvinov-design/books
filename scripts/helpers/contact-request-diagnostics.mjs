@@ -15,6 +15,7 @@ export function blockedApiDetails(request, origin, phase) {
       else if (raw === origin + '/api/app/bootstrap?view=portrait') apiKind = 'portrait-bootstrap';
       else if (raw === origin + '/api/app/auth/contact-profile') apiKind = 'contact-profile';
       else if (url.pathname === '/api/academy/reiki-guide' && /^\?course=yggdrasil&locale=(?:en|ru|es)$/.test(url.search)) apiKind = 'yggdrasil-guide';
+      else if (url.pathname === '/api/academy/reiki-guide' && /^\?course=tantra&locale=(?:en|ru|es)$/.test(url.search)) apiKind = 'tantra-guide';
     }
   } catch { /* Malformed inputs are unclassified, never printed. */ }
   let framePageAtBlock = 'unclassified';

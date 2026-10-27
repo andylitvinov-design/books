@@ -79,10 +79,27 @@ jobs:
       - name: Validate the isolated AS5.6 fixture and safety regressions
         run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs
       - name: Install isolated browser tools
+        shell: bash
         run: |
+          set -euo pipefail
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-opora-browser/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Prefer an already-configured Ubuntu archive mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/ci-ubuntu-mirror-preference.test.mjs
+          sudo "$(command -v node)" scripts/prefer-ci-ubuntu-archive.mjs --apply
+      - name: Install browser operating-system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-opora-browser/node_modules/.bin/playwright install-deps ${{ matrix.browser }}
+      - name: Install browser binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-opora-browser/node_modules/.bin/playwright install ${{ matrix.browser }}
       - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
         run: node scripts/verify-opora-as56-browser.mjs
       - uses: actions/upload-artifact@v4

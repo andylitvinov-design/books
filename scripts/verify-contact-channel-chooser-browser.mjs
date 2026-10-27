@@ -6,6 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { assertPublicJourneyRuntime, publicJourneyRequestDecision } from "./helpers/public-journey-verifier.mjs";
 
 import { blockedApiDetails } from "./helpers/contact-request-diagnostics.mjs";
+import { createAnonymousAcademyBootstrapFixture } from "./helpers/anonymous-bootstrap-fixture.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -257,9 +258,11 @@ async function runEngine(name, engine) {
         const submissions=[];
         const blocked=[];
         let requestPhase = "setup";
+        const bootstrapFixture = createAnonymousAcademyBootstrapFixture(origin, locale);
         // Fence the whole context, including popups. No request can write to a
         // backend or navigate to a provider; only this exact synthetic POST exists.
         await context.route('**/*',async route=>{
+          if (await bootstrapFixture.tryFulfill(route, requestPhase)) return;
           const request=route.request(),url=new URL(request.url()),method=request.method();
           if(url.origin===origin&&url.pathname==='/api/service-enquiries'&&!url.search&&method==='POST'){
             let payload;
@@ -409,6 +412,7 @@ async function runEngine(name, engine) {
             await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
             assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
           }
+          assert.equal(bootstrapFixture.denials,1,'Exactly one observed anonymous Academy probe receives the explicit auth denial');
           assert.deepEqual(blocked,[],'No real API/write/provider operation attempted outside the exact synthetic enquiry');
         } finally {
           await page.close();

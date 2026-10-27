@@ -177,7 +177,13 @@ async function journeyScenario({ wrongBack = false, wrongDestination = false, pr
     async toBeVisible() { assert.ok(target.selector); },
     async toHaveCount(count) { assert.equal(target.selector, '#cabinet-tests'); assert.equal(count, 1); },
   });
-  await new Function('assert', 'expect', 'origin', 'homePath', 'results', `${journeys}; return exerciseFreeJourneys;`)(assert, expect, origin, homePath, results)(page, 'test', 390);
+  const verifyHomeInlineAnalysis = async (_page, _expect, locale) => {
+    assert.equal(_page, page); assert.equal(_expect, expect);
+    assert.equal(locale, home.endsWith('/ru') ? 'ru' : 'en');
+    selected = 'analysis';
+    return { review: chooser.locator('a[data-home-free-action="analysis"]') };
+  };
+  await new Function('assert', 'expect', 'origin', 'homePath', 'results', 'verifyHomeInlineAnalysis', `${journeys}; return exerciseFreeJourneys;`)(assert, expect, origin, homePath, results, verifyHomeInlineAnalysis)(page, 'test', 390);
   assert.deepEqual(openedHomes, ['/', '/', '/', '/ru', '/ru', '/ru'].map(path => origin + path));
   assert.equal(results.filter(result => result.freeJourney && result.backReturned && !result.submitted).length, 6);
 }

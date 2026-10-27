@@ -1,3 +1,4 @@
+import { createExpectedTestimonialPosterFixture, expectedTestimonialPoster, assertSyntheticPosterObservation } from './expected-testimonial-poster-fixture.mjs'
 import assert from 'node:assert/strict'
 const REFERENCE = 'HH-ABCD1234EF56', PHONE = '+14165550123'
 // Source-pinned expectations; never inferred from a rendered URL or POST.
@@ -66,9 +67,10 @@ export function assertDiagnosisDraft(raw, locale, channel = 'whatsapp') {
 }
 // Expected provider documents are intercepted as inert HTML, not fetched.
 // Unknown APIs, writes and providers fail closed; context routing covers popups.
-export function createFreeEntryGuard(origin, locale) {
+export function createFreeEntryGuard(origin, locale, {syntheticTestimonialPoster=false} = {}) {
  boundary(origin, locale)
- const state = {videoArmed:false, enquiryArmed:false, submissions:[], videos:0, handoffs:0, blocked:[]}
+ const posterFixture=syntheticTestimonialPoster===true?createExpectedTestimonialPosterFixture(origin,locale):null
+ const state = {videoArmed:false, enquiryArmed:false, submissions:[], videos:0, handoffs:0, blocked:[], get fixturePosters(){return posterFixture?.responses||0}}
  const block = (route, reason) => { state.blocked.push(reason); return route.abort('blockedbyclient') }
  state.route = async route => {
   const request = route.request(), url = new URL(request.url()), method = request.method()
@@ -80,6 +82,7 @@ export function createFreeEntryGuard(origin, locale) {
    return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({saved:true,referenceCode:REFERENCE})})
   }
   if (url.origin === origin && ['GET','HEAD'].includes(method) && !url.pathname.startsWith('/api/')) return route.continue()
+  if (posterFixture && await posterFixture.tryFulfill(route)) return
   if (method === 'GET' && request.resourceType() === 'document') {
    if (state.videoArmed) {
     try { assertFreeReviewVideoSource(url.href,locale); state.videos++; return route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Synthetic video document</title>'}) } catch { /* Not the expected embed. */ }
@@ -150,13 +153,27 @@ export async function verifyFreeReviewCurrentFlow(page, expect, {origin,locale,i
 
 export async function verifyFreeDiagnosisHub(page, expect, {origin,locale}) {
  boundary(origin,locale)
- assert.equal(page.url(),origin+'/'+locale+'/services/free-consultation')
- const guard=createFreeEntryGuard(origin,locale),context=page.context(),c=diagnosisOffers[locale]
+ const guard=createFreeEntryGuard(origin,locale,{syntheticTestimonialPoster:true}),context=page.context(),c=diagnosisOffers[locale]
  let popup
  await context.route('**/*',guard.route)
  try {
+  await page.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
+  assert.equal(page.url(),origin+'/'+locale+'/services/free-consultation')
   const hub=page.locator('[data-free-consultation-hub]'),offers=hub.locator('[data-diagnosis-offer]')
   await expect(offers).toHaveCount(3); await expect(offers.locator('img')).toHaveCount(3)
+  // One source-approved public poster is synthetic; every other provider stays closed.
+  const posterCard=hub.locator('[data-personal-testimonials="all"] [data-testimonial-video-id="m9RfDgK76PU"]')
+  await expect(posterCard).toHaveCount(1)
+  const poster=posterCard.locator('img.site-video-poster')
+  await expect(poster).toHaveCount(1); await expect(poster).toHaveAttribute('src',expectedTestimonialPoster)
+  await posterCard.scrollIntoViewIfNeeded()
+  await expect.poll(()=>guard.fixturePosters).toBe(1)
+  await expect.poll(()=>poster.evaluate(image=>image.complete&&image.naturalWidth===640&&image.naturalHeight===360)).toBe(true)
+  const posterState=await poster.evaluate((image,expected)=>{
+   const rect=image.getBoundingClientRect()
+   return{sourceMatches:image.getAttribute('src')===expected,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,width:rect.width,height:rect.height}
+  },expectedTestimonialPoster)
+  assertSyntheticPosterObservation({...posterState,targetCount:await posterCard.count(),imageCount:await poster.count(),requests:guard.fixturePosters})
   for(let i=0;i<offerIds.length;i++) {
    const offer=hub.locator('[data-diagnosis-offer="'+offerIds[i]+'"]')
    await expect(offer.locator('h3')).toHaveText(c.titles[i])

@@ -25,9 +25,11 @@ test('only the two guarded anonymous callers opt in, by exact WebKit engine iden
     visit(ast)
     assert.equal(calls.length, 1)
     const fixture = calls[0].arguments[3]
-    assert.equal(fixture.getText(), '{anonymousTalismans:true,browserLocalBlobImages:engine === webkit}')
+    assert.equal(fixture.getText(), name === 'master' ?
+      '{anonymousTalismans:true,browserLocalBlobImages:engine === webkit,reviewedRemoteSupportIntroImage:true}' :
+      '{anonymousTalismans:true,browserLocalBlobImages:engine === webkit}')
     const properties = fixture.properties
-    assert.equal(properties.length, 2)
+    assert.equal(properties.length, name === 'master' ? 3 : 2)
     const expression = properties[1].initializer.getText()
     assert.equal(expression, 'engine === webkit')
     const webkit = {}, chromium = {}

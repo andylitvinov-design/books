@@ -31,6 +31,7 @@ const reviewedPublicPrefetchPaths = new Set([
   ]),
 ])
 const reviewedAdvancedRunesPath = '/academy/reiki-yggdrasil/source/advanced-runes.png'
+const reviewedRemoteSupportIntroPath = '/academy/reiki-yggdrasil/source/basic-program.jpg'
 // WebKit-only caller opt-in for browser-local object images, not source identity.
 // Raw origin/prefix/UUID checks reject forgiving URL-parser normalization.
 function isBrowserLocalBlobImageCandidate(request, origin) {
@@ -66,6 +67,15 @@ export function publicJourneyRequestDecision(request, origin, sensitive = [], fi
   if (fixtures.reviewedAdvancedRunesImage === true && plainLocalRead &&
       request.body === '' && request.navigation === false &&
       url === origin + reviewedAdvancedRunesPath && target.search === '' &&
+      resourceType === 'image' && hasAuthHeaders === false && hasPrefetchHeaders === false && prefetch === false &&
+      prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
+      prefetchSignals?.rsc === false) return 'allow'
+  // Exact repository JPEG declared by the remote-support intro stylesheet;
+  // source-backed master fixture only, not an identity inferred from a count.
+  if (fixtures.reviewedRemoteSupportIntroImage === true && plainLocalRead &&
+      /^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin) &&
+      request.body === '' && request.navigation === false &&
+      url === origin + reviewedRemoteSupportIntroPath && target.search === '' &&
       resourceType === 'image' && hasAuthHeaders === false && hasPrefetchHeaders === false && prefetch === false &&
       prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
       prefetchSignals?.rsc === false) return 'allow'
@@ -136,6 +146,7 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
   if (target && !target.username && !target.password && !target.hash) {
     if (origin && target.origin === origin) {
       sourceId = diagnosticSourcePaths.get(path) || diagnosticGeneratedIconPaths.get(path) || 'unclassified'
+      if (request.url === origin + reviewedRemoteSupportIntroPath) sourceId = 'public-remote-support-intro-basic-program'
       // This dynamic route may proxy upstream. Recognize structure only: never
       // print its parameters, call it a safe source, or permit the request.
       if (/^\/media\/[^/]+\/[^/]+$/.test(path)) routeShape = 'media-two-segment-route'
@@ -193,6 +204,7 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
       prefetchSignals: { purposePrefetch: headers.purpose === 'prefetch',
         nextRouterPrefetch: headers['next-router-prefetch'] === '1', rsc: headers.rsc === '1' } }
     if ((fixtures.reviewedAdvancedRunesImage === true && info.url === origin + reviewedAdvancedRunesPath) ||
+        (fixtures.reviewedRemoteSupportIntroImage === true && info.url === origin + reviewedRemoteSupportIntroPath) ||
         (fixtures.browserLocalBlobImages === true && isBrowserLocalBlobImageCandidate(info, origin))) {
       // Inspect header names only for these exact opted-in candidates; fail closed
       // on missing data. Intercepted WebKit allHeaders() is provisional, not proof

@@ -11,21 +11,30 @@ const end = source.indexOf('\n  }, [hidden, locale]);', start)
 const body = start < 0 ? '' : source.slice(start + '  useEffect(() => {'.length, end)
 
 function harness({ mobile = true, contactFocused = true, channel = true, sameForm = true, disabled = false,
-  elementPresent = true, visibility = '', pointerEvents = '', priority = '' } = {}) {
+  elementPresent = true, visibility = '', pointerEvents = '', priority = '',
+  publicCollection = false, publicPicker = true, samePicker = true, searchType = 'search', searchId = 'hh-test-hero-search', connected = true } = {}) {
   class Node { contains(other) { return other === this || other?.parent === this } }
   class Element extends Node {
     constructor(kind, form = null) { super(); this.kind = kind; this.form = form; this.isConnected = true; this.disabled = false }
     closest(selector) {
       if (selector === 'button[data-compact-channel]') return this.kind === 'child' && this.parent.kind === 'channel' ? this.parent : this.kind === 'channel' ? this : null
+      if (selector === 'button[data-test-collection]') return this.kind === 'child' && this.parent.kind === 'collection' ? this.parent : this.kind === 'collection' ? this : null
+      if (selector === '[data-prelogin-test-picker][data-public-test-picker="true"]') return this.picker || null
       if (selector === 'form[data-compact-lead-form]') return this.form
       throw new Error('unexpected selector')
     }
-    matches(selector) { assert.equal(selector, 'input[name="contact"]'); return this.kind === 'editor' }
+    matches(selector) {
+      if (selector === 'input#hh-test-hero-search[type="search"]') return this.kind === 'search' && this.type === 'search' && this.id === 'hh-test-hero-search'
+      assert.equal(selector, 'input[name="contact"]'); return this.kind === 'editor'
+    }
   }
   const form = new Element('form'), otherForm = new Element('form')
-  const button = new Element(channel ? 'channel' : 'other', form), child = new Element('child', form)
+  const picker = new Element('picker'), otherPicker = new Element('picker')
+  const button = new Element(publicCollection ? 'collection' : channel ? 'channel' : 'other', form), child = new Element('child', form)
+  button.picker = publicPicker ? picker : null; button.isConnected = connected
   child.parent = button; button.disabled = disabled
-  const editor = new Element('editor', sameForm ? form : otherForm), other = new Element('other')
+  const editor = new Element(publicCollection ? 'search' : 'editor', sameForm ? form : otherForm), other = new Element('other')
+  editor.picker = samePicker ? picker : otherPicker; editor.type = searchType; editor.id = searchId
   const values = new Map(), priorities = new Map()
   const style = {
     setProperty(key, value, p = '') { values.set(key, value); priorities.set(key, p) },
@@ -57,7 +66,7 @@ function harness({ mobile = true, contactFocused = true, channel = true, sameFor
     { nav: { current: elementPresent ? nav : null }, window, document, Element, Node }) : undefined
   let actions = 0
   const emit = (type, target = child, extras = {}, name = 'document') => {
-    const event = { type, target, pointerId: 7, isPrimary: true, button: 0, clientX: 112, clientY: 795, ...extras,
+    const event = { type, target, pointerId: 7, isTrusted: true, isPrimary: true, button: 0, clientX: 112, clientY: 795, ...extras,
       preventDefault() { throw new Error('must not cancel native event') },
       stopPropagation() { throw new Error('must not stop native event') },
       stopImmediatePropagation() { throw new Error('must not stop native event') },
@@ -243,4 +252,97 @@ test('stale completion cannot release a later gesture or lose its cleanup handle
   old()
   assert.equal(h.tasks.size, 1); assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
   h.cleanup(); assert.equal(h.tasks.size, 0); assert.equal(h.values.size, 0)
+})
+
+
+for (const focusButton of [true, false]) test('same public picker search→collection keeps physical down/up/click target; button focus ' + focusButton, () => {
+  const h = harness({ publicCollection: true }), before = h.document.activeElement
+  h.begin(); assert.equal(h.document.activeElement, before, 'Guard never moves focus')
+  assert.equal(h.style.getPropertyValue('visibility'), 'hidden'); assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
+  h.blurEditor(focusButton)
+  const up = h.hit(); h.emit('pointerup', up); const mouse = h.hit(); h.emit('mouseup', mouse)
+  assert.equal(up, h.child); assert.equal(mouse, h.child)
+  h.emit('click', up); assert.equal(h.actions(), 1); assert.equal(h.values.size, 0); h.cleanup()
+})
+
+test('public collection pointer-only release/click is native and restores before a later interaction', () => {
+  const h = harness({ publicCollection: true }), result = h.complete({ compatibilityMouse: false })
+  assert.equal(result.upTarget, h.child); assert.equal(result.clickTarget, h.child)
+  assert.equal(h.actions(), 1); assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); h.cleanup()
+})
+
+for (const [name, options, extras] of [
+  ['private picker', { publicPicker: false }, {}],
+  ['different picker', { samePicker: false }, {}],
+  ['wrong search type', { searchType: 'tel' }, {}],
+  ['wrong search identity', { searchId: 'different-search' }, {}],
+  ['no focused editor', { contactFocused: false }, {}],
+  ['disabled collection', { disabled: true }, {}],
+  ['detached collection', { connected: false }, {}],
+  ['desktop', { mobile: false }, {}],
+  ['untrusted pointer', {}, { isTrusted: false }],
+  ['secondary pointer', {}, { isPrimary: false, pointerId: 8 }],
+  ['secondary button', {}, { button: 2 }],
+]) test('public collection hold excludes ' + name, () => {
+  const h = harness({ publicCollection: true, ...options }); h.begin(extras)
+  assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); h.cleanup()
+})
+
+test('public search does not broaden the guard to unrelated buttons or collection without focus', () => {
+  const h = harness({ publicCollection: true }); h.button.kind = 'other'; h.begin()
+  assert.equal(h.values.size, 0); h.cleanup()
+})
+
+for (const terminal of ['pointercancel', 'contextmenu', 'dragstart', 'keydown', 'blur', 'pagehide', 'visibilitychange', 'cleanup'])
+  test('public collection abandoned native gesture restores on ' + terminal, () => {
+    const h = harness({ publicCollection: true }); h.begin(); h.blurEditor()
+    if (terminal === 'visibilitychange') h.document.visibilityState = 'hidden'
+    if (terminal === 'cleanup') h.cleanup()
+    else { h.emit(terminal, h.child, {}, ['blur', 'pagehide'].includes(terminal) ? 'window' : 'document'); h.cleanup() }
+    assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); assert.equal(h.listeners.length, 0)
+  })
+
+for (const terminal of ['outside', 'detached', 'disabled']) test('public collection release ' + terminal + ' keeps native cancellation', () => {
+  const h = harness({ publicCollection: true }); h.begin(); h.blurEditor()
+  if (terminal === 'detached') h.button.isConnected = false
+  if (terminal === 'disabled') h.button.disabled = true
+  h.emit('pointerup', h.child, terminal === 'outside' ? { clientX: 300, clientY: 600 } : {})
+  assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); h.cleanup()
+})
+
+test('public collection secondary pointer cannot steal primary hold and stale release cannot clear the next hold', () => {
+  const h = harness({ publicCollection: true }); h.begin(); h.blurEditor()
+  h.emit('pointerdown', h.other, { isPrimary: false, pointerId: 8 }); h.emit('pointerup', h.other, { pointerId: 8 }); h.emit('pointercancel', h.other, { pointerId: 8 })
+  assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
+  h.emit('pointerup', h.child); const old = h.scheduled[0]
+  h.document.activeElement = h.editor; h.begin({ pointerId: 9 }); h.blurEditor(); h.emit('pointerup', h.child, { pointerId: 9 })
+  old(); assert.equal(h.style.getPropertyValue('pointer-events'), 'none'); assert.equal(h.tasks.size, 1)
+  h.advanceTask(); assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); h.cleanup()
+})
+
+for (const terminal of ['none', 'disabled', 'detached']) test('public collection delayed-click fallback releases even when click is suppressed: ' + terminal, () => {
+  const h = harness({ publicCollection: true }); h.begin(); h.blurEditor(); h.emit('pointerup', h.child)
+  if (terminal === 'disabled') h.button.disabled = true
+  if (terminal === 'detached') h.button.isConnected = false
+  h.advanceTask(); assert.equal(h.values.size, 0); assert.equal(h.actions(), 0); assert.equal(h.tasks.size, 0); h.cleanup()
+})
+
+test('public collection effect cleanup restores exact preexisting style values and priorities through remount', () => {
+  for (let index = 0; index < 2; index++) {
+    const h = harness({ publicCollection: true, visibility: 'collapse', pointerEvents: 'auto', priority: 'important' })
+    h.begin(); h.blurEditor(); h.cleanup()
+    assert.equal(h.style.getPropertyValue('visibility'), 'collapse'); assert.equal(h.style.getPropertyValue('pointer-events'), 'auto')
+    assert.equal(h.style.getPropertyPriority('visibility'), 'important'); assert.equal(h.style.getPropertyPriority('pointer-events'), 'important')
+    assert.equal(h.actions(), 0); assert.equal(h.tasks.size, 0); assert.equal(h.listeners.length, 0)
+  }
+})
+
+
+test('public search blur and viewport changes do not release the held collection gesture early', () => {
+  const h = harness({ publicCollection: true }); h.begin(); h.blurEditor(false)
+  h.emit('focusout', h.editor); h.emit('focusin', h.button)
+  h.emit('resize', h.other, {}, 'window'); h.emit('visibilitychange')
+  assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
+  h.emit('pointerup', h.child); h.emit('mouseup', h.child); h.emit('click', h.child)
+  assert.equal(h.actions(), 1); assert.equal(h.values.size, 0); h.cleanup()
 })

@@ -1,3 +1,4 @@
+import { attachPublicApiReadDiagnostics } from "./helpers/public-api-read-diagnostics.mjs";
 import { verifyFreeReviewCurrentFlow, verifyFreeDiagnosisHub } from './helpers/free-entry-current-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { registerContactChannelRequest, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
@@ -17,13 +18,14 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], pageErrors: [], devIssueOverlay: false };
 let failure;
 try {
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 844 } });
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
+    attachPublicApiReadDiagnostics(page, origin, diagnostics.apiReadObservations);
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
@@ -634,7 +636,6 @@ try {
           if (width === 390) {
             const hub = await createPage(width);
             try {
-              await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
               await verifyFreeDiagnosisHub(hub, expect, {origin, locale});
               await assertViewport(hub, locale + "/free-consultation/390/after-actions");
               await assertNoDevIssueOverlay(hub, locale + "/free-consultation/390");

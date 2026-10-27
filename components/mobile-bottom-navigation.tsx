@@ -183,11 +183,21 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       if (!event.isPrimary || event.button !== 0) return;
       restore();
       if (!window.matchMedia('(max-width: 767px)').matches || !(event.target instanceof Element)) return;
-      const button = event.target.closest<HTMLButtonElement>('button[data-compact-channel]');
-      const form = button?.closest('form[data-compact-lead-form]');
+      const channelButton = event.target.closest<HTMLButtonElement>('button[data-compact-channel]');
+      const collectionButton = channelButton ? null : event.target.closest<HTMLButtonElement>('button[data-test-collection]');
+      const button = channelButton || collectionButton;
       const editor = document.activeElement;
-      if (!button || button.disabled || !form || !(editor instanceof Element)
-        || !editor.matches('input[name="contact"]') || editor.closest('form[data-compact-lead-form]') !== form) return;
+      if (!button || button.disabled || !(editor instanceof Element)) return;
+      const form = channelButton?.closest('form[data-compact-lead-form]');
+      const fromContact = form && editor.matches('input[name="contact"]')
+        && editor.closest('form[data-compact-lead-form]') === form;
+      const pickerSelector = '[data-prelogin-test-picker][data-public-test-picker="true"]';
+      const picker = collectionButton?.closest(pickerSelector);
+      // A public collection sits outside the search form. Keep its native
+      // release reachable when search blur restores the overlapping dock.
+      const fromPublicSearch = event.isTrusted && collectionButton?.isConnected === true && picker
+        && editor.matches('input#hh-test-hero-search[type="search"]') && editor.closest(pickerSelector) === picker;
+      if (!fromContact && !fromPublicSearch) return;
       activation = { pointerId: event.pointerId, button, released: false,
         visibility: element.style.getPropertyValue('visibility'), visibilityPriority: element.style.getPropertyPriority('visibility'),
         pointerEvents: element.style.getPropertyValue('pointer-events'), pointerEventsPriority: element.style.getPropertyPriority('pointer-events') };

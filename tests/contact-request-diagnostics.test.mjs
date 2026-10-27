@@ -48,6 +48,11 @@ test('all diagnostic additions erase to the exact current browser-script preimag
   assert.match(script,/await saved\.waitFor\([^\n]+\);\s*requestPhase = "dao-receipt"/);
   assert.match(script,/assert\.deepEqual\(blocked,\[\],'No real API\/write\/provider operation attempted outside the exact synthetic enquiry'\)/);
   assert.match(script,/return route\.abort\('blockedbyclient'\)/);
+  // Separately reviewed denial fixture is removed explicitly, not mistaken for a diagnostic allowance.
+  script=script.replace('import { createAnonymousAcademyBootstrapFixture } from "./helpers/anonymous-bootstrap-fixture.mjs";\n','')
+    .replace('        const bootstrapFixture = createAnonymousAcademyBootstrapFixture(origin, locale);\n','')
+    .replace('          if (await bootstrapFixture.tryFulfill(route, requestPhase)) return;\n','')
+    .replace("          assert.equal(bootstrapFixture.denials,1,'Exactly one observed anonymous Academy probe receives the explicit auth denial');\n",'')
   script=script.replace('import { blockedApiDetails } from "./helpers/contact-request-diagnostics.mjs";\n\n','')
     .replace('        let requestPhase = "setup";\n','')
     .replace(/,\n              \.\.\.\(url\.pathname\.startsWith\('\/api\/'\) \? blockedApiDetails\([^\n]+ : \{\}\)/,'')
