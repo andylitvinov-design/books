@@ -204,6 +204,25 @@ test('English and Spanish are equal flows and coaching links only allow canonica
   assert.equal(TELEGRAM_DIAGNOSTIC_V2_BUTTONS.some(x=>x.startsWith('/')),false)
   assert.equal(new Set(TELEGRAM_DIAGNOSTIC_V2_BUTTONS).size,TELEGRAM_DIAGNOSTIC_V2_BUTTONS.length)
 })
+test('existing V1 consent sessions also accept natural text without a button; no auto-consent for unknown chats',()=>{
+  for(const [locale,reply] of [['ru','Да'],['en','yes'],['es','Sí'],['ru','согласна']]){
+    const old={stage:'consent',locale,consentAt:null,flowVersion:1}
+    const next=transitionTelegramDiagnostic(old,msg(reply,{locale}))
+    assert.equal(next.stage,'focus',reply)
+    assert.equal(next.consent,true,reply)
+    assert.match(next.body,/consent/,reply)
+    assert.notEqual(next.reply,null,'the legacy second prompt is shown')
+    assert.equal(next.flowVersion,undefined,'in-progress V1 does not silently migrate')
+  }
+  const old={stage:'consent',locale:'ru',consentAt:null,flowVersion:1}
+  for(const reply of ['нет','yes but not now','Да, но не сейчас','отношения']){
+    const next=transitionTelegramDiagnostic(old,msg(reply))
+    assert.equal(next.stage,'consent',reply)
+    assert.equal(next.consent,false,reply)
+    assert.equal(next.body,null,reply)
+  }
+})
+
 test('legacy V1 in-progress question remains intact until an explicit new /start',()=>{
   const prior={stage:'question',locale:'ru',consentAt:'2026-10-26T12:00:00Z',flowVersion:1}
   const text=transitionTelegramDiagnostic(prior,msg('Старый ответ по существующей заявке'))
