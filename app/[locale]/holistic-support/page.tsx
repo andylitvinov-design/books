@@ -63,6 +63,8 @@ const copy = {
     meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
     meditationVideoTitle: "Flight to the Sun · Original English video",
     meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
+    mandalaAction: "Create my support mandala",
+    mandalaLead: "Add your photo or goal, choose a mandala and meditate with a video.",
     meditationMore: "Explore more Academy meditations",
     meditationRussianArchive: "Open the original PsiMaster series in Russian",
 
@@ -117,6 +119,8 @@ const copy = {
     meditationVideoIntro: "Семь оригинальных видео PsiMaster на русском: три медитации Солнца, «Жизненная Сила», «Круг Огня», марафоны энергопрактик и чисток. Нажмите «Смотреть» на обложке; если встроенный плеер недоступен, откройте YouTube.",
     meditationVideoTitle: "Русскоязычные медитации · архив PsiMaster",
     meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
+    mandalaAction: "Создать мандалу поддержки",
+    mandalaLead: "Добавьте фото или цель, выберите мандалу и включите медитацию.",
     meditationMore: "Другие медитации в Академии",
     meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
 
@@ -171,6 +175,8 @@ const copy = {
     meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
     meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
     meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
+    mandalaAction: "Crear mi mandala de apoyo",
+    mandalaLead: "Añade tu foto u objetivo, elige un mandala y escucha una videomeditación.",
     meditationMore: "Más meditaciones en la Academia",
     meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
 
@@ -230,6 +236,11 @@ export default async function HolisticSupportPage({ params }: Props) {
             </div>
           </header>
           <div className={styles.meditationContents}>
+            <Link href={"/" + locale + "/holistic-support/mandala"} className={styles.mandalaEntry} prefetch={false}>
+              <Image src="/images/mandalas/sun.svg" width={72} height={72} alt="" loading="lazy" />
+              <span><strong>{t.mandalaAction}</strong><small>{t.mandalaLead}</small></span>
+              <span aria-hidden="true">→</span>
+            </Link>
             {freeMeditationVideos(locale).length > 0 ? (
               <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)} />
             ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
