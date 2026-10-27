@@ -20,7 +20,17 @@ const browser = await engine.launch()
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })
 const page = await context.newPage()
 const problems = []
+const bootstrapStatuses = []
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
+// Confirm a successful same-origin protected bootstrap, not only visible UI.
+// WebKit may abort an older fetch when an authenticated page navigates away.
+page.on('response', response => {
+  try {
+    const address = new URL(response.url())
+    if (address.origin === origin && address.pathname === '/api/app/bootstrap' &&
+      bootstrapStatuses.length < 50) bootstrapStatuses.push(response.status())
+  } catch { /* Ignore non-HTTP browser-internal resources only. */ }
+})
 const open = path => page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
 
 // WebKit can complete synthetic Google onboarding while the app's own final
@@ -392,7 +402,29 @@ try {
   const devOverlayBlocked = problems.some(item => item.includes('/__nextjs_original-stack-frames'))
   const appProblems = problems.filter(item => !item.includes('/__nextjs_original-stack-frames') &&
     !(devOverlayBlocked && item === '[object Event]'))
-  assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
+  // These exact WebKit messages are from *previous* in-flight requests discarded
+  // during intentional navigation under Next dev. Never ignore an unknown host,
+  // path, error class, repeated bootstrap failure or an absent successful
+  // authenticated bootstrap. Production/browser auth remains independently gated.
+  const abandonedDevHotUpdate = /^\/127\.0\.0\.1:3100\/_next\/static\/webpack\/[\w.-]+\.webpack\.hot-update\.json due to access control checks\.$/
+  const abandonedOldBootstrap = /^\/127\.0\.0\.1:3100\/api\/app\/bootstrap due to access control checks\.$/
+  const navigationAborts = name === 'webkit' ? appProblems.filter(item =>
+    abandonedDevHotUpdate.test(item) || abandonedOldBootstrap.test(item)) : []
+  const unexpected = appProblems.filter(item => !navigationAborts.includes(item))
+  if (navigationAborts.length) {
+    const bootstrapAborts = navigationAborts.filter(item => abandonedOldBootstrap.test(item)).length
+    const devHotAborts = navigationAborts.filter(item => abandonedDevHotUpdate.test(item)).length
+    assert.ok(bootstrapAborts <= 2 && devHotAborts <= 1,
+      'Unexpected repeated WebKit bootstrap/HMR failures: ' + navigationAborts.join('; '))
+    assert.ok(bootstrapStatuses.includes(200),
+      'WebKit navigation may abort an old bootstrap only after a successful same-origin bootstrap')
+    assert.ok(!bootstrapStatuses.some(code => code === 401 || code === 403),
+      'Protected bootstrap must never reject an authenticated test account')
+    console.log('PORTRAIT_WEBKIT_DEV_NAV_ABORTS', JSON.stringify({
+      bootstrapAborts, devHotAborts, successfulBootstrapResponses:bootstrapStatuses.filter(code=>code===200).length,
+    }))
+  }
+  assert.equal(unexpected.length,0,'Browser script errors: '+unexpected.join('; '))
   console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
 } finally {
   await context.close()
