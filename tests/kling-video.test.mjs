@@ -144,3 +144,15 @@ test('admin integration is auth-gated, opt-in-only, with no publish or key in cl
   assert.match(page, /requireAdminRequest\(\)/);
   assert.ok(!actions.includes('publishSiteVideo'));
 });
+
+
+test('owner money-flow image preset is no-charge until explicit media and paid consent', () => {
+  const ui=readFileSync(new URL('../components/kling-scene-studio.tsx', import.meta.url), 'utf8');
+  assert.match(ui,/key: "wealth"/);
+  assert.match(ui,/andy-about\.png/);
+  assert.match(ui,/setMode\(personal \? "image" : "text"\)/);
+  assert.match(ui,/setDuration\(personal \? 5 : 3\)/);
+  assert.match(ui,/setResolution\("720p"\)/);
+  assert.match(ui,/setImageApproved\(false\)/);
+  assert.match(ui,/setApproved\(false\)/);
+});

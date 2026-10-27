@@ -85,3 +85,34 @@ Official references:
 - https://kling.ai/document-api/apiReference/model/imageToVideo
 - https://github.com/andylitvinov-design/ai-projects-brain/issues/219
 - https://github.com/andylitvinov-design/ai-projects-brain/issues/218
+
+## Owner wealth-flow video recipe — no automatic payment
+
+Purpose: a symbolic self-reflection film using the already public Holistic House
+owner portrait at /images/holistic-house/andy-about.png. The fourth scene
+preset in the EXISTING /admin/videos#kling-scene-studio fills that source
+and a face-preserving visual prompt. Selecting it creates NO Kling job,
+does NOT accept a third-party image, and leaves media-rights and paid consent unchecked.
+
+Final length 15–20 seconds, one OPTIONAL paid generation of 5 seconds:
+
+| Segment | Visual direction | Cost |
+| --- | --- | --- |
+| 0–3s | Real owner photo, warm beige-and-gold background, free slow zoom | Local FFmpeg, zero API credits |
+| 3–8s | Symbolic coins, abstract money-like paper and gold light flow TOWARD the person's open hands, not across the face | ONE optional 5s 720p Kling 2.5 Turbo Image-to-Video job, ONLY after personal provider cost/rights approval |
+| 8–15s | Animate free particle layers, hold/loop last approved frame | Local FFmpeg, zero API credits |
+| 15–20s | Soft glow around figure, original voice and subtitle if desired, calm fade | Local FFmpeg, zero API credits |
+
+Sample RU voice: «Деньги приходят ко мне. Я замечаю возможности и принимаю достойную оплату за свой труд».
+EN: I welcome opportunities and fair payment for the value I create.
+ES: Recibo oportunidades y una remuneración justa por el valor que creo.
+An affirmation is a symbolic meditation, not an income guarantee or evidence of earnings.
+
+Cost-free alternative: build the whole MP4 by looping/animating the real portrait
+and freely generated SVG coins, particle layers, light ribbons and original voice
+with existing FFmpeg; no Kling job required. Maintain 9:16 Reel and 16:9 website
+compositions from one master rather than rendering separate paid Kling models.
+Before Kling receives the public portrait, the owner explicitly confirms the
+image is theirs and suitable for a third-party provider. Never send photos
+from protected client records. Provider task result must be reviewed before any
+independent Drive master, YouTube or website publication.

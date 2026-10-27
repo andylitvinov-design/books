@@ -12,14 +12,17 @@ const sampleScenes = [
   { key: "morning", prompt: "Cinematic slow dolly shot through a tranquil sunlit room with natural wood and warm linen, soft morning rays, calm human-scale atmosphere, no visible people, no on-screen text, realistic photography." },
   { key: "forest", prompt: "Gentle camera movement through a quiet green forest after the rain, soft light through the leaves, a feeling of spaciousness and grounded calm, natural colors, photorealistic, no text, no people." },
   { key: "water", prompt: "Close-up cinematic view of concentric ripples spreading across a peaceful lake at golden hour, subtle reflections, unhurried motion and soft warm light, no faces, no text, photorealistic." },
+  { key: "wealth", prompt: "Use the real single adult from the reference photo, maintaining the exact face, proportions, natural identity and calm expression. Symbolic prosperity flows TOWARD the figure: a few generic golden coins and abstract banknote-like paper shapes drift gently from both sides into the person's open hands, surrounded by warm golden light and subtle cinematic camera movement. Keep the face fully visible and unaltered; do not introduce another person, deformed hands, logos, readable currency denominations, speech, captions, or claims of real financial gain. Photorealistic five-second scene." },
 ] as const;
+
+const OWNER_WEALTH_PHOTO_URL = "https://holistichouse.vercel.app/images/holistic-house/andy-about.png";
 
 const translations = {
   en: {
     title: "Kling AI · scene studio", intro: "Create atmospheric clips and animate approved public images. Use HeyGen for Andrey’s real Digital Twin and approved voice.",
     ready: "API connected; generation must be explicitly approved below.", disabled: "Paid rendering is disabled on the server. You can prepare prompts and use Kling's web editor.",
     key: "Kling API key not configured. Prepare and copy prompts for the web editor; no API request will be made.",
-    language: "Editor language", presets: "Scene ideas", morning: "Warm room", forest: "Quiet forest", water: "Calm water",
+    language: "Editor language", presets: "Scene ideas", morning: "Warm room", forest: "Quiet forest", water: "Calm water", wealth: "Money comes to me",
     prompt: "Scene description (English works well for visuals)", mode: "Source", text: "Text → video", image: "Public image → video",
     imageUrl: "Public Holistic House image URL", imageHelp: "Only publicly published JPG/PNG under https://holistichouse.vercel.app/images/..., never WebP, private client files, uploads or signed links.",
     rights: "I confirm this is an approved, public, non-client image that may be processed by Kling.",
@@ -38,7 +41,7 @@ const translations = {
     title: "Kling AI · студия видеосцен", intro: "Создавайте атмосферные фрагменты и оживляйте утверждённые публичные изображения. Для вашего Digital Twin и голоса используем HeyGen.",
     ready: "API подключён. Для каждой платной генерации требуется подтверждение.", disabled: "Платный рендер выключен на сервере. Можно подготовить промпт и воспользоваться веб-редактором Kling.",
     key: "API-ключ Kling не настроен. Готовьте и копируйте промпты в веб-редактор; вызов API не производится.",
-    language: "Язык интерфейса", presets: "Идеи сцен", morning: "Тёплая комната", forest: "Спокойный лес", water: "Тихая вода",
+    language: "Язык интерфейса", presets: "Идеи сцен", morning: "Тёплая комната", forest: "Спокойный лес", water: "Тихая вода", wealth: "Деньги идут ко мне",
     prompt: "Описание сцены (для визуальных сцен хорошо работает английский)", mode: "Исходник", text: "Текст → видео", image: "Публичное фото → видео",
     imageUrl: "URL публичного изображения Holistic House", imageHelp: "Только общедоступные JPG/PNG в https://holistichouse.vercel.app/images/... — не WebP, не личные фотографии клиентов, загрузки или подписанные ссылки.",
     rights: "Подтверждаю: изображение публичное, утверждено, не содержит данных клиента, его можно передавать Kling.",
@@ -57,7 +60,7 @@ const translations = {
     title: "Kling AI · estudio de escenas", intro: "Crea clips atmosféricos y anima imágenes públicas aprobadas. HeyGen sigue siendo el servicio para el Digital Twin y la voz de Andrey.",
     ready: "API conectada. Cada generación de pago requiere aprobación individual.", disabled: "La generación de pago está desactivada. Puedes preparar el prompt para el editor web de Kling.",
     key: "Falta la clave API de Kling. Copia los prompts al editor web; no se realizará ninguna llamada API.",
-    language: "Idioma", presets: "Ideas visuales", morning: "Sala cálida", forest: "Bosque tranquilo", water: "Agua en calma",
+    language: "Idioma", presets: "Ideas visuales", morning: "Sala cálida", forest: "Bosque tranquilo", water: "Agua en calma", wealth: "Flujo de prosperidad",
     prompt: "Descripción de la escena (se recomienda inglés)", mode: "Origen", text: "Texto → vídeo", image: "Imagen pública → vídeo",
     imageUrl: "URL de imagen pública de Holistic House", imageHelp: "Solo JPG/PNG públicos en https://holistichouse.vercel.app/images/...; nunca WebP, fotos de clientes, archivos privados ni enlaces firmados.",
     rights: "Confirmo que la imagen es pública, aprobada y sin datos de clientes, y que se puede enviar a Kling.",
@@ -155,7 +158,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
       <div>
         <p className="site-video-field-label">{t.presets}</p>
         <div className="kling-studio-presets">
-          {sampleScenes.map((scene) => <button type="button" key={scene.key} disabled={pending} onClick={() => { setPrompt(scene.prompt); setApproved(false); }}><Film size={16} aria-hidden="true" />{t[scene.key]}</button>)}
+          {sampleScenes.map((scene) => <button type="button" key={scene.key} disabled={pending} onClick={() => { setPrompt(scene.prompt); const personal = scene.key === "wealth"; setMode(personal ? "image" : "text"); setImageUrl(personal ? OWNER_WEALTH_PHOTO_URL : ""); setDuration(personal ? 5 : 3); setResolution("720p"); setImageApproved(false); setApproved(false); }}><Film size={16} aria-hidden="true" />{t[scene.key]}</button>)}
         </div>
         <label className="site-video-field"><span>{t.mode}</span><select value={mode} disabled={pending} onChange={event => { const next = event.target.value as Mode; setMode(next); setDuration(next === "image" ? 5 : 3); setApproved(false); }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select></label>
         <label className="site-video-field"><span>{t.prompt}</span><textarea rows={6} minLength={12} maxLength={2500} value={prompt} disabled={pending} onChange={event => { setPrompt(event.target.value); setApproved(false); }} /></label>
