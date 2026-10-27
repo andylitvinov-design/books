@@ -10,7 +10,7 @@ YouTube authorization is **per language**, not a Vercel secret re-entry:
 - RU: immutable channel `UCjWq6NHZTQkUr3bC3WbXXcw` (@shamanic_academy)
 - EN: owner-known handle `@aatapro`, independently verified through YouTube Data API `channels.list(forHandle)` and authenticated `mine=true`; wrong/missing channel fails closed
 - Admin OAuth start `/api/admin/telegram-video/youtube/start?target=ru` or `?target=en` reuses the existing confidential Google Web Client and owner-only PKCE challenge with target sealed in state, stores **separate per-target encrypted grants** in the existing protected table. No Google account consent can be fabricated from saved Client ID/Secret; browser/MetricooI connections cannot be silently reused as offline grants.
-- RLS migration: `20261027193500_hh_owner_video_youtube_ru_en_destinations.sql`. Production database must be migrated and read back before deploying the new server.
+- RLS migration: `20261027195009_hh_owner_video_youtube_ru_en_destinations_20261027.sql`. Production database must be migrated and read back before deploying the new server.
 
 Current acceptance remains **OPEN** until exact PR CI; Vercel production READY/source SHA/alias; real owner Telegram source→MP4; correct Google grant for chosen channel; YouTube `processed`/Unlisted/provider and returned Telegram watch-link evidence. Do not interpret successful tests or existing Metricool RU connection as video sent.
 
