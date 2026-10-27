@@ -1,5 +1,16 @@
 # Holistic House · bounded Gauntlet Loop / OpenCode pilot
 
+## Latest implementation readback — 27 October 2026
+
+- **Existing live tooling:** PR #2233 merged with exact SHA and READY deployment previously verified. Follow-up [PR #2247](https://github.com/andylitvinov-design/books/pull/2247) is a separate rollout gate; do not claim its code is live before merge and domain check.
+- **Real free inference:** [GitHub Action #40506626748](https://github.com/andylitvinov-design/books/actions/runs/40506626748) received a genuine `GLM-5.3-Flash Free` text reply through official OpenCode v2.1.2 with no paid credential.
+- **Real Builder:** an isolated Mac run on 27 October used that free model to change only the existing Free Express resume hook dependency to include `t.timeout` and add one regression test. Independent review fixed a faulty test assertion before copying two reviewed files into PR #2247. Local contract tests **33/33**, targeted zero-warning ESLint, TypeScript `--noEmit --incremental false`, and `git diff --check` all succeeded.
+- **AI Critic HOLD:** separate Critic returned `provider.free-limit` HTTP **429**. No paid retry, account switch, or billing activation occurred. Full two-agent approval is **NOT VERIFIED** and the synthetic scorecard correctly remains `NOT_PASSED`. Independent deterministic checks did catch and resolve the test mistake.
+- **Quota protection:** normal PRs and production pushes run only the offline tests. An agent trial now requires an **explicit** push of a marker under `docs/benchmarking/gauntlet-runs/` on a disposable branch named `codex/hh-gauntlet-run-*`. The CI gate also verifies exact repository, matching temporary HOME/XDG, no provider key, free-model allowlist and effective Builder/Critic ACLs. Each deliberate marker push authorizes at most one bounded isolated trial; no agent pushes/merges or creates a real lead.
+- **Still required:** exact-head GitHub CI for PR #2247, mobile Chromium/WebKit browser acceptance if shipping the two-file UI fix, safe merge, Vercel READY/alias/exact SHA, and separate consenting-person end-to-end CRM/media/OAuth/provider verification. Never confuse synthetic consent checks with delivered user data or payment.
+
+The dated original notes below document the first pilot and can refer to earlier PR-triggered runs; this later status supersedes those trigger descriptions.
+
 **27 October 2026.** Implementation: `lib/benchmarking/hh-gauntlet-loop.mjs`, `scripts/benchmarking/hh-gauntlet-loop.mjs`, two `.opencode/agents/hh-gauntlet-*.md`, independent regression tests and `.github/workflows/hh-gauntlet-loop.yml`.
 
 ## Goal and release separation
