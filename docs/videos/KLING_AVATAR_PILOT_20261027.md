@@ -62,3 +62,30 @@ API endpoint, disclose API tokens or bypass admin auth to fake connectivity.
 6. Preserve all existing HeyGen digital twin/voice, 43 library outputs and working video embeds.
 
 This feature is a *private pilot*, not a one-click replacement for 11 confirmed HeyGen public videos. It does not republish or rewrite any existing script and does not use medical/private client records.
+
+## Direct Kling control by an AI assistant (different from the site API)
+
+The official Kling remote MCP server is **https://kling.ai/mcp**. It exposes
+`who_am_i`, `text_to_video`, `image_to_video`, `query_tasks`, credits and
+asset upload. This is the recommended **natural-language assistant path**
+if the user's ChatGPT workspace permits full write-capable custom MCP. The
+owner must explicitly add/authorize Kling via **ChatGPT web → Plugins → + →
+Add custom MCP server**, then select the resulting plugin in a chat. A saved
+`KLING_API_KEY` in Vercel **does not** authorize that separate personal MCP
+OAuth session and cannot be silently reused. At the time of this work, no
+connected Kling MCP tool is exposed to this ChatGPT conversation. On plans
+without full write-capable custom MCP, use ChatGPT Work's authenticated
+browser to operate the site admin or Kling web app instead; do not invent a
+plugin connection or bypass user OAuth.
+
+Important official distinction: Kling MCP/CLI **uses Personal paid credits**;
+bonus/free credits and off-peak free generation are **not available through
+assistant MCP**. Before the first paid task, explicitly review the correct
+provider workspace and unit cost; keep the site paid flags OFF until separately
+approved. `who_am_i` / credit readback is the no-render first check. A task
+accepted by Kling cannot be canceled and direct-MCP asset links may expire
+within **24 hours**; export QA-approved masters to the existing Google Drive
+folder promptly, but never auto-publish them.
+
+Official: https://kling.ai/app/mcp/guide
+OpenAI custom MCP permissions: https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt
