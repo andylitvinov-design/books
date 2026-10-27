@@ -1,6 +1,23 @@
 # Holistic House · AI Council · Gemini 4 Argon via Vercel Gateway
 
-Date: 2026-10-27 · Issue: [#2228](https://github.com/andylitvinov-design/books/issues/2228) · **READY TO REVIEW, NOT ENABLED**
+
+## 2026-10-27 · Совместимость с live AI Council 4+1
+
+Новая production реализация **PR #2104 уже смёржена** и использует `lib/practitioners/owner-ai-five.mjs` в обработчике приватного владельца `/all`. Старая точка `aggregateOwnerCouncil` сохранена для совместимости с legacy-тестами, но не вызывает рабочий Telegram `/all`. Этот документ отражает обновлённый путь через **новый PR интеграции**:
+
+`owner Telegram /all → four confirmed $0 OpenRouter reviewers → fifth synthesizer: Gemini 4 Argon (only verified included free credits) OR Gemma 4 ($0)`.
+
+- Четыре независимых слота сохраняют закреплённые бесплатные Qwen / Dots3 Note / Cohere / Xing4; пятый бесплатный по умолчанию — `google/gemma-4-31b-it:free`. В новом маршруте вызов Argon может **заменить** пятый запрос, но никогда не становится шестым запросом.
+- Вызов Argon возможен **только** при уже имеющихся подтверждённых бесплатных AI Gateway Credits **и** отдельном project OIDC/API key бюджете, без пополнений или платных fallback, в Production, с обезличенным техническим вопросом. Дефолт: выключено. Реальный `GET /v1/credits` проверяет баланс, но **не отличает подарок от купленных кредитов** — не включать флаг `FREE_CREDITS_CONFIRMED` без проверки источника средств.
+- При отключённых флагах **нет вообще никаких вызовов AI Gateway**, работает прежний $0 Gemma 4. Если проверка credits/доступа отклоняет запрос **до генерации**, fallback на проверенную бесплатную Gemma. После попытки генерации Argon **нет повторного Argon или скрытого дополнительного запроса**, вывод/ошибки маркируются точной моделью.
+- Telegram-отчёт показывает **фактическую** пятую модель и private ledger сохраняет `synthesis.model`, без подмены Gemma/Argon. Личные/клиентские данные, диагнозы, результаты тестов и секреты не передаются на Argon. Отчёт о реальной доставке не заявлять без Bot API receipt и чтения владельцем.
+- Оригинальная интеграция Argon [PR #2232](https://github.com/andylitvinov-design/books/pull/2232) была уже merged, Vercel READY, но старая точка вызова больше не вызывается новым Council. Новый PR устраняет этот разрыв без дополнительного бота, провайдера, миграции или ежедневного cron.
+
+**Критерий завершения:** новый PR → профильный CI зеленый на exact SHA → safe merge в `codex/public-book-library` → Vercel READY + канонический домен на том же SHA, отдельное подтверждение бесплатного баланса и отсутствие top-up → владелец запускает настоящий обезличенный /all → Telegram и AI Gateway receipts. При невыполненных условиях **код в production, функция Argon OFF**.
+
+---
+
+Date: 2026-10-27 · Issue: [#2228](https://github.com/andylitvinov-design/books/issues/2228) · **CODE RELEASED; ARGON USAGE DISABLED BY DEFAULT**
 
 ## Design decisions
 
