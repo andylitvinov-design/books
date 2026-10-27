@@ -91,3 +91,25 @@ test("new TSX and route transpile without TypeScript parser diagnostics", () => 
     assert.deepEqual(errors.map(e => ts.flattenDiagnosticMessageText(e.messageText, " ")), []);
   }
 });
+
+test("personal recommendations rank verified recordings and existing talismans, with direct detailed-profile entry", () => {
+  const model = read("lib/holistic-support/recommendation-engine.js");
+  const talismans = read("components/taoist-talisman-catalog.tsx");
+  assert.match(client, /recommendSupportContent\(/);
+  assert.match(client, /scores: \{ \.\.\.scores \}/);
+  assert.match(client, /recommended\.videos\.map\(/);
+  assert.match(client, /data-support-personal-recommendations/);
+  assert.match(client, /data-support-recommended-video/);
+  assert.match(client, /data-support-recommended-talisman/);
+  assert.match(client, /data-support-detailed-analysis/);
+  assert.match(client, /data-support-recommended-detailed-analysis/);
+  assert.match(client, /\/personality-profiles/);
+  assert.match(talismans, /featuredId/);
+  assert.match(talismans, /data-recommended=/);
+  assert.match(model, /TALISMAN_BY_FOCUS/);
+  assert.match(model, /YOUTUBE_ID/);
+  assert.match(model, /matchingPrimary \? 100 : 0/);
+  assert.doesNotMatch(model, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|\bdiagnose\(/);
+  assert.match(css, /\.recommendationPanel/);
+  assert.match(css, /\.detailedAnalysisLink/);
+});

@@ -52,6 +52,41 @@
 .focusValue > svg:last-child { color: #263b34; pointer-events: none; }
 .recommendButton { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; max-width: 252px; min-height: 55px; padding: 10px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #007c5b, #1eaa78); color: white; font-size: 16px; font-weight: 800; line-height: 1.18; box-shadow: 0 7px 17px #0a85542a; }
 .recommendButton:hover { background: #006d52; }
+/* The personal recommendation stays compact: one real recording + one optional symbol. */
+.detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
+.detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
+.detailedAnalysisLink:hover { background: #e1f0e3; }
+.recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid #cddfca; border-radius: 20px; background: #f8fbf4; box-shadow: 0 6px 18px #1c54251a; }
+.recommendationLead h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: #164c37; font-size: clamp(19px, 2.4vw, 24px); line-height: 1.25; }
+.recommendationLead p { margin: 6px 0 0; color: #496353; font-size: 15px; line-height: 1.45; }
+.recommendationGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px; }
+.recommendationCard { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 11px; border: 1px solid #e1e2d7; border-radius: 14px; background: #fffdfa; }
+.recommendationVideoPreview { width: 112px; flex: 0 0 112px; overflow: hidden; border-radius: 10px; background: #35584b; }
+.recommendationVideoPreview img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.recommendationTalismanImage { flex: 0 0 67px; width: 67px; height: 87px; border-radius: 8px; object-fit: cover; }
+.recommendationCopy { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+.recommendationCopy strong { color: #327458; font-size: 13px; line-height: 1.2; }
+.recommendationCopy span { color: #23382b; font-size: 16px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.recommendationCopy small { color: #776b5d; font-size: 12px; line-height: 1.3; }
+.recommendationCopy button { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; margin-top: 3px; padding: 7px 11px; border: 1px solid #a6d5ba; border-radius: 11px; background: #e4f3e8; color: #0a684b; font-size: 14px; font-weight: 800; text-align: left; }
+.recommendationCopy button:hover { background: #d0ead8; }
+.recommendationPanel > .detailedAnalysisLink { width: fit-content; max-width: 100%; margin-top: 0; }
+@media (max-width: 800px) { .recommendationGrid { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 640px) {
+  .detailedAnalysisLink { margin-top: 6px; min-height: 42px; padding: 7px 8px; font-size: 13px; }
+  .recommendationPanel { padding: 11px; margin-bottom: 9px; gap: 8px; border-radius: 16px; }
+  .recommendationLead p { font-size: 14px; }
+  .recommendationCard { gap: 9px; padding: 9px; }
+  .recommendationVideoPreview { width: 91px; flex-basis: 91px; }
+  .recommendationTalismanImage { width: 58px; height: 76px; flex-basis: 58px; }
+  .recommendationCopy span { font-size: 15px; }
+  .recommendationCopy button { font-size: 14px; }
+}
+@media (max-width: 375px) {
+  .detailedAnalysisLink { font-size: 12px; gap: 4px; }
+  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
+  .recommendationCopy span { font-size: 14px; }
+}
 .tools h2 { margin-bottom: 17px; }
 .toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; min-height: 260px; }
 .toolButton { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; min-width: 0; min-height: 117px; padding: 12px 7px; border: 1px solid #f0e9dc; border-radius: 19px; background: #f7f1e6; color: #24322b; font-size: 18px; font-weight: 800; line-height: 1.22; text-align: center; box-shadow: 0 4px 14px #2f33200c; overflow-wrap: anywhere; }
