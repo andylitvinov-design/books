@@ -34,7 +34,7 @@ async function handle(request){
     if(body.kind==='practitioner')return NextResponse.json(await repo.moderateProfile(body.id,{action:body.action,note:body.note,isPartner:body.isPartner}),{headers:PRIVATE_HEADERS})
     if(body.kind==='credential')return NextResponse.json(await repo.moderateCredential(body.id,{action:body.action}),{headers:PRIVATE_HEADERS})
     if(body.kind==='service')return NextResponse.json(await repo.moderateService(body.id,{action:body.action,note:body.note}),{headers:PRIVATE_HEADERS})
-    if(body.kind==='event')return NextResponse.json(await eventsRepo.moderate(body.id,{action:body.action,note:body.note,ticketPaymentReviewed:body.ticketPaymentReviewed}),{headers:PRIVATE_HEADERS})
+    if(body.kind==='event')return NextResponse.json(await eventsRepo.moderate(body.id,{action:body.action,note:body.note,ticketPaymentReviewed:body.ticketPaymentReviewed,ticketReviewSnapshot:body.ticketReviewSnapshot}),{headers:PRIVATE_HEADERS})
     throw new AppError('INVALID_ACTION',400)
   }catch(error){const safe=safeError(error);return NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})}
 }
