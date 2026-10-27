@@ -32,7 +32,7 @@ jobs:
           npx tsc --noEmit
       - name: Event tickets — approved Square/PayPal checkout, moderation, EN/RU/ES and no false paid status
         run: |
-          node --test tests/event-ticket-payments.test.mjs tests/practitioner-events.test.mjs tests/event-detail-pages.test.mjs tests/events-discovery-navigation.test.mjs tests/public-event-calendar.test.mjs
+          node --test tests/event-ticket-payments.test.mjs tests/practitioner-events.test.mjs tests/event-detail-pages.test.mjs tests/events-discovery-navigation.test.mjs tests/events-compact-photo-cards.test.mjs tests/public-event-calendar.test.mjs
           npx eslint lib/practitioners/event-contracts.js lib/practitioners/events-repository.js components/app/practice-events.jsx components/events-discovery.tsx components/practitioner-moderation.jsx app/'[locale]'/events app/admin/practitioners/data/route.js lib/practitioners/public-event-resolver.ts
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
