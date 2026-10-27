@@ -99,7 +99,7 @@ export function GoalProfilePanel({ locale = 'en', accountId, entriesByKey, resul
   // Only the newest provenance-verified source result may count as completed.
   // A forged or stale answer with the same test key is not evidence of a test.
   const verifiedCurrent = useMemo(() => verifiedHistoryView(results).current, [results])
-  const rows = useMemo(() => GOAL_RATING_KEYS.map(key => ({ 
+  const rows = useMemo(() => GOAL_RATING_KEYS.map(key => ({
     key, label:GOAL_RATING_LABELS[key][lang], value:rating?.values?.[key] ?? null,
     tests:supportingTests(entriesByKey, key, verifiedCurrent),
   })), [entriesByKey, verifiedCurrent, rating, lang])
