@@ -25,6 +25,11 @@ export async function generateKlingSceneAction(input) {
   if (!apiKey) return { ok: false, error: 'not_configured' };
   try {
     const scene = normalizeKlingScene(input);
+    // By default a paid API submission is limited to a 3s silent 720p shot.
+    // Premium 5/10s and 1080p need a second, separately approved server flag.
+    if (process.env.HH_KLING_PREMIUM_RENDER_ENABLED !== 'true' &&
+        (scene.duration !== 3 || scene.resolution !== '720p'))
+      return { ok: false, error: 'low_cost_only' };
     return { ok: true, result: await submitKlingScene(scene, { apiKey }) };
   } catch (error) {
     // A timed-out provider request might have been accepted; preserve caller's
