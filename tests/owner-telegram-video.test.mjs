@@ -342,3 +342,15 @@ test('admin YouTube upload guide points owner video to the same Dot bot, not CRM
  assert.match(page,/https:\/\/t\.me\/Andydotbot\?start=video/)
  assert.doesNotMatch(page,/t\.me\/holistichouse_bot\?start=video/)
 })
+
+test('Vercel installs pinned FFmpeg and ships its binary with the private Dot webhook',()=>{
+ const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'))
+ assert.equal(pkg.dependencies['ffmpeg-static'],'5.3.0')
+ assert.equal(pkg.allowScripts?.['ffmpeg-static@5.3.0'],true)
+ assert.match(pkg.scripts.prebuild,/node scripts\/ensure-owner-video-renderer\.mjs/)
+ const nextConfig=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
+ assert.match(nextConfig,/serverExternalPackages:\s*\[["']ffmpeg-static["']\]/)
+ assert.match(nextConfig,/notification-channels\/telegram\/webhook/)
+ const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
+ assert.match(workflow,/ensure-owner-video-renderer\.mjs --verify-trace/)
+})
