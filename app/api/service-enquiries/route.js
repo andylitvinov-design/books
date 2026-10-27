@@ -35,8 +35,11 @@ export async function POST(request) {
     }
     const response = NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
     // A confirmed, consented free express request gets a scoped 1-hour
-    // continuation cookie. The public HH reference is never an auth token.
-    if (process.env.HH_FREE_EXPRESS_V2_ENABLED === 'true' && result.saved === true && isFreeExpressRequest(payload)) {
+    // continuation cookie even when the optional v2 media wizard is disabled.
+    // This allows an explicitly signed-in client to save the original request
+    // to their account without enabling private media or unverified flows.
+    // The public HH reference is never an auth token.
+    if (result.saved === true && isFreeExpressRequest(payload)) {
       const createdAt = Date.parse(result.createdAt || '')
       if (Number.isFinite(createdAt) && Date.now() - createdAt < FREE_EXPRESS_TTL_SECONDS * 1000) {
         response.cookies.set(FREE_EXPRESS_COOKIE,

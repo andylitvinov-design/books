@@ -11,12 +11,10 @@ const label = live ? 'live' : 'local';
 const evidence = '/tmp/site-video-evidence';
 mkdirSync(evidence, { recursive: true });
 const cases = [
-  ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'home-en-v2', 29.44],
   ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 'services-en-v2', 29.1],
   ['/en/services', 'method-hypnotherapy', 'en', '8c1634ce904434a91931429b6a7eefe1', 'hypnotherapy-en-v1', 46.73],
   ['/en/services', 'method-constellations', 'en', '7c6b243f048b9c0581ae29619a4a89fc', 'constellations-en-v1', 47.67],
   ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'homeopathy-en-v2', 30.72],
-  ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847', 'home-ru-v1', 31.43],
   ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'services-ru-v1', 33.44],
   ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'homeopathy-ru-v1', 31.92],
 ];
@@ -82,8 +80,8 @@ async function exercise(engine, browserType) {
     const scriptPattern = '**/_next/static/**/*.js*';
     await page.route(scriptPattern, async route => { await gate; await route.continue(); });
     try {
-      await page.goto(`${origin}/?lang=en`, { waitUntil: 'commit', timeout: 60000 });
-      const cold = page.locator('[data-video-slot="home-intro"][data-video-locale="en"]');
+      await page.goto(`${origin}/en/services`, { waitUntil: 'commit', timeout: 60000 });
+      const cold = page.locator('[data-video-slot="services-intro"][data-video-locale="en"]');
       const play = cold.locator('button.site-video-play');
       await expect(play).toBeVisible({ timeout: 20000 });
       await expect(play).toBeDisabled();
@@ -173,17 +171,15 @@ async function exercise(engine, browserType) {
         }
       }
     }
-    await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
-    await page.locator('[data-video-slot="home-intro"] .site-video-play').click();
-    await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(1);
+    await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
+    // Owner withdrew approval for the AI homepage introductions in both languages.
+    // The archived videos are still editable, but never rendered on the homes.
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0);
     await chooseRussianHome(page);
-    const russian = page.locator('[data-video-slot="home-intro"][data-video-locale="ru"]');
-    await expect(russian).toHaveCount(1);
-    await expect(russian.locator('iframe')).toHaveCount(0);
-    await russian.locator('.site-video-play').click();
-    await expect(russian.locator('iframe')).toHaveAttribute('src', expectedPublicEmbed(cases[5][3]));
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0);
+    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
-    results.push({ engine, languageSwitchResetsPlayer: true, pageJavaScriptErrors: pageErrors });
+    results.push({ engine, languageSwitchKeepsIntroHidden: true, pageJavaScriptErrors: pageErrors });
   } catch (error) {
     const geometry = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, className: String(el.className).slice(0,120), rect: el.getBoundingClientRect().toJSON() })).filter(item => item.rect.width > 1 && (item.rect.right > innerWidth + 2 || item.rect.left < -2)).slice(0,25) })).catch(() => null);
     await page.screenshot({ path: `${evidence}/${label}-six-videos-failed-${engine}.png`, fullPage: true }).catch(() => {});
@@ -195,6 +191,6 @@ try {
   await Promise.all([exercise('chromium', chromium), exercise('webkit', webkit)]);
   writeFileSync(`${evidence}/${label}-six-page-videos.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), results }, null, 2));
   assert.ok(!results.some(item => item.failure), 'Page-video checks failed; inspect JSON');
-  assert.equal(results.filter(item => item.compact).length, 32);
-  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 16);
+  assert.equal(results.filter(item => item.compact).length, 24);
+  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 12);
 } finally { if (app) app.kill('SIGTERM'); }

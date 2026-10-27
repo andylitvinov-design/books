@@ -1,6 +1,5 @@
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
@@ -25,8 +24,6 @@ const copy = {
     heroPrimary: "Получить бесплатный разбор",
     heroBook: "Запросить консультацию · от €50",
     heroSecondary: "Пройти бесплатные тесты",
-    videoKicker: "Короткое знакомство",
-    videoTitle: "О Holistic House за полминуты",
     aboutKicker: "Лично об Андрее",
     aboutIntro: "Я работаю с индивидуальными и групповыми практиками с 2002 года. Образы, системные расстановки и архетипические подходы помогают нам внимательнее исследовать ваш запрос. Принимаю запросы онлайн и в Торонто.",
     aboutAction: "Подробнее об Андрее",
@@ -40,8 +37,6 @@ const copy = {
     heroPrimary: "Get a free written review",
     heroBook: "Request a consultation · from €50",
     heroSecondary: "Take free self-checks",
-    videoKicker: "A short introduction",
-    videoTitle: "Holistic House in half a minute",
     aboutKicker: "Meet your practitioner",
     aboutIntro: "I have been facilitating personal and group development since 2002. My work draws on guided imagery, systemic constellations and archetypal approaches to explore your individual question. I offer sessions in Toronto and online.",
     aboutAction: "More about Andrey",
@@ -49,12 +44,9 @@ const copy = {
   },
 } as const;
 
-type HolisticHouseHomeProps = {
-  locale?: Locale;
-  introVideoContent?: ReactNode;
-};
+type HolisticHouseHomeProps = { locale?: Locale };
 
-export function HolisticHouseHome({ locale = "en", introVideoContent }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
   const text = copy[locale];
   const entry = LOCAL_ACQUISITION[locale];
 
@@ -71,8 +63,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeSectionCarousel locale={locale} />
       <HomeMoreDisclosure locale={locale} />
       <HomeFeaturedWorkspace locale={locale} />
-
-      {introVideoContent}
 
       <PersonalTestimonials locale={locale} variant="home" />
 

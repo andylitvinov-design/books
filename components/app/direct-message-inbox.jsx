@@ -1,15 +1,16 @@
 'use client'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
-import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Paperclip} from 'lucide-react'
+import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Paperclip,Bell} from 'lucide-react'
 import {preparePhoto} from '@/components/session-photo-uploader'
 import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
 import styles from './direct-message-inbox.module.css'
+import {ClientExpressReportNotices} from './practice-express-reports'
 
 const COPY={
   en:{
     title:'Messages',hint:'Private conversations with Holistic House practitioners.',
-    choose:'Choose a conversation',empty:'No conversations yet. Visit a practitioner page to start one.',
+    choose:'Choose a conversation',empty:'No conversations yet. Visit a practitioner page to start one.',ownerEmpty:'No private conversations yet. Telegram enquiries are in the CRM section above.',loading:'Loading conversations…',
     new:'Start a conversation',newWith:'Message',load:'Refresh',send:'Send message',
     composer:'Write a message (optional with an attachment)',attach:'Photo or audio file',
     welcome:'Send photos and audio directly. Only you and the recipient can read these messages.',
@@ -27,7 +28,7 @@ const COPY={
   },
   ru:{
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
-    choose:'Выберите беседу',empty:'Переписок пока нет. Откройте страницу мастера, чтобы написать.',
+    choose:'Выберите беседу',empty:'Переписок пока нет. Откройте страницу мастера, чтобы написать.',ownerEmpty:'Личных переписок пока нет. Заявки Telegram находятся в разделе CRM выше.',loading:'Загружаю переписки…',
     new:'Начать переписку',newWith:'Написать мастеру',load:'Обновить',send:'Отправить сообщение',
     composer:'Сообщение (необязательно, если есть файл)',attach:'Фото или аудиофайл',
     welcome:'Фото и аудио доступны только участникам диалога.',
@@ -45,7 +46,7 @@ const COPY={
   },
   es:{
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
-    choose:'Elige una conversación',empty:'Aún no hay conversaciones. Visita el perfil de un profesional.',
+    choose:'Elige una conversación',empty:'Aún no hay conversaciones. Visita el perfil de un profesional.',ownerEmpty:'No hay mensajes privados. Las solicitudes de Telegram están en CRM arriba.',loading:'Cargando conversaciones…',
     new:'Iniciar conversación',newWith:'Enviar mensaje',load:'Actualizar',send:'Enviar mensaje',
     composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto o audio',
     welcome:'Las fotos y los audios son privados entre los participantes.',
@@ -106,21 +107,25 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en'}){
+export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
     [busy,setBusy]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
-  const uploadRef=useRef(null),operationRef=useRef(null)
+  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const [showNotices,setShowNotices]=useState(false)
+  useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
     const data=await jsonGet()
+    if(expectedAccountId&&data.accountId!==expectedAccountId)throw new Error('ACCOUNT_CHANGED')
     setAccountId(data.accountId)
     setSignedOut(false)
     setThreads(data.threads||[])
+    onThreadsLoaded?.(data.threads||[])
     return data
-  },[])
+  },[onThreadsLoaded,expectedAccountId])
   useEffect(()=>{
     const parameters=new URLSearchParams(window.location.search)
     const slug=parameters.get('to')||''
@@ -137,17 +142,30 @@ export default function DirectMessageInbox({locale='en'}){
     return data
   }
   async function openThread(id){
-    setActiveId(id);setError('')
+    const generation=++readGeneration.current
+    setActiveId(id);setCurrent(null);setError('')
     try {
       const data=await jsonGet(URL+'?threadId='+encodeURIComponent(id))
-      if(data.accountId!==accountId){setCurrent(null);setAccountId(data.accountId);await getThreads();return}
+      if(generation!==readGeneration.current)return
+      if(data.threadId!==id)throw new Error('INBOX_UNAVAILABLE')
+      if(data.accountId!==accountId){
+        if(expectedAccountId){setCurrent(null);await getThreads();return}
+        setAccountId(data.accountId);await getThreads();return
+      }
       setCurrent(data)
       if(data.messages.some(m=>!m.mine)){
         await post({action:'read',threadId:id})
-        await getThreads()
+        if(generation===readGeneration.current)await getThreads()
       }
-    }catch(e){setError(e.message);setCurrent(null)}
+    }catch(e){
+      if(generation===readGeneration.current){setError(e.message);setCurrent(null)}
+    }
   }
+  openThreadRef.current=openThread
+  useEffect(()=>{
+    if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
+      void openThreadRef.current?.(initialThreadId)
+  },[simpleDetail,accountId,initialThreadId,activeId])
   async function action(body){
     setBusy(true);setError('')
     try {
@@ -207,21 +225,34 @@ export default function DirectMessageInbox({locale='en'}){
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
-  return <section className={styles.shell} aria-label={t.title}>
-    <header className={styles.head}>
-      <div><h1><MessageCircle aria-hidden="true"/>{t.title}</h1><p>{t.hint}</p></div>
-      <button type="button" className={styles.refresh} disabled={busy} onClick={async()=>{
-        try{await getThreads();if(activeId)await openThread(activeId)}catch(e){setError(e.message)}
-      }}><RefreshCw size={17} aria-hidden="true"/>{t.load}</button>
-    </header>
+  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
+    data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
+    {!simpleDetail&&<header className={styles.head}>
+      {!compact&&<div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>}
+      <div className={styles.headActions}>
+        {compact&&accountId&&<button type="button" className={styles.refresh}
+          aria-expanded={showNotices} aria-label={locale==='ru'?'Уведомления об отчётах':locale==='es'?'Avisos de informes':'Report notifications'}
+          onClick={()=>setShowNotices(value=>!value)}>
+          <Bell size={17} aria-hidden="true"/>
+        </button>}
+        <button type="button" className={styles.refresh} aria-label={t.load} disabled={busy} onClick={async()=>{
+          try{await getThreads();if(activeId)await openThread(activeId)}catch(e){setError(e.message)}
+        }}><RefreshCw size={17} aria-hidden="true"/>{!compact&&t.load}</button>
+      </div>
+    </header>}
     {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
+    {!simpleDetail&&accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
+      <ClientExpressReportNotices locale={locale} accountId={accountId}/>
+    </div>}
     {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code></p>}
     {destination&&!signedOut&&<div className={styles.intro}>
       <ShieldCheck size={18} aria-hidden="true"/><p>{t.welcome}</p>
       <button type="button" disabled={busy||!accountId} onClick={start}>{t.newWith}: {destination}</button>
     </div>}
-    <div className={styles.layout}>
-      <aside className={styles.conversations} aria-label={t.back}>
+    {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
+    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{ownerCrmAvailable?t.ownerEmpty:t.empty}</p>}
+    {accountId&&(threads.length>0||destination)&&<div className={styles.layout} data-chat-open={Boolean(current)}>
+      {!simpleDetail&&<aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>
         {!threads.length&&<p className={styles.hint}>{t.empty}</p>}
         {threads.map(item=><button type="button" key={item.id} className={item.id===activeId?styles.selected:styles.thread}
@@ -231,12 +262,12 @@ export default function DirectMessageInbox({locale='en'}){
             <small>{new Date(item.updatedAt).toLocaleDateString(locale)}</small></span>
           {item.unread>0&&<span className={styles.unread} aria-label={String(item.unread)}>{item.unread}</span>}
         </button>)}
-      </aside>
+      </aside>}
       <div className={styles.chat}>
         {!current?<div className={styles.placeholder}><Headphones size={28} aria-hidden="true"/>
           <p>{t.choose}</p></div>:<>
           <div className={styles.chatHeader}>
-            <button type="button" className={styles.back} onClick={()=>{setCurrent(null);setActiveId('')}}><ArrowLeft size={16}/>{t.back}</button>
+            <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('')}}><ArrowLeft size={16}/>{t.back}</button>
             <strong>{current.peerName}</strong>
             {current.isRecipient&&<button type="button" disabled={busy}
               onClick={()=>action({action:current.blocked?'unblock':'block',threadId:current.threadId})}>
@@ -287,6 +318,6 @@ export default function DirectMessageInbox({locale='en'}){
           </form>}
         </>}
       </div>
-    </div>
+    </div>}
   </section>
 }

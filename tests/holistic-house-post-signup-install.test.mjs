@@ -96,7 +96,7 @@ test('existing iOS/Android PWA remains same Holistic House app; no test-only APK
     assert.equal(x.name,'Holistic House')
     assert.equal(x.id,'/en/app')
     assert.equal(x.display,'standalone')
-    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/consultations')))
+    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/messages')))
   }
   const ui=read('components/app/post-signup-install-offer.jsx')
   assert.doesNotMatch(ui,/\.apk|testflight|app-store|play\.google|google-services\.json|HH_FCM/)

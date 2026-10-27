@@ -19,11 +19,17 @@ on:
       - 'supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql'
       - 'tests/free-express-wizard-v2.test.mjs'
       - 'tests/free-express-unified-v2.test.mjs'
+      - 'tests/free-express-retention.test.mjs'
       - 'tests/free-express-rls-isolated.sql'
       - 'tests/free-express-rls-isolated.integration.mjs'
       - 'components/app/practice-workspace.jsx'
       - 'components/app/profile-domains.jsx'
       - 'components/app/free-express-owner-media.jsx'
+      - 'components/app/free-express-owner-case.jsx'
+      - 'components/app/free-express-owner-case.module.css'
+      - 'components/app/practitioner-client-profiles.jsx'
+      - 'supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql'
+      - 'tests/free-express-owner-reply.test.mjs'
       - 'components/app/free-express-my-requests.jsx'
       - 'scripts/verify-free-express-wizard-v2.mjs'
   workflow_dispatch:
@@ -58,8 +64,8 @@ jobs:
       - name: Validate privacy, token and one-lead contracts
         run: |
           npm ci --include=dev --no-audit --no-fund
-          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs
-          npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js
+          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-owner-reply.test.mjs tests/free-express-retention.test.mjs
+          npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js lib/practitioners/free-express-owner-reply.js lib/practitioners/free-express-owner-reply-policy.mjs components/app/free-express-owner-case.jsx components/app/practitioner-client-profiles.jsx app/api/app/practice/free-express/'[id]'/reply/route.js
           npx tsc --noEmit
       - name: Build real preview with v2 visible (never production flag)
         timeout-minutes: 12

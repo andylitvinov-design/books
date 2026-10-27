@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs'
+import {execFileSync} from 'node:child_process'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {joinOggOpus,OWNER_AUDIO_COMBINE_MAX_PARTS,OWNER_AUDIO_COMBINE_MAX_BYTES}
   from '../lib/practitioners/owner-telegram-audio-join.mjs'
 import {parseOwnerAudioCommand,parseOwnerAudioCallback,ownerAudioHelpMessage}
@@ -17,13 +20,16 @@ function checksum(page){
   return crc>>>0
 }
 function page(text,flag,serial,seq){
-  const payload=Buffer.from(text)
+  const payload=text==='OpusHead'
+    ?Buffer.concat([Buffer.from('OpusHead'),Buffer.from([1,1,0x38,1,0,0,0,0,0,0,0])])
+    :Buffer.from(text)
   const buf=new Uint8Array(28+payload.length)
   buf.set(Buffer.from('OggS'),0)
   buf[5]=flag
   const view=new DataView(buf.buffer)
   view.setUint32(14,serial,true)
   view.setUint32(18,seq,true)
+  view.setBigUint64(6,seq===2?48000n:0n,true)
   buf[26]=1;buf[27]=payload.length;buf.set(payload,28)
   view.setUint32(22,checksum(buf),true)
   return buf
@@ -49,7 +55,8 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
-    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,command)
+    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,
+      command==='combine'?'combine':'legacy-batch-button')
   }
   const bad=message('/combine');bad.message.from.id=999
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
@@ -58,29 +65,48 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   assert.match(ownerAudioHelpMessage().text,/\/combine.*\/done/)
   assert.match(ownerAudioHelpMessage().text,/\/cancel/)
 })
-test('lossless Ogg chain preserves order and rewrites repeated serial numbers',()=>{
+function pages(bytes){
+  const result=[]
+  let pos=0
+  while(pos<bytes.length){
+    assert.deepEqual(Array.from(bytes.subarray(pos,pos+4)),[79,103,103,83])
+    const n=bytes[pos+26]
+    let payload=0
+    for(let i=0;i<n;i++)payload+=bytes[pos+27+i]
+    const size=27+n+payload,part=bytes.subarray(pos,pos+size)
+    const view=new DataView(part.buffer,part.byteOffset)
+    result.push({flags:part[5],sequence:view.getUint32(18,true),
+      serial:view.getUint32(14,true),body:part.subarray(27+n)})
+    pos+=size
+  }
+  assert.equal(pos,bytes.length)
+  return result
+}
+test('one playable Ogg logical stream has one identification header and one EOS',()=>{
   const first=clip(123),second=clip(456)
-  const result=joinOggOpus([first,second,first])
-  assert.equal(result.length,first.length*2+second.length)
-  assert.deepEqual(result.slice(0,first.length),first)
-  assert.deepEqual(result.slice(first.length,first.length+second.length),second)
-  const third=result.slice(first.length+second.length)
-  assert.notDeepEqual(third,first)
-  const view=new DataView(third.buffer,third.byteOffset)
-  assert.notEqual(view.getUint32(14,true),123)
-  const rewrittenSerial=view.getUint32(14,true)
-  const secondPage=28+Buffer.byteLength('OpusHead')
-  const thirdPage=secondPage+28+Buffer.byteLength('OpusTags')
-  assert.equal(rewrittenSerial,new DataView(third.buffer,third.byteOffset+secondPage).getUint32(14,true))
-  assert.equal(rewrittenSerial,new DataView(third.buffer,third.byteOffset+thirdPage).getUint32(14,true))
-  assert.deepEqual(joinOggOpus([first,second]),joinOggOpus([first,second]))
+  const result=joinOggOpus([first,second,first]),p=pages(result)
+  assert.equal(p.length,5)
+  assert.equal(p.filter(x=>x.flags&2).length,1)
+  assert.equal(p.filter(x=>x.flags&4).length,1)
+  assert(p.every(x=>x.serial===p[0].serial))
+  p.forEach((x,i)=>assert.equal(x.sequence,i))
+  assert.deepEqual(p.slice(2).map(x=>Buffer.from(x.body)),
+    Array.from({length:3},()=>Buffer.from('encoded Opus bytes')))
+  assert(result.length<first.length*2+second.length)
+})
+test('12 notes remux into one continuous Ogg stream and 13 are rejected',()=>{
+  const sources=Array.from({length:12},(_,i)=>clip(i%3===0?123:i+100))
+  const merged=pages(joinOggOpus(sources))
+  assert.equal(merged.length,14)
+  assert.equal(merged.filter(page=>page.flags&4).length,1)
+  assert.throws(()=>joinOggOpus([...sources,clip(987)]),/PART_COUNT/)
 })
 test('reject damaged Ogg pages, fake audio, oversize and extra parts',()=>{
   const sample=clip(777)
-  assert.equal(OWNER_AUDIO_COMBINE_MAX_PARTS,8)
+  assert.equal(OWNER_AUDIO_COMBINE_MAX_PARTS,12)
   assert.equal(OWNER_AUDIO_COMBINE_MAX_BYTES,20_000_000)
   assert.throws(()=>joinOggOpus([sample]),/PART_COUNT/)
-  assert.throws(()=>joinOggOpus(Array.from({length:9},()=>sample)),/PART_COUNT/)
+  assert.throws(()=>joinOggOpus(Array.from({length:13},()=>sample)),/PART_COUNT/)
   const tampered=new Uint8Array(sample);tampered[29]^=1
   assert.throws(()=>joinOggOpus([sample,tampered]),/INVALID_OPUS/)
   const notOpus=new Uint8Array(sample);notOpus[31]^=1
@@ -91,15 +117,52 @@ test('reject damaged Ogg pages, fake audio, oversize and extra parts',()=>{
 test('private PostgreSQL session, ordered storage and Telegram sender are wired before AI',()=>{
   const file=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
   const schema=readFileSync(new URL('../supabase/migrations/20261026131500_hh_telegram_owner_audio_combine.sql',import.meta.url),'utf8')
-  assert.match(file,/appendAudioCombine\(config,event,claimed\.row\.id\)/)
+  const expansion=readFileSync(new URL('../supabase/migrations/20261026191612_hh_telegram_audio_combine_12_parts.sql',import.meta.url),'utf8')
+  assert.match(file,/appendAudioCombine\(config,\{\.\.\.event,batchId:claimed\.batch\.batchId\},claimed\.row\.id\)/)
   assert.match(file,/result_audio_id/)
   assert.match(file,/where practitioner_id=\$1 for update/)
   assert.match(file,/items\.sort\(\(a,b\)=>a\.updateId-b\.updateId\)/)
-  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,fetcher\)/)
+  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
   assert.match(file,/form\.set\('document'/)
   assert.match(file,/event\.chatId!==credentials\.chat\|\|event\.userId!==credentials\.chat/)
   assert.match(schema,/force row level security/i)
   assert.match(schema,/revoke all.*app_private\.telegram_owner_audio_combine[\s\S]*anon, authenticated, hh_app_inbox/)
   assert.match(schema,/hh\.owner_audio_manager/)
   assert.match(schema,/jsonb_array_length\(items\)<=8/)
+  assert.match(expansion,/drop constraint if exists telegram_owner_audio_combine_items_check/i)
+  assert.match(expansion,/jsonb_array_length\(items\)<=12/)
+})
+
+test('real encoded Ogg/Opus clips remux into one fully decodable recording',t=>{
+  for(const binary of ['ffmpeg','ffprobe']){
+    try{execFileSync(binary,['-version'],{stdio:'ignore'})}
+    catch{t.skip(binary+' not installed in runner');return}
+  }
+  const dir=mkdtempSync(join(tmpdir(),'hh-ogg-combine-'))
+  try{
+    const recordings=[]
+    for(const [index,duration] of [[0,0.55],[1,0.72]]){
+      const filename=join(dir,'part-'+index+'.ogg')
+      execFileSync('ffmpeg',[
+        '-nostdin','-hide_banner','-loglevel','error',
+        '-f','lavfi','-i','sine=frequency='+(330+110*index)+':duration='+duration,
+        '-c:a','libopus','-b:a','24k','-y',filename,
+      ],{stdio:'pipe'})
+      recordings.push(new Uint8Array(readFileSync(filename)))
+    }
+    const bytes=joinOggOpus(recordings)
+    const output=join(dir,'result.ogg')
+    writeFileSync(output,bytes)
+    const duration=Number(execFileSync('ffprobe',[
+      '-v','error','-show_entries','format=duration',
+      '-of','default=noprint_wrappers=1:nokey=1',output,
+    ],{encoding:'utf8'}).trim())
+    assert(duration>1.20&&duration<1.36,'merged duration includes both recordings')
+    execFileSync('ffmpeg',[
+      '-nostdin','-v','error','-i',output,'-f','null','-',
+    ],{stdio:'pipe'})
+    const stream=pages(bytes)
+    assert.equal(stream.filter(page=>page.flags&2).length,1)
+    assert.equal(stream.filter(page=>page.flags&4).length,1)
+  }finally{rmSync(dir,{recursive:true,force:true})}
 })

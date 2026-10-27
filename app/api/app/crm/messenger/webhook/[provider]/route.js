@@ -3,7 +3,7 @@ import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -30,14 +30,32 @@ export async function POST(request,{params}){
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
     const updates=normalizeMessengerUpdates(provider,body)
+    // A previously registered bot may subscribe to 'message' only. Upgrade
+    // the SAME already-owned signed webhook before its next inline prompt.
+    // Never replace a foreign webhook or drop Telegram's pending updates.
+    if(provider==='telegram'&&updates.some(event=>event.type==='incoming'&&!event.callbackId))
+      await ensureTelegramInlineWebhookUpdates()
     for(const event of updates){
       if(provider==='telegram'){
+        if(event.type==='callback_ignored'){
+          try{await acknowledgeTelegramInlineCallback({
+            callbackId:event.callbackId,to:event.userId,
+            messageId:event.callbackMessageId})}catch{}
+          continue
+        }
         const intake=await processTelegramDiagnostic(event,config)
         if(intake.handled){
+          if(event.callbackId){
+            // Acknowledge only after the encrypted stage transition commits.
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
           if(intake.reply){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
-            try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+            try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
+              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch{ /* leave intake in CRM for owner manual follow-up */ }
           }
           continue
         }

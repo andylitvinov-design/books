@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  parseDiagnosticStart,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
-  transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
+  parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
+  transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -16,6 +16,8 @@ const env={
   HH_CRM_MSG_PRODUCTION_APPROVED:'true',
   HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED:'true',
   HH_CRM_MSG_TELEGRAM_USERNAME:'HolisticHouseBot',
+  HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_BOT_TOKEN_ONLY_123456789',
+  HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TEST_SECRET',
 }
 test('deep-link parser supports exactly three static localized starters, no client PII',()=>{
   for(const lang of ['en','ru','es']){
@@ -26,11 +28,11 @@ test('deep-link parser supports exactly three static localized starters, no clie
     assert.equal(parseDiagnosticStart(s),null)
   }
 })
-test('public CTA stays absent without connected dedicated bot, explicit rollout and owner approval',()=>{
+test('permanent public CTA requires scoped release and valid dedicated BotFather credentials',()=>{
   assert.equal(telegramDiagnosticReady({}),false)
   assert.equal(telegramDiagnosticPublicUrl('ru',{}),null)
-  for(const key of ['HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED','HH_CRM_MSG_PRODUCTION_APPROVED',
-    'HH_CRM_MSG_TELEGRAM_USERNAME','HH_CRM_TG_DIAGNOSTIC_ENABLED']){
+  for(const key of ['HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED','HH_CRM_MSG_TELEGRAM_TOKEN',
+    'HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET','HH_CRM_MSG_TELEGRAM_USERNAME','HH_CRM_TG_DIAGNOSTIC_ENABLED']){
     const missing={...env}
     delete missing[key]
     assert.equal(telegramDiagnosticPublicUrl('ru',missing),null,key)
@@ -41,9 +43,32 @@ test('public CTA stays absent without connected dedicated bot, explicit rollout 
   assert.equal(telegramDiagnosticPublicUrl('es',env),
     'https://t.me/HolisticHouseBot?start=hhreview_es')
   assert.equal(telegramDiagnosticPublicUrl('en',{...env,VERCEL_ENV:'preview'}),null)
+  assert.equal(telegramDiagnosticPublicUrl('ru',{...env,HH_CRM_MSG_PRODUCTION_APPROVED:'false'}),
+    'https://t.me/HolisticHouseBot?start=hhreview_ru',
+    'permanent link works WITHOUT enabling global outbound messaging')
+  for(const cmd of ['/start','/start hhreview_ru','/start hhreview_en','/start@HolisticHouseBot'])
+    assert.equal(telegramPublicStartRequested(cmd),true)
+  for(const cmd of ['hi','/start invite-secret','/start hhreview_ru extra','/agree',
+    '/stop','/situation','/start?token=abc',''])
+    assert.equal(telegramPublicStartRequested(cmd),false)
 })
-test('unknown chat does not enter diagnostic flow; /start never creates a CRM lead',()=>{
-  assert.equal(transitionTelegramDiagnostic(null,message('Hi')).handled,false)
+test('new Telegram chats only enter consent stage; /start cannot create CRM lead',()=>{
+  const unsolicited=transitionTelegramDiagnostic(null,message('Hi'))
+  assert.equal(unsolicited.handled,true)
+  assert.equal(unsolicited.stage,'consent')
+  assert.equal(unsolicited.body,null,'no CRM lead before /agree')
+  assert.match(unsolicited.reply,/\/agree/)
+  const photoBeforeConsent=transitionTelegramDiagnostic(null,message('',{
+    photoFileId:'AgACAgQAAxk0123456789',photoBytes:123456,
+  }))
+  assert.equal(photoBeforeConsent.body,null,'unapproved photo is never ingested')
+  assert.equal(photoBeforeConsent.stage,'consent')
+  const plainStart=transitionTelegramDiagnostic(null,message('/start'))
+  assert.equal(plainStart.stage,'consent')
+  assert.equal(plainStart.locale,'ru')
+  assert.equal(plainStart.body,null)
+  assert.match(plainStart.reply,/\/agree/)
+  assert.equal(transitionTelegramDiagnostic(null,message('/start@holistichouse_bot')).stage,'consent')
   const started=transitionTelegramDiagnostic(null,message('/start hhreview_ru'))
   assert.equal(started.stage,'consent')
   assert.equal(started.locale,'ru')
@@ -96,7 +121,9 @@ test('energy branch and optional /skip paths do not treat a click as a booking',
 test('photo is strictly optional, size bounded, accepted only after opt-in',()=>{
   assert.equal(TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,5*1024*1024)
   const before=transitionTelegramDiagnostic(null,message('',{photoFileId:'AgACAgQAAxk0123456789',photoBytes:50000}))
-  assert.equal(before.handled,false)
+  assert.equal(before.handled,true)
+  assert.equal(before.stage,'consent')
+  assert.equal(before.body,null)
   const waiting={stage:'photo',locale:'ru',consentAt:'2026-10-26T10:00:00Z'}
   for(const item of [
     {photoFileId:'AgACAgQAAxk0123456789',photoBytes:TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT+1},
@@ -137,8 +164,8 @@ test('signed Telegram transport, single transactional CRM save, update-id dedup 
   assert.match(hook,/last_update_id/)
   assert.match(hook,/pg_advisory_xact_lock/)
   assert.match(hook,/ingestMessengerEventInTransaction\(db,'telegram'/)
-  assert.match(hook,/select account_id from app_private.crm_msg_resolve/)
-  assert.match(hook,/transitionTelegramDiagnostic\(previous/)
+  assert.match(hook,/select owner_id,account_id from app_private.crm_msg_resolve/)
+  assert.match(hook,/transitionTelegramDiagnostic\(priorFlow/)
   assert.match(db,/FORCE ROW LEVEL SECURITY/i)
   assert.match(db,/force row level security/i)
   assert.match(db,/to hh_app_inbox/)
@@ -167,7 +194,8 @@ test('owner-only private photo, no public Telegram file ID or brokered medical d
 test('diagnostic webhook forwards committed reply as Bot API text, not a missing property',()=>{
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
   const provider=source('lib/crm/messenger-provider.js')
-  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard\}\)/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\]\}/)
+  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
+  assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })

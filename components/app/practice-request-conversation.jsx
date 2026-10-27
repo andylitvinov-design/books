@@ -37,7 +37,7 @@ const COPY={
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
     me:'Tú',master:'Profesional',client:'Cliente',privateNote:'Nota privada del profesional',writeNote:'Nota privada',saveNote:'Guardar nota privada',noteSaved:'Nota privada guardada, invisible para el cliente.'},
 }
-function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed}){
+function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed,inline=false}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const [view,setView]=useState(null),[error,setError]=useState('')
   const [busy,setBusy]=useState(false),[paging,setPaging]=useState(false)
@@ -167,8 +167,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       }
     }finally{if(session.current===original)setBusy(false)}
   }
-  return <section className={styles.chat} aria-label={t.title}>
-    <p className={styles.privacy}>{t.info}</p>
+  return <section className={styles.chat} aria-label={t.title} data-inline={inline||undefined}>
+    {!inline&&<p className={styles.privacy}>{t.info}</p>}
     {typeof initialMessage==='string'&&initialMessage.trim()&&<div className={styles.initial}>
       <strong>{t.initial}</strong>
       <p>{initialMessage}</p>
@@ -200,8 +200,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           <time dateTime={item.createdAt}>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(item.createdAt))}</time>
         </article>)}
       </div>
-      {(view.canReply||view.canNote)&&<div className={styles.compose}>
-        {view.canNote&&<div className={styles.modes} role="group" aria-label={t.title}>
+      {(view.canReply||(!inline&&view.canNote))&&<div className={styles.compose}>
+        {!inline&&view.canNote&&<div className={styles.modes} role="group" aria-label={t.title}>
           <button type="button" aria-pressed={visibility==='participants'} disabled={busy||!view.canReply}
             onClick={()=>{setVisibility('participants');setText('');pending.current=null}}>{t.reply}</button>
           <button type="button" aria-pressed={visibility==='practitioner_note'} disabled={busy}
@@ -234,11 +234,12 @@ export default function PracticeRequestConversation(props){
   const [open,setOpen]=useState(Boolean(props.autoOpen))
   const anchor=useRef(null)
   useEffect(()=>{
-    if(props.autoOpen){
+    if(props.autoOpen&&!props.inline){
       setOpen(true)
       anchor.current?.scrollIntoView?.({behavior:'smooth',block:'start'})
     }
   },[props.autoOpen,props.requestId])
+  if(props.inline)return <MessageConversation key={props.accountId+':'+props.requestId+':'+props.locale} {...props}/>
   return <div ref={anchor} className={styles.wrapper}>
     <button type="button" className={styles.toggle} aria-expanded={open}
       onClick={()=>setOpen(value=>!value)}>{open?t.close:t.open}</button>

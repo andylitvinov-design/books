@@ -104,11 +104,11 @@ test("videos use existing lazy click-to-play player and mobile layout; links are
   assert.match(component, /moreToggle: "Ver más testimonios"/);
 });
 
-test("video browser verification selects the managed intro even when testimonials add other play buttons", () => {
+test("video browser verification keeps the retired home intro hidden while preserving testimonials", () => {
   const verifier = read("scripts", "verify-site-video-browser.mjs");
-  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-play/);
-  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-player/);
-  assert.doesNotMatch(verifier, /page\.locator\('\.site-video-play'\)\.click\(\)/);
+  assert.match(verifier, /\[data-video-slot="home-intro"\]/);
+  assert.doesNotMatch(verifier, /page\.locator\('\[data-video-slot="home-intro"\] \.site-video-play'\)\.click\(\)/);
+  assert.match(read("components", "personal-testimonials.tsx"), /data-testimonial-video-id/);
 });
 
 
