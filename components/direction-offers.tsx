@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, Gra
 import { useState, type KeyboardEvent } from 'react'
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
+import { businessReviewQuery } from '@/lib/business-consulting/review-context'
 import type { PublicLocale } from '@/lib/public-locales'
 import styles from './direction-offers.module.css'
 
@@ -500,7 +501,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     : '/' + locale + '/courses/antistress'
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
-  } as const)[direction]
+  } as const)[direction] + (direction === 'business' ? businessReviewQuery(topicId) : '')
   const offerFromCatalog = (item: CatalogOffer, kind: OfferKind): Offer => ({
     id:item.id, title:item.title[locale], description:item.description[locale],
     photo:item.photo, href:'/' + locale + item.path, note:item.note[locale],

@@ -8,6 +8,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { alignAndMeasureStablePortraitFrame } from './helpers/portrait-frame-readiness.mjs'
 
 assertIsolated()
 const origin = process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
@@ -155,27 +156,9 @@ try {
     for (const width of [320, 390, 430]) {
       for (const height of [550, 768, 844]) {
         await page.setViewportSize({ width, height })
-        await card().locator('[data-portrait-sectors]').evaluate(
-          el => el.scrollIntoView({ block: 'start', inline: 'nearest' }))
-        const frame = await card().evaluate(el => {
-          const rect = node => node.getBoundingClientRect()
-          const upper = rect(el.querySelector('[data-portrait-sectors]'))
-          const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
-          const picture = rect(el.querySelector('[data-radar-layout="full-circle"]'))
-          const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
-          const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] button')]
-          return {
-            firstTop: upper.top,
-            lastBottom: lower.bottom,
-            span: lower.bottom - upper.top,
-            pictureWidth:picture.width,
-            pictureHeight:picture.height,
-            minTopTap: Math.min(...upperButtons.map(node => rect(node).height)),
-            minBottomTap: Math.min(...lowerButtons.map(node => rect(node).height)),
-            viewportHeight: innerHeight,
-            overflow: document.documentElement.scrollWidth - innerWidth,
-          }
-        })
+        // WebKit can finish resize/scroll placement after the viewport command.
+        // Wait for measured stability, align once, then retain every hard gate.
+        const frame = await card().evaluate(alignAndMeasureStablePortraitFrame, { width, height })
         // Log the *actual* browser geometry before gating short/regular phones.
         console.log('PORTRAIT_ONE_SCREEN', JSON.stringify({ engine:name, locale, width, height, ...frame }))
         const shortViewport = height <= 630

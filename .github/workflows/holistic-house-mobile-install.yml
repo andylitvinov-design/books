@@ -23,6 +23,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/holistic-house-install-smoke.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
@@ -49,6 +50,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/holistic-house-install-smoke.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
 permissions:
@@ -68,27 +70,43 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-install-smoke.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
+        shell: bash
         run: |
+          check() {
+            local label="$1"
+            shift
+            printf 'CHECK %s\n' "$label"
+            if "$@"; then
+              printf 'PASS %s\n' "$label"
+            else
+              local status=$?
+              printf 'FAIL %s (exit %s)\n' "$label" "$status" >&2
+              return "$status"
+            fi
+          }
+          printf 'CHECK server-start\n'
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
           trap 'kill "$child" 2>/dev/null || true' EXIT
+          ready=false
           for n in $(seq 1 55); do
-            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then ready=true; break; fi
             sleep 1
           done
-          curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
-          grep -q 'Holistic House' /tmp/hh-install-ru.html
+          check en-install-ready test "$ready" = true
+          check ru-install-fetch curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
+          check ru-install-brand grep -q 'Holistic House' /tmp/hh-install-ru.html
           for size in 180 192 512; do
-            curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
-            grep -qi '^content-type: image/png' /tmp/hh-icon-headers
-            file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
+            check "icon-$size-fetch" curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
+            check "icon-$size-content-type" grep -qi '^content-type: image/png' /tmp/hh-icon-headers
+            check "icon-$size-dimensions" bash -o pipefail -c 'file "$1" | grep -q "PNG image data, $2 x $2"' _ /tmp/hh-icon.png "$size"
           done
-          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
-          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/portrait'||!f.shortcuts.some(x=>x.url==='/ru/app/consultations'))process.exit(1)"
-          node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
+          check ru-manifest-fetch curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
+          check ru-manifest-contract node -e "const assert=require('node:assert/strict');const f=require('/tmp/hh-manifest-ru.json');assert.equal(f.start_url,'/ru/app/messages','RU install start URL');assert.ok(Array.isArray(f.shortcuts)&&f.shortcuts.some(x=>x?.url==='/ru/app/messages'),'RU Messages shortcut')"
+          check mobile-head node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098

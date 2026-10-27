@@ -185,7 +185,7 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, accountId = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
-  overviewContent = null, reportsContent = null, focusReports = false,
+  overviewContent = null, activityContent = null, reportsContent = null, focusReports = false,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
@@ -353,6 +353,7 @@ export function ProfileDomains({
       </div>
     </header>}
     {!external && profileNavigation}
+    {!external && activityContent}
     {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
       aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
       {external ? <>{reportsContent}</> : <>

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { assertProfileActivitiesBeforeArchive } from './helpers/profile-activity-layout.mjs'
 import { summarizeLearningJourney } from '../lib/app/learning-journey.mjs'
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -89,9 +90,7 @@ test('journey follows the four signed-in profiles, never duplicated in reports o
   const workspace = source('components/app/app-workspace.jsx')
   const profile = source('components/app/profile-domains.jsx')
   const journey = source('components/app/cabinet-journey.jsx')
-  const profileSection = workspace.slice(workspace.indexOf("{page === 'portrait' && ("))
-  assert.match(profileSection, /<ProfileDomains[\s\S]*<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}[^>]*\/>\s*<CabinetToday/)
-  assert.ok(profileSection.indexOf('<ProfileDomains') < profileSection.indexOf('<CabinetJourney'))
+  for (const locale of ['en', 'ru']) assertProfileActivitiesBeforeArchive(locale)
   assert.doesNotMatch(profile, /CabinetJourney/)
   assert.match(workspace, /data\.account\.onboardingState !== 'active'/)
   assert.match(journey, /appFetch\('journey', undefined, undefined, \{ accountId, signal:/)

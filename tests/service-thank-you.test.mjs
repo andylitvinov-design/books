@@ -44,14 +44,21 @@ test('page and service form only acknowledge a successful server-saved reply req
 })
 
 test('video is draft-only until explicit checked publication, with no default auto-post',()=>{
-  const draft=prepareVideoChange(null,{
-    slot:'thank-you',locale:'ru',intent:'draft',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',
-  })
-  assert.equal(toPublishedSiteVideo(draft),undefined)
-  assert.throws(()=>prepareVideoChange(draft,{
-    slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
-  }))
-  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  for(const locale of ['en','ru','es']){
+    const input={slot:'thank-you',locale,youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks'}
+    const draft=prepareVideoChange(null,{...input,intent:'draft'})
+    assert.equal(toPublishedSiteVideo(draft),undefined)
+    assert.throws(()=>prepareVideoChange(draft,{...input,intent:'publish',reviewed:false}))
+    const published=prepareVideoChange(draft,{...input,intent:'publish',reviewed:true})
+    assert.equal(toPublishedSiteVideo(published)?.language,locale)
+    assert.equal(toPublishedSiteVideo(prepareVideoChange(published,{slot:'thank-you',locale,intent:'hide'})),undefined)
+  }
+  const page=source('app/[locale]/thank-you/page.tsx')
+  assert.match(page,/await getPublishedSiteVideo\("thank-you:" \+ locale\)/)
+  assert.match(page,/video=\{video \?\? null\}/)
+  const publicVideos=source('lib/site-videos/public.ts')
+  assert.match(publicVideos,/return toPublishedSiteVideo\(await store\.get\(key, \{ timeoutMs: 1800 \}\)\)/)
+  assert.match(publicVideos,/return record \? toPublishedSiteVideo\(record\) : undefined/)
   assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })

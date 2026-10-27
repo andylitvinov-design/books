@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { assertProfileActivitiesBeforeArchive, assertProfileActivityIsolation, assertProfileActivityGates } from './helpers/profile-activity-layout.mjs'
 import {
   cabinetActionHref, cabinetActionIds, matchCabinetIntent,
 } from '../lib/app/cabinet-today.mjs'
@@ -56,9 +57,9 @@ test('typed RU/EN/ES wishes select real tools without automatically creating or 
 
 test('signed-in portrait opens the compact task-first UI before preserved report archive', () => {
   assert.match(workspace, /import CabinetToday from/)
-  const today = workspace.indexOf('<CabinetToday locale={locale}')
-  const archive = workspace.indexOf('<ProfileDomains locale={locale} mode="account"')
-  assert.ok(today > 0 && archive > today)
+  // ProfileDomains now owns both the four-profile chooser and the archive;
+  // verify the rendered archive, not its obsolete top-level component proxy.
+  for (const locale of ['en', 'ru']) assertProfileActivitiesBeforeArchive(locale)
   assert.match(workspace, /practitioner=\{Boolean\(data\.practitioner \|\| data\.practice\)\}/)
   assert.match(workspace, /owner=\{Boolean\(data\.practitioner\)\}/)
   assert.match(component, /data-cabinet-today/)
@@ -92,4 +93,14 @@ test('Personal is the left column, Professional the right; creator actions retai
   assert.match(stylesheet, /@media\(max-width:430px\)/)
   assert.match(stylesheet, /@media\(max-width:350px\)/)
   assert.match(stylesheet, /\.shell \.field input \{/)
+})
+
+for (const locale of ['en', 'ru']) {
+  test(locale + ' profile activity slot is optional, outside disclosure, and absent from legacy', () => {
+    assertProfileActivityIsolation(locale)
+  })
+}
+
+test('profile activities remain behind the actual signed-in, active-account and portrait gates', () => {
+  assertProfileActivityGates()
 })

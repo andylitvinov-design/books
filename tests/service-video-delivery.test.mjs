@@ -76,7 +76,7 @@ test("Services cards keep exact method media accessible on-page with transcript 
   assert.doesNotMatch(cards, /<iframe/);
 });
 
-test("the dedicated video appears on every service detail, with accurate EN/RU/ES language and disclosure", () => {
+test("service details retain method videos and free review uses disclosed approved EN/RU/ES introductions", () => {
   const showcase = read("components/service-video-showcase.tsx");
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
@@ -87,7 +87,26 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
   assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  // #2114 replaced the unrelated constellation case with approved general introductions.
+  const intro = free.match(/const situationVideo = kind !== "situation" \? null : locale === "es" \? \{[\s\S]*?\} : getServiceVideoMedia\("overview", locale\);/);
+  assert.ok(intro, "Only the situation landing may show the locale-specific introductory video");
+  assert.match(intro[0], /heygenId: "2c251709aba74fd96ae8be43257a080b"/);
+  assert.match(intro[0], /language: "es" as const/);
+  assert.match(intro[0], /psychic-alchemy-es-v1\.webp/);
+  const registry = read("data/service-video-library.ts");
+  for (const [locale, id] of [["En", "s30Y42IwPcg"], ["Ru", "Cz6SxXJNZbw"]]) {
+    const media = registry.match(new RegExp("const overview" + locale + ": ServiceVideoMedia = \\{[\\s\\S]*?\\n\\};"));
+    assert.ok(media, "Approved overview " + locale);
+    assert.ok(media[0].includes('youtubeId: "' + id + '"'));
+    assert.ok(media[0].includes('language: "' + locale.toLowerCase() + '"'));
+    assert.match(media[0], /general: true/);
+  }
+  for (const phrase of ["English audio", "русский язык", "audio en español",
+    "general introduction, not yet a video made specifically about this free review",
+    "общее знакомство, отдельное видео именно об этой диагностике ещё не записано",
+    "introducción general, no un vídeo específico sobre la revisión exprés gratuita"])
+    assert.ok(free.includes(phrase), "Keep accurate audio and general-intro disclosure: " + phrase);
+  assert.match(free, /<p className=\{styles\.reviewIntroSourceNote\}>\{situationVideoStory\[locale\]\.recording\}<\/p>/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);

@@ -245,6 +245,9 @@
   .card strong { font-size: 13.5px; }
   .card .description { font-size: 10.5px; }
   .cardCta { font-size: 10.5px; }
+  /* The Temple panel nests its own padded quote cards. Reclaim the duplicate
+     gutter, not text size or quote padding; other selected paths stay intact. */
+  .detail:has(> [data-tests-coaching-temple]) { padding-inline: 8px; }
   .supportFeatured { padding: 14px; }
   .supportSmall { grid-template-columns: 31px minmax(0,1fr) 44px; gap: 7px; padding: 9px; }
   .supportSmallIcon { width: 31px; height: 31px; }
