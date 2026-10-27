@@ -62,8 +62,8 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
   const fake=callback('hh-audio:done');fake.callback_query.message.from.username='NotDot'
   assert.equal(parseOwnerAudioCallback(fake),null)
-  assert.match(ownerAudioHelpMessage().text,/\/combine.*\/done/)
-  assert.match(ownerAudioHelpMessage().text,/\/cancel/)
+  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>x.callback_data==='hh-audio:combine'))
+  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>x.callback_data==='hh-audio:folders'))
 })
 function pages(bytes){
   const result=[]
