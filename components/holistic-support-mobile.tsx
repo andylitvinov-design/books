@@ -279,7 +279,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           {scene ? (
             <>
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
-                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-practitioner-sunrise.webp"
+                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
                 <div className={styles.heroFilters} role="group" aria-label={t.gallery}>
