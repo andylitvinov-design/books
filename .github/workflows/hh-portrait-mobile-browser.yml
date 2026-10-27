@@ -4,6 +4,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/goal-profile-panel.jsx'
+      - 'components/app/goal-profile-panel.module.css'
+      - 'lib/profile/goal-profile.js'
+      - 'components/app/development-program.jsx'
       - 'components/app/app-workspace.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
@@ -67,7 +71,7 @@ jobs:
           /tmp/hh-portrait-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize isolated synthetic database
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
-      - name: Four category mobile browser QA in EN/RU at 320, 390, 430
+      - name: Five profile navigation with four scored sectors, goal check-in, mobile EN/RU
         run: |
           node tests/helpers/app-auth-double.mjs > /tmp/hh-portrait-auth.log 2>&1 & PROVIDER_PID=$!
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-portrait-next.log 2>&1 & APP_PID=$!
