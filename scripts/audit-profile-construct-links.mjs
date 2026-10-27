@@ -114,7 +114,7 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
   if (process.argv.includes('--verify')) {
     const bad = report.unlinked.length || report.guestUnlinked.length ||
       report.counts.uniqueMethods !== report.counts.catalogue ||
-      report.counts.researchFacets !== 32 ||
+      report.counts.researchFacets !== 31 ||
       report.counts.profiles !== 4
     console.log(JSON.stringify({
       counts: report.counts, unlinked: report.unlinked, guestUnlinked: report.guestUnlinked,
