@@ -6,9 +6,9 @@ import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, Cl
 import styles from "./personality-profiles-builder.module.css";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
-import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
+import { PROFILE_AREA_AXES, profileAreasWithTests,
   buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
-  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals, profileTestScopeCoverage } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
@@ -31,8 +31,6 @@ type ProfileScaleGroup = {
 // Shared, source-backed topic taxonomy. All catalogue axes are mapped,
 // but only topics supported by eligible tests appear in the wizard.
 const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
-const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
-const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 
 const copy = {
   en: {
@@ -91,8 +89,8 @@ const copy = {
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
     modeOverview: "Recommended for your selected scales", modeEstimated: "estimated total", modeSource: "Test questions",
     testTitle: "Your recommended free test selection",
-    testHelp: "Start your suggested tests now, or add more from the filters below.",
-    testCount: "tests", minutes: "min", questions: "questions",
+    testHelp: "Choose the three priority tests or additional ones below. Match % describes coverage of your selected scales, not clinical accuracy.",
+    testCount: "tests", minutes: "min", questions: "questions", matchLabel: "Selected-scale match",
     more: "See more matching tests", less: "Show fewer",
     chosen: "Your selection", unmeasured: "Some selected topics may not have a suitable free questionnaire yet. No score will be invented.",
     swotTitle: "What happens after the tests? · SWOT + development",
@@ -176,8 +174,8 @@ const copy = {
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
     modeOverview: "Рекомендуем по выбранным шкалам", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
     testTitle: "Предложенный набор бесплатных тестов",
-    testHelp: "Начните рекомендованные тесты или добавьте другие с помощью фильтров ниже.",
-    testCount: "тестов", minutes: "мин", questions: "вопросов",
+    testHelp: "Выберите три основных или дополнительные тесты. Процент показывает охват выбранных шкал, а не точность диагностики.",
+    testCount: "тестов", minutes: "мин", questions: "вопросов", matchLabel: "Соответствие выбранным шкалам",
     more: "Показать больше подходящих тестов", less: "Показать меньше",
     chosen: "Ваш выбор", unmeasured: "Для части тем может не оказаться подходящего бесплатного теста. Баллы не придумываются.",
     swotTitle: "После тестов: SWOT и программа развития",
@@ -261,8 +259,8 @@ const copy = {
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
     modeOverview: "Recomendado para tus escalas", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
     testTitle: "Tus pruebas gratuitas recomendadas",
-    testHelp: "Empieza las pruebas recomendadas o añade otras con los filtros de abajo.",
-    testCount: "pruebas", minutes: "min", questions: "preguntas",
+    testHelp: "Elige tres pruebas principales u otras opcionales. El porcentaje indica cobertura de las escalas elegidas, no precisión clínica.",
+    testCount: "pruebas", minutes: "min", questions: "preguntas", matchLabel: "Coincidencia con escalas elegidas",
     more: "Ver más pruebas compatibles", less: "Ver menos",
     chosen: "Tu selección", unmeasured: "Es posible que algunas áreas no tengan una prueba gratuita adecuada. No se inventan puntuaciones.",
     swotTitle: "Después de las pruebas · DAFO y desarrollo",
@@ -298,8 +296,8 @@ const copy = {
 const additionalCopy = {
   en: {
     notMeasured: "No eligible free questionnaire yet",
-    additionalTitle: "Other tests", additionalHint: "Optional. Add tests without replacing your recommended set.",
-    profile: "1. Choose one profile", scales: "2. Choose its scales", scaleHelp: "Select any number. With none checked, all scales in this profile apply.", chooseAll: "Select all", clearScales: "Clear all", chooseFirst: "Choose a profile to see matching additional tests.",
+    additionalTitle: "Other tests for your topics", additionalHint: "Only for the topics and scales you selected above. Unchecking a test will not hide it.",
+    scope: "Your selected topics and scales",
     search: "Search tests", searchPlaceholder: "Test name or scale",
     kind: "Type", allKinds: "All types", topic: "Topic", matching: "My topics", allTopics: "All topics",
     time: "Duration", anyTime: "Any length", two: "Up to 2 min", five: "Up to 5 min", ten: "Up to 10 min",
@@ -311,8 +309,8 @@ const additionalCopy = {
   },
   ru: {
     notMeasured: "Пока нет доступного бесплатного теста",
-    additionalTitle: "Другие тесты", additionalHint: "По желанию: добавьте тесты к рекомендованному набору.",
-    profile: "1. Выберите один профиль", scales: "2. Отметьте шкалы профиля", scaleHelp: "Можно отметить любое количество шкал. Без галочек учитываются все шкалы выбранного профиля.", chooseAll: "Выбрать все", clearScales: "Снять все", chooseFirst: "Выберите профиль, чтобы открыть дополнительные тесты.",
+    additionalTitle: "Дополнительные тесты по вашим темам", additionalHint: "Только по выбранным выше темам и шкалам. Снятие галочки не скрывает тест.",
+    scope: "Ваши выбранные темы и шкалы",
     search: "Поиск теста", searchPlaceholder: "Название теста или шкалы",
     kind: "Тип", allKinds: "Все типы", topic: "Тема", matching: "Мои темы", allTopics: "Все темы",
     time: "Длительность", anyTime: "Любая", two: "До 2 мин", five: "До 5 мин", ten: "До 10 мин",
@@ -324,8 +322,8 @@ const additionalCopy = {
   },
   es: {
     notMeasured: "Aún no hay prueba gratuita disponible",
-    additionalTitle: "Otras pruebas", additionalHint: "Opcional: añade pruebas sin sustituir las recomendadas.",
-    profile: "1. Elige un perfil", scales: "2. Elige sus escalas", scaleHelp: "Selecciona cuantas escalas quieras. Sin selección se incluyen todas las del perfil.", chooseAll: "Seleccionar todas", clearScales: "Quitar todas", chooseFirst: "Elige un perfil para ver las pruebas adicionales.",
+    additionalTitle: "Otras pruebas para tus temas", additionalHint: "Solo para tus temas y escalas elegidos. Desmarcar no oculta la prueba.",
+    scope: "Temas y escalas elegidos",
     search: "Buscar pruebas", searchPlaceholder: "Nombre o escala",
     kind: "Tipo", allKinds: "Todos los tipos", topic: "Tema", matching: "Mis temas", allTopics: "Todos los temas",
     time: "Duración", anyTime: "Cualquiera", two: "Hasta 2 min", five: "Hasta 5 min", ten: "Hasta 10 min",
@@ -358,8 +356,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [selectedByMode, setSelectedByMode] = useState<Record<TestMode, string[]>>({ questionnaires: [], pro: [] });
   const [batterySignature, setBatterySignature] = useState("");
   const [showMore, setShowMore] = useState(false);
-  const [extraProfile, setExtraProfile] = useState<Focus | null>(null);
-  const [extraScales, setExtraScales] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("relevant");
   const [search, setSearch] = useState("");
@@ -390,35 +386,33 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  const extraGroups: ProfileScaleGroup[] = extraProfile
-    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[] : [];
-  const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
-    group.researchAxes.map(axis => axis.id)))]
-    .sort((a, b) => profileResearchAxisLabel(a, locale).localeCompare(profileResearchAxisLabel(b, locale), locale));
-  const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
-  const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
-    .filter(scale => effectiveExtraScales.includes(scale.researchAxisId)).map(scale => scale.testKey)));
-  const extraRelevance = (key: string) => extraGroups.reduce((total, group) => total +
-    group.scales.filter(scale => scale.testKey === key &&
-      effectiveExtraScales.includes(scale.researchAxisId)).length, 0);
+  // Scope = ONLY the selected topic groups and source-backed research facets.
+  const recommendedKeys = [...recommendProfileAxisBattery(tests, scaleGroups,
+    selectedScaleIds, batteryMode, 3)];
+  const recommendedTests = recommendedKeys.flatMap(key =>
+    tests.filter(test => test.key === key && test.testKind === modeKind));
+  const scopeMatch = (key: string) => profileTestScopeCoverage(scaleGroups, selectedScaleIds, key);
   const extraMatches = tests
-    .filter(test => !selectedKeys.includes(test.key))
-    .filter(test => test.testKind === modeKind)
-    .filter(test => extraProfile !== null && extraTestKeys.has(test.key))
+    .filter(test => test.testKind === modeKind && !recommendedKeys.includes(test.key))
+    .filter(test => scopeMatch(test.key).matched > 0)
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
-      [test.title, ...test.scales.map(scale => scale.label),
-        ...extraGroups.flatMap(group => group.scales
-          .filter(scale => scale.testKey === test.key)
-          .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale)))]
+      [test.title, ...scaleGroups.flatMap(group => group.scales
+        .filter(scale => scale.testKey === test.key && selectedAxisRefs.includes(scale.researchAxisId))
+        .flatMap(scale => [scale.label, profileResearchAxisLabel(scale.researchAxisId, locale)]))]
         .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
     .sort((a, b) => sortFilter === "shortest"
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
       : sortFilter === "alphabetical"
         ? a.title.localeCompare(b.title, locale)
-        : extraRelevance(b.key) - extraRelevance(a.key) ||
+        : scopeMatch(b.key).percent - scopeMatch(a.key).percent ||
+          scopeMatch(b.key).matched - scopeMatch(a.key).matched ||
           (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
-  const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
+  // Keep selected options visible even if the extra list is collapsed.
+  const displayTests = showMore ? extraMatches : [
+    ...extraMatches.slice(0, 5),
+    ...extraMatches.slice(5).filter(test => selectedKeys.includes(test.key)),
+  ];
 
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
@@ -451,7 +445,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   function toggleTest(key: string) {
     // Only tests from this mode of the rights-cleared guest catalogue may enter.
-    if (!tests.some(test => test.key === key && test.testKind === modeKind)) return;
+    if (!tests.some(test => test.key === key && test.testKind === modeKind) ||
+        scopeMatch(key).matched === 0) return;
     setSelectedByMode(previous => {
       const keys = previous[batteryMode];
       return { ...previous, [batteryMode]: keys.includes(key)
@@ -483,9 +478,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         // The selector returns immutable suggestions; React keeps editable
         // per-mode selections as its own mutable arrays.
         const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "questionnaires")];
+          selectedScaleIds, "questionnaires", 3)];
         const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "pro")];
+          selectedScaleIds, "pro", 3)];
         setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
         setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
@@ -723,12 +718,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
           <span>· {coverage.size}/{selectedAxisRefs.length} {t.selected}</span>
         </div>
-        {chosenTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
-          {chosenTests.map(test =>
+        {recommendedTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
+          {recommendedTests.map(test =>
             <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked onChange={() => toggleTest(test.key)} />
+              <input type="checkbox" checked={selectedKeys.includes(test.key)} onChange={() => toggleTest(test.key)} />
               <span className={styles.testText}>
                 <strong>{test.title}</strong>
+                <small className={styles.matchPercent}>{t.matchLabel}: {scopeMatch(test.key).percent}%</small>
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
@@ -753,40 +749,12 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <div className={styles.extraHeading}>
             <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
               <p>{extra.additionalHint}</p></div>
-            <Link href={'/' + locale + '/client/tests'} prefetch={false} className={styles.fullCatalogue}>
-              {extra.full}<ArrowRight size={14} aria-hidden="true" />
-            </Link>
           </div>
-          <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
-            <strong>{extra.profile}</strong>
-            <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
-              {(["wellbeing", "relationships", "work", "identity", "goal"] as const).map(key =>
-                <button type="button" key={key} data-profile-extra-profile={key}
-                  aria-pressed={extraProfile === key}
-                  onClick={() => { setExtraProfile(key); setExtraScales([]); setSearch(""); setShowMore(false); }}>
-                  {extraProfile === key ? "✓ " : ""}{t.focuses[key][0]}
-                </button>)}
-            </div>
+          <div className={styles.extraScope} data-profile-extra-selected-scope>
+            <strong>{extra.scope}</strong>
+            <p>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</p>
+            <small>{selectedAxisRefs.map(ref => profileResearchAxisLabel(ref, locale)).join(" · ")}</small>
           </div>
-          {extraProfile && <div className={styles.extraScaleSelector} data-profile-extra-scales>
-            <strong>{extra.scales}</strong>
-            <p>{extra.scaleHelp}</p>
-            <div className={styles.extraScaleChoices} role="group" aria-label={extra.scales}>
-              {axesForExtraProfile.map(axis => <button key={axis} type="button" data-profile-extra-scale={axis}
-                aria-pressed={extraScales.includes(axis)} onClick={() => {
-                  setExtraScales(previous => previous.includes(axis)
-                    ? previous.filter(item => item !== axis) : [...previous, axis]);
-                  setShowMore(false);
-                }}>
-                {extraScales.includes(axis) ? "✓ " : "+ "}{profileResearchAxisLabel(axis, locale)}
-              </button>)}
-            </div>
-            <div className={styles.extraScaleActions}>
-              <span role="status">{extraScales.length} / {axesForExtraProfile.length}</span>
-              <button type="button" onClick={() => { setExtraScales([...axesForExtraProfile]); setShowMore(false); }}>{extra.chooseAll}</button>
-              <button type="button" onClick={() => { setExtraScales([]); setShowMore(false); }}>{extra.clearScales}</button>
-            </div>
-          </div>}
           <div className={styles.extraFilters}>
             <label className={styles.extraSearch}><span>{extra.search}</span>
               <input type="search" value={search} placeholder={extra.searchPlaceholder}
@@ -808,23 +776,24 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               </select>
             </label>
           </div>
-          <p className={styles.extraResultCount} role="status">{extraProfile ? extraMatches.length + " " + extra.results : extra.chooseFirst}</p>
+          <p className={styles.extraResultCount} role="status">{extraMatches.length} {extra.results}</p>
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
+              <input type="checkbox" checked={selectedKeys.includes(test.key)} disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
                 onChange={() => toggleTest(test.key)} aria-label={extra.add + ": " + test.title} />
               <span className={styles.testText}><strong>{test.title}</strong>
+                <small className={styles.matchPercent}>{t.matchLabel}: {scopeMatch(test.key).percent}%</small>
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{[...new Set(extraGroups.flatMap(group => group.scales
+                <span>{[...new Set(scaleGroups.flatMap(group => group.scales
                   .filter(scale => scale.testKey === test.key &&
-                    effectiveExtraScales.includes(scale.researchAxisId))
+                    selectedAxisRefs.includes(scale.researchAxisId))
                   .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
-          {extraMatches.length > 6 && <button type="button" className={styles.moreTests}
+          {extraMatches.length > 5 && <button type="button" className={styles.moreTests}
             onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}>
             {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
           </button>}
