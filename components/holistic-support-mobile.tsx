@@ -211,7 +211,9 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     setRecommendation({ focus, scores: { ...scores } });
     setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
-    document.getElementById("support-mobile-experience")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    // Scroll to the newly rendered choices, not past them to the video player.
+    window.requestAnimationFrame(() => document.getElementById("support-personal-recommendations")
+      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const startVideo = () => {
     if (!selected) return;
@@ -306,7 +308,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           </section>
         </div>
 
-        {recommendation ? <section className={styles.recommendationPanel} data-support-personal-recommendations
+        {recommendation ? <section id="support-personal-recommendations" className={styles.recommendationPanel} data-support-personal-recommendations
           aria-label={t.recommendationTitle} aria-live="polite">
           <div className={styles.recommendationLead}>
             <h2><Sparkles size={21} aria-hidden="true" />{t.recommendationTitle}</h2>
