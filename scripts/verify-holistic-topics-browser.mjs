@@ -84,7 +84,7 @@ for (const engine of [chromium, webkit]) {
           assert.equal(await finder.locator("[data-support-budget]").count(), 4);
           await finder.locator("[data-remote-support-specialist]").first().waitFor({ state:"visible", timeout:30000 });
           assert.ok(requests.includes("energy"), label + " masters loaded without Search click");
-          assert.equal(await finder.locator("[data-support-search]").count(), 1, label + " optional scroll CTA");
+          assert.equal(await finder.locator("[data-support-search]").count(), 0, label + " no redundant Find button on auto-loaded page");
           assert.equal(await finder.locator('[data-remote-support-specialist]').count(), 1);
 
           await finder.locator('[data-support-choice="consultation"]').click();
