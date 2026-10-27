@@ -66,3 +66,12 @@ This update **supersedes the equal-height, two-viewport-card layout** documented
 - Remove viewport-height constraints, cropped content, “Lesson 1 of 1”, and Previous/Next buttons on the meditation section. A native 96-second WAV remains in a **compact audio strip** below the videos; missing standalone source recordings disclosed through accessible details.
 - Preserve privacy: no tracking pixels, account requirements, paid API, outbound publishing or private user materials. All filter state local to the page.
 - Release evidence: focused contract + selector tests, TypeScript/lint/build, responsive 320/375/390/430 checks, Vercel READY and SHA/production alias, real video-play on a browser if accessible. Without actual browser playback, report it as not verified rather than “done”.
+
+## 27 October 2026 — owner decision: video-only meditation section
+
+This supersedes the compact-audio-strip part of the earlier 27 October design. Until original independent audio recordings are approved, Holistic Support shows **video recordings only** in EN/RU/ES.
+
+- Removed the separate 96-second instrumental WAV player, the “soft waves and melody” audio card, the missing-MP3 explanatory accordion, audio-only locale strings and obsolete styles from the Holistic Support UI. No public media asset is deleted, and other Academy courses are unchanged.
+- Section headings say **Videos / Видео / Vídeos** and preserve themed video gallery, poster-first YouTube player, topic filters, Russian archive link and Academy link. The video soundtrack/language identification remains legitimate video metadata, not a separate audio block.
+- Regression tests assert no standalone audio player or audio card in any locale. Privacy, payment and other content unchanged.
+- Release gates: focused tests, TypeScript, lint, PR checks, Vercel READY, exact canonical SHA/alias and independent mobile/video-click validation.

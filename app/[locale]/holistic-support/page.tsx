@@ -58,21 +58,13 @@ const copy = {
     talismanSectionTitle: "Daoist Talismans · Discover & Request",
     talismanSectionLead: "Browse Fu-style symbolic talismans, explore their intentions and request a personal piece. The master confirms price and availability.",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
-    meditationSectionTitle: "Meditations · Video & audio",
+    meditationSectionTitle: "Meditations · Videos",
     meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
-    meditationAudioTitle: "Audio · Gentle waves & melody",
-    meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
-    meditationAudioLabel: "Play gentle waves and soft music",
-    meditationAudioMissing: "Original standalone MP3/M4A recordings of the Russian PsiMaster pump-ups have not been located. The English Sun video above retains its original sound; no guided audio has been extracted or invented.",
     meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
     meditationVideoTitle: "Flight to the Sun · Original English video",
     meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
     meditationMore: "Explore more Academy meditations",
     meditationRussianArchive: "Open the original PsiMaster series in Russian",
-    meditationAudioFallback: "Your browser does not support audio playback.",
-    meditationSourceToggle: "About the original audio archive",
-    meditationToAudio: "Next · Calming audio",
-    meditationBackToVideo: "Back to video",
 
     libraryAction: "Explore Temple Studies",
     disclaimer: "Symbolic insights, tarot, runes and constellations are exploratory traditions, not reliable predictions, clinical diagnostics, medical advice or emergency services. Homeopathy lacks reliable evidence for treating health conditions.",
@@ -120,21 +112,13 @@ const copy = {
     talismanSectionTitle: "Даосские талисманы · Каталог",
     talismanSectionLead: "Посмотрите даосские талисманы Фу и выберите подходящий символ. Изготовление и цену мастер подтвердит отдельно.",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
-    meditationSectionTitle: "Медитации · Видео и аудио",
+    meditationSectionTitle: "Медитации · Видео",
     meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
-    meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
-    meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
-    meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
-    meditationAudioMissing: "Отдельные оригинальные аудиофайлы MP3/M4A авторских подкачек PsiMaster пока не найдены. Выше доступны исходные русскоязычные видеозаписи со звуком; мы не извлекали аудио из видео и не подменяли записи.",
     meditationVideoIntro: "Семь оригинальных видео PsiMaster на русском: три медитации Солнца, «Жизненная Сила», «Круг Огня», марафоны энергопрактик и чисток. Нажмите «Смотреть» на обложке; если встроенный плеер недоступен, откройте YouTube.",
     meditationVideoTitle: "Русскоязычные медитации · архив PsiMaster",
     meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
     meditationMore: "Другие медитации в Академии",
     meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
-    meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
-    meditationSourceToggle: "Об оригинальных аудиозаписях",
-    meditationToAudio: "Далее · Спокойное аудио",
-    meditationBackToVideo: "Назад к видео",
 
     libraryAction: "Храмовые традиции",
     disclaimer: "И-Цзин, Руны, Таро и расстановки — символические практики, а не надёжные предсказания, медицинские диагнозы или экстренная помощь. Для лечения заболеваний у гомеопатии нет убедительной доказательной базы.",
@@ -182,21 +166,13 @@ const copy = {
     talismanSectionTitle: "Talismanes taoístas · Catálogo",
     talismanSectionLead: "Explora talismanes de estilo Fu y solicita una pieza personal. El profesional confirma el precio y la disponibilidad.",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
-    meditationSectionTitle: "Meditaciones · Vídeo y audio",
+    meditationSectionTitle: "Meditaciones · Vídeos",
     meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
-    meditationAudioTitle: "Audio · Olas y melodía suave",
-    meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
-    meditationAudioLabel: "Reproducir olas y melodía suave",
-    meditationAudioMissing: "No se han localizado los MP3/M4A originales del archivo ruso PsiMaster. Arriba está el vídeo original del Sol en inglés, con su propio audio; no hemos extraído ni inventado pistas.",
     meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
     meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
     meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
     meditationMore: "Más meditaciones en la Academia",
     meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
-    meditationAudioFallback: "Tu navegador no permite reproducir audio.",
-    meditationSourceToggle: "Sobre los audios originales",
-    meditationToAudio: "Siguiente · Audio tranquilo",
-    meditationBackToVideo: "Volver a los vídeos",
 
     libraryAction: "Explorar estudios del templo",
     disclaimer: "El I Ching, tarot, runas y constelaciones son tradiciones de reflexión, no predicciones fiables, diagnósticos clínicos ni ayuda urgente. La homeopatía carece de pruebas fiables para tratar enfermedades.",
@@ -267,23 +243,6 @@ export default async function HolisticSupportPage({ params }: Props) {
                 {t.meditationMore}<span aria-hidden="true">→</span>
               </Link>
             </nav>
-            <aside id="meditation-audio" className={styles.meditationAudioCard} data-holistic-audio-player aria-labelledby="holistic-meditation-audio-title">
-              <div className={styles.meditationAudioText}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3 id="holistic-meditation-audio-title">{t.meditationAudioTitle}</h3>
-                <p>{t.meditationAudioBody}</p>
-              </div>
-              <div className={styles.meditationAudioControls}>
-                <audio controls preload="none" aria-label={t.meditationAudioLabel}>
-                  <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
-                  {t.meditationAudioFallback}
-                </audio>
-                <details className={styles.meditationRecordingNote}>
-                  <summary>{t.meditationSourceToggle}</summary>
-                  <p>{t.meditationAudioMissing}</p>
-                </details>
-              </div>
-            </aside>
           </div>
         </section>
 
