@@ -321,14 +321,14 @@ async function runEngine(name, engine) {
             try {
               await consentError.waitFor({state:"visible",timeout:8000});
             } catch (error) {
-              const diagnostic = await page.evaluate(() => {
+              const diagnostic = await page.evaluate((expectedDocumentOrigin) => {
                 const form = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
                 const button = form?.querySelector('button[data-compact-channel="whatsapp"]');
                 const propsKey = button && Object.keys(button).find(key => key.startsWith("__reactProps$"));
                 const contact = form?.querySelector('input[name="contact"]');
                 return {
                   domClicks: window.__hhDaoClickEvents ?? 0,
-                  documentReplacedSinceTapSetup: performance.timeOrigin !== clickDocumentOrigin,
+                  documentReplacedSinceTapSetup: performance.timeOrigin !== expectedDocumentOrigin,
                   reactHandlerPresent: Boolean(propsKey && typeof button[propsKey]?.onClick === "function"),
                   formConnected: Boolean(form?.isConnected),
                   buttonDisabled: Boolean(button?.disabled),
@@ -337,7 +337,7 @@ async function runEngine(name, engine) {
                   alertCount: form?.querySelectorAll('[role="alert"]').length ?? 0,
                   readyState: document.readyState,
                 };
-              });
+              }, clickDocumentOrigin);
               throw new Error("Dao negative-consent UI did not render after tap; redacted DOM evidence=" +
                 JSON.stringify(diagnostic) + "; cause=" + error.message);
             }
