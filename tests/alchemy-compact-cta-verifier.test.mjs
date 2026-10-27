@@ -121,28 +121,28 @@ function serviceControls(locale, fault = '', countryFirst = false) {
   if (fault === 'duplicate-topic') fields.push({ ...fields.find(field => field.id === 'topic') })
   if (fault === 'extra-service-option') fields.push({ id: 'extra', name: 'Unexpected option', direct: true, visible: true })
   if (countryFirst) fields.sort((a, b) => Number(b.id === 'country') - Number(a.id === 'country'))
-  function selections(getFields) {
-    return { selection: true, items: getFields,
-      first: () => selections(() => getFields().slice(0, 1)), nth: i => selections(() => getFields().slice(i, i + 1)),
+  function selections(getFields, name) {
+    return { selection: true, items: getFields, name,
+      first: () => selections(() => getFields().slice(0, 1), name), nth: i => selections(() => getFields().slice(i, i + 1), name),
       selectOption: async value => {
         const found = getFields(); assert.equal(found.length, 1); const field = found[0]
         const options = field.id === 'format' ? ['60', ...(fault === 'missing-format-option' ? [] : ['30']), 'month']
           : field.id === 'topic' ? ['relationships', 'stress', ...(fault === 'missing-topic-option' ? [] : ['business']), 'direction', 'other'] : ['CA', 'US']
-        assert.ok(options.includes(value), 'Only a current option can be selected')
+        assert.ok(options.includes(value), 'Alchemy ' + field.id + ' option ' + value)
         if (fault !== 'ignored-' + field.id + '-change') values[field.id] = value
         changed.push(field.id + ':' + value)
       } }
   }
-  const control = (kind, attrs = {}) => ({ selection: true, items: () => [{ id: kind, visible: true, attrs }] })
+  const control = (kind, attrs = {}) => ({ selection: true, name: kind, items: () => [{ id: kind, visible: true, attrs }] })
   const form = { scrollIntoViewIfNeeded: async () => {},
-    getByRole: (role, options) => { assert.equal(role, 'combobox'); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === options.name && field.visible)) },
+    getByRole: (role, options) => { assert.equal(role, 'combobox'); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === options.name && field.visible), options.name) },
     // The service labels wrap their selects/options. Their accessible names
     // are exact, while raw label text also contains option text. Country has
     // an explicit aria-label and remains mounted inside the collapsed form.
-    getByLabel: (name, options) => { assert.equal(name, words[2]); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === name)) },
+    getByLabel: (name, options) => { assert.equal(name, words[2]); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === name), name) },
     locator: selector => {
-      if (selector === 'select') return selections(() => fields)
-      if (selector === ':scope > label > select') return selections(() => fields.filter(field => field.direct))
+      if (selector === 'select') return selections(() => fields, 'all selects')
+      if (selector === ':scope > label > select') return selections(() => fields.filter(field => field.direct), 'service options')
       if (selector === '[data-contact-order]') return control('request', { 'aria-expanded': 'false' })
       if (selector === '[data-phone-country-input] input[type="tel"]') return control('phone', fault === 'optional-phone' ? {} : { required: '' })
       if (selector === '[data-compact-phone-trigger="true"] input[type="checkbox"]') return control('consent', fault === 'optional-consent' ? {} : { required: '' })
@@ -159,23 +159,51 @@ function serviceControls(locale, fault = '', countryFirst = false) {
     assert.equal(selector, 'a[href="/' + locale + '/services/free-situation-review"]'); return link
   } }
   const expect = actual => actual.selection ? {
-    toHaveCount: async count => assert.equal(actual.items().length, count),
+    toHaveCount: async count => assert.equal(actual.items().length, count, 'Alchemy ' + actual.name + ' count'),
     toBeVisible: async () => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].visible, true) },
-    toHaveValue: async value => { assert.equal(actual.items().length, 1); assert.equal(values[actual.items()[0].id], value) },
-    toHaveAttribute: async (name, value) => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].attrs?.[name], value) },
+    toHaveValue: async value => { assert.equal(actual.items().length, 1); assert.equal(values[actual.items()[0].id], value, 'Alchemy ' + actual.name + ' value') },
+    toHaveAttribute: async (name, value) => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].attrs?.[name], value, 'Alchemy ' + actual.name + ' attribute ' + name) },
   } : f.expect(actual)
   return { f, page, expect, changed, values, selectedPrice: () => selectedPrice }
 }
-async function runWholeAlchemyForm(h, locale) {
-  const script = read('scripts/verify-app-r1.mjs')
-  const start = script.indexOf('     const form=servicePage.locator(\'[data-alchemy-lead-form="single"]\')')
-  const end = script.indexOf("    }else{\n     const capture=servicePage.locator('[data-sitewide-capture=", start)
-  assert.ok(start > 0 && end > start)
-  return runInNewContext('(async () => {' + script.slice(start, end) + '\n})()', {
+const alchemyStart = "    }else if(kind==='alchemy'){\n"
+const alchemyEnd = '\n    }\n   }\n   await servicePage.close()'
+const alchemyFirst = '     const form=servicePage.locator(\'[data-alchemy-lead-form="single"]\')'
+const alchemyLast = '     await expect(servicePage.locator(\'a[href="/\'+locale+\'/services/free-situation-review"]\').first()).toBeVisible()'
+function extractWholeAlchemyForm(script) {
+  const start = script.indexOf(alchemyStart), end = script.indexOf(alchemyEnd)
+  assert.ok(start >= 0 && end > start, 'Alchemy extraction requires ordered standalone branch boundaries')
+  assert.equal(script.lastIndexOf(alchemyStart), start, 'Alchemy extraction requires one start boundary')
+  assert.equal(script.lastIndexOf(alchemyEnd), end, 'Alchemy extraction requires one end boundary')
+  const snippet = script.slice(start + alchemyStart.length, end)
+  assert.ok(snippet.startsWith(alchemyFirst + '\n'), 'Alchemy extraction must start with the whole form')
+  assert.ok(snippet.endsWith('\n' + alchemyLast), 'Alchemy extraction must include the final free-review assertion')
+  return snippet
+}
+function runWholeAlchemyForm(h, locale) {
+  // Extract synchronously, outside assert.rejects: a broken boundary must never
+  // count as an expected semantic-control rejection.
+  const snippet = extractWholeAlchemyForm(read('scripts/verify-app-r1.mjs'))
+  return runInNewContext('(async () => {' + snippet + '\n})()', {
     assert, locale, servicePage: h.page, expect: h.expect,
     openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels,
   }, { timeout: 1000 })
 }
+test('whole Alchemy extraction excludes adjacent DAO, hypnotherapy, and page lifecycle branches', () => {
+  const snippet = extractWholeAlchemyForm(read('scripts/verify-app-r1.mjs'))
+  assert.doesNotMatch(snippet, /assertDaoFreeEntryCapture|verifyHypnotherapyRequest|servicePage\.close/)
+})
+for (const [fault, mutate, message] of [
+  ['missing start', source => source.replace(alchemyStart, ''), /ordered standalone branch boundaries/],
+  ['missing end', source => source.replace(alchemyEnd, ''), /ordered standalone branch boundaries/],
+  ['duplicate start', source => source + alchemyStart, /one start boundary/],
+  ['duplicate end', source => source + alchemyEnd, /one end boundary/],
+  ['end before start', source => alchemyEnd + source, /ordered standalone branch boundaries/],
+  ['truncated form', source => source.replace(alchemyFirst + '\n', ''), /start with the whole form/],
+  ['truncated final assertion', source => source.replace('\n' + alchemyLast, ''), /include the final free-review assertion/],
+]) test('whole Alchemy extraction rejects ' + fault, () => {
+  assert.throws(() => extractWholeAlchemyForm(mutate(read('scripts/verify-app-r1.mjs'))), { code: 'ERR_ASSERTION', message })
+})
 for (const locale of ['en', 'ru']) for (const countryFirst of [false, true]) {
   test(locale + ' complete Alchemy form branch distinguishes two options from phone country: countryFirst=' + countryFirst, async () => {
     const h = serviceControls(locale, '', countryFirst)
@@ -187,12 +215,23 @@ for (const locale of ['en', 'ru']) for (const countryFirst of [false, true]) {
     assert.equal(h.f.state.externalClicks, 0)
   })
 }
-for (const fault of ['missing-format', 'duplicate-topic', 'wrong-format-label', 'hidden-format',
-  'missing-country', 'extra-service-option', 'missing-format-option', 'missing-topic-option', 'optional-phone', 'optional-consent',
-  'ignored-format-change', 'ignored-topic-change']) {
+for (const [fault, message] of [
+  ['missing-format', /^Alchemy service options count/],
+  ['duplicate-topic', /^Alchemy service options count/],
+  ['wrong-format-label', /^Alchemy Session format count/],
+  ['hidden-format', /^Alchemy Session format count/],
+  ['missing-country', /^Alchemy Country calling code count/],
+  ['extra-service-option', /^Alchemy service options count/],
+  ['missing-format-option', /^Alchemy format option 30/],
+  ['missing-topic-option', /^Alchemy topic option business/],
+  ['optional-phone', /^Alchemy phone attribute required/],
+  ['optional-consent', /^Alchemy consent attribute required/],
+  ['ignored-format-change', /^Alchemy Session format value/],
+  ['ignored-topic-change', /^Alchemy Topic value/],
+]) {
   test('complete Alchemy branch rejects broken semantic controls: ' + fault, async () => {
     const h = serviceControls('en', fault)
-    await assert.rejects(runWholeAlchemyForm(h, 'en'), { code: 'ERR_ASSERTION' })
+    await assert.rejects(runWholeAlchemyForm(h, 'en'), { code: 'ERR_ASSERTION', message })
     assert.equal(h.f.state.requests.length, 0, 'Broken prerequisites never reach even the synthetic pricing request')
   })
 }
