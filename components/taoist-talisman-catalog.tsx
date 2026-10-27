@@ -117,7 +117,7 @@ export function TaoistTalismanCatalog({ locale, standalone = false }: { locale: 
         </div>
       )}
 
-      <div className={styles.archive}>
+      {!standalone && <div className={styles.archive}>
         <button type="button" className={styles.archiveToggle} aria-expanded={archiveOpen}
           aria-controls="tao-talisman-private-gallery" onClick={() => setArchiveOpen(open => !open)}>
           {t.archive} <span aria-hidden="true">{archiveOpen ? "−" : "+"}</span>
@@ -125,7 +125,7 @@ export function TaoistTalismanCatalog({ locale, standalone = false }: { locale: 
         {archiveOpen && <div id="tao-talisman-private-gallery" className={styles.archiveContent}>
           <SupportTalismanGallery locale={locale} />
         </div>}
-      </div>
+      </div>}
     </div>
   );
 }
