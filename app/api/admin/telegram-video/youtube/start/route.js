@@ -11,15 +11,17 @@ const COOKIE='hh_tgvideo_oauth_state'
 const CALLBACK='https://holistichouse.vercel.app/api/admin/telegram-video/youtube/callback'
 const CONTEXT={accountId:PRACTITIONER_ID,recordId:PRACTITIONER_ID,field:'telegram_video_oauth_state'}
 const HEADERS={'cache-control':'no-store','referrer-policy':'no-referrer'}
-export async function GET(){
+export async function GET(request){
  if(!await requireAdminRequest())return new Response('Unauthorized',{status:401,headers:HEADERS})
  if(!ownerVideoOauthConfigured())return new Response(
    'Google offline OAuth for Telegram videos is not configured.',{status:503,headers:HEADERS})
  try{
+   const target=new URL(request.url).searchParams.get('target')||'ru'
+   if(!['ru','en'].includes(target))return new Response('Invalid target',{status:400,headers:HEADERS})
    const config=getAppConfig()
    const verifier=randomBytes(32).toString('base64url')
    const state=randomBytes(32).toString('base64url')
-   const encrypted=seal({verifier,state,time:Date.now()},CONTEXT,config)
+   const encrypted=seal({verifier,state,target,time:Date.now()},CONTEXT,config)
    const query=new URLSearchParams({
      client_id:process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID,redirect_uri:CALLBACK,
      response_type:'code',scope:'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
