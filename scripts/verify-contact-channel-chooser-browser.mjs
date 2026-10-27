@@ -61,8 +61,18 @@ async function submitSyntheticForm(page, chooser, locale, submissions, receiptMo
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
-    await form.locator('details:has(textarea) > summary').click();
-    await form.locator('textarea').fill(privateNote);
+    // A previous browser history/layout state may leave this native <details>
+    // expanded. Clicking its summary unconditionally would CLOSE the note,
+    // making the textarea non-editable (observed in hosted WebKit acceptance).
+    // Preserve a single, real user expansion when the details is closed.
+    const note = form.locator('details:has(textarea)');
+    assert.equal(await note.count(), 1, "Exactly one optional note field");
+    if (!(await note.evaluate(element => element.open))) {
+      await note.locator('summary').click();
+    }
+    assert.equal(await note.evaluate(element => element.open), true,
+      "The optional note is expanded before editing");
+    await note.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
   await form.locator('input[type="checkbox"]').check();
