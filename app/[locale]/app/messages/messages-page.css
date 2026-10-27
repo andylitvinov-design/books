@@ -27,8 +27,4 @@
   }
 }
 
-/* App-only navigation on small screens: no cramped public website Home tab. */
-@media(max-width:760px){
- .hh-messages-page .hh-messages-app-dock{grid-template-columns:repeat(5,minmax(0,1fr))!important}
- .hh-messages-page .hh-messages-app-dock a{min-width:0;font-size:11px}
-}
+/* Messages uses the existing seven-destination Cabinet bar, never a separate dock. */
