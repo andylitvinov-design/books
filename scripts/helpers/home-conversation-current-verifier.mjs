@@ -1,3 +1,4 @@
+import { withReviewConsentDiagnostics } from './review-consent-diagnostics.mjs';
 import assert from 'node:assert/strict';
 
 export async function openHomeConversation(page, expect) {
@@ -167,11 +168,16 @@ export async function verifyCurrentReviewFault(page, expect, { origin, locale, k
     await expect(consent).not.toBeChecked();
     assert.equal(guard.writes.length, 0, 'Opening never saves');
     assert.equal(guard.providerAttempts.length, 0, 'Opening never attempts delivery');
-    await form.locator('[data-phone-country-input] select').selectOption('CA');
-    await contact.fill('4165550123');
     const submit = form.locator('button[data-contact-channel-submit="whatsapp"]');
-    await submit.click();
-    await expect(form.getByRole('alert')).toBeVisible();
+    await withReviewConsentDiagnostics(page, form, { locale, kind,
+      counters: () => ({ writes: guard.writes.length, providerAttempts: guard.providerAttempts.length,
+        routeErrors: guard.routeErrors.length, pageErrors: errors.length }),
+    }, async () => {
+      await form.locator('[data-phone-country-input] select').selectOption('CA');
+      await contact.fill('4165550123');
+      await submit.click();
+      await expect(form.getByRole('alert')).toBeVisible();
+    });
     await expect(consent).not.toBeChecked();
     assert.equal(guard.writes.length, 0, 'No write before explicit reply consent');
     assert.equal(guard.providerAttempts.length, 0, 'No provider attempt before explicit reply consent');

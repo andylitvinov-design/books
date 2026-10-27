@@ -1,3 +1,4 @@
+import { installReviewConsentProbe, closeReviewConsentProbe, sanitizeReviewConsentDiagnostic, withReviewConsentDiagnostics } from '../scripts/helpers/review-consent-diagnostics.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -43,6 +44,7 @@ function reviewFixture(locale, kind, fault = '') {
     return response;
   };
   const submit = async channel => {
+    if (!state.consent && fault === 'consent-alert-missing') return;
     if (!state.consent && fault !== 'save-before-consent') { state.alert = 'Consent required'; if (fault === 'early-provider-consent') await provider(); return; }
     state.submits++;
     const popup = sandbox.window.open('about:blank', '_blank');
@@ -153,7 +155,7 @@ for (const [locale, kind] of [['en', 'retry'], ['ru', 'handoff-failure']]) test(
   assert.equal(result.syntheticWrites, f.state.posts, 'Return only the final drained actual count');
 });
 for (const [kind, fault] of [
-  ['retry', 'implicit-consent'], ['retry', 'ignored-consent'], ['retry', 'save-before-consent'], ['retry', 'false-success'],
+  ['retry', 'implicit-consent'], ['retry', 'consent-alert-missing'], ['retry', 'ignored-consent'], ['retry', 'save-before-consent'], ['retry', 'false-success'],
   ['retry', 'failed-save-navigates'], ['retry', 'failed-popup-left-open'], ['retry', 'retry-new-operation'],
   ['retry', 'duplicate-save'], ['handoff-failure', 'receipt-retracted'], ['handoff-failure', 'fallback-resaves'], ['handoff-failure', 'fallback-retracts'], ['retry', 'unexpected-write'],
   ['retry', 'contact-leak'], ['retry', 'credential-leak'], ['retry', 'fragment-leak'], ['retry', 'different-drafts'], ['retry', 'small-fallback'], ['retry', 'fallback-navigates-parent'], ['retry', 'reveal-noop'],
@@ -243,4 +245,202 @@ test('original browser scenario inventory and unaffected safeguards remain manda
     "['temple', '/' + locale + '/holistic-support']",
   ]) assert.ok(script.includes(marker), marker);
   assert.doesNotMatch(script, /test\.skip|test\.only|test\.todo/);
+});
+
+test('missing first no-consent alert still fails after exactly one click, with no writes/provider fallback', async () => {
+  const f = reviewFixture('en', 'retry', 'consent-alert-missing');
+  await assert.rejects(verifyCurrentReviewFault(f.page, f.expect, { origin, locale: 'en', kind: 'retry' }), { code: 'ERR_ASSERTION' });
+  assert.equal(f.state.gestures.filter(value => value.startsWith('submit-')).length, 1);
+  assert.equal(f.state.posts, 0);
+  assert.ok(!f.state.gestures.includes('label') && !f.state.gestures.includes('link-tg'));
+  assert.equal(f.state.unroute, true);
+});
+
+const observerOwner = '00000000-0000-4000-8000-000000000001';
+const observerRegistryOwner = '00000000-0000-4000-8000-000000000002';
+function consentObserverDom({ propAccessor = false, partialInstall = false } = {}) {
+  const listeners = [], leases = new Map(); let getterReads = 0, handlerCalls = 0;
+  const node = (x, y, width, height) => ({ isConnected: true, disabled: false, contains(other) { return other === this; }, getBoundingClientRect: () => ({ x, y, width, height }) });
+  const phone = node(10, 500, 200, 45), consent = node(10, 560, 20, 20), button = node(10, 620, 160, 50), nav = node(0, 760, 390, 60);
+  consent.checked = false; consent.required = true; phone.validity = { valueMissing: false };
+  const handler = () => { handlerCalls++; throw Error('Observer must not invoke application handlers'); };
+  for (const [element, name] of [[phone, 'onChange'], [consent, 'onChange'], [button, 'onClick']]) {
+    Object.defineProperty(element, '__reactProps$fixture', propAccessor
+      ? { get() { getterReads++; throw Error('Private property accessor'); } }
+      : { value: { [name]: handler } });
+    for (const key of ['value', 'textContent', 'innerHTML']) Object.defineProperty(element, key, { get() { getterReads++; throw Error('Private content read'); } });
+  }
+  const form = node(0, 450, 390, 260);
+  form.contains = element => [form, phone, consent, button].includes(element);
+  form.querySelector = selector => ({ 'button[data-contact-channel-submit="whatsapp"]': button, 'input[type="tel"]': phone, 'input[type="checkbox"]': consent })[selector] || null;
+  form.querySelectorAll = selector => { assert.equal(selector, '[role="alert"]'); return []; };
+  const win = { location: { pathname: '/en/services/free-situation-review' }, scrollY: 0, innerWidth: 390, innerHeight: 820,
+    getComputedStyle: element => { assert.equal(element, nav); return { display: 'block', visibility: 'visible', pointerEvents: 'auto' }; },
+    setTimeout: (fn, milliseconds) => { assert.equal(milliseconds, 45000); const id = leases.size + 1; leases.set(id, fn); return id; },
+    clearTimeout: id => leases.delete(id),
+  };
+  const doc = { defaultView: win, readyState: 'complete', activeElement: phone,
+    querySelector: selector => selector === '.mobile-bottom-navigation' ? nav : selector.startsWith('main[data-free-entry-landing') ? form : null,
+    elementFromPoint: (_x, y) => y >= 760 ? nav : button,
+    addEventListener: (type, fn, options) => { assert.equal(options.passive, true); listeners.push({ type, fn, capture: options.capture }); if (partialInstall && listeners.length === 3) throw Error('Synthetic partial installation'); },
+    removeEventListener: (type, fn, capture) => { const index = listeners.findIndex(value => value.type === type && value.fn === fn && value.capture === capture); if (index >= 0) listeners.splice(index, 1); },
+  };
+  form.ownerDocument = doc;
+  const close = options => runInNewContext('(' + closeReviewConsentProbe.toString() + ')(options)', { window: win, options: { owner: observerOwner, registryOwner: observerRegistryOwner, ...options } });
+  const dispatch = (type, target = button, trusted = true) => {
+    const event = { type, target, isTrusted: trusted, defaultPrevented: false, clientX: 30, clientY: target === nav ? 790 : 640 };
+    for (const entry of [...listeners].filter(entry => entry.type === type)) entry.fn(event);
+  };
+  return { form, phone, consent, button, nav, win, doc, listeners, leases, close, dispatch, getterReads: () => getterReads, handlerCalls: () => handlerCalls };
+}
+
+test('passive consent observer reports bounded trusted click delivery, binding presence and geometry without private reads', () => {
+  const f = consentObserverDom();
+  assert.equal(installReviewConsentProbe(f.form, { token: 101, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), true);
+  f.dispatch('input', f.phone); f.dispatch('pointerdown'); f.dispatch('click'); f.dispatch('click', f.nav);
+  const raw = f.close({ token: 101, capture: true }), safe = sanitizeReviewConsentDiagnostic(raw, { locale: 'en', kind: 'retry', setup: 'completed', capture: 'completed', writes: 0, providerAttempts: 0, routeErrors: 0, pageErrors: 0 });
+  assert.equal(safe.initial.currentRoute, true); assert.equal(safe.initial.consentChecked, false);
+  assert.equal(safe.initial.buttonOnClickBound, true); assert.equal(safe.initial.phoneOnChangeBound, true);
+  assert.equal(safe.records.filter(value => value.type === 'click' && value.target === 'button' && value.trusted).length, 2);
+  assert.equal(safe.records.filter(value => value.target === 'navigation').length, 2);
+  assert.equal(safe.counts[7][0], 2); assert.equal(safe.counts[7][1], 2);
+  assert.equal(f.listeners.length, 0); assert.equal(f.leases.size, 0);
+  assert.equal(f.getterReads(), 0); assert.equal(f.handlerCalls(), 0);
+  assert.equal(f.doc.activeElement, f.phone); assert.equal(f.consent.checked, false);
+});
+
+test('observer never invokes React prop getters and does not mistake descriptors for executed hydration', () => {
+  const f = consentObserverDom({ propAccessor: true });
+  installReviewConsentProbe(f.form, { token: 102, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 });
+  const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 102, capture: true }));
+  assert.equal(safe.current.buttonPropsPresent, false); assert.equal(safe.current.buttonOnClickBound, false);
+  assert.equal(f.getterReads(), 0); assert.equal(f.handlerCalls(), 0);
+});
+
+test('observer caps events and remains passive when native event properties throw', () => {
+  const f = consentObserverDom();
+  installReviewConsentProbe(f.form, { token: 103, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 });
+  for (let i = 0; i < 100; i++) f.dispatch('click');
+  const throwing = { type: 'click', get target() { throw Error('Synthetic event observation failure'); } };
+  assert.doesNotThrow(() => f.listeners.find(value => value.type === 'click').fn(throwing));
+  const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 103, capture: true }));
+  assert.ok(safe.records.length <= 32); assert.ok(safe.dropped > 0); assert.ok(safe.observationErrors > 0);
+});
+
+for (const mode of ['expired', 'closed', 'partial-install', 'lease']) test('observer cleanup rejects/leaves no orphan for ' + mode, () => {
+  const f = consentObserverDom({ partialInstall: mode === 'partial-install' });
+  if (mode === 'closed') f.close({ token: 104 });
+  const installed = installReviewConsentProbe(f.form, { token: 104, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + (mode === 'expired' ? -1 : 1000) });
+  assert.equal(installed, mode === 'lease');
+  if (mode === 'lease') [...f.leases.values()][0]();
+  assert.equal(f.listeners.length, 0); assert.equal(f.leases.size, 0);
+});
+
+test('diagnostic serializer strips unknown/private fields, getters, toJSON, nonfinite geometry and oversized arrays', () => {
+  let reads = 0;
+  const raw = { current: { type: 'https://private.invalid/?phone=SECRET', phase: 'SECRET', target: 'SECRET', buttonRect: { x: Infinity, y: 2, width: 1e10, height: -Infinity }, phone: 'SECRET', toJSON() { throw Error('Do not call'); } }, records: Array(100).fill({ phone: 'SECRET', target: 'SECRET' }), counts: [[1e12, -2]], cookie: 'SECRET', toJSON() { throw Error('Do not call'); } };
+  Object.defineProperty(raw, 'initial', { get() { reads++; throw Error('Do not read'); } });
+  const serialized = JSON.stringify(sanitizeReviewConsentDiagnostic(raw, { locale: 'SECRET', kind: 'SECRET', writes: 1e12, providerAttempts: -1, pageErrors: Infinity, headers: 'SECRET' }));
+  assert.doesNotMatch(serialized, /SECRET|private.invalid|"phone":|cookie|headers|Infinity/);
+  const safe = JSON.parse(serialized);
+  assert.equal(reads, 0); assert.equal(safe.records.length, 32); assert.equal(safe.writes, 1000000);
+  assert.equal(safe.current.buttonRect.x, null); assert.equal(safe.current.buttonRect.width, 1000000);
+});
+
+for (const failure of ['setup', 'capture', 'sink', 'counters']) test('diagnostic ' + failure + ' failure preserves original exception and runs operation exactly once', async () => {
+  const sentinel = new Error('ORIGINAL_VALIDATION_FAILURE'), f = consentObserverDom(); let operations = 0, cleanup = 0;
+  const page = { evaluate: async (fn, arg) => { if (arg.capture && failure === 'capture') throw Error('capture'); cleanup++; return f.close(arg); } };
+  const form = { evaluate: async (_fn, options) => { if (failure === 'setup') throw Error('setup'); return installReviewConsentProbe(f.form, options); } };
+  await assert.rejects(withReviewConsentDiagnostics(page, form, { locale: 'en', kind: 'retry', counters: () => { if (failure === 'counters') throw Error('counters'); return {}; } }, async () => { operations++; throw sentinel; }, { log: () => { if (failure === 'sink') throw Error('sink'); } }), error => error === sentinel);
+  assert.equal(operations, 1); assert.ok(cleanup > 0); assert.equal(f.listeners.length, 0);
+});
+
+test('late installation after setup timeout is tombstoned; successful action returns unchanged without logging', async () => {
+  const f = consentObserverDom(); let resolveSetup, options, operations = 0, logs = 0;
+  const form = { evaluate: (_fn, value) => { options = value; return new Promise(resolve => { resolveSetup = resolve; }); } };
+  const page = { evaluate: async (_fn, value) => f.close(value) };
+  const result = await withReviewConsentDiagnostics(page, form, { locale: 'en', kind: 'retry', counters: () => ({}) }, async () => { operations++; return 'UNCHANGED_RESULT'; }, { timeoutMs: 2, log: () => { logs++; } });
+  assert.equal(result, 'UNCHANGED_RESULT'); assert.equal(operations, 1); assert.equal(logs, 0);
+  resolveSetup(installReviewConsentProbe(f.form, { ...options, expiresAt: Date.now() + 1000 }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.listeners.length, 0);
+});
+
+test('actual fault helper observes the first consent-negative action only, without replacing its required alert or network gates', () => {
+  const source = read('scripts/helpers/home-conversation-current-verifier.mjs');
+  const start = source.indexOf('    await withReviewConsentDiagnostics(page, form, { locale, kind,');
+  const end = source.indexOf('    await expect(consent).not.toBeChecked();', start);
+  assert.ok(start > 0 && end > start);
+  const observed = source.slice(start, end);
+  assert.equal((observed.match(/await submit\.click\(\);/g) || []).length, 1);
+  assert.match(observed, /await expect\(form\.getByRole\('alert'\)\)\.toBeVisible\(\);/);
+  assert.match(observed, /await contact\.fill\('4165550123'\);/);
+  assert.doesNotMatch(observed, /force:|waitForTimeout|\.catch\(|\.check\(|requestSubmit|dispatchEvent/);
+  const remainder = source.slice(end);
+  for (const marker of ['No write before explicit reply consent', 'No provider attempt before explicit reply consent', 'Failed save must not navigate or send', 'Unchanged retry reuses the same operation and payload', 'Exactly one deliberate fallback request is accounted for', 'Final drained write count must exclude duplicate saves during cleanup']) assert.ok(remainder.includes(marker), marker);
+});
+
+test('closing an older observer token cannot remove a later observer and unknown registry accessors are never invoked', () => {
+  const f = consentObserverDom();
+  assert.equal(installReviewConsentProbe(f.form, { token: 201, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), true);
+  assert.equal(installReviewConsentProbe(f.form, { token: 202, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), true);
+  assert.equal(f.listeners.length, 48);
+  f.close({ token: 201 }); assert.equal(f.listeners.length, 24);
+  assert.equal(installReviewConsentProbe(f.form, { token: 201, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), false);
+  f.close({ token: 202 }); assert.equal(f.listeners.length, 0);
+  const unknown = consentObserverDom(); let reads = 0;
+  Object.defineProperty(unknown.win, '__hhReviewConsentRegistry', { get() { reads++; throw Error('Unknown getter'); } });
+  assert.equal(installReviewConsentProbe(unknown.form, { token: 203, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), false);
+  assert.equal(unknown.close({ token: 203, capture: true }), null);
+  assert.equal(reads, 0); assert.equal(unknown.listeners.length, 0);
+});
+
+for (const callbacks of ['accessors', 'data-functions']) test('unknown data registry/probe is untouched even when installation is rejected: ' + callbacks, async () => {
+  const f = consentObserverDom(); let reads = 0, calls = 0, operations = 0;
+  const foreign = {};
+  for (const key of ['read', 'dispose']) Object.defineProperty(foreign, key, callbacks === 'accessors'
+    ? { get() { reads++; return () => { calls++; }; } }
+    : { value: () => { calls++; } });
+  // Deliberately resembles the former unbranded registry shape.
+  const probes = new Map(), registry = { closedThrough: 0, probes };
+  Object.defineProperty(f.win, '__hhReviewConsentRegistry', { value: registry, configurable: true });
+  const primary = new Error('ORIGINAL_NO_CONSENT_ALERT_FAILURE');
+  let options;
+  const form = { evaluate: async (_fn, value) => { options = value; probes.set(value.token, foreign); return installReviewConsentProbe(f.form, value); } };
+  const page = { evaluate: async (_fn, value) => f.close(value) };
+  await assert.rejects(withReviewConsentDiagnostics(page, form, { locale: 'en', kind: 'retry', counters: () => ({ writes: 0 }) }, async () => { operations++; throw primary; }, { log: () => {} }), error => error === primary);
+  assert.equal(operations, 1); assert.equal(reads, 0); assert.equal(calls, 0);
+  assert.equal(probes.get(options.token), foreign); assert.equal(registry.closedThrough, 0); assert.equal(f.listeners.length, 0);
+});
+
+for (const callbacks of ['accessors', 'data-functions']) test('foreign entry inside branded registry is not read, invoked or evicted: ' + callbacks, () => {
+  const f = consentObserverDom(); let reads = 0, calls = 0;
+  const foreign = { owner: 'ffffffff-ffff-4fff-8fff-ffffffffffff' };
+  for (const key of ['read', 'dispose']) Object.defineProperty(foreign, key, callbacks === 'accessors'
+    ? { get() { reads++; return () => { calls++; }; } }
+    : { value: () => { calls++; } });
+  const probes = new Map([[301, foreign]]), registry = { schema: 'hh-review-consent-observer-v1', registryOwner: observerRegistryOwner, closedThrough: 0, probes };
+  Object.defineProperty(f.win, '__hhReviewConsentRegistry', { value: registry, configurable: true });
+  assert.equal(installReviewConsentProbe(f.form, { token: 301, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), false);
+  assert.equal(f.close({ token: 301, owner: observerOwner, capture: true }), null);
+  assert.equal(reads, 0); assert.equal(calls, 0); assert.equal(probes.get(301), foreign); assert.equal(registry.closedThrough, 0);
+});
+
+test('wrong invocation nonce cannot read or remove an active owned probe', () => {
+  const f = consentObserverDom();
+  assert.equal(installReviewConsentProbe(f.form, { token: 302, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), true);
+  assert.equal(f.close({ token: 302, owner: 'ffffffff-ffff-4fff-8fff-ffffffffffff', capture: true }), null);
+  assert.equal(f.listeners.length, 24);
+  assert.ok(f.close({ token: 302, owner: observerOwner, capture: true }));
+  assert.equal(f.listeners.length, 0);
+});
+
+test('matching public schema does not confer registry ownership', () => {
+  const f = consentObserverDom(); let reads = 0;
+  const registry = { schema: 'hh-review-consent-observer-v1', registryOwner: 'ffffffff-ffff-4fff-8fff-ffffffffffff', closedThrough: 0 };
+  Object.defineProperty(registry, 'probes', { get() { reads++; throw Error('Foreign probes'); } });
+  Object.defineProperty(f.win, '__hhReviewConsentRegistry', { value: registry });
+  assert.equal(installReviewConsentProbe(f.form, { token: 303, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), false);
+  assert.equal(f.close({ token: 303, capture: true }), null);
+  assert.equal(reads, 0); assert.equal(registry.closedThrough, 0); assert.equal(f.listeners.length, 0);
 });
