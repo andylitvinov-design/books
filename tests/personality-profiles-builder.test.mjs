@@ -46,7 +46,7 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
-  assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
+  assert.match(component, /recommendProfileAxisBattery\(tests, scaleGroups,/)
   // On Tests an explicit guest CTA launches only selected eligible test keys.
   // Ready separately offers one opt-in Google save without a duplicate guest action.
   assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
@@ -124,7 +124,7 @@ test('unified profile is multi-select and describes four separate analysis layer
   for (const token of [
     'data-profile-focus-selection', 'data-profile-focus={key}', 'data-profile-confirm-focus',
     'aria-pressed={focuses.includes(key)}', 'disabled={focuses.length === 0}',
-    'const suggested = areasFor(focuses)', 'data-profile-four-layers', 't.layers.map',
+    'setAreas(visibleAreas)', 'data-profile-four-layers', 't.layers.map',
     'ONE PERSONAL PROFILE', 'ОДИН ЛИЧНЫЙ ПРОФИЛЬ', 'UN PERFIL PERSONAL',
   ]) assert.ok(component.includes(token), token)
   assert.ok(!component.includes('data-profile-kind='))
@@ -151,10 +151,8 @@ test('four life directions retain all nine topics, are localized and require an 
     'Cuerpo, salud y energía', 'Relaciones y cercanía',
     'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
   ]) assert.ok(component.includes(phrase), phrase)
-  assert.match(component, /identity: \["traits", "support", "meaning"\]/)
-  assert.match(component, /wellbeing: \["emotions", "recovery", "body"\]/)
-  assert.match(component, /relationships: \["connection"\]/)
-  assert.match(component, /work: \["work", "money"\]/)
+  for (const name of ['PROFILE_FOCUS_AREAS', 'PROFILE_AREA_AXES', 'profileAreasWithTests'])
+    assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
   assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
@@ -186,8 +184,8 @@ test('Tests slide offers a direct start followed by discoverable filters for oth
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
   const route = read('app/[locale]/personality-profiles/page.tsx')
-  const start = builder.indexOf('{step === 2 && <section')
-  const ready = builder.indexOf('{step === 3 && <section')
+  const start = builder.indexOf('{step === 3 && <section')
+  const ready = builder.indexOf('{step === 4 && <section')
   assert.ok(start > 0 && ready > start, 'Tests precedes optional Ready/save step')
   const testsSlide = builder.slice(start, ready)
   const recommendations = testsSlide.indexOf('data-profile-recommended-tests')
@@ -195,14 +193,14 @@ test('Tests slide offers a direct start followed by discoverable filters for oth
   const additional = testsSlide.indexOf('data-profile-additional-tests')
   assert.ok(recommendations > 0 && directStart > recommendations && additional > directStart,
     'suggested tests and Take tests button are above extra test filters')
-  for (const phrase of ['type="search"', 'value={kindFilter}', 'data-profile-extra-profile-filter', 'data-profile-extra-scales',
+  for (const phrase of ['type="search"', 'data-profile-test-mode', 'data-profile-extra-profile-filter', 'data-profile-extra-scales',
     'aria-pressed={extraProfile === key}', 'aria-pressed={extraScales.includes(axis)}',
-    'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'TEST_KINDS.map',
+    'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'data-profile-mode={mode}',
     "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
-  assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key\)\)/)
-  assert.match(builder, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
-  assert.match(builder, /previous\.length < 12/)
-  assert.match(builder, /if \(!tests\.some\(test => test\.key === key\)\) return/)
+  assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key/)
+  assert.match(builder, /selectedScaleIds, "pro"\)/)
+  assert.match(builder, /keys\.length < 12/)
+  assert.match(builder, /test\.key === key && test\.testKind === modeKind/)
   assert.match(route, /testKind: entry\.testKind/)
   assert.match(css, /\.extraFilters \{/)
   assert.match(css, /\.extraSearch \{ grid-column: 1 \/ -1; \}/)
@@ -222,13 +220,13 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
     'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
     assert.ok(route.includes(flag), flag)
   }
-  assert.match(builder, /test\.axes\.filter\(axis => selectedAxes\.includes\(axis\)\)/)
-  assert.match(builder, /kindFilter === "all" \|\| test\.testKind === kindFilter/)
-  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /selectedAxisRefs\.includes\(scale\.researchAxisId\)/)
+  assert.match(builder, /test\.testKind === modeKind/)
+  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
   assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
   assert.match(builder, /\[\.\.\.previous, axis\]/)
-  assert.match(builder, /allAxesFor\(focusAreas\[extraProfile\]\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
+  assert.match(builder, /buildProfileScaleGroups\(tests, areasFor\(\[extraProfile\]\), areaAxes\)/)
   assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
   assert.match(builder, /selectedKeys\.length >= 12/)
   assert.ok(!builder.includes('setSelectedAxes('))
@@ -249,7 +247,7 @@ test('additional test finder scopes a single life profile before opening multipl
   assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
   assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
   assert.match(slide, /setExtraScales\(\[\]\)/)
-  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
   for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
     'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))

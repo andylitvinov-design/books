@@ -61,7 +61,7 @@
 .wizardKicker { display: inline-flex; align-items: center; gap: 6px; color: #446e5d; font-size: 12px; font-weight: 700; }
 .progress {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
   margin: 16px 0 12px;
 }
@@ -334,3 +334,59 @@
 .extraScaleActions span{margin-right:auto;font-size:12px;color:#68766c}
 .extraScaleActions button{border:0;background:transparent;padding:8px 2px;color:#246951;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer}
 @media(max-width:450px){.extraProfileChoices{grid-template-columns:1fr}.extraProfileChoices button{min-height:44px}}
+
+/* Nested, source-backed scales for each selected Topic. */
+.scaleOverview{display:flex;gap:7px 12px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:0 0 12px;color:#536f60;font-size:12px}
+.scaleOverview strong{color:var(--forest);font-size:13px}
+.scaleOverview span{min-width:0;overflow-wrap:anywhere}
+.topicAccordions{display:grid;gap:9px}
+.topicAccordion{min-width:0;overflow:hidden;border:1px solid #cbded1;border-radius:15px;background:#f9fbf7}
+.topicAccordion[open]{border-color:#8eb39c;background:#f4f9f4}
+.topicAccordion summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:61px;padding:12px 14px;list-style:none;cursor:pointer;color:var(--forest)}
+.topicAccordion summary::-webkit-details-marker{display:none}
+.topicAccordion summary>svg{flex:none;transition:transform .15s ease}
+.topicAccordion[open] summary>svg{transform:rotate(180deg)}
+.topicAccordionTitle{min-width:0;display:flex;flex-direction:column;gap:4px}
+.topicAccordionTitle strong{color:var(--forest);font-size:15px;line-height:1.3}
+.topicAccordionTitle small{color:#687b6e;font-size:11px}
+.topicAccordionBody{display:grid;gap:7px;padding:0 12px 13px}
+.topicScaleRow{display:flex;align-items:flex-start;gap:10px;min-width:0;padding:10px 11px;border:1px solid #d7e4da;border-radius:12px;background:#fff;cursor:pointer}
+.topicScaleRow:has(input:checked){background:#edf6ed;border-color:#71a288}
+.topicScaleRow>input{flex:none;margin:4px 0 0;width:19px;height:19px;accent-color:#315f52}
+.topicScaleText{min-width:0;display:flex;flex:1;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.topicScaleText strong{color:#2d5d4e;font-size:13px;line-height:1.35}
+.topicScaleText small{color:#597165;font-size:11px;line-height:1.35}
+.scaleSourceNote{margin:12px 0 0;padding:10px 12px;border-radius:11px;background:#f5f1ea;color:#617063;font-size:11px;line-height:1.48}
+.scaleExpand{display:inline-flex;justify-self:start;align-items:center;gap:6px;min-height:42px;padding:7px 10px;border:0;background:transparent;color:var(--wine);font-size:12px;font-weight:750;cursor:pointer}
+.scaleExpand[aria-expanded=true]>svg{transform:rotate(180deg)}
+.scaleRequired{margin:8px 0;font-size:12px;color:#78654c}
+/* Actual two-mode questionnaire recommendations with deduplicated totals. */
+.batteryModes{min-width:0;margin:0 0 14px;padding:12px;border:1px solid #d3dfd2;border-radius:14px;background:#f7faf5}
+.batteryModes legend{padding:0 4px;font-size:12px;font-weight:800;color:var(--forest)}
+.batteryModeChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.batteryModeChoices button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-width:0;min-height:65px;padding:10px 12px;border:1px solid #cadbcf;border-radius:11px;background:#fff;color:#426558;text-align:left;cursor:pointer}
+.batteryModeChoices button[aria-pressed=true]{background:#315f52;color:#fff;border-color:#315f52}
+.batteryModeChoices strong{font-size:14px;line-height:1.3}
+.batteryModeChoices small{color:inherit;opacity:.89;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+.batteryModes>p{margin:8px 1px 0;color:#657769;font-size:11px;line-height:1.45}
+@media(max-width:640px){
+  .topicAccordion summary{min-height:54px;padding:10px 12px}
+  .topicAccordionTitle strong{font-size:14px}
+  .topicAccordionBody{padding:0 9px 10px}
+  .topicScaleRow{padding:9px;gap:8px}
+  .topicScaleText strong{font-size:12px}
+  .batteryModes{padding:9px;margin-bottom:12px}
+  .batteryModeChoices button{min-height:63px;padding:9px}
+  .batteryModeChoices strong{font-size:12px}
+  .batteryModeChoices small{font-size:10px}
+}
+@media(max-width:350px){.topicAccordionTitle small,.topicScaleText small{font-size:10px}.batteryModeChoices button{padding:8px 7px}}
+@media(prefers-reduced-motion:reduce){.topicAccordion summary>svg{transition:none}}
+
+/* Construct axis → actual source questionnaire scales; no fabricated score or standalone subscale timer. */
+.topicAxisGroup{min-width:0;display:grid;gap:5px;padding:9px;border:1px solid #d8e5db;border-radius:12px;background:#f8fbf7}
+.topicAxisHeading{min-width:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;padding:0 2px 3px}
+.topicAxisHeading strong{min-width:0;overflow-wrap:anywhere;font-size:12px;line-height:1.35;font-weight:800;color:#315d4c}
+.topicAxisHeading small{font-size:10px;line-height:1.35;color:#667b6d}
+.topicAxisGroup .topicScaleRow{background:#fff;min-width:0}
+@media(max-width:350px){.topicAxisGroup{padding:7px}.topicAxisHeading strong{font-size:11px}.topicAxisHeading small{font-size:10px}}

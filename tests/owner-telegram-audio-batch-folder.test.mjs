@@ -232,3 +232,24 @@ test('old 9-note session opens visibly and failed Telegram edits never silently 
   assert.ok(service.includes('set last_command_update_id=$2,updated_at=now()'))
   assert.ok(service.includes('and last_command_update_id=$4'))
 })
+
+test('old 12 batch entries with three re-forwarded duplicates become exactly nine originals',()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  const match=service.match(/function combineItems\([\s\S]*?\n}\nasync function startAudioCombine/)
+  assert.ok(match,'private batch reader is required')
+  const combineItems=new Function(match[0].replace(/\nasync function startAudioCombine$/,'')+
+    '\nreturn combineItems')()
+  const originals=Array.from({length:9},(_,i)=>({
+    id:'file-'+i,updateId:400+i,bytes:1000+i,
+  }))
+  const recovered=[...originals,
+    ...originals.slice(0,3).map((item,i)=>({...item,updateId:900+i}))]
+  assert.equal(recovered.length,12)
+  assert.deepEqual(combineItems(recovered),originals)
+  const invalid=[...recovered,{id:'file-99',updateId:'1000',bytes:1}]
+  assert.deepEqual(combineItems(invalid),originals)
+  assert.match(service,/part\.updateId===event\.updateId\|\|part\.id===audioId/)
+  assert.match(service,/set status='building',items=\$3::jsonb,last_command_update_id=\$2/)
+  assert.match(service,/console\.error\('HH_OWNER_AUDIO_COMBINE_FAILED',reason,stage\)/)
+  assert.match(service,/Код: '\+reason/)
+})

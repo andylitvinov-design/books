@@ -11,6 +11,7 @@ import {
 } from '../../lib/crm/salesbot-editor.mjs'
 import styles from './crm-salesbot.module.css'
 import CrmSalesbotDraftControls from './crm-salesbot-drafts'
+import CrmSalesbotInternalRuns from './crm-salesbot-internal-runs'
 
 const clone = value => JSON.parse(JSON.stringify(value))
 const LABELS = {
@@ -270,6 +271,7 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
     <p className={styles.warning} role="status">{t.safety}</p>
     <CrmSalesbotDraftControls key={accountId} accountId={accountId} locale={lang}
       flow={flow} onRestore={restoreSavedDraft} />
+    <CrmSalesbotInternalRuns key={'runs-'+accountId} accountId={accountId} locale={lang}/>
     <div className={styles.controls}>
       <label>{t.template}
         <select value={templateId} onChange={e => chooseTemplate(e.target.value)}>

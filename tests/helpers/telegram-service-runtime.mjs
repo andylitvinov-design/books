@@ -40,7 +40,9 @@ function evaluate(path, modules, exports) {
  if(/^import\b|^export\b/m.test(body)||!count)throw new Error('UNSUPPORTED_TEST_MODULE '+path)
  return Function(...Object.keys(names),'"use strict";\n'+body+'\nreturn {'+exports.join(',')+'};')(...Object.values(names))
 }
-export function runtime({transaction,databasePool,crmEnabled=()=>true}) {
+export function runtime({transaction,databasePool,crmEnabled=()=>true,
+ recordInternalSalesbotInbound=()=>{throw new Error('INTERNAL_RECORDER_NOT_IN_SYNTHETIC_FIXTURE')},
+}) {
  const offerings=evaluate('lib/practitioners/telegram-service-offering.js',{
   '../app/database.js':{transaction},'./contracts.js':serviceContracts,
  },['findPublishedTelegramOffering','publishedTelegramOffering'])
@@ -61,6 +63,8 @@ export function runtime({transaction,databasePool,crmEnabled=()=>true}) {
   './telegram-second-pilot.mjs':pilot,'./telegram-diagnostic-v2.mjs':diagnosticV2,
   './telegram-inline-buttons.mjs':inline,'../practitioners/telegram-service-link.mjs':link,
   '../practitioners/telegram-service-offering.js':offerings,
+  // Explicit injected boundary only: never load the production recorder/store.
+  './salesbot-internal-runtime.js':{recordInternalSalesbotInbound},
  },['processTelegramDiagnostic'])
  return {...enquiry,...webhook,...offerings}
 }
