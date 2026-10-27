@@ -16,7 +16,7 @@ const testInputs=[
   'Preguntas de coaching: '+'¿Qué debo cambiar? '.repeat(2700),
   '💚🪶✨'.repeat(9500),
   String.raw`"backslashes\\and quotes"`.repeat(1400),
-  '\t'.repeat(39000),
+  'Tabs: '+'\t'.repeat(39000),
 ]
 test('every valid long/emoji coaching questionnaire is losslessly delivered in bounded CRM pieces',()=>{
   for(const value of testInputs){
@@ -45,6 +45,8 @@ test('Telegram form checks every database write, commits atomically and attests 
   assert.match(handler,/crm_tg_existing_thread/)
   assert.match(handler,/crm_tg_questionnaire_seen/)
   assert.match(handler,/contentDigest:digest/)
+  assert.match(handler,/pg_advisory_xact_lock/)
+  assert.match(handler,/timestampBase\+index/)
   assert.match(handler,/if \(accepted!==true\) throw new AppError\('COACHING_STORAGE_REJECTED'/)
   assert.match(handler,/await db\.query\('rollback'\)/)
   assert.match(sql,/crm_tg_questionnaire_seen/)
