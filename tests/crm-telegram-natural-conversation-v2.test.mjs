@@ -45,7 +45,7 @@ test('six exact owner-authored RU messages are sent in order; photo and drawing 
     "Вышли, пожалуйста, свое фото (лучше недавнее, за последний год, чтобы четко было видно лицо, в полный рост - ну или любое которое есть).",
     "Спасибо. Фото принял.\n\nНапиши, пожалуйста,\n1) в чем ключевая задача (цель)\n2) в чем сложность\n3) любые подробности, которые стоило бы добавить.",
     "Спасибо за ответ.\n\nТеперь самое важное чтобы я мог разобрать ситуацию, сделай, пожалуйста, рисунок. Ручкой, на любом листике бумаги нарисуй три фигурки:\n- я\n- цель\n- сложность/ препятствие\n\nЭто могут быть любые абстрактные фигурки, человечки, квадратики.\nВсе что придет в голову.\n\nИ потом вышли, пожалуйста, фото рисунка в этот чат.",
-    "Спасибо.\nЗадача принята в работу.\n\nИ последнее.\nЧтобы еще чуть лучше понять, разобраться в текущей форме заполни, пожалуйста, эту коучинг форму.\n\nТакая форма поможет и тебе четче понять запрос и решения.\nИ мне подготовить для тебя те ответы, которые будут более значимы.\n\nКоучинг форма по этой ссылке.\n↓\n\nПросто зайти на нее, заполни ответы, нажми отправить.\nИ я займусь изучением твоего вопроса."
+    "Спасибо.\nЗадача принята в работу.\n\nИ последнее.\nЧтобы еще чуть лучше понять, разобраться в текущей форме заполни, пожалуйста, эту коучинг форму.\n\nТакая форма поможет и тебе четче понять запрос и решения.\nИ мне подготовить для тебя те ответы, которые будут более значимы.\n\nКоучинг форма по этой ссылке.\nhttps://holistichouse.vercel.app/ru/coaching/intake?topic=business&from=telegram\n\nПросто зайти на нее, заполни ответы, нажми отправить.\nИ я займусь изучением твоего вопроса."
   ]
   assert.equal(steps.length,6,'exactly six distinct bot messages')
   assert.deepEqual(steps.map(x=>x.stage),['consent','focus','photo','question','drawing','done'])
@@ -98,8 +98,7 @@ test('six-step journey captures the portrait, three-part goal and drawing separa
   assert.equal(flow.photoPurpose,'drawing')
   assert.equal(flow.photoFileId,PHOTO.photoFileId)
   assert.equal(flow.topic,'relationships')
-  assert.ok(flow.reply.includes('Коучинг форма по этой ссылке.\n↓'))
-  assert.doesNotMatch(flow.reply,/https:\/\/holistichouse\.vercel\.app\/ru\/coaching\/intake\?topic=/)
+  assert.ok(flow.reply.includes('https://holistichouse.vercel.app/ru/coaching/intake?topic=relationships&from=telegram'))
   assert.match(flow.reply,/нажми отправить/)
   assert.deepEqual(flow.keyboard,[])
   assert.equal(flow.consent,false)
@@ -158,11 +157,11 @@ test('English and Spanish are equal flows and coaching links only allow canonica
     assert.equal(selection.topic,'business')
   }
   assert.equal(telegramV2CoachingLink('ru','business'),
-    'https://holistichouse.vercel.app/ru/coaching/intake?topic=business')
+    'https://holistichouse.vercel.app/ru/coaching/intake?topic=business&from=telegram')
   assert.equal(telegramV2CoachingLink('es','../private/chat_id=123'),
-    'https://holistichouse.vercel.app/es/coaching/intake?topic=personal')
+    'https://holistichouse.vercel.app/es/coaching/intake?topic=personal&from=telegram')
   assert.equal(telegramV2CoachingLink('../secret','business'),
-    'https://holistichouse.vercel.app/en/coaching/intake?topic=business')
+    'https://holistichouse.vercel.app/en/coaching/intake?topic=business&from=telegram')
   assert.equal(TELEGRAM_DIAGNOSTIC_V2_BUTTONS.some(x=>x.startsWith('/')),false)
   assert.equal(new Set(TELEGRAM_DIAGNOSTIC_V2_BUTTONS).size,TELEGRAM_DIAGNOSTIC_V2_BUTTONS.length)
 })
