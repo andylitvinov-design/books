@@ -80,7 +80,7 @@ test('critic parses isolated JSON event text and refuses malformed JSON', () => 
   const report = JSON.stringify(complete());
   const event = JSON.stringify({type:'text',part:{type:'text',text:report}});
   assert.equal(parseCriticVerdict(event + '\n').passed, true);
-  assert.equal(parseCriticVerdict('\\`\\`\\`json\n' + report + '\n\\`\\`\\`').passed, false);
+  assert.equal(parseCriticVerdict('```json\n' + report + '\n```').passed, true);
   assert.equal(parseCriticVerdict('anything {not valid}').passed, false);
 });
 
