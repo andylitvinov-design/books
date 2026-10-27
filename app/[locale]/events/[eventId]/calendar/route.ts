@@ -9,8 +9,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 const locales: readonly PublicLocale[] = ["en", "ru", "es"];
 type Context = { params: Promise<{ locale: string; eventId: string }> };
 
-// Calendar availability changes when a confirmed event begins.
-export const revalidate = 300;
+// Do not cache calendar files for cancelled, paused or already-started events.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(_request: Request, { params }: Context) {
   const { locale, eventId } = await params;
