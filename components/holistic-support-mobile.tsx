@@ -197,15 +197,25 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   };
   const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
-  const progressCount = videos.filter(video => opened.includes(video.id)).length;
-  const progressTotal = videos.length;
+  const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
+  const progressTotal = relevantVideos.length;
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
       <div className={styles.container}>
-        <p className={styles.pageEyebrow}>HOLISTIC HOUSE <span aria-hidden="true">·</span> {t.newUi}</p>
+        <header className={styles.compactAppHeader} data-support-app-header>
+          <Link href={"/" + locale + "/holistic-support"} prefetch={false} className={styles.compactBrand}>
+            <strong>Holistic House</strong>
+            <span>{t.newUi}</span>
+          </Link>
+          <button type="button" className={styles.compactLocale} aria-label={t.settings}
+            aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
+            onClick={() => setSettingsOpen(open => !open)}>
+            {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
+          </button>
+        </header>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title">{t.assessment}</h1>
@@ -275,18 +285,21 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 <div className={styles.heroFilters} role="group" aria-label={t.gallery}>
                   <span className={styles.heroMode}><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
                   <label className={styles.heroFilter}><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
+                    <strong className={styles.filterValue}>{master === "all" ? t.all : master === "andrey" ? t.authorAndrey : t.authorPs}</strong>
                     <select value={master} aria-label={t.master} onChange={event => { setMaster(event.target.value as Author); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeAuthorValues.map(author => <option key={author} value={author}>{author === "andrey" ? t.authorAndrey : t.authorPs}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
                   <label className={styles.heroFilter}><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
+                    <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
                     <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
                   <label className={styles.heroFilter}><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
+                    <strong className={styles.filterValue}>{t.themes[theme]}</strong>
                     <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
                       {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
                         <option key={key} value={key}>{t.themes[key]}</option>)}
