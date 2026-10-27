@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import {
-  ArrowRight, BarChart3, BookOpen, Camera, CheckCircle2, ChevronDown,
+  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
   CircleUserRound, Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
 } from "lucide-react";
@@ -197,7 +197,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
   const progressCount = videos.filter(video => opened.includes(video.id)).length;
-  const progressTotal = Math.min(4, videos.length);
+  const progressTotal = videos.length;
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
