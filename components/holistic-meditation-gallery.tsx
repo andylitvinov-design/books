@@ -22,7 +22,7 @@ const copy = {
     audio: "Original audio: English",
     other: "Choose another recording",
     empty: "No verified recording is available for this theme yet. Try All.",
-    watch: "Play selected recording",
+    watch: "Open full-screen YouTube viewer",
   },
   ru: {
     filter: "Фильтр медитаций по темам",
@@ -32,7 +32,7 @@ const copy = {
     audio: "Оригинальное аудио: русский",
     other: "Выбрать другую запись",
     empty: "Для этой темы пока нет подтверждённых записей. Выберите «Все».",
-    watch: "Воспроизвести выбранную запись",
+    watch: "Открыть на весь экран",
   },
   es: {
     filter: "Filtrar las meditaciones por tema",
@@ -42,7 +42,7 @@ const copy = {
     audio: "Audio original: inglés",
     other: "Elegir otra grabación",
     empty: "Aún no hay grabaciones verificadas para este tema. Prueba Todas.",
-    watch: "Reproducir la grabación seleccionada",
+    watch: "Abrir reproductor a pantalla completa",
   },
 } as const;
 
