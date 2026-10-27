@@ -135,6 +135,6 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - name: Offline safety and injected runtime contracts (no DB/provider)
-        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --test-isolation=none tests/service-telegram-isolation-guard.test.mjs tests/service-telegram-isolation-runtime.test.mjs tests/service-telegram-offering.test.mjs tests/telegram-multi-master-service.test.mjs
+        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --experimental-test-isolation=none tests/service-telegram-isolation-guard.test.mjs tests/service-telegram-isolation-runtime.test.mjs tests/service-telegram-offering.test.mjs tests/telegram-multi-master-service.test.mjs
       - name: PG17 combined-policy model with synthetic two-practitioner data
-        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --test-isolation=none --test-concurrency=1 tests/telegram-service-policy.integration.mjs
+        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --experimental-test-isolation=none --test-concurrency=1 tests/telegram-service-policy.integration.mjs
