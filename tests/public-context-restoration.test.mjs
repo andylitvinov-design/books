@@ -98,14 +98,14 @@ function componentHarness(path, exportName, props, options = {}) {
       stageRemoteSupportLandingIntention: value => { stageCalls++; remote.stageRemoteSupportLandingIntention(value) },
     },
   }
-  const module = { exports: {} }
+  const compiledModule = { exports: {} }
   const compiled = ts.transpileModule(read(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
     reportDiagnostics: true,
   })
   assert.deepEqual(compiled.diagnostics.filter(item => item.category === ts.DiagnosticCategory.Error), [])
   const context = {
-    module, exports: module.exports,
+    module: compiledModule, exports: compiledModule.exports,
     require(name) {
       if (name.endsWith('.module.css')) return { default: new Proxy({}, { get: (_, key) => String(key) }) }
       if (Object.hasOwn(allowed, name)) return allowed[name]
@@ -121,7 +121,7 @@ function componentHarness(path, exportName, props, options = {}) {
     do {
       if (++passes > 8) throw new Error('Synthetic render did not settle')
       dirty = false; cursor = 0
-      tree = module.exports[exportName](props)
+      tree = compiledModule.exports[exportName](props)
       while (effects.length) effects.shift()()
     } while (dirty)
     return tree

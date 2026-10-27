@@ -5,6 +5,7 @@ import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skill
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 function fixture(locale,day){
@@ -15,7 +16,7 @@ function fixture(locale,day){
   const saved=[]
   const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){finishCount++},
     onSession:async payload=>{saved.push(structuredClone(payload));return true}})
-  return {h,saved,get finishCount(){return finishCount}}
+  return {h,saved,day,get finishCount(){return finishCount}}
 }
 async function press(h,label){
   const b=findButton(h.tree,label)
@@ -25,11 +26,11 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',
     start:"See what's next",map:'My course map',habit:'Keep OPORA close',
     configure:'Set it up',confidence:'I managed a little',week1:'Week 1: Find your supports',
     week2:'Week 2: Make it your own',finished:'Your 14 days are complete'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+  ru:{next:'Продолжить',save:'Сохранить мою практику',
     start:'Посмотреть, что дальше',map:'К карте курса',habit:'ОПОРА всегда под рукой',
     configure:'Настроить',confidence:'Получилось немного',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',finished:'Ваши 14 дней позади'},
@@ -41,7 +42,12 @@ async function saveAndOpenMap(f,locale){
   assert.equal(f.saved.length,0)
   await press(f.h,w.save)
   assert.equal(f.saved.length,1)
-  assert.ok(textOf(f.h.tree).includes(w.receipt))
+  const receipt=nodes(f.h.tree).find(n=>n.props?.['data-opora-current-screen']==='receipt')
+  assert.ok(receipt,'Only a confirmed save opens the receipt')
+  assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-lesson-outro']==='saved'))
+  const ending=oporaEndingCopy(locale)
+  assert.equal(textOf(nodes(receipt).find(n=>n.type==='h2')),
+    f.day===14?ending.congratsFinal:ending.congratsTitle.replace('{day}',String(f.day)))
   assert.ok(findButton(f.h.tree,w.start),'Receipt opens the course map directly')
   await press(f.h,w.start)
   const map=nodes(f.h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')

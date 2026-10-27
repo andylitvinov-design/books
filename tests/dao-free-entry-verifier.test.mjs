@@ -153,7 +153,7 @@ function assertSafeEvidence(value) {
 test('interaction observer distinguishes no host bindings, stale controlled value and current bindings without invoking a handler', () => {
   const f = interactionFixture()
   installDaoInteractionProbe(f.form, { contact: 'synthetic-private@example.test' })
-  assert.equal(f.listeners.length, 4)
+  assert.equal(f.listeners.length, 11)
   assert.ok(f.listeners.every(row => row.passive === true))
   let calls = 0
   f.contact.__reactProps$synthetic = { value: '', onChange() { calls++ } }
@@ -214,4 +214,94 @@ test('observer never invokes property getters, mutates control state, or patches
   assert.match(helper, /window\.__hhDaoInteractionProbe\?\.dispose\(\)/)
   assert.match(helper, /delete window\.__hhDaoInteractionProbe/)
   f.win.__hhDaoInteractionProbe.dispose()
+})
+
+function pointerFixture() {
+  const f = interactionFixture(), doc = f.form.ownerDocument
+  const rectangle = (top, height) => ({ left: 20, right: 177, top, bottom: top + height, width: 157, height })
+  let buttonBox = rectangle(780, 49), navBox = rectangle(775, 69), visible = false
+  const navChild = { textContent: 'DO_NOT_SERIALIZE_PRIVATE_NAV_TEXT' }
+  const nav = { contains: node => node === nav || node === navChild,
+    getBoundingClientRect: () => visible ? navBox : rectangle(844, 0) }
+  f.contact.value = 'DO_NOT_SERIALIZE_PRIVATE_FIELD'
+  f.button.getBoundingClientRect = () => buttonBox
+  f.form.contains = node => [f.contact, f.button, f.child].includes(node)
+  doc.activeElement = f.contact
+  doc.body = { textContent: 'DO_NOT_SERIALIZE_PRIVATE_BODY' }
+  doc.documentElement = { scrollHeight: 5000 }
+  doc.querySelector = selector => { assert.equal(selector, '.mobile-bottom-navigation'); return nav }
+  doc.elementFromPoint = (x, y) => visible && y >= 775 ? navChild : f.button
+  f.win.getComputedStyle = node => node === doc.body ? { paddingBottom: visible ? '69px' : '0px' }
+    : { display: visible ? 'grid' : 'none', visibility: 'visible', pointerEvents: 'auto' }
+  f.win.scrollY = 4000; f.win.innerHeight = 844
+  return { ...f, navChild, doc,
+    restoreNavigation() { visible = true; buttonBox = rectangle(711, 49); doc.activeElement = f.button },
+    setMalformedBox() { buttonBox = { left: Infinity, right: NaN, top: -Infinity, bottom: 1e50, width: -1e50, height: 49 } },
+  }
+}
+
+test('document pointer timeline distinguishes blur reflow and retargeted click from missing React state', () => {
+  const f = pointerFixture()
+  installDaoInteractionProbe(f.form, { contact: 'DO_NOT_SERIALIZE_PRIVATE_FIELD' })
+  const point = { clientX: 99, clientY: 804 }
+  f.dispatch('pointerdown', f.child, true, point)
+  f.dispatch('mousedown', f.child, true, point)
+  f.restoreNavigation()
+  f.dispatch('focusout', f.contact, true)
+  f.dispatch('focusin', f.button, true)
+  f.dispatch('pointerup', f.navChild, true, point)
+  f.dispatch('mouseup', f.navChild, true, point)
+  f.dispatch('click', f.form, true, point)
+  f.dispatch('click', f.form, false, point)
+  const evidence = f.win.__hhDaoInteractionProbe.read(f.form), events = evidence.pointer.events
+  assert.deepEqual(events.map(event => event.kind), [1, 2, 3, 4, 5, 6, 7])
+  assert.equal(events[0].targetButton, true)
+  assert.equal(events[0].hitButton, true)
+  assert.equal(events[0].activeContact, true)
+  assert.equal(events[0].bodyPaddingBottom, 0)
+  assert.equal(events[0].navVisible, false)
+  assert.equal(events[0].button.top, 780)
+  assert.equal(events[2].targetContact, true)
+  assert.equal(events[2].point, null)
+  assert.equal(events[2].activeButton, true)
+  assert.equal(events[2].button.top, 711)
+  assert.equal(events[2].bodyPaddingBottom, 69)
+  assert.equal(events[2].navVisible, true)
+  assert.equal(events[4].targetNavigation, true)
+  assert.equal(events[4].hitNavigation, true)
+  assert.equal(events[4].targetButton, false)
+  assert.equal(events[6].targetButton, false)
+  assert.equal(evidence.counts.clickCapture, 0)
+  assert.equal(evidence.counts.clickBubble, 0)
+  assert.equal(evidence.pointer.errors, 0)
+  assert.equal(evidence.pointer.dropped, 0)
+  assertSafeEvidence(evidence)
+  assert.doesNotMatch(JSON.stringify(evidence), /DO_NOT_SERIALIZE|PRIVATE|paddingBottom|grid|none/)
+  f.win.__hhDaoInteractionProbe.dispose()
+  assert.equal(f.listeners.length, 0)
+})
+
+test('pointer observations are capped, finite, passive and do not turn real events into exceptions', () => {
+  const f = pointerFixture()
+  installDaoInteractionProbe(f.form, { contact: 'synthetic-private@example.test' })
+  f.setMalformedBox()
+  f.dispatch('pointerdown', f.button, true, { clientX: Infinity, clientY: 42 })
+  let evidence = f.win.__hhDaoInteractionProbe.read(f.form)
+  assert.equal(evidence.pointer.events[0].point, null)
+  assert.deepEqual(evidence.pointer.events[0].button,
+    { left: null, right: null, top: null, bottom: 10000000, width: -10000000, height: 49 })
+  const prior = f.doc.elementFromPoint
+  f.doc.elementFromPoint = () => { throw new Error('DO_NOT_SERIALIZE_PRIVATE_EXCEPTION') }
+  assert.doesNotThrow(() => f.dispatch('pointerdown', f.button, true, { clientX: 99, clientY: 804 }))
+  f.doc.elementFromPoint = prior
+  for (let n = 0; n < 30; n++) f.dispatch('pointerup', f.child, true, { clientX: 99, clientY: 804 })
+  evidence = f.win.__hhDaoInteractionProbe.read(f.form)
+  assert.equal(evidence.pointer.events.length, 24)
+  assert.equal(evidence.pointer.errors, 1)
+  assert.equal(evidence.pointer.dropped, 7)
+  assert.ok(f.listeners.every(row => row.passive === true))
+  assertSafeEvidence(evidence)
+  assert.doesNotMatch(JSON.stringify(evidence), /DO_NOT_SERIALIZE|PRIVATE|Exception|Error/)
+  f.win.__hhDaoInteractionProbe.dispose()
+  assert.equal(f.listeners.length, 0)
 })

@@ -345,8 +345,14 @@ try {
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
+    // As in EN/RU, selecting online-only Reiki resets Toronto intentionally.
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
-    await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(page.locator('[data-services-studio-paid]')).toBeHidden();
+    await esShowcase.locator('[data-services-empty] button').click();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);

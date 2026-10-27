@@ -111,12 +111,61 @@ export function installDaoInteractionProbe(form, expected) {
       listeners.push([type, listener, capture])
     }
   }
+  // A successful browser click can lose its activation target between press
+  // and release (for example, when input blur restores fixed navigation).
+  // Observe the real document event sequence; never blur, retry or dispatch.
+  // kind: 1 pointerdown, 2 mousedown, 3 focusout, 4 focusin,
+  //       5 pointerup, 6 mouseup, 7 click. No DOM text/attributes are serialized.
+  const pointerEvents = ['pointerdown', 'mousedown', 'focusout', 'focusin', 'pointerup', 'mouseup', 'click']
+  const pointerTimeline = []
+  let pointerDropped = 0, pointerErrors = 0
+  const finite = number => typeof number === 'number' && Number.isFinite(number)
+    ? Math.round(Math.max(-10000000, Math.min(10000000, number)) * 10) / 10 : null
+  const rect = node => {
+    const box = node?.getBoundingClientRect?.()
+    return box ? { left: finite(box.left), top: finite(box.top), right: finite(box.right),
+      bottom: finite(box.bottom), width: finite(box.width), height: finite(box.height) } : null
+  }
+  const geometry = (event = null) => {
+    const nav = doc.querySelector?.('.mobile-bottom-navigation')
+    const navStyle = nav && win.getComputedStyle?.(nav)
+    const navBox = rect(nav)
+    const x = finite(event?.clientX), y = finite(event?.clientY)
+    const point = x !== null && y !== null ? { x, y } : null
+    const hit = point ? doc.elementFromPoint?.(point.x, point.y) : null
+    return { button: rect(button), navigation: navBox,
+      navVisible: Boolean(navBox && navBox.width > 0 && navBox.height > 0 && navStyle &&
+        navStyle.display !== 'none' && navStyle.visibility !== 'hidden'),
+      navPointerEventsNone: navStyle?.pointerEvents === 'none',
+      bodyPaddingBottom: finite(Number.parseFloat(doc.body && win.getComputedStyle?.(doc.body)?.paddingBottom)),
+      scrollY: finite(win.scrollY), viewportHeight: finite(win.innerHeight),
+      documentHeight: finite(doc.documentElement?.scrollHeight),
+      activeContact: doc.activeElement === contact, activeButton: doc.activeElement === button,
+      targetContact: Boolean(event && event.target === contact),
+      targetButton: Boolean(event?.target && button?.contains(event.target)),
+      targetForm: Boolean(event?.target && form.contains?.(event.target)),
+      targetNavigation: Boolean(event?.target && nav?.contains(event.target)),
+      point, hitButton: Boolean(hit && button?.contains(hit)),
+      hitNavigation: Boolean(hit && nav?.contains(hit)) }
+  }
+  const pointerListener = event => {
+    if (pointerTimeline.length >= 24) { pointerDropped++; return }
+    try {
+      pointerTimeline.push({ kind: pointerEvents.indexOf(event.type) + 1,
+        trusted: Boolean(event.isTrusted), defaultPrevented: Boolean(event.defaultPrevented), ...geometry(event) })
+    } catch { pointerErrors++ } // Observing must never interrupt the real event.
+  }
+  for (const type of pointerEvents) {
+    doc.addEventListener(type, pointerListener, { capture: true, passive: true })
+    listeners.push([type, pointerListener, true])
+  }
   win.__hhDaoInteractionProbe = {
     read(currentForm) {
       return { initial, clickCapture, clickBubble, current: snapshot(), counts: { ...counts },
         defaultPrevented, originalFormConnected: Boolean(form.isConnected), sameForm: currentForm === form,
         sameContact: currentForm.querySelector('input[name="contact"]') === contact,
-        sameButton: currentForm.querySelector('button[data-compact-channel="whatsapp"]') === button }
+        sameButton: currentForm.querySelector('button[data-compact-channel="whatsapp"]') === button,
+        pointer: { events: pointerTimeline.map(event => ({ ...event })), dropped: pointerDropped, errors: pointerErrors } }
     },
     dispose() { for (const [type, listener, capture] of listeners) doc.removeEventListener(type, listener, capture) },
   }

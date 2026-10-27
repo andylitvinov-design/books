@@ -45,9 +45,33 @@ const safeDiagnosticPaths = new Set([
   '/academy/reiki-yggdrasil/source/advanced-runes.png',
   '/academy/reiki-yggdrasil/source/program-overview.jpg',
 ])
-export function publicJourneyRequestDiagnostic(request, decision) {
-  let path = ''
-  try { path = new URL(request.url).pathname } catch {}
+// Passive source labels, NEVER request permissions. Exact public source literals:
+// app/layout.tsx (metadata), PublicSiteHeader (wordmark), and the two footer
+// Links in RemoteEnergySupportBooking. Unknown paths must stay unclassified.
+const diagnosticSourcePaths = new Map([
+  ['/', 'public-home-wordmark'], ['/es', 'public-home-wordmark'],
+  ['/holistic-house-app.webmanifest', 'public-app-manifest'],
+  ['/icons/holistic-house-teal.svg', 'public-app-icon-svg'],
+  ['/holistic-house-icon/180', 'public-app-apple-icon'],
+  ...['en', 'ru', 'es'].flatMap(locale => [
+    ['/' + locale + '/masters', 'remote-support-masters-link'],
+    ['/' + locale + '/academy/reiki/yggdrasil/free-initiation', 'remote-support-free-initiation-link'],
+  ]),
+])
+// EN/ES freeMeditationVideos selects the authored English Sun recording;
+// AcademyCourseVideoPlaylist -> AcademyVideoPlayer emits this public poster.
+const diagnosticSunPoster = 'https://i.ytimg.com/vi/HqfixazXqRY/hqdefault.jpg'
+export function publicJourneyRequestDiagnostic(request, decision, origin) {
+  let path = '', target
+  try { target = new URL(request.url); path = target.pathname } catch {}
+  let sourceId = 'unclassified'
+  if (target && !target.username && !target.password && !target.hash) {
+    if (origin && target.origin === origin) sourceId = diagnosticSourcePaths.get(path) || 'unclassified'
+    else if (target.href === diagnosticSunPoster) sourceId = 'public-english-sun-poster'
+  }
+  const queryKeys = target ? [...target.searchParams.keys()] : []
+  const queryShape = !target ? 'invalid-url' : !target.search ? 'none' :
+    queryKeys.length === 1 && queryKeys[0] === '_rsc' && target.searchParams.get('_rsc') ? 'single-rsc' : 'other'
   return { decision,
     method: ['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'].includes(request.method) ? request.method : 'OTHER',
     navigation: request.navigation === true,
@@ -55,6 +79,13 @@ export function publicJourneyRequestDiagnostic(request, decision) {
     prefetch: request.prefetch === true,
     category: path.startsWith('/api/') ? 'api' : /\.(?:png|jpe?g|webp|avif|svg|ico|woff2?|wav|mp3|css|js)$/i.test(path) ? 'static-asset' : /^\/(?:en|ru|es)(?:\/|$)/.test(path) ? 'localized-route' : 'other',
     path: decision === 'private-text' ? '[redacted]' : safeDiagnosticPaths.has(path) ? path : '[redacted]',
+    sourceId: decision === 'private-text' ? 'redacted' : sourceId,
+    queryShape: decision === 'private-text' ? 'redacted' : queryShape,
+    prefetchSignals: {
+      purposePrefetch: request.prefetchSignals?.purposePrefetch === true,
+      nextRouterPrefetch: request.prefetchSignals?.nextRouterPrefetch === true,
+      rsc: request.prefetchSignals?.rsc === true,
+    },
   }
 }
 export async function installPublicJourneyFence(context, origin, sensitive = [], fixtures = {}) {
@@ -67,7 +98,9 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
     const headers = request.headers?.() || {}
     const info = { url: request.url(), method: request.method(), body: request.postData() || '',
       navigation: request.isNavigationRequest(), resourceType: request.resourceType?.(),
-      prefetch: headers.purpose === 'prefetch' || headers['next-router-prefetch'] === '1' }
+      prefetch: headers.purpose === 'prefetch' || headers['next-router-prefetch'] === '1',
+      prefetchSignals: { purposePrefetch: headers.purpose === 'prefetch',
+        nextRouterPrefetch: headers['next-router-prefetch'] === '1', rsc: headers.rsc === '1' } }
     const decision = publicJourneyRequestDecision(info, origin, sensitive, fixtures)
     if (decision === 'allow') return route.continue()
     if (decision === 'synthetic-anonymous-talismans') {
@@ -77,7 +110,7 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
     // Never save the URL/body: a failing implementation might contain private text.
     if (decision === 'external-resource') blockedResources.push(decision)
     else violations.push(decision)
-    if (requestDiagnostics.length < 20) requestDiagnostics.push(publicJourneyRequestDiagnostic(info, decision))
+    if (requestDiagnostics.length < 20) requestDiagnostics.push(publicJourneyRequestDiagnostic(info, decision, origin))
     await route.abort('blockedbyclient')
   })
   return {

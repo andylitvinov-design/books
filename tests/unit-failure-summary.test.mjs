@@ -21,6 +21,9 @@ test('retains only checkout-allowlisted failure coordinates and fixed enums', ()
   assert.deepEqual(result.counters, { tests: 2, pass: 1, fail: 1 });
   assert.deepEqual(result.failures, [{ location: { file, line: 12, column: 3 }, assertionLocation: { file, line: 19, column: 4 }, errorClass: 'AssertionError', failureType: 'testCodeFailure' }]);
   assert.equal(result.observedFailureMarkers, 1);
+  assert.deepEqual(result.failureFiles, [{ file, failures: 1 }]);
+  assert.equal(result.droppedFailureFileRecords, 0);
+  assert.equal(result.droppedFailureFileMarkers, 0);
 });
 
 test('titles, actual/expected values, credentials, headers, URL queries and user content are absent', () => {
@@ -42,6 +45,7 @@ for (const value of [
   const result = collect([...failure(value), '  ...']);
   assert.equal(result.failures[0].location, null);
   assert.equal(result.unknownLocationFailures, 1);
+  assert.deepEqual(result.failureFiles, []);
 });
 
 test('relative public path accepted; a different file cannot become the assertion location', () => {
@@ -53,6 +57,7 @@ test('relative public path accepted; a different file cannot become the assertio
 test('passing test locations and error-like log text are negative controls', () => {
   const result = collect(['ok 1 - passing', `  location: '${root}/${file}:20:1'`, "  name: 'AssertionError'", '  ...', '# fail 0']);
   assert.deepEqual(result.failures, []);
+  assert.deepEqual(result.failureFiles, []);
   assert.equal(result.observedFailureMarkers, 0);
   assert.equal(result.counters.fail, 0);
 });
@@ -64,6 +69,7 @@ test('a segment boundary cannot associate a tail location with a prefix failure'
   const result = collector.result();
   assert.equal(result.failures[0].location, null);
   assert.equal(result.unknownLocationFailures, 1);
+  assert.deepEqual(result.failureFiles, []);
 });
 
 test('oversized lines are discarded, counters are bounded, and absent TAP is not success', () => {
@@ -81,7 +87,104 @@ test('failure count and serialized output stay bounded; dropped records remain e
   assert.equal(result.failures.length, LIMITS.failures);
   assert.equal(result.droppedFailureRecords, 5);
   assert.equal(result.observedFailureMarkers, LIMITS.failures + 5);
+  assert.deepEqual(result.failureFiles, [{ file, failures: LIMITS.failures + 5 }]);
   assert.ok(Buffer.byteLength(JSON.stringify(result)) < 65536);
+});
+
+test('all scanned markers are grouped before either output cap, with exact omitted and unknown counts', () => {
+  const paths = Array.from({ length: LIMITS.failureFiles + 3 }, (_, index) => `tests/group-${String(index).padStart(4, '0')}.test.mjs`);
+  const collector = createFailureCollector({ allowedPaths: paths, repositoryRoot: root });
+  for (const path of [...paths.flatMap(path => [path, path]), ...Array(3).fill(paths.at(-1))]) {
+    for (const line of [...failure(`${path}:1:1`), '  ...']) collector.line(line);
+  }
+  for (const path of ['tests/untracked-private.test.mjs:1:1', 'https://private.invalid/?token=SECRET']) {
+    for (const line of [...failure(path), '  ...']) collector.line(line);
+  }
+  const result = collector.result();
+  assert.equal(result.failures.length, LIMITS.failures);
+  assert.equal(result.failureFiles.length, LIMITS.failureFiles);
+  assert.deepEqual(result.failureFiles[0], { file: paths.at(-1), failures: 5 });
+  assert.deepEqual(result.failureFiles.slice(1), paths.slice(0, LIMITS.failureFiles - 1).map(file => ({ file, failures: 2 })));
+  assert.equal(result.droppedFailureFileRecords, 3);
+  assert.equal(result.droppedFailureFileMarkers, 6);
+  assert.equal(result.unknownLocationFailures, 2);
+  assert.equal(result.observedFailureMarkers, paths.length * 2 + 5);
+  assert.equal(result.droppedFailureRecords, result.observedFailureMarkers - LIMITS.failures);
+  assert.equal(result.failureFiles.reduce((sum, group) => sum + group.failures, 0) + result.droppedFailureFileMarkers + result.unknownLocationFailures, result.observedFailureMarkers);
+  assert.deepEqual(collector.result(), result, 'repeated result/boundary calls never double-count');
+  collector.boundary();
+  assert.deepEqual(collector.result(), result);
+  assert.doesNotMatch(JSON.stringify(result), /untracked-private|private\.invalid|SECRET|private title/);
+});
+
+test('a gap, unknown locations and footer totals never invent per-file failures', () => {
+  const collector = createFailureCollector({ allowedPaths: [file], repositoryRoot: root });
+  collector.line('not ok 1 - private prefix');
+  collector.boundary();
+  collector.line(`  location: '${file}:3:1'`);
+  collector.line('# fail 999');
+  for (const line of [...failure(`${file}:4:1`), '  ...']) collector.line(line);
+  collector.line('not ok 3 - private partial');
+  collector.oversizedLine();
+  collector.boundary();
+  const result = collector.result();
+  assert.deepEqual(result.failureFiles, [{ file, failures: 1 }]);
+  assert.equal(result.counters.fail, 999);
+  assert.equal(result.observedFailureMarkers, 3);
+  assert.equal(result.unknownLocationFailures, 2);
+  assert.equal(result.droppedFailureFileRecords, 0);
+  assert.equal(result.droppedFailureFileMarkers, 0);
+});
+
+test('an 80-record synthetic excerpt cannot reconstruct 301 unseen failures from a footer', () => {
+  const lines = Array.from({ length: 80 }, () => [...failure(`${file}:1:1`), '  ...']).flat();
+  const result = collect([...lines, '# fail 381']);
+  assert.equal(result.counters.fail, 381);
+  assert.equal(result.observedFailureMarkers, 80);
+  assert.deepEqual(result.failureFiles, [{ file, failures: 80 }]);
+  assert.equal(result.droppedFailureRecords, 0);
+  assert.equal(result.droppedFailureFileRecords, 0);
+  assert.equal(result.droppedFailureFileMarkers, 0);
+  assert.equal(result.unknownLocationFailures, 0);
+});
+
+test('maximum-length grouped paths and detailed coordinates keep serialized output bounded', () => {
+  const paths = Array.from({ length: LIMITS.failureFiles + 1 }, (_, index) => `tests/${String(index).padStart(4, '0')}-${'x'.repeat(236)}.test.mjs`);
+  assert.ok(paths.every(path => Buffer.byteLength(path) === LIMITS.pathBytes));
+  const collector = createFailureCollector({ allowedPaths: paths, repositoryRoot: root });
+  for (const path of paths) {
+    for (const line of [...failure(`${path}:10000000:1000000`), `    private (${path}:10000000:1000000)`, '  ...']) collector.line(line);
+  }
+  const result = collector.result();
+  assert.equal(result.failures.length, LIMITS.failures);
+  assert.ok(result.failures.every(record => record.assertionLocation !== null));
+  assert.equal(result.failureFiles.length, LIMITS.failureFiles);
+  assert.equal(result.droppedFailureFileRecords, 1);
+  assert.equal(result.droppedFailureFileMarkers, 1);
+  assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2)) < 192 * 1024);
+});
+
+test('group keys still require a canonical path within the bounded allowlist', () => {
+  const paths = Array.from({ length: 10001 }, (_, index) => `tests/allowed-${index}.test.mjs`);
+  const collector = createFailureCollector({ allowedPaths: paths, repositoryRoot: root });
+  for (const path of [paths[0], paths[9999], paths[10000]]) {
+    for (const line of [...failure(`${path}:1:1`), '  ...']) collector.line(line);
+  }
+  const result = collector.result();
+  assert.deepEqual(result.failureFiles, [paths[0], paths[9999]].map(file => ({ file, failures: 1 })));
+  assert.equal(result.unknownLocationFailures, 1);
+  assert.equal(result.observedFailureMarkers, 3);
+});
+
+test('original scan, detail, line and path limits remain fixed alongside the grouped-record cap', () => {
+  assert.deepEqual(LIMITS, { segmentBytes: 16 * 1024 * 1024, chunkBytes: 64 * 1024, lineBytes: 4096, failures: 80, failureFiles: 256, pathBytes: 256 });
+  const result = collect([]);
+  assert.deepEqual(result.failureFiles, []);
+  assert.equal(result.droppedFailureFileRecords, 0);
+  assert.equal(result.droppedFailureFileMarkers, 0);
+  assert.equal(result.observedFailureMarkers, 0);
+  assert.equal(result.unknownLocationFailures, 0);
+  assert.deepEqual(result.counters, {});
 });
 
 test('invalid allowlist entries never enable arbitrary private paths', () => {
@@ -93,6 +196,7 @@ test('invalid allowlist entries never enable arbitrary private paths', () => {
 test('exit receipt keeps command and pipefail failure, rejects malformed or incomplete evidence', () => {
   assert.deepEqual(parseExitCodes('7 0 7\n'), { command: 7, capture: 0, pipeline: 7 });
   assert.deepEqual(parseExitCodes('7 9 9\n'), { command: 7, capture: 9, pipeline: 9 });
+  assert.deepEqual(parseExitCodes('0 9 9\n'), { command: 0, capture: 9, pipeline: 9 });
   assert.deepEqual(parseExitCodes('0 0 0\n'), { command: 0, capture: 0, pipeline: 0 });
   for (const value of [null, '', '0 0', '7 0 0', '0 9 0', '256 0 256', '0 0 0\nSECRET', 'SECRET'.repeat(100)]) assert.equal(parseExitCodes(value), null);
 });

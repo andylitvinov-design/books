@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 // Positive allowlists only: never retain test titles, messages, expected/actual
 // values, stack text, URLs, headers or environment values from the raw log.
-export const LIMITS = Object.freeze({ segmentBytes: 16 * 1024 * 1024, chunkBytes: 64 * 1024, lineBytes: 4096, failures: 80, pathBytes: 256 });
+export const LIMITS = Object.freeze({ segmentBytes: 16 * 1024 * 1024, chunkBytes: 64 * 1024, lineBytes: 4096, failures: 80, failureFiles: 256, pathBytes: 256 });
 const CLASSES = new Set(['Error', 'AssertionError', 'TypeError', 'ReferenceError', 'SyntaxError', 'RangeError', 'AggregateError', 'URIError', 'EvalError']);
 const TYPES = new Set(['testCodeFailure', 'subtestsFailed', 'cancelledByParent', 'testTimeoutFailure', 'testAborted', 'hookFailed', 'uncaughtException', 'unhandledRejection']);
 const OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped']);
@@ -14,7 +14,7 @@ const number = (value, max = 10_000_000) => /^\d{1,9}$/.test(String(value)) && N
 
 export function createFailureCollector({ allowedPaths = [], repositoryRoot = '' } = {}) {
   const allowed = new Set(allowedPaths.filter(safePath).slice(0, 10000));
-  const failures = [], counters = {};
+  const failures = [], counters = {}, failureFiles = new Map();
   let current = null, markerCount = 0, droppedFailures = 0, unknownLocations = 0, oversizedLines = 0, tapHeaderSeen = false;
   const locate = value => {
     let candidate = value;
@@ -30,6 +30,9 @@ export function createFailureCollector({ allowedPaths = [], repositoryRoot = '' 
   const finish = () => {
     if (!current) return;
     if (!current.location) unknownLocations++;
+    // Count every scanned marker before the detailed-record cap. Keys can only
+    // come from the bounded HEAD allowlist, never titles or raw diagnostic text.
+    else failureFiles.set(current.location.file, (failureFiles.get(current.location.file) ?? 0) + 1);
     if (failures.length < LIMITS.failures) failures.push(current);
     else droppedFailures++;
     current = null;
@@ -65,7 +68,15 @@ export function createFailureCollector({ allowedPaths = [], repositoryRoot = '' 
     oversizedLine() { oversizedLines++; },
     result() {
       finish();
-      return { format: 'node-test-tap', tapHeaderSeen, counters, observedFailureMarkers: markerCount, unknownLocationFailures: unknownLocations, droppedFailureRecords: droppedFailures, oversizedLines, failures };
+      const groups = Array.from(failureFiles, ([file, count]) => ({ file, failures: count }))
+        .sort((a, b) => b.failures - a.failures || (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+      // These are observed markers only; missing or unscanned log bytes cannot
+      // supply counts. Unknown locations remain separate from omitted groups.
+      return { format: 'node-test-tap', tapHeaderSeen, counters, observedFailureMarkers: markerCount, unknownLocationFailures: unknownLocations, droppedFailureRecords: droppedFailures, oversizedLines, failures,
+        failureFiles: groups.slice(0, LIMITS.failureFiles),
+        droppedFailureFileRecords: Math.max(0, groups.length - LIMITS.failureFiles),
+        droppedFailureFileMarkers: groups.slice(LIMITS.failureFiles).reduce((total, group) => total + group.failures, 0),
+      };
     },
   };
 }

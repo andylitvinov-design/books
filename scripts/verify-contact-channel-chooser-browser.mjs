@@ -304,7 +304,9 @@ async function runEngine(name, engine) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
             if(item.tantra){
-              await page.locator('[data-tantra-whatsapp-capture] select').waitFor({state:'visible'});
+              // The compact contact form has its own country-code select.
+              // Wait for the labelled five-intent control, not every select.
+              await page.locator('[data-tantra-whatsapp-capture] select#tantra-request-'+locale).waitFor({state:'visible'});
               await verifyTantraChoice(page,locale,[name,locale,width,'tantra'].join('-'),submissions);
               continue;
             }

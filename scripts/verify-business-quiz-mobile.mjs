@@ -162,7 +162,10 @@ async function verify(browserType,locale,width){
     const offerSnapshot=[]
     for(const card of await page.locator('[data-business-service-cards] [data-business-offer]').all()){
       const price=card.locator('h3').locator('xpath=preceding-sibling::*[1]').locator(':scope > span').last()
-      const duration=card.locator('details').locator('xpath=preceding-sibling::*[1]')
+      // Only the offer's own disclosure follows its duration. Paid cards also
+      // contain nested contact/privacy disclosures, which are not offer terms.
+      const duration=card.locator(':scope > div > details').locator('xpath=preceding-sibling::*[1]')
+      assert.equal(await duration.count(),1,label+': exactly one public offer duration')
       const direct=card.locator('[data-business-direct-option]')
       offerSnapshot.push({kind:await card.getAttribute('data-business-offer'),
         price:(await price.innerText()).trim(),time:(await duration.innerText()).trim(),
