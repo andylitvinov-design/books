@@ -93,19 +93,20 @@ test("the thematic energy support path preserves privacy and request journeys wi
   const filter = read("components/holistic-support-topic-filter.tsx");
   assert.ok(page.includes("<HolisticSupportTopicFilter locale={locale} />"));
   assert.doesNotMatch(page, /data-holistic-healing|data-holistic-offer=/);
-  // Meditation stays an on-page anchor. Talisman and practitioner requests now
-  // open the existing inline order wizard, rather than navigating away.
+  // Source contract follows the active coordinated inline-order interaction.
   assert.match(filter, /<Link href="#meditation-practices"/);
   assert.match(filter, /data-holistic-order-trigger=\{id\}/);
-  assert.match(filter, /onClick=\{\(\) => setOrderKind\(id === "talisman" \? "talisman" : "energy"\)\}/);
+  assert.match(filter, /const openOrder = \(value: SupportRequestKind\) => \{/);
+  assert.match(filter, /window\.dispatchEvent\(new CustomEvent\("hh-support-order-open"/);
+  assert.match(filter, /setOrderKind\(value\)/);
+  assert.match(filter, /onClick=\{\(\) => openOrder\(id === "talisman" \? "talisman" : "energy"\)\}/);
   assert.match(filter, /aria-controls="holistic-inline-order"/);
   assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\} kind=\{orderKind\}/);
   assert.match(filter, /onClose=\{\(\) => setOrderKind\(null\)\}/);
   const inlineOrder = read("components/holistic-inline-support-order.tsx");
-  assert.match(inlineOrder, /data-holistic-inline-order=\{kind\}/);
+  assert.match(inlineOrder, /data-holistic-inline-order=\{choice\}/);
   assert.match(inlineOrder, /onClick=\{onClose\}/);
   assert.match(inlineOrder, /credentials: "omit"/);
-  assert.match(inlineOrder, /selectedKind=\{kind\}/);
   assert.ok(filter.includes("data-holistic-topic-card={id}"));
   assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
   assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);

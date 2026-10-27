@@ -21,6 +21,9 @@ const practitionerRecordingSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ffmpeg-static uses __dirname to locate its downloaded native executable.
+  // Keep the package external to Next webpack so its binary path remains valid.
+  serverExternalPackages: ["ffmpeg-static"],
   // The idle Next badge covers fixed mobile navigation in isolated browser CI.
   // This supported option preserves compile/runtime error badges and overlays.
   devIndicators: process.env.CI === "true" &&

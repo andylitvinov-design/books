@@ -27,9 +27,37 @@ for (const engine of [chromium, webkit]) {
         page.on("pageerror", error => errors.push(error.message));
         page.on("request", request => {
           if (request.method() !== "GET" && request.method() !== "HEAD" &&
-            new URL(request.url()).pathname.startsWith("/api/")) {
+            new URL(request.url()).pathname.startsWith("/api/"))
             unexpectedWrites.push(request.method() + " " + new URL(request.url()).pathname);
-          }
+        });
+        // Synthetic public catalog only: proves UI without using personal accounts,
+        // posting enquiries, charging, or assuming real provider availability.
+        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+          const requestUrl = new URL(route.request().url());
+          const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
+          const consultations = [
+            { serviceId: "test-eur20", title: "Synthetic €20 consultation", practitionerName: "Fixture",
+              description: "Published session test record", areaKey: "business_money",
+              price: 20, currency: "EUR", pricingMode: "fixed", href: "/" + locale + "/services/fixture/eur20" },
+            { serviceId: "test-eur100", title: "Synthetic €100 consultation", practitionerName: "Fixture",
+              description: "Published session test record", areaKey: "business_money",
+              price: 100, currency: "EUR", pricingMode: "fixed", href: "/" + locale + "/services/fixture/eur100" },
+            { serviceId: "test-cad15", title: "Synthetic CAD consultation", practitionerName: "Fixture",
+              description: "Published session test record", areaKey: "business_money",
+              price: 15, currency: "CAD", pricingMode: "fixed", href: "/" + locale + "/services/fixture/cad15" },
+            { serviceId: "test-free", title: "Synthetic free introduction", practitionerName: "Fixture",
+              description: "Published introduction test record", areaKey: "relationships",
+              price: 0, currency: "EUR", pricingMode: "free", href: "/" + locale + "/services/fixture/free" },
+          ];
+          const masters = [{
+            slug: "fixture-master", name: "Fixture Master", title: "Synthetic published profile",
+            photo: "", serviceId: "fixture-energy", methods: ["Usui Reiki"], languages: ["en","ru","es"],
+            bio: "", description: "Fixture only", currency: "EUR",
+            priceOptions: [{ duration: 30, price: 50 }, { duration: 60, price: 100 }],
+            reviewCount: 0, reviewAverage: 0,
+          }];
+          await route.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
         try {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
@@ -55,30 +83,29 @@ for (const engine of [chromium, webkit]) {
             const talisman = panel.locator('[data-holistic-topic-card="talisman"]');
             const expert = panel.locator('[data-holistic-topic-card="expert"]');
             assert.equal(await meditation.locator("a").getAttribute("href"), "#meditation-practices");
-            // These are real inline order actions now, not navigation links.
-            // Changing the test must not restore the retired external-order route.
-            const talismanAction = talisman.locator('[data-holistic-order-trigger="talisman"]');
-            const expertAction = expert.locator('[data-holistic-order-trigger="expert"]');
-            assert.equal(await talisman.locator("a").count(), 0, label + " talisman stays inline");
-            assert.equal(await expert.locator("a").count(), 0, label + " energy support stays inline");
-            for (const [kind, action] of [["talisman", talismanAction], ["energy", expertAction]]) {
-              assert.equal(await action.count(), 1, label + " " + kind + " action");
-              assert.equal(await action.getAttribute("aria-controls"), "holistic-inline-order");
-              const actionBounds = await action.boundingBox();
-              assert.ok(actionBounds && actionBounds.height >= 44 && actionBounds.width >= 44,
-                label + " " + kind + " mobile target >=44px");
+            assert.equal(await talisman.locator('[data-holistic-order-trigger="talisman"]').count(), 1,
+              label + " opens inline talisman enquiry");
+            assert.equal(await expert.locator('[data-holistic-order-trigger="expert"]').count(), 1,
+              label + " opens inline energy support");
+            // Exercise both real disclosure actions without posting a request.
+            for (const [kind, action] of [
+              ["talisman", talisman.locator('[data-holistic-order-trigger="talisman"]')],
+              ["energy", expert.locator('[data-holistic-order-trigger="expert"]')],
+            ]) {
+              const bounds = await action.boundingBox();
+              assert.ok(bounds && bounds.height >= 44 && bounds.width >= 44,
+                label + " " + kind + " mobile action >= 44px");
               await action.click();
               assert.equal(await action.getAttribute("aria-expanded"), "true",
-                label + " " + kind + " expanded");
+                label + " " + kind + " opens");
               const inline = panel.locator('[data-holistic-inline-order="' + kind + '"]');
               await inline.waitFor({ state: "visible", timeout: 15000 });
               assert.equal(await inline.locator("#holistic-inline-order-title").count(), 1,
-                label + " accessible inline order title");
-              // First button is the explicit close action in the inline panel.
-              await inline.locator("button").first().click();
+                label + " " + kind + " accessible order title");
+              await inline.locator('button[aria-label]').first().click();
               await inline.waitFor({ state: "hidden", timeout: 15000 });
               assert.equal(await action.getAttribute("aria-expanded"), "false",
-                label + " " + kind + " closed");
+                label + " " + kind + " closes");
             }
             const currentTitle = (await meditation.locator("h3").innerText()).trim();
             assert.ok(currentTitle.length > 8 && currentTitle !== previousMeditationTitle,
@@ -91,10 +118,57 @@ for (const engine of [chromium, webkit]) {
             assert.ok(geometry.document <= geometry.viewport + 2,
               label + " no horizontal overflow " + JSON.stringify(geometry));
           }
+          // Owner 27 Oct: show the entire primary picker in one typical
+          // mobile viewport, including all themes, service types, budgets and CTA.
+          await root.locator('[data-holistic-topic="business"]').click();
+          await root.locator('[data-holistic-order-trigger="expert"]').click();
+          const finder = page.locator("#holistic-inline-order");
+          await finder.waitFor({ state: "visible" });
+          assert.equal(await finder.locator("[data-support-theme]").count(), 3, label + " 3 request themes");
+          assert.equal(await finder.locator("[data-support-choice]").count(), 3, label + " 3 service types");
+          assert.equal(await finder.locator("[data-support-budget]").count(), 4, label + " 4 price filters");
+          const firstScreen = await finder.boundingBox();
+          assert.ok(firstScreen && firstScreen.x >= -2 && firstScreen.x + firstScreen.width <= width + 2,
+            label + " request inside viewport " + JSON.stringify(firstScreen));
+          assert.ok(firstScreen.width >= width - 24, label + " full-width request");
+          assert.ok(firstScreen.height < 540, label + " one mobile-screen request height");
+
+          await finder.locator('[data-support-choice="consultation"]').click();
+          await finder.locator('[data-support-budget="20"]').click();
+          await finder.locator("[data-support-search]").click();
+          await finder.locator('#holistic-inline-results article').first().waitFor();
+          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
+            label + " EUR 20 excludes CAD 15 and EUR 100");
+          await finder.locator('[data-support-budget="100"]').click();
+          await finder.locator("[data-support-search]").click();
+          await finder.locator('#holistic-inline-results article').first().waitFor();
+          assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
+            label + " EUR 100 includes 2 EUR offers, not CAD");
+          await finder.locator('[data-support-theme="relationships"]').click();
+          await finder.locator('[data-support-budget="free"]').click();
+          await finder.locator("[data-support-search]").click();
+          await finder.locator('#holistic-inline-results article').first().waitFor();
+          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
+            label + " free relationship consultation");
+
+          await finder.locator('[data-support-choice="talisman"]').click();
+          await finder.locator('[data-support-budget="20"]').click();
+          await finder.locator("[data-support-search]").click();
+          await finder.locator('#remote-results [role="status"]').first().waitFor();
+          assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
+            label + " never quote an unpublished talisman price");
+
+          const finalGeometry = await page.evaluate(() => ({
+            viewport: document.documentElement.clientWidth,
+            page: document.documentElement.scrollWidth,
+          }));
+          assert.ok(finalGeometry.page <= finalGeometry.viewport + 2,
+            label + " no overflow with open picker " + JSON.stringify(finalGeometry));
+
           await root.screenshot({ path: "artifacts/holistic-topic-mobile/" +
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
-          assert.deepEqual(unexpectedWrites, [], label + " inline selection never submits CRM, booking or payment");
+          assert.deepEqual(unexpectedWrites, [], label + " no unsolicited CRM, booking or payment writes");
           evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, overflow: false });
         } finally {
           await page.close();

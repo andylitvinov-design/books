@@ -56,3 +56,5 @@ jobs:
         run: npx tsc --noEmit --incremental false
       - name: Next production build
         run: npm run build
+      - name: Verify shipped FFmpeg in owner Dot webhook function trace
+        run: node scripts/ensure-owner-video-renderer.mjs --verify-trace
