@@ -28,7 +28,7 @@ assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("<HolisticSupportTopicFilter"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
 
-  const meditationCss = css.slice(css.indexOf("/* Meditation library:"), css.indexOf("/* Holistic Support: a complete first-screen"));
+  const meditationCss = css.slice(css.indexOf("/* Video-only meditation library:"), css.indexOf("/* Holistic Support: a complete first-screen"));
   assert.ok(meditationCss.includes(".section[data-holistic-meditations]"));
   assert.doesNotMatch(meditationCss, /meditationAudioCard|meditationRecordingNote|meditationAudioControls/);
   assert.ok(meditationCss.includes("@media(max-width:650px)"));
