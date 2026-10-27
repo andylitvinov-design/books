@@ -56,7 +56,7 @@ jobs:
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
           node scripts/verify-holistic-topics-browser.mjs || status=$?
-           node scripts/verify-remote-inline-order-browser.mjs || status=$?
+          node scripts/verify-remote-inline-order-browser.mjs || status=$?
           node scripts/verify-direction-focus-mobile.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?
