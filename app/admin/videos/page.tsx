@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { SiteVideoManager } from "@/components/site-video-manager";
 import { KlingSceneStudio } from "@/components/kling-scene-studio";
+import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
@@ -37,8 +38,7 @@ export default async function SiteVideosPage() {
     // Configuration and connection errors stay out of HTML and browser logs.
   }
 
-  // Owner editor offers only existing, approved public master identities.
-  // Failure is explicit: the editor must not invent a master or publish unattributed video.
+  // Only already approved, public practitioner profiles may be attributed.
   let masters: { slug: string; name: string }[] = [];
   try {
     const approved: PublicPractitioner[] = await createPractitionerRepository(getAppConfig()).listPublicPractitioners("en");
@@ -46,7 +46,7 @@ export default async function SiteVideosPage() {
       slug: item.slug,
       name: item.profile.displayName || item.profile.name || item.slug,
     })).filter(item => Boolean(item.name));
-  } catch { /* Publishing fails closed if the approved master directory cannot load. */ }
+  } catch { /* Publishing remains disabled when the verified master directory is unavailable. */ }
 
   const entities = {
     remedies: getRemedyDirectory("en").map(remedy => ({ id: remedy.slug, label: { en: remedy.title, ru: remedy.title } })),
@@ -64,6 +64,12 @@ export default async function SiteVideosPage() {
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
         enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true"}
+        premiumEnabled={process.env.HH_KLING_PREMIUM_RENDER_ENABLED === "true"}
+      />
+      <KlingAvatarStudio
+        initialLocale={klingLocale}
+        configured={Boolean(process.env.KLING_API_KEY)}
+        enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true" && process.env.HH_KLING_AVATAR_PAID_ENABLED === "true"}
       />
     </main>
   );

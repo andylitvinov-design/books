@@ -20,10 +20,16 @@ authentication or publication system. EN/RU/ES user interface, warm mobile UI.
   be converted to JPG/PNG offline and published before they can be used.
   Strict URL allowlist and a separate rights/public-asset confirmation are
   enforced **on the server**; no private signed URLs or arbitrary remote hosts.
-- Render via official Kling 3.0 Text-to-Video / Image-to-Video API (once configured).
-  5 or 10 seconds, 720p draft or 1080p final, 16:9/9:16/1:1 for text mode.
-  Image mode inherits reference frame ratio from the image.
-  Audio is always OFF to avoid misrepresenting Andrey's voice.
+- Lowest-cost image route: official **Kling 2.5 Turbo Standard 720p**, 5s
+  via `/image-to-video/kling-2.5-turbo` (published API reference rate
+  1.5 resource units/5s; owner account price not yet verified). It uses
+  approved public JPG/PNG only and inherits the image's aspect ratio.
+- Text-only route: Kling 3.0 Text-to-Video defaults to **3s, silent, 720p**;
+  formats 16:9/9:16/1:1. Both are blocked by default until the separate
+  `HH_KLING_PAID_GENERATION_ENABLED=true` authorization. 5/10s or 1080p
+  additionally require `HH_KLING_PREMIUM_RENDER_ENABLED=true` and separate
+  owner-approved cost. No audio generation or third-party voice.
+  Commercial free-web draft rights must be verified before public reuse.
 - Check a task by returned ID or external ID manually; result links are temporary.
   No unattended polling, automatic retries, download, import, publishing or
   external charge on page load.
@@ -79,3 +85,34 @@ Official references:
 - https://kling.ai/document-api/apiReference/model/imageToVideo
 - https://github.com/andylitvinov-design/ai-projects-brain/issues/219
 - https://github.com/andylitvinov-design/ai-projects-brain/issues/218
+
+## Owner wealth-flow video recipe — no automatic payment
+
+Purpose: a symbolic self-reflection film using the already public Holistic House
+owner portrait at /images/holistic-house/andy-about.png. The fourth scene
+preset in the EXISTING /admin/videos#kling-scene-studio fills that source
+and a face-preserving visual prompt. Selecting it creates NO Kling job,
+does NOT accept a third-party image, and leaves media-rights and paid consent unchecked.
+
+Final length 15–20 seconds, one OPTIONAL paid generation of 5 seconds:
+
+| Segment | Visual direction | Cost |
+| --- | --- | --- |
+| 0–3s | Real owner photo, warm beige-and-gold background, free slow zoom | Local FFmpeg, zero API credits |
+| 3–8s | Symbolic coins, abstract money-like paper and gold light flow TOWARD the person's open hands, not across the face | ONE optional 5s 720p Kling 2.5 Turbo Image-to-Video job, ONLY after personal provider cost/rights approval |
+| 8–15s | Animate free particle layers, hold/loop last approved frame | Local FFmpeg, zero API credits |
+| 15–20s | Soft glow around figure, original voice and subtitle if desired, calm fade | Local FFmpeg, zero API credits |
+
+Sample RU voice: «Деньги приходят ко мне. Я замечаю возможности и принимаю достойную оплату за свой труд».
+EN: I welcome opportunities and fair payment for the value I create.
+ES: Recibo oportunidades y una remuneración justa por el valor que creo.
+An affirmation is a symbolic meditation, not an income guarantee or evidence of earnings.
+
+Cost-free alternative: build the whole MP4 by looping/animating the real portrait
+and freely generated SVG coins, particle layers, light ribbons and original voice
+with existing FFmpeg; no Kling job required. Maintain 9:16 Reel and 16:9 website
+compositions from one master rather than rendering separate paid Kling models.
+Before Kling receives the public portrait, the owner explicitly confirms the
+image is theirs and suitable for a third-party provider. Never send photos
+from protected client records. Provider task result must be reviewed before any
+independent Drive master, YouTube or website publication.

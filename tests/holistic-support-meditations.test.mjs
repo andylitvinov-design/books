@@ -7,13 +7,13 @@ import { readFileSync } from "node:fs";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const media = JSON.parse(read("data/academy/psimaster-media.generated.json"));
 
-test("Holistic Support has a compact themed video gallery and original instrumental player in EN/RU/ES", () => {
+test("Holistic Support displays a video-only themed gallery in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const css = read("app/[locale]/holistic-support/holistic-support.module.css");
   const gallery = read("components/holistic-meditation-gallery.tsx");
   const galleryCss = read("components/holistic-meditation-gallery.module.css");
   for (const label of [
-    "Meditations · Video & audio", "Медитации · Видео и аудио", "Meditaciones · Vídeo y audio",
+    "Meditations · Videos", "Медитации · Видео", "Meditaciones · Vídeos",
     "Business", "Love", "Energy", "Health", "Бизнес", "Любовь", "Энергия", "Здоровье",
     "Negocios", "Amor", "Energía", "Salud",
   ]) assert.ok((page + gallery).includes(label), "missing localized meditation label " + label);
@@ -21,20 +21,16 @@ test("Holistic Support has a compact themed video gallery and original instrumen
 assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\} \/>/);
-  assert.match(page, /id="meditation-audio"/);
-  assert.match(page, /data-holistic-audio-player/);
-  assert.match(page, /<audio controls preload="none"/);
-  assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
-  assert.match(page, /meditationAudioMissing/);
-  assert.match(page, /<details className=\{styles\.meditationRecordingNote\}>/);
+  assert.doesNotMatch(page, /id="meditation-audio"|data-holistic-audio-player|<audio|holistic-house-soft-melody-gentle-waves-96s/);
+  assert.doesNotMatch(page, /meditationAudioTitle|meditationAudioMissing|meditationSourceToggle|meditationToAudio/);
   assert.match(page, /data-holistic-russian-archive/);
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("<HolisticSupportTopicFilter"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
 
-  const meditationCss = css.slice(css.indexOf("/* Meditation library:"), css.indexOf("/* Holistic Support: a complete first-screen"));
+  const meditationCss = css.slice(css.indexOf("/* Video-only meditation library:"), css.indexOf("/* Holistic Support: a complete first-screen"));
   assert.ok(meditationCss.includes(".section[data-holistic-meditations]"));
-  assert.ok(meditationCss.includes(".meditationAudioCard"));
+  assert.doesNotMatch(meditationCss, /meditationAudioCard|meditationRecordingNote|meditationAudioControls/);
   assert.ok(meditationCss.includes("@media(max-width:650px)"));
   assert.ok(meditationCss.includes("@media(max-width:350px)"));
   assert.doesNotMatch(meditationCss, /height:calc\(100svh/);
@@ -58,7 +54,6 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   const model = read("data/academy/holistic-support-meditations.ts");
   const player = read("components/academy-video-player.tsx");
   const playlist = read("components/academy-course-video-playlist.tsx");
-  const sound = read("scripts/generate-soft-ocean-melody.mjs");
   assert.match(model, /psimaster-media\.generated\.json/);
   assert.match(model, /verified_legacy_public_embed/);
   assert.match(model, /english-guided-meditations/);
@@ -73,7 +68,6 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(playlist, /key=\{active\.id\}/);
   assert.match(player, /setPlaying\(true\)/);
   assert.match(player, /youtube-nocookie\.com\/embed/);
-  assert.match(sound, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   // A checked-in media manifest is named *.generated.json; that does NOT create audio.
   // Reject only real standalone audio paths, synthesis calls, or hard-coded YouTube IDs.
   assert.doesNotMatch(model, /\.mp3\b|\.m4a\b|storage\.from\s*\(|(?:generateAudio|generateVoice|synthesizeSpeech)\s*\(|youtubeId:\s*["']/);

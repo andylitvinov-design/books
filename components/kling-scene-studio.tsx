@@ -7,30 +7,33 @@ import { checkKlingSceneAction, generateKlingSceneAction } from "@/app/admin/vid
 type Language = "en" | "ru" | "es";
 type Mode = "text" | "image";
 type Task = { taskId: string; externalTaskId?: string | null; status: string; videoUrl?: string | null; duration?: number | null };
-type Props = { initialLocale: Language; configured: boolean; enabled: boolean };
+type Props = { initialLocale: Language; configured: boolean; enabled: boolean; premiumEnabled: boolean };
 const sampleScenes = [
   { key: "morning", prompt: "Cinematic slow dolly shot through a tranquil sunlit room with natural wood and warm linen, soft morning rays, calm human-scale atmosphere, no visible people, no on-screen text, realistic photography." },
   { key: "forest", prompt: "Gentle camera movement through a quiet green forest after the rain, soft light through the leaves, a feeling of spaciousness and grounded calm, natural colors, photorealistic, no text, no people." },
   { key: "water", prompt: "Close-up cinematic view of concentric ripples spreading across a peaceful lake at golden hour, subtle reflections, unhurried motion and soft warm light, no faces, no text, photorealistic." },
+  { key: "wealth", prompt: "Use the real single adult from the reference photo, maintaining the exact face, proportions, natural identity and calm expression. Symbolic prosperity flows TOWARD the figure: a few generic golden coins and abstract banknote-like paper shapes drift gently from both sides into the person's open hands, surrounded by warm golden light and subtle cinematic camera movement. Keep the face fully visible and unaltered; do not introduce another person, deformed hands, logos, readable currency denominations, speech, captions, or claims of real financial gain. Photorealistic five-second scene." },
 ] as const;
+
+const OWNER_WEALTH_PHOTO_URL = "https://holistichouse.vercel.app/images/holistic-house/andy-about.png";
 
 const translations = {
   en: {
     title: "Kling AI · scene studio", intro: "Create atmospheric clips and animate approved public images. Use HeyGen for Andrey’s real Digital Twin and approved voice.",
     ready: "API connected; generation must be explicitly approved below.", disabled: "Paid rendering is disabled on the server. You can prepare prompts and use Kling's web editor.",
     key: "Kling API key not configured. Prepare and copy prompts for the web editor; no API request will be made.",
-    language: "Editor language", presets: "Scene ideas", morning: "Warm room", forest: "Quiet forest", water: "Calm water",
+    language: "Editor language", presets: "Scene ideas", morning: "Warm room", forest: "Quiet forest", water: "Calm water", wealth: "Money comes to me",
     prompt: "Scene description (English works well for visuals)", mode: "Source", text: "Text → video", image: "Public image → video",
     imageUrl: "Public Holistic House image URL", imageHelp: "Only publicly published JPG/PNG under https://holistichouse.vercel.app/images/..., never WebP, private client files, uploads or signed links.",
     rights: "I confirm this is an approved, public, non-client image that may be processed by Kling.",
-    duration: "Duration", ratio: "Format", resolution: "Quality", preview: "720p test", final: "1080p final",
+    duration: "Duration", ratio: "Format", resolution: "Quality", preview: "720p test", final: "1080p final", cheapHint: "Text → video: 3s silent 720p Kling 3.0. Longer / HD needs separate approval.", imageCheap: "Public image → video: cheaper Kling 2.5 Turbo Standard, 5s 720p, no audio. Check commercial rights before using free web drafts.",
     noAudio: "Audio is always disabled. No stock avatar, cloned voice, client content, automatic archive or publication.",
     draft: "Copy draft prompt", copied: "Prompt copied", copyError: "Select the description and copy it manually.",
     paid: "I explicitly approve this paid Kling render and its current provider charges. One click creates one job.",
     generate: "Generate clip (paid)", working: "Requesting…", status: "Retrieve status", querying: "Checking…",
     taskId: "Kling task ID", taskHelp: "Keep this ID. You can check it later; status is requested only on click.",
     result: "Provider result (temporary)", download: "Open source video", archive: "After manual quality check, save the MP4 to Drive. Publish to YouTube or the site only with separate approval.",
-    errors: { unauthorized: "Admin session expired.", approval: "Approve the individual paid render first.", disabled: "Paid Kling generation is disabled.", not_configured: "Kling API key is missing.", validation: "Check the prompt, input image, duration and settings.", provider_unavailable: "Provider did not confirm the request. Check the external task ID before any retry.", unknown: "Could not connect to Kling." },
+    errors: { low_cost_only: "Only 3s silent 720p is authorized. Premium formats remain disabled.", unauthorized: "Admin session expired.", approval: "Approve the individual paid render first.", disabled: "Paid Kling generation is disabled.", not_configured: "Kling API key is missing.", validation: "Check the prompt, input image, duration and settings.", provider_unavailable: "Provider did not confirm the request. Check the external task ID before any retry.", unknown: "Could not connect to Kling." },
     statusValues: { submitted: "Submitted", processing: "Processing", succeeded: "Completed", failed: "Failed", not_found: "Not found", unknown: "Unknown" },
     taskPrefix: "Task", manual: "Create with Kling Web", docs: "Kling API setup"
   },
@@ -38,18 +41,18 @@ const translations = {
     title: "Kling AI · студия видеосцен", intro: "Создавайте атмосферные фрагменты и оживляйте утверждённые публичные изображения. Для вашего Digital Twin и голоса используем HeyGen.",
     ready: "API подключён. Для каждой платной генерации требуется подтверждение.", disabled: "Платный рендер выключен на сервере. Можно подготовить промпт и воспользоваться веб-редактором Kling.",
     key: "API-ключ Kling не настроен. Готовьте и копируйте промпты в веб-редактор; вызов API не производится.",
-    language: "Язык интерфейса", presets: "Идеи сцен", morning: "Тёплая комната", forest: "Спокойный лес", water: "Тихая вода",
+    language: "Язык интерфейса", presets: "Идеи сцен", morning: "Тёплая комната", forest: "Спокойный лес", water: "Тихая вода", wealth: "Деньги идут ко мне",
     prompt: "Описание сцены (для визуальных сцен хорошо работает английский)", mode: "Исходник", text: "Текст → видео", image: "Публичное фото → видео",
     imageUrl: "URL публичного изображения Holistic House", imageHelp: "Только общедоступные JPG/PNG в https://holistichouse.vercel.app/images/... — не WebP, не личные фотографии клиентов, загрузки или подписанные ссылки.",
     rights: "Подтверждаю: изображение публичное, утверждено, не содержит данных клиента, его можно передавать Kling.",
-    duration: "Длительность", ratio: "Формат", resolution: "Качество", preview: "720p тест", final: "1080p финал",
+    duration: "Длительность", ratio: "Формат", resolution: "Качество", preview: "720p тест", final: "1080p финал", cheapHint: "Текст → видео: 3 с без звука, 720p Kling 3.0. Длинные / HD требуют отдельного разрешения.", imageCheap: "Картинка → видео: более дешёвый Kling 2.5 Turbo Standard, 5 с, 720p, без звука. Бесплатные веб-черновики не публикуем без проверки коммерческих прав.",
     noAudio: "Звук выключен. Без чужого аватара и клонированного голоса, личных данных, автоматического архива и публикации.",
     draft: "Копировать промпт", copied: "Промпт скопирован", copyError: "Выделите описание и скопируйте вручную.",
     paid: "Я отдельно разрешаю эту платную генерацию по текущему тарифу Kling. Одно нажатие создаёт одну задачу.",
     generate: "Создать видео (платно)", working: "Отправка…", status: "Проверить готовность", querying: "Проверка…",
     taskId: "ID задачи Kling", taskHelp: "Сохраните ID. Проверить задачу можно позже; нет автозапросов и повторных рендеров.",
     result: "Результат Kling (временная ссылка)", download: "Открыть исходный MP4", archive: "После ручной проверки качества сохраните мастер в Drive. YouTube и сайт — только после отдельного разрешения.",
-    errors: { unauthorized: "Сессия администратора закончилась.", approval: "Подтвердите платную генерацию.", disabled: "Платная генерация Kling выключена.", not_configured: "API-ключ Kling отсутствует.", validation: "Проверьте описание, картинку, длительность и настройки.", provider_unavailable: "Kling не подтвердил запрос. Проверьте внешний ID задачи перед повтором.", unknown: "Не удалось связаться с Kling." },
+    errors: { low_cost_only: "Разрешён только экономный режим: 3 с, без звука, 720p. Остальные режимы выключены.", unauthorized: "Сессия администратора закончилась.", approval: "Подтвердите платную генерацию.", disabled: "Платная генерация Kling выключена.", not_configured: "API-ключ Kling отсутствует.", validation: "Проверьте описание, картинку, длительность и настройки.", provider_unavailable: "Kling не подтвердил запрос. Проверьте внешний ID задачи перед повтором.", unknown: "Не удалось связаться с Kling." },
     statusValues: { submitted: "В очереди", processing: "Создаётся", succeeded: "Готово", failed: "Ошибка", not_found: "Не найдено", unknown: "Неизвестно" },
     taskPrefix: "Задача", manual: "Открыть Kling Web", docs: "Настроить Kling API"
   },
@@ -57,30 +60,30 @@ const translations = {
     title: "Kling AI · estudio de escenas", intro: "Crea clips atmosféricos y anima imágenes públicas aprobadas. HeyGen sigue siendo el servicio para el Digital Twin y la voz de Andrey.",
     ready: "API conectada. Cada generación de pago requiere aprobación individual.", disabled: "La generación de pago está desactivada. Puedes preparar el prompt para el editor web de Kling.",
     key: "Falta la clave API de Kling. Copia los prompts al editor web; no se realizará ninguna llamada API.",
-    language: "Idioma", presets: "Ideas visuales", morning: "Sala cálida", forest: "Bosque tranquilo", water: "Agua en calma",
+    language: "Idioma", presets: "Ideas visuales", morning: "Sala cálida", forest: "Bosque tranquilo", water: "Agua en calma", wealth: "Flujo de prosperidad",
     prompt: "Descripción de la escena (se recomienda inglés)", mode: "Origen", text: "Texto → vídeo", image: "Imagen pública → vídeo",
     imageUrl: "URL de imagen pública de Holistic House", imageHelp: "Solo JPG/PNG públicos en https://holistichouse.vercel.app/images/...; nunca WebP, fotos de clientes, archivos privados ni enlaces firmados.",
     rights: "Confirmo que la imagen es pública, aprobada y sin datos de clientes, y que se puede enviar a Kling.",
-    duration: "Duración", ratio: "Formato", resolution: "Calidad", preview: "720p prueba", final: "1080p final",
+    duration: "Duración", ratio: "Formato", resolution: "Calidad", preview: "720p prueba", final: "1080p final", cheapHint: "Texto → vídeo: 3s sin audio, 720p Kling 3.0; HD y clips largos requieren aprobación.", imageCheap: "Imagen pública → vídeo: Kling 2.5 Turbo Standard más barato, 5s, 720p, sin audio. Comprueba derechos comerciales de pruebas web gratuitas.",
     noAudio: "Audio desactivado. Sin avatares ajenos, voz clonada, datos privados, archivo ni publicación automática.",
     draft: "Copiar prompt", copied: "Prompt copiado", copyError: "Selecciona la descripción y cópiala manualmente.",
     paid: "Autorizo expresamente esta generación de pago según las tarifas actuales de Kling. Un clic crea una tarea.",
     generate: "Generar vídeo (de pago)", working: "Enviando…", status: "Consultar estado", querying: "Consultando…",
     taskId: "ID de tarea Kling", taskHelp: "Guarda este ID; puedes consultarlo más tarde, sin sondeos automáticos.",
     result: "Resultado del proveedor (enlace temporal)", download: "Abrir MP4", archive: "Tras revisar la calidad, archiva el archivo en Drive. Publicación web y YouTube requieren autorización adicional.",
-    errors: { unauthorized: "Sesión de administración caducada.", approval: "Aprueba esta generación de pago.", disabled: "Generación de pago desactivada.", not_configured: "Falta la clave API de Kling.", validation: "Comprueba el texto, la imagen y los ajustes.", provider_unavailable: "Kling no ha confirmado la solicitud. Comprueba el ID externo antes de reintentar.", unknown: "No se pudo contactar con Kling." },
+    errors: { low_cost_only: "Solo se permite vídeo de 3 s, sin audio, 720p. Los modos premium están desactivados.", unauthorized: "Sesión de administración caducada.", approval: "Aprueba esta generación de pago.", disabled: "Generación de pago desactivada.", not_configured: "Falta la clave API de Kling.", validation: "Comprueba el texto, la imagen y los ajustes.", provider_unavailable: "Kling no ha confirmado la solicitud. Comprueba el ID externo antes de reintentar.", unknown: "No se pudo contactar con Kling." },
     statusValues: { submitted: "Enviado", processing: "Procesando", succeeded: "Completado", failed: "Fallido", not_found: "No encontrado", unknown: "Desconocido" },
     taskPrefix: "Tarea", manual: "Abrir Kling Web", docs: "Configurar API Kling"
   },
 } as const;
 
-export function KlingSceneStudio({ initialLocale, configured, enabled }: Props) {
+export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEnabled }: Props) {
   const [lang, setLang] = useState<Language>(initialLocale);
   const [mode, setMode] = useState<Mode>("text");
   const [prompt, setPrompt] = useState<string>(sampleScenes[0].prompt);
   const [imageUrl, setImageUrl] = useState("");
   const [imageApproved, setImageApproved] = useState(false);
-  const [duration, setDuration] = useState<5 | 10>(5);
+  const [duration, setDuration] = useState<3 | 5 | 10>(3);
   const [ratio, setRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
   const [approved, setApproved] = useState(false);
@@ -144,7 +147,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled }: Props) 
 
   return <section className="kling-studio" lang={lang} aria-label={t.title} id="kling-scene-studio">
     <div className="kling-studio-top">
-      <div><p className="site-video-field-label"><Sparkles size={17} aria-hidden="true" /> Kling 3.0</p><h2>{t.title}</h2><p>{t.intro}</p></div>
+      <div><p className="site-video-field-label"><Sparkles size={17} aria-hidden="true" /> Kling AI · Turbo / 3.0</p><h2>{t.title}</h2><p>{t.intro}</p></div>
       <div className="kling-studio-links"><a href="https://kling.ai/" target="_blank" rel="noopener noreferrer">{t.manual}<ExternalLink size={15} aria-hidden="true" /></a><a href="https://kling.ai/dev/api-key" target="_blank" rel="noopener noreferrer">{t.docs}<ExternalLink size={15} aria-hidden="true" /></a></div>
     </div>
     <div className="site-video-language-picker kling-studio-langs" role="group" aria-label={t.language}>
@@ -155,19 +158,20 @@ export function KlingSceneStudio({ initialLocale, configured, enabled }: Props) 
       <div>
         <p className="site-video-field-label">{t.presets}</p>
         <div className="kling-studio-presets">
-          {sampleScenes.map((scene) => <button type="button" key={scene.key} disabled={pending} onClick={() => { setPrompt(scene.prompt); setApproved(false); }}><Film size={16} aria-hidden="true" />{t[scene.key]}</button>)}
+          {sampleScenes.map((scene) => <button type="button" key={scene.key} disabled={pending} onClick={() => { setPrompt(scene.prompt); const personal = scene.key === "wealth"; setMode(personal ? "image" : "text"); setImageUrl(personal ? OWNER_WEALTH_PHOTO_URL : ""); setDuration(personal ? 5 : 3); setResolution("720p"); setImageApproved(false); setApproved(false); }}><Film size={16} aria-hidden="true" />{t[scene.key]}</button>)}
         </div>
-        <label className="site-video-field"><span>{t.mode}</span><select value={mode} disabled={pending} onChange={event => { setMode(event.target.value as Mode); setApproved(false); }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select></label>
+        <label className="site-video-field"><span>{t.mode}</span><select value={mode} disabled={pending} onChange={event => { const next = event.target.value as Mode; setMode(next); setDuration(next === "image" ? 5 : 3); setApproved(false); }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select></label>
         <label className="site-video-field"><span>{t.prompt}</span><textarea rows={6} minLength={12} maxLength={2500} value={prompt} disabled={pending} onChange={event => { setPrompt(event.target.value); setApproved(false); }} /></label>
         {mode === "image" && <>
           <label className="site-video-field"><span>{t.imageUrl}</span><input type="url" value={imageUrl} disabled={pending} maxLength={500} placeholder="https://holistichouse.vercel.app/images/holistic-house/..." onChange={event => { setImageUrl(event.target.value); setApproved(false); }} /><small>{t.imageHelp}</small></label>
           <label className="site-video-review-check"><input type="checkbox" checked={imageApproved} disabled={pending} onChange={event => { setImageApproved(event.target.checked); setApproved(false); }} /><span>{t.rights}</span></label>
         </>}
         <div className="kling-studio-settings">
-          <label className="site-video-field"><span>{t.duration}</span><select value={duration} disabled={pending} onChange={event => { setDuration(Number(event.target.value) as 5 | 10); setApproved(false); }}><option value={5}>5 s</option><option value={10}>10 s</option></select></label>
+          <label className="site-video-field"><span>{t.duration}</span><select value={duration} disabled={pending} onChange={event => { setDuration(Number(event.target.value) as 3 | 5 | 10); setApproved(false); }}><option value={3} disabled={mode === "image"}>3 s</option><option value={5} disabled={mode === "text" && !premiumEnabled}>5 s</option><option value={10} disabled={!premiumEnabled}>10 s</option></select></label>
           <label className="site-video-field"><span>{t.ratio}</span><select value={ratio} disabled={pending || mode === "image"} onChange={event => { setRatio(event.target.value as typeof ratio); setApproved(false); }}><option>16:9</option><option>9:16</option><option>1:1</option></select></label>
-          <label className="site-video-field"><span>{t.resolution}</span><select value={resolution} disabled={pending} onChange={event => { setResolution(event.target.value as typeof resolution); setApproved(false); }}><option value="720p">{t.preview}</option><option value="1080p">{t.final}</option></select></label>
+          <label className="site-video-field"><span>{t.resolution}</span><select value={resolution} disabled={pending} onChange={event => { setResolution(event.target.value as typeof resolution); setApproved(false); }}><option value="720p">{t.preview}</option><option value="1080p" disabled={!premiumEnabled}>{t.final}</option></select></label>
         </div>
+        <p className="site-video-draft-help">{mode === "image" ? t.imageCheap : t.cheapHint}</p>
         <p className="site-video-draft-help">{t.noAudio}</p>
         <div className="site-video-editor-actions kling-studio-buttons">
           <button type="button" className="site-video-admin-button" onClick={copyPrompt}><Copy size={16} aria-hidden="true" />{t.draft}</button>
