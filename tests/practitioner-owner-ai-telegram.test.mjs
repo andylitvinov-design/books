@@ -39,7 +39,7 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials','track'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
   const live=ownerAiMenu({five:{enough:true,available:['ux','product','engineering','critic','chair']},gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(buttons,['hh-ai:all'])
@@ -166,7 +166,8 @@ test('signed existing webhook, DB dedup, owner isolation and private RLS are man
   assert.doesNotMatch(service,/from app\.crm_contacts|from app\.assessment_results|console\.log/)
   assert.match(transport,/existing\?\.url&&existing\.url!==expected/)
   assert.match(transport,/allowed_updates:\['message','callback_query'\]/)
-  assert.match(transport,/saved.length===OWNER_AI_COMMANDS.length/)
+  assert.match(transport,/saved.length===ownerCommands.length/)
+  assert.match(transport,/ownerScopedTelegramCommands\(/)
   assert.match(transport,/scope:\{type:'chat',chat_id:chatNumber\}/)
   assert.match(setup,/practitionerEmailAllowed/)
   assert.match(setup,/requireSameOrigin/)

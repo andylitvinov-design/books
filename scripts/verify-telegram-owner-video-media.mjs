@@ -3,9 +3,11 @@ import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises'
 import {spawnSync} from 'node:child_process'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {renderOwnerTelegramVideo} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {renderOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 const binary=process.env.HH_TEST_FFMPEG_PATH||(await import('ffmpeg-static')).default
 if(!binary)throw Error('FFMPEG_STATIC_BINARY_NOT_INSTALLED')
+const executable=await resolveOwnerVideoFfmpegPath('/vercel/bundled/chunks/ffmpeg')
+if(!executable)throw Error('FFMPEG_PACKAGED_BINARY_UNRESOLVED')
 const dir=await mkdtemp(join(tmpdir(),'hh-video-ci-'))
 function run(args){
  const result=spawnSync(binary,['-hide_banner','-loglevel','error','-y',...args],{
@@ -34,7 +36,7 @@ try{
   duration:[1,4].includes(i)?2:0,updateId:100+i
  }))
  const mp4=await renderOwnerTelegramVideo(parts,{
-  executable:binary,fetchPart:p=>source[p.updateId-100]})
+  executable,fetchPart:p=>source[p.updateId-100]})
  if(mp4.length<1024||mp4.toString('ascii',4,8)!=='ftyp')throw Error('INVALID_MP4')
  const target=join(dir,'output.mp4')
  await writeFile(target,mp4)
@@ -54,5 +56,34 @@ try{
       yellow[0]>yellow[2]+60&&yellow[1]>yellow[2]+60&&
       red[0]>red[1]+60&&red[0]>red[2]+60))
    throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED')
+
+ // Full-capacity integration: interleave 15 photos and 15 audio pieces using
+ // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
+ const imageBytes=await Promise.all(photos.map(file=>readFile(file)))
+ const soundBytes=await Promise.all(sounds.map(file=>readFile(file)))
+ const fullParts=[],fullSources=[]
+ for(let i=0;i<15;i++){
+   for(const kind of ['photo','audio']){
+     const bytes=kind==='photo'?imageBytes[i%imageBytes.length]:
+       soundBytes[i%soundBytes.length]
+     const index=fullParts.length
+     fullParts.push({kind,mime:kind==='photo'?'image/jpeg':'audio/mpeg',
+       ext:kind==='photo'?'jpg':'mp3',fileId:'CI_FULL_FILE_'+index,
+       uniqueId:'CI_FULL_UNIQUE_'+index,bytes:bytes.length,
+       duration:kind==='audio'?2:0,updateId:500+index})
+     fullSources.push(bytes)
+   }
+ }
+ const fullMp4=await renderOwnerTelegramVideo(fullParts,{
+   executable,fetchPart:p=>fullSources[p.updateId-500]})
+ if(fullMp4.length<1024||fullMp4.toString('ascii',4,8)!=='ftyp')
+   throw Error('VIDEO_15X15_NOT_MP4')
+ const fullTarget=join(dir,'full-15-15.mp4')
+ await writeFile(fullTarget,fullMp4)
+ const fullDecoded=spawnSync(binary,['-hide_banner','-i',fullTarget,'-f','null','-'],{
+   timeout:60000,encoding:'utf8',maxBuffer:128000})
+ if(fullDecoded.status!==0||!/Video: h264/.test(fullDecoded.stderr)||
+   !/Audio: aac/.test(fullDecoded.stderr))throw Error('VIDEO_15X15_CODEC_FAILED')
+ console.log('MEDIA_15X15_SMOKE_PASSED 15 photos + 15 audio H264/AAC bytes='+fullMp4.length)
  console.log('MEDIA_SMOKE_PASSED ordered blue/yellow/red H264/AAC 1920x1080 MP4 bytes='+mp4.length)
 }finally{await rm(dir,{force:true,recursive:true})}

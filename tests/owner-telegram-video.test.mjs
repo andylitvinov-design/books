@@ -1,17 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
+import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
-  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
+  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
-import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
 import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
-import {OWNER_AI_COMMANDS} from '../lib/practitioners/owner-ai-telegram.mjs'
+import {OWNER_AI_COMMANDS,ownerScopedTelegramCommands} from '../lib/practitioners/owner-ai-telegram.mjs'
 
 const TIME=1793001600000
 const BOT='holistichouse_bot'
@@ -36,6 +38,7 @@ test('owner-only Telegram video deep link and explicit private preview resend co
    message_id:56,text:'/start video'}}
  assert.equal(parsed(update)?.action,'start')
  assert.equal(parsed({...update,message:{...update.message,text:'/video_retry'}})?.action,'retry')
+ assert.equal(parsed({...update,message:{...update.message,text:'/video_status'}})?.action,'status')
  assert.equal(parsed(callback('hh-video:retry'))?.action,'retry')
  assert.equal(parsed({...update,message:{...update.message,text:'/start@wrongbot video'}}),null)
  const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
@@ -61,6 +64,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  const fixed='b6e8526e-c251-4dd5-a9ca-2886c430f912'
  assert.equal(parsed(callback('hh-video:start')).action,'start')
  assert.equal(parsed(callback('hh-video:done')).action,'done')
+ assert.equal(parsed(callback('hh-video:status')).action,'status')
  assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
  assert.equal(parsed(callback('hh-video:publish:bad')),null)
  const spoof=callback('hh-video:done');spoof.callback_query.message.from.username='Attacker_bot'
@@ -68,19 +72,83 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  const unpaired=callback('hh-video:done');unpaired.callback_query.from.id=555
  assert.equal(parsed(unpaired),null)
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
+ assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
+ assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
  assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[0][0].callback_data,'hh-video:publish:'+fixed)
 })
 test('strict ordered safe source limits and anti-duplication',()=>{
  const items=[part('photo',0),part('audio',1)]
  assert.deepEqual(safeVideoParts(items),{images:1,audios:1,bytes:4600,seconds:3})
- assert.equal(VIDEO_IMAGE_LIMIT,6)
- assert.equal(VIDEO_AUDIO_LIMIT,4)
+ assert.equal(VIDEO_IMAGE_LIMIT,15)
+ assert.equal(VIDEO_AUDIO_LIMIT,15)
  assert.equal(safeVideoParts([...items,items[1]]),null)
- assert.equal(safeVideoParts([...Array.from({length:7},(_,i)=>part('photo',i)),part('audio',7)]),null)
+ assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',16)]),null)
  assert.equal(safeVideoParts([part('audio',0,{duration:121})]),null)
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
 })
+
+test('production database item constraint is widened to 30 without weakening RLS',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261027174939_hh_owner_video_15_photo_15_audio_20261027.sql',import.meta.url),'utf8')
+ assert.match(sql,/drop constraint telegram_owner_video_jobs_items_check/)
+ assert.match(sql,/jsonb_array_length\(items\) <= 30/)
+ assert.doesNotMatch(sql,/disable row level security|drop table|grant\s+.*\s+to\s+anon/i)
+})
+
+test('serverless bundled FFmpeg path falls back to executable in traced node_modules only',async()=>{
+ const temp=mkdtempSync(join(tmpdir(),'hh-video-exec-'))
+ try{
+   const folder=join(temp,'node_modules','ffmpeg-static')
+   mkdirSync(folder,{recursive:true})
+   const executable=join(folder,'ffmpeg')
+   writeFileSync(executable,'#!/bin/sh\\nexit 0\\n',{mode:0o755})
+   assert.equal(await resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),executable)
+   assert.equal(await resolveOwnerVideoFfmpegPath(executable,temp),executable)
+   chmodSync(executable,0o644)
+   await assert.rejects(()=>resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),/VIDEO_RENDERER_UNAVAILABLE/)
+ }finally{rmSync(temp,{force:true,recursive:true})}
+})
+
+test('Vercel npm installation permits only the pinned ffmpeg binary downloader',()=>{
+ const config=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'))
+ assert.equal(config.dependencies['ffmpeg-static'],'5.3.0')
+ assert.equal(config.allowScripts['ffmpeg-static@5.3.0'],true)
+ assert.equal(Object.keys(config.allowScripts).length,1)
+ assert.equal(config.allowScripts['ffmpeg-static'],undefined)
+ assert.equal(config.allowScripts['unrs-resolver@1.11.1'],undefined)
+ const next=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
+ assert.match(next,/\/api\/app\/notification-channels\/telegram\/webhook/)
+ assert.match(next,/node_modules\/ffmpeg-static\/ffmpeg/)
+})
+
+test('15 photographs and 15 audio pieces are allowed and compose in their real mixed order',()=>{
+ const interleaved=Array.from({length:15},(_,i)=>[
+   part('photo',i*2),part('audio',i*2+1,{duration:2})
+ ]).flat()
+ const totals=safeVideoParts(interleaved)
+ assert.deepEqual(totals,{images:15,audios:15,bytes:69000,seconds:30})
+ assert.equal(VIDEO_MAX_INPUT_BYTES,20_000_000)
+ assert.equal(VIDEO_MAX_SECONDS,120)
+ assert.equal(safeVideoParts([...interleaved,part('photo',30)]),null)
+ assert.equal(safeVideoParts([...interleaved,part('audio',30)]),null)
+ assert.equal(safeVideoParts(interleaved.map((item,i)=>
+   i===1?{...item,duration:100}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:1_400_000}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:1_250_000}:item))?.images,15)
+ const mixed=[...interleaved].reverse()
+ const plan=photoTimeline(mixed)
+ assert.equal(plan.length,15)
+ assert.deepEqual(plan.map(x=>x.startMs),Array.from({length:15},(_,i)=>i*2000))
+ assert.ok(plan.every(x=>x.durationMs===2000))
+ const args=videoRenderArguments(mixed,'/tmp/full-15-15.mp4')
+ assert.equal(args.filter(x=>x==='-i').length,30)
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=1')))
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=0:a=1')))
+ assert.ok(args.includes('libx264')&&args.includes('aac'))
+})
+
 test('FFmpeg command arguments use no shell and encode a single bounded 16:9 stream',()=>{
  const args=videoRenderArguments([part('photo',0),part('photo',1),part('audio',2)],'/tmp/output.mp4')
  assert.equal(args.at(-1),'/tmp/output.mp4')
@@ -311,18 +379,22 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
-   .find(x=>x.callback_data==='hh-video:start')
+   .find(x=>x.url==='https://t.me/Andydotbot?start=video')
  assert.ok(videoButton)
  assert.match(videoButton.text,/Создать видео/)
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
-   .some(x=>x.callback_data==='hh-video:start'))
+   .some(x=>x.url==='https://t.me/Andydotbot?start=video'))
  const dotOwner={id:privateBase.id,is_bot:false}
  const dotCommand={update_id:2007,message:{
    date:TIME/1000,chat:privateBase,from:dotOwner,message_id:47,text:'/video'}}
  assert.equal(parseOwnerVideoUpdate(dotCommand,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ const dotLink={...dotCommand,message:{...dotCommand.message,text:'/start video'}}
+ assert.equal(parseOwnerVideoUpdate(dotLink,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ assert.match(ownerVideoStartMessage().text,/\/video_done/)
  const dotCallback={update_id:2008,callback_query:{id:'video-start',
    data:'hh-video:start',from:dotOwner,
    message:{chat:privateBase,from:{is_bot:true,username:'Andydotbot'}}}}
@@ -336,6 +408,23 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  const transport=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
  assert.match(transport,/saved\[i\]\?\.description===command.description/)
 });
+
+test('private /video command remains registered if Owner AI is disabled',()=>{
+ const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
+   ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
+ assert.deepEqual(menu('shared_practice',false,true),['audio','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,false),['all','audio','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,false),[])
+ assert.deepEqual(menu('dedicated',true,true),[])
+ const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
+ assert.match(source,/ownerMenu\(env\)/)
+ assert.match(source,/commands:ownerCommands,scope:\{type:'chat',chat_id:chatNumber\}/)
+ assert.match(source,/ownerCommands.every\(\(command,i\)=>/)
+ assert.match(source,/!info.allowed_updates\?\.includes\('callback_query'\)/)
+ const audioService=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
+ assert.match(audioService,/env.HH_OWNER_AI_TG_ENABLED==='true'\|\|env.HH_OWNER_VIDEO_ENABLED==='true'/)
+})
 
 test('admin YouTube upload guide points owner video to the same Dot bot, not CRM',()=>{
  const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
