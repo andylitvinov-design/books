@@ -474,10 +474,12 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       if (batterySignature !== signature) {
         // A selected *source scale* resolves to a particular research construct.
         // Big Five extraversion cannot be substituted with an unrelated trait.
-        const questionnaires = recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "questionnaires");
-        const pro = recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "pro");
+        // The selector returns immutable suggestions; React keeps editable
+        // per-mode selections as its own mutable arrays.
+        const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
+          selectedScaleIds, "questionnaires")];
+        const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
+          selectedScaleIds, "pro")];
         setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
         setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
