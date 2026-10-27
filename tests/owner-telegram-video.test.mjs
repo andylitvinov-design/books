@@ -543,7 +543,7 @@ test('EN upload uses Unlisted and returns completed same-channel ID, never trust
 })
 
 test('dual-target persistence keeps verified Google PKCE, private RLS and immutable publishing',()=>{
- const migration=readFileSync(new URL('../supabase/migrations/20261027193500_hh_owner_video_youtube_ru_en_destinations.sql',import.meta.url),'utf8')
+ const migration=readFileSync(new URL('../supabase/migrations/20261027195009_hh_owner_video_youtube_ru_en_destinations_20261027.sql',import.meta.url),'utf8')
  assert.match(migration,/youtube_target/)
  assert.match(migration,/primary key\(practitioner_id,target\)/i)
  assert.match(migration,/force row level security/i)
