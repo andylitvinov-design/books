@@ -69,11 +69,18 @@ test('signed official WhatsApp webhook stores language marker as locale only, ne
     assert.equal(result.length,1)
     assert.equal(result[0].language,locale)
     assert.equal(result[0].diagnosticLocale,locale)
-    assert.equal(result[0].body,body)
+    // The signed raw message keeps newlines for locale parsing; CRM stores a
+    // bounded, safely normalized message without line breaks.
+    assert.equal(result[0].body,body.replace(/[\r\n\u0000-\u001f]/g,' ').trim().slice(0,1200))
     assert.equal(result[0].type,'incoming')
     assert.equal(result[0].stop,false)
   }
   assert.equal(waEnv.HH_CRM_MSG_PRODUCTION_APPROVED,'true','synthetic fixture only')
+  const noMarker={entry:[{changes:[{value:{metadata:{phone_number_id:waEnv.HH_CRM_MSG_WHATSAPP_PHONE_ID},
+    messages:[{from:'14165550001',id:'wamid.unmarked',type:'text',text:{body:'Hello'},timestamp:'1793000000'}]}}]}]}
+  const unmarked=normalizeMessengerUpdates('whatsapp',noMarker)
+  assert.equal(unmarked[0].language,null)
+  assert.equal(unmarked[0].diagnosticLocale,null)
 })
 test('free situation landing exposes locale-scoped chooser with distinct Telegram bot and manual WhatsApp labels',()=>{
   const component=read('components/telegram-diagnostic-entry.tsx')
@@ -89,7 +96,8 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
   assert.match(component,/start=hhreview_/)
   assert.match(component,/setTelegramUrl\(null\)/)
   assert.match(component,/whatsappExpressReviewHandoff\(locale\)/)
-  assert.match(hook,/whatsappExpressReviewLocale\(safeBody\)/)
+  assert.match(hook,/whatsappExpressReviewLocale\((?:String\(body\?\?''\)|body)\)/)
+  assert.match(hook,/const safeBody=safeString\(body,1200\)/)
   assert.ok(route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')<
     route.indexOf('normalizeMessengerUpdates(provider,body)'))
   assert.doesNotMatch(component,/sendOneMessengerMessage|autoSend|createContact|book|payment|sendBeacon/)
