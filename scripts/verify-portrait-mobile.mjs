@@ -28,9 +28,9 @@ const labels = ['body','work','relationships','growth']
 const expected = { body: 5, work: 3, relationships: 4, growth: 5 }
 
 function assertMobileEvidence({ locale, width, sector, data }) {
-  assert.equal(data.buttonCount, 5, 'All and four category buttons')
-  assert.ok(data.fiveInRow, `${locale} ${width}px: five portrait buttons must share one row`)
-  assert.ok(data.minTapHeight >= 44, `${locale} ${width}px: all category buttons need >=44px tap height`)
+  assert.equal(data.buttonCount, 6, 'All plus five life-profile buttons')
+  assert.ok(data.sixInRow, `${locale} ${width}px: all six profile buttons must share one row`)
+  assert.ok(data.minTapHeight >= 44 && data.minTapWidth >= 44, `${locale} ${width}px: six category buttons need >=44px tap targets`)
   assert.ok(data.overflow <= 1, `${locale} ${width}px: no horizontal document overflow`)
   assert.ok(data.radarWidth > 0 && data.ringWidth / data.radarWidth > .78,
     `${locale} ${width}px: outer ring must fill most of the picture`)
@@ -70,8 +70,9 @@ async function measure(locale, width, sector) {
     const pressed = buttons.filter(button => button.getAttribute('aria-pressed') === 'true')
     return {
       buttonCount: buttons.length,
-      fiveInRow: tops.length === 5 && Math.max(...tops)-Math.min(...tops)<2,
+      sixInRow: tops.length === 6 && Math.max(...tops)-Math.min(...tops)<2,
       minTapHeight: Math.min(...buttons.map(button=>rect(button).height)),
+      minTapWidth: Math.min(...buttons.map(button=>rect(button).width)),
       pressedCount: pressed.length, pressedKey: pressed[0]?.getAttribute('data-portrait-sector'),
       overflow: document.documentElement.scrollWidth-innerWidth,
       radarWidth: image.width, ringWidth: rect(outer).width,
@@ -116,7 +117,7 @@ try {
   for (const locale of ['en','ru']) {
     await open('/'+locale+'/app/portfolio')
     await expect(card()).toBeVisible({timeout:90000})
-    await expect(buttons()).toHaveCount(4,{timeout:30000})
+    await expect(buttons()).toHaveCount(5,{timeout:30000})
     await expect(card().locator('[class*="visualState"]')).toHaveCount(0)
     const all = card().locator('[data-portrait-sector-all]')
     await expect(all).toHaveCount(1)
@@ -125,6 +126,40 @@ try {
     await expect(overview).toBeVisible()
     await expect(overview.locator('[data-summary-sector]')).toHaveCount(4)
     await expect(card().locator('[data-detail-axis]')).toHaveCount(0)
+    // Fifth life profile is NOT a fifth psychometric radar sector.
+    // Exercise a real click: the private three-rating panel replaces the
+    // diagram, while the four original sectors still retain their exact rays.
+    const goalButton = card().locator('button[data-portrait-sector="goal"]')
+    await goalButton.click()
+    await expect(goalButton).toHaveAttribute('aria-pressed','true')
+    const goalPanel = card().locator('[data-goal-profile]')
+    await expect(goalPanel).toBeVisible()
+    await expect(goalPanel.locator('[data-goal-support-facet]')).toHaveCount(3)
+    await expect(card().locator('[data-radar-layout="full-circle"]')).toHaveCount(0)
+    for (const width of [320,390,430]) {
+      await page.setViewportSize({width,height:900})
+      const fit = await card().locator('[data-portrait-sectors]').evaluate(parent => {
+        const buttons = [...parent.querySelectorAll('button')]
+        const rects = buttons.map(item=>item.getBoundingClientRect())
+        return {
+          buttons:buttons.length,
+          minWidth:Math.min(...rects.map(r=>r.width)),
+          minHeight:Math.min(...rects.map(r=>r.height)),
+          rows:Math.max(...rects.map(r=>r.top))-Math.min(...rects.map(r=>r.top)),
+          overflow:document.documentElement.scrollWidth-innerWidth,
+        }
+      })
+      console.log('GOAL_PORTRAIT_NAV',JSON.stringify({engine:name,locale,width,...fit}))
+      assert.equal(fit.buttons,6,locale+' goal profile must have All plus five options')
+      assert.ok(fit.minWidth>=44 && fit.minHeight>=44,
+        `${locale} ${width}px: all life profile taps must be at least 44px`)
+      assert.ok(fit.rows<2 && fit.overflow<=1,
+        `${locale} ${width}px: goal profile selector must stay one row, without overflow`)
+    }
+    await all.click()
+    await expect(all).toHaveAttribute('aria-pressed','true')
+    await expect(card().locator('svg[data-radar-mode="summary"]')).toBeVisible()
+    await expect(card().locator('[data-summary-sector]')).toHaveCount(4)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       for (const sector of labels) {
@@ -285,7 +320,7 @@ try {
   const appProblems = problems.filter(item => !item.includes('/__nextjs_original-stack-frames') &&
     !(devOverlayBlocked && item === '[object Event]'))
   assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
-  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
+  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 scored sectors + separate Goal profile')
 } finally {
   await context.close()
   await browser.close()
