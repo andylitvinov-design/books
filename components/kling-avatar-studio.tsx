@@ -18,7 +18,7 @@ const copy={
     cost:"I approve ONE potentially paid Kling Avatar Standard 720p job (up to 20 seconds). I have checked the current provider price and remaining balance; the site cannot guarantee the final charge.",
     generate:"Create private test preview",busy:"Preparing and submitting…",inspect:"Check existing task",task:"Kling task ID (keep it)",
     result:"Private preview — not published",archive:"Check lip sync, voice, face, hands and commercial rights; download and archive the MP4 before the provider removes it. Publishing is a separate decision.",
-    manual:"Open Kling Avatar web",none:"No generation has been submitted.",
+    manual:"Open Kling Avatar web",google:"Connect Google / YouTube",none:"No generation has been submitted.",
     errors:{disabled:"Avatar generation is disabled server-side.",not_configured:"The API key is not configured.",approval:"Confirm consent and the single-render cost.",validation:"Use one approved portrait and a voice clip between 2 and 20 seconds.",origin:"The request must come from the admin website.",unauthorized:"Your admin session has expired.",provider_unavailable:"No definitive response from Kling. Check provider history before any retry.",local:"The selected files cannot be prepared on this device.",unknown:"Unable to complete the request."},
   },
   ru:{
@@ -32,7 +32,7 @@ const copy={
     cost:"Я разрешаю ОДИН потенциально платный рендер Kling Avatar Standard 720p (до 20 секунд). Я проверил актуальную цену и остаток средств у Kling; сайт не гарантирует итоговую стоимость.",
     generate:"Создать приватный тест",busy:"Подготовка и отправка…",inspect:"Проверить задачу",task:"ID задачи Kling (сохраните)",
     result:"Приватное превью — не опубликовано",archive:"Проверьте лицо, голос, lip-sync и жесты. Сохраните MP4 в архив до удаления у провайдера. Публикация — отдельное разрешение.",
-    manual:"Открыть Kling Avatar",none:"Новых генераций пока нет.",
+    manual:"Открыть Kling Avatar",google:"Подключить Google / YouTube",none:"Новых генераций пока нет.",
     errors:{disabled:"Генерация аватара выключена на сервере.",not_configured:"Ключ Kling API не настроен.",approval:"Подтвердите права и стоимость одного рендера.",validation:"Выберите свой портрет и голос длиной 2–20 секунд.",origin:"Запрос допускается только из админки сайта.",unauthorized:"Сессия администратора закончилась.",provider_unavailable:"Kling не подтвердил результат запроса. Проверьте историю провайдера до повторного запуска.",local:"Не удалось обработать выбранные файлы на устройстве.",unknown:"Не удалось выполнить операцию."},
   },
   es:{
@@ -46,7 +46,7 @@ const copy={
     cost:"Apruebo UNA generación de pago Avatar Standard 720p (hasta 20 segundos). He comprobado el precio y el saldo vigentes; el sitio no garantiza el cobro final.",
     generate:"Crear vista previa privada",busy:"Preparando y enviando…",inspect:"Consultar tarea",task:"ID de tarea Kling",
     result:"Vista previa privada — sin publicar",archive:"Revisa los labios, el rostro y la voz. Guarda el MP4 antes de su eliminación; publicación por separado.",
-    manual:"Abrir Kling Avatar",none:"No se ha enviado una generación.",
+    manual:"Abrir Kling Avatar",google:"Conectar Google / YouTube",none:"No se ha enviado una generación.",
     errors:{disabled:"La generación está deshabilitada en el servidor.",not_configured:"Falta la clave API.",approval:"Confirma tu consentimiento y el coste.",validation:"Usa un retrato propio y audio de 2–20 segundos.",origin:"Solicita la operación desde la web de administración.",unauthorized:"La sesión ha caducado.",provider_unavailable:"Kling no confirmó. Comprueba su historial antes de repetir.",local:"No se pueden preparar estos archivos.",unknown:"La solicitud no se pudo completar."},
   },
 } as const;
@@ -165,6 +165,7 @@ export function KlingAvatarStudio({initialLocale,configured,enabled}:Props){
         {busy?t.busy:t.generate}
       </button>
       <a href="https://kling.ai/feature/avatars" target="_blank" rel="noopener noreferrer" style={{fontSize:13,color:"#634a37",display:"inline-flex",gap:5,alignItems:"center"}}>{t.manual}<ExternalLink size={14}/></a>
+      <a href="/admin/youtube-upload" style={{fontSize:13,color:"#634a37",display:"inline-flex",gap:5,alignItems:"center"}}>{t.google}<ExternalLink size={14}/></a>
     </div>
     <div style={{marginTop:15,fontSize:13}}>
       <label style={{display:"grid",gap:5}}>{t.task}
