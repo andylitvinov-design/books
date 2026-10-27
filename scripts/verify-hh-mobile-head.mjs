@@ -6,8 +6,10 @@ const origin=process.argv[2]||'http://127.0.0.1:3098'
 const cases=[
   ['/', '/holistic-house-app.webmanifest'],
   ['/ru', '/holistic-house-app-ru.webmanifest'],
+  ['/es', '/holistic-house-app-es.webmanifest'],
   ['/en/install', '/holistic-house-app.webmanifest'],
   ['/ru/install', '/holistic-house-app-ru.webmanifest'],
+  ['/es/install', '/holistic-house-app-es.webmanifest'],
   ['/en/app/portrait', '/holistic-house-app.webmanifest'],
   ['/ru/app/portrait', '/holistic-house-app-ru.webmanifest'],
   ['/ru/homeopathy', '/manifest.webmanifest'],
@@ -28,7 +30,7 @@ for(const [route,expected] of cases){
     failures.push(route+': '+String(error?.message||error))
   }
 }
-for(const path of ['/holistic-house-app.webmanifest','/holistic-house-app-ru.webmanifest','/manifest.webmanifest']){
+for(const path of ['/holistic-house-app.webmanifest','/holistic-house-app-ru.webmanifest','/holistic-house-app-es.webmanifest','/manifest.webmanifest']){
   try{
     const response=await fetch(new URL(path,origin))
     assert.equal(response.status,200,path+' status')
