@@ -300,6 +300,53 @@ const goalScaleLabels: Record<Locale, Record<string, string>> = {
   ru: { "goal::clarity": "Ясность цели", "goal::motivation": "Мотивация", "goal::confidence": "Уверенность" },
   es: { "goal::clarity": "Claridad de la meta", "goal::motivation": "Motivación", "goal::confidence": "Confianza" },
 };
+// Stage 3 describes areas of exploration rather than exposing source-test names.
+// Keys below are immutable *source dimension* IDs from the reviewed goal crosswalk;
+// they are supplementary topics, not direct measurements of the chosen goal.
+const goalTopicLabels: Record<Locale, Record<string, string>> = {
+  en: {
+    "weekly.clarity": "Clarity right now",
+    "function.decision_fog.overall": "Clarity in decisions",
+    "resources.values_direction.overall": "Values and direction",
+    "resources.meaning_compass.overall": "Meaning and direction",
+    "resources.motivation_spark.overall": "Everyday motivation",
+    "resources.change_readiness.overall": "Readiness for change",
+    "function.start_button.overall": "Starting important tasks",
+    "function.goal_obstacles.overall": "Obstacles and next steps",
+    "resources.confidence_pulse.overall": "General self-confidence",
+    "resource.self_support": "Perceived self-support",
+    "resources.inner_ally.overall": "Inner support",
+  },
+  ru: {
+    "weekly.clarity": "Ясность в данный момент",
+    "function.decision_fog.overall": "Ясность решений",
+    "resources.values_direction.overall": "Ценности и направление",
+    "resources.meaning_compass.overall": "Смысл и направление",
+    "resources.motivation_spark.overall": "Повседневная мотивация",
+    "resources.change_readiness.overall": "Готовность к переменам",
+    "function.start_button.overall": "Начало важных дел",
+    "function.goal_obstacles.overall": "Препятствия и следующие шаги",
+    "resources.confidence_pulse.overall": "Уверенность в себе",
+    "resource.self_support": "Ощущаемая поддержка себя",
+    "resources.inner_ally.overall": "Внутренняя опора",
+  },
+  es: {
+    "weekly.clarity": "Claridad en este momento",
+    "function.decision_fog.overall": "Claridad al decidir",
+    "resources.values_direction.overall": "Valores y dirección",
+    "resources.meaning_compass.overall": "Sentido y dirección",
+    "resources.motivation_spark.overall": "Motivación cotidiana",
+    "resources.change_readiness.overall": "Disposición al cambio",
+    "function.start_button.overall": "Empezar tareas importantes",
+    "function.goal_obstacles.overall": "Obstáculos y próximos pasos",
+    "resources.confidence_pulse.overall": "Confianza personal general",
+    "resource.self_support": "Autoapoyo percibido",
+    "resources.inner_ally.overall": "Apoyo interior",
+  },
+};
+const topicLabel = (area: Area, scale: { key: string; label: string }, locale: Locale) =>
+  area === "goal" ? goalTopicLabels[locale][scale.key] || scale.label : scale.label;
+
 const researchLabel = (id: string, locale: Locale) =>
   goalScaleLabels[locale][id] || profileResearchAxisLabel(id, locale);
 
@@ -711,7 +758,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
                     onChange={() => toggleScale(scale.id)} />
                   <span className={styles.topicScaleText}>
-                    <strong>{scale.label}</strong>
+                    <strong>{topicLabel(group.area, scale, locale)}</strong>
                   </span>
                 </label>)}
                   </div>)}
