@@ -29,8 +29,8 @@ const expected = { body: 5, work: 3, relationships: 4, growth: 5 }
 
 function assertMobileEvidence({ locale, width, sector, data }) {
   assert.equal(data.buttonCount, 6, 'All and five life-profile buttons')
-  assert.ok(data.sixInRow, `${locale} ${width}px: five portrait buttons must share one row`)
-  assert.ok(data.minTapHeight >= 44, `${locale} ${width}px: all category buttons need >=44px tap height`)
+  assert.ok(data.sixInRow, `${locale} ${width}px: six focus buttons must share one row`)
+  assert.ok(data.minTapHeight >= 44 && data.minTapWidth >= 44, `${locale} ${width}px: all six profile chips need at least 44×44px tap targets`)
   assert.ok(data.overflow <= 1, `${locale} ${width}px: no horizontal document overflow`)
   assert.ok(data.radarWidth > 0 && data.ringWidth / data.radarWidth > .78,
     `${locale} ${width}px: outer ring must fill most of the picture`)
@@ -209,6 +209,8 @@ try {
           const rect = node => node.getBoundingClientRect()
           const upper = rect(el.querySelector('[data-portrait-sectors]'))
           const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
+          const middle = el.querySelector('[data-testid="portrait-view-switch"]')
+          const middleButtons = [...(middle?.querySelectorAll('button') || [])]
           const picture = rect(el.querySelector('[data-radar-layout="full-circle"]'))
           const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
           const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] a, [data-testid="portrait-quick-actions"] button')]
@@ -221,6 +223,9 @@ try {
             pictureWidth:picture.width,
             pictureHeight:picture.height,
             minTopTap: Math.min(...upperButtons.map(node => rect(node).height)),
+            miniTabCount: middleButtons.length,
+            middleVisible: Boolean(middle && rect(middle).top >= upper.bottom && rect(middle).bottom <= lower.top),
+            minMiddleTap: middleButtons.length ? Math.min(...middleButtons.map(node => rect(node).height)) : 0,
             minBottomTap: Math.min(...lowerButtons.map(node => rect(node).height)),
             viewportHeight: innerHeight,
             overflow: document.documentElement.scrollWidth - innerWidth,
@@ -236,6 +241,8 @@ try {
           `${locale} ${width}x${height}: image must fill available space while preserving its native aspect ratio`)
         assert.ok(frame.firstTop >= -2 && frame.lastBottom <= frame.viewportHeight - 70,
           `${locale} ${width}x${height}: both menu rows must be onscreen above bottom nav`)
+        assert.ok(frame.miniTabCount === 3 && frame.middleVisible && frame.minMiddleTap >= 44,
+          `${locale} ${width}x${height}: Chart / Axes / Tests must remain between green focus chips and chart, at least 44px tall`)
         assert.ok(frame.minTopTap >= 44 && frame.minBottomTap >= 44,
           `${locale} ${width}x${height}: both menu rows need 44px touch targets`)
         assert.ok(frame.overflow <= 1, `${locale} ${width}x${height}: horizontal overflow`)

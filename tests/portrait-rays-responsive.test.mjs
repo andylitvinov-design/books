@@ -53,6 +53,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
       if (name === 'next/image') return { __esModule:true, default:'img' }
       if (name === '@/lib/assessments/test-explorer') return {TEST_EXPLORER_AXES,TEST_EXPLORER_AXIS_LABELS}
       if (name === '@/lib/assessments/portrait-ray-labels') return {layoutPortraitRayLabels}
+      if (name === './goal-profile-panel') return {GoalProfilePanel: () => null}
       if (name === '@/lib/assessments/portrait-sectors') return {
         PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
         portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,portraitSectorReadouts,
@@ -353,7 +354,7 @@ test('Reports uses a thin Chart / Axes / Tests switch and preserves lower action
   const actions=src.indexOf('portraitActions({ selectedSector, portrait })')
   assert.ok(nav>=0 && chooser>nav && radar>chooser && actions>radar,
     'Axis chooser replaces the chart and stays immediately under its switch')
-  assert.match(src,/portraitView === 'axes' && <section/)
+  assert.match(src,/portraitView === 'axes' && selectedSector !== 'goal' && <section/)
   assert.match(src,/hidden=\{Boolean\(portrait\) && \(portraitView !== 'chart' \|\| selectedSector === 'goal'\)\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
   assert.match(src,/data-portrait-sector-all/)
