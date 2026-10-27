@@ -450,6 +450,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
+    setExtraProfile(null);
+    setExtraScales([]);
     setShowMore(false);
   }
 
@@ -462,6 +464,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
+    setExtraProfile(null);
+    setExtraScales([]);
     setShowMore(false);
   }
 
