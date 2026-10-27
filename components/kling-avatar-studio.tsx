@@ -13,6 +13,7 @@ const copy={
     statusOn:"Avatar API pilot enabled — one paid render only after separate confirmation.",
     statusOff:"Avatar API render is held until the owner’s budget and server switch are verified; free/manual Kling Studio remains available.",
     noKey:"The Kling API key is missing. Use Kling Web for a manual test.",
+    probe:"Verify Kling key (free GET)",probeBusy:"Checking API…",probeOk:"Kling accepted the API key. No video generated.",probeNoPack:"No active video package confirmed. Cash balance and pricing are not checked.",probeFail:"Kling has not confirmed this API key; check provider access.",
     photo:"Your own JPG or PNG portrait",voice:"Your original voice (WAV, MP3, M4A, AAC)",tip:"Use a clear solo portrait. Only a 2–20 second voice excerpt; other formats are converted locally to mono WAV, never archived here.",
     prompt:"Performance direction",consent:"This is my own face and voice. No client, private report or other person's image/audio.",
     privacy:"I approve sending these two specific media files to Kling for this render only.",
@@ -27,6 +28,7 @@ const copy={
     statusOn:"Пилот Kling Avatar API доступен. Каждый платный рендер требует отдельного подтверждения.",
     statusOff:"Рендер аватара выключен до проверки бюджета и серверного переключателя. Ручная студия Kling доступна.",
     noKey:"Ключ Kling API отсутствует. Используйте веб-редактор Kling для пробного ролика.",
+    probe:"Проверить Kling API (без рендера)",probeBusy:"Проверка подключения…",probeOk:"Kling подтвердил ключ. Рендер не запускался.",probeNoPack:"Активный пакет видео не подтверждён. Денежный баланс и цена не проверены.",probeFail:"Подключение к Kling не подтверждено; проверьте ключ и доступ.",
     photo:"Мой портрет JPG или PNG",voice:"Моя оригинальная речь (WAV, MP3, M4A, AAC)",tip:"Портрет — один человек, лицо видно. Речь — от 2 до 20 секунд; конвертация в WAV выполняется локально в браузере.",
     prompt:"Мимика и движения",consent:"Это моё лицо и мой голос; здесь нет клиентов, частных отчётов или записей других людей.",
     privacy:"Я разрешаю передать два выбранных файла Kling только для этой генерации.",
@@ -41,6 +43,7 @@ const copy={
     statusOn:"El piloto está activado. Cada generación de pago requiere confirmación individual.",
     statusOff:"El render está bloqueado hasta confirmar el presupuesto y activar el servidor. Kling Web sigue disponible.",
     noKey:"No se ha configurado la clave API. Utiliza la versión web.",
+    probe:"Comprobar clave Kling (sin generar)",probeBusy:"Comprobando…",probeOk:"Kling confirmó la clave. No se generó ningún vídeo.",probeNoPack:"No se confirmó paquete activo. No se verificó el saldo ni el precio.",probeFail:"Kling no ha confirmado la clave; revisa el acceso.",
     photo:"Mi retrato JPG o PNG",voice:"Mi grabación WAV, MP3, M4A o AAC",tip:"Una cara visible; audio original de 2–20 segundos, convertido a WAV en el navegador.",
     prompt:"Expresión y movimiento",consent:"Esta es mi cara y mi voz; no incluye clientes ni datos privados.",
     privacy:"Autorizo enviar estos dos archivos a Kling para esta generación.",
@@ -102,8 +105,21 @@ export function KlingAvatarStudio({initialLocale,configured,enabled}:Props){
   const [prompt,setPrompt]=useState(DEFAULT_PROMPT);
   const [owner,setOwner]=useState(false),[rights,setRights]=useState(false),[paid,setPaid]=useState(false);
   const [busy,setBusy]=useState(false),[task,setTask]=useState<Result|null>(null),[taskId,setTaskId]=useState("");
+  const [connection,setConnection]=useState<"idle"|"checking"|"connected"|"failed">("idle");
+  const [packageActive,setPackageActive]=useState(false);
   const [external,setExternal]=useState(""),[error,setError]=useState<keyof typeof copy.ru.errors|null>(null);
   const t=copy[lang];
+  async function verifyConnection(){
+    if(!configured||busy||connection==="checking")return;
+    setConnection("checking");
+    try{
+      const response=await fetch("/api/admin/kling-avatar?mode=connection",{cache:"no-store"});
+      const data=await response.json();
+      if(data?.ok&&data.result?.connected===true){
+        setConnection("connected");setPackageActive(data.result.hasActivePackage===true);
+      }else setConnection("failed");
+    }catch{setConnection("failed");}
+  }
   async function generate(){
     if(!image||!audio||!owner||!rights||!paid){setError("approval");return;}
     if(busy||!enabled)return;
@@ -142,6 +158,13 @@ export function KlingAvatarStudio({initialLocale,configured,enabled}:Props){
     </div>
     <p style={{fontSize:14,lineHeight:1.5}}>{t.intro}</p>
     <p role="status" style={{fontSize:13}}>{!configured?t.noKey:enabled?t.statusOn:t.statusOff}</p>
+    {configured&&<div className="kling-avatar-connection" style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:9,margin:"10px 0"}}>
+      <button type="button" disabled={busy||connection==="checking"} onClick={verifyConnection}
+        style={{minHeight:44,border:"1px solid #b7a089",borderRadius:8,padding:"8px 12px",background:"#fff",color:"#513e30"}}>
+        {connection==="checking"?t.probeBusy:t.probe}
+      </button>
+      <span role="status" aria-live="polite" style={{fontSize:13}}>{connection==="connected"?(packageActive?t.probeOk:t.probeOk+" "+t.probeNoPack):connection==="failed"?t.probeFail:""}</span>
+    </div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,270px),1fr))",gap:14,marginTop:14}}>
       <label style={{fontSize:13,display:"grid",gap:6}}>{t.photo}
         <input type="file" accept="image/jpeg,image/png" onChange={e=>setImage(e.target.files?.[0]||null)} aria-required="true" style={{maxWidth:"100%",fontSize:13}}/>
