@@ -59,7 +59,7 @@ const copy = {
     talismanSectionLead: "Organize personal images by protection, energy, harmony, prosperity, wisdom and more. New uploads stay private.",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditations · Video & audio",
-    meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive."
+    meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
     meditationAudioTitle: "Audio · Gentle waves & melody",
     meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
     meditationAudioLabel: "Play gentle waves and soft music",
@@ -121,7 +121,7 @@ const copy = {
     talismanSectionLead: "Защита, энергия, гармония, благополучие, мудрость и другие рубрики. Новые загрузки доступны только вам.",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
     meditationSectionTitle: "Медитации · Видео и аудио",
-    meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster."
+    meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
     meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
     meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
     meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
@@ -183,7 +183,7 @@ const copy = {
     talismanSectionLead: "Protección, energía, armonía, prosperidad, sabiduría y más. Tus fotos nuevas son privadas.",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditaciones · Vídeo y audio",
-    meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso."
+    meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
     meditationAudioTitle: "Audio · Olas y melodía suave",
     meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
     meditationAudioLabel: "Reproducir olas y melodía suave",
