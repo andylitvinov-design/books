@@ -8,6 +8,8 @@ on:
       - 'components/csp-navigation-boundary.tsx'
       - 'app/admin/youtube-upload/**'
       - 'scripts/verify-youtube-phone-mobile.mjs'
+      - 'app/__qa/youtube-phone/**'
+      - 'lib/youtube/mobile-qa-guard.mjs'
       - 'tests/youtube-phone-upload.test.mjs'
       - 'tests/youtube-upload-history.test.mjs'
       - 'tests/youtube-upload-readback.test.mjs'
