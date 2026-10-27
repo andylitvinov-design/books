@@ -35,10 +35,10 @@ const full = accountEntries.filter(entry =>
 const guest = guestEntries.filter(isGuest).map(toSource)
 const areas = [...new Set(Object.values(PROFILE_FOCUS_AREAS).flat())]
 
-test('32 research axes describe 4 profiles and 9 topics without inventing scoring axes', () => {
+test('31 source-backed research axes describe 4 profiles and 9 topics without inventing scoring axes', () => {
   assert.deepEqual(Object.keys(PROFILE_FOCUS_AREAS), ['wellbeing','relationships','work','identity'])
   assert.deepEqual(new Set(areas), new Set(Object.keys(PROFILE_AREA_AXES)))
-  assert.equal(Object.values(PROFILE_RESEARCH_AXES).flat().length, 32)
+  assert.equal(Object.values(PROFILE_RESEARCH_AXES).flat().length, 31)
   assert.deepEqual(new Set(Object.values(PROFILE_AREA_AXES).flat()), new Set(TEST_EXPLORER_AXES))
   for (const [area, specs] of Object.entries(PROFILE_RESEARCH_AXES)) {
     assert.ok(specs.length > 0, area)
