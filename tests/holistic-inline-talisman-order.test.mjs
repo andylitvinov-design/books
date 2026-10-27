@@ -9,15 +9,18 @@ const approved = {
   active: true, delivery_format: "online", pricing_mode: "fixed",
 };
 
-test("Symbols and Energy Support cards disclose the same inline wizard with separate kind", () => {
+test("Symbols and Energy Support cards route to separate focused pages and reuse the secured wizard", () => {
   const filter = read("components/holistic-support-topic-filter.tsx");
   const loader = read("components/holistic-inline-support-order.tsx");
   const wizard = read("components/remote-energy-support-booking.tsx");
   const css = read("components/holistic-inline-support-order.module.css");
   assert.match(filter, /data-holistic-order-trigger=\{id\}/);
-  assert.match(filter, /aria-expanded=\{orderKind ===/);
-  assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\}/);
-  assert.match(filter, /onClose=\{\(\) => setOrderKind\(null\)\}/);
+  assert.match(filter, /\/talismans/);
+  assert.match(filter, /\/support-options\?topic=/);
+  assert.doesNotMatch(filter, /<HolisticInlineSupportOrder/);
+  const standalone = read("components/holistic-support-order-page.tsx");
+  assert.match(standalone, /<HolisticInlineSupportOrder standalone locale=\{locale\}/);
+  assert.match(standalone, /router\.push\("\/" \+ locale \+ "\/holistic-support"\)/);
   assert.match(filter, /Order a talisman/);
   assert.match(filter, /Заказать талисман/);
   assert.match(filter, /Encargar un talismán/);

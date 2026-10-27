@@ -8,18 +8,26 @@ const approved={slug:"remote-energy-support",area_key:"energy_spiritual",
   status:"published",active:true,delivery_format:"online",pricing_mode:"fixed"};
 
 test("Public Holistic Support uses a scrollable, photograph-led order catalog",()=>{
-  const page=read("app/[locale]/holistic-support/page.tsx");
+  const page=read("app/[locale]/talismans/page.tsx");
+  const hub=read("app/[locale]/holistic-support/page.tsx");
   const widget=read("components/taoist-talisman-catalog.tsx");
   const css=read("components/taoist-talisman-catalog.module.css");
-  assert.match(page,/TaoistTalismanCatalog locale=\{locale\}/);
+  assert.match(page,/TaoistTalismanCatalog locale=\{locale\} standalone/);
+  assert.match(hub,/data-holistic-talisman-catalog-link/);
+  assert.doesNotMatch(hub,/TaoistTalismanCatalog locale/);
   assert.doesNotMatch(page,/<SupportTalismanGallery locale=\{locale\}/);
   assert.match(widget,/data-taoist-talisman-catalog/);
   assert.match(widget,/role="region" tabIndex=\{0\}/);
   assert.match(widget,/data-tao-talisman-order=\{item.id\}/);
   assert.match(widget,/HolisticInlineSupportOrder key=\{selection.id\}/);
+  assert.match(widget,/useState<Talisman \| null>\(standalone \? TAOIST_TALISMANS\[0\] : null\)/);
+  assert.match(widget,/data-tao-selected-item=\{selection.id\}/);
+  assert.match(widget,/Image src=\{selection.image\}/);
   assert.match(widget,/archiveOpen && <div/);
   assert.match(widget,/SupportTalismanGallery locale=\{locale\}/);
   assert.match(css,/overflow:auto/);
+  assert.match(css,/\.standalone \.scroller\{max-height:none;overflow:visible/);
+  assert.match(css,/\.selectionHero/);
   assert.match(css,/grid-template-columns:96px minmax\(0,1fr\)/);
   assert.match(css,/max-width:355px/);
   for (const locale of ["en","ru","es"]) {
@@ -67,10 +75,14 @@ test("Catalog choice remains explicit from selected card to encrypted master inb
   assert.match(read("lib/app/repository.js"),/createPractitionerClientMessages/);
   assert.doesNotMatch(read("components/taoist-talisman-catalog.tsx"),/sessionStorage|localStorage/);
 });
-test("Themed and catalog order panels coordinate, keeping just one active",()=>{
+test("Themed entry navigates into one standalone order, keeping private drafts inside the secured flow",()=>{
   const filter=read("components/holistic-support-topic-filter.tsx");
   const catalog=read("components/taoist-talisman-catalog.tsx");
-  for(const file of [filter,catalog])assert.match(file,/hh-support-order-open/);
-  assert.match(filter,/setOrderKind\(null\)/);
-  assert.match(catalog,/setSelection\(null\)/);
+  const source=read("app/[locale]/talismans/page.tsx");
+  assert.match(filter,/\/talismans/);
+  assert.match(source,/data-talisman-standalone-page/);
+  assert.doesNotMatch(filter,/<HolisticInlineSupportOrder/);
+  assert.match(catalog,/setSelection\(item\)/);
+  assert.match(catalog,/initialTalismanId=\{selection.id\}/);
+  assert.doesNotMatch(source,/sessionStorage|checkout|paymentIntent/);
 });

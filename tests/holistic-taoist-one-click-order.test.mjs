@@ -9,8 +9,10 @@ test("Catalog Order loads published talisman master without repeating search fil
  const booking=read("components/remote-energy-support-booking.tsx");
  assert.match(item,/initialGoal=\{selection\.goal\} initialTalismanId=\{selection\.id\}/);
  assert.match(wizard,/const catalogMode = kind === "talisman" && Boolean\(initialTalismanId\)/);
- assert.match(wizard,/useState\(catalogMode\)/);
- assert.match(wizard,/setSearched\(Boolean\(initialTalismanId\)\)/);
+ assert.match(wizard,/useState\(true\)/);
+ assert.doesNotMatch(wizard,/setSearched\(false\)/);
+ assert.match(item,/standalone \? TAOIST_TALISMANS\[0\] : null/);
+ assert.match(item,/data-tao-selected-item=\{selection.id\}/);
  assert.match(wizard,/\{!catalogMode && <div className=\{styles\.picker\}>/);
  assert.match(wizard,/\{catalogMode \? t\.catalogTitle : t\.title\}/);
  assert.match(wizard,/fetch\(query, \{ credentials: "omit"/);

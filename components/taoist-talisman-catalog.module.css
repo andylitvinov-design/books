@@ -44,3 +44,50 @@
 .order{padding:8px 10px;font-size:11.2px}
 }
 @media(prefers-reduced-motion:reduce){.scroller{scroll-behavior:auto}}
+
+/* Dedicated, product-first catalog. No nested page-height scroller or wizard cards. */
+.standalone{gap:13px}
+.standalone .scroller{max-height:none;overflow:visible;padding:0;scroll-snap-type:none;gap:12px}
+.standalone .card{grid-template-columns:clamp(130px,25%,205px) minmax(0,1fr);min-height:176px;border-radius:18px;background:#fffefb}
+.standalone .photo{min-height:176px}
+.standalone .description{font-size:13px;line-height:1.48}
+.standalone .order{background:#86465d;border-color:#86465d}
+.standalone .order:hover{background:#71384b}
+.standalone .order[aria-pressed="true"]{background:#65452f;border-color:#65452f}
+.standalone .request{margin-top:10px;gap:9px;border-top:1px solid #e7d9c8;padding:16px 0 3px}
+.selectionHero{display:grid;grid-template-columns:clamp(130px,24%,182px) minmax(0,1fr);min-width:0;overflow:hidden;border:1px solid #deccb6;border-radius:18px;background:linear-gradient(108deg,#f2e4d2,#fffcf7 60%)}
+.selectionPhoto{position:relative;min-height:180px;background:#e5d3b5}
+.selectionPhoto img{object-fit:cover}
+.selectionCopy{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:17px 19px}
+.selectionCopy .selected{color:#876444;font:800 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.09em;text-transform:uppercase}
+.selectionCopy h3{margin:0;color:#533829;font:400 clamp(23px,3vw,31px)/1.15 Georgia,"Times New Roman",serif}
+.selectionCopy>p:not(.selected){margin:0;color:#65574b;font:13px/1.5 Arial,Helvetica,sans-serif}
+.selectionPrice{color:#6b4f37;font:750 12px/1.4 Arial,Helvetica,sans-serif}
+.standalone .explanation{margin:0 4px 5px;font-size:12px;line-height:1.5}
+@media(max-width:430px){
+ .standalone .scroller{gap:9px}
+ .standalone .card{grid-template-columns:116px minmax(0,1fr);min-height:178px}
+ .standalone .photo{min-height:178px}
+ .standalone .details{padding:11px;gap:7px}
+ .standalone .details h3{font-size:20px}
+ .standalone .description{font-size:11.8px;line-height:1.4}
+ .selectionHero{grid-template-columns:112px minmax(0,1fr)}
+ .selectionPhoto{min-height:168px}
+ .selectionCopy{padding:12px;gap:6px}
+ .selectionCopy h3{font-size:21px}
+ .selectionCopy>p:not(.selected){font-size:11.5px;line-height:1.42}
+ .selectionPrice{font-size:10.8px}
+}
+@media(max-width:355px){
+ .standalone .card{grid-template-columns:99px minmax(0,1fr);min-height:185px}
+ .standalone .photo{min-height:185px}
+ .standalone .details{padding:9px}
+ .standalone .details h3{font-size:18px}
+ .standalone .description{font-size:11.3px}
+ .standalone .order{padding:8px 10px}
+ .selectionHero{grid-template-columns:93px minmax(0,1fr)}
+ .selectionPhoto{min-height:175px}
+ .selectionCopy{padding:10px}
+ .selectionCopy h3{font-size:19px}
+ .selectionCopy>p:not(.selected){font-size:11px}
+}

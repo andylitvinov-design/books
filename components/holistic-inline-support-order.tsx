@@ -65,13 +65,14 @@ const copy = {
   },
 } as const;
 
-export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialTalismanId = "", onKindChange, onClose }: {
+export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialTalismanId = "", onKindChange, onClose, standalone = false }: {
   locale: PublicLocale;
   kind: SupportRequestKind;
   initialGoal: string;
   initialTalismanId?: string;
   onKindChange: (kind: SupportRequestKind) => void;
   onClose: () => void;
+  standalone?: boolean;
 }) {
   // A selected catalog design already fixes the theme and service kind.
   // Do not make the buyer repeat the three-row search screen.
@@ -79,15 +80,16 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   const [choice, setChoice] = useState<RequestChoice>(kind);
   const [topic, setTopic] = useState(initialGoal);
   const [budget, setBudget] = useState<Budget>("any");
-  const [searched, setSearched] = useState(catalogMode);
+  // Results are visible immediately, including on a cold-load dedicated page.
+  const [searched, setSearched] = useState(true);
   const [masters, setMasters] = useState<EnergySupportMaster[] | null>(null);
   const [consultations, setConsultations] = useState<ConsultationOffer[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const t = copy[locale];
 
-  useEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
-  useEffect(() => { setTopic(initialGoal); setSearched(Boolean(initialTalismanId)); }, [initialGoal, initialTalismanId]);
+  useEffect(() => { setChoice(kind); setSearched(true); }, [kind, initialTalismanId]);
+  useEffect(() => { setTopic(initialGoal); setSearched(true); }, [initialGoal, initialTalismanId]);
 
   useEffect(() => {
     if (!searched) return;
@@ -121,7 +123,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
     .slice(0, 16);
 
   return (
-    <aside className={styles.panel} id="holistic-inline-order" data-holistic-inline-order={choice}
+    <aside className={styles.panel + (standalone ? " " + styles.standalone : "")} id="holistic-inline-order" data-holistic-inline-order={choice}
       aria-labelledby="holistic-inline-order-title">
       <div className={styles.heading}>
         <h3 id="holistic-inline-order-title" tabIndex={-1}>{catalogMode ? t.catalogTitle : t.title}</h3>
@@ -132,7 +134,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
           <p className={styles.groupLabel}>{t.topic}</p>
           <div className={styles.threeColumns}>
             {TOPICS.map(item => <button type="button" key={item.id} data-support-theme={item.id}
-              aria-pressed={topic === item.goal} onClick={() => { setTopic(item.goal); setSearched(false); }}>
+              aria-pressed={topic === item.goal} onClick={() => { setTopic(item.goal); setSearched(true); }}>
               {t.themes[item.id]}
             </button>)}
           </div>
@@ -143,7 +145,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
             {(["energy", "talisman", "consultation"] as const).map(value =>
               <button type="button" key={value} data-support-choice={value}
                 aria-pressed={choice === value} onClick={() => {
-                  setChoice(value); setSearched(false);
+                  setChoice(value); setSearched(true);
                   if (value !== "consultation") onKindChange(value);
                 }}>{t.kinds[value]}</button>)}
           </div>
@@ -153,13 +155,19 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
           <div className={styles.fourColumns}>
             {(["any", "free", "20", "100"] as const).map(value =>
               <button type="button" key={value} data-support-budget={value}
-                aria-pressed={budget === value} onClick={() => { setBudget(value); setSearched(false); }}>
+                aria-pressed={budget === value} onClick={() => { setBudget(value); setSearched(true); }}>
                 {t.budgets[value]}</button>)}
           </div>
         </div>
-        <button type="button" data-support-search className={styles.search}
+        {!standalone && <button type="button" data-support-search className={styles.search}
           aria-controls="holistic-inline-results" aria-expanded={searched}
-          onClick={() => setSearched(true)}>{t.search}<span aria-hidden="true">→</span></button>
+          onClick={() => {
+             setSearched(true);
+             document.getElementById("holistic-inline-results")?.scrollIntoView({
+               block: "start",
+               behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+             });
+           }}>{t.search}<span aria-hidden="true">→</span></button>}
         <p className={styles.note}>{t.note}</p>
       </div>}
       <div id="holistic-inline-results" className={styles.results} hidden={!searched}>

@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { HolisticSupportChoices } from "@/components/holistic-support-choices";
-import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticMeditationGallery } from "@/components/holistic-meditation-gallery";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -56,7 +55,8 @@ const copy = {
     freeEngineLead: "This separate, browser-based symbolic reflection is not the personal coaching diagnostic or a booking. No AI practitioner or medical diagnosis.",
     talismanEyebrow: "04 · SYMBOLS & TALISMANS",
     talismanSectionTitle: "Daoist Talismans · Discover & Request",
-    talismanSectionLead: "Browse Fu-style symbolic talismans, explore their intentions and request a personal piece. The master confirms price and availability.",
+    talismanSectionLead: "Discover illustrated Fu-style designs and their meanings in the dedicated catalogue.",
+    talismanCatalogAction: "Explore talismans & practitioners",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditations · Videos",
     meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
@@ -110,7 +110,8 @@ const copy = {
     freeEngineLead: "Это отдельная символическая практика в браузере, не личная диагностика, не запись и не медицинский совет.",
     talismanEyebrow: "04 · СИМВОЛЫ И ТАЛИСМАНЫ",
     talismanSectionTitle: "Даосские талисманы · Каталог",
-    talismanSectionLead: "Посмотрите даосские талисманы Фу и выберите подходящий символ. Изготовление и цену мастер подтвердит отдельно.",
+    talismanSectionLead: "Фотографии и описания талисманов, выбор изделия и мастера — на отдельной странице.",
+    talismanCatalogAction: "Смотреть каталог талисманов",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
     meditationSectionTitle: "Медитации · Видео",
     meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
@@ -164,7 +165,8 @@ const copy = {
     freeEngineLead: "Es otra práctica simbólica en el navegador, no una evaluación personal, cita ni diagnóstico médico.",
     talismanEyebrow: "04 · SÍMBOLOS Y TALISMANES",
     talismanSectionTitle: "Talismanes taoístas · Catálogo",
-    talismanSectionLead: "Explora talismanes de estilo Fu y solicita una pieza personal. El profesional confirma el precio y la disponibilidad.",
+    talismanSectionLead: "Explora los diseños Fu y encuentra los profesionales disponibles en una página independiente.",
+    talismanCatalogAction: "Ver el catálogo de talismanes",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditaciones · Vídeos",
     meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
@@ -252,7 +254,15 @@ export default async function HolisticSupportPage({ params }: Props) {
             <h2 id="holistic-talismans-title">{t.talismanSectionTitle}</h2>
             <p>{t.talismanSectionLead}</p>
           </div>
-          <TaoistTalismanCatalog locale={locale} />
+          <Link className={styles.talismanCatalogLink} href={"/" + locale + "/talismans"} prefetch={false} data-holistic-talisman-catalog-link>
+            <span className={styles.talismanPreviewImage}>
+              <Image src="/images/holistic-house/tao-fu-prosperity.webp" alt="" fill sizes="(max-width:600px) 108px, 150px" />
+            </span>
+            <span className={styles.talismanPreviewContent}>
+              <strong>{t.talismanCatalogAction} →</strong>
+              <small>{t.talismanSectionLead}</small>
+            </span>
+          </Link>
         </section>
 
         <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">

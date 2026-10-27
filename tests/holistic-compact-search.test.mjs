@@ -53,8 +53,10 @@ test("mobile chooser is one-stage, full-width, 3 × 3 × 4 choices and one Searc
   assert.match(component, /data-support-choice=\{value\}/);
   assert.match(component, /data-support-budget=\{value\}/);
   assert.match(component, /data-support-search/);
-  assert.match(component, /setSearched\(true\)/);
+  assert.match(component, /useState\(true\)/);
+  assert.doesNotMatch(component, /setSearched\(false\)/);
   assert.match(component, /hidden=\{!searched\}/);
+  assert.match(component, /standalone \? " " \+ styles.standalone/);
   assert.match(component, /"energy", "talisman", "consultation"/);
   assert.match(component, /"any", "free", "20", "100"/);
   assert.match(component, /matchesHolisticEuroBudget\(/);

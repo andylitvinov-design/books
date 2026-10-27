@@ -32,8 +32,9 @@ test("Holistic Support thematic navigation reuses existing public routes and pra
   assert.match(page, /id="meditation-practices"/);
   assert.match(meditations, /freeMeditationVideos\(locale: PublicLocale\)/);
   assert.match(filter, /data-holistic-order-trigger=\{id\}/);
-  assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\}/);
-  assert.match(filter, /onClose=\{\(\) => setOrderKind\(null\)\}/);
+  assert.match(filter, /\/talismans/);
+  assert.match(filter, /\/support-options\?topic=/);
+  assert.doesNotMatch(filter, /HolisticInlineSupportOrder/);
   assert.match(page, /id="talismans"/);
   assert.match(support, /RemoteEnergySupport/);
 });
