@@ -16,10 +16,12 @@ type Props = {
   initialLocale: Locale;
   storageReady: boolean;
   entities: { remedies: EntityOption[]; books: EntityOption[] };
+  masters: { slug: string; name: string }[];
 };
 type FormValues = {
   youtubeUrl: string;
   title: string;
+  practitionerSlug: string;
   description: string;
   transcript: string;
   driveUrl: string;
@@ -36,13 +38,14 @@ const copy = {
     unavailable: "Сохранение видео сейчас недоступно. Изменения не будут опубликованы. Подключение хранилища нужно проверить.",
     chooseRemedy: "Выберите препарат", chooseBook: "Выберите книгу", destination: "Страница назначения", openPage: "Открыть страницу",
     link: "Ссылка на видео YouTube / HeyGen", linkHelp: "Вставьте ссылку YouTube или ссылку Share / Embed из HeyGen.",
+    master: "Автор · мастер", chooseMaster: "Выберите опубликованного мастера", masterHelp: "Имя мастера появится под видео; на его странице посетитель увидит все опубликованные ролики.",
     title: "Название видео", titlePlaceholder: "Например: как проходит личная консультация", visibility: "Доступ на YouTube",
     unlisted: "Доступ по ссылке (Unlisted)", public: "Открытый доступ (Public)", visibilityHelp: "«Личное» (Private) видео не откроется у посетителей. Доступ по ссылке подходит для сайта.",
     heygenVisibilityHelp: "В HeyGen включите доступ по публичной ссылке. Проверьте, что видео открывается без входа в аккаунт.",
     details: "Описание, текст и архив", description: "Короткое описание", transcript: "Текст видео / расшифровка", transcriptHelp: "Посетитель сможет раскрыть текст под видео. Субтитры настраиваются в сервисе, где размещено видео.",
     duration: "Длительность, секунд", archive: "Ссылка на оригинал в Google Drive", archiveHelp: "Только для вашего архива. Эта ссылка не появится на публичной странице.",
     preview: "Предпросмотр", previewHelp: "Добавьте ссылку на видео YouTube или HeyGen, чтобы проверить воспроизведение.", invalidLink: "Проверьте ссылку: нужна ссылка на видео YouTube или ссылка Share / Embed из HeyGen.",
-    reviewed: "Я проверил видео: оно открывается и предназначено для посетителей сайта.",
+    reviewed: "Я проверил видео, согласие автора и право публикации на сайте.",
     save: "Сохранить черновик", publish: "Опубликовать на странице", update: "Обновить публикацию", hide: "Скрыть с сайта", saving: "Сохранение…",
     youtubePending: "публичных видео ожидают переноса на YouTube", youtubeMigration: "Для этого опубликованного видео пока нет подтверждённой YouTube-копии. Действующий HeyGen-плеер сохраняется до загрузки оригинала как Unlisted и проверки просмотра без входа.", youtubeUploader: "Загрузить на YouTube", youtubeReady: "YouTube ID указан. Проверьте воспроизведение в предпросмотре перед публикацией.",
     draftHelp: "Сохранение черновика не меняет видео, которое уже видят посетители.", unsaved: "Есть несохранённые изменения", current: "Сейчас на сайте", watch: "Открыть видео",
@@ -54,6 +57,7 @@ const copy = {
       conflict: "Эту запись уже изменили в другом окне. Обновите список перед сохранением.",
       approval: "Сначала проверьте видео и отметьте подтверждение под предпросмотром.",
       destination: "Не удалось найти выбранную страницу. Выберите её заново.",
+      master: "Выберите существующего опубликованного мастера. Нельзя публиковать ролик от имени неподтверждённого профиля.",
       validation: "Проверьте поля: для публикации нужны название и корректная ссылка YouTube или HeyGen; архивная ссылка должна вести в Google Drive.",
     },
   },
@@ -64,13 +68,14 @@ const copy = {
     unavailable: "Video storage is currently unavailable. Changes cannot be published until the storage connection is checked.",
     chooseRemedy: "Choose a remedy", chooseBook: "Choose a book", destination: "Destination page", openPage: "Open page",
     link: "YouTube / HeyGen video link", linkHelp: "Paste a YouTube link or a Share / Embed link from HeyGen.",
+    master: "Author · practitioner", chooseMaster: "Select an approved practitioner", masterHelp: "The name links to the practitioner profile with all their published videos.",
     title: "Video title", titlePlaceholder: "For example: what happens in a personal consultation", visibility: "YouTube visibility",
     unlisted: "Unlisted — anyone with the link", public: "Public — discoverable on YouTube", visibilityHelp: "Private videos will not play for visitors. Unlisted is suitable for website videos.",
     heygenVisibilityHelp: "Enable public link sharing in HeyGen. Check that the video opens without signing in.",
     details: "Description, transcript and archive", description: "Short description", transcript: "Video text / transcript", transcriptHelp: "Visitors can expand the transcript below the video. Manage captions in the service hosting the video.",
     duration: "Duration in seconds", archive: "Original file in Google Drive", archiveHelp: "For your archive only. This link is never shown on the public page.",
     preview: "Preview", previewHelp: "Add a YouTube or HeyGen video link to check playback.", invalidLink: "Check the link: use a YouTube video link or a Share / Embed link from HeyGen.",
-    reviewed: "I checked that the video plays and is intended for website visitors.",
+    reviewed: "I checked playback, author consent and permission to publish this video.",
     save: "Save draft", publish: "Publish to page", update: "Update publication", hide: "Hide from website", saving: "Saving…",
     youtubePending: "public videos awaiting a YouTube copy", youtubeMigration: "This published video has no confirmed YouTube counterpart yet. The working HeyGen player stays until you upload the approved original as Unlisted and verify anonymous playback.", youtubeUploader: "Upload to YouTube", youtubeReady: "YouTube ID entered. Verify playback in the preview before publishing.",
     draftHelp: "Saving a draft does not change the video visitors already see.", unsaved: "Unsaved changes", current: "Currently on the website", watch: "Open video",
@@ -82,6 +87,7 @@ const copy = {
       conflict: "This record changed in another window. Refresh the list before saving.",
       approval: "Check the video first, then tick the confirmation below the preview.",
       destination: "The selected page could not be found. Please select it again.",
+      master: "Select an existing approved practitioner before publishing this video.",
       validation: "Check the fields: publishing needs a title and valid YouTube or HeyGen link; an archive link must point to Google Drive.",
     },
   },
@@ -92,6 +98,7 @@ function valuesFor(record?: SiteVideoRecord): FormValues {
   return {
     youtubeUrl: record?.draft?.youtubeUrl ?? (source ? siteVideoWatchUrl(source) : ""),
     title: source?.title ?? "",
+    practitionerSlug: source?.practitionerSlug ?? "",
     description: source?.description ?? "",
     transcript: source?.transcript ?? "",
     driveUrl: record?.draft?.driveUrl ?? "",
@@ -101,7 +108,7 @@ function valuesFor(record?: SiteVideoRecord): FormValues {
   };
 }
 
-export function SiteVideoManager({ initialRecords, initialLocale, storageReady, entities }: Props) {
+export function SiteVideoManager({ initialRecords, initialLocale, storageReady, entities, masters }: Props) {
   const [uiLocale, setUiLocale] = useState<Locale>(initialLocale);
   const [locale, setLocale] = useState<VideoLocale>("en");
   const [slotId, setSlotId] = useState("home-intro");
@@ -231,6 +238,14 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
             <form className="site-video-editor-form" onSubmit={event => event.preventDefault()}>
               <label className="site-video-field"><span>{text.link}</span><input name="youtubeUrl" value={form.youtubeUrl} disabled={pending} maxLength={2048} placeholder="https://youtu.be/… / https://app.heygen.com/share/…" autoComplete="off" spellCheck={false} onChange={event => change({ youtubeUrl: event.target.value })} /><small>{text.linkHelp}</small>{form.youtubeUrl.trim() && !source && <small className="site-video-field-error">{text.invalidLink}</small>}</label>
               <label className="site-video-field"><span>{text.title}</span><input name="title" value={form.title} disabled={pending} maxLength={160} placeholder={text.titlePlaceholder} onChange={event => change({ title: event.target.value })} /></label>
+              <label className="site-video-field" data-video-master-selector>
+                <span>{text.master}</span>
+                <select name="practitionerSlug" value={form.practitionerSlug} disabled={pending || !masters.length} onChange={event => change({ practitionerSlug: event.target.value })}>
+                  <option value="">{text.chooseMaster}</option>
+                  {masters.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
+                </select>
+                <small>{text.masterHelp}</small>
+              </label>
               {youtubeConfigured && <p className="site-video-draft-help" data-youtube-migration="linked">{text.youtubeReady}</p>}
               {source?.youtubeId ? <label className="site-video-field"><span>{text.visibility}</span><select name="youtubeVisibility" value={form.youtubeVisibility} disabled={pending} onChange={event => change({ youtubeVisibility: event.target.value as "unlisted" | "public" })}><option value="unlisted">{text.unlisted}</option><option value="public">{text.public}</option></select><small>{text.visibilityHelp}</small></label> : source?.heygenId ? <p className="site-video-draft-help">{text.heygenVisibilityHelp}</p> : null}
 
@@ -244,11 +259,16 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
 
               <section className="site-video-admin-preview" aria-label={text.preview}>
                 <p className="site-video-field-label">{text.preview}</p>
-                {source ? <SiteVideoPlayer video={{ ...source, title: form.title || text.preview, description: form.description, transcript: form.transcript, language: locale, ...(Number(form.durationSeconds) > 0 ? { durationSeconds: Number(form.durationSeconds) } : {}) }} locale={uiLocale} /> : <div className="site-video-preview-empty"><Film size={30} strokeWidth={1.3} aria-hidden="true" /><p>{text.previewHelp}</p></div>}
+                {source ? <SiteVideoPlayer video={{ ...source, title: form.title || text.preview, description: form.description, transcript: form.transcript, language: locale,
+                  ...(form.practitionerSlug && masters.some(item => item.slug === form.practitionerSlug) ? {
+                    practitionerSlug: form.practitionerSlug,
+                    practitionerName: masters.find(item => item.slug === form.practitionerSlug)?.name,
+                  } : {}),
+                  ...(Number(form.durationSeconds) > 0 ? { durationSeconds: Number(form.durationSeconds) } : {}) }} locale={uiLocale} /> : <div className="site-video-preview-empty"><Film size={30} strokeWidth={1.3} aria-hidden="true" /><p>{text.previewHelp}</p></div>}
               </section>
               <label className="site-video-review-check"><input name="reviewed" type="checkbox" checked={form.reviewed} disabled={pending || !source} onChange={event => change({ reviewed: event.target.checked })} /><span>{text.reviewed}</span></label>
               <div className="site-video-editor-actions">
-                <button type="button" className="site-video-admin-button site-video-admin-button--primary" disabled={pending || !storageReady || !source || !form.title.trim() || !form.reviewed} onClick={() => save("publish")}>{pending ? text.saving : record?.published ? text.update : text.publish}</button>
+                <button type="button" className="site-video-admin-button site-video-admin-button--primary" disabled={pending || !storageReady || !source || !form.title.trim() || !form.practitionerSlug || !masters.some(item => item.slug === form.practitionerSlug) || !form.reviewed} onClick={() => save("publish")}>{pending ? text.saving : record?.published ? text.update : text.publish}</button>
                 <button type="button" className="site-video-admin-button" disabled={pending || !storageReady} onClick={() => save("draft")}><Save size={16} aria-hidden="true" />{text.save}</button>
                 {record?.published && <button type="button" className="site-video-hide" disabled={pending || !storageReady} onClick={() => save("hide")}>{text.hide}</button>}
               </div>

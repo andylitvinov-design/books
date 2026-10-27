@@ -48,9 +48,18 @@ try {
     // Match production HTTPS validation without weakening the application rule.
     server.listen(443, '127.0.0.1')
     await once(server, 'listening')
+    // The production build is tested separately above. This isolated app
+    // exercises real admin actions with the existing RLS-protected PostgreSQL
+    // practitioner directory plus ephemeral Redis; Next production mode
+    // intentionally refuses loopback synthetic DB credentials.
+    assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+    assert.match(process.env.HH_APP_DATABASE_URL || '', /^postgres:\/\/hh_app_ci_login:[^@]+@127\.0\.0\.1:5432\/hh_app_test$/)
     const log = createWriteStream(`${evidence}/local-app.log`)
-    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100', '-H', '127.0.0.1'], {
-      env: { ...process.env, PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
+    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3100', '-H', '127.0.0.1'], {
+      env: { ...process.env, NODE_ENV: 'development', HH_APP_ENABLED: 'true',
+        PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '',
+        PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1',
+        PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     app.stdout.pipe(log); app.stderr.pipe(log)
@@ -165,11 +174,11 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
@@ -177,7 +186,10 @@ try {
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      const locator = route.endsWith('/free-situation-review')
+        ? '[data-free-review-intro-video]'
+        : topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`
+      const block = page.locator(locator)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -186,7 +198,7 @@ try {
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
+      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000, message: `Playback on ${route} must match its approved source ${expectedUrl}` }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
@@ -248,6 +260,10 @@ try {
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
       // All 16 canonical site-video slots are selectable in the same editor.
       await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
+      // Approval is read from the actual isolated PostgreSQL fixture with RLS,
+      // not injected into the browser or mocked in the public form.
+      await expect(target.locator('select[name="practitionerSlug"] option[value="andy-litvinov"]'))
+        .toHaveText('Andy')
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -258,6 +274,7 @@ try {
     async function fill(title, target = editor) {
       await target.locator('input[name="youtubeUrl"]').fill('https://youtu.be/OkLEN8Zb-sY?si=test-tracker')
       await target.locator('input[name="title"]').fill(title)
+      await target.locator('select[name="practitionerSlug"]').selectOption('andy-litvinov')
     }
     async function save(intent, target = editor) {
       if (intent === 'publish') {
@@ -306,9 +323,30 @@ try {
           }, RECEIPT_SESSION_KEY)
           await page.reload({ waitUntil: 'domcontentloaded' })
         }
-        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+        if (slot.id === 'home-intro') {
+          // Deliberately archived site intros cannot replace the home's
+          // dedicated testimonial surface, even when their editor has a
+          // reviewed publication. The owner profile can still list them.
+          await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
+        } else {
+          await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+          await expect(page.locator('.site-video-player').filter({ hasText: title })
+            .locator('.site-video-master-link')).toHaveAttribute(
+              'href', '/' + locale + '/masters/andy-litvinov#practitioner-videos')
+        }
+        if (locale === 'en' && slot.id === 'home-intro') {
+          // Follow the same published snapshot through its verified author
+          // to the real master gallery. Long catalogues may start collapsed.
+          await navigate('/en/masters/andy-litvinov')
+          const gallery = page.locator('#practitioner-videos')
+          await expect(gallery).toBeVisible()
+          const showAll = gallery.getByRole('button', { name: /Show all videos/ })
+          if (await showAll.count()) await showAll.click()
+          await expect(gallery.getByText(title, { exact: true })).toBeVisible()
+          pass('Real approved master profile displays the newly published site video')
+        }
       }
-      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
+      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions, RLS PostgreSQL and isolated Redis`)
     }
     await choose(SITE_VIDEO_SLOTS[0])
     await editor.screenshot({ path: `${evidence}/editor-desktop.png`, fullPage: true })
@@ -355,7 +393,7 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(2)
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')

@@ -309,3 +309,10 @@
   .site-video-player { break-inside: avoid; box-shadow: none; }
   .site-video-player .site-video-caption { padding: 12px; }
 }
+
+
+/* Verified public author links are available without opening the player. */
+.site-video-master-byline{margin:8px 0 10px;font:500 13px/1.5 var(--font-sans,Arial,sans-serif);color:#695d50;overflow-wrap:anywhere}
+.site-video-master-link{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:36px;color:#765035;text-decoration:underline;text-underline-offset:3px;font-weight:700}
+.site-video-master-all{font-size:12px;font-weight:500;white-space:normal}
+.site-video-master-link:focus-visible{outline:2px solid #765035;outline-offset:3px;border-radius:3px}

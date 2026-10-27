@@ -10,6 +10,9 @@ import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
 import { requireAdminRequest } from "@/lib/prescriptions/admin";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import type { SiteVideoRecord } from "@/lib/site-videos/model";
 import { builtInSiteVideoRecords } from "@/lib/site-videos/defaults";
 import { getSiteVideoStore } from "@/lib/site-videos/store";
@@ -35,6 +38,16 @@ export default async function SiteVideosPage() {
     // Configuration and connection errors stay out of HTML and browser logs.
   }
 
+  // Only already approved, public practitioner profiles may be attributed.
+  let masters: { slug: string; name: string }[] = [];
+  try {
+    const approved: PublicPractitioner[] = await createPractitionerRepository(getAppConfig()).listPublicPractitioners("en");
+    masters = approved.map(item => ({
+      slug: item.slug,
+      name: item.profile.displayName || item.profile.name || item.slug,
+    })).filter(item => Boolean(item.name));
+  } catch { /* Publishing remains disabled when the verified master directory is unavailable. */ }
+
   const entities = {
     remedies: getRemedyDirectory("en").map(remedy => ({ id: remedy.slug, label: { en: remedy.title, ru: remedy.title } })),
     books: books.map(book => ({ id: book.id, label: { en: localizedBookText(book, "en").title, ru: localizedBookText(book, "ru").title } })),
@@ -46,7 +59,7 @@ export default async function SiteVideosPage() {
         title={{ en: "Website videos", ru: "Видео сайта" }}
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
-      <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} />
+      <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} masters={masters} />
       <KlingSceneStudio
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
