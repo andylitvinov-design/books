@@ -34,9 +34,10 @@ const copy = {
   },
 } as const;
 
-export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
+export function TaoistTalismanCatalog({ locale, standalone = false }: { locale: PublicLocale; standalone?: boolean }) {
   const t = copy[locale];
-  const [selection, setSelection] = useState<Talisman | null>(null);
+  const [selection, setSelection] = useState<Talisman | null>(standalone ? TAOIST_TALISMANS[0] : null);
+  const [hasPicked, setHasPicked] = useState(false);
   const [kind, setKind] = useState<SupportRequestKind>("talisman");
   const [archiveOpen, setArchiveOpen] = useState(false);
 
@@ -49,7 +50,7 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
   }, []);
 
   useEffect(() => {
-    if (!selection) return;
+    if (!selection || !hasPicked) return;
     const panel = document.getElementById("holistic-inline-order");
     if (!panel) return;
     panel.scrollIntoView({
@@ -57,16 +58,17 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
       behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
     panel.querySelector<HTMLElement>("#holistic-inline-order-title")?.focus({ preventScroll:true });
-  }, [selection]);
+  }, [selection, hasPicked]);
 
   const choose = (item: Talisman) => {
     window.dispatchEvent(new CustomEvent("hh-support-order-open", { detail:{ source:"catalog" } }));
     setKind("talisman");
+    setHasPicked(true);
     setSelection(item);
   };
 
   return (
-    <div className={styles.root} data-taoist-talisman-catalog>
+    <div className={styles.root + (standalone ? " " + styles.standalone : "")} data-taoist-talisman-catalog>
       <div className={styles.scroller} role="region" tabIndex={0} aria-label={t.scroll}>
         {TAOIST_TALISMANS.map(item => (
           <article key={item.id} className={styles.card} data-tao-talisman={item.id}>
@@ -82,6 +84,7 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
                 <span className={styles.price}><small>{t.price}</small><strong>{t.quote}</strong></span>
                 <button type="button" className={styles.order}
                   data-tao-talisman-order={item.id}
+                  aria-pressed={selection?.id === item.id}
                   aria-expanded={selection?.id === item.id && kind === "talisman"}
                   aria-controls="holistic-inline-order" onClick={() => choose(item)}>
                   {t.order}<span aria-hidden="true"> →</span>
@@ -95,7 +98,18 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
 
       {selection && (
         <div className={styles.request} data-tao-talisman-request={selection.id}>
-          <p className={styles.selected}><strong>{t.selected}:</strong> {selection[locale].title}</p>
+          <article className={styles.selectionHero} data-tao-selected-item={selection.id}>
+             <div className={styles.selectionPhoto}>
+               <Image src={selection.image} alt={selection[locale].title} fill
+                 sizes="(max-width:430px) 120px, 180px" />
+             </div>
+             <div className={styles.selectionCopy}>
+               <p className={styles.selected}>{t.selected}</p>
+               <h3>{selection[locale].title}</h3>
+               <p>{selection[locale].description}</p>
+               <span className={styles.selectionPrice}>{t.price}: {t.quote}</span>
+             </div>
+           </article>
           <p className={styles.explanation}>{t.enquiry}</p>
           <HolisticInlineSupportOrder key={selection.id} locale={locale} kind={kind}
             initialGoal={selection.goal} initialTalismanId={selection.id}
