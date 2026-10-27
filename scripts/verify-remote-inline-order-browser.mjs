@@ -83,9 +83,10 @@ async function run(engine, locale, width) {
       label + ' no private cabinet navigation')
 
     await page.locator('[data-holistic-order-trigger="talisman"]').click()
-    await support.locator('[data-support-request-kind="talisman"]').waitFor({state:'visible'})
+    await page.locator('[data-remote-support-intent-first][data-support-request-kind="talisman"]').waitFor({state:'visible'})
     const talisman = support.locator('[data-remote-support-specialist]').first()
-    await talisman.locator('button[aria-controls^="remote-request-"]').click()
+    const talismanToggle = talisman.locator('button[aria-controls^="remote-request-"]')
+    if (await talismanToggle.getAttribute('aria-expanded') === 'false') await talismanToggle.click()
     const talismanForm = talisman.locator('[data-remote-order-contact]')
     await talismanForm.waitFor({state:'visible'})
     await talismanForm.locator('input[id^="remote-contact-"]').fill('+14165550123')
