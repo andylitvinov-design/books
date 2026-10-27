@@ -69,7 +69,7 @@ test('all cron paths authenticate and enforce Toronto slot, no anonymous or prev
   assert.deepEqual(cron.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
-    {path:'/api/internal/practice-telegram-digest',schedule:'0 19,20 * * *'},
+    {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
   ])
   for(const [route,slot] of [
