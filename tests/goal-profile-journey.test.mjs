@@ -126,6 +126,13 @@ test('saved goal check-in is read only under account identity; conversion remain
   assert.match(panel,/data-goal-support-facet/)
   assert.match(panel,/eligibleGoalSupportEntry\(test, rule\)/)
   assert.match(panel,/verifiedHistoryView\(results\)\.current/)
+  // /app/tests preselects a test only when BOTH the canonical key and the
+  // exact source scoring axis are supplied; passing suggest alone did nothing.
+  assert.match(panel,/encodeURIComponent\(test\.axis\)/)
+  const explorer = view('components/app/test-explorer.jsx')
+  assert.match(explorer,/const requestedAxis = params\.get\('axis'\)/)
+  assert.match(explorer,/!suggestedKey \|\| !requestedAxis/)
+  assert.match(explorer,/item\.measurementAxes\?\.includes\(requestedAxis\)/)
   assert.match(panel,/SERVICE_PATH/)
   assert.match(panel,/completed/)
   assert.match(editor,/data-goal-checkin-editor/)
