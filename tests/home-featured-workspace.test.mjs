@@ -195,7 +195,40 @@ test("full-height photo stays left and Details → Request stays right at 320–
   assert.doesNotMatch(css, /\.offerAction/);
 })
 
-test("all home cards use the approved compact Tests photo-card visual on EN/RU/ES", () => {
+
+// Source-level declaration checks, not a browser cascade or visual acceptance test.
+function cssDeclarations(selector) {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const block = clean.match(new RegExp("(?:^|})\\s*" + escaped + "\\s*\\{([^{}]*)\\}"));
+  assert.ok(block, "Missing exact rule: " + selector);
+  const declarations = [];
+  for (const part of block[1].split(";")) {
+    if (!part.trim()) continue;
+    const declaration = part.match(/^\s*([a-z-]+)\s*:\s*(.*?)\s*$/i);
+    assert.ok(declaration, "Expected a real declaration in " + selector);
+    declarations.push([declaration[1].toLowerCase(), declaration[2]]);
+  }
+  return declarations;
+}
+function effectiveBackground(declarations) {
+  return declarations.findLast(([property]) => property === "background" || property === "background-color")?.[1];
+}
+function luminance(hex) {
+  assert.match(hex ?? "", /^#(?:[\da-f]{3}|[\da-f]{6})$/i, "Contrast needs an explicit opaque hex color");
+  const full = hex.length === 4 ? [...hex.slice(1)].map(char => char + char).join("") : hex.slice(1);
+  const linear = full.match(/../g).map(channel => {
+    const value = parseInt(channel, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+}
+function contrast(foreground, background) {
+  const values = [luminance(foreground), luminance(background)].sort((a, b) => a - b);
+  return (values[1] + 0.05) / (values[0] + 0.05);
+}
+
+test("all home cards retain compact Tests photo-card layout and readable canonical actions in EN/RU/ES", () => {
   const eyebrows = catalog("cardEyebrows");
   for (const locale of ["en", "ru", "es"]) {
     for (const stage of expected) {
@@ -208,13 +241,33 @@ test("all home cards use the approved compact Tests photo-card visual on EN/RU/E
   assert.match(css, /\.offer \{[\s\S]*?grid-template-areas: "photo content";[\s\S]*?padding: 0;/);
   assert.match(css, /\.photo \{[\s\S]*?border-radius: 17px 0 0 17px;/);
   const secondary = css.split("\n.offerSecondary {")[1].split("}")[0];
-  const primary = css.split(".offerPrimary {")[1].split("}")[0];
+  const primaryDeclarations = cssDeclarations(".offerPrimary");
+  const primary = Object.fromEntries(primaryDeclarations);
   assert.match(secondary, /border: 0;/);
   assert.match(secondary, /background: transparent;/);
   assert.match(secondary, /text-decoration: underline;/);
   assert.doesNotMatch(secondary, /border: 1px/);
-  assert.match(primary, /background: linear-gradient\(108deg, #07899c 0%, #305a93 100%\)/);
-  assert.match(primary, /border: 1px solid #187c9f/);
+  // Preserve the published canonical palette during test cleanup. This is not
+  // evidence of an authenticated owner color override after the older blue snapshot.
+  assert.equal(effectiveBackground(primaryDeclarations), "#742c42");
+  assert.match(primary.border ?? "", /^1px\s+solid\s+#742c42$/);
+  assert.ok(contrast(primary.color, effectiveBackground(primaryDeclarations)) >= 4.5,
+    "Primary action text retains at least 4.5:1 contrast");
+  const hoverDeclarations = cssDeclarations(".offerPrimary:hover");
+  const hover = Object.fromEntries(hoverDeclarations);
+  assert.ok(contrast(hover.color ?? primary.color, effectiveBackground(hoverDeclarations)) >= 4.5,
+    "Hovered primary action text retains at least 4.5:1 contrast");
+  const focus = Object.fromEntries(cssDeclarations(".root :is(a, button, summary):focus-visible"));
+  const outline = focus.outline?.match(/^(\d+(?:\.\d+)?)px\s+solid\s+(#[\da-f]{3}(?:[\da-f]{3})?)$/i);
+  assert.ok(outline, "Keyboard focus retains a real solid outline");
+  const width = focus["outline-width"] ?? outline[1] + "px";
+  assert.match(width, /^\d+(?:\.\d+)?px$/);
+  assert.ok(parseFloat(width) >= 2, "Keyboard focus outline is at least 2px");
+  assert.equal(focus["outline-style"] ?? "solid", "solid");
+  assert.match(focus["outline-offset"] ?? "", /^\d+(?:\.\d+)?px$/);
+  assert.ok(parseFloat(focus["outline-offset"]) >= 2, "Keyboard focus outline stays separated from the action");
+  assert.ok(contrast(focus["outline-color"] ?? outline[2], effectiveBackground(cssDeclarations(".offer"))) >= 3,
+    "Keyboard focus outline retains at least 3:1 contrast against the card surface");
   assert.match(css, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);

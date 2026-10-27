@@ -14,6 +14,8 @@ on:
       - 'lib/assessments/portrait-sectors.js'
       - 'scripts/verify-portrait-mobile.mjs'
       - 'scripts/helpers/portrait-frame-readiness.mjs'
+      - 'scripts/helpers/portrait-claim-precompile.mjs'
+      - 'tests/portrait-claim-precompile.test.mjs'
       - 'tests/portrait-frame-readiness.test.mjs'
       - 'scripts/helpers/portrait-navigation-diagnostics.mjs'
       - 'scripts/helpers/isolated-browser-diagnostics.mjs'
@@ -65,7 +67,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci --no-audit --no-fund
       - name: Portrait readiness and diagnostic unit regressions
-        run: node --test tests/portrait-frame-readiness.test.mjs tests/portrait-navigation-diagnostics.test.mjs
+        run: node --test tests/portrait-frame-readiness.test.mjs tests/portrait-navigation-diagnostics.test.mjs tests/portrait-claim-precompile.test.mjs
       - name: Isolated Playwright browser
         run: |
           mkdir -p /tmp/hh-portrait-playwright

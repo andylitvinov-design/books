@@ -72,7 +72,17 @@ const aboutTestimonialVideos = [
   ['itjo2_z2NGk', 'en'], ['4NrryHcEF1A', 'en'], ['hYwRNMxIMjc', 'en'],
   ['MIVLm1GUTtM', 'ru'], ['ttQxUHopaUM', 'ru'], ['VABgpmn4ZYA', 'ru'], ['muOnIHllI7E', 'ru'],
 ]
-function classifyAboutGallery(snapshot) {
+function aboutPosterIdentityMatches(raw, id, configuredOrigin) {
+  // Next 15.5.21 reassigns img.src = img.src when onError is present. Its
+  // resolved URL can replace the original relative content attribute.
+  // Accept only these two exact representations under the configured origin;
+  // no parsing/normalization, optimizer URLs, fallbacks or suffixes are allowed.
+  if (!['http://127.0.0.1:3100', 'https://holistichouse.vercel.app'].includes(configuredOrigin)) return false
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(id)) return false
+  const relative = `/images/holistic-house/testimonial-posters/${id}.webp`
+  return raw === relative || raw === configuredOrigin + relative
+}
+function classifyAboutGallery(snapshot, configuredOrigin) {
   if (!snapshot || !Array.isArray(snapshot.cards)) return 'invalid'
   if (snapshot.galleryCount !== 1) return 'gallery-count'
   if (snapshot.locale !== 'en') return 'gallery-locale'
@@ -87,11 +97,71 @@ function classifyAboutGallery(snapshot) {
     if (card.playerLocale !== 'en') return 'player-locale'
     if (card.audioLanguage !== language) return 'audio-language'
     if (card.playCount !== 1 || card.playDisabled !== false) return 'poster-not-ready'
-    if (card.posterSrc !== `/images/holistic-house/testimonial-posters/${id}.webp`) return 'poster-identity'
+    if (!aboutPosterIdentityMatches(card.posterSrc, id, configuredOrigin)) return 'poster-identity'
   }
   return 'match'
 }
 // END bounded About gallery contract.
+
+// BEGIN bounded About poster diagnostics (measurement only; never an acceptance rule).
+function aboutPosterDiagnosticSnapshot(galleries, { ids, origin }) {
+  function sourceKind(raw, id) {
+    if (typeof raw !== 'string' || !raw) return 'absent'
+    if (raw.length > 2048 || raw !== raw.trim()) return 'invalid'
+    const expected = `/images/holistic-house/testimonial-posters/${id}.webp`
+    if (raw === expected) return 'expected-relative'
+    if (raw === origin + expected) return 'expected-absolute'
+    let url
+    try { url = new URL(raw, origin) } catch { return 'invalid' }
+    if (url.username || url.password) return 'credentials-present'
+    if (url.protocol === 'data:') return 'data-source'
+    if (url.protocol === 'blob:') return 'blob-source'
+    if (!['http:', 'https:'].includes(url.protocol)) return 'other-scheme'
+    if (url.origin === origin) {
+      if (url.pathname === expected) return url.search || url.hash ? 'same-path-with-suffix' : 'same-path-other-form'
+      if (url.pathname === '/_next/image' && url.searchParams.get('url') === expected) return 'same-id-next-image'
+      if (/^\/images\/holistic-house\/testimonial-posters\/[A-Za-z0-9_-]{11}\.webp$/.test(url.pathname)) return 'other-local-testimonial'
+      return 'other-same-origin'
+    }
+    if (url.origin === 'https://i.ytimg.com' && !url.search && !url.hash
+      && [`/vi/${id}/hqdefault.jpg`, `/vi/${id}/maxresdefault.jpg`].includes(url.pathname)) return 'same-id-provider-thumbnail'
+    return 'other-origin'
+  }
+  function imageState(node, id) {
+    return {
+      present: Boolean(node),
+      source: sourceKind(node?.getAttribute('src'), id),
+      currentSource: sourceKind(node?.currentSrc, id),
+      complete: node?.complete === true,
+      hasNaturalWidth: typeof node?.naturalWidth === 'number' && Number.isFinite(node.naturalWidth) && node.naturalWidth > 0,
+    }
+  }
+  const gallery = galleries[0]
+  const cards = gallery ? [...gallery.querySelectorAll('[data-testimonial-video-id]')].slice(0, 11) : []
+  return {
+    status: 'captured', galleryCount: Math.min(galleries.length, 2), cardCount: cards.length,
+    cards: Array.from({ length: 10 }, (_, index) => {
+      const card = cards[index]
+      const id = ids[index]
+      const player = card?.querySelector('.site-video-player')
+      const fallback = player ? [...player.querySelectorAll('img.site-video-fallback-poster')].slice(0, 2) : []
+      const posters = player ? [...player.querySelectorAll('img.site-video-poster')].slice(0, 2) : []
+      return {
+        alias: `about-video-${String(index + 1).padStart(2, '0')}`,
+        present: Boolean(card), idMatches: Boolean(card) && card.getAttribute('data-testimonial-video-id') === id,
+        fallbackCount: fallback.length, posterCount: posters.length,
+        fallback: imageState(fallback[0], id), primary: imageState(posters[0], id),
+      }
+    }),
+  }
+}
+async function withAboutPosterDiagnostic(operation, diagnose) {
+  try { return await operation() } catch (error) {
+    try { await diagnose() } catch { /* Measurement must never replace the original failure. */ }
+    throw error
+  }
+}
+// END bounded About poster diagnostics.
 
 try {
   if (!live) {
@@ -148,6 +218,17 @@ try {
     // Readiness concerns the outer application page, not imported source markup.
     await expect(page.locator('main').first()).toBeVisible()
   }
+  async function recordAboutPosterDiagnostic() {
+    let measurement = { status: 'unavailable' }
+    try {
+      measurement = await page.locator('#about-testimonials[data-personal-testimonials="about"]')
+        .evaluateAll(aboutPosterDiagnosticSnapshot, { ids: aboutTestimonialVideos.map(([id]) => id), origin })
+    } catch { /* No error text, URLs or DOM contents are emitted. */ }
+    const diagnostic = { schemaVersion: 1, caseAlias: 'about-en-gallery', ...measurement }
+    try { writeFileSync(`${evidence}/about-poster-diagnostic.json`, JSON.stringify(diagnostic, null, 2)) }
+    catch { /* Still report the bounded measurement when artifact writing fails. */ }
+    console.error('OBSERVATION: about-poster', JSON.stringify(diagnostic))
+  }
   async function readAboutGallery() {
     // Read only public identity/cardinality attributes. No titles, narratives,
     // transcripts, frame URLs, HTML dumps or client information enter diagnostics.
@@ -178,8 +259,10 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (classifyAboutGallery(await readAboutGallery()) === 'match') break
-      if (i >= 40) throw new Error('Updated module not observed on production')
+      if (classifyAboutGallery(await readAboutGallery(), origin) === 'match') break
+      if (i >= 40) await withAboutPosterDiagnostic(async () => {
+        throw new Error('Updated module not observed on production')
+      }, recordAboutPosterDiagnostic)
       await pause(5000)
     }
   }
@@ -321,8 +404,10 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  await expect.poll(async () => classifyAboutGallery(await readAboutGallery()),
-    { timeout: 10000, message: 'About EN gallery: exact ten locale-first identities, local posters and opt-in players' }).toBe('match')
+  await withAboutPosterDiagnostic(async () => {
+    await expect.poll(async () => classifyAboutGallery(await readAboutGallery(), origin),
+      { timeout: 10000, message: 'About EN gallery: exact ten locale-first identities, local posters and opt-in players' }).toBe('match')
+  }, recordAboutPosterDiagnostic)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
   pass(`${live ? 'Production' : 'Local'}: approved About intro, ten exact locale-first testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })

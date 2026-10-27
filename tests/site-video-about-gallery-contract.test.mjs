@@ -90,7 +90,7 @@ function goodSnapshot() {
 test('About EN renders exactly the six English then four archived Russian identities, one click-to-mount poster player each', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(aboutTestimonialVideos)), expected)
   assertRendered()
-  assert.equal(classifyAboutGallery(goodSnapshot()), 'match')
+  assert.equal(classifyAboutGallery(goodSnapshot(), 'http://127.0.0.1:3100'), 'match')
 })
 
 test('renderer proof rejects compact subsets, unarchived additions, duplicated identities, reversed locale order and wrong audio/player bindings', () => {
@@ -124,16 +124,16 @@ test('browser classifier rejects missing, duplicate and extra cards/players, wro
   ]
   for (const mutate of mutations) {
     const snapshot = goodSnapshot(); mutate(snapshot)
-    const result = classifyAboutGallery(snapshot)
+    const result = classifyAboutGallery(snapshot, 'http://127.0.0.1:3100')
     assert.notEqual(result, 'match')
     assert.match(result, /^[a-z-]{1,30}$/, 'Only a bounded category may be reported')
   }
-  assert.equal(classifyAboutGallery(null), 'invalid')
+  assert.equal(classifyAboutGallery(null, 'http://127.0.0.1:3100'), 'invalid')
 })
 
 test('both local assertion and live readiness use the same exact scoped metadata contract, never pagewide count relaxation', () => {
-  assert.ok(verifier.includes("if (classifyAboutGallery(await readAboutGallery()) === 'match') break"), 'live exact readiness')
-  assert.ok(verifier.includes('await expect.poll(async () => classifyAboutGallery(await readAboutGallery())'), 'local exact gate')
+  assert.ok(verifier.includes("if (classifyAboutGallery(await readAboutGallery(), origin) === 'match') break"), 'live exact readiness')
+  assert.ok(verifier.includes('await expect.poll(async () => classifyAboutGallery(await readAboutGallery(), origin)'), 'local exact gate')
   assert.ok(verifier.includes("message: 'About EN gallery: exact ten locale-first identities, local posters and opt-in players' }).toBe('match')"), 'local oracle accepts only an exact match')
   assert.ok(!/page\.locator\('\.site-video-player'\)\.count\(\)\s*(?:===|,)\s*(?:3|10)/.test(verifier), 'No pagewide cardinality shortcut')
   assert.ok(verifier.includes("page.locator('#about-testimonials[data-personal-testimonials=\"about\"]')"), 'exact gallery selector')

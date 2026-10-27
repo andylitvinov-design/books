@@ -1,3 +1,5 @@
+import { withPublicPickerActionDiagnostics } from './helpers/public-picker-action-diagnostics.mjs'
+import { classifyDiagnosticError } from './helpers/isolated-browser-diagnostics.mjs'
 import { assertFreeReviewLanding, verifyFreeReviewPrivateHandoff } from './helpers/free-review-private-handoff-verifier.mjs'
 import { assertNativeCompactChannelGestures } from './helpers/native-compact-channel-gestures.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
@@ -48,6 +50,7 @@ await context.addInitScript(() => {
   window.addEventListener('popstate', () => console.log('HH_HOME_PROBE '+JSON.stringify({kind:'early-popstate',path:location.pathname,pendingPath:window.__hhCspHardDestination ? new URL(window.__hhCspHardDestination).pathname : null})), {capture:true,passive:true})
 })
 let page=await context.newPage()
+let guestPickerFailurePage=null
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
 page.on('pageerror',capturePageError)
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
@@ -567,6 +570,10 @@ try {
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
+ guestPickerFailurePage=guestPickerPage
+ // Record only fixed categories from this otherwise unobserved public page.
+ // Deduplication bounds output and feeds the existing uncaught-error gate.
+ guestPickerPage.on('pageerror',error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;const category=classifyDiagnosticError(error);const key='guest-picker:'+category;if(!errors.includes(key)){errors.push(key);console.log('SYNTHETIC_GUEST_PICKER_PAGE_ERROR',JSON.stringify({page:'guest-picker',category}))}})
  await guestPickerPage.goto(origin+'/en/client')
  const picker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await expect(picker).toBeVisible({timeout:30000})
@@ -667,8 +674,10 @@ try {
  await expect(recommendationPriority).toHaveCount(1)
  const shorterPriority=recommendationPriority.getByRole('button',{name:'Shorter tests. Prioritize shorter questionnaires',exact:true})
  await expect(shorterPriority).toHaveCount(1)
- await shorterPriority.click()
- await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
+ await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{
+  await shorterPriority.click()
+  await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
+ })
  await optional.locator('summary').click()
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
  await picker.getByRole('button',{name:'Browse full database'}).click()
@@ -719,6 +728,7 @@ try {
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'es')
  await exercisePublicCollections(guestPickerPage,expect,'es')
  await guestPickerContext.close()
+ guestPickerFailurePage=null
  passed('pre-login test picker, optional filters, recommendations and full database')
 
  // The new public course presentation is a real mobile-first landing,
@@ -1476,7 +1486,7 @@ try {
   elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
   log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
   write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
-  screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
+  screenshot:()=>screenshotEvidence(guestPickerFailurePage||page,{path:output+'/failure-synthetic-only.png',fullPage:true,...(guestPickerFailurePage?{mask:[guestPickerFailurePage.locator('input,textarea,[contenteditable]')]}:{})}),
  }) } finally { throw error }
 } finally {
  const outcome=await boundedBestEffort(()=>browser.close())

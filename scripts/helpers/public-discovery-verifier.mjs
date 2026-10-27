@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { withPublicPickerActionDiagnostics } from './public-picker-action-diagnostics.mjs'
 import { PORTRAIT_SECTORS } from '../../lib/assessments/portrait-sectors.js'
 import { availableTestCollections } from '../../lib/assessments/test-collections.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, searchPublicTestEntries, TEST_EXPLORER_AXES } from '../../lib/assessments/test-explorer.js'
@@ -185,9 +186,11 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await expect(sleep).toHaveAttribute('aria-pressed', 'true')
     assert.deepEqual(await readSelection(picker), preserved, 'Love search does not auto-select intimate questionnaires')
     await expect(page).toHaveURL(currentUrl)
-    await root.locator('[data-test-collection="sexuality"]').click()
-    await expect(search).toHaveValue('')
-    await expect(root.locator('[data-test-collection="sexuality"]')).toHaveAttribute('aria-pressed', 'true')
+    await withPublicPickerActionDiagnostics(page, root.locator('[data-test-collection="sexuality"]'), { action: 'collection-sexuality', locale }, async () => {
+      await root.locator('[data-test-collection="sexuality"]').click()
+      await expect(search).toHaveValue('')
+      await expect(root.locator('[data-test-collection="sexuality"]')).toHaveAttribute('aria-pressed', 'true')
+    })
     assert.deepEqual(await readSelection(picker), preserved)
     await root.locator('[data-test-collection="sexuality"]').click()
     await more.click()

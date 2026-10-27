@@ -105,7 +105,7 @@ const offers: Record<Direction, readonly [Offer, Offer, Offer]> = {
     },
     {
       id: "business-coaching", image: "/images/holistic-house/andy-about.png",
-      path: "/services/business-consulting#business-direct-request", free: false,
+      path: "/services/business-consulting#business-offers", free: false,
       title: localize("Business strategy coaching", "Стратегический бизнес-коучинг", "Coaching de estrategia empresarial"),
       description: localize("Clarify priorities, decisions and next steps with Andrey.", "Проясните приоритеты, решения и следующие шаги с Андреем.", "Aclara prioridades, decisiones y próximos pasos con Andrey."),
       details: localize("Personal business consultations are offered at €50 for 30 minutes and €100 for 60 minutes. Submitting a request is not a booking; time and payment need confirmation.", "Личные бизнес-консультации: €50 за 30 минут и €100 за 60 минут. Отправка запроса не равна записи; время и оплата подтверждаются отдельно.", "Las consultas personales cuestan €50 por 30 minutos y €100 por 60 minutos. Una solicitud no es una reserva; horario y pago deben confirmarse."),

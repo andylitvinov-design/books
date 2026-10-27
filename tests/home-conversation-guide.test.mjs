@@ -105,17 +105,25 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES let the visitor ask a question on demand after seven clear stages", () => {
+test("EN/RU/ES offer on-demand guidance in the early topic picker without duplicating the seven stages", () => {
   const en = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   const more = read("components/home-more-disclosure.tsx");
   for (const page of [en,es]) {
-    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+    // The early topic picker precedes the seven-stage workspace, not a repeated lower grid.
+    const sections = ["HomeSectionCarousel", "HomeMoreDisclosure", "HomeFeaturedWorkspace"];
+    for (const name of sections) {
+      assert.equal((page.match(new RegExp("<" + name + "\\b", "g")) || []).length, 1, name);
+    }
+    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeMoreDisclosure"));
+    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
     assert.doesNotMatch(page, /<HomeConversationGuide locale=/);
   }
-  assert.match(more, /<HomeConversationGuide locale=\{locale\} \/>/);
-  assert.match(more, /ssr: false/);
+  assert.match(more, /const HomeConversationGuide = dynamic\([\s\S]*?import\("\.\/home-conversation-guide"\)[\s\S]*?ssr: false/);
+  assert.match(more, /const \[expanded, setExpanded\] = useState\(false\)/);
+  assert.match(more, /<details[\s\S]*?onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
+  assert.match(more, /<summary>/);
+  assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
   assert.ok(read("app/[locale]/page.tsx").includes("<HolisticHouseHome"));
 });
 

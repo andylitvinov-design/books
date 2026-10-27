@@ -10,10 +10,13 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
 import { observePortraitNavigation } from './helpers/portrait-navigation-diagnostics.mjs'
 import { alignAndMeasureStablePortraitFrame } from './helpers/portrait-frame-readiness.mjs'
+import { precompilePortraitClaim } from './helpers/portrait-claim-precompile.mjs'
 
 assertIsolated()
 const origin = process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Only isolated loopback browser QA allowed')
+// Complete the observed cold route's unauthenticated compile before browser creation.
+await precompilePortraitClaim({ origin })
 const name = process.env.HH_TEST_BROWSER === 'webkit' ? 'webkit' : 'chromium'
 const engine = name === 'webkit' ? webkit : chromium
 const output = 'artifacts/portrait-mobile'
