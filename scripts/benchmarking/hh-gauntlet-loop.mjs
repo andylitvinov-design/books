@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   FREE_MODELS, SAFE_EDIT_FILES, REQUIRED_CRITERIA, CONTRACT_TESTS,
@@ -40,7 +40,7 @@ function run(command, args, timeoutMs, env = process.env) {
 function git(args) {
   const result = run('git', args, 20_000);
   if (!result.ok) throw new Error('Git preflight failed: ' + args[0]);
-  return result.stdout.replace(/\\s+$/, '');
+  return result.stdout.replace(/\s+$/, '');
 }
 
 function agentEnv() {
