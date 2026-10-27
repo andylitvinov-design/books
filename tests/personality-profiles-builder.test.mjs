@@ -46,7 +46,7 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
-  assert.match(component, /recommendProfileMode\(tests, selectedAxes, "questionnaires"\)/)
+  assert.match(component, /recommendProfileMode\(relevantTests, selectedAxes, "questionnaires"\)/)
   // On Tests an explicit guest CTA launches only selected eligible test keys.
   // Ready separately offers one opt-in Google save without a duplicate guest action.
   assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
@@ -151,10 +151,8 @@ test('four life directions retain all nine topics, are localized and require an 
     'Cuerpo, salud y energía', 'Relaciones y cercanía',
     'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
   ]) assert.ok(component.includes(phrase), phrase)
-  assert.match(component, /identity: \["traits", "support", "meaning"\]/)
-  assert.match(component, /wellbeing: \["emotions", "recovery", "body"\]/)
-  assert.match(component, /relationships: \["connection"\]/)
-  assert.match(component, /work: \["work", "money"\]/)
+  for (const name of ['PROFILE_FOCUS_AREAS', 'PROFILE_AREA_AXES', 'profileAreasWithTests'])
+    assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
   assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
@@ -249,7 +247,7 @@ test('additional test finder scopes a single life profile before opening multipl
   assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
   assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
   assert.match(slide, /setExtraScales\(\[\]\)/)
-  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
   for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
     'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))
