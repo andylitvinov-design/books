@@ -350,6 +350,11 @@
 .researchChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .researchChoice{min-width:0;min-height:49px;display:flex;align-items:center;gap:9px;padding:10px 11px;text-align:left;border:1px solid #d4e3d6;border-radius:12px;background:#fffdf8;cursor:pointer;color:#315e4f}
 .researchChoice strong{min-width:0;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.mainScaleBody{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:3px}
+.mainScaleBody strong{font-size:15px;line-height:1.35}
+.mainScaleBody small{font-size:12px;line-height:1.35;color:#5f7669}
+.researchGroupList>.researchChoice{width:100%;min-height:64px}
+
 .researchChoice[aria-pressed=true]{background:#e8f3eb;border-color:#508773;box-shadow:inset 0 0 0 1px #508773}
 .researchSelectedCount{margin:7px 0 0;color:#456b58;font-size:12px;font-weight:750}
 .researchChoice:focus-visible{outline:3px solid #9c715e;outline-offset:2px}
