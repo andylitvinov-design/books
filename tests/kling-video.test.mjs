@@ -8,20 +8,20 @@ import {
 const request = {
   mode: 'text',
   prompt: 'Cinematic slow tracking shot of a bright forest in springtime.',
-  duration: 5,
+  duration: 3,
   resolution: '720p',
   aspectRatio: '16:9',
   imageUrl: '',
   externalTaskId: 'hh_kling_12345678901234567890',
 };
 
-test('default is silent Kling 3.0 text-to-video, 5s, 720p and 16:9', () => {
+test('default is silent Kling 3.0 text-to-video, 3s, 720p and 16:9', () => {
   const scene = normalizeKlingScene(request);
   const { path, body } = klingRequestForScene(scene);
   assert.equal(path, '/text-to-video/kling-3.0');
   assert.equal(body.prompt, request.prompt);
   assert.deepEqual(body.settings, {
-    duration: 5, resolution: '720p', audio: 'off',
+    duration: 3, resolution: '720p', audio: 'off',
     multi_shot: false, aspect_ratio: '16:9',
   });
   assert.equal(body.options.external_task_id, request.externalTaskId);
@@ -30,15 +30,15 @@ test('default is silent Kling 3.0 text-to-video, 5s, 720p and 16:9', () => {
 
 test('approved public images use the image route; do not send arbitrary URLs', () => {
   const imageUrl = 'https://holistichouse.vercel.app/images/holistic-house/coaching-ancient/egyptian-cover.jpg';
-  const scene = normalizeKlingScene({ ...request, mode: 'image', imageUrl, publicImageApproved: true });
+  const scene = normalizeKlingScene({ ...request, mode: 'image', duration: 5, imageUrl, publicImageApproved: true });
   const { path, body } = klingRequestForScene(scene);
-  assert.equal(path, '/image-to-video/kling-3.0');
+  assert.equal(path, '/image-to-video/kling-2.5-turbo');
   assert.deepEqual(body.contents, [
     { type: 'prompt', text: request.prompt },
     { type: 'first_frame', url: imageUrl },
   ]);
-  assert.equal(body.settings.audio, 'off');
-  assert.equal(body.settings.aspect_ratio, undefined);
+  assert.deepEqual(body.settings, { duration: 5, resolution: '720p' });
+  assert.equal(body.settings.audio, undefined);
 });
 
 test('reject client-private, external, URL token, http, encoded traversal and non-approved media', () => {
@@ -53,13 +53,18 @@ test('reject client-private, external, URL token, http, encoded traversal and no
     'https://holistichouse.vercel.app/images/holistic-house/video-posters/home-en-v2.webp',
   ];
   for (const imageUrl of invalid) assert.throws(
-    () => normalizeKlingScene({ ...request, mode: 'image', imageUrl, publicImageApproved: true }),
+    () => normalizeKlingScene({ ...request, mode: 'image', duration: 5, imageUrl, publicImageApproved: true }),
     /validation/, imageUrl,
   );
   assert.throws(() => normalizeKlingScene({
-    ...request, mode: 'image', publicImageApproved: false,
+    ...request, mode: 'image', duration: 5, publicImageApproved: false,
     imageUrl: 'https://holistichouse.vercel.app/images/holistic-house/a.jpg',
   }), /validation/);
+});
+
+test('cheapest image-to-video API rejects unsupported 3s requests before billable submit', () => {
+  const imageUrl = 'https://holistichouse.vercel.app/images/holistic-house/coaching-ancient/egyptian-cover.jpg';
+  assert.throws(() => normalizeKlingScene({ ...request, mode: 'image', duration: 3, imageUrl, publicImageApproved: true }), /validation/);
 });
 
 test('input validation protects paid requests from malformed options', () => {
