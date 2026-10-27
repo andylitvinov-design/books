@@ -49,6 +49,11 @@ async function handle(request) {
       data = await repo.withOwner(actor, store => store.approveSalesbotPreview({
         id: body.id, expectedRevision: body.expectedRevision,
       }))
+    } else if (body.action === 'activate_internal') {
+      if ('flow' in body) throw new AppError('INVALID_SALESBOT_COMMAND',400)
+      data = await repo.withOwner(actor,store => store.activateInternalSalesbotFlow({
+        id:body.id,expectedRevision:body.expectedRevision,
+      }))
     } else if (body.action === 'pause') {
       if ('flow' in body) throw new AppError('INVALID_SALESBOT_COMMAND', 400)
       data = await repo.withOwner(actor, store => store.pauseSalesbotPreview({
