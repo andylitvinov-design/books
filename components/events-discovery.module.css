@@ -153,3 +153,8 @@
 
 .eventByline{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 5px;color:#356c78;font-size:12px;font-weight:650;line-height:1.45}
 .eventByline a{color:#167c85;text-decoration:underline;text-underline-offset:2px}
+
+/* A paid ticket is a separate external checkout, not a registration or a CRM receipt. */
+.ticketButton{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:9px 12px;border:1px solid #b99362;border-radius:10px;background:#f6ead9;color:#694221;text-decoration:none;font:800 12px/1.35 system-ui,sans-serif;text-align:center}
+.ticketButton:hover{background:#edddc6}
+.ticketNote{display:block;margin:2px 0 0;color:#755d48;font:550 10px/1.45 system-ui,sans-serif}
