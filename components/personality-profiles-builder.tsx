@@ -728,7 +728,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </section>}
 
       {step === 1 && <section aria-labelledby="profile-builder-step-title" data-profile-scale-selection-step>
-        <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
         <p className={styles.focusContext} data-profile-selected-focus>
