@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { nextKoanIndex, taoistKoanCards } from "../data/dao/taoist-koan-cards.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -51,4 +51,27 @@ test("board appears immediately after the theme cards and never sends private da
   assert.match(css, /max-width:360px/);
   assert.match(css, /min-height:46px/);
   assert.match(css, /focus-visible/);
+});
+
+test("each Taoist alchemy stage has a distinct, existing local photograph that changes with the koan", () => {
+  const board = read("components/taoist-koan-board.tsx");
+  const styles = read("components/taoist-koan-board.module.css");
+  assert.match(board, /import Image from "next\/image"/);
+  assert.match(board, /const photo = active \? stagePhotos\[active.stage\]/);
+  assert.match(board, /src=\{photo.src\}/);
+  assert.match(board, /alt=""/); // Decorative stage photo: the complete quote remains accessible as text.
+  assert.match(board, /data-taoist-koan-photo/);
+  assert.match(board, /data-taoist-koan-stage=\{active.stage\}/);
+  assert.match(board, /sizes="\(max-width: 720px\)/);
+  assert.doesNotMatch(board, /unoptimized|https:\/\/|http:\/\/|fetch\(/);
+  const photoPaths = [...board.matchAll(/"\/images\/holistic-house\/[^"]+\.(?:webp|avif)"/g)].map(match => match[0].slice(1, -1));
+  assert.equal(photoPaths.length, 6);
+  assert.equal(new Set(photoPaths).size, 6);
+  for (const path of photoPaths) assert.ok(existsSync(new URL("../public" + path, import.meta.url)), `missing photo: ${path}`);
+  for (const stage of [3, 4, 5, 6, 7, 8]) assert.match(board, new RegExp('"' + stage + '": \\{'));
+  assert.match(styles, /grid-template-columns:minmax\(220px,31%\) minmax\(0,1fr\)/);
+  assert.match(styles, /\.photo\{position:relative/);
+  assert.match(styles, /\.photo img\{object-fit:cover\}/);
+  assert.match(styles, /@media\(max-width:720px\)/);
+  assert.match(styles, /height:clamp\(156px,46vw,196px\)/);
 });
