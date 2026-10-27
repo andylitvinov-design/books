@@ -21,7 +21,7 @@ Two separate confidence levels:
 
 - **Free allowlist only:** `opencode/glm-5.3-flash-free` (default) or `opencode/deepseek-v4.1-flash-free`. Model availability must be confirmed by the local OpenCode catalog (`opencode models opencode`) and current OpenCode Console pricing. Model ID mismatch stops; it never falls back to a paid model.
 - Step 5 Preview may be evaluated separately **only after its actual price, opt-in and spending limits have been approved**; it is deliberately not selectable here.
-- `--check` is the default and runs **offline**, no CLI/model call or installation. `--run` must be explicitly requested; never executed in GitHub Actions or Vercel.
+- `--check` is the default and runs **offline**. `--run` must be explicitly requested. Production Vercel and ordinary CI remain blocked. A single **PR-only, zero-credential** GitHub Actions trial is permitted only with `HH_GAUNTLET_CI_SYNTHETIC=isolated-20261027`, the official exact repository, a disposable `codex/hh-gauntlet-*` branch, and an isolated matching HOME/XDG under `RUNNER_TEMP`. This is not enabled on production pushes; future agent PR experiments require their own deliberate gate.
 - Run only in an initially clean, disposable `codex/hh-gauntlet-*` worktree of `andylitvinov-design/books`. No `.env*`, `.vercel` or production credentials in that worktree.
 - Builder and Critic each run via their own `opencode run` invocation (no `--continue` or shared session). Critic has **no edit/bash/network/MCP rights** and sees the goal, diff and deterministic results, **not Builder self-evaluation**. Both have external-directory access denied. Builder can edit only six named wizard UI/contract test files and has no shell/network/MCP permissions.
 - No `git push`, commits, PR merge, Vercel changes, database migration, real posts, paid render or delivery. The script stops on unauthorized edits and on tests/typecheck/lint/critic failures.
@@ -50,6 +50,12 @@ If either model is unavailable, **stop**. Do not set or enable a paid OpenRouter
 The independent critic returns a machine-validated scorecard for six predefined criteria: `en-ru-es`, `mobile-320-430`, `opt-in`, `single-lead`, `privacy`, `regressions`. Each needs a concrete evidence statement and status `PASS`, `FAIL` or `UNKNOWN`. Missing, duplicated or unsupported criteria cannot pass. The deterministic test/typecheck/lint/whitespace gates **also** must pass. One negative gate stops a PASS; feedback may guide the next bounded builder iteration. On the last failure, exit code 2 and retain evidence. The agents do not approve merges.
 
 The real Chromium/WebKit, mobile and PG17 RLS systems already exist in `.github/workflows/hh-free-express-wizard-v2.yml` and `scripts/verify-free-express-wizard-v2.mjs`. They remain the source of truth for their respective layers. This Gauntlet adds independent AI review and **reuses** those tests; it does not clone them or produce artificial customer leads.
+
+## Cloud test — 27 October 2026
+
+The authorized Mac is offline, so [PR #2247](https://github.com/andylitvinov-design/books/pull/2247) includes one isolated PR runner using pinned official `@opencode/cli@2.1.2`. A **real** zero-credential GLM-5.3-Flash Free text reply was observed in [GitHub Actions run #40506626748](https://github.com/andylitvinov-design/books/actions/runs/40506626748): `opencode v2.1.2`, exit `0`, NDJSON `step_start, text`, token `HH_GAUNTLET_FREE_20261027_OK` received. No billing key or stored account authentication was supplied. This verifies only the public free inference path, not permissions/Builder/Critic/CRM.
+
+The next PR run deliberately checks out public HH code **after** the successful connectivity probe, installs existing tests, and permits exactly one Builder → fresh-context Critic pass. The run does not persist edits or push; it saves a 7-day synthetic-only scorecard. Any unapproved paths or failed verification should make the job red; investigate rather than force-merging. No live applications or data are modified.
 
 ## Acceptance / limitations
 
