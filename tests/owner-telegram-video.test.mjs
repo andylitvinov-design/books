@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,ownerVideoTargetKeyboard,
+import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,ownerVideoTargetKeyboard,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,VIDEO_EN_CHANNEL_HANDLE}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
@@ -44,6 +44,24 @@ test('owner-only Telegram video deep link and explicit private preview resend co
  const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
  assert.equal(parsed(group),null)
 })
+test('Dot confirms video processing start in Toronto and exposes in-progress status',()=>{
+ const totals={images:2,audios:3,seconds:108}
+ const started=ownerVideoRenderingMessage(totals,'2026-10-27T19:36:14.000Z')
+ assert.match(started,/Сборка видео началась в 15:36 \(Торонто\)/)
+ assert.match(started,/2 фото.*3 аудио.*108 сек/)
+ assert.match(started,/приватный MP4/)
+ assert.match(started,/\/video_status/)
+ assert.match(started,/YouTube ничего не загружаю/)
+ assert.ok(started.includes('\n📷 '),'receipt must contain an actual newline')
+ assert.match(ownerVideoRenderingMessage(totals,'2026-12-27T19:36:14.000Z'),/14:36 \(Торонто\)/)
+ assert.doesNotMatch(ownerVideoRenderingMessage(totals,null),/Торонто/)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/where practitioner_id=\$1 returning processing_started_at/)
+ assert.match(service,/await ownerMessage\(owner,ownerVideoRenderingMessage\(batch.totals,batch.startedAt\)/)
+ assert.match(service,/background:\(\)=>buildVideo\(config,batch,owner,fetcher\)/)
+ assert.match(service,/rendering\?ownerVideoRenderingMessage\(rendering,row.processing_started_at\)/)
+})
+
 test('photo and voice/audio messages attach only in an explicit owner video session',()=>{
  assert.equal(parsed(media([photo],'photo')).action,'media')
  assert.equal(parsed(media([photo],'photo')).part.kind,'photo')
