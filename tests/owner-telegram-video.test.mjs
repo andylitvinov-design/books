@@ -253,6 +253,8 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(crmWebhook,/ensureTelegramInlineWebhookUpdates/)
  const nextConfig=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
  assert.match(nextConfig,/\/api\/app\/crm\/messenger\/webhook\/\*/)
+ assert.match(nextConfig,/\/api\/app\/notification-channels\/telegram\/webhook/)
+ assert.match(nextConfig,/ffmpeg-static\/ffmpeg/)
  assert.match(crmWebhook,/if\(video.background\)after\(/)
  assert.match(service,/event.chatId!==owner.chat\|\|event.userId!==owner.chat/)
  assert.match(service,/if\(env.VERCEL_ENV==='preview'\|\|env.HH_OWNER_VIDEO_ENABLED!=='true'\)/)

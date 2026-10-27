@@ -135,6 +135,9 @@ const nextConfig: NextConfig = {
     // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
     // Only this Function traces the pinned FFmpeg binary (no external render API).
     "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // Owner-private Dot /audio → /video uses its existing signed webhook.
+    // The same pinned FFmpeg binary must be available in this function too.
+    "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
