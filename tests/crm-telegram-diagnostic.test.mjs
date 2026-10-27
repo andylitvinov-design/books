@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {retrievePrivateTelegramPhoto} from '../lib/crm/messenger-provider.js'
 import {readFileSync} from 'node:fs'
 import {
   parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
@@ -198,4 +199,59 @@ test('diagnostic webhook forwards committed reply as Bot API text, not a missing
   assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
   assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
+})
+
+
+// The Bot API "File.file_size" is OPTIONAL. The private proxy must fetch and
+// validate actual JPEG/PNG bytes even when Telegram sends no size metadata.
+// Mock transport only; no Telegram access, credentials, records or sends.
+const photoPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+tTmYAAAAASUVORK5CYII=','base64')
+const photoId='AgACAgQAAxk0123456789'
+async function mockTelegramFile(fileInfo,fileBytes,verify){
+  const original=globalThis.fetch
+  const requests=[]
+  globalThis.fetch=async url=>{
+    const target=String(url)
+    assert.ok(target.startsWith('https://api.telegram.org/'),'only the Telegram origin')
+    if(target.includes('/getFile?')){
+      requests.push('metadata')
+      return Response.json({ok:true,result:fileInfo})
+    }
+    assert.match(target,/\/file\/bot/)
+    requests.push('download')
+    return new Response(fileBytes,{status:200})
+  }
+  try {await verify(requests)} finally {globalThis.fetch=original}
+}
+test('owner Telegram photo proxy accepts missing optional File.file_size and validates real PNG bytes',async()=>{
+  await mockTelegramFile({file_path:'photos/file_1.png'},photoPng,async calls=>{
+    const result=await retrievePrivateTelegramPhoto(photoId,env)
+    assert.equal(result.contentType,'image/png')
+    assert.deepEqual(result.bytes,photoPng)
+    assert.deepEqual(calls,['metadata','download'])
+  })
+})
+test('owner Telegram photo proxy also accepts a declared valid file size',async()=>{
+  await mockTelegramFile({file_size:photoPng.length,file_path:'photos/file_1.png'},photoPng,async calls=>{
+    assert.equal((await retrievePrivateTelegramPhoto(photoId,env)).bytes.length,photoPng.length)
+    assert.deepEqual(calls,['metadata','download'])
+  })
+})
+test('owner Telegram proxy blocks inflated, malformed, unsafe-path and invalid content without disclosure',async()=>{
+  for(const info of [
+    {file_size:5*1024*1024+1,file_path:'photos/file_1.png'},
+    {file_size:'many',file_path:'photos/file_1.png'},
+    {file_size:-5,file_path:'photos/file_1.png'},
+    {file_path:'../private.env'},
+    {file_path:'photos/../private.env'},
+  ]){
+    await mockTelegramFile(info,photoPng,async calls=>{
+      await assert.rejects(retrievePrivateTelegramPhoto(photoId,env),{code:'PHOTO_UNAVAILABLE',status:404})
+      assert.deepEqual(calls,['metadata'],'must not download unsafe or oversized media')
+    })
+  }
+  await mockTelegramFile({file_path:'photos/file_1.png'},Buffer.from('not-a-valid-image-payload'),async calls=>{
+    await assert.rejects(retrievePrivateTelegramPhoto(photoId,env),{code:'PHOTO_UNAVAILABLE',status:404})
+    assert.deepEqual(calls,['metadata','download'])
+  })
 })
