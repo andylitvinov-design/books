@@ -42,5 +42,5 @@ test('one-shot mode cannot create a second cron or bypass the existing daily cla
   assert.match(route,/maxDuration=120/)
   const schedule=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
   assert.deepEqual(schedule.crons.filter(x=>x.path.includes('council-archive-telegram')),
-    [{path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'}])
+    [{path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'}])
 })
