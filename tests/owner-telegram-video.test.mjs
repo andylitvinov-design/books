@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
-  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
+  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
@@ -36,6 +36,7 @@ test('owner-only Telegram video deep link and explicit private preview resend co
    message_id:56,text:'/start video'}}
  assert.equal(parsed(update)?.action,'start')
  assert.equal(parsed({...update,message:{...update.message,text:'/video_retry'}})?.action,'retry')
+ assert.equal(parsed({...update,message:{...update.message,text:'/video_status'}})?.action,'status')
  assert.equal(parsed(callback('hh-video:retry'))?.action,'retry')
  assert.equal(parsed({...update,message:{...update.message,text:'/start@wrongbot video'}}),null)
  const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
@@ -61,6 +62,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  const fixed='b6e8526e-c251-4dd5-a9ca-2886c430f912'
  assert.equal(parsed(callback('hh-video:start')).action,'start')
  assert.equal(parsed(callback('hh-video:done')).action,'done')
+ assert.equal(parsed(callback('hh-video:status')).action,'status')
  assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
  assert.equal(parsed(callback('hh-video:publish:bad')),null)
  const spoof=callback('hh-video:done');spoof.callback_query.message.from.username='Attacker_bot'
@@ -68,19 +70,47 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  const unpaired=callback('hh-video:done');unpaired.callback_query.from.id=555
  assert.equal(parsed(unpaired),null)
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
+ assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
+ assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
  assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[0][0].callback_data,'hh-video:publish:'+fixed)
 })
 test('strict ordered safe source limits and anti-duplication',()=>{
  const items=[part('photo',0),part('audio',1)]
  assert.deepEqual(safeVideoParts(items),{images:1,audios:1,bytes:4600,seconds:3})
- assert.equal(VIDEO_IMAGE_LIMIT,6)
- assert.equal(VIDEO_AUDIO_LIMIT,4)
+ assert.equal(VIDEO_IMAGE_LIMIT,15)
+ assert.equal(VIDEO_AUDIO_LIMIT,15)
  assert.equal(safeVideoParts([...items,items[1]]),null)
- assert.equal(safeVideoParts([...Array.from({length:7},(_,i)=>part('photo',i)),part('audio',7)]),null)
+ assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',7)]),null)
  assert.equal(safeVideoParts([part('audio',0,{duration:121})]),null)
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
 })
+test('15 photographs and 15 audio pieces are allowed and compose in their real mixed order',()=>{
+ const interleaved=Array.from({length:15},(_,i)=>[
+   part('photo',i*2),part('audio',i*2+1,{duration:2})
+ ]).flat()
+ const totals=safeVideoParts(interleaved)
+ assert.deepEqual(totals,{images:15,audios:15,bytes:69000,seconds:30})
+ assert.equal(VIDEO_MAX_INPUT_BYTES,20_000_000)
+ assert.equal(VIDEO_MAX_SECONDS,120)
+ assert.equal(safeVideoParts([...interleaved,part('photo',30)]),null)
+ assert.equal(safeVideoParts([...interleaved,part('audio',30)]),null)
+ assert.equal(safeVideoParts(interleaved.map((item,i)=>
+   i===1?{...item,duration:100}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map((item,i)=>
+   i===0?{...item,bytes:19_950_000}:item)),null)
+ const mixed=[...interleaved].reverse()
+ const plan=photoTimeline(mixed)
+ assert.equal(plan.length,15)
+ assert.deepEqual(plan.map(x=>x.startMs),Array.from({length:15},(_,i)=>i*2000))
+ assert.ok(plan.every(x=>x.durationMs===2000))
+ const args=videoRenderArguments(mixed,'/tmp/full-15-15.mp4')
+ assert.equal(args.filter(x=>x==='-i').length,30)
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=1')))
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=0:a=1')))
+ assert.ok(args.includes('libx264')&&args.includes('aac'))
+})
+
 test('FFmpeg command arguments use no shell and encode a single bounded 16:9 stream',()=>{
  const args=videoRenderArguments([part('photo',0),part('photo',1),part('audio',2)],'/tmp/output.mp4')
  assert.equal(args.at(-1),'/tmp/output.mp4')
