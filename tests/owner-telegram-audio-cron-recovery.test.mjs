@@ -38,7 +38,7 @@ function simulate({status='collecting',n=9,found=n,verified=true,delivered=true,
       events.db.push({sql,args})
       if(sql.includes('select batch_id,status,items,expires_at,result_audio_id,delivered_at'))
         return {rows:[row]}
-      if(sql.includes('select count(*)::int as count from app_private.telegram_owner_audio')){
+      if(sql.includes('select count(*)::int as count')){
         if(sql.includes('coalesce(sum(bytes)'))
           return {rows:[{count:found,total_bytes:found*4096}]}
         return {rows:[{count:0}]}
