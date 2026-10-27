@@ -49,7 +49,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Telegram and audio regression tests
-        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
+        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-inbox.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
