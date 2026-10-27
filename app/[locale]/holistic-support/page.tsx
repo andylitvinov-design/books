@@ -9,6 +9,7 @@ import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-pl
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
+import { TaoistKoanBoard } from "@/components/taoist-koan-board";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "./holistic-support.module.css";
@@ -291,6 +292,7 @@ export default async function HolisticSupportPage({ params }: Props) {
         </div>
 
         <HolisticSupportTopicFilter locale={locale} />
+        <TaoistKoanBoard locale={locale} />
 
         <section id="holistic-healing-support" className={styles.section} data-holistic-healing aria-labelledby="holistic-healing-title">
           <div className={styles.sectionHeading}>
