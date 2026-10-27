@@ -249,7 +249,7 @@ test('old 12 batch entries with three re-forwarded duplicates become exactly nin
   const invalid=[...recovered,{id:'file-99',updateId:'1000',bytes:1}]
   assert.deepEqual(combineItems(invalid),originals)
   assert.match(service,/part\.updateId===event\.updateId\|\|part\.id===audioId/)
-  assert.match(service,/set status='building',items=\$3::jsonb,last_command_update_id=\$2/)
+  assert.match(service,/last_command_update_id=case when \$4 then last_command_update_id else \$2 end/)
   assert.match(service,/console\.error\('HH_OWNER_AUDIO_COMBINE_FAILED',reason,stage\)/)
   assert.match(service,/Код: '\+reason/)
 })
