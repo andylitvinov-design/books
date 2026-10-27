@@ -2,12 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, BriefcaseBusiness, Heart, HeartPulse } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
-import { HolisticInlineSupportOrder } from "./holistic-inline-support-order";
-import type { SupportRequestKind } from "./remote-energy-support-booking";
 import styles from "./holistic-support-topic-filter.module.css";
 
 type Topic = "business" | "love" | "health";
@@ -132,33 +130,6 @@ const copy = {
 
 export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale }) {
   const [activeTopic, setActiveTopic] = useState<Topic>("business");
-  const [orderKind, setOrderKind] = useState<SupportRequestKind | null>(null);
-  useEffect(() => {
-    const onOtherOrder = (event: Event) => {
-      if ((event as CustomEvent<{source?: string}>).detail?.source !== "topics") setOrderKind(null);
-    };
-    window.addEventListener("hh-support-order-open", onOtherOrder);
-    return () => window.removeEventListener("hh-support-order-open", onOtherOrder);
-  }, []);
-  const openOrder = (value: SupportRequestKind) => {
-    window.dispatchEvent(new CustomEvent("hh-support-order-open", {detail:{source:"topics"}}));
-    setOrderKind(value);
-  };
-  const initialGoal: Record<Topic, string> = {
-    business: "Work and money",
-    love: "Connection and relationships",
-    health: "Inner balance and calm",
-  };
-  useEffect(() => {
-    if (!orderKind) return;
-    const panel = document.getElementById("holistic-inline-order");
-    if (!panel) return;
-    panel.scrollIntoView({
-      block: "start",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-    panel.querySelector<HTMLElement>("#holistic-inline-order-title")?.focus({ preventScroll: true });
-  }, [orderKind, activeTopic]);
   const t = copy[locale];
   const selected = t.topics[activeTopic];
 
@@ -208,36 +179,20 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
               </div>
               <div className={styles.cardBody}>
                 <h3>{id === "meditation" ? selected.cards[id].title : (
-                  <button type="button" className={styles.titleButton}
-                    aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
-                    aria-controls="holistic-inline-order"
-                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
-                    {selected.cards[id].title}
-                  </button>
+                  <Link href={"/" + locale + (id === "talisman" ? "/talismans" : "/support-options?topic=" + activeTopic)}
+                    className={styles.titleButton} prefetch={false}>{selected.cards[id].title}</Link>
                 )}</h3>
                 <p>{selected.cards[id].body}</p>
-                {id === "meditation" ? (
-                  <Link href="#meditation-practices" prefetch={false} className={styles.action}>
-                    {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <button type="button" className={styles.action}
-                    data-holistic-order-trigger={id}
-                    aria-expanded={orderKind === (id === "talisman" ? "talisman" : "energy")}
-                    aria-controls="holistic-inline-order"
-                    onClick={() => openOrder(id === "talisman" ? "talisman" : "energy")}>
-                    {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
-                  </button>
-                )}
+                <Link href={id === "meditation" ? "#meditation-practices" : "/" + locale +
+                  (id === "talisman" ? "/talismans" : "/support-options?topic=" + activeTopic)}
+                  prefetch={false} className={styles.action}
+                  {...(id !== "meditation" ? { "data-holistic-order-trigger": id } : {})}>
+                  {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
+                </Link>
               </div>
             </article>
           ))}
         </div>
-        {orderKind && (
-          <HolisticInlineSupportOrder locale={locale} kind={orderKind}
-            initialGoal={initialGoal[activeTopic]} onKindChange={setOrderKind}
-            onClose={() => setOrderKind(null)} />
-        )}
         <p className={styles.archiveNote} role="note">{t.archiveNote}</p>
       </div>
     </section>
