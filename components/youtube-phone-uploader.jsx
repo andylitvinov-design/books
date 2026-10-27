@@ -19,6 +19,7 @@ const copy = {
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
     config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
     setupTitle:'Первое подключение Google YouTube',
+    reusedConfig:'Google OAuth уже настроен для Holistic House. Повторно вводить Client ID не нужно. Для доступа к каналу выберите аккаунт Google и подтвердите разрешения.',
     setupHelp:'В Google Cloud включите YouTube Data API v3, создайте OAuth Client (тип Web application) и добавьте разрешённый JavaScript origin: https://holistichouse.vercel.app. Укажите здесь только публичный Client ID, без секрета.',
     setupGoogle:'Открыть Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
@@ -86,6 +87,7 @@ const copy = {
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
     config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
     setupTitle:'Connect Google YouTube once',
+    reusedConfig:'Google OAuth is already configured for Holistic House. No Client ID entry is needed. Select your Google account and approve channel access.',
     setupHelp:'In Google Cloud enable YouTube Data API v3, create a Web application OAuth client, and authorize this JavaScript origin: https://holistichouse.vercel.app. Enter the public Client ID only, never a secret.',
     setupGoogle:'Open Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
@@ -158,7 +160,7 @@ function mergeHistory(old, record) {
   return [record, ...old.filter(item => item.videoId !== record.videoId)]
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
-export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, initialChannels,
+export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, oauthSource='missing', initialChannels,
   initialHistory=[], historyReady=false}) {
   const t = copy[locale] || copy.ru
   const [target, setTarget] = useState('ru')
@@ -497,6 +499,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </div>
       {!enabled && !setupAvailable && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {enabled && oauthSource === 'owner_video' && <p className={styles.muted} role="status">{t.reusedConfig}</p>}
       {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
         type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
       {setupAvailable && showSetup && <div className={styles.pairing}>
