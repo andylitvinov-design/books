@@ -9,6 +9,9 @@ on:
       - 'components/site-video-*'
       - 'components/page-video.tsx'
       - 'app/admin/videos/**'
+      - 'components/instagram-native-reel-kit*'
+      - 'lib/instagram/**'
+      - 'tests/instagram-native-reel-kit.test.mjs'
       - 'app/site-video*.css'
       - 'tests/site-video*.mjs'
       - 'middleware.ts'
@@ -26,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
+      - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs tests/instagram-native-reel-kit.test.mjs
       - run: npm ci --no-audit --no-fund
-      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
+      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx components/instagram-native-reel-kit.tsx lib/instagram/native-reel-kit.mjs tests/instagram-native-reel-kit.test.mjs
       - run: npx tsc --noEmit
