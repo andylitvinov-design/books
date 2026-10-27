@@ -87,7 +87,7 @@ export default async function CoachingPage({ params, searchParams }: Props) {
         </div>
       </section>
       {invalidPrivateReturn ? <p role="alert" data-coaching-invalid-private-return>{t.invalidPrivateReturn}</p>
-        : <CoachingIntakeForm locale={locale} privateCopyMode={privateCopyMode} />}
+        : <CoachingIntakeForm locale={locale} privateCopyMode={privateCopyMode} telegramEntry={query?.from === 'telegram'} />}
     </main>
   </div>;
 }
