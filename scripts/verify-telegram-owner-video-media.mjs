@@ -118,7 +118,11 @@ try{
    ?Number(containerMatch[1])*3600+Number(containerMatch[2])*60+Number(containerMatch[3]):0
  if(ownerDecoded.status!==0||!/Video: h264/.test(ownerDecoded.stderr)||
    !/Audio: aac/.test(ownerDecoded.stderr)||containerSeconds<131||containerSeconds>135)
-   throw Error('VIDEO_11_AUDIO_3_PHOTO_NOT_FULL_MP4')
+   throw Error('VIDEO_11_AUDIO_3_PHOTO_NOT_FULL_MP4 duration='+
+     containerSeconds+' decoderStatus='+ownerDecoded.status+
+     ' H264='+/Video: h264/.test(ownerDecoded.stderr)+
+     ' AAC='+/Audio: aac/.test(ownerDecoded.stderr)+
+     ' decoderTail='+String(ownerDecoded.stderr).slice(-400))
  // Decode *only* the concatenated soundtrack: the final-video duration
  // can be a little longer than the actual audio because of -shortest muxing.
  const audible=spawnSync(binary,['-hide_banner','-i',ownerTarget,
