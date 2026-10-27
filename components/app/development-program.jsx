@@ -295,6 +295,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       setGoals(value.goals)
       setGoalDraft(Object.fromEntries(GOAL_RATING_KEYS.map(key => [key, value.goals?.goalCheckin?.values?.[key] == null ? '' : String(value.goals.goalCheckin.values[key])])) )
       setGoalDraftDirty(false)
+      window.dispatchEvent(new Event('hh:goal-checkin-saved'))
       setRevision(value.revision)
       setDirty(false)
       setActivePanel('plan')
