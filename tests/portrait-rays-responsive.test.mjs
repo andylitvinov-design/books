@@ -72,11 +72,20 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
     render(){hook=0;return compiled.exports.TestExplorerVisual({locale,coverage,portrait})},
     measured,portrait,
     choose(key){
-      const control=sectors(this.render()).find(button=>button.props['data-portrait-sector']===key)
+      const control=key === 'all'
+        ? nodes(this.render(),'button',p=>p['data-portrait-sector-all']!==undefined)[0]
+        : sectors(this.render()).find(button=>button.props['data-portrait-sector']===key)
       assert.ok(control, 'missing category button: '+key)
       control.props.onClick()
       return this.render()
     },
+    view(key){
+      const tab=nodes(this.render(),'button',p=>p['data-portrait-view']===key)[0]
+      assert.ok(tab, 'missing portrait view: '+key)
+      tab.props.onClick()
+      return this.render()
+    },
+    openAxes(){return this.view('axes')},
   }
 }
 
@@ -103,8 +112,10 @@ test('All is the first of five views and labels actual original test values, not
     assert.equal(nodes(detail,'svg',p=>p['data-radar-layout']==='full-circle').length,1)
     assert.equal(anchors(detail).length,5)
     assert.equal(labels(detail).length,5)
-    assert.equal(rayOptions(detail).length,5)
-    assert.equal(rayInputs(detail).filter(input=>input.props.checked).length,5)
+    assert.equal(rayOptions(detail).length,0, 'chart is the default view')
+    const axes=app.openAxes()
+    assert.equal(rayOptions(axes).length,5)
+    assert.equal(rayInputs(axes).filter(input=>input.props.checked).length,5)
   }
 })
 
@@ -203,7 +214,7 @@ test('each category shows all its own 3–5 scales, spaced over the FULL 360-deg
       assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,1)
       assert.equal(sectors(tree).find(b=>b.props['aria-pressed']).props['data-portrait-sector'],sector.key)
       assert.equal(detailRays(tree).length,sector.axes.length)
-      assert.equal(rayInputs(tree).length,sector.axes.length)
+      assert.equal(rayInputs(app.openAxes()).length,sector.axes.length)
       assert.equal(anchors(tree).length,sector.axes.length)
       assert.equal(labels(tree).length,sector.axes.length)
       assert.equal(nodes(tree,'svg',p=>p['data-active-portrait-sector']===sector.key).length,1)
@@ -224,7 +235,8 @@ test('each category shows all its own 3–5 scales, spaced over the FULL 360-deg
 
 test('user can opt out of one scale; switching categories preserves that preference',()=>{
   const app=harness('en')
-  const first=app.choose('body')
+  app.choose('body')
+  const first=app.openAxes()
   const bodyAxes=PORTRAIT_SECTORS[0].axes
   assert.equal(rayInputs(first).filter(input=>input.props.checked).length,bodyAxes.length)
   // Embodiment is not measured in the fixture but its axis and label are visible.
@@ -244,7 +256,8 @@ test('user can opt out of one scale; switching categories preserves that prefere
 test('without test results each category retains its axes and does not invent values',()=>{
   const app=harness('ru',[])
   for(const sector of PORTRAIT_SECTORS){
-    const tree=app.choose(sector.key)
+    app.choose(sector.key)
+    const tree=app.openAxes()
     assert.equal(labels(tree).length,sector.axes.length)
     assert.equal(anchors(tree).length,sector.axes.length)
     assert.ok(anchors(tree).every(node=>node.props['data-measured']===false))
@@ -257,7 +270,8 @@ test('without test results each category retains its axes and does not invent va
 test('missing scales keep actual test links and source data stays private',()=>{
   const app=harness('en')
   for(const sector of PORTRAIT_SECTORS){
-    const tree=app.choose(sector.key)
+    app.choose(sector.key)
+    const tree=app.openAxes()
     const missing=sector.axes.filter(axis=>!app.measured.includes(axis))
     assert.equal(testItLinks(tree).length,missing.length)
     for(const link of testItLinks(tree)){
@@ -273,7 +287,8 @@ test('measured rays show localized Details links to their exact result and score
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     for(const sector of PORTRAIT_SECTORS){
-      const tree=app.choose(sector.key)
+      app.choose(sector.key)
+      const tree=app.openAxes()
       const measured=sector.axes.filter(axis=>app.measured.includes(axis))
       assert.equal(detailsLinks(tree).length,measured.length)
       for(const link of detailsLinks(tree)){
@@ -329,14 +344,93 @@ test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
   assert.match(css,/\.portraitRayTestLink:focus-visible/)
 })
 
-test('Reports keeps the three quick actions right under the radar',()=>{
+test('Reports uses a thin profile-specific Chart / Axes switch and keeps lower actions once',()=>{
   const src=read('components/app/test-explorer-visual.jsx')
-  const radar = src.indexOf('className={styles.portraitRadar}')
-  const actions = src.indexOf('portraitActions({ selectedSector, portrait })')
-  const rayChooser = src.indexOf('className={styles.portraitControls}')
-  assert.ok(radar >= 0 && actions > radar && rayChooser > actions,
-    'Portrait action render callback stays below radar and above the ray chooser')
-  assert.match(src,/\{portrait && !compact && portraitTab === 'tests' && !allSectors && <section className=\{styles.portraitControls\}/)
+  const nav=src.indexOf('className={styles.portraitModeBar}')
+  const chooser=src.indexOf('className={styles.portraitControls}')
+  const radar=src.indexOf('className={styles.portraitRadar}')
+  const actions=src.indexOf('portraitActions({ selectedSector, portrait })')
+  assert.ok(nav>=0 && chooser>nav && radar>chooser && actions>radar,
+    'Axis chooser replaces the chart and stays immediately under its switch')
+  assert.match(src,/portraitView === 'axes' && <section/)
+  assert.match(src,/hidden=\{Boolean\(portrait\) && portraitView !== 'chart'\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
   assert.match(src,/data-portrait-sector-all/)
+})
+
+test('All overview changes with chosen axes without altering saved source measurements',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale,['stress','energy','clarity','relationships','mood'])
+    app.portrait.axes.energy.measuredAt='2026-10-26T12:00:00Z'
+    app.portrait.axes.stress.measuredAt='2026-10-25T12:00:00Z'
+    let all=app.render()
+    const source=tree=>nodes(tree,'g',p=>p['data-summary-sector']==='body')[0]
+    assert.equal(source(all).props['data-source-axis'],'energy')
+    const tabs=nodes(all,'button',p=>p['data-portrait-view']!=null)
+    assert.equal(tabs.length,2)
+    assert.equal(tabs[0].props['aria-selected'],true)
+    assert.equal(tabs[1].props['aria-selected'],false)
+    assert.match(JSON.stringify(tabs.map(t=>t.props.children)),locale==='ru' ? /График/ : locale==='es' ? /Gráfico/ : /Chart/)
+    const axes=app.openAxes()
+    assert.equal(nodes(axes,'div',p=>p.className==='modelStage')[0].props.hidden,true)
+    assert.equal(rayInputs(axes).length,10,'All initially displays a compact list of axes')
+    const options=nodes(axes,'div',p=>p['data-portrait-ray']==='energy')
+    assert.equal(options.length,1)
+    const energy=rayInputs(options[0])[0]
+    assert.equal(energy.props.checked,true)
+    energy.props.onChange()
+    all=app.view('chart')
+    assert.equal(source(all).props['data-source-axis'],'stress',
+      'the overview falls back to a different real measured axis when selected source is hidden')
+    assert.equal(nodes(all,'div',p=>p.className==='modelStage')[0].props.hidden,false)
+    assert.equal(app.portrait.axes.energy.rawValue,4.1,
+      'display filtering must not rewrite an assessment result')
+    const again=app.openAxes()
+    assert.equal(rayInputs(nodes(again,'div',p=>p['data-portrait-ray']==='energy')[0])[0].props.checked,false)
+  }
+})
+
+test('select all / clear all affect only the focused profile; empty overview is not a fake score',()=>{
+  const app=harness('en',['stress','energy','clarity','relationships','mood'])
+  app.choose('body')
+  let tree=app.openAxes()
+  const quick=nodes(tree,'div',p=>p.className==='portraitRayBulk')[0]
+  assert.ok(quick)
+  const buttons=nodes(quick,'button',()=>true)
+  assert.equal(buttons.length,2)
+  buttons[1].props.onClick()
+  tree=app.render()
+  assert.equal(rayInputs(tree).filter(input=>input.props.checked).length,0)
+  app.choose('all')
+  tree=app.view('chart')
+  const body=nodes(tree,'g',p=>p['data-summary-sector']==='body')[0]
+  assert.equal(body.props['data-source-axis'],'')
+  assert.equal(nodes(body,'line',p=>p.className==='radarRay').length,0)
+  const work=nodes(tree,'g',p=>p['data-summary-sector']==='work')[0]
+  assert.equal(work.props['data-source-axis'],'clarity',
+    'clearing Body does not erase scores or axes in Work')
+  tree=app.openAxes()
+  const allQuick=nodes(tree,'div',p=>p.className==='portraitRayBulk')[0]
+  nodes(allQuick,'button',()=>true)[0].props.onClick()
+  tree=app.view('chart')
+  assert.equal(nodes(tree,'g',p=>p['data-summary-sector']==='body')[0].props['data-source-axis'],'stress')
+})
+
+test('the two-level portrait switch has exactly Chart / Axes, with no empty Tests tab',()=>{
+  const app=harness('en')
+  let tree=app.render()
+  const top=nodes(tree,'button',p=>p['data-portrait-view']!==undefined)
+  assert.deepEqual(top.map(x=>x.props['data-portrait-view']),['chart','axes'])
+  assert.equal(nodes(tree,'div',p=>p['data-testid']==='portrait-chart-options').length,1)
+  const modes=nodes(tree,'button',p=>p['data-chart-mode']!=null)
+  assert.deepEqual(modes.map(x=>x.props['data-chart-mode']),['profiles','axes'])
+  modes[1].props.onClick()
+  tree=app.render()
+  assert.equal(detailRays(tree).length,17,'chosen-axis wheel uses selected source axes')
+  app.choose('body')
+  tree=app.render()
+  assert.equal(detailRays(tree).length,5,'axis wheel stays in the chosen profile')
+  const axes=app.openAxes()
+  assert.equal(rayInputs(axes).length,5)
+  assert.equal(nodes(axes,'button',p=>p['data-portrait-view']==='axes')[0].props['aria-selected'],true)
 })

@@ -1419,3 +1419,67 @@
     width:min(100%,clamp(230px,42svh,275px));
   }
 }
+
+/* Reports: thin second-level chart/axis switch directly below four life profiles.
+   Axis chooser is a distinct view, never a second long list below the chart. */
+.visual:not(.visualCompact) .portraitModeBar{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px;padding:3px;margin:0 3px 7px;min-width:0;
+  border:1px solid #c6dbd2;border-radius:11px;background:#edf5f0;
+}
+.visual:not(.visualCompact) .portraitModeButton{
+  display:flex;justify-content:center;align-items:center;gap:4px;
+  min-width:0;min-height:34px;padding:5px 8px;
+  border:1px solid transparent;border-radius:8px;
+  background:transparent;color:#346a61;cursor:pointer;
+  font:700 12px/1.2 system-ui,sans-serif;text-align:center;
+}
+.visual:not(.visualCompact) .portraitModeButton[aria-selected=true]{
+  background:#fffdfa;color:#1b5f55;border-color:#a9cec1;
+  box-shadow:0 1px 3px #195f531a;
+}
+.visual:not(.visualCompact) .portraitModeButton:focus-visible,
+.visual:not(.visualCompact) .portraitRayBulk button:focus-visible{
+  outline:3px solid #23796f;outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage[hidden]{display:none!important}
+.visual:not(.visualCompact) .portraitControls{
+  margin:0 3px 8px;padding:10px;border-radius:12px;
+  background:#fbfbf8;border:1px solid #c6dbd2;
+}
+.visual:not(.visualCompact) .portraitRayBulk{
+  display:flex;justify-content:flex-end;gap:10px;margin:5px 0 10px;
+}
+.visual:not(.visualCompact) .portraitRayBulk button{
+  border:0;background:transparent;color:#23695e;
+  padding:5px 2px;cursor:pointer;font:700 11px/1.25 system-ui,sans-serif;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.visual:not(.visualCompact) .portraitAxisHint{
+  margin:0 0 9px;color:#536e64;font:400 11px/1.4 system-ui,sans-serif;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 6px;padding:2px}
+  .visual:not(.visualCompact) .portraitModeButton{min-height:32px;padding:5px 3px;font-size:11px}
+  .visual:not(.visualCompact) .portraitControls{margin:0 2px 7px;padding:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitModeButton{transition:none}
+}
+
+/* Optional source-axis wheel under the existing chart, not a third primary tab. */
+.visual:not(.visualCompact) .portraitChartChoices{
+  display:flex;justify-content:center;align-items:center;gap:4px;
+  margin:0 4px 6px;padding:2px;border-radius:9px;
+  background:rgba(235,245,239,.9);border:1px solid #d1e1d8;
+}
+.visual:not(.visualCompact) .portraitChartChoices button{
+  flex:1;min-width:0;min-height:28px;padding:4px 7px;
+  border:1px solid transparent;border-radius:7px;
+  background:transparent;color:#37675f;cursor:pointer;
+  font:650 11px/1.2 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true]{
+  background:#fffdfa;border-color:#b8d6ca;color:#155f53;
+}
+.visual:not(.visualCompact) .portraitChartChoices button:focus-visible{outline:3px solid #23796f;outline-offset:1px}

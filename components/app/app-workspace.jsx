@@ -2318,7 +2318,7 @@ function PortfolioPage({ data, locale }) {
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
           <Brain size={20} aria-hidden="true" />
-          <strong>{ru ? 'Мой психологический портрет' : 'My psychological portrait'}</strong>
+          <strong>{ru ? 'Мои психологические профили' : locale === 'es' ? 'Mis perfiles psicológicos' : 'My psychological profiles'}</strong>
           <span className="hh-insights-portrait-collapse">{ru ? 'Свернуть' : 'Collapse'}</span>
           <span className="hh-insights-portrait-expand">{ru ? 'Раскрыть' : 'Expand'}</span>
           <ChevronDown size={18} aria-hidden="true" />
