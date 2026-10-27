@@ -1,0 +1,402 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import {
+  ArrowRight, BarChart3, BookOpen, Camera, CheckCircle2, ChevronDown,
+  CircleUserRound, Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
+  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
+} from "lucide-react";
+
+import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
+import type { SupportRequestKind } from "@/components/remote-energy-support-booking";
+import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
+import type { PublicLocale } from "@/lib/public-locales";
+import styles from "./holistic-support-mobile.module.css";
+
+export type SupportMobileVideo = {
+  id: string;
+  title: string;
+  topics: MeditationTopic[];
+  program: "sun" | "reiki" | "energy";
+  author: "andrey" | "psimaster";
+  sourceLanguage: "en" | "ru";
+};
+
+type Focus = "energy" | "money" | "relationships" | "goals";
+type Choice = "meditation" | "consultation" | "talisman" | "pump";
+type Program = "all" | SupportMobileVideo["program"];
+type Author = "all" | SupportMobileVideo["author"];
+type Theme = "all" | MeditationTopic;
+
+const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
+const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
+const choices: { id: Choice; Icon: typeof Play }[] = [
+  { id: "meditation", Icon: Play },
+  { id: "consultation", Icon: TestTubeDiagonal },
+  { id: "talisman", Icon: Sparkles },
+  { id: "pump", Icon: RotateCcw },
+];
+const focusTopics: Record<Focus, MeditationTopic> = {
+  energy: "energy", money: "business", relationships: "love", goals: "business",
+};
+const focusRequest: Record<Focus, string> = {
+  energy: "Inner balance and calm", money: "Work and money",
+  relationships: "Connection and relationships", goals: "Personal direction and goals",
+};
+
+const copy = {
+  en: {
+    assessment: "1. Check in with yourself", scoreGuide: "Rate from 1 to 10",
+    focusLabel: "Your focus", upload: "Add your photo", replace: "Change your photo",
+    photoPrivacy: "Photo stays on this device until you leave.",
+    photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
+    recommend: "Find recommendations", toolsTitle: "2. Choose what helps",
+    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Energy practice" },
+    master: "Teacher", program: "Program", theme: "Topic", all: "All",
+    authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
+    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
+    themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
+    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
+    heroIntro: "Choose an original guided recording and take a quiet moment.",
+    play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
+    youtube: "Open on YouTube", gallery: "More original meditations", galleryHint: "Four verified recordings, where available. Themes are browsing hints, not treatment claims.",
+    notAvailable: "No verified recordings match those filters. Try All.",
+    testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
+    tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
+    talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
+    energyTitle: "Energy practices", energyIntro: "Watch a verified recording or ask a practitioner about optional complementary support.",
+    energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
+    progress: "Your progress", started: "Videos opened here", focusStatus: "Selected focus",
+    private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
+    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navProgress: "My progress", navSettings: "Settings",
+    settings: "Languages & privacy", language: "Language", close: "Close settings",
+    healthNote: "These are reflective practices, not medical diagnoses or treatment.",
+  },
+  ru: {
+    assessment: "1. Оцени себя сейчас", scoreGuide: "Поставь баллы от 1 до 10",
+    focusLabel: "Выбранный фокус", upload: "Добавить фото", replace: "Изменить фото",
+    photoPrivacy: "Фото остаётся только на этом устройстве.",
+    photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
+    recommend: "Подобрать рекомендации", toolsTitle: "2. Выбери, что поможет",
+    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Энергоподкачка" },
+    master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
+    authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
+    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
+    themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
+    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
+    heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
+    play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
+    youtube: "Открыть на YouTube", gallery: "Другие медитации", galleryHint: "До четырёх проверенных записей. Темы помогают искать практики, но не означают лечение.",
+    notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
+    testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
+    tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
+    talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
+    energyTitle: "Практики для энергии", energyIntro: "Посмотри авторские видеозаписи или запроси дополнительную поддержку мастера.",
+    energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
+    progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Текущий фокус",
+    private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
+    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navProgress: "Мой прогресс", navSettings: "Настройки",
+    settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
+    healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
+  },
+  es: {
+    assessment: "1. Evalúa cómo estás", scoreGuide: "Puntúa del 1 al 10",
+    focusLabel: "Tu enfoque", upload: "Añadir foto", replace: "Cambiar foto",
+    photoPrivacy: "Tu foto se queda solo en este dispositivo.",
+    photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
+    recommend: "Buscar recomendaciones", toolsTitle: "2. Elige lo que te ayuda",
+    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Práctica energética" },
+    master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
+    authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
+    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
+    themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
+    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
+    heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
+    play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
+    youtube: "Abrir en YouTube", gallery: "Otras meditaciones", galleryHint: "Hasta cuatro grabaciones verificadas. Los temas son ayudas para explorar, no tratamientos.",
+    notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
+    testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
+    tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
+    talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
+    energyTitle: "Prácticas energéticas", energyIntro: "Mira una grabación verificada o pregunta por apoyo complementario.",
+    energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
+    progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Enfoque actual",
+    private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
+    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navProgress: "Mi progreso", navSettings: "Ajustes",
+    settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
+    healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
+  },
+} as const;
+
+export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale; videos: SupportMobileVideo[] }) {
+  const t = copy[locale];
+  const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
+  const [focus, setFocus] = useState<Focus>("energy");
+  const [choice, setChoice] = useState<Choice>("meditation");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState("");
+  const [master, setMaster] = useState<Author>("all");
+  const [program, setProgram] = useState<Program>("all");
+  const [theme, setTheme] = useState<Theme>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [opened, setOpened] = useState<string[]>([]);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [orderKind, setOrderKind] = useState<SupportRequestKind>("energy");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
+  const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
+      setPhotoError(t.photoError);
+      event.target.value = "";
+      return;
+    }
+    setPhotoError("");
+    setPhotoUrl(URL.createObjectURL(file));
+    event.target.value = "";
+  };
+
+  const relevantVideos = useMemo(() => {
+    const filtered = videos.filter(video => (master === "all" || video.author === master) &&
+      (program === "all" || video.program === program));
+    const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
+    return [
+      ...filtered.filter(video => video.topics.includes(wanted)),
+      ...filtered.filter(video => !video.topics.includes(wanted)),
+    ].slice(0, 4);
+  }, [videos, master, program, theme, focus, choice]);
+  const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
+  const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
+  const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
+    encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
+  const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
+  const chooseFocus = (value: Focus) => { setFocus(value); setSelectedId(null); setPlaying(false); };
+  const onRecommendations = () => {
+    setChoice("meditation"); setTheme(focusTopics[focus]); setProgram("all"); setMaster("all");
+    setSelectedId(null); setPlaying(false);
+    document.getElementById("support-mobile-experience")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const startVideo = () => {
+    if (!selected) return;
+    setPlaying(true);
+    setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
+  };
+  const changeChoice = (value: Choice) => {
+    setChoice(value); setPlaying(false); setSelectedId(null);
+    if (value === "pump") { setTheme("energy"); setProgram("all"); }
+  };
+  const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
+  const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
+  const progressCount = videos.filter(video => opened.includes(video.id)).length;
+  const progressTotal = Math.min(4, videos.length);
+  const FocusIcon = scoreIcons[focus];
+  const scene = choice === "meditation" || choice === "pump";
+
+  return (
+    <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
+      <div className={styles.container}>
+        <p className={styles.pageEyebrow}>HOLISTIC HOUSE <span aria-hidden="true">·</span> {t.newUi}</p>
+        <div className={styles.topGrid}>
+          <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
+            <h1 id="mobile-assessment-title">{t.assessment}</h1>
+            <p className={styles.subText}>{t.scoreGuide}</p>
+            <div className={styles.scaleList}>
+              {focusOrder.map(id => {
+                const Icon = scoreIcons[id];
+                return <label className={styles.scaleRow} key={id} data-support-scale={id}>
+                  <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
+                  <span className={styles.scaleDetail}>
+                    <span className={styles.scaleLabel}>{t.foci[id]}</span>
+                    <input type="range" min="1" max="10" step="1" value={scores[id]}
+                      aria-label={t.foci[id]} aria-valuetext={scores[id] + " / 10"}
+                      onChange={event => setScores(previous => ({ ...previous, [id]: Number(event.target.value) }))} />
+                  </span>
+                  <output className={styles.scaleValue} data-tone={id}>{scores[id]}</output>
+                </label>;
+              })}
+            </div>
+          </section>
+
+          <section className={styles.profile} aria-label={t.focusLabel}>
+            <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
+              {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
+                <span className={styles.photoPlaceholder}><CircleUserRound size={63} strokeWidth={1.15} aria-hidden="true" /><strong>{t.upload}</strong></span>}
+              <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
+                aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
+            </label>
+            {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
+            <label className={styles.focusSelector}>
+              <span className={styles.focusCaption}>{t.focusLabel}</span>
+              <span className={styles.focusValue}><FocusIcon size={22} aria-hidden="true" />
+                <select value={focus} onChange={event => chooseFocus(event.target.value as Focus)}
+                  aria-label={t.focusLabel}>
+                  {focusOrder.map(id => <option key={id} value={id}>{t.foci[id]}</option>)}
+                </select><ChevronDown size={18} aria-hidden="true" />
+              </span>
+            </label>
+            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations>
+              <Sparkles size={21} aria-hidden="true" />{t.recommend}
+            </button>
+          </section>
+
+          <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
+            <h2 id="mobile-tools-title">{t.toolsTitle}</h2>
+            <div className={styles.toolGrid}>
+              {choices.map(({ id, Icon }) => (
+                <button key={id} type="button" data-support-tool={id}
+                  className={styles.toolButton} aria-pressed={choice === id}
+                  onClick={() => changeChoice(id)}>
+                  <Icon size={30} strokeWidth={1.65} aria-hidden="true" />
+                  <span>{t.options[id]}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section className={styles.experience} id="support-mobile-experience" aria-live="off">
+          {scene ? (
+            <>
+              <div className={styles.hero} data-support-player>
+                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-practitioner-sunrise.webp"
+                  alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
+                {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
+                <div className={styles.heroFilters} aria-label={t.gallery}>
+                  <span className={styles.heroMode}><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
+                  <label className={styles.heroFilter}><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
+                    <select value={master} aria-label={t.master} onChange={event => { setMaster(event.target.value as Author); setPlaying(false); setSelectedId(null); }}>
+                      <option value="all">{t.all}</option>
+                      {activeAuthorValues.map(author => <option key={author} value={author}>{author === "andrey" ? t.authorAndrey : t.authorPs}</option>)}
+                    </select><ChevronDown size={14} aria-hidden="true" />
+                  </label>
+                  <label className={styles.heroFilter}><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
+                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
+                      <option value="all">{t.all}</option>
+                      {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
+                    </select><ChevronDown size={14} aria-hidden="true" />
+                  </label>
+                  <label className={styles.heroFilter}><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
+                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
+                      {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
+                        <option key={key} value={key}>{t.themes[key]}</option>)}
+                    </select><ChevronDown size={14} aria-hidden="true" />
+                  </label>
+                </div>
+                {playing && selected ? <div className={styles.iframeWrap}>
+                  <iframe key={selected.id} src={videoSrc} title={selected.title}
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen loading="eager" />
+                </div> : (
+                  <div className={styles.heroBody}>
+                    <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
+                    <h2>{choice === "pump" ? t.energyTitle : t.heroTitle[focus]}</h2>
+                    <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
+                    {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
+                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
+                      <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
+                  </div>
+                )}
+              </div>
+              <div className={styles.videoSection}>
+                <div className={styles.videoHeading}>
+                  <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {t.foci[focus]}</span></h3>
+                  <span className={styles.videoLanguage}>{locale === "ru" ? t.originalRu : t.originalEn}</span>
+                </div>
+                {relevantVideos.length > 0 ? (
+                  <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
+                    {relevantVideos.map(video => <button type="button" key={video.id}
+                      className={styles.videoCard} aria-pressed={selected?.id === video.id}
+                      data-support-video={video.id} onClick={() => pickVideo(video.id)}>
+                      <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
+                        alt="" width={320} height={180} unoptimized loading="lazy" />
+                      <span className={styles.videoDark} aria-hidden="true" />
+                      <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
+                      <span className={styles.videoTitle}>{video.title}</span>
+                    </button>)}
+                  </div>
+                ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+                <p className={styles.videoHint}>{t.galleryHint}</p>
+                {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
+                  target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
+              </div>
+              {choice === "pump" ? <div className={styles.supportEnquiry}>
+                <p>{t.energyIntro}</p>
+                <button type="button" className={styles.secondaryButton}
+                  aria-expanded={requestOpen} aria-controls="support-mobile-master-request"
+                  onClick={() => setRequestOpen(open => !open)}>{requestOpen ? t.energyHide : t.energyAction}</button>
+                {requestOpen ? <div id="support-mobile-master-request">
+                  <HolisticInlineSupportOrder locale={locale} kind={orderKind} initialGoal={focusRequest[focus]}
+                    onKindChange={setOrderKind} onClose={() => setRequestOpen(false)} />
+                </div> : null}
+                <small>{t.energyNote}</small>
+              </div> : null}
+            </>
+          ) : choice === "talisman" ? (
+            <div className={styles.insetPanel}>
+              <div className={styles.insetIntro}><Sparkles size={33} aria-hidden="true" />
+                <div><h2>{t.talismansTitle}</h2><p>{t.talismansIntro}</p></div></div>
+              <TaoistTalismanCatalog locale={locale} />
+            </div>
+          ) : (
+            <div className={styles.insetPanel}>
+              <div className={styles.insetIntro}><TestTubeDiagonal size={33} aria-hidden="true" />
+                <div><h2>{t.testsTitle}</h2><p>{t.testsIntro}</p></div></div>
+              <div className={styles.consultOptions}>
+                <Link href={"/" + locale + "/tests"} prefetch={false}><BarChart3 size={27} aria-hidden="true" /><span>{t.tests}</span><ArrowRight size={22} aria-hidden="true" /></Link>
+                <Link href={"/" + locale + "/coaching"} prefetch={false}><UserRound size={27} aria-hidden="true" /><span>{t.consult}</span><ArrowRight size={22} aria-hidden="true" /></Link>
+              </div>
+              <p className={styles.consultNote}>{t.consultNote}</p>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
+          <h2 id="support-mobile-progress-heading">{t.progress}</h2>
+          <div className={styles.progressGrid}>
+            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as React.CSSProperties}>
+              <strong>{progressCount}/{progressTotal}</strong>
+            </div>
+            <div><strong>{t.started}</strong><span>{t.private}</span></div>
+            <div className={styles.progressFocus}><FocusIcon size={27} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+          </div>
+          <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
+        </section>
+        <footer className={styles.disclaimer}>
+          <p>{t.healthNote}</p>
+          <Link href={"/" + locale + "/holistic-support"} prefetch={false}>{t.standard} <ArrowRight size={16} aria-hidden="true" /></Link>
+        </footer>
+      </div>
+
+      {settingsOpen ? <section className={styles.settingsPanel} id="support-mobile-settings" aria-label={t.settings}>
+        <h2><Settings2 size={22} aria-hidden="true" />{t.settings}</h2>
+        <p>{t.language}</p>
+        <div className={styles.localeLinks}>
+          {(["en", "ru", "es"] as PublicLocale[]).map(language => <Link key={language}
+            href={"/" + language + "/holistic-support/mobile"} hrefLang={language} aria-current={locale === language ? "page" : undefined}>
+            {language.toUpperCase()}</Link>)}
+        </div>
+        <p>{t.privateInfo}</p>
+        <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
+      </section> : null}
+
+      <nav className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
+        <Link href={"/" + locale + "/"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
+        <Link href={"/" + locale + "/app"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
+        <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
+        <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
+          onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
+      </nav>
+    </main>
+  );
+}
