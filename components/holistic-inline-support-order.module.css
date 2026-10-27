@@ -53,3 +53,18 @@
  .note{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.panel{animation:none}}
+
+/* Dedicated support page: compact filters, automatic results, never viewport-offset overlay. */
+.panel.standalone{width:100%;max-width:100%;left:auto;margin:0;padding:13px 15px;border-radius:17px;box-shadow:none}
+.standalone .heading{margin-bottom:9px}
+.standalone .heading h3{font-size:23px}
+.standalone .picker{gap:8px}
+.standalone .search{min-height:44px;font-size:13px;max-width:270px;justify-self:end}
+.standalone .results{display:block;padding-top:14px;margin-top:14px;border-top:1px solid #e1cfbd}
+@media(max-width:720px){
+ .panel.standalone{width:100%;max-width:100%;left:auto;margin:0;padding:12px}
+ .standalone .picker{gap:7px}
+ .standalone .results{margin-top:10px;padding-top:10px}
+ .standalone .search{min-height:44px;max-width:100%;width:100%}
+}
+@media(max-width:360px){.panel.standalone{width:100%;left:auto;margin:0;padding:9px}}
