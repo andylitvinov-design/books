@@ -108,6 +108,10 @@ test('main scales are short broad choices; step three selects source-backed topi
   assert.match(tests, /data-profile-recommended-tests/);
   assert.match(tests, /data-profile-five-more-tests/);
   assert.doesNotMatch(tests, /data-profile-extra-profile-filter/);
+  assert.match(tests, /remainingTestKeys\.size > 0 && <section className=\{styles\.extraPanel\}/);
+  assert.match(tests, /id="profile-builder-extra-results" hidden=\{!showMore\}/);
+  assert.ok(tests.indexOf('data-profile-extra-toggle') < tests.indexOf('data-profile-extra-selected-scope'),
+    'overflow must start with a single small toggle, not a long form');
   assert.match(builder, /setSelectedScaleIds\(\[\]\);/);
   assert.match(builder, /setSelectedByMode\(\{ questionnaires: \[\], pro: \[\] \}\)/);
   assert.match(css, /\.mainScaleBody\{display:flex/);
