@@ -10,6 +10,8 @@ import { createArticleRepository } from "@/lib/practitioners/article-repository"
 import { createDirectMessages } from "@/lib/practitioners/direct-messages";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
+import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
@@ -101,11 +103,13 @@ export default async function MasterProfile({ params }: PageProps) {
   let articles: PublishedArticle[] = [];
   let publishedMeditations: PublishedMeditation[] = [];
   let sharedAudios: {id:string;title:string;locale:'en'|'ru'|'es'}[] = [];
+  let siteRecordings: {title:string;description:string;locale:'en'|'ru'|'es';url:string}[] = [];
   // Both repositories return *only* approved public snapshots. No drafts, client data or media URLs.
-  const [articleResult, courseResult, audioResult] = await Promise.allSettled([
+  const [articleResult, courseResult, audioResult, siteVideoResult] = await Promise.allSettled([
     createArticleRepository(config).publicByPractitioner(practitioner.slug),
     createPractitionerCourseRepository(config).catalog(),
     createDirectMessages(config).publicAudios(practitioner.slug),
+    getPublishedSiteVideos(),
   ]);
   if (articleResult.status === "fulfilled") {
     articles = (articleResult.value as PublishedArticle[])
@@ -120,6 +124,19 @@ export default async function MasterProfile({ params }: PageProps) {
       .slice(0, 12);
   }
   if (audioResult.status === 'fulfilled') sharedAudios = audioResult.value;
+  if (siteVideoResult.status === 'fulfilled') {
+    // Editorial videos are public, reviewed snapshots; never load private
+    // owner Telegram MP4 drafts or another master's publications here.
+    siteRecordings = Object.values(siteVideoResult.value)
+      .filter(video => video.practitionerSlug === practitioner.slug)
+      .map(video => ({
+        title: video.title,
+        description: video.description || "",
+        locale: video.language,
+        url: siteVideoWatchUrl(video),
+      }))
+      .filter(video => Boolean(video.url));
+  }
   // Reuse verified original media only for its actual author. Never invent translations or audio files.
   const originalVideos = practitioner.slug === "andy-litvinov"
     ? freeMeditationVideos(ru ? "ru" : es ? "es" : "en").map(item => ({
@@ -131,7 +148,7 @@ export default async function MasterProfile({ params }: PageProps) {
     }))
     : [];
   const seenPublicVideos = new Set<string>();
-  const videos = [...(profile.videoMaterials || []), ...originalVideos].filter(item => {
+  const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...originalVideos].filter(item => {
     if (seenPublicVideos.has(item.url)) return false;
     seenPublicVideos.add(item.url);
     return true;
@@ -212,6 +229,7 @@ export default async function MasterProfile({ params }: PageProps) {
         <nav className={styles.sectionNav} aria-label={ru ? "Разделы профиля" : es ? "Secciones del perfil" : "Profile sections"}>
           <a href="#practitioner-services">{ru ? "Услуги" : es ? "Servicios" : "Services"}</a>
           <a href="#practitioner-meditations">{ru ? "Медитации" : es ? "Meditaciones" : "Meditations"}</a>
+          {videos.length > 0 && <a href="#practitioner-videos">{ru ? "Все видео" : es ? "Todos los vídeos" : "All videos"}</a>}
           <a href="#practitioner-articles">{ru ? "Статьи" : es ? "Artículos" : "Articles"}</a>
           <a href="#practitioner-about">{ru ? "О мастере" : es ? "Acerca de" : "About"}</a>
         </nav>
