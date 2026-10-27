@@ -780,7 +780,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
               <input type="checkbox" checked={selectedKeys.includes(test.key)} disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
-                onChange={() => toggleTest(test.key)} aria-label={extra.add + ": " + test.title} />
+                onChange={() => toggleTest(test.key)} aria-label={(selectedKeys.includes(test.key) ? extra.remove : extra.add) + ": " + test.title} />
               <span className={styles.testText}><strong>{test.title}</strong>
                 <small className={styles.matchPercent}>{t.matchLabel}: {scopeMatch(test.key).percent}%</small>
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
