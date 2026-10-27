@@ -4,18 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
+import { matchesHolisticEuroBudget } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./remote-energy-support-booking.module.css";
 
 type Locale = "en" | "ru" | "es";
 type Format = "asynchronous" | "live";
 export type SupportRequestKind = "talisman" | "energy";
 type PriceBudget = "any" | "free" | "20" | "100";
-
-function publishedPriceFitsBudget(price: number, currency: string, budget: PriceBudget) {
-  if (budget === "any") return true;
-  if (budget === "free") return price === 0;
-  return currency === "EUR" && Number.isFinite(price) && price > 0 && price <= Number(budget);
-}
 
 export type EnergySupportMaster = {
   slug: string;
@@ -322,13 +317,13 @@ export function RemoteEnergySupportBooking({
     [selected]
   );
   const budgetOptions = useMemo(
-    () => compactFinder ? options.filter(option => publishedPriceFitsBudget(option.price, selected?.currency || "", priceBudget)) : options,
+    () => compactFinder ? options.filter(option => matchesHolisticEuroBudget(option.price, selected?.currency || "", "fixed", priceBudget)) : options,
     [compactFinder, options, priceBudget, selected?.currency]
   );
   const currentPrice = budgetOptions.find((option) => option.duration === duration);
   const matchingMasters = compactFinder && priceBudget !== "any"
     ? requestKind === "talisman" ? [] : masters.filter(master =>
-      master.priceOptions.some(option => publishedPriceFitsBudget(option.price, master.currency, priceBudget)))
+      master.priceOptions.some(option => matchesHolisticEuroBudget(option.price, master.currency, "fixed", priceBudget)))
     : masters;
   const priceLabel = (price: number, currency: string) => {
     try {
@@ -518,7 +513,7 @@ export function RemoteEnergySupportBooking({
               const isOpen = selectedServiceId === master.serviceId;
               const offers = master.priceOptions
                 .filter((offer) => Number.isFinite(offer.price) && offer.price > 0 &&
-                  (!compactFinder || publishedPriceFitsBudget(offer.price, master.currency, priceBudget)))
+                  (!compactFinder || matchesHolisticEuroBudget(offer.price, master.currency, "fixed", priceBudget)))
                 .sort((a, b) => a.duration - b.duration);
               return (
                 <article key={master.serviceId} className={styles.masterOffer}
