@@ -67,6 +67,21 @@ test("broad videos with four loose tags do not crowd out a focused recording", (
   assert.equal(result.videos[0].id, "fffffffffff");
 });
 
+test("low ratings reorder secondary talisman options without replacing the chosen symbolic intention", () => {
+  const one = recommendSupportContent({
+    focus: "energy", scores: {energy: 7, money: 9, relationships: 1, goals: 9},
+    videos: library, talismans: TAOIST_TALISMANS,
+  });
+  const two = recommendSupportContent({
+    focus: "energy", scores: {energy: 7, money: 1, relationships: 9, goals: 9},
+    videos: library, talismans: TAOIST_TALISMANS,
+  });
+  assert.equal(one.talismans[0].id, "fu-balance");
+  assert.equal(two.talismans[0].id, "fu-balance");
+  assert.equal(one.talismans[1].id, "fu-harmony");
+  assert.equal(two.talismans[1].id, "fu-prosperity");
+});
+
 test("language matching is a tie-breaker without hiding verified originals", () => {
   const recordings = [video("eeeeeeeeeee", ["energy"], "en"), video("fffffffffff", ["energy"], "ru")];
   const ru = recommendSupportContent({ focus: "energy", scores: defaultScores, videos: recordings, locale: "ru" });
