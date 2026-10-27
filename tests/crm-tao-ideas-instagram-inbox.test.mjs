@@ -44,6 +44,12 @@ test('@tao.ideas has a single, narrowly approved CRM source; do not expose anoth
   assert.equal(instagramTaoInboxApproved({...production,HH_CRM_MSG_INSTAGRAM_USERNAME:'other.brand'}),false);
   assert.equal(channelTransportReady('instagram',{...production,HH_CRM_MSG_INSTAGRAM_USERNAME:'other.brand'}),false);
   assert.equal(channelTransportReady('instagram',{...production,HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED:'false'}),false);
+  assert.equal(channelTransportReady('instagram',{...production,
+    HH_CRM_MSG_PRODUCTION_APPROVED:'true',HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED:'false'}),false,
+    'global transport approval cannot silently authorize @tao.ideas');
+  assert.equal(messengerSetupStatus('instagram',{...production,
+    HH_CRM_MSG_PRODUCTION_APPROVED:'true',HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED:'false'}).liveApproved,false);
+
   for(const k of ['HH_CRM_MSG_INSTAGRAM_TOKEN','HH_CRM_MSG_INSTAGRAM_ID','HH_CRM_MSG_META_APP_SECRET',
     'HH_CRM_MSG_META_VERIFY_TOKEN','HH_CRM_MSG_META_API_VERSION','HH_CRM_MSG_INSTAGRAM_ENABLED']){
     const broken={...production};delete broken[k];
