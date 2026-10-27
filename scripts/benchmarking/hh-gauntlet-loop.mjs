@@ -20,6 +20,10 @@ const task = [
   'The protected client/practitioner inbox and real lead persistence are OUTSIDE this',
   'synthetic-only pilot; NEVER describe mocked browser writes as real CRM delivery.',
   'Keep EN/RU/ES parity and 320/390/430px usability. Protect consent and privacy.',
+  'Verified P1 regression: React exhaustive-deps warns that the resume useEffect',
+  'in components/free-express-wizard.tsx uses t.timeout without listing it.',
+  'Fix that warning without changing request semantics and add a narrow test',
+  'to the existing free-express-wizard-v2.test.mjs preventing recurrence.',
   'Allowed changes are existing wizard UI and its synthetic regression tests only.',
   'No paid APIs, provider calls, migrations, secrets, real leads or advertisements.',
 ].join(' ');
@@ -88,7 +92,7 @@ function deterministicGates() {
   const tests = run(process.execPath, ['--test', ...CONTRACT_TESTS], 120_000);
   const tsc = run(join(root, 'node_modules/.bin/tsc'), ['--noEmit'], 180_000);
   const lint = run(join(root, 'node_modules/.bin/eslint'),
-    SAFE_EDIT_FILES.filter(path => /\.(mjs|js|jsx|ts|tsx)$/.test(path)), 120_000);
+    ['--max-warnings=0', ...SAFE_EDIT_FILES.filter(path => /\.(mjs|js|jsx|ts|tsx)$/.test(path))], 120_000);
   const whitespace = run('git', ['diff', '--check'], 20_000);
   return {
     ok: tests.ok && tsc.ok && lint.ok && whitespace.ok,
