@@ -6,6 +6,7 @@ import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
+import { FreeMobileAppBanner } from "@/components/free-mobile-app-banner";
 
 
 
@@ -63,6 +64,7 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
       <HomeSectionCarousel locale={locale} />
       <HomeMoreDisclosure locale={locale} />
       <HomeFeaturedWorkspace locale={locale} />
+      <FreeMobileAppBanner locale={locale} />
 
       <PersonalTestimonials locale={locale} variant="home" />
 

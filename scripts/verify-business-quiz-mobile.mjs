@@ -1,144 +1,117 @@
-// Browser acceptance for the ACTUAL /explore/business direction journey.
-// The old photo-quiz/finder is no longer mounted on this route. Verify the
-// existing topic/intention chooser and links to the existing consented form,
-// rather than forcing a second business finder or a duplicate CRM funnel.
-// Only isolated loopback GET/navigation; no lead, messenger or payment POST.
+// Real browser acceptance for the business photo hero and service alternatives.
+// Runs against an isolated production-mode Next server; does not send a lead.
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { mkdir } from 'node:fs/promises'
-
-const require = createRequire(import.meta.url)
-const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
-const origin = process.env.HH_PUBLIC_QA_ORIGIN || 'http://127.0.0.1:3100'
-if (!/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+const require=createRequire(import.meta.url)
+const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||'playwright')
+const origin=process.env.HH_PUBLIC_QA_ORIGIN||'http://127.0.0.1:3100'
+if(!/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(origin))
   throw new Error('Business browser QA only on isolated loopback server')
-}
-const dir = 'artifacts/business-quiz-mobile'
-await mkdir(dir, { recursive: true })
+const dir='artifacts/business-quiz-mobile'
+await mkdir(dir,{recursive:true})
 
-async function assertNoOverflow(page, label) {
-  const bounds = await page.evaluate(() => ({
-    viewport: window.innerWidth,
-    content: document.documentElement.scrollWidth,
+async function verify(browserType,locale,width){
+  const browser=await browserType.launch()
+  const page=await browser.newPage({
+    viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,reducedMotion:'reduce',
+  })
+  const errors=[]
+  page.on('pageerror',err=>errors.push(err.message))
+  const label=browserType.name()+'-'+locale+'-'+width
+  const snap=browserType===webkit&&locale==='en'&&width===390
+  const measure=async()=>page.evaluate(()=>({
+    viewport:window.innerWidth,content:document.documentElement.scrollWidth,
   }))
-  assert.ok(bounds.content <= bounds.viewport + 1, label + ': horizontal overflow ' + JSON.stringify(bounds))
-}
-
-async function verify(browserType, locale, width) {
-  const browser = await browserType.launch()
-  const page = await browser.newPage({
-    viewport: { width, height: 844 },
-    deviceScaleFactor: 1, hasTouch: width <= 430, reducedMotion: 'reduce',
-  })
-  const label = browserType.name() + ':' + locale + ':' + width
-  const pageErrors = []
-  const forbiddenRequests = []
-  page.on('pageerror', error => pageErrors.push(error.message))
-  page.on('request', request => {
-    if (request.method() === 'POST' &&
-      /\/api\/(?:service-enquiries|payments|billing)\b/.test(new URL(request.url()).pathname)) {
-      forbiddenRequests.push(request.method() + ' ' + new URL(request.url()).pathname)
+  try{
+    const response=await page.goto(origin+'/'+locale+'/explore/business',{waitUntil:'networkidle',timeout:60000})
+    assert.equal(response?.status(),200,label+': route')
+    // CSS Modules hash class; assert via real img near the finder instead of class text.
+    const finder=page.locator('[data-business-consultation-finder]')
+    await finder.waitFor({state:'visible'})
+    const image=page.locator('[data-topic-journey="business"] > section').first().locator('img').first()
+    assert.ok(await image.evaluate(img=>img.complete&&img.naturalWidth>50),label+': authentic portrait')
+    assert.equal(await page.locator('[data-topic-journey="business"] > section').first().locator('h1').count(),1)
+    assert.equal(await finder.locator('[data-business-finder-step="need"]').count(),1)
+    const options=page.locator('[data-business-need]')
+    assert.equal(await options.count(),3,label+': three answers')
+    assert.deepEqual(await options.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-business-need'))),
+      ['clarity','income','growth'])
+    for(let i=0;i<3;i++){
+      const box=await options.nth(i).boundingBox()
+      assert.ok(box&&box.height>=44,label+': 44px option '+i)
     }
-  })
-
-  try {
-    const response = await page.goto(origin + '/' + locale + '/explore/business', {
-      waitUntil: 'networkidle', timeout: 60000,
-    })
-    assert.equal(response?.status(), 200, label + ': business route')
-
-    const direction = page.locator('[data-direction-offers="business"]')
-    await direction.waitFor({ state: 'visible', timeout: 30000 })
-    assert.equal(await direction.locator('[data-direction-hero] h1').count(), 1,
-      label + ': direction hero')
-    assert.equal(await direction.locator('[data-direction-wish-form] input[type="search"]').count(), 1,
-      label + ': one optional question input (not submitted)')
-    assert.equal(await direction.locator('[data-direction-topic-finder]').count(), 1,
-      label + ': existing topic selector')
-    const focus = direction.locator('[data-direction-filter]')
-    assert.equal(await focus.count(), 5, label + ': four business topics and all')
-    assert.equal(await direction.locator('[data-direction-action-finder] [data-direction-intent]').count(),
-      4, label + ': test, advice, course and consultation choices')
-    assert.equal(await direction.locator('[data-direction-section]').count(), 3,
-      label + ': default test, course and session groups')
-
-    const session = direction.locator('[data-offer-id="primary-session"] [data-offer-action="session"]')
-    assert.equal(await session.getAttribute('href'), '/' + locale + '/services/business-consulting',
-      label + ': paid business CTA uses existing service, not a second form')
-    assert.match(await direction.locator('[data-offer-id="primary-session"]').innerText(),
-      /€50.*€100|€50|€100/, label + ': approved session-price context')
-
-    const cards = page.locator('[data-goal-support-offers][data-goal-support-theme="business"]')
-    await cards.waitFor({ state: 'visible' })
-    assert.equal(await cards.locator('[data-goal-support-card]').count(), 3,
-      label + ': free review, constellations and coaching')
-    const free = cards.locator('[data-goal-support-action="business-review"]')
-    const paid = cards.locator('[data-goal-support-action="business-coaching"]')
-    assert.equal(await free.getAttribute('href'),
-      '/' + locale + '/services/free-situation-review?topic=business')
-    assert.equal(await paid.getAttribute('href'),
-      '/' + locale + '/services/business-consulting#business-direct-request')
-    for (const [kind, action] of [['free', free], ['paid', paid]]) {
-      const box = await action.boundingBox()
-      assert.ok(box && box.height >= 44, label + ': ' + kind + ' touch target >=44px')
+    const sizes=await measure()
+    assert.ok(sizes.content<=sizes.viewport+1,label+': initial horizontal overflow')
+    if(width<=430){
+      const box=await options.last().boundingBox()
+      assert.ok(box.y+box.height<770,label+': all three choices above bottom bar')
     }
-    await assertNoOverflow(page, label + ': initial')
+    const filters=page.locator('[data-business-service-filter]')
+    assert.equal(await filters.evaluate(node=>node.open),false,label+': filter initially collapsed')
+    assert.equal(await page.locator('[data-business-service-card]').count(),3,label+': first three services')
+    if(snap)await page.screenshot({path:dir+'/01-photo-and-three-choices.png',fullPage:false})
 
-    // Actual React interactions, with no synthetic submitted enquiry.
-    await direction.locator('[data-direction-intent="session"]').click()
-    await direction.locator('[data-direction-section="session"]').waitFor({ state: 'visible' })
-    assert.equal(await direction.locator('[data-direction-section]').count(), 1,
-      label + ': selecting consultation removes unrelated results')
-    assert.equal(await direction.locator('[data-direction-intent="session"]').getAttribute('aria-pressed'),
-      'true')
-    await direction.locator('[data-direction-filter="decisions"]').click()
-    assert.equal(await direction.locator('[data-direction-filter="decisions"]').getAttribute('aria-pressed'),
-      'true', label + ': chosen business topic')
-    assert.ok(await direction.locator('[data-direction-section="session"] [data-offer-action="session"]').count() >= 1)
-    await direction.locator('[data-direction-intent="session"]').click()
-    assert.equal(await direction.locator('[data-direction-section]').count(), 3,
-      label + ': reselecting consultation restores all paths')
-
-    const details = cards.locator('[data-goal-support-details="business-coaching"]')
-    await details.click()
-    assert.equal(await details.getAttribute('aria-expanded'), 'true')
-    const description = cards.locator('#goal-support-info-business-coaching')
-    await description.waitFor({ state: 'visible' })
-    assert.match(await description.innerText(), /€50/)
-    assert.match(await description.innerText(), /€100/)
-    if (browserType === webkit && locale === 'en' && width === 390) {
-      await page.screenshot({ path: dir + '/business-current-offers-webkit-390.png', fullPage: false })
+    // Every answer reveals BOTH paths: an actual free questionnaire and a consented personal session.
+    await page.locator('[data-business-need="income"]').click()
+    await page.locator('[data-business-finder-result]').waitFor({state:'visible'})
+    assert.equal(await page.locator('[data-business-result-path]').count(),2,label+': two visible paths')
+    const freeCta=page.locator('[data-business-finder-start="free-review"]')
+    const cta=page.locator('[data-business-finder-start="website-form"]')
+    assert.equal(await freeCta.getAttribute('href'),'/'+locale+'/services/free-situation-review?topic=business')
+    assert.equal(await freeCta.getAttribute('data-business-finder-context'),null)
+    assert.equal(await cta.getAttribute('href'),'#business-direct-request')
+    assert.equal(await cta.getAttribute('data-business-direct-option'),'express')
+    for(const [name,link] of [['free',freeCta],['paid',cta]]){
+      const box=await link.boundingBox()
+      assert.ok(box&&box.height>=44,label+': '+name+' 44px touch target')
+      if(width<=430)assert.ok(box.y+box.height<770,label+': '+name+' CTA above fixed bottom navigation')
     }
+    if(snap)await page.screenshot({path:dir+'/02-free-and-paid.png',fullPage:false})
+    await cta.click()
+    const form=page.locator('[data-business-website-enquiry]')
+    await form.waitFor({state:'visible'})
+    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'express')
+    assert.ok((await form.locator('textarea').inputValue()).trim(),label+': selected need shown for review')
+    await page.locator('[data-business-finder-result] summary').click()
+    await page.locator('[data-business-format-choice="full"]').click()
+    assert.equal(await cta.getAttribute('data-business-direct-option'),'full')
+    assert.equal(await freeCta.getAttribute('href'),'/'+locale+'/services/free-situation-review?topic=business')
+    await cta.click()
+    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'full')
+    await page.locator('[data-business-finder-reset]').click()
+    assert.equal(await page.locator('[data-business-need]').count(),3)
 
-    // The free review and paid service both actually resolve, without a lead.
-    if (width === 390) {
-      const freePage = await page.request.get(origin + '/' + locale +
-        '/services/free-situation-review?topic=business', { timeout: 30000 })
-      assert.equal(freePage.status(), 200, label + ': free review target')
-    }
-    await paid.click()
-    await page.waitForURL(url => url.pathname === '/' + locale + '/services/business-consulting',
-      { timeout: 30000 })
-    await page.locator('[data-business-website-enquiry]').waitFor({
-      state: 'visible', timeout: 30000,
-    })
-    assert.equal(await page.locator('[data-business-offer="express"]').count(), 1,
-      label + ': existing €50/30-min choice')
-    assert.equal(await page.locator('[data-business-offer="full"]').count(), 1,
-      label + ': existing €100/60-min choice')
-    await assertNoOverflow(page, label + ': paid-service target')
-    assert.deepEqual(forbiddenRequests, [], label + ': no lead or payment request sent')
-    assert.deepEqual(pageErrors, [], label + ': no unhandled page errors')
+    // The alternative finder is genuinely collapsed and does not require a quiz.
+    await filters.locator('summary').click()
+    assert.equal(await filters.evaluate(node=>node.open),true)
+    await page.locator('[data-service-filter-topic="income"]').click()
+    assert.equal(await page.locator('[data-business-service-card]').count(),2)
+    await page.locator('[data-service-filter-topic="all"]').click()
+    assert.equal(await page.locator('[data-business-service-card]').count(),3)
+    const more=page.locator('[data-business-show-more]')
+    await more.click()
+    assert.equal(await page.locator('[data-business-service-card]').count(),6)
+    assert.equal(await page.locator('[data-business-service-card="mentoring"]').count(),1)
+    assert.equal(await page.locator('[data-business-service-card="constellations"]').count(),1)
+    assert.equal(await page.locator('[data-business-service-card="imagery"]').count(),1)
+    // Existing consent-gated CRM form receives a direct card's approved price.
+    await page.locator('[data-business-service-card="full"] [data-business-direct-option="full"]').click()
+    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'full')
+    const after=await measure()
+    assert.ok(after.content<=after.viewport+1,label+': after interactions no horizontal overflow')
+    // Follow the real free link (no lead submission), not a simulated client-side redirect.
+    await page.locator('[data-business-need="clarity"]').click()
+    await page.locator('[data-business-finder-start="free-review"]').click()
+    await page.waitForURL('**/'+locale+'/services/free-situation-review?topic=business',{timeout:30000})
+    assert.equal(new URL(page.url()).pathname,'/'+locale+'/services/free-situation-review')
+    assert.deepEqual(errors,[],label+': no unhandled page errors')
     return label
-  } finally {
-    await page.close()
-    await browser.close()
-  }
+  }finally{await page.close();await browser.close()}
 }
-
-const done = []
-for (const locale of ['en', 'ru', 'es']) {
-  for (const width of [320, 375, 390, 430]) done.push(await verify(webkit, locale, width))
-  done.push(await verify(chromium, locale, 390))
+const done=[]
+for(const locale of ['en','ru','es']){
+  for(const width of [320,375,390,430])done.push(await verify(webkit,locale,width))
+  done.push(await verify(chromium,locale,390))
 }
-console.log('Business direction → existing free/paid service browser acceptance:', done.join(', '))
+console.log('Business photo and service browser acceptance:',done.join(', '))
