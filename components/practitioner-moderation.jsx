@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
+import { eventTicketReviewSnapshot } from '@/lib/practitioners/event-contracts'
 
 export default function PractitionerModeration(){
  const [items,setItems]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
  const [ticketReviewed,setTicketReviewed]=useState({})
- async function load(){setError('');try{const r=await fetch('/admin/practitioners/data',{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error();setItems((await r.json()).items||[])}catch{setError('Unable to load practitioner network.')}}
+ async function load(){setError('');try{const r=await fetch('/admin/practitioners/data',{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error();setItems((await r.json()).items||[]);setTicketReviewed({})}catch{setError('Unable to load practitioner network.')}}
  useEffect(()=>{load()},[])
  async function act(kind,id,action,extra={}){setBusy(true);setError('');try{const r=await fetch('/admin/practitioners/data',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,id,action,...extra})});if(!r.ok)throw new Error();await load()}catch{setError('The moderation action failed.')}finally{setBusy(false)}}
  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Practitioner Network" description="Review practitioner profiles, credentials, services and events."/><p><a href="/admin/practitioners/articles">Review practitioner articles →</a></p>
@@ -51,7 +52,7 @@ export default function PractitionerModeration(){
         <button disabled={busy||!['submitted','changes_requested'].includes(e.status)||
           Boolean(e.draft?.ticketPaymentHref&&ticketReviewed[e.id]!==true)}
           onClick={()=>act('event',e.id,'approve',e.draft?.ticketPaymentHref
-            ?{ticketPaymentReviewed:ticketReviewed[e.id]===true}:{})}>Publish</button>
+            ?{ticketPaymentReviewed:ticketReviewed[e.id]===true,ticketReviewSnapshot:eventTicketReviewSnapshot(e.draft)}:{})}>Publish</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>act('event',e.id,'changes_requested',{note:'Please revise the date, public description or registration link and resubmit.'})}>Request changes</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>window.confirm('Suspend this public event?')&&act('event',e.id,'suspend',{note:'Suspended by Holistic House.'})}>Suspend</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>act('event',e.id,'archive')}>Archive</button>
