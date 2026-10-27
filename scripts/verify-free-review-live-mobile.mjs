@@ -251,7 +251,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           // radio dot. WebKit may still be smoothly scrolling from the hero
           // anchor and a direct input.check() can hit a moving 19px target.
           // Verify the REAL large-card interaction, including native checked
-          // state, selected styling and unchanged one-off contact consent.          await enquiry.locator('[data-express-focus="energy"]').click();
+          // state, selected styling and unchanged one-off contact consent.
+          await enquiry.locator('[data-express-focus="energy"]').click();
           assert.equal(await enquiry.locator('input[value="energy"]').isChecked(), true,
             "tapping the whole energy card checks the native radio");
           assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
