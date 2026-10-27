@@ -97,3 +97,12 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
   assert.match(css,/@media\(max-width:580px\)/)
   assert.match(css,/min-height:46px/)
 })
+
+test('free-review copy does not contradict consented optional Telegram photo and drawing',()=>{
+  const landing=read('components/free-entry-landing.tsx')
+  assert.doesNotMatch(landing,/Do not send private answers or drawings via messengers|Не отправляйте личные ответы и рисунки в мессенджерах|No envíes respuestas privadas ni dibujos por mensajería/)
+  assert.match(landing,/After consent, the Telegram dialogue may ask/)
+  assert.match(landing,/После согласия Telegram-бот может/)
+  assert.match(landing,/Tras dar tu consentimiento, Telegram puede pedir/)
+  assert.match(landing,/protected website form/)
+})
