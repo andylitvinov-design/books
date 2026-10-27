@@ -8,7 +8,7 @@ import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
   buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
-  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, rankProfileAxisTests, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
@@ -90,6 +90,10 @@ const copy = {
     modeCheckins: "Questionnaires", modePro: "Pro tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
     modeOverview: "Recommended for your selected scales", modeEstimated: "estimated total", modeSource: "Test questions",
+    selectedTests: "selected", coveredScales: "scales covered",
+    mainThree: "3 key recommended tests", nextFive: "5 more tests ranked by topic match",
+    fit: "match", fitInfo: "Estimated fit to your chosen topics and source-backed scales, not a health score or clinical probability.",
+    noneSelected: "Select at least one test to continue. Unticked tests remain available.",
     testTitle: "Your recommended free test selection",
     testHelp: "Start your suggested tests now, or add more from the filters below.",
     testCount: "tests", minutes: "min", questions: "questions",
@@ -175,6 +179,10 @@ const copy = {
     modeCheckins: "Опросники", modePro: "Pro-тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
     modeOverview: "Рекомендуем по выбранным шкалам", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
+    selectedTests: "выбрано", coveredScales: "шкал охвачено",
+    mainThree: "3 основных рекомендованных теста", nextFive: "Ещё 5 тестов по проценту соответствия",
+    fit: "соответствие", fitInfo: "Ориентировочное соответствие выбранным темам и реальным шкалам тестов — не оценка здоровья и не клинический прогноз.",
+    noneSelected: "Отметьте хотя бы один тест. Снятые с выбора тесты остаются в списке.",
     testTitle: "Предложенный набор бесплатных тестов",
     testHelp: "Начните рекомендованные тесты или добавьте другие с помощью фильтров ниже.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
@@ -260,6 +268,10 @@ const copy = {
     modeCheckins: "Cuestionarios", modePro: "Pruebas Pro", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
     modeOverview: "Recomendado para tus escalas", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
+    selectedTests: "seleccionadas", coveredScales: "escalas cubiertas",
+    mainThree: "3 pruebas principales recomendadas", nextFive: "5 pruebas más, ordenadas por coincidencia",
+    fit: "coincidencia", fitInfo: "Afinidad aproximada con tus temas y escalas reales, no una medida de salud ni probabilidad clínica.",
+    noneSelected: "Selecciona al menos una prueba. Las desmarcadas permanecen visibles.",
     testTitle: "Tus pruebas gratuitas recomendadas",
     testHelp: "Empieza las pruebas recomendadas o añade otras con los filtros de abajo.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
@@ -390,6 +402,22 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
+  // The visible catalogue is derived only from selected topics/scales, never
+  // from checked test keys. Unchecking changes the plan, not the recommendation.
+  const rankedCandidates = rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)
+    as Array<{ key: string; matchPercent: number; matchedAxes: readonly string[] }>;
+  const recommendedKeys = recommendProfileAxisBattery(tests, scaleGroups,
+    selectedScaleIds, batteryMode).slice(0, 3);
+  const recommendedTests = rankedCandidates
+    .filter(candidate => recommendedKeys.includes(candidate.key))
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+      .map(test => ({ test, matchPercent: candidate.matchPercent })));
+  const fiveMoreTests = rankedCandidates
+    .filter(candidate => !recommendedKeys.includes(candidate.key))
+    .slice(0, 5)
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+      .map(test => ({ test, matchPercent: candidate.matchPercent })));
+  const featuredTestKeys = new Set([...recommendedKeys, ...fiveMoreTests.map(item => item.test.key)]);
   const extraGroups: ProfileScaleGroup[] = extraProfile
     ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[] : [];
   const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
@@ -398,11 +426,14 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
   const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
     .filter(scale => effectiveExtraScales.includes(scale.researchAxisId)).map(scale => scale.testKey)));
-  const extraRelevance = (key: string) => extraGroups.reduce((total, group) => total +
-    group.scales.filter(scale => scale.testKey === key &&
-      effectiveExtraScales.includes(scale.researchAxisId)).length, 0);
+  const extraMatchPercent = (key: string) => {
+    const covered = new Set(extraGroups.flatMap(group => group.scales
+      .filter(scale => scale.testKey === key && effectiveExtraScales.includes(scale.researchAxisId))
+      .map(scale => scale.researchAxisId)));
+    return Math.round(100 * covered.size / Math.max(effectiveExtraScales.length, 1));
+  };
   const extraMatches = tests
-    .filter(test => !selectedKeys.includes(test.key))
+    .filter(test => !featuredTestKeys.has(test.key))
     .filter(test => test.testKind === modeKind)
     .filter(test => extraProfile !== null && extraTestKeys.has(test.key))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
@@ -416,7 +447,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
       : sortFilter === "alphabetical"
         ? a.title.localeCompare(b.title, locale)
-        : extraRelevance(b.key) - extraRelevance(a.key) ||
+        : extraMatchPercent(b.key) - extraMatchPercent(a.key) ||
           (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
   const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
 
@@ -483,9 +514,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         // The selector returns immutable suggestions; React keeps editable
         // per-mode selections as its own mutable arrays.
         const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "questionnaires")];
+          selectedScaleIds, "questionnaires")].slice(0, 3);
         const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "pro")];
+          selectedScaleIds, "pro")].slice(0, 3);
         setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
         setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
