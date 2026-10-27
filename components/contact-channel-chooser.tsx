@@ -141,9 +141,13 @@ type Props = {
   event?: AcquisitionEvent;
   analyticsEvent?: PublicAnalyticsEvent;
   onChannelClick?: (channel: "whatsapp" | "telegram") => void;
+  /** Called only after the first-party CRM endpoint confirms a saved enquiry. */
+  onSaved?: (referenceCode: string) => void;
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
+  /** Cart capture: Google OAuth or an international phone, with one reply-only opt-in. */
+  cartContact?: boolean;
   /** Phone + messenger handoff for existing compact forms. */
   compactPhone?: boolean;
   /** Only Alchemy's fixed one-time SKU; never a client-specified amount or booking status. */
@@ -163,12 +167,12 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
+  onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [method, setMethod] = useState<"email" | "phone">("email");
+  const [method, setMethod] = useState<"email" | "phone">(cartContact ? "phone" : "email");
   const [googleReady, setGoogleReady] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [email, setEmail] = useState("");
@@ -225,7 +229,7 @@ export function ContactChannelChooser({
     setOpen(false);
     setDescription("");
     setDisplayName("");
-    setMethod("email");
+    setMethod(cartContact ? "phone" : "email");
     setGoogleReady(false);
     setEmail("");
     setPhone("");
@@ -234,7 +238,7 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [enquiryResetKey, quick, compactPhone]);
+  }, [enquiryResetKey, quick, compactPhone, cartContact]);
 
   useEffect(() => {
     if (compactPhone || (!open && !(quick && saved))) return;
@@ -438,6 +442,7 @@ export function ContactChannelChooser({
         throw new Error(data.error || "NOT_SAVED");
       }
       setSaved({ saved: true, referenceCode: data.referenceCode });
+      onSaved?.(data.referenceCode);
       if (bookingSku) { setBookingConfirmed(false); setBookingStartsAt(null); }
       // Only a confirmed server/CRM write creates a receipt. No personal data
       // or sensitive answers are placed in browser storage or the URL.
@@ -786,7 +791,7 @@ export function ContactChannelChooser({
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
             </label>
-            {quick && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
+            {quick && !cartContact && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
               onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
               {method === "email" ? c.quickPhone : c.quickEmail}
             </button>}
@@ -798,7 +803,7 @@ export function ContactChannelChooser({
             <button type="submit" className={styles.submit}
               disabled={busy || googleBusy ||
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
-              <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick ? c.quickSubmit : c.submit)}
+              <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick && cartContact ? c.submit : quick ? c.quickSubmit : c.submit)}
             </button>
             {error && <p className={styles.error} role="alert">{error}</p>}
           </form>
