@@ -4,6 +4,7 @@ import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 
 export default function PractitionerModeration(){
  const [items,setItems]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+ const [ticketReviewed,setTicketReviewed]=useState({})
  async function load(){setError('');try{const r=await fetch('/admin/practitioners/data',{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error();setItems((await r.json()).items||[])}catch{setError('Unable to load practitioner network.')}}
  useEffect(()=>{load()},[])
  async function act(kind,id,action,extra={}){setBusy(true);setError('');try{const r=await fetch('/admin/practitioners/data',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,id,action,...extra})});if(!r.ok)throw new Error();await load()}catch{setError('The moderation action failed.')}finally{setBusy(false)}}
@@ -33,9 +34,24 @@ export default function PractitionerModeration(){
         <p>{e.draft?.startsAt||'Date not set'} · {e.draft?.city||e.draft?.timeZone}</p>
         <span>{e.status}</span>
         {e.reviewNote&&<p>{e.reviewNote}</p>}
+        {e.draft?.ticketPaymentHref&&<div data-event-ticket-moderation={e.id}>
+          <p><strong>Event ticket:</strong> {e.draft.priceAmount} {e.draft.currency} · {e.draft.pricingMode}</p>
+          <a href={e.draft.ticketPaymentHref} rel="noopener noreferrer" target="_blank">
+            Open the exact Square/PayPal checkout to check the seller, event title, final amount and refund terms
+          </a>
+          <label style={{display:'flex',alignItems:'flex-start',gap:7,marginTop:8}}>
+            <input type="checkbox" checked={ticketReviewed[e.id]===true}
+              onChange={event=>setTicketReviewed(previous=>({...previous,[e.id]:event.target.checked}))} />
+            I independently verified this event's payment link, merchant, exact currency/price and refund conditions.
+            A payment is not a confirmed registration.
+          </label>
+        </div>}
       </div>
       <div className="practitioner-cabinet-actions">
-        <button disabled={busy||!['submitted','changes_requested'].includes(e.status)} onClick={()=>act('event',e.id,'approve')}>Publish</button>
+        <button disabled={busy||!['submitted','changes_requested'].includes(e.status)||
+          Boolean(e.draft?.ticketPaymentHref&&ticketReviewed[e.id]!==true)}
+          onClick={()=>act('event',e.id,'approve',e.draft?.ticketPaymentHref
+            ?{ticketPaymentReviewed:ticketReviewed[e.id]===true}:{})}>Publish</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>act('event',e.id,'changes_requested',{note:'Please revise the date, public description or registration link and resubmit.'})}>Request changes</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>window.confirm('Suspend this public event?')&&act('event',e.id,'suspend',{note:'Suspended by Holistic House.'})}>Suspend</button>
         <button disabled={busy||e.status==='archived'} onClick={()=>act('event',e.id,'archive')}>Archive</button>
