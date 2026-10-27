@@ -885,17 +885,23 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             : <button type="button" disabled className={styles.primary}>{t.start}</button>}
         </div>
 
-        <section className={styles.extraPanel} aria-labelledby="profile-builder-extra-title" data-profile-additional-tests>
-          <div className={styles.extraHeading}>
-            <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
-              <p>{extra.additionalHint}</p></div>
-          </div>
-          <div className={styles.extraScope} data-profile-extra-selected-scope>
-            <strong>{extra.scope}</strong>
-            <p>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</p>
-            <small>{selectedAxisRefs.map(ref => researchLabel(ref, locale)).join(" · ")}</small>
-          </div>
+        {remainingTestKeys.size > 0 && <section className={styles.extraPanel}
+          aria-label={extra.additionalTitle} data-profile-additional-tests>
+          <button type="button" className={styles.moreTests}
+            onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}
+            aria-controls="profile-builder-extra-results" data-profile-extra-toggle>
+            {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
+          </button>
           <div id="profile-builder-extra-results" hidden={!showMore} data-profile-extra-results>
+            <div className={styles.extraHeading}>
+              <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
+                <p>{extra.additionalHint}</p></div>
+            </div>
+            <div className={styles.extraScope} data-profile-extra-selected-scope>
+              <strong>{extra.scope}</strong>
+              <p>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</p>
+              <small>{selectedAxisRefs.map(ref => researchLabel(ref, locale)).join(" · ")}</small>
+            </div>
           <div className={styles.extraFilters}>
             <label className={styles.extraSearch}><span>{extra.search}</span>
               <input type="search" value={search} placeholder={extra.searchPlaceholder}
@@ -937,14 +943,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
-          </div>
-          {remainingTestKeys.size > 0 && <button type="button" className={styles.moreTests}
-            onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}
-            aria-controls="profile-builder-extra-results" data-profile-extra-toggle>
-            {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
-          </button>}
           {selectedKeys.length >= 12 && <p className={styles.caution}>{extra.limit}</p>}
-        </section>
+          </div>
+        </section>}
       </section>}
 
       {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
