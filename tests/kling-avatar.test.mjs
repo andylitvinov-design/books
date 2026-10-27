@@ -104,3 +104,39 @@ test('admin security is server enforced; app never publishes, stores or sends cl
   assert.match(ui,/new OfflineAudioContext/);
   assert.match(ui,/fetch\("\/api\/admin\/kling-avatar"/);
 });
+
+
+test('read-only Kling account handshake uses one GET and no task charges', async () => {
+  const {checkKlingAccount}=await import('../lib/kling-video.mjs');
+  const calls=[];
+  const value=await checkKlingAccount({apiKey:'private-server-key-example',now:1793100000000,
+    fetchImpl:async(...args)=>{
+      calls.push(args);
+      return {ok:true,json:async()=>({code:0,data:{code:0,resource_pack_subscribe_infos:[
+        {status:'online',remaining_quantity:50,resource_pack_name:'test-resource'},
+      ]}})};
+    }});
+  assert.equal(calls.length,1);
+  assert.equal(calls[0][1].method,'GET');
+  assert.match(calls[0][0],/^https:\/\/api-singapore\.klingai\.com\/account\/costs\?start_time=/);
+  assert.equal(calls[0][1].headers.Authorization,'Bearer private-server-key-example');
+  assert.equal(calls[0][1].body,undefined);
+  assert.deepEqual(value,{connected:true,hasActivePackage:true,balanceDelayed:true});
+  assert.ok(!JSON.stringify(value).includes('test-resource'));
+});
+
+test('read-only handshake rejects invalid auth and never leaks provider error or key', async () => {
+  const {checkKlingAccount}=await import('../lib/kling-video.mjs');
+  let networkCalled=false;
+  await assert.rejects(checkKlingAccount({apiKey:'',fetchImpl:async()=>{networkCalled=true;}}),/not_configured/);
+  assert.equal(networkCalled,false);
+  await assert.rejects(checkKlingAccount({apiKey:'private-server-key-example',fetchImpl:async()=>({
+    ok:true,json:async()=>({code:0,data:{code:1001,secret:'do not leak'}}),
+  })}),/provider_unavailable/);
+  const route=readFileSync(new URL('../app/api/admin/kling-avatar/route.js',import.meta.url),'utf8');
+  const ui=readFileSync(new URL('../components/kling-avatar-studio.tsx',import.meta.url),'utf8');
+  assert.match(route,/params\.get\('mode'\)==='connection'/);
+  assert.match(route,/requireAdminRequest\(\)/);
+  assert.match(ui,/verifyConnection\(\)/);
+  assert.ok(!ui.includes('process.env.KLING_API_KEY'));
+});
