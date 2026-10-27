@@ -166,3 +166,95 @@ test('real encoded Ogg/Opus clips remux into one fully decodable recording',t=>{
     assert.equal(stream.filter(page=>page.flags&4).length,1)
   }finally{rmSync(dir,{recursive:true,force:true})}
 })
+
+
+// Telegram/iOS can forward Ogg Opus with validated packets but no EOS flag.
+const crcTable=Uint32Array.from({length:256},(_,index)=>{
+  let n=index<<24
+  for(let i=0;i<8;i++)n=((n<<1)^((n&0x80000000)?0x04c11db7:0))>>>0
+  return n
+})
+function crc(page){
+  let result=0
+  for(const byte of page)result=((result<<8)^crcTable[((result>>>24)^byte)&255])>>>0
+  return result
+}
+function oggPages(bytes){
+  const pages=[]
+  let pos=0
+  while(pos<bytes.length){
+    assert.equal(Buffer.from(bytes.subarray(pos,pos+4)).toString(),'OggS')
+    const n=bytes[pos+26]
+    let content=0
+    for(let i=0;i<n;i++)content+=bytes[pos+27+i]
+    const size=27+n+content
+    assert(pos+size<=bytes.length)
+    pages.push({offset:pos,size,n,flags:bytes[pos+5]})
+    pos+=size
+  }
+  assert.equal(pos,bytes.length)
+  return pages
+}
+function mutateLastPage(source,{clearEOS=false,zeroGranule=false}={}){
+  const bytes=new Uint8Array(source)
+  const pages=oggPages(bytes)
+  const last=pages.at(-1)
+  assert(last.flags&4)
+  if(clearEOS)bytes[last.offset+5]&=~4
+  if(zeroGranule)bytes.fill(0,last.offset+6,last.offset+14)
+  bytes.fill(0,last.offset+22,last.offset+26)
+  const view=new DataView(bytes.buffer,bytes.byteOffset+last.offset,last.size)
+  view.setUint32(22,crc(bytes.subarray(last.offset,last.offset+last.size)),true)
+  return bytes
+}
+test('EOS-less Telegram-style voice clips remux to one fully decodable OGG',t=>{
+  for(const bin of ['ffmpeg','ffprobe']) {
+    try{execFileSync(bin,['-version'],{stdio:'ignore'})}
+    catch{t.skip(bin+' unavailable');return}
+  }
+  const tmp=mkdtempSync(join(tmpdir(),'hh-eosless-'))
+  try{
+    const inputs=[]
+    const durations=[0.47,0.72,0.56]
+    durations.forEach((sec,i)=>{
+      const file=join(tmp,'voice-'+i+'.ogg')
+      execFileSync('ffmpeg',['-nostdin','-loglevel','error','-f','lavfi',
+        '-i','sine=frequency='+(360+i*140)+':duration='+sec,
+        '-c:a','libopus','-b:a','24k','-y',file])
+      inputs.push(new Uint8Array(readFileSync(file)))
+    })
+    const eosless=inputs.map(x=>mutateLastPage(x,{clearEOS:true}))
+    assert(eosless.every(x=>!(oggPages(x).at(-1).flags&4)))
+    for(const parts of [[...eosless],[inputs[0],eosless[1],eosless[2]]]){
+      const result=joinOggOpus(parts)
+      const pages=oggPages(result)
+      assert.equal(pages.filter(x=>x.flags&2).length,1)
+      assert.equal(pages.filter(x=>x.flags&4).length,1)
+      const final=join(tmp,'joined.ogg')
+      writeFileSync(final,result)
+      const reported=Number(execFileSync('ffprobe',['-v','error',
+        '-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',final],
+        {encoding:'utf8'}).trim())
+      assert(reported>1.6&&reported<1.9,'all three recordings are present')
+      execFileSync('ffmpeg',['-nostdin','-v','error','-i',final,'-f','null','-'],{stdio:'pipe'})
+    }
+  }finally{rmSync(tmp,{recursive:true,force:true})}
+})
+test('bad checksums, packet truncation and missing final granule remain rejected',t=>{
+  try{execFileSync('ffmpeg',['-version'],{stdio:'ignore'})}
+  catch{t.skip('ffmpeg unavailable');return}
+  const tmp=mkdtempSync(join(tmpdir(),'hh-eosless-reject-'))
+  try{
+    const file=join(tmp,'valid.ogg')
+    execFileSync('ffmpeg',['-nostdin','-loglevel','error','-f','lavfi',
+      '-i','sine=frequency=400:duration=0.6','-c:a','libopus','-y',file])
+    const source=new Uint8Array(readFileSync(file))
+    const valid=mutateLastPage(source,{clearEOS:true})
+    assert.doesNotThrow(()=>joinOggOpus([valid,valid]))
+    const broken=new Uint8Array(valid);broken[broken.length-4]^=1
+    assert.throws(()=>joinOggOpus([valid,broken]),/INVALID_OPUS/)
+    assert.throws(()=>joinOggOpus([valid,valid.subarray(0,valid.length-1)]),/INVALID_OPUS/)
+    const noGranule=mutateLastPage(source,{clearEOS:true,zeroGranule:true})
+    assert.throws(()=>joinOggOpus([valid,noGranule]),/INVALID_OPUS/)
+  }finally{rmSync(tmp,{recursive:true,force:true})}
+})
