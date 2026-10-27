@@ -6,6 +6,7 @@ import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 import {parseOwnerAiUpdate} from '@/lib/practitioners/owner-ai-telegram.mjs'
 import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
+import {receiveOwnerTelegramVideoWebhook} from '@/lib/practitioners/owner-telegram-video-service'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -26,7 +27,17 @@ export async function POST(request){
  }catch{return new NextResponse('Invalid update',{status:400,headers:PRIVATE_HEADERS})}
  try{
   const config=getAppConfig()
-  const audio=await receiveOwnerTelegramAudioWebhook(config,update)
+   // Verified Dot webhook serves owner-only video before ordinary audio inbox.
+   // Outside an active video collection it declines and audio handling is unchanged.
+   const video=await receiveOwnerTelegramVideoWebhook(config,update,{channel:'practice'})
+   if(video.handled){
+     if(video.background)after(async()=>{
+       try{await video.background()}
+       catch{console.error('HH_OWNER_VIDEO_DOT_AFTER_FAILED')}
+     })
+     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+   }
+   const audio=await receiveOwnerTelegramAudioWebhook(config,update)
   if(audio.handled){
     if(audio.retry)return NextResponse.json({ok:false},{status:503,headers:PRIVATE_HEADERS})
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})

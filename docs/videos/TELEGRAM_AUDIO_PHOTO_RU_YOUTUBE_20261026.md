@@ -52,3 +52,15 @@ Current release state must distinguish code landed, Vercel READY exact SHA, DB r
 Completed video jobs create **one finished MP4** per batch in the private `hh-owner-video-drafts` bucket and owner-only `app_private.telegram_owner_video_drafts` table, not individual photos or audio. Input file identifiers are cleared from the working session after successful MP4 persistence; failed rendering can retry without losing sources. Multiple completed MP4s remain in the private owner history.
 
 Owner `/admin/materials` → Telegram videos → Watch streams using authenticated same-origin `/api/admin/telegram-video/drafts/{id}/file` (GET/HEAD/Range), including iPhone Safari byte probes. Each request rechecks a persisted admin session and private RLS. No public or signed Supabase URLs, no user/client access. Apply migration `20261027020000_hh_owner_video_final_only_cabinet.sql` before shipping; verify forced RLS and `anon`/`authenticated` have no SELECT; confirm unauthenticated 404 and authenticated 206, no source files in My Materials. Feature remains OFF until a real owner Telegram MP4 receipt test.
+
+## Dot /audio → Audio and Video owner-only submenu (2026-10-27)
+
+The existing verified `@Andydotbot` owner menu retains its `/audio` command but changes the description to **🎙 Аудио и видео**. In that submenu, tap **🎬 Создать видео из фото и аудио** or send `/video` in the same Dot chat. Send 1–6 photos and 1–4 audio clips (chronological order), tap **Собрать видео**, receive private MP4 in Dot, and find only the completed MP4 in owner `/admin/materials`. YouTube requires a separate review click and offline Google OAuth for the exact RU channel.
+
+The existing signed Dot webhook routes owner-only video BEFORE ordinary audio imports. When video collection is inactive, all existing `/audio`, `/combine`, `/done`, AI Council and customer messaging remain untouched. Starting video while a Dot audio batch is still collecting/building returns a neutral warning without disturbing its inputs. `/audio` refreshes the owner-chat Bot API menu when either the command list OR its descriptions differ; global/client bot scopes are never modified. Official Telegram setMyCommands is provider-owned and client UI may cache it.
+
+Provider acceptance is still required: genuine owner `/audio`, Bot API getMyCommands for owner chat, one real photo+audio → confirmed Dot MP4, owner cabinet iPhone playback; then separately authorized RU YouTube `videos.insert`, `videos.list`, and anonymous Unlisted playback. A green Node/FFmpeg build alone is not proof.
+
+### Canonical bot isolation (2026-10-27)
+
+**Only Dot now creates a video.** The previous owner commands in the signed `@holistichouse_bot` CRM webhook answer with a direct Dot link instead of starting/finishing/publishing shared jobs; photos and audio that arrive in the CRM bot are not enrolled in Dot video. This prevents cross-bot media mixing while preserving CRM enquiries. The entire `/audio`→video→MP4→explicit YouTube approval path is within the original `@Andydotbot` private owner chat. No client content or source media enters YouTube automatically.
