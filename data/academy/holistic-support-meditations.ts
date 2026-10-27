@@ -6,6 +6,26 @@ import type { PublicLocale } from "@/lib/public-locales";
 // PsiMaster source manifest. This does not create or claim standalone MP3s.
 // Keep the Sun series first, then the named short practices and two historical
 // Energy Pump-Ups archive references. Never merge duplicate YouTube IDs.
+export type MeditationTopic = "business" | "love" | "energy" | "health";
+export type MeditationVideo = {
+  id: string;
+  title: string;
+  order: number;
+  topics: MeditationTopic[];
+};
+
+// The themes are navigation hints for original recordings, not claims that
+// these recordings are purpose-built business/relationship/health courses.
+const allThemes: MeditationTopic[] = ["business", "love", "energy", "health"];
+const originalRuThemes: MeditationTopic[][] = [
+  ["business", "love", "energy", "health"], // Sun: general introductory reflection
+  ["business", "love", "energy"],           // Sun series
+  ["love", "energy"],                       // Sun series
+  ["energy", "health"],                     // Life Force
+  ["energy"],                               // Circle of Fire
+  ["energy", "health"],                     // Energy practice archive
+  ["energy", "health"],                     // Energy practice archive
+];
 const selection = [
   ["videos/strength-protection", 5],
   ["videos/strength-protection", 6],
@@ -17,7 +37,7 @@ const selection = [
 ] as const;
 const validYoutubeId = /^[A-Za-z0-9_-]{11}$/;
 
-export function freeMeditationVideos(locale: PublicLocale) {
+export function freeMeditationVideos(locale: PublicLocale): MeditationVideo[] {
   // English original stays on EN/ES, with its English soundtrack disclosed.
   // The RU playlist contains ONLY verified original Russian PsiMaster recordings.
   if (locale !== "ru") {
@@ -28,10 +48,11 @@ export function freeMeditationVideos(locale: PublicLocale) {
       id: englishSun.youtubeId,
       title: englishSun.title + (locale === "es" ? " · audio original en inglés" : " · original English audio"),
       order: 1,
+      topics: [...allThemes],
     }] : [];
   }
   const seen = new Set<string>();
-  return selection.flatMap(([logicalId, order]) => {
+  return selection.flatMap(([logicalId, order], index) => {
     const recording = psimasterMedia.find(
       item => item.logicalId === logicalId
         && item.order === order
@@ -45,6 +66,7 @@ export function freeMeditationVideos(locale: PublicLocale) {
       title: recording.lessonTitle,
       // An archived source position, not the position of this curated playlist.
       order: recording.order,
+      topics: [...originalRuThemes[index]],
     }];
   });
 }

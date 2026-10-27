@@ -103,15 +103,8 @@
 /* Meditation is its own Holistic Support choice and scroll destination. */
 .option[data-holistic-offer="meditations"]{background:#f7f8f2;border-color:#d8d8c9}
 .section[data-holistic-meditations]{scroll-margin-top:88px}
-.meditationAudioRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);align-items:center;gap:15px;min-width:0;padding:14px;border:1px solid #dfd3c0;border-radius:16px;background:linear-gradient(105deg,#eee9dd,#faf8f1)}
-.meditationAudioRow>div{min-width:0}
-.meditationAudioRow h3{margin:8px 0 5px;font:400 clamp(19px,2.3vw,25px)/1.2 Georgia,"Times New Roman",serif}
-.meditationAudioRow p{margin:0;color:#665d53;font:12.5px/1.55 Arial,Helvetica,sans-serif}
-.meditationAudioRow audio{display:block;width:100%;max-width:100%;min-width:0;min-height:54px}
 .meditationSourceNote{margin:12px 1px 3px;padding:10px 12px;border-left:3px solid #bc9b72;background:#faf7f1;color:#645c53;font:12px/1.53 Arial,Helvetica,sans-serif}
-.section[data-holistic-meditations] .libraryLink{margin-top:4px}
-@media(max-width:650px){.meditationAudioRow{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.meditationAudioRow audio{max-width:100%}.meditationSourceNote{font-size:11.5px}}
-@media(max-width:350px){.meditationAudioRow{padding:9px}.meditationAudioRow h3{font-size:19px}}
+@media(max-width:650px){.meditationSourceNote{font-size:11.5px}}
 
 /* Personal talismans share the warm, compact Support cards. */
 .option[data-holistic-offer="talismans"]{border-color:#d8c7ad;background:#faf4e9}
@@ -119,126 +112,54 @@
 .section[data-holistic-talismans]{scroll-margin-top:90px}
 
 
-/* Meditation redesign: two distinct, identically sized scenic viewport cards.
-   Long labels / zoom remain reachable INSIDE the card, never clipped or lost. */
+/* Video-only meditation library: compact responsive 16:9 video gallery.
+   No standalone audio card, fixed viewport heights, or duplicate course controls. */
 .section[data-holistic-meditations]{
   scroll-margin-top:88px;
-  display:grid;
-  gap:14px;
-  margin:12px 0 22px;
+  margin:14px 0 21px;
   padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-}
-.meditationFrame{
-  display:grid;
-  grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr);
-  height:calc(100svh - 112px);
-  min-height:0;
-  min-width:0;
   overflow:hidden;
-  border:1px solid #d9c9b6;
-  border-radius:25px;
+  border:1px solid #d9c9b7;
+  border-radius:22px;
   background:#fcf8f1;
-  box-shadow:0 12px 32px rgb(65 45 31 / 9%);
-  scroll-margin-top:88px;
+  box-shadow:0 10px 30px rgb(65 45 31 / 7%);
 }
-.meditationScenic{position:relative;isolation:isolate;min-height:0;overflow:hidden;background:#7a6c57}
-.meditationScenic img{object-fit:cover;object-position:center}
-.meditationScenic::after{
-  content:"";
-  position:absolute;inset:0;z-index:0;
-  background:linear-gradient(180deg,rgba(32,43,33,.12) 5%,rgba(25,35,30,.78) 100%);
-  pointer-events:none;
+.meditationHero{
+  position:relative;isolation:isolate;display:flex;align-items:flex-end;
+  min-width:0;min-height:185px;overflow:hidden;background:#4d5543;
 }
-.meditationScenicCopy{
-  position:absolute;inset:auto 0 0;z-index:1;
-  padding:clamp(22px,4vw,48px);
-  color:#fffaf1;
+.meditationHero img{z-index:-2;object-fit:cover;object-position:center 47%}
+.meditationHero::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(24,37,30,.88),rgba(25,40,33,.7) 54%,rgba(25,40,33,.32));
 }
-.meditationEyebrow{margin:0 0 9px;color:#f5daba;font:800 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.13em}
-.meditationScenicCopy h2{
-  margin:0;
-  font:400 clamp(31px,3.5vw,48px)/1.07 Georgia,"Times New Roman",serif;
-  letter-spacing:-.035em;text-wrap:balance;overflow-wrap:anywhere;
-}
-.meditationScenicLead{
-  margin:13px 0 0;max-width:400px;
-  color:#f6ebdf;font:13px/1.5 Arial,Helvetica,sans-serif;
-}
-.meditationMain{
-  display:flex;flex-direction:column;min-width:0;min-height:0;
-  padding:clamp(12px,2.4vw,29px);
-  overflow-y:auto;overscroll-behavior:contain;
-  scrollbar-width:thin;scrollbar-color:#cdb9a3 transparent;
-}
-.meditationKind{margin:0 0 12px;color:#855b42;font:800 11px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.065em}
-.meditationFooterLinks{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;margin-top:auto;padding-top:10px}
-.meditationNext,.meditationArchiveLink{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:44px;max-width:100%;padding:9px 13px;
-  border-radius:12px;text-align:center;text-decoration:none;
-  font:750 12px/1.25 Arial,Helvetica,sans-serif;
-  overflow-wrap:anywhere;
-}
-.meditationNext{border:1px solid #765139;background:#79513a;color:#fff9f1}
-.meditationNext:hover{background:#583b2c;color:#fff}
-.meditationArchiveLink{border:1px solid #d4beaa;background:#fffdf8;color:#785139}
-.meditationArchiveLink:hover{background:#f0e3d4;color:#563721}
-.meditationFrame :is(a,button,audio):focus-visible{outline:3px solid #aa7656;outline-offset:2px}
-.meditationFrame .meditationAudioRow{
-  display:flex;flex-direction:column;align-items:flex-start;gap:12px;
-  min-width:0;margin:0;padding:clamp(14px,2.7vw,28px);
-  border-radius:19px;border:1px solid #e0ceba;
-  background:linear-gradient(155deg,#fffdf8,#f0e5d8);
-}
-.meditationFrame .meditationAudioRow h3{
-  margin:0;color:#4b372a;
-  font:400 clamp(23px,2.7vw,32px)/1.15 Georgia,"Times New Roman",serif;
-}
-.meditationFrame .meditationAudioRow audio{display:block;width:100%;min-width:0;max-width:100%;min-height:54px}
-.meditationFrame .meditationSourceNote{
-  margin:13px 1px;padding:11px 12px;border-left:3px solid #b99a77;
-  border-radius:0 9px 9px 0;background:#f5eee3;
-  color:#6a5b4d;font:12px/1.5 Arial,Helvetica,sans-serif;
-}
+.meditationHeroCopy{position:relative;z-index:1;width:min(850px,100%);padding:24px clamp(17px,3vw,32px);color:#fffaf0}
+.meditationEyebrow{margin:0 0 7px;color:#f5daba;font:800 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.12em}
+.meditationHero h2{margin:0;color:#fffaf1;font:400 clamp(29px,3.3vw,42px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.03em;text-wrap:balance}
+.meditationHeroCopy>p:last-child{max-width:640px;margin:9px 0 0;color:#f8ebdf;font:13px/1.45 Arial,Helvetica,sans-serif}
+.meditationContents{min-width:0;padding:clamp(14px,2.3vw,27px)}
+.meditationFooterLinks{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0 0}
+.meditationArchiveLink{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #d6c1ad;border-radius:11px;background:#fffdf8;color:#76513b;text-align:left;text-decoration:none;font:750 11.5px/1.35 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.meditationArchiveLink:hover{background:#efe3d5;color:#543a2c}
+.section[data-holistic-meditations] :is(a,button):focus-visible{outline:3px solid #a87552;outline-offset:3px}
 @media(max-width:650px){
-  .section[data-holistic-meditations]{gap:10px;margin-top:10px}
-  .meditationFrame{
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:clamp(88px,20%,110px) minmax(0,1fr);
-    height:calc(100svh - 142px);
-    border-radius:18px;
-  }
-  .meditationScenicCopy{padding:13px 16px 12px}
-  .meditationScenicCopy h2{font-size:clamp(23px,6.4vw,29px);line-height:1.08}
-  .meditationScenicLead{display:none}
-  .meditationEyebrow{margin-bottom:5px;font-size:9px}
-  .meditationMain{padding:10px 12px 11px}
-  .meditationKind{display:none}
-  .meditationFooterLinks{padding-top:6px;gap:4px}
-  .meditationNext,.meditationArchiveLink{font-size:10.7px;min-height:44px;padding:6px 9px}
-  .meditationFrame .meditationAudioRow{gap:9px;padding:13px}
-  .meditationFrame .meditationAudioRow h3{font-size:22px}
-  .meditationFrame .meditationSourceNote{margin:10px 0;font-size:11px;line-height:1.38;padding:8px 9px}
+  .section[data-holistic-meditations]{margin:11px 0 17px;border-radius:17px}
+  .meditationHero{min-height:146px}
+  .meditationHeroCopy{padding:15px 15px 16px}
+  .meditationHero h2{font-size:clamp(26px,6.9vw,33px)}
+  .meditationHeroCopy>p:last-child{font-size:11.7px;line-height:1.42;margin-top:7px}
+  .meditationEyebrow{font-size:9px;margin-bottom:5px}
+  .meditationContents{padding:12px 11px 13px}
+  .meditationFooterLinks{gap:7px;margin:11px 0 0}
+  .meditationArchiveLink{padding:8px 10px;font-size:10.8px}
 }
-@media(max-width:360px){
-  .meditationScenicCopy{padding:10px 12px}
-  .meditationScenicCopy h2{font-size:22px}
-  .meditationMain{padding:7px 9px}
-  .meditationNext,.meditationArchiveLink{padding:5px 7px;font-size:10.3px}
-  .meditationFrame .meditationAudioRow h3{font-size:20px}
+@media(max-width:350px){
+  .meditationHero{min-height:136px}
+  .meditationHeroCopy{padding:12px 11px}
+  .meditationHero h2{font-size:25px}
+  .meditationContents{padding:10px 8px}
+  .meditationArchiveLink{font-size:10.2px;padding:7px 8px}
 }
-/* Browser font zoom and short devices: keep the viewport boundary but allow
-   users to scroll card content, rather than conceal notes or player controls. */
-@media(max-height:640px) and (min-width:651px){
-  .meditationScenicCopy{padding:22px}
-  .meditationScenicCopy h2{font-size:30px}
-  .meditationScenicLead{font-size:11.5px;line-height:1.35}
-  .meditationMain{padding:12px 15px}
-}
-@media(prefers-reduced-motion:reduce){.meditationFrame{scroll-behavior:auto}}
 
 /* Holistic Support: a complete first-screen selector at 320–430px and on desktop. */
 .journeyHero{position:relative;isolation:isolate;display:flex;align-items:center;min-height:min(690px,calc(100svh - 94px));overflow:hidden;border:1px solid #c0ae99;border-radius:23px;background:#334840;color:#fffaf3}
@@ -313,6 +234,22 @@
 .journeyChoicePhoto{width:74px;height:76px}
 .journeyChoiceText strong{font-size:17px}
 .journeyChoiceText small{font-size:10px}
+}
+/* At iPhone SE 320×568 the page header leaves limited height. The three
+   photographed choices carry the meaning themselves; hide only redundant
+   introductory copy and small icons so all choices remain visible and tappable. */
+@media(max-width:350px) and (max-height:620px){
+.journeyEyebrow,.journeyLead,.journeyChoiceIcon{display:none}
+.journeyContent{padding:9px 8px}
+.journeyContent h1{font-size:29px;line-height:1.02}
+.journeyPrompt{margin:8px 0 6px;font-size:14px;line-height:1.2}
+.journeyChoices{gap:5px}
+.journeyChoice{grid-template-columns:70px minmax(0,1fr) 15px;gap:6px;min-height:83px;padding:5px}
+.journeyChoicePhoto{width:70px;height:72px}
+.journeyChoiceText{gap:3px;padding:0}
+.journeyChoiceText strong{font-size:17px;line-height:1.13}
+.journeyChoiceText small{font-size:10px;line-height:1.2}
+.journeyArrow{width:15px;height:15px}
 }
 
 /* On short 320px phones the fixed site chrome leaves less than 390px for

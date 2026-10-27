@@ -8,6 +8,44 @@ import { sanitizeServiceLog } from '../scripts/helpers/isolated-browser-diagnost
 
 const origin = 'http://127.0.0.1:3100'
 const options = { timeout: 3000 }
+
+test('passive event records never invoke foreign getters, proxies or primitive coercions', options, () => {
+  const { page, frame, request } = fixture()
+  const reads = { message: 0, name: 0, errorText: 0, payload: 0, proxy: 0, coercion: 0 }
+  const accessor = key => ({ get [key]() { reads[key]++; return 'private sentinel' } })
+  const coercible = { toString() { reads.coercion++; return origin }, [Symbol.toPrimitive]() { reads.coercion++; return origin } }
+  const proxy = new Proxy({}, { get() { reads.proxy++; return 'private sentinel' }, getOwnPropertyDescriptor() { reads.proxy++; return { value: 'private sentinel', configurable: true } }, getPrototypeOf() { reads.proxy++; return null } })
+  const revoked = Proxy.revocable({}, {}); revoked.revoke()
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  for (const error of [accessor('message'), accessor('name'), proxy, revoked.proxy, { message: coercible, name: coercible }]) page.emit('pageerror', error)
+  for (const value of [accessor('errorText'), proxy, revoked.proxy]) page.emit('requestfailed', { ...request('/en/app/portrait'), failure: () => value })
+  page.emit('console', { text: () => coercible })
+  page.emit('websocket', socket(coercible))
+  page.emit('request', { ...request('/'), url: () => coercible })
+  page.emit('framenavigated', { ...frame, url: () => coercible })
+  const ws = socket(); page.emit('websocket', ws)
+  for (const value of [accessor('payload'), proxy, revoked.proxy, { payload: coercible }]) ws.emit('framesent', value)
+  probe.mark('failure', coercible)
+  const result = probe.stop()
+  assert.deepEqual(reads, { message: 0, name: 0, errorText: 0, payload: 0, proxy: 0, coercion: 0 })
+  assert.doesNotMatch(JSON.stringify(result), /private sentinel|toString|Symbol/)
+  assert.equal(page.eventNames().length, 0); assert.equal(ws.eventNames().length, 0)
+  assert.throws(() => observePortraitNavigation(page, { origin: coercible, runtime: 'isolated' }), /Isolated loopback/)
+  assert.equal(reads.coercion, 0)
+})
+
+test('native error categories and bootstrap aliases survive descriptor-only extraction', options, () => {
+  const { page } = fixture(), originals = []
+  page.on('pageerror', value => originals.push(value))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const values = [new TypeError('synthetic'), new SyntaxError('synthetic'), nativeFetchError(origin + '/api/app/bootstrap?secret')]
+  for (const value of values) page.emit('pageerror', value)
+  const result = probe.stop()
+  assert.deepEqual(originals, values)
+  assert.deepEqual(result.events.slice(0, 2).map(event => [event.errorName, event.category]), [['TypeError', 'javascript_type_error'], ['SyntaxError', 'javascript_syntax_error']])
+  assert.equal(result.events[2].errorTarget, 'bootstrap')
+  assert.deepEqual(page.eventNames(), ['pageerror'])
+})
 function fixture() {
   const page = new EventEmitter()
   const frame = { url: () => origin + '/en/app/portrait?token=secret#secret' }

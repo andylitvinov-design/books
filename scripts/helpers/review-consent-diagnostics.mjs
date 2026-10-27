@@ -61,6 +61,20 @@ export function installReviewConsentProbe(originalForm, { token, owner, registry
       const alias = node => !node ? 'none' : contains(button, node) ? 'button' : contains(originalButton, node) ? 'original-button' : node === phone ? 'phone' : node === consent ? 'consent' : contains(form, node) ? 'form' : contains(nav, node) ? 'navigation' : 'other'
       const buttonProps = props(button), phoneProps = props(phone), consentProps = props(consent)
       const navStyle = nav && win.getComputedStyle(nav)
+      // Numeric layout state distinguishes a restored dock from a changed root
+      // scroll range. Never export stylesheet text, input values or raw styles.
+      const number = read => { try { return finite(read()) } catch { return null } }
+      const pixels = read => {
+        try {
+          const value = read()
+          return typeof value === 'string' && /^-?(?:\d+(?:\.\d+)?|\.\d+)px$/.test(value.trim())
+            ? finite(Number.parseFloat(value)) : null
+        } catch { return null }
+      }
+      const root = doc.scrollingElement, body = doc.body, html = doc.documentElement
+      const viewport = win.visualViewport
+      let dockHeightPinned = false
+      try { dockHeightPinned = body?.style.getPropertyPriority('--ia222-bottom-height') === 'important' } catch { /* Diagnostic only. */ }
       return {
         type: event ? types[types.indexOf(event.type)] || 'unknown' : 'snapshot', phase,
         elapsedMs: finite(Date.now() - started), trusted: event?.isTrusted === true, defaultPrevented: event?.defaultPrevented === true,
@@ -79,6 +93,14 @@ export function installReviewConsentProbe(originalForm, { token, owner, registry
         navigationPointerEventsNone: navStyle?.pointerEvents === 'none',
         x, y, buttonRect: box, navigationRect: rect(nav), scrollY: finite(win.scrollY),
         viewportWidth: finite(win.innerWidth), viewportHeight: finite(win.innerHeight),
+        rootIsDocumentElement: Boolean(root && root === html), rootIsBody: Boolean(root && root === body), dockHeightPinned,
+        rootScrollHeight: number(() => root?.scrollHeight), rootClientHeight: number(() => root?.clientHeight),
+        rootScrollTop: number(() => root?.scrollTop), bodyScrollHeight: number(() => body?.scrollHeight),
+        documentScrollHeight: number(() => html?.scrollHeight),
+        dockHeightPx: pixels(() => body && win.getComputedStyle(body).getPropertyValue('--ia222-bottom-height')),
+        dockInlineHeightPx: pixels(() => body?.style.getPropertyValue('--ia222-bottom-height')),
+        visualViewportHeight: number(() => viewport?.height), visualViewportOffsetTop: number(() => viewport?.offsetTop),
+        visualViewportPageTop: number(() => viewport?.pageTop),
       }
     }
     const read = () => { try { return snapshot() } catch { observationErrors = increment(observationErrors); return null } }
@@ -146,8 +168,8 @@ export function sanitizeReviewConsentDiagnostic(raw, meta = {}) {
     const out = { type: pick(own(value, 'type'), ['snapshot', 'input', 'change', 'pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'submit', 'invalid']),
       phase: pick(own(value, 'phase'), ['snapshot', 'capture', 'bubble']), alertCount: count(own(value, 'alertCount'), 100) }
     for (const key of ['target', 'focus', 'hit']) out[key] = pick(own(value, key), ['none', 'button', 'original-button', 'phone', 'consent', 'form', 'navigation', 'other'])
-    for (const key of ['trusted', 'defaultPrevented', 'currentRoute', 'documentComplete', 'formConnected', 'originalFormConnected', 'buttonConnected', 'sameForm', 'sameButton', 'buttonDisabled', 'phoneDisabled', 'consentChecked', 'consentDisabled', 'consentRequired', 'phoneValueMissing', 'buttonPropsPresent', 'buttonOnClickBound', 'phoneOnChangeBound', 'consentOnChangeBound', 'navigationHidden', 'navigationPointerEventsNone']) out[key] = own(value, key) === true
-    for (const key of ['elapsedMs', 'x', 'y', 'scrollY', 'viewportWidth', 'viewportHeight']) out[key] = finite(own(value, key))
+    for (const key of ['trusted', 'defaultPrevented', 'currentRoute', 'documentComplete', 'formConnected', 'originalFormConnected', 'buttonConnected', 'sameForm', 'sameButton', 'buttonDisabled', 'phoneDisabled', 'consentChecked', 'consentDisabled', 'consentRequired', 'phoneValueMissing', 'buttonPropsPresent', 'buttonOnClickBound', 'phoneOnChangeBound', 'consentOnChangeBound', 'navigationHidden', 'navigationPointerEventsNone', 'rootIsDocumentElement', 'rootIsBody', 'dockHeightPinned']) out[key] = own(value, key) === true
+    for (const key of ['elapsedMs', 'x', 'y', 'scrollY', 'viewportWidth', 'viewportHeight', 'rootScrollHeight', 'rootClientHeight', 'rootScrollTop', 'bodyScrollHeight', 'documentScrollHeight', 'dockHeightPx', 'dockInlineHeightPx', 'visualViewportHeight', 'visualViewportOffsetTop', 'visualViewportPageTop']) out[key] = finite(own(value, key))
     for (const key of ['buttonRect', 'navigationRect']) out[key] = rect(own(value, key))
     return out
   }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { observePortraitNavigation } from './portrait-navigation-diagnostics.mjs'
 
 // Independent expectations for the approved seven-day invitation, not values
 // read back from the page or imported from its implementation.
@@ -100,13 +101,16 @@ async function assertMobileWidth(page, locale, phase) {
  }
 }
 
-export async function verifyOporaPublicEntry(callerPage, expect, { origin, screenshotEvidence, output }) {
+export async function verifyOporaPublicEntry(callerPage, expect, { origin, screenshotEvidence, output,
+ runtime = process.env.HH_APP_TEST_RUNTIME,
+}) {
  const guard = createOporaGuestPreviewGuard(origin), context = callerPage.context()
  // Limits bound failure cleanup, not successful programme/content assertions.
  // Unknown ancestry is never treated as unrelated merely because time expired.
  const maxPages = 32, maxCloses = 16, closureTimeoutMs = 5000
  const owned = new Set(), watched = new Map(), parents = new Map(), ownershipChecks = new Set(), pageErrors = [], cleanupErrors = []
  let page, primaryError, primaryFailed = false, routeInstalled = false, generation = 0, ownershipFailure
+ let navigation, diagnosticLocale = null, diagnosticStage = 'owned-page'
  let reconciling = false
  const ownershipFault = message => { ownershipFailure ||= new Error(message) }
  const watch = target => {
@@ -204,10 +208,16 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
   page = await context.newPage()
   assert.notEqual(page, callerPage, 'The OPORA preview must not reuse the caller page')
   own(page)
+  // Reuse the existing bounded passive navigation/HMR observer. This does not
+  // warm, retry, navigate, intercept requests or excuse any original failure.
+  // A missing observer is diagnostic-only; it must not replace the real gate.
+  try { navigation = observePortraitNavigation(page, { origin, runtime }) } catch {}
   const viewport = callerPage.viewportSize()
   assert.ok(viewport, 'The OPORA preview requires the caller mobile viewport')
   await page.setViewportSize(viewport)
   for (const locale of ['en', 'ru']) {
+   diagnosticLocale = locale
+   diagnosticStage = 'invitation-entry'
    const t = OPORA_PUBLIC_ENTRY[locale], entry = '/' + locale + '/app/course?program=stress'
    // Keep the original anonymous course deep link; it must show the mandatory
    // seven-day invitation before the visitor elects to sign in.
@@ -218,8 +228,10 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
    assertClean()
    // The full curriculum now lives behind this actual native programme link.
    // Do not replace it with page.goto or recreate the obsolete noncompact UI.
+   diagnosticStage = 'programme-link'
    await explore.click()
    await expect(page).toHaveURL(origin + '/' + locale + '/courses/antistress')
+   diagnosticStage = 'programme-content'
    const programme = page.locator('[data-opora-antistress-landing]')
    await expect(programme).toBeVisible()
    await expect(programme.getByRole('heading', { name: t.programmeTitle, level: 1, exact: true })).toBeVisible()
@@ -255,6 +267,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
    assertClean()
    // This public link only returns to the invitation. Never click its OAuth
    // button or submit affirmative enrolment in this anonymous coverage.
+   diagnosticStage = 'enrollment-backlink'
    await enrollment.click()
    await assertInvite(page, expect, origin, locale)
    assertClean()
@@ -262,7 +275,17 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
  } catch (error) {
   primaryFailed = true
   primaryError = error
+  // Capture before closing the owned page. Only the observer's allowlisted,
+  // bounded evidence is emitted; never the original error, URL query or body.
+  try {
+   navigation?.mark('failure')
+   console.log('SYNTHETIC_OPORA_NAVIGATION_DIAGNOSTIC', JSON.stringify({ locale: diagnosticLocale, stage: diagnosticStage,
+    observation: navigation ? navigation.stop() : { unavailable: true } }))
+  } catch { /* Diagnostics must preserve the original assertion. */ }
  } finally {
+  // Successful journeys stay quiet. Stop even if evidence recording failed;
+  // the separate ownership/pageerror guards remain active through cleanup.
+  try { navigation?.stop() } catch {}
   // Only a bounded closure of the observed owned-page graph is certified.
   // Failed/incomplete ancestry, caps or closes retain the fence and listeners.
   const deadline = Date.now() + closureTimeoutMs

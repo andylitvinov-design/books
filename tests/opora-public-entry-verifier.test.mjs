@@ -7,6 +7,8 @@ import { antiStressBlueprint } from '../lib/inner-growth/anti-stress-blueprint.j
 import { OPORA_PUBLIC_ENTRY, assertOporaGuestPreviewSnapshot, createOporaGuestPreviewGuard, verifyOporaPublicEntry } from '../scripts/helpers/opora-public-entry-verifier.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+const importVerifier = source => import('data:text/javascript,' + encodeURIComponent(source.replace(
+ "'./portrait-navigation-diagnostics.mjs'", JSON.stringify(new URL('../scripts/helpers/portrait-navigation-diagnostics.mjs', import.meta.url).href))))
 const inviteSource = read('components/app/opora-first-week-invite.jsx')
 const mutate = (source, from, to) => {
  assert.equal(source.split(from).length - 1, 1, 'Mutation must change one precise source site')
@@ -131,7 +133,7 @@ test('real routes keep the compact invitation, full programme and original enrol
 // come from its authored blueprint. Geometry is a passing synthetic value:
 // these tests establish lifecycle/guard behavior, NOT browser acceptance.
 function lifecycleFixture(options = {}) {
- const origin = 'http://127.0.0.1:3100', context = new EventEmitter(), pages = [], screenshots = [], requests = [], journey = []
+ const origin = 'http://127.0.0.1:3100', context = new EventEmitter(), pages = [], screenshots = [], requests = [], journey = [], evidence = []
  const routes = new Set(), snapshots = new Map()
  context.route = async (_pattern, handler) => { routes.add(handler) }
  context.unroute = async (_pattern, handler) => {
@@ -152,6 +154,7 @@ function lifecycleFixture(options = {}) {
   const page = new EventEmitter()
   Object.assign(page, { locale: 'en', phase: 'blank', currentUrl: 'about:blank', closed: false, viewports: [],
    context: () => context, opener: async () => opener, isClosed: () => page.closed,
+   url: () => page.currentUrl, mainFrame: () => page,
    viewportSize: () => page.viewports.at(-1) || null,
    setViewportSize: async viewport => { page.viewports.push({ ...viewport }) },
    goto: async url => {
@@ -169,6 +172,13 @@ function lifecycleFixture(options = {}) {
     page.closed = true
    },
   })
+  if (options.observerSetupError) {
+   const on = page.on.bind(page)
+   page.on = (type, listener) => {
+    if (type === 'request') throw options.observerSetupError
+    return on(type, listener)
+   }
+  }
   const locator = (kind, value) => {
    const t = OPORA_PUBLIC_ENTRY[page.locale]
    if (!snapshots.has(page.locale)) snapshots.set(page.locale, renderedPreview(page.locale).snapshot)
@@ -190,6 +200,9 @@ function lifecycleFixture(options = {}) {
     click: async () => {
      assert.ok(exists(), 'Only a present node may be activated')
      if (kind === 'explore') {
+      await options.onExplore?.({ page, context })
+      if (options.renderedProgrammeAtOldUrl) page.phase = 'programme'
+      if (options.failedExplore) return
       page.phase = 'programme'; page.currentUrl = origin + '/' + page.locale + '/courses/antistress'
       await context.dispatch(page.currentUrl); journey.push(page.locale + ':programme')
      } else if (kind === 'enrollment') {
@@ -241,10 +254,17 @@ function lifecycleFixture(options = {}) {
   toBeEnabled: async () => assert.equal(target.kind, 'accept'),
   toHaveAttribute: async (name, value) => assert.equal(target.attribute(name), value),
  })
- return { origin, caller, context, pages, routes, requests, screenshots, journey, createPage,
-  run: (verify = verifyOporaPublicEntry) => verify(caller, expect, { origin, output: '/not-written', screenshotEvidence: async target => {
-   assert.notEqual(target, caller); assert.ok(pages.includes(target)); screenshots.push(target)
-  } }),
+ return { origin, caller, context, pages, routes, requests, screenshots, journey, evidence, createPage,
+  run: async (verify = verifyOporaPublicEntry) => {
+   const original = console.log
+   console.log = (label, value) => {
+    assert.equal(label, 'SYNTHETIC_OPORA_NAVIGATION_DIAGNOSTIC')
+    evidence.push(JSON.parse(value)); if (options.recordError) throw options.recordError
+   }
+   try { return await verify(caller, expect, { origin, runtime: 'isolated', output: '/not-written', screenshotEvidence: async target => {
+    assert.notEqual(target, caller); assert.ok(pages.includes(target)); screenshots.push(target)
+   } }) } finally { console.log = original }
+  },
  }
 }
 
@@ -259,6 +279,8 @@ test('complete actual helper owns its page, copies viewport, follows both native
  assert.equal(fixture.context.listenerCount('page'), 0)
  assert.equal(fixture.pages[0].listenerCount('pageerror'), 0)
  assert.equal(fixture.pages[0].listenerCount('popup'), 0)
+ assert.deepEqual(fixture.evidence, [], 'Successful journeys must stay quiet')
+ assert.equal(fixture.pages[0].eventNames().length, 0, 'Passive observer listeners must be detached')
  assert.ok(fixture.requests.every(request => request.method === 'GET' && request.forwarded))
 })
 
@@ -325,7 +347,7 @@ test('delayed route failures are drained and primary failures survive throwing c
 test('a guard-leak counterfactual fails the complete helper lifecycle oracle', async () => {
  const source = read('scripts/helpers/opora-public-entry-verifier.mjs')
  const leaked = mutate(source, 'await until(() => context.unroute(\'**/*\', guard.route), deadline, \'fence removal\'); routeInstalled = false', 'routeInstalled = false /* synthetic leaked handler */')
- const module = await import('data:text/javascript,' + encodeURIComponent(leaked))
+ const module = await importVerifier(leaked)
  const fixture = lifecycleFixture()
  await fixture.run(module.verifyOporaPublicEntry)
  assert.equal(fixture.routes.size, 1)
@@ -457,7 +479,7 @@ test('removing retained graph reconciliation reproduces the original grandchild 
  const changed = mutate(source,
   'if (!owned.has(target) && [...openers].some(opener => owned.has(opener))) changed = adopt(target) || changed',
   'if (false) changed = adopt(target) || changed /* synthetic lost retained edge */')
- const module = await import('data:text/javascript,' + encodeURIComponent(changed))
+ const module = await importVerifier(changed)
  const { fixture, descendants } = earlyGrandchildFixture({ earlyError: true })
  await fixture.run(module.verifyOporaPublicEntry)
  assert.ok(descendants().some(page => !page.isClosed()))
@@ -487,4 +509,84 @@ test('a broken page factory cannot transfer caller ownership or alter its viewpo
  await assert.rejects(fixture.run(), /must not reuse the caller page/)
  assert.equal(fixture.pages.length, 0)
  assert.equal(fixture.routes.size, 0)
+})
+
+test('failed native programme URL stays failed and records sanitized navigation/HMR before owned cleanup', async () => {
+ let socket, closedAfterEvidence = false
+ const fixture = lifecycleFixture({ failedExplore: true, onExplore: ({ page }) => {
+  socket = new EventEmitter()
+  socket.url = () => 'ws://127.0.0.1:3100/_next/webpack-hmr'
+  page.emit('websocket', socket)
+  socket.emit('framereceived', { payload: JSON.stringify({ action: 'built', privateToken: 'never-retain-build' }) })
+  socket.emit('framesent', { payload: JSON.stringify({ event: 'client-full-reload', hadRuntimeError: false, stackTrace: null, privateToken: 'never-retain-frame' }) })
+  for (const path of ['/en/courses/antistress?secret=never-retain-query#never-retain-fragment', '/en/app/course?program=stress']) {
+   const request = { url: () => fixture.origin + path, isNavigationRequest: () => true,
+    frame: () => page, redirectedFrom: () => null }
+   page.emit('request', request)
+   page.emit('response', { request: () => request, status: () => 200 })
+  }
+  page.emit('framenavigated', page)
+ }, onClose: ({ page }) => {
+  assert.equal(fixture.evidence.length, 1)
+  assert.equal(page.listenerCount('request'), 0)
+  assert.equal(page.listenerCount('pageerror'), 1, 'Original ownership error gate survives diagnostic cleanup')
+  closedAfterEvidence = true
+ } })
+ await assert.rejects(fixture.run(), /courses\/antistress/)
+ assert.equal(closedAfterEvidence, true)
+ assert.equal(fixture.evidence.length, 1)
+ const record = fixture.evidence[0]
+ assert.equal(record.locale, 'en'); assert.equal(record.stage, 'programme-link')
+ assert.ok(record.observation.events.some(event => event.type === 'hmr-sent' && event.event === 'client-full-reload' && event.hadRuntimeError === false && event.errorDetails === 'null'))
+ assert.deepEqual(record.observation.events.filter(event => event.type === 'navigation-request').map(event => event.pathname), ['/en/courses/[segment]', '/en/app/course'])
+ assert.ok(record.observation.events.some(event => event.type === 'phase' && event.phase === 'failure'))
+ assert.doesNotMatch(JSON.stringify(record), /never-retain|privateToken|program=|stress|http:|stackTrace/)
+ assert.equal(socket.eventNames().length, 0)
+ assert.equal(fixture.pages[0].eventNames().length, 0)
+ assert.equal(fixture.routes.size, 0)
+ assert.equal(fixture.pages[0].isClosed(), true)
+})
+
+test('OPORA diagnostic observer preserves its existing event cap and leaves no socket listeners', async () => {
+ let socket
+ const fixture = lifecycleFixture({ failedExplore: true, onExplore: ({ page }) => {
+  socket = new EventEmitter(); socket.url = () => 'ws://127.0.0.1:3100/_next/webpack-hmr'
+  page.emit('websocket', socket)
+  for (let i = 0; i < 260; i++) socket.emit('framereceived', { payload: '{"action":"built"}' })
+ } })
+ await assert.rejects(fixture.run(), /courses\/antistress/)
+ assert.equal(fixture.evidence[0].observation.events.length, 200)
+ assert.ok(fixture.evidence[0].observation.dropped > 0)
+ assert.equal(socket.eventNames().length, 0)
+ assert.equal(fixture.pages[0].eventNames().length, 0)
+})
+
+test('programme content cannot substitute for the original strict destination URL gate', async () => {
+ const fixture = lifecycleFixture({ failedExplore: true, renderedProgrammeAtOldUrl: true })
+ await assert.rejects(fixture.run(), /courses\/antistress/)
+ assert.equal(fixture.evidence[0].stage, 'programme-link')
+ assert.deepEqual(fixture.journey, ['en:entry'])
+ assert.equal(fixture.pages[0].eventNames().length, 0)
+})
+
+test('observer attachment and evidence-output faults never replace the primary OPORA failure', async () => {
+ for (const extra of [{ observerSetupError: new Error('synthetic observer attachment') }, { recordError: new Error('synthetic output fault') }]) {
+  const primary = new Error('original OPORA assertion never-retain-primary-error')
+  const fixture = lifecycleFixture({ ...extra, primaryError: primary })
+  await assert.rejects(fixture.run(), error => error === primary)
+  assert.equal(fixture.evidence.length, 1)
+  if (extra.observerSetupError) assert.deepEqual(fixture.evidence[0].observation, { unavailable: true })
+  assert.doesNotMatch(JSON.stringify(fixture.evidence), /never-retain|synthetic observer|synthetic output/)
+  assert.equal(fixture.pages[0].eventNames().length, 0)
+  assert.equal(fixture.routes.size, 0)
+ }
+})
+
+test('passive diagnostics never swallow a page error or alter either native programme action', async () => {
+ const fixture = lifecycleFixture({ onExplore: ({ page }) => page.emit('pageerror', new Error('never-retain-runtime-detail')) })
+ await assert.rejects(fixture.run(), /must not raise page errors/)
+ assert.deepEqual(fixture.journey, ['en:entry', 'en:programme'])
+ assert.ok(fixture.evidence[0].observation.events.some(event => event.type === 'page-error'))
+ assert.doesNotMatch(JSON.stringify(fixture.evidence), /never-retain/)
+ assert.equal(fixture.pages[0].eventNames().length, 0)
 })

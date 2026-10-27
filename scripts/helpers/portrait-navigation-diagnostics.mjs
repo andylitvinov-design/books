@@ -1,4 +1,5 @@
 import { performance } from 'node:perf_hooks'
+import { types } from 'node:util'
 import { sanitizePathname, classifyDiagnosticError } from './isolated-browser-diagnostics.mjs'
 
 const HMR_ACTIONS = new Set(['building', 'built', 'sync', 'serverComponentChanges', 'reloadPage', 'addedPage', 'removedPage'])
@@ -13,11 +14,31 @@ const PORTRAIT_READS = new Map([
   ['/api/free-express/claim', 'free-express-claim'],
 ])
 
+// Event records are not Playwright observation objects. Read only primitive
+// own data properties, never arbitrary accessors, proxies or string coercions.
+function ownValue(record, key) {
+  if (!record || typeof record !== 'object' || types.isProxy(record)) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  return descriptor && Object.hasOwn(descriptor, 'value') ? descriptor.value : undefined
+}
+function errorFields(error) {
+  const message = typeof error === 'string' ? error : ownValue(error, 'message')
+  let name = ownValue(error, 'name')
+  // Standard native Errors inherit a data-only name. Preserve those existing
+  // categories without inspecting arbitrary prototypes or invoking getters.
+  if (name === undefined && error && typeof error === 'object' && !types.isProxy(error) && types.isNativeError(error)) {
+    const prototype = Object.getPrototypeOf(error)
+    for (const constructor of [Error, TypeError, SyntaxError, ReferenceError, RangeError, EvalError, URIError, AggregateError]) {
+      if (prototype === constructor.prototype) { name = constructor.name; break }
+    }
+  }
+  return { message: typeof message === 'string' ? message.slice(0, 4096) : '', name: typeof name === 'string' ? name.slice(0, 4096) : '' }
+}
+
 // Fixed classes only. A tooling-looking error remains an error: this observer
 // never exempts it from the verifier's original pageerror gate.
 function classifyPortraitError(error) {
-  const value = typeof error === 'string' ? error : error?.message
-  const text = typeof value === 'string' ? value.slice(0, 4096) : ''
+  const fields = errorFields(error), text = fields.message
   if (text === '[object Event]') return 'opaque_event'
   if (/Loading hot update chunk [^\n]* failed\./.test(text)) return 'hmr_chunk_load_error'
   if (/Failed to fetch update manifest\b/.test(text)) return 'hmr_manifest_fetch_error'
@@ -26,8 +47,8 @@ function classifyPortraitError(error) {
   if (/\bdue to access control checks\.(?:\n|$)/.test(text)) return 'access_control_error'
   if (/Frame load interrupted|navigation [^\n]*interrupted by another navigation|NS_BINDING_ABORTED/i.test(text)) return 'navigation_interrupted'
   if (/^(?:TypeError: )?Load failed(?:\n|$)/.test(text)) return 'network_load_error'
-  if (error?.name === 'ChunkLoadError' || /^ChunkLoadError:/.test(text)) return 'chunk_load_error'
-  return classifyDiagnosticError(typeof error === 'string' ? text : { name: error?.name, message: text })
+  if (fields.name === 'ChunkLoadError' || /^ChunkLoadError:/.test(text)) return 'chunk_load_error'
+  return classifyDiagnosticError(fields)
 }
 
 // WebKit logs native fetch refusals as JS-source console errors. Playwright
@@ -35,11 +56,12 @@ function classifyPortraitError(error) {
 // slash of http://. Reconstruct only that pinned native shape, never an
 // arbitrary stack URL. A target alias identifies text, not a failure cause.
 function portraitErrorTarget(error, origin) {
-  const value = typeof error === 'string' ? error : error?.message
+  const value = typeof error === 'string' ? error : ownValue(error, 'message')
   if (typeof value !== 'string' || value.length > 4096) return {}
   let line = value.split('\n', 1)[0]
-  if (typeof error !== 'string' && /^(?:Fetch API|XMLHttpRequest) cannot load https?$/.test(error?.name)
-      && /^\/[^/]/.test(line)) line = error.name + ':/' + line
+  const name = errorFields(error).name
+  if (typeof error !== 'string' && /^(?:Fetch API|XMLHttpRequest) cannot load https?$/.test(name)
+      && /^\/[^/]/.test(line)) line = name + ':/' + line
   const match = line.match(/^(?:Error: )?(?:Fetch API|XMLHttpRequest) cannot load (https?:\/\/[^\s]+) due to access control checks\.$/)
   if (!match || /…|\.\.\.|%e2%80%a6|\\/i.test(match[1])
       || !/^https?:\/\/[^/\\?#\s]+\//.test(match[1])) return {}
@@ -64,7 +86,7 @@ function reloadErrorDetails(message, origin) {
 // retry, request body/header, raw URL, console text, or error stack is retained.
 // A request redirect chain is evidence, not a JavaScript initiator stack.
 export function observePortraitNavigation(page, { origin, runtime = process.env.HH_APP_TEST_RUNTIME } = {}) {
-  if (runtime !== 'isolated' || !sanitizePathname('/', origin)) throw new Error('Isolated loopback diagnostics only')
+  if (runtime !== 'isolated' || typeof origin !== 'string' || !sanitizePathname('/', origin)) throw new Error('Isolated loopback diagnostics only')
   const started = performance.now(), events = [], listeners = []
   let stopped = false, dropped = 0, observedSockets = 0, cleanupErrors = 0
   const reads = new WeakMap()
@@ -153,7 +175,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   })
   listen('requestfinished', request => updateRead('portrait-read-finished', request))
   listen('requestfailed', request => {
-    const extra = { category: classifyPortraitError(request.failure()?.errorText) }
+    const extra = { category: classifyPortraitError(ownValue(request.failure(), 'errorText')) }
     navigationRequest('navigation-failed', request, extra)
     hotUpdateRequest('hmr-asset-failed', request, extra)
     updateRead('portrait-read-failed', request, extra)
@@ -166,11 +188,12 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   for (const type of ['domcontentloaded', 'load', 'crash', 'close']) listen(type, () => add({ type }))
   listen('pageerror', error => add({
     type: 'page-error', category: classifyPortraitError(error),
-    errorName: ERROR_NAMES.has(error?.name) ? error.name : 'Other',
+    errorName: ERROR_NAMES.has(errorFields(error).name) ? errorFields(error).name : 'Other',
     ...portraitErrorTarget(error, origin),
   }))
   listen('console', message => {
     const text = message.text()
+    if (typeof text !== 'string') return
     const category = /Fast Refresh had to perform a full reload/i.test(text) ? 'fast-refresh-full-reload'
       : /\[Fast Refresh\] rebuilding/.test(text) ? 'fast-refresh-rebuilding'
         : /\[Fast Refresh\] done/.test(text) ? 'fast-refresh-done' : null
@@ -180,14 +203,16 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   // Exact Next 15.5.21 action/event enums discriminate reload instructions from
   // a console rebuild correlation. No frame, stack, hash, ID or URL is retained.
   listen('websocket', socket => {
-    const url = new URL(socket.url()), base = new URL(origin)
+    const raw = socket.url()
+    if (typeof raw !== 'string') return
+    const url = new URL(raw), base = new URL(origin)
     if (url.protocol !== 'ws:' || url.host !== base.host || url.pathname !== '/_next/webpack-hmr'
       || url.username || url.password) return
     if (observedSockets >= 8) { add({ type: 'hmr-socket-limit' }); return }
     observedSockets++
     add({ type: 'hmr-connected' })
     const frame = (direction, data) => {
-      const payload = data?.payload
+      const payload = ownValue(data, 'payload')
       if (typeof payload !== 'string' || payload.length > 16384 || Buffer.byteLength(payload, 'utf8') > 16384) {
         add({ type: 'hmr-frame-dropped' }); return
       }

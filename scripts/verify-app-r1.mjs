@@ -1,3 +1,4 @@
+import { withPublicServiceNavigationDiagnostics } from './helpers/public-service-navigation-diagnostics.mjs'
 import { verifyOporaPublicEntry } from './helpers/opora-public-entry-verifier.mjs'
 import { withPublicPickerActionDiagnostics } from './helpers/public-picker-action-diagnostics.mjs'
 import { classifyDiagnosticError } from './helpers/isolated-browser-diagnostics.mjs'
@@ -458,7 +459,8 @@ async function verifyPublicServiceConversionJourneys(){
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    await withPublicServiceNavigationDiagnostics(servicePage,{origin,locale,slug,width},
+     ()=>servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'}))
     if(kind==='dao'){
       const dao=servicePage.locator('main[data-free-entry-landing="dao"]')
       await expect(dao).toHaveCount(1)

@@ -444,3 +444,114 @@ test('matching public schema does not confer registry ownership', () => {
   assert.equal(f.close({ token: 303, capture: true }), null);
   assert.equal(reads, 0); assert.equal(registry.closedThrough, 0); assert.equal(f.listeners.length, 0);
 });
+
+function scrollObserverDom() {
+  const f = consentObserverDom();
+  const styleState = { computed: '0px', inline: '0px', priority: '' };
+  const root = { scrollHeight: 5575, clientHeight: 820, scrollTop: 4755 };
+  const body = { scrollHeight: 5575, style: {
+    getPropertyValue(name) { assert.equal(name, '--ia222-bottom-height'); return styleState.inline; },
+    getPropertyPriority(name) { assert.equal(name, '--ia222-bottom-height'); return styleState.priority; },
+    setProperty() { throw Error('Observer must not write layout'); },
+    removeProperty() { throw Error('Observer must not remove layout'); },
+  } };
+  const computed = f.win.getComputedStyle;
+  f.win.getComputedStyle = element => element === body
+    ? { getPropertyValue(name) { assert.equal(name, '--ia222-bottom-height'); return styleState.computed; } }
+    : computed(element);
+  f.doc.body = body; f.doc.documentElement = root; f.doc.scrollingElement = root;
+  f.win.visualViewport = { height: 820, offsetTop: 0, pageTop: 4755 };
+  f.win.scrollY = 4755;
+  return { ...f, root, body, styleState };
+}
+
+for (const rootExpands of [true, false]) test('numeric snapshots distinguish range expansion from scrolling in an unchanged range: ' + rootExpands, () => {
+  const f = scrollObserverDom();
+  assert.equal(installReviewConsentProbe(f.form, { token: 401, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 }), true);
+  f.dispatch('pointerdown');
+  // Competing synthetic hypotheses, not an asserted cause of the hosted failure.
+  if (rootExpands) {
+    f.root.scrollHeight += 69; f.body.scrollHeight += 69;
+    f.styleState.computed = '69px'; f.styleState.inline = '69px';
+  }
+  f.doc.activeElement = f.button; f.dispatch('focusout', f.phone); f.dispatch('focusin', f.button);
+  f.root.scrollTop += 50; f.win.scrollY += 50; f.win.visualViewport.pageTop += 50;
+  f.dispatch('pointerup');
+  const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 401, capture: true }));
+  const down = safe.records.find(record => record.type === 'pointerdown');
+  const up = safe.records.find(record => record.type === 'pointerup');
+  assert.equal(down.rootScrollTop, 4755); assert.equal(up.rootScrollTop, 4805);
+  assert.equal(up.rootScrollHeight - down.rootScrollHeight, rootExpands ? 69 : 0);
+  assert.equal(up.rootClientHeight, 820); assert.equal(up.documentScrollHeight, up.rootScrollHeight);
+  assert.equal(up.bodyScrollHeight, up.rootScrollHeight);
+  assert.equal(up.dockHeightPx, rootExpands ? 69 : 0); assert.equal(up.dockInlineHeightPx, up.dockHeightPx);
+  assert.equal(up.visualViewportHeight, 820); assert.equal(up.visualViewportOffsetTop, 0); assert.equal(up.visualViewportPageTop, 4805);
+  assert.equal(up.rootIsDocumentElement, true); assert.equal(up.rootIsBody, false); assert.equal(up.dockHeightPinned, false);
+  assert.equal(f.doc.activeElement, f.button); assert.equal(f.consent.checked, false);
+  assert.equal(f.getterReads(), 0); assert.equal(f.handlerCalls(), 0); assert.equal(f.listeners.length, 0); assert.equal(f.leases.size, 0);
+});
+
+test('dock layout reads are numeric and capture an existing owned important pin without writing it', () => {
+  const f = scrollObserverDom(); f.styleState.computed = ' 0.25px '; f.styleState.inline = '-.5px'; f.styleState.priority = 'important';
+  f.doc.scrollingElement = f.body; f.body.clientHeight = 820; f.body.scrollTop = 4755;
+  installReviewConsentProbe(f.form, { token: 402, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 });
+  const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 402, capture: true }));
+  assert.equal(safe.current.dockHeightPx, .3); assert.equal(safe.current.dockInlineHeightPx, -.5); assert.equal(safe.current.dockHeightPinned, true);
+  assert.equal(safe.current.rootIsBody, true); assert.equal(safe.current.rootIsDocumentElement, false);
+  assert.deepEqual(f.styleState, { computed: ' 0.25px ', inline: '-.5px', priority: 'important' });
+  assert.equal(f.root.scrollTop, 4755); assert.equal(f.getterReads(), 0); assert.equal(f.handlerCalls(), 0);
+});
+
+for (const value of ['url(https://private.invalid/SECRET)', 'calc(1px + 2px)', '1e3px', 'Infinitypx', 'NaNpx', '69px;SECRET', '', 69, null])
+  test('optional dock metric rejects non-plain-pixel data: ' + typeof value + ':' + String(value), () => {
+    const f = scrollObserverDom(); f.styleState.computed = value; f.styleState.inline = value;
+    installReviewConsentProbe(f.form, { token: 403, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 });
+    const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 403, capture: true }));
+    assert.equal(safe.current.dockHeightPx, null); assert.equal(safe.current.dockInlineHeightPx, null);
+    assert.equal(safe.current.buttonOnClickBound, true); assert.equal(safe.observationErrors, 0);
+    assert.doesNotMatch(JSON.stringify(safe), /private.invalid|SECRET|calc\(/);
+  });
+
+test('optional layout metrics never coerce foreign objects or hide the primary geometry when unavailable', () => {
+  const f = scrollObserverDom(); let coercions = 0;
+  f.styleState.computed = f.styleState.inline = { toString() { coercions++; throw Error('Private style conversion'); } };
+  Object.defineProperty(f.root, 'scrollHeight', { get() { throw Error('Unavailable scroll extent'); } });
+  Object.defineProperty(f.root, 'scrollTop', { get() { return Infinity; } });
+  Object.defineProperty(f.win.visualViewport, 'pageTop', { get() { throw Error('Unavailable viewport'); } });
+  installReviewConsentProbe(f.form, { token: 404, owner: observerOwner, registryOwner: observerRegistryOwner, locale: 'en', expiresAt: Date.now() + 1000 });
+  f.dispatch('pointerdown');
+  const safe = sanitizeReviewConsentDiagnostic(f.close({ token: 404, capture: true }));
+  assert.equal(safe.current.rootScrollHeight, null); assert.equal(safe.current.rootScrollTop, null); assert.equal(safe.current.documentScrollHeight, null);
+  assert.equal(safe.current.visualViewportPageTop, null); assert.equal(safe.current.dockHeightPx, null); assert.equal(safe.current.dockInlineHeightPx, null);
+  assert.equal(safe.current.buttonOnClickBound, true); assert.equal(safe.records.length, 2); assert.equal(safe.observationErrors, 0);
+  assert.equal(coercions, 0); assert.equal(f.getterReads(), 0); assert.equal(f.handlerCalls(), 0);
+});
+
+test('new numeric sanitizer fields reject accessors and strings, cap finite magnitudes, and export no raw layout objects', () => {
+  let reads = 0;
+  const current = { type: 'snapshot', phase: 'snapshot', rootScrollHeight: 'SECRET', rootScrollTop: Infinity,
+    rootClientHeight: 1e20, documentScrollHeight: -Infinity, bodyScrollHeight: NaN,
+    dockHeightPx: '69px;SECRET', dockInlineHeightPx: { toJSON() { throw Error('No conversion'); } },
+    visualViewportHeight: 820, visualViewportOffsetTop: .25, visualViewportPageTop: 4755,
+    rootIsDocumentElement: 'SECRET', rootIsBody: true, dockHeightPinned: 'important', rawStyles: 'SECRET',
+  };
+  Object.defineProperty(current, 'rootScrollHeight', { get() { reads++; throw Error('Do not read raw getter'); } });
+  const safe = sanitizeReviewConsentDiagnostic({ current });
+  assert.equal(reads, 0); assert.equal(safe.current.rootScrollHeight, null); assert.equal(safe.current.rootScrollTop, null);
+  assert.equal(safe.current.rootClientHeight, 1000000); assert.equal(safe.current.bodyScrollHeight, null); assert.equal(safe.current.documentScrollHeight, null);
+  assert.equal(safe.current.dockHeightPx, null); assert.equal(safe.current.dockInlineHeightPx, null);
+  assert.equal(safe.current.visualViewportHeight, 820); assert.equal(safe.current.visualViewportOffsetTop, .3); assert.equal(safe.current.visualViewportPageTop, 4755);
+  assert.equal(safe.current.rootIsDocumentElement, false); assert.equal(safe.current.rootIsBody, true); assert.equal(safe.current.dockHeightPinned, false);
+  assert.doesNotMatch(JSON.stringify(safe), /SECRET|rawStyles|important|Infinity/);
+});
+
+test('scroll diagnostic introduces no actions, subscriptions or timing changes and keeps original primary-error preservation', () => {
+  const source = read('scripts/helpers/review-consent-diagnostics.mjs');
+  assert.equal((source.match(/doc\.addEventListener\(/g) || []).length, 1);
+  assert.equal((source.match(/win\.setTimeout\(/g) || []).length, 1);
+  assert.match(source, /const types = \['input', 'change', 'pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'submit', 'invalid'\]/);
+  assert.match(source, /if \(records.length === 32\)/);
+  assert.doesNotMatch(source, /scrollTo\(|scrollIntoView\(|setPointerCapture|preventDefault\(|dispatchEvent\(|\.focus\(|\.blur\(|\.click\(|(?:phone|consent|button)\.value\b|\.css['"]/);
+  assert.match(source, /try \{ return await operation\(\) \}/);
+  assert.match(source, /throw error/);
+});
