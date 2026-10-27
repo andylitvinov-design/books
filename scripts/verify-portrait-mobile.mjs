@@ -72,6 +72,7 @@ async function measure(locale, width, sector) {
       buttonCount: buttons.length,
       sixInRow: tops.length === 6 && Math.max(...tops)-Math.min(...tops)<2,
       minTapHeight: Math.min(...buttons.map(button=>rect(button).height)),
+      minTapWidth: Math.min(...buttons.map(button=>rect(button).width)),
       pressedCount: pressed.length, pressedKey: pressed[0]?.getAttribute('data-portrait-sector'),
       overflow: document.documentElement.scrollWidth-innerWidth,
       radarWidth: image.width, ringWidth: rect(outer).width,
