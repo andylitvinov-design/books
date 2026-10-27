@@ -31,6 +31,7 @@ const copy = {
     sendFree: "Free written diagnostic · €0",
     sendShort: "Personal session · 30 min · €50",
     sendFull: "Personal session · 60 min · €100",
+    telegramLinked: "This questionnaire will attach to your existing private Telegram CRM conversation. Email and phone are optional.",
     sendEmail: "Email for a reply",
     sendPhone: "Phone (optional if email is supplied)",
     sendConsent: "I explicitly agree to send all my completed coaching answers and contact details securely to Andrey in Holistic House CRM for one personal response. No marketing.",
@@ -86,6 +87,7 @@ const copy = {
     sendFree: "Бесплатная письменная диагностика · €0",
     sendShort: "Личная сессия · 30 минут · €50",
     sendFull: "Личная сессия · 60 минут · €100",
+    telegramLinked: "Анкета привяжется к существующему диалогу Telegram в CRM. Email и телефон необязательны.",
     sendEmail: "Email для ответа",
     sendPhone: "Телефон (необязателен, если указан email)",
     sendConsent: "Я явно согласен(на) отправить все ответы коучинговой анкеты и контакты Андрею в защищённую CRM Holistic House для одного личного ответа. Без рекламы и рассылок.",
@@ -141,6 +143,7 @@ const copy = {
     sendFree: "Evaluación escrita gratis · €0",
     sendShort: "Sesión personal · 30 min · €50",
     sendFull: "Sesión personal · 60 min · €100",
+    telegramLinked: "El cuestionario se vinculará a tu conversación privada de Telegram. Email y teléfono son opcionales.",
     sendEmail: "Email de contacto",
     sendPhone: "Teléfono (opcional con email)",
     sendConsent: "Acepto expresamente enviar todas mis respuestas y datos de contacto a Andrey mediante el CRM privado de Holistic House para recibir una respuesta personal. Sin publicidad.",
@@ -232,6 +235,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
   const [sendConsent, setSendConsent] = useState(false);
+  const [telegramHandoff, setTelegramHandoff] = useState<string | null>(null);
   const [leadBusy, setLeadBusy] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadReceipt, setLeadReceipt] = useState("");
@@ -243,6 +247,14 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const total = COACHING_FIELDS.length;
 
   useEffect(() => {
+    // Opaque token lives in memory only, not history, analytics or storage.
+    const url = new URL(window.location.href);
+    const handoff = new URLSearchParams(url.hash.slice(1)).get('handoff');
+    if(handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff))setTelegramHandoff(handoff);
+    if(handoff){
+      url.hash='';
+      window.history.replaceState(window.history.state,'',url.pathname+url.search);
+    }
     let active = true;
     let restored: Draft | null = null;
     // Only a public, allowlisted topic may cross this page link.
@@ -358,7 +370,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   }
   async function submitDiagnostic() {
     if (leadBusy || leadReceipt || busy || collision) return;
-    if (missing || !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())) {
+    if (missing || !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)) {
       setLeadError(t.sendError); return;
     }
     setLeadBusy(true); setLeadError("");
@@ -371,6 +383,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           answers: draft.answers, questions: draft.questions,
           contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
           contactConsent: true, website: "",
+          ...(telegramHandoff ? {handoff:telegramHandoff} : {}),
         }) };
       }
       const response = await fetch("/api/coaching-diagnostic", {
@@ -515,6 +528,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
               </label>)}
             </div>
           </fieldset>
+          {telegramHandoff?<p className={styles.requestFootnote}>{t.telegramLinked}</p>:null}
           <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
@@ -530,7 +544,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           </label>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
-            !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
+            !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
