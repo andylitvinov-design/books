@@ -27,6 +27,32 @@ and callback:
 Use the existing Google Cloud project https://console.cloud.google.com/apis/credentials?project=first-cascade-510215-n2 and never modify the Supabase Login Web OAuth client or use the unrelated Desktop publisher for a server callback.
 The actual Google login/consent must be completed by the owner; credentials and YouTube refresh token must remain server-only. No YouTube video upload without independent real status/owner-channel/Unlisted verification. See books #623 and #2160.
 
+## Owner-only no-charge provider verification
+
+A **Check Kling API / Проверить Kling API** control now reads the server-only
+`KLING_API_KEY` with `GET /account/costs` (Kling's free resource-usage API).
+It uses the already-protected admin GET `/api/admin/kling-avatar?mode=connection`.
+This performs **zero video-generation POSTs** and returns only a sanitized
+connection result and whether any active video resource package is reported.
+Provider amounts, secrets, provider account identity and raw provider failures
+never go to the browser. The package statistics may lag up to 12 hours; a valid
+key or active package is **not** a billing authorization, commercial-rights
+approval or guarantee of sufficient balance. The two paid-generation switches
+remain **false** by default, and an Avatar generation additionally requires
+three per-render approvals plus the owner's selected media files.
+
+## ChatGPT / operator workflow
+
+This page is ready for authenticated computer-use/Work workflows: open the
+existing `/admin/videos#kling-avatar-studio`, run the read-only connection
+check, prepare already owner-approved photo and original voice, and only after
+cost/identity approval submit one render and inspect its job ID.
+The current ChatGPT conversation does **not** itself possess the owner website
+session or a direct Kling plugin/tool. A deployed HTTP route is not an agent
+connector or autonomous approval for credit spending; **do not** claim the
+chat can submit billable Kling jobs automatically. Do not create a public
+API endpoint, disclose API tokens or bypass admin auth to fake connectivity.
+
 ## QA / acceptance
 1. Focused unit/security contract tests, scoped ESLint, TypeScript and Next build; inspect current PR head and full diff.
 2. Verify Kling API key validity through the real admin interface; flag OFF means **no paid request** (do not equate presence of an env-variable record with verified API balance).
