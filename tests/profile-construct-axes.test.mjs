@@ -21,7 +21,8 @@ const isGuest = entry => entry.selectable === true && entry.startable === true &
   entry.explicitOptIn !== true && entry.scaleGuide?.measurementAxes?.length
 
 const toSource = entry => ({
-  key: entry.key, title: entry.title, topics: entry.topics, testKind: entry.testKind,
+  key: entry.key, version: entry.definition?.version || entry.version,
+  title: entry.title, topics: entry.topics, testKind: entry.testKind,
   axes: entry.measurementAxes, minutes: entry.durationMinutes, questions: entry.questionCount,
   // Immutable scorer dimensions, not guessed questionnaire/diagnostic facets.
   scales: (entry.scaleGuide?.scales || []).filter(scale =>
