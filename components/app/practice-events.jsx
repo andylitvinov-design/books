@@ -10,6 +10,7 @@ const emptyDraft = () => ({
   category:'connection', format:'in_person', startsAt:'', endsAt:'',
   timeZone:'America/Toronto', city:'Toronto',location:'',
   posterUrl:'', registrationHref:'', pricingMode:'free',priceAmount:'',currency:'CAD',
+  ticketPaymentHref:'',
 })
 const copy = {
   en: {
@@ -23,6 +24,8 @@ const copy = {
     pricing:'Price',free:'Free',fixed:'Fixed price',contact:'Contact organizer',amount:'Amount',
     photo:'Cover photo',titleHelp:'Provide at least one language. Missing translations use your original text.',
     registrationHelp:'Use your registration or booking page. Client contact details should not appear in the public description.',
+    ticketPayment:'Event ticket payment link (optional)',
+    ticketPaymentHelp:'For a fixed CAD ticket use a Square event-specific link; for EUR use a PayPal Payment Link. Create the link for this exact event and price, not a Session/consultation. Payment alone does not register a person or confirm a seat. The organizer reviews the merchant and total before publication.',
     sent:'Event sent for review.',saved:'Event saved as a draft.',pausedNotice:'Event is no longer listed publicly.',
     archivedNotice:'Event archived.',error:'Could not save the event.',dateError:'Enter a valid start date and time.',
     timeError:'This time does not exist in the selected time zone (daylight saving change).',
@@ -41,6 +44,8 @@ const copy = {
     pricing:'Стоимость',free:'Бесплатно',fixed:'Фиксированная цена',contact:'Уточнить у организатора',amount:'Сумма',
     photo:'Обложка',titleHelp:'Достаточно заполнить один язык. Для остальных будет показан исходный текст.',
     registrationHelp:'Добавьте ссылку записи или регистрации. Не размещайте данные клиентов в публичном описании.',
+    ticketPayment:'Ссылка оплаты билета (необязательно)',
+    ticketPaymentHelp:'Для билета в CAD укажите отдельную Square-ссылку именно этого мероприятия, для EUR — PayPal Payment Link. Не используйте ссылки Session/консультаций. Оплата сама по себе не регистрирует участника и не гарантирует место. Перед публикацией проверяются получатель и точная сумма.',
     sent:'Отправлено на проверку.',saved:'Черновик сохранён.',pausedNotice:'Мероприятие скрыто из публичного списка.',
     archivedNotice:'Мероприятие перемещено в архив.',error:'Не удалось сохранить мероприятие.',
     dateError:'Укажите корректную дату и время начала.',timeError:'Такого времени нет в часовом поясе (переход на летнее/зимнее время).',
@@ -59,6 +64,8 @@ const copy = {
     pricing:'Precio',free:'Gratis',fixed:'Precio fijo',contact:'Consultar',amount:'Importe',
     photo:'Portada',titleHelp:'Basta con un idioma; se mostrará el original si falta una traducción.',
     registrationHelp:'Usa una página de registro. No incluyas información privada de clientes.',
+    ticketPayment:'Enlace de pago de entrada (opcional)',
+    ticketPaymentHelp:'Para entradas en CAD usa un enlace Square específico del evento; para EUR un PayPal Payment Link. No reutilices enlaces de sesiones personales. Pagar no inscribe ni reserva plaza automáticamente. Revisa el destinatario y precio antes de publicar.',
     sent:'Evento enviado a revisión.',saved:'Borrador guardado.',pausedNotice:'Evento retirado del calendario.',
     archivedNotice:'Evento archivado.',error:'No se pudo guardar.',dateError:'Introduce una fecha y hora válida.',
     timeError:'La hora no existe en esta zona horaria.',confirm:'¿Archivar evento?',locationHelp:'Indica un lugar.',
@@ -146,7 +153,11 @@ export default function PracticeEvents({locale='en', accountId}) {
     setLanguage(languages.includes(locale)?locale:'en')
   }
   function close() {setEditing(null);setError('')}
-  const change=(key,value)=>setForm(prev=>({...prev,[key]:value}))
+  const change=(key,value)=>setForm(prev=>({
+    ...prev,[key]:value,
+    ...((key==='pricingMode'&&value!=='fixed')||
+      (key==='currency'&&!['CAD','EUR'].includes(value)) ? {ticketPaymentHref:''} : {}),
+  }))
   const changeText=(key,value)=>setForm(prev=>({...prev,[key]:{...prev[key],[language]:value}}))
   const reportError=err=>{
     if(err.message==='INVALID_EVENT_DATE')return t.dateError
@@ -226,6 +237,13 @@ export default function PracticeEvents({locale='en', accountId}) {
           <div className={styles.priceRow}><input type="number" min="0" max="100000" step="0.01" value={form.priceAmount} onChange={e=>change('priceAmount',e.target.value)}/>
           <select value={form.currency} onChange={e=>change('currency',e.target.value)}>{['CAD','USD','EUR','GBP'].map(c=><option key={c}>{c}</option>)}</select></div>
         </label>}
+        {form.pricingMode==='fixed'&&['CAD','EUR'].includes(form.currency)&&
+          <label className={styles.full}>{t.ticketPayment}
+            <input type="url" value={form.ticketPaymentHref||''} maxLength={512}
+              autoComplete="url" placeholder={form.currency==='CAD'?'https://square.link/u/...':'https://www.paypal.com/ncp/payment/...'}
+              onChange={e=>change('ticketPaymentHref',e.target.value)} />
+            <small>{t.ticketPaymentHelp}</small>
+          </label>}
       </div>
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} disabled={busy||photoBusy} onClick={()=>save(false)}><Save size={15}/>{t.save}</button>
