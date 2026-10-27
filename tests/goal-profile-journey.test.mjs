@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { GOAL_RATING_KEYS, GOAL_RATING_LABELS, GOAL_SUPPORT_RULES, goalSupportFacetForScale, normalizeGoalCheckin } from '../lib/profile/goal-profile.js'
+import { GOAL_RATING_KEYS, GOAL_RATING_LABELS, GOAL_SUPPORT_RULES, goalSupportFacetForScale, eligibleGoalSupportEntry, normalizeGoalCheckin } from '../lib/profile/goal-profile.js'
 import { normalizeDevelopmentGoals, DEVELOPMENT_GOALS_VERSION, DEFAULT_DEVELOPMENT_TARGETS } from '../lib/profile/development-program.js'
 import { PROFILE_FOCUS_AREAS, PROFILE_RESEARCH_AXES, isProfileScaleRelevant } from '../lib/profile/profile-scale-selection.js'
 import { PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER } from '../lib/assessments/portrait-sectors.js'
@@ -52,28 +52,66 @@ test('self-ratings reject inferred or malformed scores and fields that might lea
 })
 
 test('supporting tests must match canonical key AND an actual scored axis, not keywords or general traits', () => {
-  assert.equal(goalSupportFacetForScale('hh-weekly-pulse','clarity'),'clarity')
-  assert.equal(goalSupportFacetForScale('hh-weekly-pulse','relationships'),null)
-  assert.equal(goalSupportFacetForScale('hh-motivation-spark','energy'),'motivation')
-  assert.equal(goalSupportFacetForScale('hh-confidence-pulse','self_support'),'confidence')
-  assert.equal(goalSupportFacetForScale('fictional','self_support'),null)
+  assert.equal(goalSupportFacetForScale('hh-weekly-pulse',{key:'weekly.clarity',axis:'clarity'},'v1'),'clarity')
+  assert.equal(goalSupportFacetForScale('hh-weekly-pulse',{key:'weekly.connection',axis:'relationships'}),null)
+  assert.equal(goalSupportFacetForScale('hh-weekly-pulse',{key:'weekly.clarity',axis:'clarity'},'v2'),null)
+  assert.equal(goalSupportFacetForScale('hh-motivation-spark',{key:'resources.motivation_spark.overall',axis:'energy'}),'motivation')
+  assert.equal(goalSupportFacetForScale('hh-confidence-pulse',{key:'resources.confidence_pulse.overall',axis:'self_support'}),'confidence')
+  assert.equal(goalSupportFacetForScale('fictional',{key:'resource.self_support',axis:'self_support'}),null)
   for(const rule of GOAL_SUPPORT_RULES){
     assert.ok(GOAL_RATING_KEYS.includes(rule.facet))
-    assert.ok(isProfileScaleRelevant({key:rule.testKey},{axis:rule.axis},'goal'))
-    assert.equal(isProfileScaleRelevant({key:'unrelated'},{axis:rule.axis},'goal'),false)
+    assert.ok(rule.dimensionKey.length > 4 && rule.version === 'v1')
+    const correct = {key:rule.dimensionKey,axis:rule.axis}
+    assert.equal(goalSupportFacetForScale(rule.testKey,correct,rule.version),rule.facet)
+    assert.ok(isProfileScaleRelevant({key:rule.testKey,version:rule.version},correct,'goal'))
+    assert.equal(isProfileScaleRelevant({key:'unrelated',version:rule.version},correct,'goal'),false)
+    assert.equal(goalSupportFacetForScale(rule.testKey,{...correct,key:'unrelated'},rule.version),null)
+    assert.equal(goalSupportFacetForScale(rule.testKey,correct,'v999'),null)
   }
-  assert.equal(isProfileScaleRelevant({key:'hh-weekly-pulse'},{axis:'clarity'},'work'),false)
+  assert.equal(isProfileScaleRelevant({key:'hh-weekly-pulse',version:'v1'},{key:'weekly.clarity',axis:'clarity'},'work'),false)
 })
 
-test('live eligible account catalogue is used for supplementary Goal tests, never invented psychometrics', () => {
+test('every goal source maps an exact registered versioned scorer dimension, not generic axes', () => {
   for (const locale of ['en','ru','es']) {
-    const source=buildExplorerEntries({locale,audience:'account'})
-    const relevant=source.filter(entry=>entry.selectable && entry.startable &&
-      entry.rightsStatus==='cleared' && entry.free && !entry.explicitOptIn &&
-      GOAL_SUPPORT_RULES.some(rule=>rule.testKey===entry.key &&
-        (entry.scaleGuide?.scales||[]).some(scale=>scale.axis===rule.axis)))
-    assert.ok(relevant.length >= 1,locale)
-    assert.ok(relevant.every(entry=>entry.definition),locale)
+    const source = buildExplorerEntries({locale:locale==='es'?'en':locale,audience:'account'})
+    for (const rule of GOAL_SUPPORT_RULES) {
+      const entry = source.find(item => item.key === rule.testKey)
+      assert.ok(entry && entry.definition,locale+': missing source '+rule.testKey)
+      assert.equal(entry.definition.version,rule.version,rule.testKey+' version')
+      assert.ok(entry.scaleGuide?.scales?.some(scale => scale.key === rule.dimensionKey &&
+        scale.axis === rule.axis),locale+': missing EXACT score '+rule.testKey+'/'+rule.dimensionKey)
+      assert.equal(goalSupportFacetForScale(rule.testKey,{
+        key:rule.dimensionKey,axis:rule.axis},rule.version),rule.facet)
+      assert.equal(eligibleGoalSupportEntry({
+        ...entry, rightsStatus:'restricted'},rule),false)
+      assert.equal(eligibleGoalSupportEntry({
+        ...entry, explicitOptIn:true},rule),false)
+      assert.equal(eligibleGoalSupportEntry({
+        ...entry, definition:{...entry.definition,version:'v999'}},rule),false)
+    }
+  }
+})
+
+test('all three goal axes have real, rights-cleared free guest starter scales', () => {
+  for (const locale of ['en','ru','es']) {
+    const source = buildExplorerEntries({locale:locale==='es'?'en':locale,audience:'guest'})
+    const supported = GOAL_SUPPORT_RULES.filter(rule => {
+      const entry = source.find(item => item.key === rule.testKey)
+      return eligibleGoalSupportEntry(entry,rule,'guest')
+    })
+    for(const facet of GOAL_RATING_KEYS) {
+      assert.ok(supported.some(rule => rule.facet === facet),
+        locale+': no eligible source backing goal facet '+facet)
+    }
+    assert.ok(supported.every(rule => {
+      const entry = source.find(item => item.key === rule.testKey)
+      return entry.guestEligible===true && entry.free===true &&
+        entry.starterEligible!==false && entry.rightsStatus==='cleared' &&
+        entry.definition?.version===rule.version
+    }))
+    assert.equal(eligibleGoalSupportEntry({
+      ...source.find(e=>e.key==='hh-weekly-pulse'),guestEligible:false
+    }, GOAL_SUPPORT_RULES.find(r=>r.testKey==='hh-weekly-pulse'),'guest'),false)
   }
 })
 
@@ -86,7 +124,8 @@ test('saved goal check-in is read only under account identity; conversion remain
   assert.match(panel,/appFetch\('development-goals', undefined, 'GET', \{ accountId \}\)/)
   assert.match(panel,/data-goal-profile/)
   assert.match(panel,/data-goal-support-facet/)
-  assert.match(panel,/explicitOptIn !== true/)
+  assert.match(panel,/eligibleGoalSupportEntry\(test, rule\)/)
+  assert.match(panel,/verifiedHistoryView\(results\)\.current/)
   assert.match(panel,/SERVICE_PATH/)
   assert.match(panel,/completed/)
   assert.match(editor,/data-goal-checkin-editor/)
