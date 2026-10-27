@@ -109,21 +109,30 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
-      // Read-only interaction: the hero CTA reveals the approved one-field,
-      // opt-in phone capture. Do not submit any contact or open a messenger.
+      // Read-only P0 booking gate: the hero now uses the real €100/60-min
+      // CRM enquiry, not the retired direct-messenger form. A click must not
+      // create an enquiry, confirm a time, reveal payment, or open a messenger.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');
-        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
-        await trigger.waitFor({state:"visible"});
+        const flow = hero.locator('[data-session-booking-flow][data-booking-sku="personal-session-60"]');
+        await flow.waitFor({state:"visible",timeout:15000});
+        const trigger = flow.locator('[data-contact-order][data-booking-cta="book"]');
+        await trigger.waitFor({state:"visible",timeout:15000});
+        assert.equal(await flow.locator('[data-booking-cart-link]').count(), 0,
+          key + ": payment cart must be gated by practitioner time confirmation");
         await trigger.click();
-        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
-        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
-          issues.push("compact Telegram option missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
-          issues.push("compact opt-in consent missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
-          issues.push("long email capture incorrectly expanded from the hero");
+        await flow.locator('[data-booking-step="contact"]').waitFor({state:"visible",timeout:15000});
+        if (await trigger.getAttribute("aria-expanded") !== "true")
+          issues.push("€100 CRM enquiry did not expand");
+        if (await flow.locator('[data-booking-step="contact"] input[type="checkbox"]').count() !== 1)
+          issues.push("€100 booking consent missing");
+        if (await flow.locator('[data-booking-step="contact"] input[type="email"]').count() !== 0)
+          issues.push("unexpected email requirement before optional Google sign-in");
+        if (await flow.locator('[data-booking-payment-options], [data-booking-cart-link]').count() !== 0)
+          issues.push("payment exposed before an agreed session time");
         await trigger.click();
+        if (await trigger.getAttribute("aria-expanded") !== "false")
+          issues.push("€100 CRM enquiry did not close");
       }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
