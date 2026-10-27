@@ -11,7 +11,7 @@ import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploade
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
 import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
-import {OWNER_AI_COMMANDS} from '../lib/practitioners/owner-ai-telegram.mjs'
+import {OWNER_AI_COMMANDS,ownerScopedTelegramCommands} from '../lib/practitioners/owner-ai-telegram.mjs'
 
 const TIME=1793001600000
 const BOT='holistichouse_bot'
@@ -340,6 +340,20 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  const transport=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
  assert.match(transport,/saved\[i\]\?\.description===command.description/)
 });
+
+test('private /video command remains registered if Owner AI is disabled',()=>{
+ const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
+   ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
+ assert.deepEqual(menu('shared_practice',false,true),['audio','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,false),[])
+ assert.deepEqual(menu('dedicated',true,true),[])
+ const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
+ assert.match(source,/ownerMenu\(env\)/)
+ assert.match(source,/commands:ownerCommands,scope:\{type:'chat',chat_id:chatNumber\}/)
+ assert.match(source,/ownerCommands.every\(\(command,i\)=>/)
+ assert.match(source,/!info.allowed_updates\?\.includes\('callback_query'\)/)
+})
 
 test('admin YouTube upload guide points owner video to the same Dot bot, not CRM',()=>{
  const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
