@@ -314,14 +314,15 @@ test('the saved report honors the exact scale selected by the portrait Details l
   assert.match(compact,/focusedIndex >= 0 \? focusedIndex/)
 })
 
-test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
+test('mobile CSS keeps All plus five profiles in one row at 320px with 44px taps',()=>{
   const css=read('components/app/test-explorer.module.css')
-  const fresh=css.slice(css.lastIndexOf('/* Portrait v4:'))
+  const fresh=css.slice(css.lastIndexOf('/* Five life profiles plus All:'))
   assert.ok(fresh.length>1500)
   assert.match(fresh,/\.visual:not\(\.visualCompact\) \.portraitSectorGrid\{/)
-  assert.match(fresh,/grid-template-columns:minmax\(43px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.68fr\) repeat\(5,minmax\(44px,1fr\)\)/)
   assert.match(fresh,/@media\(max-width:440px\)\{/)
-  assert.match(fresh,/grid-template-columns:minmax\(39px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.68fr\) repeat\(5,minmax\(44px,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.64fr\) repeat\(5,minmax\(44px,1fr\)\)/)
   assert.match(fresh,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\)\{[\s\S]*?aspect-ratio:360 \/ 390/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\) > \.portraitRadar\{[\s\S]*?height:100%/)
