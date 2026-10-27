@@ -51,7 +51,7 @@ test('server checks practitioner/RLS, prevents double booking and separates paym
   const booking = read('lib/practitioners/public-service-enquiry.js')
   const owner = read('lib/practitioners/repository.js')
   const status = read('app/api/service-enquiries/booking-status/route.js')
-  const migration = read('supabase/migrations/20261027134425_alchemy_booking_after_owner_confirmation.sql')
+  const migration = read('supabase/migrations/20261027144834_alchemy_booking_after_owner_confirmation.sql')
   const chooser = read('components/contact-channel-chooser.tsx')
   assert.match(booking,/if \(input.action === 'confirm_booking'\)/)
   assert.match(booking,/for update/)
