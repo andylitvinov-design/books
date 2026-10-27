@@ -10,7 +10,7 @@ const source=read('components/mobile-bottom-navigation.tsx')
 // claim of native browser focus, scrolling or pointer behavior.
 function fixture({sourceOverride=source,mobile=true,hidden=false,retainedInline=false,webkitImportant=false}={}) {
   const properties=new Map(),listeners=new Map(),windowListeners=new Map(),frames=new Map(),timers=new Map()
-  let next=0,observer,disconnected=false,dockHeight=69,compact=true
+  let next=0,observer,disconnected=false,dockHeight=69,compact=true,phoneChooser=true,phoneField=true
   // Pinned WebKit MutableStyleProperties.cpp:262-267 rejects a normal
   // custom-property write over an existing important declaration, even when
   // its value differs. This models that source path, not native browser proof.
@@ -22,10 +22,13 @@ function fixture({sourceOverride=source,mobile=true,hidden=false,retainedInline=
     getPropertyValue:name=>properties.get(name)?.value||'',getPropertyPriority:name=>properties.get(name)?.priority||''}
   class Element {closest(){return null}}
   class HTMLInputElement extends Element {}
-  const form=new Element(),label=new Element(),span=new Element(),consent=new HTMLInputElement(),phone=new HTMLInputElement()
+  const form=new Element(),label=new Element(),span=new Element(),consent=new HTMLInputElement(),phone=new HTMLInputElement(),button=new Element(),buttonChild=new Element()
   Object.assign(consent,{type:'checkbox',disabled:false,form})
   Object.assign(phone,{type:'tel',form})
-  form.closest=selector=>{assert.equal(selector,'[data-contact-channel-chooser][data-compact-phone-trigger="true"]');return compact?form:null}
+  form.closest=selector=>{if(selector==='[data-contact-channel-chooser][data-reiki-phone-enquiry]')return phoneChooser?form:null;assert.equal(selector,'[data-contact-channel-chooser][data-compact-phone-trigger="true"]');return compact?form:null}
+  phone.closest=selector=>selector==='[data-phone-country-input]'&&phoneField?phone:null
+  Object.assign(button,{form,disabled:false,isConnected:true})
+  for(const target of [button,buttonChild])target.closest=selector=>selector==='button[data-contact-channel-submit]'?button:null
   label.querySelector=selector=>{assert.equal(selector,'input[type="checkbox"]');return consent}
   for(const target of [consent,label,span])target.closest=selector=>selector==='label'?label:selector==='input[type="checkbox"]'&&target===consent?consent:null
   const add=(map,type,fn,options)=>{const list=map.get(type)||[];list.push({fn,options});map.set(type,list)}
@@ -48,15 +51,15 @@ function fixture({sourceOverride=source,mobile=true,hidden=false,retainedInline=
   const fire=(type,event={},where=listeners)=>{for(const {fn}of[...(where.get(type)||[])])fn({type,...event})}
   const event={isTrusted:true,isPrimary:true,button:0,pointerId:7,target:consent}
   return {doc,style,clearance,form,phone,consent,label,span,properties,listeners,windowListeners,timers,frames,
-    height:()=>2400+parseFloat(clearance()),
+    button,buttonChild,height:()=>2400+parseFloat(clearance()),
     focusPhone(){doc.activeElement=phone;if(!retainedInline)observer();fire('focusin')},
     press(overrides={}){fire('pointerdown',{...event,...overrides})},
-    blurPhone(){doc.activeElement=consent;fire('focusout');fire('focusin')},
+    blurPhone(target=consent){doc.activeElement=target;fire('focusout');fire('focusin')},
     release(overrides={}){fire('pointerup',{...event,...overrides})},
     cancel(overrides={}){fire('pointercancel',{...event,...overrides})},
     fire,fireWindow:(type,event={})=>fire(type,event,windowListeners),
     flush(){for(const [id,fn]of[...timers]){timers.delete(id);fn()}},
-    resize(height){dockHeight=height;observer()},setCompact:value=>compact=value,
+    resize(height){dockHeight=height;observer()},setCompact:value=>compact=value,setPhoneChooser:value=>phoneChooser=value,setPhoneField:value=>phoneField=value,
     cleanup(){cleanup?.()},get disconnected(){return disconnected},
   }
 }
@@ -372,4 +375,97 @@ test('height completion does not remove an unrelated inline priority when no own
     assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'important')
   }
   f.cleanup()
+})
+
+// Source-backed regression: hosted Chromium observed dock clearance 0 -> 69
+// and root height 5995 -> 6064 during focusout before the pointer release.
+// This model checks the authored writer; it does not simulate browser scrolling.
+for(const retainedInline of [false,true])for(const target of ['button','buttonChild'])test('authored clearance pin also protects same compact phone channel '+target+'; retained='+retainedInline,()=>{
+  const f=fixture({retainedInline});f.focusPhone();const height=f.height(),clearance=f.clearance()
+  f.press({target:f[target]});assert.equal(f.clearance(),clearance)
+  f.blurPhone(f.button);f.resize(69)
+  assert.equal(f.height(),height,'Allowed height writer must defer during the channel press')
+  assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'important')
+  f.release({target:f.button});assert.equal(f.height(),height)
+  f.flush();assert.equal(f.clearance(),'69px');assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'')
+  f.cleanup();assert.equal(f.properties.size,0);assert.equal(f.timers.size,0)
+})
+
+for(const invalid of ['desktop','untrusted','secondary','non-primary','disabled','disconnected','wrong-form','non-tel','wrong-chooser','wrong-phone-field'])test('channel geometry pin excludes '+invalid,()=>{
+  const f=fixture({mobile:invalid!=='desktop'});f.focusPhone();const event={target:f.button}
+  if(invalid==='untrusted')event.isTrusted=false
+  if(invalid==='secondary')event.button=2
+  if(invalid==='non-primary')event.isPrimary=false
+  if(invalid==='disabled')f.button.disabled=true
+  if(invalid==='disconnected')f.button.isConnected=false
+  if(invalid==='wrong-form')f.button.form={}
+  if(invalid==='non-tel')f.phone.type='email'
+  if(invalid==='wrong-chooser')f.setPhoneChooser(false)
+  if(invalid==='wrong-phone-field')f.setPhoneField(false)
+  f.press(event);assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'')
+  f.blurPhone();assert.equal(f.clearance(),'69px');f.cleanup()
+})
+
+for(const terminal of ['cancel','keydown','blur','pagehide','visibilitychange','cleanup'])test('channel geometry pin releases through existing '+terminal+' lifecycle, without activation',()=>{
+  const f=fixture();f.focusPhone();f.press({target:f.button});f.blurPhone(f.button);f.release({target:f.button});assert.equal(f.timers.size,1)
+  if(terminal==='cancel')f.cancel()
+  else if(terminal==='keydown')f.fire('keydown')
+  else if(terminal==='visibilitychange'){f.doc.visibilityState='hidden';f.fire('visibilitychange')}
+  else if(terminal==='cleanup')f.cleanup()
+  else f.fireWindow(terminal)
+  assert.equal(f.timers.size,0);assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'')
+  if(terminal!=='cleanup')f.cleanup()
+})
+
+test('channel physical outside release still ends geometry hold without moving focus or scrolling',()=>{
+  const f=fixture();f.focusPhone();f.press({target:f.button});f.blurPhone(f.button)
+  f.release({target:new Object(),clientX:300,clientY:100});f.flush()
+  assert.equal(f.clearance(),'69px');assert.equal(f.doc.activeElement,f.button);assert.equal(f.timers.size,0)
+  f.cleanup()
+})
+
+test('removing channel eligibility rejects the proposed geometry contract on authored effect code',()=>{
+  const gate='if (!fromConsent && !fromPhoneChannel) return;';assert.equal(source.split(gate).length,2)
+  const f=fixture({sourceOverride:source.replace(gate,'if (!fromConsent) return;'),retainedInline:true})
+  f.focusPhone();const height=f.height();f.press({target:f.button});f.blurPhone(f.button)
+  assert.throws(()=>assert.equal(f.height(),height),{code:'ERR_ASSERTION'});f.cleanup()
+})
+
+for(const webkitImportant of [false,true])test('observed focusout writer keeps the 5995 root extent until physical release; WebKit priority='+webkitImportant,()=>{
+  const f=fixture({webkitImportant,retainedInline:true});f.focusPhone()
+  const rootHeight=()=>5995+parseFloat(f.clearance())
+  assert.equal(rootHeight(),5995)
+  f.press({target:f.button,clientX:106,clientY:816})
+  f.blurPhone(f.button);f.resize(69)
+  assert.equal(rootHeight(),5995,'Focusout cannot reintroduce the measured 69px clearance mid-press')
+  f.release({target:f.button,clientX:106,clientY:816})
+  assert.equal(rootHeight(),5995,'Pin survives physical release until existing next-task flush')
+  f.flush();assert.equal(rootHeight(),6064);f.cleanup()
+})
+
+test('prior eligibility reproduces the observed 69px focusout extent jump',()=>{
+  const gate='if (!fromConsent && !fromPhoneChannel) return;';assert.equal(source.split(gate).length,2)
+  const f=fixture({sourceOverride:source.replace(gate,'if (!fromConsent) return;'),retainedInline:true})
+  f.focusPhone();const rootHeight=()=>5995+parseFloat(f.clearance());assert.equal(rootHeight(),5995)
+  f.press({target:f.button});f.blurPhone(f.button);assert.equal(rootHeight(),6064)
+  f.cleanup()
+})
+
+for(const terminal of ['cancel','keydown','blur','pagehide','visibilitychange','cleanup'])test('in-flight channel pin terminates before pointerup on '+terminal,()=>{
+  const f=fixture();f.focusPhone();f.press({target:f.button});f.blurPhone(f.button)
+  assert.equal(f.clearance(),'0px');assert.equal(f.timers.size,0)
+  if(terminal==='cancel')f.cancel()
+  else if(terminal==='keydown')f.fire('keydown')
+  else if(terminal==='visibilitychange'){f.doc.visibilityState='hidden';f.fire('visibilitychange')}
+  else if(terminal==='cleanup')f.cleanup()
+  else f.fireWindow(terminal)
+  assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'');assert.equal(f.timers.size,0)
+  if(terminal!=='cleanup'){assert.equal(f.clearance(),'69px');f.cleanup()}
+})
+
+test('foreign pointer release cannot terminate the current channel pin',()=>{
+  const f=fixture();f.focusPhone();f.press({target:f.button});f.blurPhone(f.button)
+  f.release({target:f.button,pointerId:9});f.cancel({pointerId:9})
+  assert.equal(f.clearance(),'0px');assert.equal(f.timers.size,0)
+  f.release({target:f.button});f.flush();assert.equal(f.clearance(),'69px');f.cleanup()
 })

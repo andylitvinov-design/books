@@ -60,7 +60,7 @@ jobs:
         run: node --test tests/asrs6-cabinet-entry-verifier.test.mjs tests/mhc-profile-pdf-readiness.test.mjs
       - name: Public service browser contract regressions
         if: matrix.suite == 'core'
-        run: node --test tests/alchemy-panel-contract.test.mjs tests/dao-free-entry-verifier.test.mjs tests/alchemy-compact-cta-verifier.test.mjs
+        run: node --test tests/alchemy-panel-contract.test.mjs tests/dao-free-entry-verifier.test.mjs tests/alchemy-compact-cta-verifier.test.mjs tests/opora-public-route-precompile.test.mjs
       - name: Isolated test tools
         shell: bash
         run: |

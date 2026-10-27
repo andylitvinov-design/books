@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Compass, Headphones, HeartHandshake } from "lucide-react";
+import { ArrowRight, Compass, Headphones, HeartHandshake, Sparkles } from "lucide-react";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { stageRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
@@ -22,6 +22,7 @@ const copy = {
     energyHint: "Request a session with a practitioner",
     dao: "Taoist insights",
     daoHint: "Ask a question · free I Ching reflection",
+    mobileLink: "Try the new mobile Support screen",
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE · ПРАКТИКИ И ПОДСКАЗКИ",
@@ -34,6 +35,7 @@ const copy = {
     energyHint: "Запросить сессию у мастера",
     dao: "Даосские подсказки",
     daoHint: "Задать вопрос · бесплатно · И-Цзин",
+    mobileLink: "Открыть новый мобильный экран поддержки",
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · PRÁCTICAS Y ORIENTACIÓN",
@@ -46,6 +48,7 @@ const copy = {
     energyHint: "Solicitar una sesión con un profesional",
     dao: "Consejos taoístas",
     daoHint: "Haz tu pregunta · reflexión gratuita del I Ching",
+    mobileLink: "Ver la nueva pantalla móvil de apoyo",
   },
 } as const;
 
@@ -126,6 +129,9 @@ export function HolisticSupportChoices({ locale }: { locale: PublicLocale }) {
               <ArrowRight className={styles.journeyArrow} size={20} aria-hidden="true" />
             </button>
           </div>
+          <Link className={styles.mobileExperienceLink} href={"/" + locale + "/holistic-support/mobile"} prefetch={false} data-support-alternative-link>
+            <Sparkles size={18} aria-hidden="true" />{t.mobileLink}<ArrowRight size={18} aria-hidden="true" />
+          </Link>
         </div>
       </section>
       {daoOpen ? (

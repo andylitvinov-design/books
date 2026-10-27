@@ -21,7 +21,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // /client and /client/tests are public test-selection pages; other client
   // paths, private account routes and documents must keep the bar hidden.
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
-  const hidden = /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
+  const hidden = /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname)
+    || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));
   useEffect(() => {
@@ -64,11 +65,19 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       const label = event.target.closest('label');
       const control = event.target.closest<HTMLInputElement>('input[type="checkbox"]')
         || label?.querySelector<HTMLInputElement>('input[type="checkbox"]');
-      const form = control?.form;
+      const channelButton = control ? null : event.target.closest<HTMLButtonElement>('button[data-contact-channel-submit]');
+      const form = control?.form || channelButton?.form;
       const editor = document.activeElement;
-      if (!control || control.disabled || !form || !(editor instanceof HTMLInputElement)
-        || editor.type !== 'tel' || editor.form !== form
-        || !form.closest('[data-contact-channel-chooser][data-compact-phone-trigger="true"]')) return;
+      if (!form || !(editor instanceof HTMLInputElement) || editor.type !== 'tel' || editor.form !== form) return;
+      const fromConsent = control && !control.disabled
+        && form.closest('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
+      // The current chooser's phone-to-channel gesture needs the same computed
+      // clearance pin; hiding the dock alone does not preserve root geometry.
+      const phoneField = editor.closest('[data-phone-country-input]');
+      const fromPhoneChannel = channelButton?.isConnected === true && !channelButton.disabled
+        && form.closest('[data-contact-channel-chooser][data-reiki-phone-enquiry]')
+        && phoneField;
+      if (!fromConsent && !fromPhoneChannel) return;
       // Focused-editor CSS can reserve zero dock space. Preserve that computed
       // geometry through the real press, not an assumed nonzero dock height.
       // Phone blur must not resize the root scroller between down and release.

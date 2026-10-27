@@ -252,6 +252,12 @@
 .journeyArrow{width:15px;height:15px}
 }
 
+/* Optional mobile-first alternative; standard Support remains unchanged. */
+.mobileExperienceLink{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin-top:13px;padding:11px 17px;border:1px solid #a7e2cc;border-radius:14px;background:#0d8662;color:#fffaf2;text-decoration:none;font:750 15px/1.3 Arial,Helvetica,sans-serif}
+.mobileExperienceLink:hover{background:#066f52}
+.mobileExperienceLink:focus-visible{outline:3px solid #f7d18a;outline-offset:4px}
+@media(max-width:700px){.mobileExperienceLink{width:100%;min-height:48px;font-size:14px}}
+
 /* On short 320px phones the fixed site chrome leaves less than 390px for
    the entry. Keep every choice and its copy; put the explanatory paragraph
    after the controls instead of shrinking option labels or clipping a choice.

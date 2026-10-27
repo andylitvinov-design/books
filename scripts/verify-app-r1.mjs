@@ -1,3 +1,4 @@
+import { precompileOporaPublicRoutes } from './helpers/opora-public-route-precompile.mjs'
 import { withPublicServiceNavigationDiagnostics } from './helpers/public-service-navigation-diagnostics.mjs'
 import { verifyOporaPublicEntry } from './helpers/opora-public-entry-verifier.mjs'
 import { withPublicPickerActionDiagnostics } from './helpers/public-picker-action-diagnostics.mjs'
@@ -26,6 +27,9 @@ import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only isolated loopback browser verification is permitted')
+// Prepared dev-server acceptance; cold compilation/HMR overlap remains unresolved.
+// No browser/HMR client exists yet; the unchanged anonymous OPORA journey runs first.
+await precompileOporaPublicRoutes({origin})
 const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
@@ -567,6 +571,12 @@ async function verifyPublicServiceConversionJourneys(){
 }
 
 try {
+ // Preserve the anonymous OPORA deep link, explicit consent boundary, and
+ // all seven-skill/14-day checks through its real full-programme link.
+ await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})
+ await page.setViewportSize({width:390,height:844})
+ passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
+
  await assertNativeCompactChannelGestures(browser,expect,{origin})
  passed('native compact channel mouse/touch gestures and navigation restoration without network')
  await verifyPublicServiceConversionJourneys()
@@ -733,12 +743,6 @@ try {
  await guestPickerContext.close()
  guestPickerFailurePage=null
  passed('pre-login test picker, optional filters, recommendations and full database')
-
- // Preserve the anonymous OPORA deep link, explicit consent boundary, and
- // all seven-skill/14-day checks through its real full-programme link.
- await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})
- await page.setViewportSize({width:390,height:844})
- passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})

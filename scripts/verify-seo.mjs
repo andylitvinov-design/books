@@ -4,13 +4,14 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { getPrioritySitemapEntries, SEO_PRIORITY_PAGE_FAMILIES } from "../data/seo-priority-paths.js";
+import { auditDelegatedHeading, delegatedHeadingPage, delegatedHeadingComponent } from "./seo-delegated-heading.mjs";
 
 const projectRoot = new URL("../", import.meta.url);
-const read = (path) => readFileSync(new URL(path, projectRoot), "utf8");
+const readSource = (path) => readFileSync(new URL(path, projectRoot), "utf8");
 const origin = "https://holistichouse.vercel.app";
 const publicRouteSources = [
   ["app/[locale]/about/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
-  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
+  [delegatedHeadingPage, /generateMetadata/, /alternates:/],
   ["app/[locale]/academy/[[...slug]]/page.tsx", /generateMetadata/, /alternates:/],
   ["components/yggdrasil-free-initiation.tsx", /<h1/],
 ];
@@ -21,7 +22,7 @@ const privateRouteSources = [
   "app/admin/clients/page.js",
 ];
 
-export function auditSeoSources() {
+export function auditSeoSources({ readSource: read = readSource } = {}) {
   const failures = [];
   const check = (condition, message) => { if (!condition) failures.push(message); };
   const entries = getPrioritySitemapEntries(origin);
@@ -53,6 +54,8 @@ export function auditSeoSources() {
     check(existsSync(new URL(path, projectRoot)), "Missing private route source: " + path);
     check(/robots:\s*\{\s*index:\s*false/.test(read(path)), "Private route must remain noindex: " + path);
   }
+  const heading = auditDelegatedHeading(read(delegatedHeadingPage), read(delegatedHeadingComponent));
+  failures.push(...heading.failures);
   const sitemapCode = read("app/sitemap.ts");
   check(/getPrioritySitemapEntries\(base\)/.test(sitemapCode), "Priority sitemap entries are not integrated");
   check(/\.\.\.existing, \.\.\.entries, \.\.\.priorityEntries, \.\.\.network/.test(sitemapCode), "Sitemap merge or deduplication contract changed");
