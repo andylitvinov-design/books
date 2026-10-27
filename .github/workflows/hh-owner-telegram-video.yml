@@ -22,6 +22,8 @@ on:
       - "tests/owner-telegram-audio-combine.test.mjs"
       - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
       - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
+      - "supabase/migrations/20261027195009_hh_owner_video_youtube_ru_en_destinations_20261027.sql"
+      - "tests/owner-telegram-audio-inbox.test.mjs"
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -47,7 +49,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Telegram and audio regression tests
-        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
+        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-inbox.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files

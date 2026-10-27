@@ -5,7 +5,7 @@ import {
   OWNER_AUDIO_MAX_BYTES,OWNER_AUDIO_DESTINATION_MINUTES,OWNER_AUDIO_FOLDERS,
   ownerAudioFolder,ownerAudioType,
   parseOwnerAudioMessage,parseOwnerAudioCommand,parseOwnerAudioCallback,
-  ownerAudioHelpMessage,ownerAudioMaterialsMessage,ownerAudioDestinationKeyboard,
+  ownerAudioHelpMessage,ownerAudioFoldersMessage,ownerAudioMaterialsMessage,ownerAudioDestinationKeyboard,
   ownerAudioDestinationSelectedMessage,audioMatchesMagic,
 } from '../lib/practitioners/owner-telegram-audio-model.mjs'
 
@@ -93,13 +93,18 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   audio.message.from.id=90000
   assert.equal(parseOwnerAudioCommand(audio,NOW),null)
   const prompt=ownerAudioHelpMessage()
-  assert.match(prompt.text,/Переслать.*Dot.*Отправить/)
-  assert.match(prompt.text,/✅/)
+  assert.match(prompt.text,/выбери YouTube/)
   assert.match(prompt.text,/20 МБ/)
   assert.doesNotMatch(prompt.text,/файл уже сохранён/)
+  const controls=prompt.reply_markup.inline_keyboard.flat()
+  assert.ok(controls.some(button=>button.url==='https://t.me/Andydotbot?start=video_ru'))
+  assert.ok(controls.some(button=>button.url==='https://t.me/Andydotbot?start=video_en'))
+  assert.ok(controls.some(button=>button.callback_data==='hh-audio:folders'))
+  assert.ok(!controls.some(button=>button.callback_data?.startsWith('hh-audio:to:')))
+  assert.ok(ownerAudioFoldersMessage().reply_markup.inline_keyboard.flat()
+    .some(button=>button.callback_data==='hh-audio:to:meditations'))
   assert.match(ownerAudioMaterialsMessage().text,/admin\/materials\/telegram/)
-  assert.ok(prompt.reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-audio:to:meditations'))
-  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url==='https://holistichouse.vercel.app/admin/materials/telegram')
+  const library=controls.find(button=>button.url==='https://holistichouse.vercel.app/admin/materials/telegram')
   assert.equal(library.url,'https://holistichouse.vercel.app/admin/materials/telegram')
 })
 test('in-chat audio entry button is owner-only and cannot alter folders by itself',()=>{
@@ -108,6 +113,8 @@ test('in-chat audio entry button is owner-only and cannot alter folders by itsel
     from:{id:123456,is_bot:false},
     message:{chat:{type:'private',id:123456},from:{is_bot:true,username:'Andydotbot'}}}}
   assert.equal(parseOwnerAudioCallback(query).action,'help')
+  query.callback_query.data='hh-audio:folders'
+  assert.equal(parseOwnerAudioCallback(query).action,'folders')
   query.callback_query.data='hh-audio:materials'
   assert.equal(parseOwnerAudioCallback(query).action,'materials')
   query.callback_query.message.from.username='EvilBot'

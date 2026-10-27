@@ -4,7 +4,7 @@ import {ownerVideoOauthStateMatches} from '@/lib/practitioners/owner-telegram-vi
 import {getAppConfig} from '@/lib/app/config'
 import {openSealed} from '@/lib/app/crypto'
 import {PRACTITIONER_ID} from '@/data/app-services'
-import {verifyYoutubeRuOwner} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
+import {verifyYoutubeTargetOwner} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
 import {saveOwnerVideoYoutubeConsent,ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -34,7 +34,8 @@ export async function GET(request){
    const config=getAppConfig()
    const cookie=(await cookies()).get(COOKIE)?.value
    const sealed=openSealed(cookie,CONTEXT,config)
-   if(!ownerVideoOauthStateMatches(sealed,state))return result('failed')
+   if(!ownerVideoOauthStateMatches(sealed,state)||!['ru','en'].includes(sealed?.target))
+     return result('failed')
    const payload=new URLSearchParams({code,code_verifier:sealed.verifier,
      grant_type:'authorization_code',
      client_id:process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID,
@@ -50,8 +51,8 @@ export async function GET(request){
      !String(token.scope||'').includes('youtube.upload')||
      !String(token.scope||'').includes('youtube.readonly'))
      return result('failed')
-   const channel=await verifyYoutubeRuOwner(token.access_token)
-   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel)
+   const channel=await verifyYoutubeTargetOwner(token.access_token,sealed.target)
+   await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,sealed.target)
    return result('connected')
  }catch{return result('failed')}
 }
