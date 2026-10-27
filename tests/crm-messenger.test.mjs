@@ -110,7 +110,7 @@ test('Meta provider adapters use the correct official Instagram Login and Page-s
   assert.match(provider,/const INSTAGRAM = 'https:\/\/graph\.instagram\.com'/)
   assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\/messages'/)
   assert.match(provider,/configuredExternalId\('messenger',env\)\+'\/messages'/)
-  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\?fields=id'/)
+  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\?fields=id,username,account_type'/)
 })
 
 test('multiple browser tabs and lost HTTP responses cannot reserve same pending message twice',()=>{
