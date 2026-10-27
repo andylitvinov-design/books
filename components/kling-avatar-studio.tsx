@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import Link from "next/link";
 import {Film, ExternalLink, RefreshCcw} from "lucide-react";
 
 type Locale="en"|"ru"|"es";
@@ -165,7 +166,7 @@ export function KlingAvatarStudio({initialLocale,configured,enabled}:Props){
         {busy?t.busy:t.generate}
       </button>
       <a href="https://kling.ai/feature/avatars" target="_blank" rel="noopener noreferrer" style={{fontSize:13,color:"#634a37",display:"inline-flex",gap:5,alignItems:"center"}}>{t.manual}<ExternalLink size={14}/></a>
-      <a href="/admin/youtube-upload" style={{fontSize:13,color:"#634a37",display:"inline-flex",gap:5,alignItems:"center"}}>{t.google}<ExternalLink size={14}/></a>
+      <Link href="/admin/youtube-upload" style={{fontSize:13,color:"#634a37",display:"inline-flex",gap:5,alignItems:"center"}}>{t.google}<ExternalLink size={14}/></Link>
     </div>
     <div style={{marginTop:15,fontSize:13}}>
       <label style={{display:"grid",gap:5}}>{t.task}
