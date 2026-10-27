@@ -28,7 +28,7 @@ function simulate({status='collecting',n=9,found=n,verified=true,delivered=true,
   }
   const recover=new Function(
     'telegramClientBotMode','ownerTransaction','PRACTITIONER_ID',
-    'OWNER_AUDIO_RECOVERY_BATCH','combineItems','OWNER_AUDIO_COMBINE_MAX_BYTES',
+    'isRecoveryBatch','combineItems','OWNER_AUDIO_COMBINE_MAX_BYTES',
     'resolvedOwnerTelegramEnv','ownerBotCredentials','verifyOwnerTelegram',
     'finishAudioCombine','checkedAudioStorage','deleteTemporaryAudioParts',
     recoveredFunction+'\nreturn recoverOwnerAudioBatchFromCron',
@@ -47,7 +47,7 @@ function simulate({status='collecting',n=9,found=n,verified=true,delivered=true,
         return {rows:[recovered]}
       throw Error('UNEXPECTED_DB_QUERY')
     }}),
-    'owner-practitioner',BATCH_ID,arr=>{
+    'owner-practitioner',id=>id===BATCH_ID,arr=>{
       const used=new Set()
       return arr.filter(x=>x&&typeof x.id==='string'&&!used.has(x.id)&&used.add(x.id))
     },20_000_000,
@@ -112,6 +112,7 @@ test('RLS and provider receipt are backend-only, cron is existing CRON_SECRET ga
   assert.match(service,/internalRecovery=event\.internalRecovery===true/)
   assert.match(service,/last_command_update_id=case when \$4 then last_command_update_id else \$2 end/)
   assert.match(cron,/runHousekeepingCron\(request/)
+  assert.doesNotMatch(service,/ebc20303-d41d-4f77-89ac-e277dd50d4f6/)
   assert.match(cron,/recoverOwnerAudioBatchFromCron\(config\)/)
   assert(!cron.includes('OWNER_AUDIO_RECOVERY_BATCH'))
 })
