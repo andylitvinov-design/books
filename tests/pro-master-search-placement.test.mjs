@@ -9,8 +9,9 @@ const finder = source("components/master-network-explorer.tsx");
 const css = source("components/master-network-explorer.module.css");
 test("Approved practitioners are searchable directly in Pro, not Holistic Support", () => {
   assert.doesNotMatch(holistic, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
-  assert.match(holistic, /data-holistic-offer="energy"/);
-  assert.match(holistic, /data-holistic-offer="alchemy"/);
+  assert.match(holistic, /<HolisticSupportTopicFilter locale=\{locale\} \/>/);
+  assert.match(source("components/holistic-support-topic-filter.tsx"), /services\/remote-energy-support/);
+  assert.doesNotMatch(holistic, /data-holistic-offer=/);
   assert.match(pro, /listPublicPractitioners\(locale\)/);
   assert.match(pro, /createPractitionerCourseRepository\(config\)\.catalog\(\)/);
   assert.match(pro, /approvedSlugs\.has\(row\.practitionerSlug\)/);
