@@ -76,6 +76,8 @@ test('Mini App appends to the active encrypted Telegram thread, never creates a 
   assert.match(hook,/webAppUrl:reply/)
   assert.match(form,/URLSearchParams\(window\.location\.hash\.slice\(1\)\)/)
   assert.match(form,/telegramStatus === "linked"/)
+  assert.match(form,/disabled=\{requestFromTelegram \|\| leadLocked/)
+  assert.match(form,/topic: result\.topic \}\)\);/)
   assert.match(form,/!requestFromTelegram/)
   assert.match(form,/contactConsent: true/)
 })
