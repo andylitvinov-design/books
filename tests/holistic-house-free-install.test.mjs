@@ -45,7 +45,7 @@ test('all three Home pages offer exactly the same free installer without duplica
   assert.match(nav,/data-nav-item="install"/)
   assert.match(nav,/siteMenu\.install/)
   const locales=read('lib/public-locales.ts')
-  assert.match(locales,/\/(?:en\|ru\|es)\/install/)
+  assert.ok(locales.includes(String.raw`(?:en|ru|es)\/install`))
 })
 
 test('free install button uses browser PWA event, manual fallbacks and never claims install before appinstalled',()=>{
