@@ -20,10 +20,16 @@ authentication or publication system. EN/RU/ES user interface, warm mobile UI.
   be converted to JPG/PNG offline and published before they can be used.
   Strict URL allowlist and a separate rights/public-asset confirmation are
   enforced **on the server**; no private signed URLs or arbitrary remote hosts.
-- Render via official Kling 3.0 Text-to-Video / Image-to-Video API (once configured).
-  5 or 10 seconds, 720p draft or 1080p final, 16:9/9:16/1:1 for text mode.
-  Image mode inherits reference frame ratio from the image.
-  Audio is always OFF to avoid misrepresenting Andrey's voice.
+- Lowest-cost image route: official **Kling 2.5 Turbo Standard 720p**, 5s
+  via `/image-to-video/kling-2.5-turbo` (published API reference rate
+  1.5 resource units/5s; owner account price not yet verified). It uses
+  approved public JPG/PNG only and inherits the image's aspect ratio.
+- Text-only route: Kling 3.0 Text-to-Video defaults to **3s, silent, 720p**;
+  formats 16:9/9:16/1:1. Both are blocked by default until the separate
+  `HH_KLING_PAID_GENERATION_ENABLED=true` authorization. 5/10s or 1080p
+  additionally require `HH_KLING_PREMIUM_RENDER_ENABLED=true` and separate
+  owner-approved cost. No audio generation or third-party voice.
+  Commercial free-web draft rights must be verified before public reuse.
 - Check a task by returned ID or external ID manually; result links are temporary.
   No unattended polling, automatic retries, download, import, publishing or
   external charge on page load.
