@@ -436,7 +436,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             <div className={styles.insetPanel}>
               <div className={styles.insetIntro}><Sparkles size={33} aria-hidden="true" />
                 <div><h2>{t.talismansTitle}</h2><p>{t.talismansIntro}</p></div></div>
-              <TaoistTalismanCatalog locale={locale} featuredId={recommendedTalisman?.id} />
+              <TaoistTalismanCatalog locale={locale} featuredId={recommendedTalisman?.id}\n                rankedIds={recommended?.talismans.map(item => item.id)} />
             </div>
           ) : (
             <div className={styles.insetPanel}>
