@@ -59,9 +59,9 @@ jobs:
   isolated-free-model-smoke:
     name: Zero-credential OpenCode GLM Free connectivity, synthetic-only
     # Run on this explicit tooling PR, never on a normal production push.
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'codex/hh-gauntlet-execution-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 7
+    timeout-minutes: 18
     permissions:
       contents: read
     steps:
@@ -120,3 +120,53 @@ jobs:
             if(!hasText || error)process.exit(1);
           ' "$RUNNER_TEMP/hh-oc-free.stdout"
           echo "PASS: one zero-credential free-model response. Not proof of GitHub builder/critic or CRM E2E."
+      - name: Checkout public HH source without write access
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install existing test tools only
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Run one live free Builder and separate Critic in ephemeral branch
+        shell: bash
+        timeout-minutes: 12
+        env:
+          CI: 'true'
+          HH_GAUNTLET_CI_SYNTHETIC: isolated-20261027
+          HH_GAUNTLET_BROWSER: 'disabled-no-browser-claim'
+          HOME: ${{ runner.temp }}/hh-oc-home
+          XDG_CONFIG_HOME: ${{ runner.temp }}/hh-oc-home/config
+          XDG_DATA_HOME: ${{ runner.temp }}/hh-oc-home/data
+          XDG_CACHE_HOME: ${{ runner.temp }}/hh-oc-home/cache
+          TMPDIR: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          git switch -c codex/hh-gauntlet-ci-20261027
+          export PATH="$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin:$PATH"
+          timeout --kill-after=8s 660s node scripts/benchmarking/hh-gauntlet-loop.mjs \
+            --run --rounds 1 --timeout-seconds 180 \
+            --model opencode/glm-5.3-flash-free
+          echo "PASS: real Builder + fresh Critic + deterministic gates (synthetic only)."
+      - name: Copy no-PII pilot scorecard
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/hh-gauntlet-evidence"
+          find "$RUNNER_TEMP" -maxdepth 2 -type f -path '*/hh-gauntlet-scorecard-*/scorecard.json' \
+            -exec cp {} "$RUNNER_TEMP/hh-gauntlet-evidence/scorecard.json" \;
+          if [ -f "$RUNNER_TEMP/hh-gauntlet-evidence/scorecard.json" ]; then
+            node -e '
+              const r=require(process.argv[1]);
+              console.log("Result: "+r.result);
+              console.log("Rounds: "+r.rounds.length);
+              console.log("No real CRM/provider receipt: "+r.real_crm_delivery+"/"+r.real_provider_receipt);
+            ' "$RUNNER_TEMP/hh-gauntlet-evidence/scorecard.json"
+          else
+            echo "No scorecard produced: blocked before model runner startup."
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-gauntlet-free-agent-scorecard
+          path: ${{ runner.temp }}/hh-gauntlet-evidence/scorecard.json
+          retention-days: 7
+          if-no-files-found: warn
