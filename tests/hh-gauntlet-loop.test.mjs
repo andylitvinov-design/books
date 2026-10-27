@@ -138,6 +138,12 @@ test('OpenCode v2 agents enforce ordered deny-all, scoped Builder edits and read
   assert.match(critic, /fresh session/);
 });
 
+test('OpenCode v2 provider listing uses the supported standalone CLI form', () => {
+  const script = source('scripts/benchmarking/hh-gauntlet-loop.mjs');
+  assert.match(script, /\['models', '--standalone'\]/);
+  assert.doesNotMatch(script, /\['models', 'opencode'\]/);
+});
+
 test('offline --check makes no provider calls; --run with paid model stops before executing', () => {
   const script = new URL('../scripts/benchmarking/hh-gauntlet-loop.mjs', import.meta.url);
   const offline = spawnSync(process.execPath, [script.pathname, '--check'],
