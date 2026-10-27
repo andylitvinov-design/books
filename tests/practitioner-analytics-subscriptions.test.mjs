@@ -98,7 +98,7 @@ test('all outbound sends require existing verified /start and separate master op
 })
 test('existing daily cron is reused with separate feature flag; no extra Vercel cron/billing',()=>{
  const vercel=JSON.parse(file('vercel.json'))
- assert.equal(vercel.crons.length,3)
+ assert.equal(vercel.crons.length,4)
  assert.equal(vercel.crons.filter(x=>x.path==='/api/internal/practice-telegram-digest').length,1)
  const cron=file('app/api/internal/practice-telegram-digest/route.js')
  assert.match(cron,/cronAuthorized\(request,process\.env\)/)

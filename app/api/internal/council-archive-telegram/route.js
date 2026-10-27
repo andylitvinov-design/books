@@ -3,6 +3,7 @@ import {getAppConfig} from '@/lib/app/config'
 import {closeDatabase} from '@/lib/app/database'
 import {cronAuthorized} from '@/lib/app/housekeeping-cron'
 import {councilOneShotAuthorized} from '@/lib/practitioners/council-one-shot-guard.mjs'
+import {torontoReportDue} from '@/lib/practitioners/owner-telegram-report-hours.mjs'
 import {ownerAiProviderReadiness} from '@/lib/practitioners/owner-ai-provider-settings'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {practiceTelegramConfigured} from '@/lib/practitioners/daily-telegram-transport.mjs'
@@ -20,6 +21,8 @@ export async function GET(request){
   const manual=councilOneShotAuthorized(request,process.env)
   if(!cronAuthorized(request,process.env)&&!manual)
     return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
+  if(!manual&&!torontoReportDue('strategy'))
+    return NextResponse.json({status:'not_due'},{headers:PRIVATE_HEADERS})
   if(process.env.VERCEL_ENV==='preview')
     return NextResponse.json({error:'NOT_AVAILABLE'},{status:404,headers:PRIVATE_HEADERS})
   if(!process.env.HH_PRACTICE_TG_BOT_TOKEN)
@@ -41,7 +44,7 @@ export async function GET(request){
     if(!practiceTelegramConfigured(env))
       return NextResponse.json({status:'paired',delivery_enabled:false},
         {headers:PRIVATE_HEADERS})
-    return NextResponse.json(await deliverArchivedCouncilReports(config,{env}),
+    return NextResponse.json(await deliverArchivedCouncilReports(config,{env,strategyOnly:!manual}),
       {headers:PRIVATE_HEADERS})
   }catch{
     console.error('HH_COUNCIL_ARCHIVE_DELIVERY_FAILED')
