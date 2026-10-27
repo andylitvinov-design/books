@@ -7,7 +7,7 @@ import { getCommerceConfig } from "@/lib/commerce/config";
 import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
-import { configuredSquarePaymentLinks, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
+import { configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad50, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
 import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { configuredPayPalHostedLinks, buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
@@ -34,6 +34,9 @@ const copy = {
     interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareInfo: "Square Canada charges a separately approved CAD total, not the EUR reference. Check the seller and CAD total before paying. We verify receipt manually; payment does not book a session.", squareApiInfo: "Secure Square checkout charges the displayed CAD total. We verify the received payment directly with Square; your appointment time is arranged separately.", squareReceipt: "Paid with Square? Send transaction ID", combinedSquare: "Pay both by Square",
     combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
     combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
+    squareSessionTitle: "Square · separate CAD session payment",
+    squareSessionNote: "Only use this CA$50 link if Andrey has personally agreed that exact CAD amount for your session. It is not the €50 consultation price or a currency conversion. Verify Holistic House and the final CA$50 total in Square. No automatic booking or payment verification.",
+    squareSessionPay: "Pay CA$50 with Square", squareSessionReceipt: "Already paid? Send Square transaction ID",
   },
   ru: {
     back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
@@ -54,6 +57,9 @@ const copy = {
     interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareInfo: "Square Canada списывает отдельно утверждённую сумму CAD, а не указанную цену EUR. Проверьте продавца и сумму CAD. Поступление проверяется вручную; оплата не бронирует сеанс.", squareApiInfo: "Безопасная оплата в Square списывает указанную сумму CAD. Поступление проверяется напрямую через Square; время консультации согласуем отдельно.", squareReceipt: "Оплатили через Square? Отправить ID", combinedSquare: "Оплатить обе услуги через Square",
     combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
     combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
+    squareSessionTitle: "Square · отдельная оплата сеанса в CAD",
+    squareSessionNote: "Используйте ссылку на CA$50 только если Андрей лично согласовал именно эту сумму CAD за ваш сеанс. Это не цена консультации €50 и не конвертация валюты. Проверьте Holistic House и итог CA$50 в Square. Оплата и бронирование не подтверждаются автоматически.",
+    squareSessionPay: "Оплатить CA$50 через Square", squareSessionReceipt: "Уже оплатили? Отправить ID Square",
   },
   es: {
     back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
@@ -74,6 +80,9 @@ const copy = {
     interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareInfo: "Square Canada cobra el importe CAD aprobado por separado, no el precio de referencia en EUR. Comprueba el vendedor y el total CAD. Verificamos el pago manualmente; no reserva una cita.", squareApiInfo: "El pago seguro de Square cobra el importe CAD mostrado. Verificamos el pago directamente con Square; la hora de la sesión se acuerda aparte.", squareReceipt: "¿Pagaste con Square? Enviar ID", combinedSquare: "Pagar ambas con Square",
     combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
     combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
+    squareSessionTitle: "Square · pago de sesión independiente en CAD",
+    squareSessionNote: "Usa este enlace de CA$50 solo si Andrey acordó personalmente ese importe CAD para tu sesión. No equivale a la consulta de €50 ni es una conversión de moneda. Comprueba Holistic House y el total CA$50 en Square. No confirma automáticamente el pago ni la cita.",
+    squareSessionPay: "Pagar CA$50 con Square", squareSessionReceipt: "¿Ya pagaste? Enviar ID de Square",
   },
 } as const;
 
@@ -121,6 +130,7 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
   const enabled = personalPayPalEnabled();
   const products = publicServiceCatalog(locale);
   const squareLinks = configuredSquarePaymentLinks();
+  const standaloneSquareSession = configuredStandaloneSquareSessionCad50();
   const squareApiEnabled = getSquareGatewayConfig().enabled;
   const hostedPayPalLinks = configuredPayPalHostedLinks();
   const combinedIds = products.map(product => product.id);
@@ -154,6 +164,23 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
         <div className={styles.zenNotice} data-interac-manual-inquiry>
           <strong>{t.interacTitle}</strong><p>{t.interacIntro}</p>
         </div>
+        {standaloneSquareSession ? <section className={styles.combined} data-square-cad50-session-payment>
+          <div>
+            <strong>{t.squareSessionTitle} · {formatSquareCadAmount(standaloneSquareSession.amountMinor, locale)}</strong>
+            <p>{t.squareSessionNote}</p>
+          </div>
+          <div className={styles.combinedActions}>
+            <a href={standaloneSquareSession.url} className={styles.payButton}
+              target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-square-cad50-session-checkout>
+              {t.squareSessionPay} <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <a href={squareReceiptUrl(locale, "Session (separately agreed CAD amount)", standaloneSquareSession.amountMinor)}
+              className={styles.receiptButton} target="_blank" rel="noopener noreferrer"
+              data-square-cad50-session-receipt>
+              <MessageCircle size={17} aria-hidden="true" />{t.squareSessionReceipt}
+            </a>
+          </div>
+        </section> : null}
         <h2 className={styles.heading}>{t.choose}</h2>
         <div className={styles.cards}>
           {products.map((product) => {
