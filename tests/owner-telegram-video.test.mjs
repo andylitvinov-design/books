@@ -346,6 +346,7 @@ test('private /video command remains registered if Owner AI is disabled',()=>{
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
  assert.deepEqual(menu('shared_practice',false,true),['audio','video','materials','track'])
  assert.deepEqual(menu('shared_practice',true,true),['all','audio','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,false),['all','audio','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
  const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
