@@ -128,7 +128,7 @@ for (const engine of [chromium, webkit]) {
           await finder.locator('[data-support-choice="talisman"]').click();
           await finder.locator('[data-support-budget="20"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results [role="status"]').first().waitFor();
+          await finder.locator('#remote-results [role="status"]').first().waitFor();
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
 
