@@ -95,7 +95,9 @@ const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update
           ? 'Your Holistic House booking has an update. Open your secure Cabinet for details.'
           : event==='new'
             ? 'You received a new Holistic House booking request. Open My Practice to respond.'
-            : 'A Holistic House booking request changed. Open My Practice for details.',
+            : event==='enquiry'
+              ? 'You received a new Holistic House service enquiry. Open My Practice to respond.'
+              : 'A Holistic House booking request changed. Open My Practice for details.',
       })
       if(result.duplicate===false){
         const messageId=result.id
@@ -952,8 +954,15 @@ async function handle(request, { params }) {
           event:'new',revision:result.revision,practitionerId:result.practitionerId,
           messageId:result.bookingMessageId,
         })
+      if(result.enquiryNotice===true)
+        notifyBookingParticipants(config,actor,result.id,'master',{
+          event:'enquiry',practitionerId:result.practitionerId,
+          messageId:result.enquiryMessageId,
+        })
       delete result.bookingNotice
       delete result.bookingMessageId
+      delete result.enquiryNotice
+      delete result.enquiryMessageId
       return json(result,201)
     }
     if (path[0] === 'requests' && path.length === 2) {
