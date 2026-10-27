@@ -536,9 +536,11 @@ export function RemoteEnergySupportBooking({
                         : <span aria-hidden="true">✦</span>}
                     </div>
                     <div className={styles.masterCopy}>
-                      <p className={styles.serviceType}>{requestKind === "talisman" ? t.talismanServiceType : t.serviceType}</p>
+                      <p className={styles.serviceType}>{requestKind === "talisman" ? t.practitioner : t.serviceType}</p>
                       <h3>{master.name}</h3>
-                      <p className={styles.serviceDescription}>{master.description || t.defaultDescription}</p>
+                      {requestKind === "talisman"
+                        ? <p className={styles.talismanMasterCaption}>{t.talismanServiceType}</p>
+                        : <p className={styles.serviceDescription}>{master.description || t.defaultDescription}</p>
                       {requestKind === "talisman" ? null : offers.length ? (
                         <div className={styles.offerPrices} aria-label={t.publishedFrom}>
                           {offers.map((offer) => (
