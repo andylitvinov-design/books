@@ -110,19 +110,31 @@ test('critic parses isolated JSON event text and refuses malformed JSON', () => 
   assert.equal(parseCriticVerdict('anything {not valid}').passed, false);
 });
 
-test('OpenCode agents are separate; Builder scope restricted, Critic read-only', () => {
+test('OpenCode v2 agents enforce ordered deny-all, scoped Builder edits and read-only Critic', () => {
   const builder = source('.opencode/agents/hh-gauntlet-builder.md');
   const critic = source('.opencode/agents/hh-gauntlet-critic.md');
   for (const agent of [builder, critic]) {
-    assert.match(agent, /mode: primary/);
-    assert.match(agent, /external_directory: deny/);
-    assert.match(agent, /webfetch: deny/);
-    assert.match(agent, /bash: deny/);
-    assert.match(agent, /"mcp_\*": deny/);
+    const frontmatter = agent.split('---')[1];
+    assert.match(frontmatter, /mode: primary/);
+    assert.match(frontmatter, /\npermissions:\n/);
+    assert.doesNotMatch(frontmatter, /\npermission:|\nbash:|\ntemperature:/);
+    const rules = [...frontmatter.matchAll(/^  - action: "([^"]+)"\n    resource: "([^"]+)"\n    effect: (allow|deny)$/gm)]
+      .map(x => ({ action: x[1], resource: x[2], effect: x[3] }));
+    assert.deepEqual(rules[0], { action: '*', resource: '*', effect: 'deny' });
+    assert.ok(rules.some(x => x.action === 'read' && x.resource === '*' && x.effect === 'allow'));
+    assert.ok(rules.some(x => x.action === 'glob' && x.effect === 'allow'));
+    assert.ok(rules.some(x => x.action === 'grep' && x.effect === 'allow'));
+    assert.ok(rules.some(x => x.action === 'read' && x.resource === '**/.env.*' && x.effect === 'deny'));
+    assert.ok(!rules.some(x => x.effect === 'allow' &&
+      ['shell', 'execute', 'external_directory', 'webfetch', 'websearch', 'subagent'].includes(x.action)));
+    const approved = rules.filter(x => x.action === 'edit' && x.effect === 'allow').map(x => x.resource);
+    if (agent === builder) {
+      assert.deepEqual(approved.sort(), SAFE_EDIT_FILES.slice().sort());
+    } else {
+      assert.deepEqual(approved, [], 'Critic must have no edit permission');
+    }
+    assert.equal(rules.length, agent === builder ? 14 : 8, 'No hidden permission grants');
   }
-  assert.match(builder, /"\*": deny/);
-  assert.match(builder, /components\/free-express-wizard.tsx/);
-  assert.match(critic, /edit: deny/);
   assert.match(critic, /fresh session/);
 });
 
