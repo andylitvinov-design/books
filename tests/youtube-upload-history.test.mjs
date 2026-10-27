@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {RUSSIAN_CHANNEL_ID, validateHistoryRecord, normalizeChannelConfig, parseHistoryRecord,
-  sortHistory, normalizeGoogleOauthClientId} from '../lib/youtube/upload-history-model.mjs'
+  sortHistory, normalizeGoogleOauthClientId, resolvePhoneYoutubeClientId} from '../lib/youtube/upload-history-model.mjs'
 import {createMemoryYoutubeHistoryStore, createYoutubeHistoryStore} from '../lib/youtube/upload-history-store.js'
 
 const ENGLISH_ID = 'UCaaaaaaaaaaaaaaaaaaaaaa'
@@ -103,4 +103,23 @@ test('owner-configured public OAuth Client ID is durable, editable and never mis
   assert.equal(await store.oauthConfig(),second)
   assert.deepEqual((await store.channels()).ru.id,RU_ID)
   assert.deepEqual(await store.list(),[])
+})
+
+
+test('existing owner-video Google Web Client ID automatically unlocks phone setup', () => {
+  const serverId='123456789012-sharedweb.apps.googleusercontent.com'
+  const dedicatedId='123456789012-phoneweb.apps.googleusercontent.com'
+  const savedId='123456789012-savedweb.apps.googleusercontent.com'
+  assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:serverId,ownerVideoConfigured:true}),
+    {clientId:serverId,source:'owner_video'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({dedicatedId,savedId,ownerVideoId:serverId,ownerVideoConfigured:true}),
+    {clientId:dedicatedId,source:'dedicated'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({savedId,ownerVideoId:serverId,ownerVideoConfigured:true}),
+    {clientId:savedId,source:'saved'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:serverId,ownerVideoConfigured:false}),
+    {clientId:null,source:'missing'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:'secret-not-a-client-id',ownerVideoConfigured:true}),
+    {clientId:null,source:'missing'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:serverId}),
+    {clientId:null,source:'missing'})
 })
