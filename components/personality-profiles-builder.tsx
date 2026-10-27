@@ -25,23 +25,6 @@ const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
 const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 
-const axesCopy: Record<string, Record<Locale, string>> = {
-  embodiment: { en: "Body awareness", ru: "Контакт с телом", es: "Conciencia corporal" },
-  sleep: { en: "Sleep and rest", ru: "Сон и отдых", es: "Sueño y descanso" },
-  stress: { en: "Perceived stress", ru: "Воспринимаемый стресс", es: "Estrés percibido" },
-  energy: { en: "Energy", ru: "Энергия", es: "Energía" },
-  resource: { en: "Personal resources", ru: "Личные ресурсы", es: "Recursos personales" },
-  self_support: { en: "Self-support", ru: "Самоподдержка", es: "Apoyo personal" },
-  clarity: { en: "Mental clarity", ru: "Ясность мышления", es: "Claridad mental" },
-  focus: { en: "Focus", ru: "Концентрация", es: "Concentración" },
-  functioning: { en: "Everyday functioning", ru: "Действия и эффективность", es: "Actividades cotidianas" },
-  meaning: { en: "Meaning and direction", ru: "Смысл и направление", es: "Sentido y dirección" },
-  mood: { en: "Current mood", ru: "Текущее настроение", es: "Estado emocional" },
-  personality: { en: "Personality patterns", ru: "Личностные особенности", es: "Patrones personales" },
-  emotional_regulation: { en: "Emotional awareness", ru: "Осознание эмоций", es: "Conciencia emocional" },
-  relationships: { en: "Relationships", ru: "Отношения", es: "Relaciones" },
-};
-
 const copy = {
   en: {
     kicker: "FREE SELF-DISCOVERY", title: "Build your personal profile",
@@ -415,7 +398,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
       [test.title, ...test.scales.map(scale => scale.label),
-        ...extraGroups.flatMap(group => group.researchAxes.map(axis => profileResearchAxisLabel(axis.id, locale)))]
+        ...extraGroups.flatMap(group => group.scales
+          .filter(scale => scale.testKey === test.key)
+          .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale)))]
         .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
     .sort((a, b) => sortFilter === "shortest"
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
@@ -818,7 +803,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{test.axes.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
+                <span>{[...new Set(extraGroups.flatMap(group => group.scales
+                  .filter(scale => scale.testKey === test.key &&
+                    effectiveExtraScales.includes(scale.researchAxisId))
+                  .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
