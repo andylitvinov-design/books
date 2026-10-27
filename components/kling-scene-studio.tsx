@@ -23,7 +23,7 @@ const translations = {
     prompt: "Scene description (English works well for visuals)", mode: "Source", text: "Text → video", image: "Public image → video",
     imageUrl: "Public Holistic House image URL", imageHelp: "Only publicly published JPG/PNG under https://holistichouse.vercel.app/images/..., never WebP, private client files, uploads or signed links.",
     rights: "I confirm this is an approved, public, non-client image that may be processed by Kling.",
-    duration: "Duration", ratio: "Format", resolution: "Quality", preview: "720p test", final: "1080p final", cheapHint: "Lowest-cost API pilot: 3 seconds, silent, 720p. Longer and HD modes need a separate premium approval. Free web trials are for evaluation until commercial rights are checked.",
+    duration: "Duration", ratio: "Format", resolution: "Quality", preview: "720p test", final: "1080p final", cheapHint: "Text → video: 3s silent 720p Kling 3.0. Longer / HD needs separate approval.", imageCheap: "Public image → video: cheaper Kling 2.5 Turbo Standard, 5s 720p, no audio. Check commercial rights before using free web drafts.",
     noAudio: "Audio is always disabled. No stock avatar, cloned voice, client content, automatic archive or publication.",
     draft: "Copy draft prompt", copied: "Prompt copied", copyError: "Select the description and copy it manually.",
     paid: "I explicitly approve this paid Kling render and its current provider charges. One click creates one job.",
@@ -42,7 +42,7 @@ const translations = {
     prompt: "Описание сцены (для визуальных сцен хорошо работает английский)", mode: "Исходник", text: "Текст → видео", image: "Публичное фото → видео",
     imageUrl: "URL публичного изображения Holistic House", imageHelp: "Только общедоступные JPG/PNG в https://holistichouse.vercel.app/images/... — не WebP, не личные фотографии клиентов, загрузки или подписанные ссылки.",
     rights: "Подтверждаю: изображение публичное, утверждено, не содержит данных клиента, его можно передавать Kling.",
-    duration: "Длительность", ratio: "Формат", resolution: "Качество", preview: "720p тест", final: "1080p финал", cheapHint: "Экономный API-пилот: 3 секунды, без звука, 720p. Более длинные и HD-видео требуют отдельного разрешения. Бесплатный веб-режим — для проб до проверки коммерческих прав.",
+    duration: "Длительность", ratio: "Формат", resolution: "Качество", preview: "720p тест", final: "1080p финал", cheapHint: "Текст → видео: 3 с без звука, 720p Kling 3.0. Длинные / HD требуют отдельного разрешения.", imageCheap: "Картинка → видео: более дешёвый Kling 2.5 Turbo Standard, 5 с, 720p, без звука. Бесплатные веб-черновики не публикуем без проверки коммерческих прав.",
     noAudio: "Звук выключен. Без чужого аватара и клонированного голоса, личных данных, автоматического архива и публикации.",
     draft: "Копировать промпт", copied: "Промпт скопирован", copyError: "Выделите описание и скопируйте вручную.",
     paid: "Я отдельно разрешаю эту платную генерацию по текущему тарифу Kling. Одно нажатие создаёт одну задачу.",
@@ -61,7 +61,7 @@ const translations = {
     prompt: "Descripción de la escena (se recomienda inglés)", mode: "Origen", text: "Texto → vídeo", image: "Imagen pública → vídeo",
     imageUrl: "URL de imagen pública de Holistic House", imageHelp: "Solo JPG/PNG públicos en https://holistichouse.vercel.app/images/...; nunca WebP, fotos de clientes, archivos privados ni enlaces firmados.",
     rights: "Confirmo que la imagen es pública, aprobada y sin datos de clientes, y que se puede enviar a Kling.",
-    duration: "Duración", ratio: "Formato", resolution: "Calidad", preview: "720p prueba", final: "1080p final", cheapHint: "Prueba API económica: 3 segundos, sin audio, 720p. HD y clips largos necesitan aprobación adicional. Verifica los derechos comerciales antes de usar pruebas web gratuitas.",
+    duration: "Duración", ratio: "Formato", resolution: "Calidad", preview: "720p prueba", final: "1080p final", cheapHint: "Texto → vídeo: 3s sin audio, 720p Kling 3.0; HD y clips largos requieren aprobación.", imageCheap: "Imagen pública → vídeo: Kling 2.5 Turbo Standard más barato, 5s, 720p, sin audio. Comprueba derechos comerciales de pruebas web gratuitas.",
     noAudio: "Audio desactivado. Sin avatares ajenos, voz clonada, datos privados, archivo ni publicación automática.",
     draft: "Copiar prompt", copied: "Prompt copiado", copyError: "Selecciona la descripción y cópiala manualmente.",
     paid: "Autorizo expresamente esta generación de pago según las tarifas actuales de Kling. Un clic crea una tarea.",
@@ -157,18 +157,18 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
         <div className="kling-studio-presets">
           {sampleScenes.map((scene) => <button type="button" key={scene.key} disabled={pending} onClick={() => { setPrompt(scene.prompt); setApproved(false); }}><Film size={16} aria-hidden="true" />{t[scene.key]}</button>)}
         </div>
-        <label className="site-video-field"><span>{t.mode}</span><select value={mode} disabled={pending} onChange={event => { setMode(event.target.value as Mode); setApproved(false); }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select></label>
+        <label className="site-video-field"><span>{t.mode}</span><select value={mode} disabled={pending} onChange={event => { const next = event.target.value as Mode; setMode(next); setDuration(next === "image" ? 5 : 3); setApproved(false); }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select></label>
         <label className="site-video-field"><span>{t.prompt}</span><textarea rows={6} minLength={12} maxLength={2500} value={prompt} disabled={pending} onChange={event => { setPrompt(event.target.value); setApproved(false); }} /></label>
         {mode === "image" && <>
           <label className="site-video-field"><span>{t.imageUrl}</span><input type="url" value={imageUrl} disabled={pending} maxLength={500} placeholder="https://holistichouse.vercel.app/images/holistic-house/..." onChange={event => { setImageUrl(event.target.value); setApproved(false); }} /><small>{t.imageHelp}</small></label>
           <label className="site-video-review-check"><input type="checkbox" checked={imageApproved} disabled={pending} onChange={event => { setImageApproved(event.target.checked); setApproved(false); }} /><span>{t.rights}</span></label>
         </>}
         <div className="kling-studio-settings">
-          <label className="site-video-field"><span>{t.duration}</span><select value={duration} disabled={pending} onChange={event => { setDuration(Number(event.target.value) as 3 | 5 | 10); setApproved(false); }}><option value={3}>3 s</option><option value={5} disabled={!premiumEnabled}>5 s</option><option value={10} disabled={!premiumEnabled}>10 s</option></select></label>
+          <label className="site-video-field"><span>{t.duration}</span><select value={duration} disabled={pending} onChange={event => { setDuration(Number(event.target.value) as 3 | 5 | 10); setApproved(false); }}><option value={3} disabled={mode === "image"}>3 s</option><option value={5} disabled={mode === "text" && !premiumEnabled}>5 s</option><option value={10} disabled={!premiumEnabled}>10 s</option></select></label>
           <label className="site-video-field"><span>{t.ratio}</span><select value={ratio} disabled={pending || mode === "image"} onChange={event => { setRatio(event.target.value as typeof ratio); setApproved(false); }}><option>16:9</option><option>9:16</option><option>1:1</option></select></label>
           <label className="site-video-field"><span>{t.resolution}</span><select value={resolution} disabled={pending} onChange={event => { setResolution(event.target.value as typeof resolution); setApproved(false); }}><option value="720p">{t.preview}</option><option value="1080p" disabled={!premiumEnabled}>{t.final}</option></select></label>
         </div>
-        <p className="site-video-draft-help">{t.cheapHint}</p>
+        <p className="site-video-draft-help">{mode === "image" ? t.imageCheap : t.cheapHint}</p>
         <p className="site-video-draft-help">{t.noAudio}</p>
         <div className="site-video-editor-actions kling-studio-buttons">
           <button type="button" className="site-video-admin-button" onClick={copyPrompt}><Copy size={16} aria-hidden="true" />{t.draft}</button>
