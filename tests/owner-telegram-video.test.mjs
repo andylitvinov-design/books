@@ -88,6 +88,13 @@ test('strict ordered safe source limits and anti-duplication',()=>{
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
 })
 
+test('production database item constraint is widened to 30 without weakening RLS',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261027174939_hh_owner_video_15_photo_15_audio_20261027.sql',import.meta.url),'utf8')
+ assert.match(sql,/drop constraint telegram_owner_video_jobs_items_check/)
+ assert.match(sql,/jsonb_array_length\(items\) <= 30/)
+ assert.doesNotMatch(sql,/disable row level security|drop table|grant\s+.*\s+to\s+anon/i)
+})
+
 test('serverless bundled FFmpeg path falls back to executable in traced node_modules only',async()=>{
  const temp=mkdtempSync(join(tmpdir(),'hh-video-exec-'))
  try{
