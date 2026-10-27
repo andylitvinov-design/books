@@ -6,7 +6,7 @@ import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {uiLocaleCookie} from '@/lib/ui-locale'
-import {RUSSIAN_CHANNEL_ID, resolvePhoneYoutubeClientId} from '@/lib/youtube/upload-history-model.mjs'
+import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId, resolvePhoneYoutubeClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
 import styles from '@/components/youtube-phone-uploader.module.css'
 
@@ -35,7 +35,7 @@ export default async function YoutubeUploadPage() {
   // The client ID is public; the separate server-side OAuth secret never
   // reaches the browser. Reuse the validated Web client to avoid double setup.
   const ownerVideoClientId = telegramVideoConfigured ? process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID : null
-  const environmentClientId = process.env.HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID || null
+  const environmentClientId = normalizeGoogleOauthClientId(process.env.HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID || '')
   const explicitlyDisabled = process.env.HH_YOUTUBE_PHONE_UPLOAD_ENABLED === 'false'
   let savedClientId = null
   const initialChannels = {
