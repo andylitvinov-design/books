@@ -55,6 +55,7 @@ jobs:
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
+          node scripts/verify-meditation-immersive-browser.mjs || status=$?
           node scripts/verify-holistic-topics-browser.mjs || status=$?
           node scripts/verify-direction-focus-mobile.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
@@ -80,6 +81,7 @@ jobs:
             artifacts/business-quiz-mobile/
             artifacts/ideas-mobile/
             artifacts/holistic-support-mobile/
+            artifacts/meditation-immersive-mobile/
             artifacts/holistic-topic-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/
