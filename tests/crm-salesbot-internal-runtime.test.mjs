@@ -124,7 +124,7 @@ test('CI structural controls: only signed post-consent opt-in event can enroll; 
 })
 
 test('R4 follow-on RLS migration explicitly binds run owner, consented Telegram identity and minimal column writes',()=>{
-  const migration=src('supabase/migrations/20261027030256_hh_salesbot_event_run_owner_relation_rls_20261027.sql')
+  const migration=src('supabase/migrations/20261027031035_hh_salesbot_event_run_owner_relation_rls_20261027.sql')
   assert.match(migration,/alter policy crm_salesbot_runs_signed_inbound_insert/)
   assert.match(migration,/f\.owner_id\s*=\s*crm_salesbot_runs\.owner_id/)
   assert.match(migration,/t\.owner_id\s*=\s*crm_salesbot_runs\.owner_id/)
