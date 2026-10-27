@@ -190,9 +190,9 @@ test('disallowed or disabled Argon makes no Gateway requests; free Gemma remains
   assert.equal(h.calls.length,5)
   assert.equal(h.gateway.length,0)
  }
- const privateQuestion='Пациент с симптомами хочет улучшить сайт Holistic House'
+ const generalQuestion='Как выразить творческую идею через метафору без личных данных?'
  const h=argonHarness()
- const r=await runOwnerCouncilFive(privateQuestion,argonEnv,h.fetcher)
+ const r=await runOwnerCouncilFive(generalQuestion,argonEnv,h.fetcher)
  assert.equal(r.synthesis.model,COUNCIL_CHAIR.id)
  assert.equal(h.gateway.length,0)
 })
