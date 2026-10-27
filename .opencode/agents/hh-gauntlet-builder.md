@@ -3,7 +3,12 @@ description: Holistic House bounded Free Express UI pilot builder; no provider w
 mode: primary
 temperature: 0.2
 permission:
-  read: allow
+  read:
+    "*": allow
+    "*.env": deny
+    "*.env.*": deny
+    "**/.env": deny
+    "**/.env.*": deny
   glob: allow
   grep: allow
   list: allow
