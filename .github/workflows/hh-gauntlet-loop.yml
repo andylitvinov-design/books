@@ -126,6 +126,55 @@ jobs:
           persist-credentials: false
       - name: Install existing test tools only
         run: npm ci --include=dev --no-audit --no-fund
+      - name: Verify resolved OpenCode v2 agent ACLs (before any model tools)
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/hh-oc-home
+          XDG_CONFIG_HOME: ${{ runner.temp }}/hh-oc-home/config
+          XDG_DATA_HOME: ${{ runner.temp }}/hh-oc-home/data
+          XDG_CACHE_HOME: ${{ runner.temp }}/hh-oc-home/cache
+        run: |
+          set -euo pipefail
+          node --test tests/hh-gauntlet-loop.test.mjs
+          "$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin/opencode" debug agents \
+            > "$RUNNER_TEMP/hh-oc-actual-agents.json"
+          node --input-type=module - "$RUNNER_TEMP/hh-oc-actual-agents.json" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const raw = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+          const choices = Array.isArray(raw) ? raw :
+            Object.entries(raw.agents || raw).map(([id, item]) => ({ id, ...item }))
+          for (const role of ['hh-gauntlet-builder', 'hh-gauntlet-critic']) {
+            const item = choices.find(a => a.id === role || a.name === role)
+            if (!item || !Array.isArray(item.permissions)) {
+              console.error('Missing effective V2 ACL for ' + role)
+              process.exit(1)
+            }
+            const rules = item.permissions
+            const denyAll = rules.findIndex(r =>
+              r.action === '*' && r.resource === '*' && r.effect === 'deny')
+            if (denyAll < 0 || rules.slice(denyAll + 1).some(r =>
+                r.effect === 'allow' && (r.action === '*' ||
+                  ['shell', 'subagent', 'execute', 'external_directory', 'webfetch', 'websearch'].includes(r.action)))) {
+              console.error('Unsafe effective permissions for ' + role)
+              process.exit(1)
+            }
+            const edits = rules.filter(r => r.action === 'edit' && r.effect === 'allow')
+            const safe = [
+              'components/free-express-wizard.tsx',
+              'components/free-express-wizard.module.css',
+              'components/personal-express-enquiry.tsx',
+              'tests/free-express-wizard-v2.test.mjs',
+              'tests/free-express-unified-v2.test.mjs',
+              'tests/free-express-mobile-consent-layout.test.mjs',
+            ]
+            if (edits.length !== (role.endsWith('critic') ? 0 : safe.length) ||
+                edits.some(r => !safe.includes(r.resource))) {
+              console.error('Unsafe edit scope for ' + role)
+              process.exit(1)
+            }
+            console.log('PASS: loaded exact OpenCode v2 ACL for ' + role)
+          }
+          NODE
       - name: Run one live free Builder and separate Critic in ephemeral branch
         shell: bash
         timeout-minutes: 12
