@@ -11,10 +11,11 @@ const copy = {
   es: { title: "Tu solicitud", loading: "Buscando profesionales disponibles…", failed: "El directorio no está disponible por el momento.", retry: "Reintentar", close: "Cerrar formulario" },
 } as const;
 
-export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindChange, onClose }: {
+export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialTalismanId = "", onKindChange, onClose }: {
   locale: PublicLocale;
   kind: SupportRequestKind;
   initialGoal: string;
+  initialTalismanId?: string;
   onKindChange: (kind: SupportRequestKind) => void;
   onClose: () => void;
 }) {
@@ -55,7 +56,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindCh
       </div>}
       {masters && <RemoteEnergySupportBooking locale={locale} masters={masters}
         preferredPractitioner="" mode="inline" selectedKind={kind}
-        initialGoal={initialGoal} onKindChange={onKindChange}/>}
+        initialGoal={initialGoal} initialTalismanId={initialTalismanId} onKindChange={onKindChange}/>}
     </aside>
   );
 }
