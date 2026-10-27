@@ -30,7 +30,10 @@ export async function GET(request) {
             const recovery=await recoverOwnerAudioBatchFromCron(config)
             if(recovery.status==='provider_confirmed')
               console.info('HH_OWNER_AUDIO_RECOVERY_PROVIDER_CONFIRMED')
-            else if(['telegram_not_confirmed','provider_accepted_receipt_not_persisted'].includes(recovery.status))
+            else if(['telegram_not_confirmed','provider_accepted_receipt_not_persisted',
+              'owner_not_configured','telegram_identity_unavailable',
+              'telegram_identity_unverified','unverified_sources','unexpected_parts',
+              'inactive'].includes(recovery.status))
               console.error('HH_OWNER_AUDIO_RECOVERY_NEEDS_REVIEW',recovery.status)
           }catch{console.error('HH_OWNER_AUDIO_RECOVERY_ATTEMPT_FAILED')}
           const result = await runAppHousekeeping(config)
