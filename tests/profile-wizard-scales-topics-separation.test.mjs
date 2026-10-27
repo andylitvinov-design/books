@@ -85,3 +85,31 @@ test('goal topics are source-keyed and not presented as questionnaire names', ()
   assert.match(builder, /area === "goal" \? goalTopicLabels\[locale\]\[scale\.key\]/);
   assert.match(builder, /focuses\.includes\("goal"\) && <p className=\{styles\.scaleSourceNote\}>\{t\.goalScaleNote\}/);
 });
+
+test('main scales are short broad choices; step three selects source-backed topic axes, not questionnaires', () => {
+  const scales = stage(1);
+  const topics = stage(2);
+  const tests = stage(3);
+  // Five focuses map to at most three main area cards per direction.
+  assert.match(scales, /visibleScaleGroups\.flatMap\(group => group\.area === "goal"/);
+  assert.match(scales, /data-profile-main-scales/);
+  assert.match(scales, /data-profile-main-scale=\{group\.area\}/);
+  assert.match(scales, /toggleMainScale\(group\.area\)/);
+  assert.match(scales, /data-profile-main-scale=\{axis\.id\}/);
+  assert.doesNotMatch(scales, /group\.scales\.map\(scale/);
+  assert.doesNotMatch(scales, /scale\.testTitle|scale\.scaleQuestions|scale\.minutes/);
+  assert.match(topics, /data-profile-topic-choice=\{axis\.id\}/);
+  assert.match(topics, /toggleTopicAxis\(axis\.id\)/);
+  assert.match(topics, /researchLabel\(axis\.id, locale\)/);
+  // The 11 goal-specific supporting topics stay selectable separately.
+  assert.match(topics, /group\.area === "goal"/);
+  assert.match(topics, /data-profile-topic-choice=\{scale\.id\}/);
+  assert.doesNotMatch(topics, /previewProfileScales|scale\.testTitle|scale\.minutes/);
+  assert.match(tests, /data-profile-recommended-tests/);
+  assert.match(tests, /data-profile-five-more-tests/);
+  assert.doesNotMatch(tests, /data-profile-extra-profile-filter/);
+  assert.match(builder, /setSelectedScaleIds\(\[\]\);/);
+  assert.match(builder, /setSelectedByMode\(\{ questionnaires: \[\], pro: \[\] \}\)/);
+  assert.match(css, /\.mainScaleBody\{display:flex/);
+  assert.match(css, /\.researchChoices\{grid-template-columns:minmax\(0,1fr\)\}/);
+});
