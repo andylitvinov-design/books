@@ -1,80 +1,123 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { publicServiceCatalog } from "../lib/commerce/catalog.js";
+import { restoreServiceCart } from "../lib/commerce/cart.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const landing = read("app/[locale]/services/free-situation-review/page.tsx");
-const styles = read("app/[locale]/services/free-situation-review/review.module.css");
+const entry = read("components/free-entry-landing.tsx");
+const express = read("components/personal-express-enquiry.tsx");
 const homepage = read("components/holistic-house-home.tsx");
 const services = read("components/services-conversion-hero.tsx");
 
-test("free written review and optional paid consultation are distinct choices on one landing", () => {
-  assert.match(landing, /id="request-free-review"/);
-  assert.match(landing, /id="personal-consultation"/);
-  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
-  assert.match(landing, /variant="all"/);
-  assert.match(landing, /href="#request-free-review"/);
-  assert.match(landing, /href="#situations"/);
-  assert.match(landing, /<ServiceVideoShowcase topic="overview"/);
-  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('<ServiceVideoShowcase'), "consultation format selection belongs after the value explanation and video");
-  assert.match(landing, /<details className=\{styles\.directions\}>/);
-  assert.match(landing, /className=\{styles\.finalRequest\} id="request-free-review"/);
-  assert.ok(landing.includes('href={"/" + locale + "/services/alchemy-of-soul"}'));
+function assertFreeEntry(page, shared, capture) {
+  assert.match(page, /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  assert.match(shared, /<PersonalExpressEnquiry locale=\{locale\} intro=/);
+  assert.match(shared, /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.match(shared, /href="#request-free-review"/);
+  assert.match(capture, /id="request-free-review" data-personal-express-enquiry/);
+  assert.match(capture, /enableWizard = false/);
+  assert.match(capture, /data-express-reveal aria-expanded=\{expanded\} aria-controls="express-request-form"/);
+  assert.match(capture, /id="express-request-form"[\s\S]*?hidden=\{!expanded\}/);
+  assert.match(capture, /whatsappUrl=\{whatsappUrl\} compactPhone stayAfterSave resetKey=\{focus\}/);
+  assert.match(capture, /allowSecureExpressClaim publicServiceTitle=\{t\.service\}/);
+  assert.match(capture, /publicTopic=\{"Express review focus: " \+ t\.areas\[focus\]\.tag\}/);
+  assert.doesNotMatch(page + shared, /<FreeReviewQuickRequest/);
+}
+
+test("free written review uses its authored disclosure and private preparation, not a paid selector", () => {
+  assertFreeEntry(landing, entry, express);
+  const captureCss = read("components/personal-express-enquiry.module.css");
+  const entryCss = read("components/free-entry-landing.module.css");
+  assert.match(captureCss, /\.wrapper :is\(input,button,a\):focus-visible/);
+  assert.match(captureCss, /\.reveal\{min-height:48px/);
+  assert.match(captureCss, /@media\(max-width:720px\)/);
+  assert.match(entryCss, /\.page :is\(a,button,summary,input,textarea,select\):focus-visible/);
+  assert.match(entryCss, /@media\(max-width:600px\)/);
+  assert.match(entryCss + captureCss, /prefers-reduced-motion/);
+  for (const [before, after] of [
+    ['id="request-free-review"', 'id="missing-review"'],
+    ['hidden={!expanded}', 'hidden={false}'],
+    ['publicServiceTitle={t.service}', 'publicServiceTitle="Personal session"'],
+    ['compactPhone stayAfterSave', 'compactPhone'],
+  ]) {
+    assert.ok(express.includes(before), before);
+    assert.throws(() => assertFreeEntry(landing, entry, express.replace(before, after)), undefined, before);
+  }
 });
 
-test("three languages preserve a genuinely free written report and transparent live consultation prices", () => {
-  for (const phrase of [
-    "Начать бесплатный разбор",
-    "Get my free written review",
-    "Recibir revisión escrita gratuita",
-    "written", "письмен", "escrito",
-  ]) assert.ok(landing.includes(phrase), "missing localised consultation detail: " + phrase);
-  assert.doesNotMatch(landing, /€50|€100/, "Monetary amounts appear only in the final request component");
-  const selector = read("components/free-review-quick-request.tsx");
-  for (const phrase of ["€50", "€100", "Free", "Бесплатно", "Gratis"]) assert.ok(selector.includes(phrase), phrase);
-  assert.match(landing, /медицинским диагнозом/i);
-  assert.match(landing, /medical diagnosis/i);
+test("three languages retain free written review while paid durations and prices stay explicit in the service catalog", () => {
+  for (const phrase of ["personal written review", "письменный", "revisión escrita", "not a medical diagnosis", "не диагностика или лечение", "sin diagnóstico médico"]) {
+    assert.ok((landing + entry).includes(phrase), phrase);
+  }
+  assert.doesNotMatch(landing + express, /€50|€100/, "The free request does not silently become a paid consultation");
+  for (const locale of ["en", "ru", "es"]) {
+    const catalog = publicServiceCatalog(locale);
+    assert.deepEqual(catalog.map(({ id, durationMinutes, amountMinor, currency, kind }) => ({ id, durationMinutes, amountMinor, currency, kind })), [
+      { id: "express-consultation-30", durationMinutes: 30, amountMinor: 5000, currency: "EUR", kind: "one_time" },
+      { id: "personal-session-60", durationMinutes: 60, amountMinor: 10000, currency: "EUR", kind: "one_time" },
+    ]);
+    assert.ok(catalog.every(product => product.title && product.description));
+  }
 });
 
-test("home and services offer direct and clear free and paid landing actions", () => {
-  assert.match(homepage, /services\/free-situation-review/);
-  assert.match(read("data/core-service-offers.ts"), /free-situation-review/);
-  assert.match(read("components/services-studio-offers.tsx"), /situation.href/);
-  assert.match(homepage, /className="service-home-button service-home-button--primary"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
-  assert.match(homepage, /\{text\.heroBook\}/);
-  assert.match(services, /className=\{styles\.paidLink\} href="#consultation" data-service-hero-cta="paid"/);
-  assert.match(homepage, /service-home-button--primary/);
-  assert.match(services, /paidCta:/);
-  assert.match(styles, /\.heroActions\{/);
-  assert.match(styles, /\.finalRequest\{/);
-  assert.match(styles, /@media\(max-width:767px\)/);
+function assertHomePaths(home, carousel, featured, hero) {
+  assert.match(home, /<HomeSectionCarousel locale=\{locale\} \/>/);
+  assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
+  assert.ok(carousel.includes('slide.key === "services" ? `/${locale}/services#consultation`'));
+  assert.ok(featured.includes('review: "/" + locale + "/services/free-situation-review"'));
+  assert.ok(featured.includes('therapist: "/" + locale + "/services#consultation"'));
+  assert.match(featured, /<Link href=\{hrefs\[offer\.id\]\}/);
+  assert.match(hero, /href="#free-insights" data-service-hero-cta="free"/);
+  assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
+}
+
+test("home and services keep distinct direct free and paid destinations through their current components", () => {
+  const carousel = read("components/home-section-carousel.tsx");
+  const featured = read("components/home-featured-workspace.tsx");
+  assertHomePaths(homepage, carousel, featured, services);
+  assert.throws(() => assertHomePaths(homepage, carousel.replace('/services#consultation', '/services#missing'), featured, services));
+  assert.throws(() => assertHomePaths(homepage, carousel, featured.replace('/services/free-situation-review', '/services/business-consulting'), services));
+  assert.throws(() => assertHomePaths(homepage, carousel, featured, services.replace('href="#free-insights"', 'href="#consultation"')));
 });
 
-function assertBookingAnchor(page, cta, capture) {
+function assertBookingAnchor(page, cta, cart) {
   const targets = [...page.matchAll(/<PublicConsultationCta\b[^>]*\/>/g)].map(match => match[0]);
   assert.equal(targets.length, 1, "One consultation target per Services page");
   assert.match(targets[0], /id="consultation"/);
   assert.match(targets[0], /\bserviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
-  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} wiseEnabled=\{wiseEnabled\} paypalPersonalEnabled=\{paypalPersonalEnabled\} \/>/);
-  assert.match(capture, /<section\s+id=\{id\}/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationCartEntry locale=\{locale\} id=\{id\} \/>/);
+  assert.match(cart, /<section id=\{id\}[^>]*data-consultation-capture="service"/);
+  assert.match(cart, /aria-pressed=\{added\}/);
+  assert.match(cart, /onClick=\{\(\) => toggle\(product\.id\)\}/);
+  assert.match(cart, /restoreServiceCart\(JSON\.stringify\(/);
+  assert.match(cart, /Adding to cart does not charge or reserve a time/);
+  assert.match(cart, /Before paying, confirm the time, total amount/);
+  assert.match(cart, /<p className=\{styles\.note\}>\{t\.note\}<\/p>/);
+  assert.doesNotMatch(cart, /fetch\(|sendBeacon|XMLHttpRequest|window\.open|paypal\.com|wise\.com/);
 }
 
-test("booking links resolve to the service selector anchor in every Services locale", () => {
+test("booking anchors resolve to the current SKU-only cart in every Services locale without charging or reserving", () => {
   const cta = read("components/public-consultation-cta.tsx");
-  const capture = read("components/consultation-choice-capture.tsx");
+  const cart = read("components/commerce/consultation-cart-entry.tsx");
   for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
     const page = read(path);
-    assertBookingAnchor(page, cta, capture);
-    assert.throws(() => assertBookingAnchor(page.replace('id="consultation"', 'id="missing-consultation"'), cta, capture));
-    assert.throws(() => assertBookingAnchor(page.replace(' serviceBooking ', ' '), cta, capture));
-    assert.throws(() => assertBookingAnchor(page.replace('wiseEnabled={wisePaymentsEnabled()}', 'wiseEnabled={true}'), cta, capture));
-    assert.throws(() => assertBookingAnchor(page.replace('paypalPersonalEnabled={personalPayPalEnabled()}', 'paypalPersonalEnabled={true}'), cta, capture));
-    assert.throws(() => assertBookingAnchor(page.replace(' paypalPersonalEnabled={personalPayPalEnabled()}', ''), cta, capture));
+    assertBookingAnchor(page, cta, cart);
+    for (const [before, after] of [
+      ['id="consultation"', 'id="missing-consultation"'], [' serviceBooking ', ' '],
+      ['wiseEnabled={wisePaymentsEnabled()}', 'wiseEnabled={true}'],
+      ['paypalPersonalEnabled={personalPayPalEnabled()}', 'paypalPersonalEnabled={true}'],
+    ]) assert.throws(() => assertBookingAnchor(page.replace(before, after), cta, cart));
   }
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('variant="service" id={id}', 'variant="personal" id={id}'), capture));
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('wiseEnabled={wiseEnabled}', 'wiseEnabled={true}'), capture));
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('paypalPersonalEnabled={paypalPersonalEnabled}', 'paypalPersonalEnabled={true}'), capture));
+  const page = read("app/es/services/page.tsx");
+  assert.throws(() => assertBookingAnchor(page, cta.replace('id={id} />', 'id="missing" />'), cart));
+  assert.throws(() => assertBookingAnchor(page, cta, cart.replace('<section id={id}', '<section')));
+  assert.throws(() => assertBookingAnchor(page, cta, cart.replace('{t.note}</p>', '</p>')));
+  assert.throws(() => assertBookingAnchor(page, cta, cart + '\nfetch("/api/pay");'));
+  const selected = restoreServiceCart(JSON.stringify(['express-consultation-30', 'express-consultation-30', 'synthetic@example.invalid', '+14165550123', 'https://example.invalid/private', 'personal-session-60']));
+  assert.deepEqual(selected, ['express-consultation-30', 'personal-session-60']);
+  for (const invalid of ['not-json', '{}', 'null', '["private answers"]']) assert.deepEqual(restoreServiceCart(invalid), []);
 });
 
 test("existing personal form directs to private saving without a messenger material handoff", () => {

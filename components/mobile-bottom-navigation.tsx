@@ -38,9 +38,60 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     const viewport = window.visualViewport;
     let frame: number | null = null;
     let correction = 0;
+    let heightPress: { pointerId: number; value: string; priority: string } | null = null;
+    let heightReleaseTimer: number | null = null;
     const measureHeight = () => {
+      if (heightPress) return;
       document.body.style.setProperty('--ia222-bottom-height', `${element.getBoundingClientRect().height}px`);
     };
+    const finishHeightPress = () => {
+      if (heightReleaseTimer !== null) window.clearTimeout(heightReleaseTimer);
+      heightReleaseTimer = null;
+      if (!heightPress) return;
+      const saved = heightPress;
+      heightPress = null;
+      if (saved.value) document.body.style.setProperty('--ia222-bottom-height', saved.value, saved.priority);
+      else document.body.style.removeProperty('--ia222-bottom-height');
+      measureHeight();
+    };
+    const onConsentPointerDown = (event: PointerEvent) => {
+      if (!event.isTrusted || !event.isPrimary || event.button !== 0) return;
+      finishHeightPress();
+      if (!window.matchMedia('(max-width: 767px)').matches || !(event.target instanceof Element)) return;
+      const label = event.target.closest('label');
+      const control = event.target.closest<HTMLInputElement>('input[type="checkbox"]')
+        || label?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      const form = control?.form;
+      const editor = document.activeElement;
+      if (!control || control.disabled || !form || !(editor instanceof HTMLInputElement)
+        || editor.type !== 'tel' || editor.form !== form
+        || !form.closest('[data-contact-channel-chooser][data-compact-phone-trigger="true"]')) return;
+      // Focused-editor CSS can reserve zero dock space. Preserve that computed
+      // geometry through the real press, not an assumed nonzero dock height.
+      // Phone blur must not resize the root scroller between down and release.
+      const height = window.getComputedStyle(document.body).getPropertyValue('--ia222-bottom-height');
+      if (!height.trim()) return;
+      heightPress = { pointerId: event.pointerId,
+        value: document.body.style.getPropertyValue('--ia222-bottom-height'),
+        priority: document.body.style.getPropertyPriority('--ia222-bottom-height') };
+      document.body.style.setProperty('--ia222-bottom-height', height, 'important');
+    };
+    const onConsentPointerUp = (event: PointerEvent) => {
+      if (!heightPress || heightPress.pointerId !== event.pointerId || heightReleaseTimer !== null) return;
+      // Physical release resolves before this next-task flush; a delayed
+      // compatibility click retains the browser's resolved down/up target.
+      // Also release when removal/disable suppresses that click altogether.
+      const releasing = heightPress;
+      heightReleaseTimer = window.setTimeout(() => {
+        if (heightPress !== releasing) return;
+        heightReleaseTimer = null;
+        finishHeightPress();
+      }, 0);
+    };
+    const onConsentPointerCancel = (event: PointerEvent) => {
+      if (heightPress?.pointerId === event.pointerId) finishHeightPress();
+    };
+    const onConsentVisibility = () => { if (document.visibilityState === 'hidden') finishHeightPress(); };
     const dockToViewport = () => {
       if (frame !== null) return;
       frame = window.requestAnimationFrame(() => {
@@ -73,7 +124,15 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     window.addEventListener('pageshow', onLayoutChange);
     document.addEventListener('focusin', dockToViewport);
     document.addEventListener('focusout', onLayoutChange);
+    document.addEventListener('pointerdown', onConsentPointerDown, { capture: true, passive: true });
+    document.addEventListener('pointerup', onConsentPointerUp, { capture: true, passive: true });
+    document.addEventListener('pointercancel', onConsentPointerCancel, { capture: true, passive: true });
+    document.addEventListener('keydown', finishHeightPress, { capture: true, passive: true });
+    document.addEventListener('visibilitychange', onConsentVisibility);
+    window.addEventListener('blur', finishHeightPress);
+    window.addEventListener('pagehide', finishHeightPress);
     return () => {
+      finishHeightPress();
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', dockToViewport);
@@ -83,6 +142,13 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       window.removeEventListener('pageshow', onLayoutChange);
       document.removeEventListener('focusin', dockToViewport);
       document.removeEventListener('focusout', onLayoutChange);
+      document.removeEventListener('pointerdown', onConsentPointerDown, true);
+      document.removeEventListener('pointerup', onConsentPointerUp, true);
+      document.removeEventListener('pointercancel', onConsentPointerCancel, true);
+      document.removeEventListener('keydown', finishHeightPress, true);
+      document.removeEventListener('visibilitychange', onConsentVisibility);
+      window.removeEventListener('blur', finishHeightPress);
+      window.removeEventListener('pagehide', finishHeightPress);
       element.style.removeProperty('transform');
       document.body.style.removeProperty('--ia222-bottom-height');
     };

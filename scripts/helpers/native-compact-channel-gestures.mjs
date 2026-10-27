@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { stripTypeScriptTypes } from 'node:module'
 import { assertDaoVerifierBoundary } from './dao-free-entry-verifier.mjs'
+import { assertNativeCompactConsentLayout } from './native-compact-consent-layout.mjs'
 
 // Execute exactly the current component's self-contained gesture effect, not a
 // separately maintained implementation. Fail closed if its extraction changes.
@@ -108,4 +109,5 @@ export async function assertNativeCompactChannelGestures(browser, expect, { orig
     assert.deepEqual(errors, [], 'Native compact fixture has no browser errors')
     assert.equal(blockedRequests, 0, 'Native compact fixture remains offline')
   } finally { await context.close() }
+  await assertNativeCompactConsentLayout(browser, expect, { origin })
 }

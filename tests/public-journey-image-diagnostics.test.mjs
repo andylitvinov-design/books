@@ -45,7 +45,8 @@ test('cross-origin, credentials, fragments and private-text cannot inherit safe-
   for(const path of [...fixtures.map(([path])=>path),'/media/PRIVATE_SERIES/PRIVATE_FILE']){
     for(const url of ['https://foreign.invalid'+path,'http://user:password@127.0.0.1:3100'+path,origin+path+'#PRIVATE_FRAGMENT']){
       const result=diag(url);assert.equal(result.routeShape,'unclassified');assert.equal(result.sourceId,'unclassified')
-      assert.doesNotMatch(JSON.stringify(result),/PRIVATE|foreign|password|user|http/)
+      assert.ok(['http','https'].includes(result.urlScheme))
+      assert.doesNotMatch(JSON.stringify({...result,urlScheme:undefined}),/PRIVATE|foreign|password|user|http/)
     }
     assert.equal(publicJourneyRequestDiagnostic(request(origin+path),'unplanned-route').routeShape,'unclassified','Missing trusted loopback origin cannot classify a route')
     const result=diag(origin+path+'?private=PRIVATE_QUERY','private-text')

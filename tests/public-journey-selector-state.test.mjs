@@ -67,12 +67,16 @@ test('Business duration extraction uses each actual offer disclosure, not nested
   // Match the three extra nested details reported in exact CI without executing
   // ContactChannelChooser, auth, API, consent, or provider code.
   const contactScaffold = () => jsx('section', { children: ['div', 'small', 'form'].flatMap(type => [jsx(type, { children: 'not an offer duration' }), jsx('details')]) })
+  // Replay only the source-authored title closure; contactUrl and chooser remain inert stubs.
+  const titleDeclarations = ['requestOption', 'requestServiceTitle'].map(name =>
+    'const ' + find(source, node => ts.isVariableDeclaration(node) && node.name.getText() === name).getText() + ';').join('\n')
+  const bindServiceTitle = compile('export const bind = t => {' + titleDeclarations + 'return requestServiceTitle}', {}).bind
   function cards(locale, snippet = article.getText()) {
     return Array.from(copy[locale].offers, (offer, index) => {
-      const exports = compile('export const render=({offer,index,locale,offerImages,t,styles,Image,ChevronDown,ClipboardCheck,ArrowRight,AcquisitionEventLink,ContactChannelChooser,contactUrl,freeHref,detailLabel,siteRequestLabel})=>(' + snippet + ')', { 'react/jsx-runtime': { jsx, jsxs: jsx } })
+      const exports = compile('export const render=({offer,index,locale,offerImages,t,styles,Image,ChevronDown,ClipboardCheck,ArrowRight,AcquisitionEventLink,ContactChannelChooser,contactUrl,requestServiceTitle,freeHref,detailLabel,siteRequestLabel})=>(' + snippet + ')', { 'react/jsx-runtime': { jsx, jsxs: jsx } })
       return attachParents(exports.render({ offer, index, locale, offerImages: constant(source, 'offerImages'), t: copy[locale], styles: {}, Image: 'img', ChevronDown: 'svg', ClipboardCheck: 'svg', ArrowRight: 'svg',
         AcquisitionEventLink: props => jsx('a', { ...props, ...props.attributes }), ContactChannelChooser: contactScaffold,
-        contactUrl: () => 'https://provider.invalid/not-navigated', freeHref: '/unused', detailLabel: 'Details', siteRequestLabel: 'Website request' }))
+        contactUrl: () => 'https://provider.invalid/not-navigated', requestServiceTitle: bindServiceTitle(copy[locale]), freeHref: '/unused', detailLabel: 'Details', siteRequestLabel: 'Website request' }))
     })
   }
   const replay = async (locale, snippet = loop, sourceCards = cards(locale)) => {

@@ -462,3 +462,111 @@ test('access-control text remains a failure class, not an inferred cancellation 
   assert.deepEqual(original, [error]); assert.deepEqual(page.eventNames(), ['pageerror'])
   assert.doesNotMatch(JSON.stringify(result), /secret|http|stack|ignored|waived|benign|request_aborted/)
 })
+
+// Mirrors Playwright1.63.0 splitErrorMessage: the first colon is the URL scheme
+// delimiter, and substring(index+2) consumes its first slash as well.
+function nativeFetchError(url, initiator = 'Fetch API') {
+  const text = initiator + ' cannot load ' + url + ' due to access control checks.'
+  const index = text.indexOf(':')
+  return { name: text.slice(0, index), message: text.substring(index + 2), stack: 'secret' }
+}
+
+test('native WebKit error text yields only fixed same-origin targets after pinned Playwright splitting', options, () => {
+  const { page } = fixture(), original = []
+  page.on('pageerror', error => original.push(error))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const paths = [...readPaths, '/_next/static/webpack/secret.hot-update.json', '/_next/static/webpack/app/private-secret.secret.hot-update.js']
+  const errors = paths.map((path, i) => nativeFetchError(origin + path + '?account=secret#private', i % 2 ? 'XMLHttpRequest' : 'Fetch API'))
+  errors.forEach(error => page.emit('pageerror', error))
+  const result = probe.stop()
+  assert.deepEqual(result.events.map(event => event.errorTarget), [...readAliases, 'hot-update-manifest', 'hot-update-chunk'])
+  assert.ok(result.events.every(event => event.category === 'access_control_error' && event.errorName === 'Other'))
+  assert.deepEqual(original, errors); assert.deepEqual(page.eventNames(), ['pageerror'])
+  assert.doesNotMatch(JSON.stringify(result), /secret|private|account|https?:|message|stack|query|fragment|ignored|benign/)
+})
+
+test('complete native text in HMR details is classified but plain Load failed has no invented target', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' }), ws = socket()
+  page.emit('websocket', ws)
+  for (const stackTrace of [
+    'Fetch API cannot load ' + origin + '/_next/static/webpack/secret.hot-update.json?secret due to access control checks.\nsecret stack',
+    'Error: XMLHttpRequest cannot load ' + origin + '/api/app/journey?secret due to access control checks.\nsecret stack',
+    'TypeError: Load failed\n at fetch (' + origin + '/_next/static/webpack/secret.hot-update.json)',
+  ]) emitFrame(ws, 'framesent', { event: 'client-full-reload', hadRuntimeError: false, stackTrace })
+  const events = probe.stop().events.filter(event => event.type === 'hmr-sent')
+  assert.deepEqual(events.map(event => event.errorTarget), ['hot-update-manifest', 'journey', undefined])
+  assert.deepEqual(events.map(event => event.errorCategory), ['access_control_error', 'access_control_error', 'network_load_error'])
+  assert.ok(events.every(event => event.errorDetails === 'text' && event.hadRuntimeError === false))
+  assert.ok(!Object.hasOwn(events[2], 'errorTarget'))
+  assert.doesNotMatch(JSON.stringify(events), /secret|https?:|stack|fetch|cause|benign/)
+})
+
+test('native error target rejects foreign origins, credentials, unknown paths and deceptive message shapes', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const urls = [
+    'https://127.0.0.1:3100/api/app/journey', 'http://external.invalid/api/app/journey',
+    'http://127.0.0.1:54329/api/app/journey', 'http://secret@127.0.0.1:3100/api/app/journey',
+    origin + '/api/app/journey/private', origin + '/api/app/%6aourney', origin + '/api/app/bootstrap',
+    origin + '/_next/static/chunks/secret.js', origin + '/other?next=/_next/static/webpack/secret.hot-update.json',
+    origin + '/_next/static/webpack/secret…secret.hot-update.json', origin + '/_next/static/webpack/secret...secret.hot-update.json',
+    origin + '/_next/static/webpack/secret%e2%80%a6secret.hot-update.json',
+    'http:///127.0.0.1:3100/api/app/journey', 'http:////127.0.0.1:3100/api/app/journey',
+    'http://127.0.0.1:3100\\api\\app\\journey',
+  ]
+  const good = 'Fetch API cannot load ' + origin + '/api/app/journey due to access control checks.'
+  const malformed = [
+    { name: 'Error', message: 'Unrelated failure at ' + origin + '/api/app/journey due to access control checks.' },
+    { name: 'Error', message: 'secret\n' + good },
+    { name: 'Error', message: good.replace('due to access control checks.', 'Load failed') },
+    { name: 'Fetch API cannot load http', message: '//127.0.0.1:3100/api/app/journey due to access control checks.' },
+    { name: 'secret', message: '/127.0.0.1:3100/api/app/journey due to access control checks.' },
+    { message: '/127.0.0.1:3100/api/app/journey due to access control checks.' },
+    { name: 'Fetch API cannot load http:', message: '/127.0.0.1:3100/api/app/journey due to access control checks.' },
+    { name: 'Error', message: 'secret', stack: good },
+    { name: 'Error', message: good + '\n' + 's'.repeat(4096) },
+  ]
+  for (const error of [...urls.map(url => nativeFetchError(url)), ...malformed]) page.emit('pageerror', error)
+  const result = probe.stop()
+  assert.equal(result.events.length, urls.length + malformed.length)
+  assert.ok(result.events.every(event => !Object.hasOwn(event, 'errorTarget')))
+  assert.doesNotMatch(JSON.stringify(result), /secret|private|https?:|message|stack|unavailable/)
+})
+
+test('error target aliases preserve event bounds and never create request identities', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  for (let i = 0; i < 220; i++) page.emit('pageerror', nativeFetchError(origin + '/api/free-express/claim?secret'))
+  const result = probe.stop()
+  assert.equal(result.events.length, 200); assert.equal(result.dropped, 20)
+  assert.ok(result.events.every(event => event.errorTarget === 'free-express-claim'))
+  assert.ok(result.events.every(event => !Object.hasOwn(event, 'requestId')))
+  assert.deepEqual(page.eventNames(), [])
+})
+
+test('real verifier finally emits safe target aliases while its unchanged pageerror gate still rejects', options, async () => {
+  const source = await readFile(sourceURL, 'utf8')
+  const start = source.lastIndexOf('} finally {')
+  assert.ok(start > 0)
+  const body = source.slice(start + '} finally {'.length, source.lastIndexOf('}'))
+  for (const completed of [false, true]) {
+    const { page } = fixture(), problems = [], writes = [], cleanup = []
+    page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
+    const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+    page.emit('pageerror', nativeFetchError(origin + '/_next/static/webpack/secret.hot-update.json?account=secret#secret'))
+    await runInNewContext('(async () => {' + body + '})()', {
+      completed, output: '/synthetic', name: 'webkit', navigationDiagnostics: probe,
+      writeFile: async (path, content) => writes.push({ path, content: JSON.parse(content) }),
+      console: { warn: () => { throw Error('unexpected artifact failure') } },
+      context: { close: async () => cleanup.push('context') }, browser: { close: async () => cleanup.push('browser') },
+    }, { timeout: 1000 })
+    assert.equal(writes.length, 1); assert.equal(writes[0].path, '/synthetic/webkit-navigation.json')
+    assert.equal(writes[0].content.events[0].errorTarget, 'hot-update-manifest')
+    assert.equal(writes[0].content.events.at(-1).phase, completed ? 'success' : 'failure')
+    assert.doesNotMatch(JSON.stringify(writes), /secret|account|https?:|message|stack/)
+    assert.deepEqual(cleanup, ['context', 'browser']); assert.deepEqual(page.eventNames(), ['pageerror'])
+    const gateStart = source.indexOf('const devOverlayBlocked = ')
+    const gateEnd = source.indexOf("console.log('PORTRAIT_QA_SUCCESS'", gateStart)
+    assert.ok(gateStart > 0 && gateEnd > gateStart)
+    assert.throws(() => runInNewContext(source.slice(gateStart, gateEnd), { problems, assert }, { timeout: 1000 }),
+      error => error.code === 'ERR_ASSERTION' && error.actual === 1 && error.expected === 0)
+  }
+})

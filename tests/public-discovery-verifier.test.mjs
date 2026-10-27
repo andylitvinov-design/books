@@ -6,7 +6,7 @@ import { hooks, compile, modules, jsx, renderWithEffects, assertDiscoveryIsolati
 afterEach(assertDiscoveryIsolation)
 import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
-import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
+import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches, publicCollectionSearchKeys } from '../scripts/helpers/public-discovery-verifier.mjs'
 import * as portraitConstructs from '../lib/assessments/portrait-constructs.js'
 import * as portraitSectors from '../lib/assessments/portrait-sectors.js'
 import * as portraitRayLabels from '../lib/assessments/portrait-ray-labels.js'
@@ -139,6 +139,93 @@ test('collection browser acceptance checks exact boosted ranking and rejects unk
   assertPublicCollectionMatches(expected,entries,collection,[])
   for(const shown of [expected.slice(1),[...expected].reverse(),['unknown-key'],[expected[0],expected[0]],[],Array(6).fill(expected[0])])assert.throws(()=>assertPublicCollectionMatches(shown,entries,collection,[]))
 
+})
+
+function collectionSearchHarness(locale, initialPreferences, mutate = source => source) {
+  const parentHooks = hooks(), pickerHooks = hooks()
+  let tree, props, starts = 0
+  assertAfterIsolation(() => assert.equal(starts, 0, 'Local collection search never starts tests, including cleanup'))
+  const { TestExplorer } = compile(mutate(parentSource), parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
+  const render = () => renderWithEffects([parentHooks, pickerHooks], () => {
+    props = TestExplorer({ locale, audience: 'guest', simpleMode: true, initialPreferences, onStart: () => { starts++ } }).props
+    return tree = SimpleTestPicker(props)
+  })
+  render()
+  // Keep one explicit cross-topic selection while switching/searching collections.
+  const candidate = props.catalogEntries.find(entry => entry.key === 'hh-love-affection')
+  assert.ok(candidate?.selectable)
+  props.onToggleTest(candidate.key); render()
+  const preserved = props.activeBattery.map(entry => entry.key)
+  props.onChooseCollection('sleep'); render()
+  const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
+  const search = () => nodes(tree).find(node => node.props.id === 'hh-test-hero-search')
+  search().props.onChange({ target: { value: query } }); render()
+  nodes(tree).find(node => node.type === 'form' && node.props.role === 'search').props.onSubmit({ preventDefault() {} }); render()
+  assert.equal(props.activeCollectionId, 'sleep')
+  assert.deepEqual(Array.from(props.focus), initialPreferences.focus || [])
+  assert.deepEqual(props.activeBattery.map(entry => entry.key), preserved)
+  assert.equal(nodes(tree).filter(node => node.props['data-via-family']).length, 0)
+  const collection = availableTestCollections(props.catalogEntries, initialPreferences).find(item => item.id === 'sleep')
+  assert.ok(collection)
+  return { shown: nodes(tree).filter(node => node.props['data-test-match']).map(node => node.props['data-test-match']), entries: props.catalogEntries, collection, preserved, query }
+}
+
+for (const [locale, initialPreferences] of [
+  ['en', { focus: ['stress'], depth: 'quick' }],
+  ['ru', { focus: ['stress'], depth: 'balanced' }],
+  ['es', {}],
+]) test(locale + ' collection search oracle preserves the actual initial preferences and exact five-card order', () => {
+  const h = collectionSearchHarness(locale, initialPreferences)
+  const expected = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, initialPreferences)
+  assert.equal(expected.length, 5)
+  assert.deepEqual(h.shown, expected)
+  if (locale === 'en') {
+    // The current hosted Chromium failure: old sleep-only oracle, not an app bug.
+    assert.deepEqual(h.shown, ['hh-love-affection', 'hh-monthly-profile', 'hh-stress-weather', 'hh-support-seeking', 'cbi-client'])
+    assert.deepEqual(publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, { depth: 'quick' }), ['hh-love-affection', 'hh-monthly-profile', 'hh-loss-adjustment', 'hh-solitude-choice', 'hh-speaking-up'])
+  }
+})
+
+test('collection search oracle retains explicit kind/time filters without admitting selected out-of-filter tests', () => {
+  const initialPreferences = { focus: ['stress'], depth: 'quick', kinds: ['professional'], maxMinutes: 3 }
+  const h = collectionSearchHarness('en', initialPreferences)
+  const expected = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, initialPreferences)
+  assert.equal(expected.length, 5)
+  assert.deepEqual(h.shown, expected)
+  assert.ok(h.shown.every(key => h.entries.some(entry => entry.key === key && entry.testKind === 'professional' && entry.durationMinutes <= 3)))
+  assert.ok(h.preserved.includes('hh-love-affection'))
+  assert.ok(!h.shown.includes('hh-love-affection'), 'Selected battery remains intact but does not bypass recommendation filters')
+  for (const dropped of [{ ...initialPreferences, kinds: [] }, { ...initialPreferences, maxMinutes: 0 }]) {
+    assert.notDeepEqual(expected, publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, dropped), 'Each explicit filter must independently affect the oracle')
+  }
+})
+
+test('collection search exact oracle rejects omitted/extra preferences, reordering and wrong visible counts', () => {
+  const initialPreferences = { focus: ['stress'], depth: 'quick' }
+  const h = collectionSearchHarness('en', initialPreferences)
+  const expected = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, initialPreferences)
+  const omitted = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, { ...initialPreferences, focus: [] })
+  const added = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, { ...initialPreferences, focus: ['stress', 'relationships'] })
+  const lostDepth = publicCollectionSearchKeys(h.entries, h.collection, h.preserved, h.query, { focus: ['stress'] })
+  for (const wrong of [omitted, added, lostDepth, [...expected].reverse(), expected.slice(0, 4), [...expected, 'unknown-key'], [expected[0], ...expected.slice(0, 4)]]) {
+    assert.throws(() => assert.deepEqual(wrong, expected))
+  }
+  const union = '[...new Set([...focus, ...activeCollection.focus])]'
+  const mutations = [
+    [union, '[...activeCollection.focus]'],
+    [union, "[...new Set([...focus, 'relationships', ...activeCollection.focus])]"],
+    ["initialPreferences?.depth ?? 'balanced'", "'balanced'"],
+    ['const searchRecommendations = simpleRecommendations', 'const searchRecommendations = [...simpleRecommendations].reverse()'],
+  ]
+  for (const [before, after] of mutations) {
+    assert.ok(parentSource.includes(before), 'Mutation must modify the real current parent')
+    const changed = collectionSearchHarness('en', initialPreferences, source => source.replace(before, after))
+    assert.notDeepEqual(changed.shown, expected, 'The same exact oracle must detect the altered preference/order semantics')
+  }
+  const helper = read('scripts/helpers/public-discovery-verifier.mjs')
+  assert.ok(helper.includes('publicCollectionSearchKeys(entries, sleepCollection, preserved, query, initialPreferences)'))
+  assert.ok(helper.includes('toEqual(expectedSearch)'), 'Browser equality must remain ordered and count-sensitive')
 })
 
 function portraitHarness(locale, mutate = source => source, measuredCount = 8) {

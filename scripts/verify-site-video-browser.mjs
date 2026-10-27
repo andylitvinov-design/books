@@ -23,6 +23,47 @@ const exec = promisify(execFile)
 const testToken = 'synthetic-video-browser-test-only'
 const namespace = 'holistic-house:site-videos:v1'
 
+// BEGIN bounded public detail-video contract (source-tested, no browser/provider calls).
+// These literals are independent of the renderer and registry. Update only with
+// source-routing plus independent delivery/isolation evidence; not registry self-comparison.
+const detailVideoCases = [
+  {"alias": "alchemy-en", "route": "/en/services/alchemy-of-soul", "canonicalPath": "/en/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "7c6b243f048b9c0581ae29619a4a89fc"},
+  {"alias": "hypnotherapy-en", "route": "/en/services/hypnotherapy-course", "canonicalPath": "/en/services/hypnotherapy-course", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "8c1634ce904434a91931429b6a7eefe1"},
+  {"alias": "alchemy-ru", "route": "/ru/services/alchemy-of-soul", "canonicalPath": "/ru/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "Cz6SxXJNZbw"},
+  {"alias": "hypnotherapy-ru", "route": "/ru/services/hypnotherapy-course", "canonicalPath": "/ru/services/hypnotherapy-course", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "eLsjFaKCBhI"},
+  {"alias": "alchemy-legacy-en", "route": "/en/services/psychohomeopathy", "canonicalPath": "/en/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "7c6b243f048b9c0581ae29619a4a89fc"},
+  {"alias": "alchemy-legacy-ru", "route": "/ru/services/psychohomeopathy", "canonicalPath": "/ru/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "Cz6SxXJNZbw"},
+  {"alias": "imagery-es", "route": "/es/services/imagery-therapy", "canonicalPath": "/es/services/imagery-therapy", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "es", "audioLanguage": "en", "provider": "heygen", "videoId": "8c1634ce904434a91931429b6a7eefe1"},
+  {"alias": "constellations-en", "route": "/en/services/systemic-constellations", "canonicalPath": "/en/services/systemic-constellations", "selector": "[data-service-video=\"constellation-case\"]", "locale": "en", "audioLanguage": "en", "provider": "youtube", "videoId": "sfVFOQNr2qk"},
+  {"alias": "free-review-en", "route": "/en/services/free-situation-review", "canonicalPath": "/en/services/free-situation-review", "selector": "[data-free-review-intro-video][data-intro-audio-language=\"en\"]", "locale": "en", "audioLanguage": "en", "provider": "youtube", "videoId": "s30Y42IwPcg"},
+]
+
+function detailVideoWatchUrl(contract) {
+  return contract.provider === 'heygen'
+    ? `https://app.heygen.com/share/${contract.videoId}`
+    : `https://www.youtube.com/watch?v=${contract.videoId}`
+}
+
+function classifyDetailVideoSource(raw, contract) {
+  if (typeof raw !== 'string' || !raw) return 'missing'
+  if (raw.length > 2048 || raw !== raw.trim()) return 'invalid'
+  let url
+  try { url = new URL(raw) } catch { return 'invalid' }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash) return 'invalid'
+  const origin = contract.provider === 'heygen' ? 'https://app.heygen.com' : 'https://www.youtube-nocookie.com'
+  if (url.origin !== origin) return 'wrong-origin'
+  const path = contract.provider === 'heygen' ? `/embeds/${contract.videoId}` : `/embed/${contract.videoId}`
+  if (url.pathname !== path) return 'wrong-video'
+  if (contract.provider === 'heygen') return url.search ? 'wrong-parameters' : 'match'
+  const parameters = { autoplay: '1', playsinline: '1', rel: '0', hl: contract.locale, cc_lang_pref: contract.audioLanguage }
+  if ([...url.searchParams].length !== Object.keys(parameters).length) return 'wrong-parameters'
+  for (const [name, value] of Object.entries(parameters)) {
+    if (url.searchParams.getAll(name).length !== 1 || url.searchParams.get(name) !== value) return 'wrong-parameters'
+  }
+  return 'match'
+}
+// END bounded public detail-video contract.
+
 try {
   if (!live) {
     assert.equal(process.env.CI, 'true', 'Isolated tests must run in CI')
@@ -161,33 +202,56 @@ try {
     }
     pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
 
-    const detailRoutes = [
-      ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-    ]
-    for (const [route, topic, expectedUrl] of detailRoutes) {
-      await navigate(route)
-      if (route.endsWith('/psychohomeopathy')) {
-        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
+    for (const contract of detailVideoCases) {
+      const { alias, route, selector, locale, audioLanguage, provider } = contract
+      let block, phase = 'navigate'
+      console.log(`CHECK: video-detail ${alias}`)
+      try {
+        await navigate(route)
+        assert.equal(new URL(page.url()).pathname, contract.canonicalPath, `Video detail ${alias}: canonical route`)
+        await expect(page.locator('main').first()).toHaveAttribute('lang', locale)
+        phase = 'poster'
+        block = page.locator(selector)
+        await expect(block).toHaveCount(1)
+        await block.scrollIntoViewIfNeeded()
+        await expect(block.locator('.site-video-player')).toHaveAttribute('lang', locale)
+        await expect(block.locator('.site-video-caption [lang]').first()).toHaveAttribute('lang', audioLanguage)
+        await expect(block.locator('.site-video-play')).toBeVisible()
+        assert.equal(await block.locator('iframe').count(), 0, `Video detail ${alias}: eager third-party iframe`)
+        const transcript = block.locator('details.site-video-transcript')
+        if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
+        // Check the independently pinned original identity without printing unknown hrefs.
+        await expect.poll(async () => (await block.locator('.site-video-watch-link').first().getAttribute('href')) === detailVideoWatchUrl(contract),
+          { message: `Video detail ${alias}: original watch identity` }).toBe(true)
+        phase = 'play'
+        await block.locator('.site-video-play').click()
+        await expect(block.locator('iframe')).toHaveCount(1)
+        // Parse exact origin/path and language parameters, not a permissive URL prefix.
+        // Failures report only a fixed category, never an unknown iframe URL/query.
+        await expect.poll(async () => classifyDetailVideoSource(await block.locator('iframe').getAttribute('src'), contract),
+          { timeout: 10000, message: `Video detail ${alias}: approved embed identity` }).toBe('match')
+        await expect.poll(async () => (await block.locator('iframe').getAttribute('data-video-playback')) === provider,
+          { message: `Video detail ${alias}: playback provider` }).toBe(true)
+        assert.equal(await block.locator('.site-video-play').count(), 0, `Video detail ${alias}: poster remained after Play`)
+        console.log(`PASS: video-detail ${alias}`)
+      } catch (error) {
+        let snapshot = { status: 'unavailable' }
+        try {
+          const frames = block ? await block.locator('iframe').evaluateAll(nodes => nodes.slice(0, 2).map(node => ({
+            src: node.getAttribute('src'), provider: node.getAttribute('data-video-playback'),
+          }))) : []
+          snapshot = {
+            status: 'captured', canonicalPathMatches: new URL(page.url()).pathname === contract.canonicalPath,
+            blockCount: block ? Math.min(await block.count(), 2) : 0,
+            frameCount: block ? Math.min(await block.locator('iframe').count(), 2) : 0,
+            frames: frames.map(frame => ({ source: classifyDetailVideoSource(frame.src, contract), providerMatches: frame.provider === provider })),
+          }
+        } catch { /* Diagnostic failure must not replace the original assertion. */ }
+        const failure = { schemaVersion: 1, caseAlias: alias, phase, ...snapshot }
+        writeFileSync(`${evidence}/detail-route-failure.json`, JSON.stringify(failure, null, 2))
+        console.error('FAIL: video-detail', JSON.stringify(failure))
+        throw error
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
-      await expect(block).toHaveCount(1)
-      await block.scrollIntoViewIfNeeded()
-      await expect(block.locator('.site-video-play')).toBeVisible()
-      assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
-      const transcript = block.locator('details.site-video-transcript')
-      if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
-      await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
-      await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
-      assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.

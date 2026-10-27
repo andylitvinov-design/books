@@ -79,8 +79,7 @@ for(const [name,status,data] of [
   }finally{page.unmount()}
 })
 
-test('source integration preserves geometry/locales/other services and tests actual authored footer',()=>{
-  const script=read('scripts/verify-app-r1.mjs')
+function assertCoreServiceIntegration(script){
   assert.match(script,/for\(const locale of \['en','ru'\]\)/)
   assert.match(script,/for\(const width of \[320,360,390,1280\]\)/)
   assert.match(script,/if\(kind==='hypnotherapy'&&\(width===390\|\|width===1280\)\)/)
@@ -91,8 +90,14 @@ test('source integration preserves geometry/locales/other services and tests act
   assert.match(script,/assertDaoFreeEntryCapture\(servicePage/)
   assert.match(script,/openRegisteredCompactPhoneChooser\(pricing/)
   assert.match(script,/assertAlchemyPanelGeometry\(measurements\)/)
-  assert.match(script,/const readyChooser=await openContactChannelChooser\(ready,expect\)/)
+  assert.match(script,/import \{ assertFreeReviewLanding, verifyFreeReviewPrivateHandoff \} from '.\/helpers\/free-review-private-handoff-verifier.mjs'/)
+  assert.match(script,/await assertFreeReviewLanding\(publicPage,expect,locale\)/)
+  assert.match(script,/await verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/)
   assert.doesNotMatch(script,/openContactChannelChooser\(capture,expect\)/)
+}
+
+test('source integration preserves geometry/locales/other services and tests actual authored footer',()=>{
+  assertCoreServiceIntegration(read('scripts/verify-app-r1.mjs'))
   const helper=read('scripts/helpers/hypnotherapy-request-verifier.mjs')
   assert.doesNotMatch(helper,/newContext\(|newPage\(|\.goto\(|\.reload\(|clearCookies\(|sessionStorage\.clear|removeItem\(|force:\s*true|waitForTimeout|route\.continue\(|route\.fetch\(/)
   assert.match(helper,/await context\.unroute\('\*\*\/\*', guard\.route\)/)
@@ -101,6 +106,25 @@ test('source integration preserves geometry/locales/other services and tests act
   const route=read('app/[locale]/services/hypnotherapy-course/page.tsx')
   assert.match(route,/const kind = "hypnotherapy"/);assert.match(route,/<CoreServiceDetail locale=\{locale as Locale\} kind=\{kind\}/)
 })
+// Exercise the integration assertions on mutations of the actual current core.
+// The retired public copy form is not a Hypnotherapy invariant; its replacement
+// must still be imported and called, alongside the unchanged Hypnotherapy flow.
+for(const [name,from,to] of [
+  ['missing hypnotherapy request', "await verifyHypnotherapyRequest(servicePage,expect,{origin,locale,channel:width===390?'whatsapp':'telegram'})", 'await Promise.resolve()'],
+  ['wrong desktop channel', "channel:width===390?'whatsapp':'telegram'", "channel:'whatsapp'"],
+  ['wrong authored footer owner', 'main[data-core-service-detail="hypnotherapy"] > section:last-child > details', '[data-sitewide-capture="core-service"] > details'],
+  ['mobile-only early gate', "if(kind==='hypnotherapy'&&(width===390||width===1280)){", "if(width!==390)continue\n    if(kind==='hypnotherapy'&&(width===390||width===1280)){"],
+  ['missing current free-review import', "import { assertFreeReviewLanding, verifyFreeReviewPrivateHandoff } from './helpers/free-review-private-handoff-verifier.mjs'", ''],
+  ['missing current free-review landing', 'await assertFreeReviewLanding(publicPage,expect,locale)', 'await Promise.resolve()'],
+  ['retired free-review handoff', 'await verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,', 'await openContactChannelChooser(publicPage,expect,{origin,locale,'],
+])test('current core source rejects '+name,()=>{
+  const source=read('scripts/verify-app-r1.mjs')
+  assert.equal(source.split(from).length-1,1,'Negative control must target exactly one current core statement')
+  const changed=source.replace(from,to)
+  assert.notEqual(changed,source)
+  assert.throws(()=>assertCoreServiceIntegration(changed),{code:'ERR_ASSERTION'})
+})
+
 for(const bad of ['https://example.test','http://127.0.0.1:3100/path','http://localhost:3100?query=1','http://127.0.0.2:3100'])test('reject nonisolated origin '+bad,()=>assert.throws(()=>assertHypnotherapyBoundary(bad,'en',env)))
 for(const patch of [{CI:'false'},{HH_APP_TEST_RUNTIME:'production'},{VERCEL:'1'},{HH_TEST_ADMIN_DATABASE_URL:'postgres://db.example.test/hh_app_test'},{HH_TEST_ADMIN_DATABASE_URL:'postgres://localhost/production'}])test('reject invalid runtime '+Object.keys(patch)[0]+':'+Object.values(patch)[0],()=>assert.throws(()=>assertHypnotherapyBoundary(origin,'en',{...env,...patch})))
 for(const [key,value] of [['contactConsent',false],['serviceTitle','Other'],['sourcePath','/en/app'],['locale','ru'],['description','private'],['operationId','no-uuid'],['contact',{displayName:'real',email:'other@example.test',phone:''}],['website','spam'],['extra','unreviewed']])test('reject invalid payload '+key,()=>assert.throws(()=>assertHypnotherapyRequest({...payload(),[key]:value},'en','whatsapp')))

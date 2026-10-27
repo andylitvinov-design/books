@@ -52,7 +52,8 @@ test('trusted origin, credentials, fragments and image type gate the new syntax 
   for (const url of ['https://foreign.invalid/PRIVATE_ONE/PRIVATE_TWO', 'http://PRIVATE_USER:PRIVATE_PASSWORD@127.0.0.1:3100/PRIVATE_ONE', origin + '/PRIVATE_ONE#PRIVATE_FRAGMENT', 'not a url']) {
     const result = diagnostic(url)
     assert.deepEqual(syntax(result), ['unclassified', 'unclassified'])
-    assert.doesNotMatch(JSON.stringify(result), /PRIVATE|foreign|127|http/)
+    assert.ok(['http', 'https', 'invalid-url'].includes(result.urlScheme))
+    assert.doesNotMatch(JSON.stringify({ ...result, urlScheme: undefined }), /PRIVATE|foreign|127|http/)
   }
   assert.deepEqual(syntax(publicJourneyRequestDiagnostic(request(origin + '/PRIVATE_ONE'), 'unplanned-route')), ['unclassified', 'unclassified'])
   for (const resourceType of ['fetch', 'xhr', 'document', 'media', 'other', undefined]) {

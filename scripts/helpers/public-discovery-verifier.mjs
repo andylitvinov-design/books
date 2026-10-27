@@ -101,6 +101,25 @@ export function assertPublicCollectionMatches(shown, entries, collection, select
   assert.deepEqual(shown,expected,'The standard list uses the exact collection ranking, not a separate card layout or hard topic subset')
 }
 
+// Search uses the same eligible pool and retained preferences as the normal
+// public recommendations. A collection adds a soft topic boost; it does not
+// replace the visitor's focus or remove explicit kind/time/other filters.
+export function publicCollectionSearchKeys(entries, collection, selectedKeys, query, preferences = {}) {
+  const pool = filterExplorerEntries(entries, {
+    availability: 'available', styles: preferences.styles, kinds: preferences.kinds,
+    lengths: preferences.lengths, areas: preferences.areas, details: preferences.details,
+    axes: preferences.axes, maxMinutes: preferences.maxMinutes,
+    language: preferences.language, tracking: preferences.tracking, freeOnly: preferences.freeOnly,
+  })
+  const ranked = rankPublicTestMatches(pool, {
+    ...preferences, depth: preferences.depth || 'balanced',
+    focus: [...new Set([...(preferences.focus || []), ...collection.focus])],
+    collectionId: collection.id, collectionFocus: collection.focus,
+  })
+  return searchPublicTestEntries(groupViaRecommendations(ranked, new Set(selectedKeys), false).visible, query)
+    .slice(0, 5).map(entry => entry.key)
+}
+
 export async function exercisePublicCollections(page, expect, locale, initialPreferences = {}) {
   const picker = page.locator('[data-prelogin-test-picker]')
   const root = picker.locator('[data-test-topic-collections]')
@@ -159,8 +178,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await search.fill(query)
     await search.press('Enter')
     const sleepCollection = collections.find(item=>item.id==='sleep')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: sleepCollection.focus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
-    const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
+    const expectedSearch = publicCollectionSearchKeys(entries, sleepCollection, preserved, query, initialPreferences)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)
     await expect(picker.locator('[data-via-family]')).toHaveCount(0)

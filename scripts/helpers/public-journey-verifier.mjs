@@ -111,6 +111,10 @@ const diagnosticSunPoster = 'https://i.ytimg.com/vi/HqfixazXqRY/hqdefault.jpg'
 export function publicJourneyRequestDiagnostic(request, decision, origin) {
   let path = '', target
   try { target = new URL(request.url); path = target.pathname } catch {}
+  // A blob URL can inherit loopback origin while its pathname contains http://.
+  // Report only a fixed scheme enum; this is never permission or source identity.
+  const urlScheme = !target ? 'invalid-url' :
+    ({ 'http:': 'http', 'https:': 'https', 'blob:': 'blob', 'data:': 'data' })[target.protocol] || 'other'
   let sourceId = 'unclassified', routeShape = 'unclassified'
   let imagePathShape = 'unclassified', imagePathDepth = 'unclassified'
   if (target && !target.username && !target.password && !target.hash) {
@@ -144,6 +148,7 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
     navigation: request.navigation === true,
     resourceType: ['document','stylesheet','image','media','font','script','xhr','fetch','other'].includes(request.resourceType) ? request.resourceType : 'other',
     prefetch: request.prefetch === true,
+    urlScheme: decision === 'private-text' ? 'redacted' : urlScheme,
     category: path.startsWith('/api/') ? 'api' : /\.(?:png|jpe?g|webp|avif|svg|ico|woff2?|wav|mp3|css|js)$/i.test(path) ? 'static-asset' : /^\/(?:en|ru|es)(?:\/|$)/.test(path) ? 'localized-route' : 'other',
     path: decision === 'private-text' ? '[redacted]' : safeDiagnosticPaths.has(path) ? path : '[redacted]',
     sourceId: decision === 'private-text' ? 'redacted' : sourceId,

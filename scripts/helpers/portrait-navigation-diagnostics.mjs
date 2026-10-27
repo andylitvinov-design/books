@@ -29,12 +29,34 @@ function classifyPortraitError(error) {
   return classifyDiagnosticError(typeof error === 'string' ? text : { name: error?.name, message: text })
 }
 
-function reloadErrorDetails(message) {
+// WebKit logs native fetch refusals as JS-source console errors. Playwright
+// 1.63 splits at the first colon and skips two characters, including the first
+// slash of http://. Reconstruct only that pinned native shape, never an
+// arbitrary stack URL. A target alias identifies text, not a failure cause.
+function portraitErrorTarget(error, origin) {
+  const value = typeof error === 'string' ? error : error?.message
+  if (typeof value !== 'string' || value.length > 4096) return {}
+  let line = value.split('\n', 1)[0]
+  if (typeof error !== 'string' && /^(?:Fetch API|XMLHttpRequest) cannot load https?$/.test(error?.name)
+      && /^\/[^/]/.test(line)) line = error.name + ':/' + line
+  const match = line.match(/^(?:Error: )?(?:Fetch API|XMLHttpRequest) cannot load (https?:\/\/[^\s]+) due to access control checks\.$/)
+  if (!match || /…|\.\.\.|%e2%80%a6|\\/i.test(match[1])
+      || !/^https?:\/\/[^/\\?#\s]+\//.test(match[1])) return {}
+  let url, base
+  try { url = new URL(match[1]); base = new URL(origin) } catch { return {} }
+  if (url.origin !== base.origin || url.username || url.password) return {}
+  const endpoint = PORTRAIT_READS.get(url.pathname)
+  if (endpoint) return { errorTarget: endpoint }
+  const asset = url.pathname.match(/^\/_next\/static\/webpack\/.+\.hot-update\.(json|js)$/)
+  return asset ? { errorTarget: asset[1] === 'json' ? 'hot-update-manifest' : 'hot-update-chunk' } : {}
+}
+
+function reloadErrorDetails(message, origin) {
   if (!Object.hasOwn(message, 'stackTrace')) return { errorDetails: 'absent' }
   if (message.stackTrace === null) return { errorDetails: 'null' }
   if (typeof message.stackTrace !== 'string') return { errorDetails: 'non_text' }
   if (!message.stackTrace) return { errorDetails: 'empty' }
-  return { errorDetails: 'text', errorCategory: classifyPortraitError(message.stackTrace) }
+  return { errorDetails: 'text', errorCategory: classifyPortraitError(message.stackTrace), ...portraitErrorTarget(message.stackTrace, origin) }
 }
 
 // Passive Playwright events only: no evaluate, injected script, navigation,
@@ -136,6 +158,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   listen('pageerror', error => add({
     type: 'page-error', category: classifyPortraitError(error),
     errorName: ERROR_NAMES.has(error?.name) ? error.name : 'Other',
+    ...portraitErrorTarget(error, origin),
   }))
   listen('console', message => {
     const text = message.text()
@@ -167,7 +190,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
       } else if (direction === 'sent' && HMR_EVENTS.has(message.event)) {
         add({ type: 'hmr-sent', event: message.event,
           ...(typeof message.hadRuntimeError === 'boolean' ? { hadRuntimeError: message.hadRuntimeError } : {}),
-          ...(message.event === 'client-full-reload' ? reloadErrorDetails(message) : {}),
+          ...(message.event === 'client-full-reload' ? reloadErrorDetails(message, origin) : {}),
         })
       }
     }

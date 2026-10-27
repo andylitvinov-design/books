@@ -18,7 +18,8 @@ test("Services landing has free-first cards and preserves original personal path
   assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesStudioOffers"));
   assert.ok(page.indexOf("<ServicesStudioOffers") < page.indexOf("<ServicesIntroMedia"));
   assert.ok(page.indexOf("<ServicesIntroMedia") < page.indexOf("<PersonalTestimonials"));
-  assert.ok(page.indexOf("<PersonalTestimonials") < page.indexOf("<PublicConsultationCta"));
+  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<PublicConsultationCta"));
+  assert.ok(page.indexOf("<PublicConsultationCta") < page.indexOf("<ServicesStudioOffers"));
   assert.doesNotMatch(page, /<ServicesSmartDiscovery|<ServiceCart|<FreeInsightsPaths/);
   for (const id of ["tests", "situation", "dao", "alchemy", "hypnotherapy", "business", "constellations", "remote-energy-support"])
     assert.ok(ui.includes('id: "' + id + '"') || ui.includes('session("' + id + '")'), id);
@@ -34,39 +35,68 @@ test("Services landing has free-first cards and preserves original personal path
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:680px\)/);
   assert.match(css, /min-height:44px/);
+  assert.match(css, /:focus-visible/);
+  assert.match(ui, /<summary aria-label=\{t\.details \+ ": " \+ offer\.title\}/);
   assertBusinessPriceScope(offers);
 });
 
-test("homepage restores photo-left four services while keeping tests and Academy", () => {
+
+test("homepage keeps photo-led personal paths, free tests, Academy and reading in its current components", () => {
   const home = read("components/holistic-house-home.tsx");
   const css = read("app/holistic-house-home.css");
-  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
-  assert.ok(read("components/services-solutions.tsx").includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
-  assert.match(home, /event="self_check_start"/);
-  const explore = read("components/home-explore-sections.tsx");
-  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(explore, /"\/academy"/);
-  assert.match(explore, /"\/library"/);
+  const featured = read("components/home-featured-workspace.tsx");
+  const carousel = read("components/home-section-carousel.tsx");
+  const more = read("components/home-more-disclosure.tsx");
+  const assertPaths = (home, featured, carousel, more) => {
+    assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
+    assert.match(home, /<HomeSectionCarousel locale=\{locale\} \/>/);
+    assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/);
+    assert.doesNotMatch(home, /<FreeInsightsPaths|<PersonalWorkJourney/);
+    for (const route of ["free-situation-review", "business-consulting", "systemic-constellations", "alchemy-of-soul", "remote-energy-support"])
+      assert.ok(featured.includes('/services/' + route), route);
+    assert.ok(featured.includes('allTests: "/" + locale + "/client/tests"'));
+    assert.ok(featured.includes('academy: "/" + locale + "/academy"'));
+    assert.match(featured, /<Link href=\{hrefs\[offer\.id\]\}/);
+    assert.match(carousel, /key: "ideas", href: "\/books"/);
+    assert.match(carousel, /<Link className=\{styles\.viewButton\} href=\{href\}/);
+    assert.match(more, /href=\{"\/" \+ locale \+ "\/academy"\}/);
+  };
+  assertPaths(home, featured, carousel, more);
+  assert.throws(() => assertPaths(home, featured.replace('/client/tests', '/cart'), carousel, more));
+  assert.throws(() => assertPaths(home, featured.replace('/services/free-situation-review', '/cart'), carousel, more));
+  assert.throws(() => assertPaths(home, featured, carousel.replace('href: "/books"', 'href: "/cart"'), more));
+  assert.throws(() => assertPaths(home, featured, carousel, more.replace('/academy', '/cart')));
   assert.doesNotMatch(home, /heroIntro: "[^"]*ME \/ GOAL/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
-test("new DAO free page is independent of two existing personal service landings and has a genuine multilingual enquiry", () => {
+
+function assertDaoCapture(shared, compact) {
+  assert.match(shared, /kind === "dao" \? "request-free-wu-xing"/);
+  assert.match(shared, /kind !== "situation" \? <CompactLeadCapture\s+locale=\{locale\}\s+id=\{captureId\}\s+serviceTitle=\{serviceTitles\[kind\]\}/);
+  assert.match(shared, /disclaimer=\{common\.limitations\}/);
+  assert.match(compact, /if \(!contact \|\| \(phoneOnly && !contact\.phone\)\) \{[^}]+return; \}/);
+  assert.match(compact, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
+  assert.match(compact, /serviceTitle,\s+description: "Preferred reply channel: "/);
+  assert.match(compact, /contact: \{ displayName: "", \.\.\.contact \},\s+contactConsent: true/);
+  assert.match(compact, /type="checkbox" required checked=\{consent\}/);
+  assert.doesNotMatch(compact, /navigator\.clipboard|privateContext|privateAnswers/);
+}
+
+test("DAO uses the consented minimal contact capture, independently of the personal service routes", () => {
   const dao = read("app/[locale]/services/dao-health-profile/page.tsx");
   const shared = read("components/free-entry-landing.tsx");
-  const form = read("components/free-resource-enquiry.tsx");
+  const compact = read("components/compact-lead-capture.tsx");
   assert.match(dao, /generateMetadata/);
   assert.match(dao, /generateStaticParams/);
   assert.match(dao, /kind="dao"/);
   assert.match(dao, /isPublicLocale/);
   for (const lang of ["en", "ru", "es"]) assert.ok(dao.includes("/" + lang + "/services/dao-health-profile"));
-  assert.match(shared, /"request-free-wu-xing"/);
-  assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
-  assert.match(form, /<ContactChannelChooser/);
-  assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assertDaoCapture(shared, compact);
+  assert.throws(() => assertDaoCapture(shared.replace('serviceTitle={serviceTitles[kind]}', 'serviceTitle="Paid session"'), compact));
+  assert.throws(() => assertDaoCapture(shared, compact.replace('if (!consent)', 'if (false)')));
+  assert.throws(() => assertDaoCapture(shared, compact.replace('if (!contact || (phoneOnly && !contact.phone))', 'if (false)')));
+  assert.throws(() => assertDaoCapture(shared, compact + '\nnavigator.clipboard.writeText(privateAnswers)'));
   for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
