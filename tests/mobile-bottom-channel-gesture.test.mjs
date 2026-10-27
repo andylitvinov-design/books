@@ -12,29 +12,37 @@ const body = start < 0 ? '' : source.slice(start + '  useEffect(() => {'.length,
 
 function harness({ mobile = true, contactFocused = true, channel = true, sameForm = true, disabled = false,
   elementPresent = true, visibility = '', pointerEvents = '', priority = '',
-  publicCollection = false, publicPicker = true, samePicker = true, searchType = 'search', searchId = 'hh-test-hero-search', connected = true } = {}) {
+  publicCollection = false, publicPicker = true, samePicker = true, searchType = 'search', searchId = 'hh-test-hero-search', connected = true,
+  compactPhone = false, compactChooser = true, phoneField = true, phoneType = 'tel', sourceOverride = source } = {}) {
   class Node { contains(other) { return other === this || other?.parent === this } }
   class Element extends Node {
     constructor(kind, form = null) { super(); this.kind = kind; this.form = form; this.isConnected = true; this.disabled = false }
     closest(selector) {
       if (selector === 'button[data-compact-channel]') return this.kind === 'child' && this.parent.kind === 'channel' ? this.parent : this.kind === 'channel' ? this : null
+      if (selector === 'button[data-contact-channel-submit]') return this.kind === 'child' && this.parent.kind === 'phone-channel' ? this.parent : this.kind === 'phone-channel' ? this : null
+      if (selector === 'form') return this.kind === 'form' ? this : this.form
+      if (selector === '[data-contact-channel-chooser][data-reiki-phone-enquiry]') return this.phoneChooser || null
+      if (selector === '[data-phone-country-input]') return this.phoneField || null
       if (selector === 'button[data-test-collection]') return this.kind === 'child' && this.parent.kind === 'collection' ? this.parent : this.kind === 'collection' ? this : null
       if (selector === '[data-prelogin-test-picker][data-public-test-picker="true"]') return this.picker || null
       if (selector === 'form[data-compact-lead-form]') return this.form
       throw new Error('unexpected selector')
     }
     matches(selector) {
+      if (selector === 'input[type="tel"]') return this.kind === 'phone' && this.type === 'tel'
       if (selector === 'input#hh-test-hero-search[type="search"]') return this.kind === 'search' && this.type === 'search' && this.id === 'hh-test-hero-search'
       assert.equal(selector, 'input[name="contact"]'); return this.kind === 'editor'
     }
   }
   const form = new Element('form'), otherForm = new Element('form')
   const picker = new Element('picker'), otherPicker = new Element('picker')
-  const button = new Element(publicCollection ? 'collection' : channel ? 'channel' : 'other', form), child = new Element('child', form)
+  const button = new Element(compactPhone ? 'phone-channel' : publicCollection ? 'collection' : channel ? 'channel' : 'other', form), child = new Element('child', form)
   button.picker = publicPicker ? picker : null; button.isConnected = connected
   child.parent = button; button.disabled = disabled
-  const editor = new Element(publicCollection ? 'search' : 'editor', sameForm ? form : otherForm), other = new Element('other')
-  editor.picker = samePicker ? picker : otherPicker; editor.type = searchType; editor.id = searchId
+  const editor = new Element(compactPhone ? 'phone' : publicCollection ? 'search' : 'editor', sameForm ? form : otherForm), other = new Element('other')
+  form.phoneChooser = compactChooser ? new Element('phone-chooser') : null
+  editor.phoneField = phoneField ? new Element('phone-field') : null
+  editor.picker = samePicker ? picker : otherPicker; editor.type = compactPhone ? phoneType : searchType; editor.id = searchId
   const values = new Map(), priorities = new Map()
   const style = {
     setProperty(key, value, p = '') { values.set(key, value); priorities.set(key, p) },
@@ -60,13 +68,16 @@ function harness({ mobile = true, contactFocused = true, channel = true, sameFor
     setTimeout(fn, delay) { assert.equal(delay, 0); const id = ++taskId; tasks.set(id, fn); scheduled.push(fn); return id },
     clearTimeout(id) { tasks.delete(id) },
     matchMedia(query) { assert.equal(query, '(max-width: 767px)'); return { matches: mobile } } }
-  document.elementFromPoint = (x, y) => x >= 34 && x <= 191 && y >= 770.9 && y <= 819.9
+  document.elementFromPoint = (x, y) => (compactPhone ? x >= 21 && x <= 191 && y >= 805.3 && y <= 820 : x >= 34 && x <= 191 && y >= 770.9 && y <= 819.9)
     ? (document.activeElement === editor || style.getPropertyValue('pointer-events') === 'none' ? child : nav) : other
-  const cleanup = body ? vm.runInNewContext(stripTypeScriptTypes('(function(){' + body + '})()'),
-    { nav: { current: elementPresent ? nav : null }, window, document, Element, Node }) : undefined
+  const effectStart = sourceOverride.indexOf(marker), effectEnd = sourceOverride.indexOf('\n  }, [hidden, locale]);', effectStart)
+  assert.ok(effectStart > 0 && effectEnd > effectStart, 'Actual gesture effect must exist')
+  const effectBody = sourceOverride.slice(effectStart + '  useEffect(() => {'.length, effectEnd)
+  const cleanup = vm.runInNewContext(stripTypeScriptTypes('(function(){' + effectBody + '})()'),
+    { nav: { current: elementPresent ? nav : null }, window, document, Element, Node })
   let actions = 0
   const emit = (type, target = child, extras = {}, name = 'document') => {
-    const event = { type, target, pointerId: 7, isTrusted: true, isPrimary: true, button: 0, clientX: 112, clientY: 795, ...extras,
+    const event = { type, target, pointerId: 7, isTrusted: true, isPrimary: true, button: 0, clientX: compactPhone ? 106 : 112, clientY: compactPhone ? 812.6 : 795, ...extras,
       preventDefault() { throw new Error('must not cancel native event') },
       stopPropagation() { throw new Error('must not stop native event') },
       stopImmediatePropagation() { throw new Error('must not stop native event') },
@@ -345,4 +356,151 @@ test('public search blur and viewport changes do not release the held collection
   assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
   h.emit('pointerup', h.child); h.emit('mouseup', h.child); h.emit('click', h.child)
   assert.equal(h.actions(), 1); assert.equal(h.values.size, 0); h.cleanup()
+})
+
+// The hosted 3e38/d91b trace had a connected, enabled button at (21,805.3)
+// sized 170x46 and a restored dock covering y751..820. At (106,812.6):
+// down 116ms hit the button; phone focusout 118ms restored the dock; up/click
+// 124ms hit the dock. Replaying this ordering is not native browser proof.
+function reviewSequence({ sourceOverride = source, focusButton = true, compatibilityMouse = true } = {}) {
+  const h = harness({ compactPhone: true, sourceOverride })
+  Object.defineProperty(h.editor, 'value', { get() { throw new Error('Phone value must not be read') } })
+  const originalFocus = h.document.activeElement
+  h.begin({ timeStamp: 116 })
+  assert.equal(h.document.activeElement, originalFocus, 'Guard must not move focus')
+  h.blurEditor(focusButton)
+  h.emit('focusout', h.editor, { timeStamp: 118 }); h.emit('focusin', h.button, { timeStamp: 123 })
+  const up = h.hit(); h.emit('pointerup', up, { timeStamp: 124 })
+  let mouse = null
+  if (compatibilityMouse) { mouse = h.hit(); h.emit('mouseup', mouse, { timeStamp: 124 }) }
+  const click = h.button.contains(up) && (!mouse || h.button.contains(mouse)) ? h.child : h.other
+  h.emit('click', click, { timeStamp: 124 })
+  return { h, up, mouse, click }
+}
+function assertReviewDelivered(options = {}) {
+  const { h, up, mouse, click } = reviewSequence(options)
+  try {
+    assert.equal(up, h.child, 'Dock must not intercept the observed release')
+    if (options.compatibilityMouse !== false) assert.equal(mouse, h.child)
+    assert.equal(click, h.child); assert.equal(h.actions(), 1, 'Exactly one native handler delivery')
+    assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0)
+  } finally { h.cleanup(); assert.equal(h.listeners.length, 0) }
+}
+function assertPhoneExcluded(options = {}, extras = {}, sourceOverride = source) {
+  const h = harness({ compactPhone: true, ...options, sourceOverride })
+  try {
+    h.begin(extras)
+    assert.equal(h.values.size, 0, 'Unrelated/invalid phone gesture must not hide the dock')
+    assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0)
+  } finally { h.cleanup(); assert.equal(h.listeners.length, 0) }
+}
+
+test('current compactPhone scope is backed by the authored chooser and actual phone input', () => {
+  const chooser = readFileSync(new URL('../components/contact-channel-chooser.tsx', import.meta.url), 'utf8')
+  const input = readFileSync(new URL('../components/phone-country-input.tsx', import.meta.url), 'utf8')
+  const begin = chooser.indexOf('  if (compactPhone) {\n    return (')
+  const end = chooser.indexOf('\n  return (', begin)
+  assert.ok(begin > 0 && end > begin)
+  const compact = chooser.slice(begin, end)
+  assert.match(compact, /data-contact-channel-chooser data-reiki-phone-enquiry/)
+  assert.match(compact, /<form className=\{styles.compactPhoneForm\} onSubmit=\{event => event.preventDefault\(\)\}>/)
+  assert.match(compact, /<PhoneCountryInput id=\{panelId \+ "-phone"\}/)
+  for (const channel of ['whatsapp', 'telegram']) {
+    assert.ok(compact.includes('data-contact-channel-submit="' + channel + '" onClick={() => { void saveEnquiry("' + channel + '"); }}'))
+  }
+  assert.doesNotMatch(compact, /data-compact-channel|data-compact-lead-form/)
+  assert.match(input, /<div className=\{styles.wrap\} data-phone-country-input>/)
+  assert.match(input, /<input id=\{inputId\} name=\{name\} type="tel"/)
+})
+
+for (const focusButton of [true, false]) for (const compatibilityMouse of [true, false])
+  test('observed compactPhone down→blur→release→click remains native; button focus=' + focusButton + ', mouse=' + compatibilityMouse, () => {
+    assertReviewDelivered({ focusButton, compatibilityMouse })
+  })
+
+test('removing current compactPhone eligibility reproduces the exact native trace interception', () => {
+  const gate = 'if (!fromContact && !fromCompactPhone && !fromPublicSearch) return;'
+  assert.equal(source.split(gate).length, 2)
+  const oldEligibility = source.replace(gate, 'if (!fromContact && !fromPublicSearch) return;')
+  const { h, up, mouse, click } = reviewSequence({ sourceOverride: oldEligibility })
+  assert.equal(up, h.nav); assert.equal(mouse, h.nav); assert.equal(click, h.other)
+  assert.equal(h.actions(), 0); assert.equal(h.values.size, 0); h.cleanup()
+  assert.throws(() => assertReviewDelivered({ sourceOverride: oldEligibility }), { code: 'ERR_ASSERTION' })
+})
+
+for (const [name, options, extras] of [
+  ['wrong form', { sameForm: false }, {}],
+  ['non-compact chooser', { compactChooser: false }, {}],
+  ['not a PhoneCountryInput', { phoneField: false }, {}],
+  ['non-phone editor', { phoneType: 'email' }, {}],
+  ['no focused editor', { contactFocused: false }, {}],
+  ['disabled button', { disabled: true }, {}],
+  ['detached button', { connected: false }, {}],
+  ['desktop', { mobile: false }, {}],
+  ['untrusted pointer', {}, { isTrusted: false }],
+  ['secondary pointer', {}, { isPrimary: false, pointerId: 8 }],
+  ['secondary button', {}, { button: 2 }],
+]) test('current compactPhone dock hold excludes ' + name, () => assertPhoneExcluded(options, extras))
+
+test('current phone focus does not broaden the hold to unrelated buttons', () => {
+  const h = harness({ compactPhone: true }); h.button.kind = 'other'
+  h.begin(); assert.equal(h.values.size, 0); assert.equal(h.actions(), 0); h.cleanup()
+})
+
+for (const terminal of ['pointercancel', 'contextmenu', 'dragstart', 'keydown', 'blur', 'pagehide', 'visibilitychange', 'cleanup'])
+  test('current compactPhone abandoned gesture restores on ' + terminal, () => {
+    const h = harness({ compactPhone: true }); h.begin(); h.blurEditor()
+    assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
+    if (terminal === 'visibilitychange') h.document.visibilityState = 'hidden'
+    if (terminal === 'cleanup') h.cleanup()
+    else { h.emit(terminal, h.child, {}, ['blur', 'pagehide'].includes(terminal) ? 'window' : 'document'); h.cleanup() }
+    assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); assert.equal(h.listeners.length, 0)
+  })
+
+for (const terminal of ['outside', 'detached', 'disabled']) test('current compactPhone release ' + terminal + ' preserves native cancellation', () => {
+  const h = harness({ compactPhone: true }); h.begin(); h.blurEditor()
+  if (terminal === 'detached') h.button.isConnected = false
+  if (terminal === 'disabled') h.button.disabled = true
+  h.emit('pointerup', h.child, terminal === 'outside' ? { clientX: 300, clientY: 600 } : {})
+  assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0); h.cleanup()
+})
+
+for (const terminal of ['none', 'disabled', 'detached']) test('current compactPhone suppressed click releases the existing next-task hold: ' + terminal, () => {
+  const h = harness({ compactPhone: true }); h.begin(); h.blurEditor(); h.emit('pointerup', h.child)
+  if (terminal === 'disabled') h.button.disabled = true
+  if (terminal === 'detached') h.button.isConnected = false
+  assert.equal(h.tasks.size, 1); h.advanceTask()
+  assert.equal(h.values.size, 0); assert.equal(h.actions(), 0); assert.equal(h.tasks.size, 0); h.cleanup()
+})
+
+test('current compactPhone secondary/stale release cannot steal a later primary hold', () => {
+  const h = harness({ compactPhone: true }); h.begin(); h.blurEditor()
+  h.emit('pointerdown', h.other, { isPrimary: false, pointerId: 8 }); h.emit('pointerup', h.other, { pointerId: 8 }); h.emit('pointercancel', h.other, { pointerId: 8 })
+  assert.equal(h.style.getPropertyValue('pointer-events'), 'none')
+  h.emit('pointerup', h.child); const old = h.scheduled[0]
+  h.document.activeElement = h.editor; h.begin({ pointerId: 9 }); h.blurEditor(); h.emit('pointerup', h.child, { pointerId: 9 })
+  old(); assert.equal(h.style.getPropertyValue('pointer-events'), 'none'); assert.equal(h.tasks.size, 1)
+  h.cleanup(); assert.equal(h.values.size, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 0)
+})
+
+test('current compactPhone keyboard activation never starts a hold and exact styles restore through cleanup', () => {
+  const h = harness({ compactPhone: true, visibility: 'collapse', pointerEvents: 'auto', priority: 'important' })
+  h.document.activeElement = h.button; h.emit('keydown'); h.emit('click', h.button, { detail: 0 })
+  assert.equal(h.actions(), 1); assert.equal(h.style.getPropertyValue('visibility'), 'collapse')
+  h.document.activeElement = h.editor; h.begin(); h.blurEditor(); h.cleanup()
+  assert.equal(h.style.getPropertyValue('visibility'), 'collapse'); assert.equal(h.style.getPropertyValue('pointer-events'), 'auto')
+  assert.equal(h.style.getPropertyPriority('visibility'), 'important'); assert.equal(h.style.getPropertyPriority('pointer-events'), 'important')
+  assert.equal(h.listeners.length, 0); assert.equal(h.tasks.size, 0); assert.equal(h.actions(), 1)
+})
+
+for (const [name, from, to, options, extras] of [
+  ['trust', 'const fromCompactPhone = event.isTrusted &&', 'const fromCompactPhone =', {}, { isTrusted: false }],
+  ['connection', 'phoneChannelButton?.isConnected === true && phoneForm', 'phoneForm', { connected: false }, {}],
+  ['same form', "&& editor.closest('form') === phoneForm", '', { sameForm: false }, {}],
+  ['compact layout', "&& phoneForm.closest('[data-contact-channel-chooser][data-reiki-phone-enquiry]')", '', { compactChooser: false }, {}],
+  ['phone type', "&& editor.matches('input[type=\"tel\"]')", '', { phoneType: 'email' }, {}],
+  ['phone component', "&& editor.closest('[data-phone-country-input]')", '', { phoneField: false }, {}],
+]) test('actual-source mutation removing ' + name + ' eligibility is rejected', () => {
+  assert.equal(source.split(from).length, 2)
+  assert.throws(() => assertPhoneExcluded(options, extras, source.replace(from, to)), { code: 'ERR_ASSERTION' })
 })

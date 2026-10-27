@@ -184,20 +184,28 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       restore();
       if (!window.matchMedia('(max-width: 767px)').matches || !(event.target instanceof Element)) return;
       const channelButton = event.target.closest<HTMLButtonElement>('button[data-compact-channel]');
-      const collectionButton = channelButton ? null : event.target.closest<HTMLButtonElement>('button[data-test-collection]');
-      const button = channelButton || collectionButton;
+      const phoneChannelButton = channelButton ? null : event.target.closest<HTMLButtonElement>('button[data-contact-channel-submit]');
+      const collectionButton = channelButton || phoneChannelButton ? null : event.target.closest<HTMLButtonElement>('button[data-test-collection]');
+      const button = channelButton || phoneChannelButton || collectionButton;
       const editor = document.activeElement;
       if (!button || button.disabled || !(editor instanceof Element)) return;
       const form = channelButton?.closest('form[data-compact-lead-form]');
       const fromContact = form && editor.matches('input[name="contact"]')
         && editor.closest('form[data-compact-lead-form]') === form;
+      // The current compact phone chooser uses different controls from the
+      // legacy lead form. Its phone blur must not expose the dock mid-click.
+      const phoneForm = phoneChannelButton?.closest('form');
+      const fromCompactPhone = event.isTrusted && phoneChannelButton?.isConnected === true && phoneForm
+        && phoneForm.closest('[data-contact-channel-chooser][data-reiki-phone-enquiry]')
+        && editor.matches('input[type="tel"]') && editor.closest('[data-phone-country-input]')
+        && editor.closest('form') === phoneForm;
       const pickerSelector = '[data-prelogin-test-picker][data-public-test-picker="true"]';
       const picker = collectionButton?.closest(pickerSelector);
       // A public collection sits outside the search form. Keep its native
       // release reachable when search blur restores the overlapping dock.
       const fromPublicSearch = event.isTrusted && collectionButton?.isConnected === true && picker
         && editor.matches('input#hh-test-hero-search[type="search"]') && editor.closest(pickerSelector) === picker;
-      if (!fromContact && !fromPublicSearch) return;
+      if (!fromContact && !fromCompactPhone && !fromPublicSearch) return;
       activation = { pointerId: event.pointerId, button, released: false,
         visibility: element.style.getPropertyValue('visibility'), visibilityPriority: element.style.getPropertyPriority('visibility'),
         pointerEvents: element.style.getPropertyValue('pointer-events'), pointerEventsPriority: element.style.getPropertyPriority('pointer-events') };

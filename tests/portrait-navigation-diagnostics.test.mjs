@@ -689,3 +689,166 @@ test('unchanged actual global pageerror gate rejects bootstrap errors even besid
     assert.throws(()=>runInNewContext(gate,{problems,assert},{timeout:1000}),error=>error.code==='ERR_ASSERTION'&&error.expected===0&&error.actual>0)
   assert.doesNotThrow(()=>runInNewContext(gate,{problems:[],assert},{timeout:1000}))
 })
+
+// These execute the current Runner's real JSX with synthetic state and inert
+// effects. No browser, account endpoint, test answers, or runtime module executes.
+async function renderActualQuickRunner({ loaded = true, mode = 'quick', status = 'draft', busy = false } = {}) {
+  const source = await readFile(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  const start = source.indexOf('function Runner({'), end = source.indexOf('\nfunction profileNumber(', start)
+  assert.ok(start > 0 && end > start)
+  const { default: ts } = await import('typescript')
+  const output = ts.transpileModule(source.slice(start, end), {
+    fileName: 'actual-runner.tsx', compilerOptions: { jsx: ts.JsxEmit.React, jsxFactory: 'h', jsxFragmentFactory: 'Fragment', target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const definition = { key: 'synthetic', title: 'Synthetic', instrumentLocale: 'en', questions: [{ id: 'synthetic-question', text: 'Synthetic question' }], optionalContext: [], answerScale: { min: 0, max: 1 } }
+  const run = loaded ? { definitionId: 'synthetic-definition', status, progress: 0, answers: {}, context: {} } : null
+  let stateIndex = 0
+  const callbacks = [], effects = []
+  const component = () => null
+  const Runner = runInNewContext(output + '\nRunner', {
+    h: (type, props, ...children) => ({ type, props: props || {}, children: children.flat(Infinity) }), Fragment: 'fragment',
+    useSubscription: () => ({ offerAfterCompletion: () => { throw Error('unexpected subscription action') } }), COPY: { en: { loading: 'Loading', tests: 'Tests' } },
+    useState: initial => { const index = stateIndex++; return [index === 0 ? run : index === 2 ? busy : initial, value => callbacks.push(value)] },
+    useRef: value => ({ current: value }), useEffect: callback => effects.push(callback),
+    getDefinitionById: id => { assert.equal(id, 'synthetic-definition'); return definition },
+    monitoringCatalogItem: () => ({ durationMinutes: 1 }), hasTraumaAdministration: () => false,
+    RunnerAnswerChoices: component, TraumaSectionInstructions: component, Asrs6SourceNotice: component, TestFinishActions: component, Link: component,
+  }, { timeout: 1000 })
+  const tree = Runner({ id: 'synthetic-run', locale: 'en', initialMode: mode })
+  assert.equal(effects.length, 1, 'Actual run-load effect is registered but never invoked here')
+  assert.deepEqual(callbacks, [], 'Rendering never answers, saves, or mutates the synthetic run')
+  return tree
+}
+function runnerNodes(tree, parents = []) {
+  if (!tree || typeof tree !== 'object') return []
+  return [{ node: tree, parents }, ...(tree.children || []).flatMap(child => runnerNodes(child, [...parents, tree]))]
+}
+const hasClass = (node, name) => String(node.props?.className || '').split(/\s+/).includes(name)
+async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = false, navigationFailure = null, readinessFailure = null, sourceTransform = value => value } = {}) {
+  const source = sourceTransform(await readFile(sourceURL, 'utf8'))
+  const start = source.indexOf("    if(locale==='en'){")
+  const end = source.indexOf('\n    }\n  }\n  // Next', start)
+  assert.ok(start > 0 && end > start)
+  const originalURL = origin + '/en/app/runs/synthetic-run?mode=quick'
+  let url = originalURL
+  const calls = [], entries = runnerNodes(tree)
+  const roots = entries.filter(({ node }) => hasClass(node, 'hh-runner') && hasClass(node, 'hh-runner--quick'))
+  if (duplicate) roots.push(...roots)
+  const questions = entries.filter(({ node, parents }) => node.type === 'fieldset' && hasClass(node, 'hh-quick-question') &&
+    hasClass(parents.at(-1) || {}, 'hh-quick-form') && parents.some(parent => hasClass(parent, 'hh-runner') && hasClass(parent, 'hh-runner--quick')))
+  const page = {
+    url: () => url,
+    locator(selector) {
+      calls.push(['locator', selector])
+      assert.ok(['.hh-runner.hh-runner--quick', '.hh-runner.hh-runner--quick .hh-quick-form > fieldset.hh-quick-question'].includes(selector), 'Only source-backed runner selectors')
+      const nodes = selector === '.hh-runner.hh-runner--quick' ? roots : questions
+      return { nodes, first: () => ({ nodes: nodes.slice(0, 1) }) }
+    },
+  }
+  const expect = target => ({
+    async toHaveURL(expected, settings) {
+      calls.push(['url', typeof expected === 'string' ? 'same-run' : 'original-pattern', settings?.timeout ?? null])
+      if (navigationFailure) throw navigationFailure
+      if (typeof expected === 'string') assert.equal(url, expected, 'Ready UI must remain on the originally opened run')
+      else assert.ok(expected.test(url), 'Expected EN quick-run URL')
+    },
+    async toBeVisible(...args) {
+      calls.push(['visible']); assert.deepEqual(args, [], 'No new timeout override or inflation')
+      if (readinessFailure) throw readinessFailure
+      assert.equal(target.nodes.length, 1, 'Semantic readiness requires one mounted real runner/question')
+      assert.notEqual(target.nodes[0].node.props.hidden, true)
+      if (changedURL) url = origin + '/ru/app/runs/other-synthetic-run?mode=quick'
+    },
+    async toHaveJSProperty(property, expected, ...args) {
+      calls.push(['property', property, expected]); assert.deepEqual(args, [], 'No new timeout override or inflation')
+      assert.equal(property, 'disabled'); assert.equal(expected, false)
+      assert.equal(target.nodes.length, 1); assert.equal(target.nodes[0].node.type, 'fieldset')
+      assert.equal(Boolean(target.nodes[0].node.props.disabled), expected, 'Exact reflected HTMLFieldSetElement.disabled property')
+    },
+    async toBeEnabled(...args) {
+      // Playwright 1.63 roleUtils.isNativelyDisabled excludes FIELDSET itself.
+      // Our source fieldset has no aria-disabled ancestor: this legacy assertion
+      // passes even when its own disabled property is true. Do not emulate a
+      // stronger, nonexistent matcher contract here.
+      calls.push(['legacy-enabled-fieldset']); assert.deepEqual(args, [])
+      assert.equal(target.nodes.length, 1); assert.equal(target.nodes[0].node.type, 'fieldset')
+    },
+  })
+  const run = () => runInNewContext('(async () => {' + source.slice(start, end) + '\n} })()', {
+    locale: 'en', name: 'webkit', page, expect,
+    work: { click: async () => calls.push(['work-click']) }, takeTest: { click: async () => calls.push(['take-test-click']) },
+    suggested: { first: () => ({ click: async () => calls.push(['suggested-click']) }) },
+    console: { log: () => calls.push(['success-marker']) },
+  }, { timeout: 1000 })
+  return { run, calls }
+}
+test('actual quick Runner proves mounted loaded UI with disabled false before the unchanged handoff success marker', options, async () => {
+  const fixture = await actualRunHandoffFixture({ tree: await renderActualQuickRunner() })
+  await fixture.run()
+  assert.deepEqual(fixture.calls.map(call => call[0]), ['work-click', 'take-test-click', 'suggested-click', 'url', 'locator', 'visible', 'locator', 'visible', 'property', 'url', 'success-marker'])
+  assert.deepEqual(fixture.calls.filter(call => call[0] === 'url'), [['url', 'original-pattern', 60000], ['url', 'same-run', null]])
+})
+for (const [name, settings] of [
+  ['URL-only unmounted destination', { unmounted: true }],
+  ['actual Runner not yet loaded', { loaded: false }],
+  ['wrong guided runner', { mode: 'guided' }],
+  ['completed run instead of live question', { status: 'completed' }],
+  ['fieldset disabled true', { busy: true }],
+  ['hidden question in mounted runner', { hiddenQuestion: true }],
+  ['questionless mounted runner', { questionless: true }],
+]) test('semantic run readiness rejects ' + name + ' despite a passing URL', options, async () => {
+  const tree = settings.unmounted ? null : await renderActualQuickRunner(settings)
+  if (settings.hiddenQuestion) runnerNodes(tree).find(({ node }) => hasClass(node, 'hh-quick-question')).node.props.hidden = true
+  if (settings.questionless) runnerNodes(tree).find(({ node }) => hasClass(node, 'hh-quick-form')).node.children = []
+  const fixture = await actualRunHandoffFixture({ tree })
+  await assert.rejects(fixture.run(), error => error.code === 'ERR_ASSERTION')
+  assert.equal(fixture.calls.filter(call => call[0] === 'suggested-click').length, 1)
+  assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'), 'Must not advance after failed readiness')
+})
+test('semantic run readiness rejects ambiguous runner and a changed destination', options, async () => {
+  const tree = await renderActualQuickRunner()
+  for (const extra of [{ duplicate: true }, { changedURL: true }]) {
+    const fixture = await actualRunHandoffFixture({ tree, ...extra })
+    await assert.rejects(fixture.run(), error => error.code === 'ERR_ASSERTION')
+    assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'))
+  }
+})
+test('semantic run readiness retains primary failures and performs no retry or extra action', options, async () => {
+  const tree = await renderActualQuickRunner()
+  for (const kind of ['navigationFailure', 'readinessFailure']) {
+    const failure = new Error('synthetic original timeout')
+    const fixture = await actualRunHandoffFixture({ tree, [kind]: failure })
+    await assert.rejects(fixture.run(), error => error === failure)
+    assert.deepEqual(fixture.calls.filter(call => call[0].endsWith('-click')), [['work-click'], ['take-test-click'], ['suggested-click']])
+    assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'))
+  }
+})
+test('run readiness is tied to current keyed bootstrap-backed Runner source and preserves locale order and error gate', options, async () => {
+  const source = await readFile(sourceURL, 'utf8')
+  const runtime = await readFile(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  assert.match(runtime, /const fresh = await appFetch\(page === 'portrait' \? 'bootstrap\?view=portrait' : 'bootstrap'\)/)
+  assert.match(runtime, /if \(state === 'loading'\)[\s\S]*?<main className="hh-app" aria-busy="true">/)
+  assert.match(runtime, /page === 'runs' && \([\s\S]*?<Runner\s+key=\{recordId\}\s+id=\{recordId\}/)
+  assert.match(runtime, /const value = await appFetch\('runs\/' \+ id\)[\s\S]*?setRun\(value\)/)
+  assert.match(source, /for\s*\(const locale of \['en','ru'\]\)/)
+  const handoff = source.slice(source.indexOf("    if(locale==='en'){"), source.indexOf('  // Next', source.indexOf("    if(locale==='en'){")))
+  assert.doesNotMatch(handoff, /waitForTimeout|waitForLoadState|networkidle|\.catch\(|try\s*\{|\.evaluate\(|\.fill\(|\.check\(|\.press\(|\.fetch\(|\.request\./)
+  assert.equal((handoff.match(/timeout:/g) || []).length, 1)
+  assert.match(source, /assert\.equal\(appProblems\.length,0,'Browser script errors: '\+appProblems\.join\('; '\)\)/)
+})
+
+
+test('fieldset disabled-property contract rejects the misleading Playwright 1.63 enabled assertion', options, async () => {
+  const tree = await renderActualQuickRunner({ busy: true })
+  const exact = await actualRunHandoffFixture({ tree })
+  await assert.rejects(exact.run(), error => error.code === 'ERR_ASSERTION')
+  const legacy = await actualRunHandoffFixture({ tree, sourceTransform: source => {
+    const needle = "await expect(firstQuestion).toHaveJSProperty('disabled', false)"
+    assert.ok(source.includes(needle))
+    return source.replace(needle, 'await expect(firstQuestion).toBeEnabled()')
+  } })
+  await legacy.run()
+  assert.ok(legacy.calls.some(call => call[0] === 'legacy-enabled-fieldset'))
+  assert.ok(legacy.calls.some(call => call[0] === 'success-marker'), 'Old matcher falsely permits the disabled fieldset')
+  assert.ok(!exact.calls.some(call => call[0] === 'success-marker'))
+})

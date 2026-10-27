@@ -310,6 +310,14 @@ try {
       await takeTest.click()
       await suggested.first().click()
       await expect(page).toHaveURL(/\/en\/app\/runs\/[^/?#]+\?mode=quick/,{timeout:60000})
+      // A changed URL alone does not prove the destination's bootstrap and run loaded.
+      // Assert the real quick-runner UI before starting the next locale; do not answer it.
+      const openedRun = page.url()
+      await expect(page.locator('.hh-runner.hh-runner--quick')).toBeVisible()
+      const firstQuestion = page.locator('.hh-runner.hh-runner--quick .hh-quick-form > fieldset.hh-quick-question').first()
+      await expect(firstQuestion).toBeVisible()
+      await expect(firstQuestion).toHaveJSProperty('disabled', false)
+      await expect(page).toHaveURL(openedRun)
       console.log('PORTRAIT_QA',name,'one explicit Take test click opened a real synthetic account test')
     }
   }
