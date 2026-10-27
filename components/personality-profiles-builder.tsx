@@ -743,7 +743,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 aria-pressed={batteryMode === mode} data-profile-mode={mode}
                 onClick={() => { setBatteryMode(mode); setShowMore(false); }}>
               <strong>{mode === "pro" ? t.modePro : t.modeCheckins}</strong>
-              <small>{modeTotals[mode].count} {t.testCount} · ~{modeTotals[mode].minutes} {t.minutes}
+              <small>{modeTotals[mode].count} {t.selectedTests} · ~{modeTotals[mode].minutes} {t.minutes}
                 {modeTotals[mode].questions ? " · " + modeTotals[mode].questions + " " + t.questions : ""}</small>
             </button>)}
           </div>
@@ -752,26 +752,61 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
           <strong>{chosenTests.length} {t.testCount}</strong>
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
-          <span>· {coverage.size}/{selectedAxisRefs.length} {t.selected}</span>
+          <span>· {coverage.size}/{selectedAxisRefs.length} {t.coveredScales}</span>
         </div>
-        {chosenTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
-          {chosenTests.map(test =>
-            <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked onChange={() => toggleTest(test.key)} />
-              <span className={styles.testText}>
-                <strong>{test.title}</strong>
-                <small>{test.questions ? test.questions + " " + t.questions : ""}
-                  {test.questions && test.minutes ? " · " : ""}
-                  {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{[...new Set(scaleGroups.flatMap(group => group.scales
-                  .filter(scale => scale.testKey === test.key &&
-                    selectedAxisRefs.includes(scale.researchAxisId))
-                  .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
-              </span>
-            </label>)}
+        {recommendedTests.length > 0 ? <div data-profile-recommended-tests>
+          <h3 className={styles.testSectionHeading}>{t.mainThree}</h3>
+          <div className={styles.testList}>
+            {recommendedTests.map(({ test, matchPercent }) =>
+              <label key={test.key} className={styles.testRow} data-profile-recommendation={test.key}>
+                <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                  disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                  onChange={() => toggleTest(test.key)} />
+                <span className={styles.testText}>
+                  <strong>{test.title}</strong>
+                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                    {test.questions && test.minutes ? " · " : ""}
+                    {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                  <span>{[...new Set(scaleGroups.flatMap(group => group.scales
+                    .filter(scale => scale.testKey === test.key &&
+                      selectedAxisRefs.includes(scale.researchAxisId))
+                    .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+                </span>
+                <span className={styles.fitPill} title={t.fitInfo}>
+                  <strong>{matchPercent}%</strong><small>{t.fit}</small>
+                </span>
+              </label>)}
+          </div>
         </div> : <p className={styles.caution} role="status">{t.modeNoTests}</p>}
+        {fiveMoreTests.length > 0 && <div className={styles.fiveMore} data-profile-five-more-tests>
+          <h3 className={styles.testSectionHeading}>{t.nextFive}</h3>
+          <div className={styles.testList}>
+            {fiveMoreTests.map(({ test, matchPercent }) =>
+              <label key={test.key} className={styles.testRow} data-profile-additional-suggestion={test.key}>
+                <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                  disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                  onChange={() => toggleTest(test.key)} />
+                <span className={styles.testText}>
+                  <strong>{test.title}</strong>
+                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                    {test.questions && test.minutes ? " · " : ""}
+                    {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                  <span>{[...new Set(scaleGroups.flatMap(group => group.scales
+                    .filter(scale => scale.testKey === test.key &&
+                      selectedAxisRefs.includes(scale.researchAxisId))
+                    .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+                </span>
+                <span className={styles.fitPill} title={t.fitInfo}>
+                  <strong>{matchPercent}%</strong><small>{t.fit}</small>
+                </span>
+              </label>)}
+          </div>
+        </div>}
+        {(recommendedTests.length > 0 || fiveMoreTests.length > 0) && <p className={styles.fitNote}>{t.fitInfo}</p>}
         {coverage.size < selectedAxisRefs.length && chosenTests.length > 0 &&
           <p className={styles.caution}>{t.unmeasured}</p>}
+        {selectedKeys.length === 0 && recommendedTests.length > 0 &&
+          <p className={styles.caution} role="status">{t.noneSelected}</p>}
         <div className={styles.startRow}>
           {selectedKeys.length > 0
             ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
@@ -842,8 +877,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <p className={styles.extraResultCount} role="status">{extraProfile ? extraMatches.length + " " + extra.results : extra.chooseFirst}</p>
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
-                onChange={() => toggleTest(test.key)} aria-label={extra.add + ": " + test.title} />
+              <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                onChange={() => toggleTest(test.key)} aria-label={test.title} />
               <span className={styles.testText}><strong>{test.title}</strong>
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
@@ -852,6 +888,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   .filter(scale => scale.testKey === test.key &&
                     effectiveExtraScales.includes(scale.researchAxisId))
                   .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+              </span>
+              <span className={styles.fitPill} title={t.fitInfo}>
+                <strong>{extraMatchPercent(test.key)}%</strong><small>{t.fit}</small>
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
