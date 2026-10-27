@@ -12,9 +12,9 @@ const block = source.slice(start, end);
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const check = new AsyncFunction("createPage", "origin", "visible", "expect", "assertNoDevIssueOverlay",
   "assertViewport", "diagnostics", "captureAlchemyPanelOverflow", "output", "assert", "console", "assertAlchemyPaymentsExpanded", block);
-const names = ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"];
+const names = ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"];
 
-function fixture({ height = 764, count = 8, termsHeight = 44, primaryHeight = 44, wise = false,
+function fixture({ height = 764, panelNames = names, panelHeights = {}, termsHeight = 44, primaryHeight = 44, wise = false,
   pageError = false, overflow = false, overlay = false, captureError = false,
   defaultOpen = false, summaryHeight = 44, clippedNote = false, hiddenNote = false, noLinks = false } = {}) {
   const events = [];
@@ -30,9 +30,9 @@ function fixture({ height = 764, count = 8, termsHeight = 44, primaryHeight = 44
         if (selector === '[data-alchemy-format="60"]') return { attrs: { "aria-pressed": "true" } };
         if (selector === '[data-alchemy-lead-form="single"]') return { count: async () => 1 };
         if (selector === "[data-alchemy-panel]") return { evaluateAll: async fn => {
-          const nodes = names.slice(0, count).map(name => ({
+          const nodes = panelNames.map(name => ({
             getAttribute: () => name,
-            getBoundingClientRect: () => ({ height: name === "formats" ? (width === 1188 ? 900 : height) : 300 }),
+            getBoundingClientRect: () => ({ height: panelHeights[name] ?? (name === "formats" ? (width === 1188 ? 900 : height) : 300) }),
           }));
           return JSON.parse(JSON.stringify(runInNewContext("(" + fn + ")(nodes)", { nodes, window: { innerHeight: 844 } })));
         } };
@@ -167,8 +167,43 @@ test("A failed diagnostic capture does not hide Spanish 824px overflow", async (
   assert.equal(f.events.filter(event => event.warning).length, 1);
 });
 
-test("Spanish defaults retain eight panels and reject JS, overlay, and horizontal errors", async () => {
-  await assert.rejects(fixture({ count: 7 }).run(), /Eight compact Spanish Alchemy panels/);
+test("ES fixture retains the actual landing's ten approved chapters in source order", async () => {
+  const landing = await readFile(new URL("../components/alchemy-soul-landing.tsx", import.meta.url), "utf8");
+  assert.deepEqual([...landing.matchAll(/data-alchemy-panel="([a-z-]+)"/g)].map(match => match[1]), names);
+});
+
+test("Spanish defaults require ten chapters including video and public sample report", async () => {
+  for (const panelNames of [names.slice(1), names.filter(name => name !== "report"), [...names, "extra"]]) {
+    await assert.rejects(fixture({ panelNames }).run(), error => {
+      assert.equal(error.code, "ERR_ASSERTION");
+      assert.match(error.message, /Ten Alchemy chapters including video and public sample report/);
+      assert.equal(error.actual, panelNames.length);
+      assert.equal(error.expected, 10);
+      return true;
+    });
+  }
+});
+
+test("Only the reviews panel may exceed the mobile viewport height budget", async () => {
+  const reviews = fixture({ panelHeights: { reviews: 2400 } });
+  await reviews.run();
+  assert.equal(reviews.events.filter(event => event.capture).length, 0);
+  for (const name of names.filter(name => name !== "reviews")) {
+    const f = fixture({ panelHeights: { [name]: 765 } });
+    await assert.rejects(f.run(), error => {
+      assert.equal(error.code, "ERR_ASSERTION");
+      assert.match(error.message, /One semantic section per mobile viewport/);
+      assert.deepEqual(error.actual, [{ name, height: 765, max: 764 }]);
+      return true;
+    });
+    const capture = f.events.find(event => event.capture);
+    assert.equal(capture.capture, "es");
+    assert.equal(capture.width, 320);
+    assert.deepEqual(capture.panelHeights.find(panel => panel.name === name), { name, height: 765, max: 764 });
+  }
+});
+
+test("Spanish defaults reject JS, overlay, and horizontal errors", async () => {
   await assert.rejects(fixture({ pageError: true }).run(), /Unexpected Spanish Alchemy browser page errors/);
   await assert.rejects(fixture({ overflow: true }).run(), /Horizontal overflow: es\/alchemy-of-soul\/320/);
   await assert.rejects(fixture({ overlay: true }).run(), /next dev overlay must not appear/);

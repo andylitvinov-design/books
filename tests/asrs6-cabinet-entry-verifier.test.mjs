@@ -40,7 +40,8 @@ function fixture({ busy = false, unavailable = false, omitPortal = false } = {})
       assert.equal(role, 'button'); assert.equal(options.exact, true)
       return locator(nodes.flatMap(walk).filter(node => node.type === 'button' && text(node) === options.name))
     },
-    async click() {
+    async click(...options) {
+      assert.deepEqual(options, [], 'entry must use the native click without overrides')
       assert.equal(nodes.length, 1, 'click must identify exactly one current button')
       assert.notEqual(nodes[0].props.disabled, true, 'the real CTA must be enabled')
       assert.equal(typeof nodes[0].props.onClick, 'function')
@@ -48,6 +49,7 @@ function fixture({ busy = false, unavailable = false, omitPortal = false } = {})
     },
   })
   const page = locator([tree])
+  page.goto = async path => { paths.push(path) }
   const expect = target => ({ async toBeVisible() { assert.equal(target.nodes.length, 1, 'current Cabinet entry must be visible') } })
   const navigate = async (target, path) => { assert.equal(target, page); paths.push(path) }
   return { page, expect, navigate, paths, portal, signinCalls: () => signinCalls, decoyCalls: () => decoyCalls }
@@ -59,6 +61,9 @@ for (const { label, path, startStatement, endStatement, consentStatement } of [
   { label: 'personality', path: 'scripts/verify-personality-types.mjs',
     startStatement: " await navigate(page,origin+'/en/app')", endStatement: " await expect(page.getByRole('heading'",
     consentStatement: "await page.getByLabel('I agree to private processing',{exact:false}).check()" },
+  { label: 'account status', path: 'scripts/verify-account-status-filters.mjs',
+    startStatement: "  await page.goto(origin + '/en/app')", endStatement: "  await expect(page.getByRole('heading'",
+    consentStatement: "await page.getByLabel('I agree to private processing', { exact: false }).check()" },
 ]) {
 const source = read(path)
 const start = source.indexOf(startStatement), end = source.indexOf(endStatement, start)

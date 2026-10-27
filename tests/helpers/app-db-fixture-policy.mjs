@@ -58,6 +58,15 @@ export const ISOLATED_SCHEMA_DEPENDENCIES = Object.freeze([
   'sql/client-delivery-sessions-20261015.sql',
   'sql/client-delivery-session-private-pdfs-20261015.sql',
   'supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql',
+  // Existing source schemas for empty/synthetic authenticated reads only.
+  // Preserve original SQL, RLS and revokes; no production-parity claim.
+  // Academy enrollment/resume and express-report create/send remain outside this closure.
+  'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql',
+  'supabase/migrations/20261018184658_hh_reiki_course_private_crm_leads_20261018.sql',
+  'supabase/migrations/20261019030943_hh_reiki_course_public_reviews_20261019.sql',
+  'supabase/migrations/20261025173000_hh_practitioner_express_reports.sql',
+  'supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',
+  'supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',
 ])
 
 export function monitoringRegistryDiagnostic(definition) {

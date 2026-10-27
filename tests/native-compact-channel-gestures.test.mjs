@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { extractCompactChannelGestureEffect, nativeCompactChannelFixture } from '../scripts/helpers/native-compact-channel-gestures.mjs'
+
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+test('native acceptance extracts the actual current typed component effect and fails closed', () => {
+  const component = read('components/mobile-bottom-navigation.tsx')
+  const effect = extractCompactChannelGestureEffect(component)
+  assert.match(effect, /element.style.setProperty\('pointer-events', 'none'\)/)
+  assert.match(effect, /window.setTimeout\(/)
+  assert.doesNotMatch(effect, /useEffect|HTMLButtonElement|PointerEvent|number \| null/)
+  assert.throws(() => extractCompactChannelGestureEffect(''))
+  assert.throws(() => extractCompactChannelGestureEffect(component + component))
+  assert.throws(() => extractCompactChannelGestureEffect(component.replaceAll('}, [hidden, locale]);', '}, []);')))
+})
+test('native fixture uses real mouse/touch/keyboard input and blocks all network without changing existing app acceptance', () => {
+  const helper = read('scripts/helpers/native-compact-channel-gestures.mjs')
+  assert.match(helper, /assertDaoVerifierBoundary\(origin\)/)
+  assert.match(helper, /hasTouch: true/)
+  assert.match(helper, /isMobile: true, serviceWorkers: 'block'/)
+  assert.match(helper, /context.route\('\*\*\/\*', async route => \{ blockedRequests\+\+; await route.abort\('blockedbyclient'\) \}\)/)
+  assert.match(helper, /page.touchscreen.tap\(112, 795\)/)
+  assert.match(helper, /page.mouse.down\(\)/)
+  assert.match(helper, /page.mouse.up\(\)/)
+  assert.match(helper, /page.keyboard.press\('Space'\)/)
+  assert.match(helper, /event.isTrusted/)
+  assert.match(helper, /'disable-on-release', 'detach-on-release'/)
+  assert.ok(helper.indexOf("' releases inline dock hold'") < helper.indexOf('Only after proving'))
+  assert.match(helper, /assert.equal\(blockedRequests, 0/)
+  assert.match(helper, /finally \{ await context.close\(\) \}/)
+  assert.doesNotMatch(helper, /dispatchEvent|\.click\(|\.blur\(|force:\s*true|waitForTimeout|test.skip|fetch\(/)
+  assert.doesNotMatch(nativeCompactChannelFixture, /https?:|src=|href=|<script/)
+  assert.match(nativeCompactChannelFixture, /top:770.9px;width:157px;height:49px/)
+  assert.match(nativeCompactChannelFixture, /bottom:0;height:69px/)
+  const app = read('scripts/verify-app-r1.mjs')
+  assert.match(app, /try \{\s*await assertNativeCompactChannelGestures\(browser,expect,\{origin\}\)\s*passed\([^\n]+\)\s*await verifyPublicServiceConversionJourneys\(\)/)
+  assert.match(app, /await assertDaoFreeEntryCapture\(servicePage,expect,\{origin,locale,/)
+})
+
+test('native final counts are checked after restoration, optional Tab, effect cleanup and final CSS checks', () => {
+  const helper = read('scripts/helpers/native-compact-channel-gestures.mjs')
+  const restored = helper.indexOf("' releases inline dock hold'")
+  const tab = helper.indexOf("await page.keyboard.press('Tab')", restored)
+  const cleanup = helper.indexOf('await page.evaluate(() => { window.__nativeDockCleanup(); delete window.__nativeDockCleanup })')
+  const visible = helper.indexOf("await expect(page.locator('nav')).toBeVisible()", cleanup)
+  const visibility = helper.indexOf("await expect(page.locator('nav')).toHaveCSS('visibility', 'visible')", visible)
+  const pointerEvents = helper.indexOf("await expect(page.locator('nav')).toHaveCSS('pointer-events', 'auto')", visibility)
+  const finalCounts = helper.indexOf('assert.deepEqual(await page.evaluate(() => window.__nativeDockCounts),')
+  const close = helper.indexOf('await page.close()', finalCounts)
+  assert.ok(restored >= 0 && tab > restored && cleanup > tab && visible > cleanup
+    && visibility > visible && pointerEvents > visibility && finalCounts > pointerEvents && close > finalCounts)
+  assert.match(helper, /assert\.deepEqual\(await page\.evaluate\(\(\) => window\.__nativeDockCounts\),\s*\{ clicks: wanted, trustedClicks: wanted \}, kind \+ ' final native activation count after cleanup'\)/)
+  assert.doesNotMatch(helper, /waitForTimeout|setTimeout|dispatchEvent|\.click\(|\.blur\(|force:\s*true/)
+})

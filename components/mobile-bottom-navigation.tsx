@@ -87,6 +87,94 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       document.body.style.removeProperty('--ia222-bottom-height');
     };
   }, [hidden, locale]);
+  useEffect(() => {
+    // Keep the fixed dock from taking the release half of an editor-to-channel
+    // gesture. CSS hides it during text focus, but input blur precedes mouseup.
+    // Do not change focus, capture the pointer, cancel events or invoke actions.
+    const element = nav.current;
+    if (!element) return;
+    let activation: { pointerId: number; button: HTMLButtonElement; released: boolean;
+      visibility: string; visibilityPriority: string; pointerEvents: string; pointerEventsPriority: string } | null = null;
+    let completionTimer: number | null = null;
+    const restore = () => {
+      if (completionTimer !== null) window.clearTimeout(completionTimer);
+      completionTimer = null;
+      if (!activation) return;
+      const saved = activation;
+      activation = null;
+      for (const [property, value, priority] of [
+        ['visibility', saved.visibility, saved.visibilityPriority],
+        ['pointer-events', saved.pointerEvents, saved.pointerEventsPriority],
+      ]) {
+        if (value) element.style.setProperty(property, value, priority);
+        else element.style.removeProperty(property);
+      }
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!event.isPrimary || event.button !== 0) return;
+      restore();
+      if (!window.matchMedia('(max-width: 767px)').matches || !(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>('button[data-compact-channel]');
+      const form = button?.closest('form[data-compact-lead-form]');
+      const editor = document.activeElement;
+      if (!button || button.disabled || !form || !(editor instanceof Element)
+        || !editor.matches('input[name="contact"]') || editor.closest('form[data-compact-lead-form]') !== form) return;
+      activation = { pointerId: event.pointerId, button, released: false,
+        visibility: element.style.getPropertyValue('visibility'), visibilityPriority: element.style.getPropertyPriority('visibility'),
+        pointerEvents: element.style.getPropertyValue('pointer-events'), pointerEventsPriority: element.style.getPropertyPriority('pointer-events') };
+      element.style.setProperty('visibility', 'hidden');
+      element.style.setProperty('pointer-events', 'none');
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (!activation || event.pointerId !== activation.pointerId || activation.released) return;
+      // Touch can implicitly capture the pointer: event.target alone does not
+      // establish that release is still over the original button.
+      const hit = Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+        ? document.elementFromPoint(event.clientX, event.clientY) : null;
+      if (!activation.button.isConnected || activation.button.disabled || !(event.target instanceof Node)
+        || !activation.button.contains(event.target) || !hit || !activation.button.contains(hit)) { restore(); return; }
+      activation.released = true;
+      const completing = activation;
+      // End this completed gesture on the next timer task even if a browser
+      // suppresses mouseup/click (or a later handler removes/disables the button).
+      // Never use a microtask: compatibility mouseup may still need the hold.
+      // Delayed clicks keep their native pointerdown/up targets; do not synthesize one.
+      completionTimer = window.setTimeout(() => {
+        if (activation !== completing) return;
+        completionTimer = null;
+        restore();
+      }, 0);
+    };
+    const onPointerCancel = (event: PointerEvent) => {
+      if (activation?.pointerId === event.pointerId) restore();
+    };
+    // The native mouseup target is already resolved here. Restoring now does not
+    // retarget that event, and also releases a gesture whose click is suppressed.
+    // Pointer-only activation instead restores at click, after its target exists.
+    const onMouseUp = () => { if (activation?.released) restore(); };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') restore(); };
+    document.addEventListener('pointerdown', onPointerDown, { capture: true, passive: true });
+    document.addEventListener('pointerup', onPointerUp, { capture: true, passive: true });
+    document.addEventListener('pointercancel', onPointerCancel, { capture: true, passive: true });
+    document.addEventListener('mouseup', onMouseUp, { capture: true, passive: true });
+    for (const type of ['click', 'contextmenu', 'dragstart', 'keydown'])
+      document.addEventListener(type, restore, { capture: true, passive: true });
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('blur', restore);
+    window.addEventListener('pagehide', restore);
+    return () => {
+      restore();
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerCancel, true);
+      document.removeEventListener('mouseup', onMouseUp, true);
+      for (const type of ['click', 'contextmenu', 'dragstart', 'keydown'])
+        document.removeEventListener(type, restore, true);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('blur', restore);
+      window.removeEventListener('pagehide', restore);
+    };
+  }, [hidden, locale]);
   if (hidden) return null;
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);

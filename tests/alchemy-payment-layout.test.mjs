@@ -39,18 +39,24 @@ function render({ locale, selected, wiseEnabled, paypalPersonalEnabled }, input 
   return { nodes, zenCalls };
 }
 const marked = (nodes, name) => nodes.filter(node => Object.hasOwn(node.props, name));
+const summaries = node => [node.props.children].flat().filter(child => child?.type === "summary");
 
 function assertGates(input = form) {
   for (const locale of ["en", "ru", "es"]) for (const selected of ["30", "60", "month"])
     for (const wiseEnabled of [false, true]) for (const paypalPersonalEnabled of [false, true]) {
       const { nodes, zenCalls } = render({ locale, selected, wiseEnabled, paypalPersonalEnabled }, input);
       const monthly = selected === "month";
+      const formatDetails = marked(nodes, "data-alchemy-format-details");
+      assert.equal(formatDetails.length, 1, "Format explanations remain independently available");
+      assert.equal(formatDetails[0].type, "details");
+      assert.ok(!formatDetails[0].props.open, "Format explanations default closed");
+      assert.equal(summaries(formatDetails[0]).length, 1, "Format details have exactly one direct summary");
       const disclosures = marked(nodes, "data-alchemy-payment-disclosure");
       assert.equal(disclosures.length, monthly ? 0 : 1);
       if (!monthly) {
         assert.equal(disclosures[0].type, "details");
         assert.ok(!disclosures[0].props.open, "Payment details default closed");
-        assert.equal(nodes.filter(node => node.type === "summary").length, 1);
+        assert.equal(summaries(disclosures[0]).length, 1, "Payment disclosure has exactly one direct summary");
       }
       assert.equal(marked(nodes, "data-wise-payment-link").length, !monthly && wiseEnabled ? 1 : 0);
       assert.equal(marked(nodes, "data-paypal-personal-offer").length, !monthly && paypalPersonalEnabled ? 1 : 0);
@@ -72,12 +78,31 @@ test("Owner payment disclosure preserves every provider/month gate and product f
 test("Open-by-default, unpriced-month and disabled-provider mutations fail", () => {
   for (const [before, after] of [
     ['data-alchemy-payment-disclosure>', 'data-alchemy-payment-disclosure open>'],
+    ['data-alchemy-format-details>', 'data-alchemy-format-details open>'],
     ['selected !== "month" && (wiseEnabled', 'true && (wiseEnabled'],
     ['{wiseEnabled ? (', '{true ? ('],
     ['{paypalPersonalEnabled ? (', '{true ? ('],
   ]) {
     assert.ok(form.includes(before), before);
-    assert.throws(() => assertGates(form.replace(before, after)), undefined, before);
+    assert.throws(() => assertGates(form.replace(before, after)), { code: "ERR_ASSERTION" }, before);
+  }
+});
+
+test("An unrelated summary cannot mask a missing or duplicated disclosure summary", () => {
+  for (const [attribute, message] of [
+    ["data-alchemy-payment-disclosure", /Payment disclosure has exactly one direct summary/],
+    ["data-alchemy-format-details", /Format details have exactly one direct summary/],
+  ]) {
+    const detailsStart = form.indexOf(attribute + ">");
+    const summaryStart = form.indexOf("<summary>", detailsStart);
+    const summaryEnd = form.indexOf("</summary>", summaryStart) + "</summary>".length;
+    const detailsEnd = form.indexOf("</details>", detailsStart);
+    assert.ok(detailsStart >= 0 && summaryStart > detailsStart && summaryEnd > summaryStart && summaryEnd < detailsEnd);
+    const summary = form.slice(summaryStart, summaryEnd);
+    for (const replacement of ["", summary + summary]) {
+      const changed = form.slice(0, summaryStart) + replacement + form.slice(summaryEnd);
+      assert.throws(() => assertGates(changed), { code: "ERR_ASSERTION", message }, attribute);
+    }
   }
 });
 

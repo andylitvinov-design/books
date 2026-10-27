@@ -3,8 +3,32 @@ import { sanitizePathname, classifyDiagnosticError } from './isolated-browser-di
 
 const HMR_ACTIONS = new Set(['building', 'built', 'sync', 'serverComponentChanges', 'reloadPage', 'addedPage', 'removedPage'])
 const HMR_EVENTS = new Set(['client-full-reload', 'client-reload-page', 'server-component-reload-page'])
-const ERROR_NAMES = new Set(['Error', 'TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'EvalError', 'URIError', 'AggregateError', 'DOMException'])
+const ERROR_NAMES = new Set(['Error', 'TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'EvalError', 'URIError', 'AggregateError', 'DOMException', 'ChunkLoadError', 'AbortError', 'SecurityError', 'NetworkError', 'InvalidStateError'])
 const PHASES = new Set(['goto-start', 'goto-complete', 'goto-failed', 'signed-in', 'success', 'failure'])
+
+// Fixed classes only. A tooling-looking error remains an error: this observer
+// never exempts it from the verifier's original pageerror gate.
+function classifyPortraitError(error) {
+  const value = typeof error === 'string' ? error : error?.message
+  const text = typeof value === 'string' ? value.slice(0, 4096) : ''
+  if (text === '[object Event]') return 'opaque_event'
+  if (/Loading hot update chunk [^\n]* failed\./.test(text)) return 'hmr_chunk_load_error'
+  if (/Failed to fetch update manifest\b/.test(text)) return 'hmr_manifest_fetch_error'
+  if (/__nextjs_original-stack-frames\b/.test(text)) return 'development_overlay_request_error'
+  if (/Content Security Policy|violates? [^\n]*content security policy/i.test(text)) return 'content_security_policy_error'
+  if (/Frame load interrupted|navigation [^\n]*interrupted by another navigation|NS_BINDING_ABORTED/i.test(text)) return 'navigation_interrupted'
+  if (/^(?:TypeError: )?Load failed(?:\n|$)/.test(text)) return 'network_load_error'
+  if (error?.name === 'ChunkLoadError' || /^ChunkLoadError:/.test(text)) return 'chunk_load_error'
+  return classifyDiagnosticError(typeof error === 'string' ? text : { name: error?.name, message: text })
+}
+
+function reloadErrorDetails(message) {
+  if (!Object.hasOwn(message, 'stackTrace')) return { errorDetails: 'absent' }
+  if (message.stackTrace === null) return { errorDetails: 'null' }
+  if (typeof message.stackTrace !== 'string') return { errorDetails: 'non_text' }
+  if (!message.stackTrace) return { errorDetails: 'empty' }
+  return { errorDetails: 'text', errorCategory: classifyPortraitError(message.stackTrace) }
+}
 
 // Passive Playwright events only: no evaluate, injected script, navigation,
 // retry, request body/header, raw URL, console text, or error stack is retained.
@@ -30,16 +54,37 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     const redirectedFrom = previous ? sanitizePathname(previous.url(), origin) : null
     add({ type, pathname, redirectedFrom, ...extra })
   }
-  listen('request', request => navigationRequest('navigation-request', request))
+  // Webpack 5's absent update manifest (HTTP 404) resolves hot.check() to null;
+  // Next 15.5.21 then reloads without hadRuntimeError or an error argument.
+  // Observe existing main-frame asset traffic to distinguish that case from
+  // failed/blocked hot-update fetches. No URL, hash, body or header is retained.
+  const hotUpdateRequest = (type, request, extra = {}) => {
+    if (request.frame() !== page.mainFrame()) return
+    const raw = request.url()
+    if (typeof raw !== 'string' || raw.length > 16384) return
+    const url = new URL(raw), base = new URL(origin)
+    if (url.origin !== base.origin || url.username || url.password) return
+    const match = url.pathname.match(/^\/_next\/static\/webpack\/.+\.hot-update\.(json|js)$/)
+    if (!match) return
+    add({ type, asset: match[1] === 'json' ? 'manifest' : 'chunk', ...extra })
+  }
+  listen('request', request => {
+    navigationRequest('navigation-request', request)
+    hotUpdateRequest('hmr-asset-request', request)
+  })
   listen('response', response => {
     const status = response.status()
-    navigationRequest('navigation-response', response.request(), {
+    const extra = {
       status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : null,
-    })
+    }
+    navigationRequest('navigation-response', response.request(), extra)
+    hotUpdateRequest('hmr-asset-response', response.request(), extra)
   })
-  listen('requestfailed', request => navigationRequest('navigation-failed', request, {
-    category: classifyDiagnosticError(request.failure()?.errorText),
-  }))
+  listen('requestfailed', request => {
+    const extra = { category: classifyPortraitError(request.failure()?.errorText) }
+    navigationRequest('navigation-failed', request, extra)
+    hotUpdateRequest('hmr-asset-failed', request, extra)
+  })
   listen('framenavigated', frame => {
     if (frame !== page.mainFrame()) return
     const pathname = sanitizePathname(frame.url(), origin)
@@ -47,7 +92,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   })
   for (const type of ['domcontentloaded', 'load', 'crash', 'close']) listen(type, () => add({ type }))
   listen('pageerror', error => add({
-    type: 'page-error', category: classifyDiagnosticError(error),
+    type: 'page-error', category: classifyPortraitError(error),
     errorName: ERROR_NAMES.has(error?.name) ? error.name : 'Other',
   }))
   listen('console', message => {
@@ -80,6 +125,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
       } else if (direction === 'sent' && HMR_EVENTS.has(message.event)) {
         add({ type: 'hmr-sent', event: message.event,
           ...(typeof message.hadRuntimeError === 'boolean' ? { hadRuntimeError: message.hadRuntimeError } : {}),
+          ...(message.event === 'client-full-reload' ? reloadErrorDetails(message) : {}),
         })
       }
     }

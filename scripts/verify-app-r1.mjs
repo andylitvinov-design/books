@@ -1,3 +1,4 @@
+import { assertNativeCompactChannelGestures } from './helpers/native-compact-channel-gestures.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
@@ -6,6 +7,7 @@ import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPi
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { verifyHypnotherapyRequest } from './helpers/hypnotherapy-request-verifier.mjs'
 import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -447,7 +449,7 @@ async function verifyPublicServiceConversionJourneys(){
   ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
  ]
  for(const locale of ['en','ru']){
-  for(const [slug,kind,names] of services){
+  for(const [slug,kind] of services){
    const servicePage=await publicContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
@@ -485,6 +487,17 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    if(kind==='hypnotherapy'&&(width===390||width===1280)){
+     await verifyHypnotherapyRequest(servicePage,expect,{origin,locale,channel:width===390?'whatsapp':'telegram'})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+     // The authored free-review alternative belongs to CoreServiceDetail,
+     // not the separate CompactLeadCapture appended by SitewideLeadCapture.
+     const alternative=servicePage.locator('main[data-core-service-detail="hypnotherapy"] > section:last-child > details')
+     await expect(alternative).toHaveCount(1)
+     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+     await alternative.locator('summary').click()
+     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    }
     if(width!==390)continue
     if(kind==='dao'){
      await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale,
@@ -519,19 +532,6 @@ async function verifyPublicServiceConversionJourneys(){
      assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
        'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
-    }else{
-     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-     await capture.scrollIntoViewIfNeeded()
-     await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
-     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
-     await alternative.locator('summary').click()
-     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
     }
    }
    await servicePage.close()
@@ -615,6 +615,8 @@ async function verifyPublicServiceConversionJourneys(){
 }
 
 try {
+ await assertNativeCompactChannelGestures(browser,expect,{origin})
+ passed('native compact channel mouse/touch gestures and navigation restoration without network')
  await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import {
   assertIsolatedDatabaseEnvironment, isolatedAdminConnection,
   assertFreshIsolatedFixture, ISOLATED_SCHEMA_DEPENDENCIES, monitoringRegistryDiagnostic,
@@ -87,9 +88,9 @@ test('fresh-service proof rejects wrong identity, wrong PostgreSQL version and a
   assert.throws(() => assertFreshIsolatedFixture(undefined, empty()), denied)
 })
 
-test('dependency closure uses only eight existing sources in prerequisite order', async () => {
+test('dependency closure uses only fourteen existing sources in prerequisite order', async () => {
   assert.equal(Object.isFrozen(ISOLATED_SCHEMA_DEPENDENCIES), true)
-  assert.equal(new Set(ISOLATED_SCHEMA_DEPENDENCIES).size, 8)
+  assert.equal(new Set(ISOLATED_SCHEMA_DEPENDENCIES).size, 14)
   const pathOf = part => ISOLATED_SCHEMA_DEPENDENCIES.find(path => path.includes(part))
   const before = (earlier, later) => {
     assert.ok(pathOf(earlier), earlier)
@@ -164,4 +165,71 @@ test('database CI runs pure fixture safety tests before the existing integration
   assert.ok(safety > 0 && safety < integration)
   assert.match(databaseJob, /image: postgres:17-alpine/)
   assert.match(databaseJob, /HH_APP_TEST_RUNTIME: isolated/)
+})
+
+test('read-path closure retains the original eight and exactly six unchanged schema sources', async () => {
+  const original = [
+    "supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql",
+    "supabase/migrations/20261019152000_hh_public_service_enquiries_secure.sql",
+    "supabase/migrations/20261019174312_hh_practitioner_request_read_state_20261019.sql",
+    "supabase/migrations/20261019180000_hh_client_message_push_optin.sql",
+    "supabase/migrations/20261020123209_hh_practitioner_request_followup_tasks_20261020.sql",
+    "sql/client-delivery-sessions-20261015.sql",
+    "sql/client-delivery-session-private-pdfs-20261015.sql",
+    "supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql"
+  ]
+  const readSchemas = [
+    {
+      "path": "supabase/migrations/20261017181000_hh_academy_energywork_progress.sql",
+      "sha": "f7c8ec677d6102be649ebd6161333d048941219d"
+    },
+    {
+      "path": "supabase/migrations/20261018184658_hh_reiki_course_private_crm_leads_20261018.sql",
+      "sha": "a5ff2a3422a0af2aa7b94b32983947d35a9da7a2"
+    },
+    {
+      "path": "supabase/migrations/20261019030943_hh_reiki_course_public_reviews_20261019.sql",
+      "sha": "33f2a9cb6dbbd84601105882e0134699730d73ec"
+    },
+    {
+      "path": "supabase/migrations/20261025173000_hh_practitioner_express_reports.sql",
+      "sha": "5d87a12e0eb62cf7d80fc1198e19f0d7d7f69299"
+    },
+    {
+      "path": "supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql",
+      "sha": "5e565c87495b7d34ad0c6872c7fad82357cd2ab1"
+    },
+    {
+      "path": "supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql",
+      "sha": "d14756fdb7318d569c874cf0664202e5d9790122"
+    }
+  ]
+  // This is a bounded source-wiring test, not proof of live PostgreSQL behavior.
+  // No Academy enrollment/resume, express create/send, CRM or Telegram delivery closure.
+  assert.deepEqual(ISOLATED_SCHEMA_DEPENDENCIES, [
+    ...original, ...readSchemas.map(source => source.path),
+  ])
+  const before = (earlier, later) => {
+    const first = ISOLATED_SCHEMA_DEPENDENCIES.findIndex(path => path.includes(earlier))
+    const last = ISOLATED_SCHEMA_DEPENDENCIES.findIndex(path => path.includes(later))
+    assert.ok(first >= 0 && last > first, earlier + ' before ' + later)
+  }
+  before('public_service_enquiries_secure', 'free_express_guest_continuation_rls')
+  before('free_express_guest_continuation_rls', 'free_express_owner_account_reply')
+  before('academy_energywork_progress', 'reiki_course_private_crm_leads')
+  before('reiki_course_private_crm_leads', 'reiki_course_public_reviews')
+  assert.equal(readSchemas.some(({ path }) =>
+    /claimed_enquiry_delivery|client_telegram|messenger_pending|crm_owner|assessment|registry|seed|proposed/i.test(path)), false)
+  for (const { path, sha } of readSchemas) {
+    const source = await readFile(new URL('../' + path, import.meta.url))
+    const actual = createHash('sha1').update('blob ' + source.length + '\0').update(source).digest('hex')
+    // Pins include every byte: never strip proposal sentinels, policies or grants.
+    assert.equal(actual, sha, 'Unchanged reviewed SQL source required: ' + path)
+  }
+  const setup = await read('tests/helpers/app-db-setup.mjs')
+  assert.ok(setup.includes(
+    "for(const path of ISOLATED_SCHEMA_DEPENDENCIES){\n" +
+    "   assertIsolated()\n" +
+    "   await db.query(await readFile(new URL('../../'+path,import.meta.url),'utf8'))\n" +
+    " }"), 'Guarded setup executes the unchanged files in explicit list order')
 })

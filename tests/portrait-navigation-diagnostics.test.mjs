@@ -224,3 +224,99 @@ test('page errors include only a fixed Error.name class and still reach original
   assert.deepEqual(errors, [safe, arbitrary])
   assert.doesNotMatch(JSON.stringify(result), /secret|message|stack/)
 })
+
+test('full reload details distinguish absent, null, empty, non-text and classified error without inventing a cause', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' }), ws = socket()
+  page.emit('websocket', ws)
+  const details = [
+    {}, { stackTrace: null }, { stackTrace: '' }, { stackTrace: { secret: 'secret' } },
+    { stackTrace: 'ChunkLoadError: Loading hot update chunk secret failed.\n(error: https://secret.invalid/token)' },
+    { stackTrace: 'Error: Failed to fetch update manifest secret\nsecret stack' },
+    { stackTrace: 'Error: secret application fault\nsecret stack' },
+  ]
+  for (const detail of details) emitFrame(ws, 'framesent', { event: 'client-full-reload', hadRuntimeError: false, ...detail })
+  emitFrame(ws, 'framesent', { event: 'client-reload-page', stackTrace: 'secret' })
+  const result = probe.stop(), sent = result.events.filter(e => e.event === 'client-full-reload')
+  assert.deepEqual(sent.map(e => e.errorDetails), ['absent', 'null', 'empty', 'non_text', 'text', 'text', 'text'])
+  assert.deepEqual(sent.slice(4).map(e => e.errorCategory), ['hmr_chunk_load_error', 'hmr_manifest_fetch_error', 'unclassified_error'])
+  assert.ok(sent.every(e => e.hadRuntimeError === false))
+  assert.ok(sent.slice(0, 4).every(e => !Object.hasOwn(e, 'errorCategory')))
+  assert.ok(!Object.hasOwn(result.events.at(-1), 'errorDetails'))
+  assert.doesNotMatch(JSON.stringify(result), /secret|stackTrace|token|https?:|cause|benign/)
+})
+
+test('only same-loopback main-frame hot-update assets expose kind and response status, never names or content', options, () => {
+  const { page, request } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const manifest = request('/_next/static/webpack/secret.hot-update.json?token=secret', null, page.mainFrame(), false)
+  const chunk = request('/_next/static/webpack/app/private-secret.secret.hot-update.js?token=secret', null, page.mainFrame(), false)
+  page.emit('request', manifest)
+  page.emit('response', { request: () => manifest, status: () => 404 })
+  page.emit('request', chunk)
+  page.emit('response', { request: () => chunk, status: () => 200 })
+  page.emit('requestfailed', { ...chunk, failure: () => ({ errorText: 'Frame load interrupted secret' }) })
+  const result = probe.stop()
+  assert.deepEqual(result.events.map(({ atMs, ...event }) => event), [
+    { type: 'hmr-asset-request', asset: 'manifest' },
+    { type: 'hmr-asset-response', asset: 'manifest', status: 404 },
+    { type: 'hmr-asset-request', asset: 'chunk' },
+    { type: 'hmr-asset-response', asset: 'chunk', status: 200 },
+    { type: 'hmr-asset-failed', asset: 'chunk', category: 'navigation_interrupted' },
+  ])
+  assert.doesNotMatch(JSON.stringify(result), /secret|private|token|http|pathname|headers|body/)
+})
+
+test('hot-update observation rejects other origins, ports, credentials, frames, paths and oversized URLs', options, () => {
+  const { page, request } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const good = request('/_next/static/webpack/secret.hot-update.json', null, page.mainFrame(), false)
+  for (const url of ['https://127.0.0.1:3100/_next/static/webpack/secret.hot-update.json',
+    'http://external.invalid/_next/static/webpack/secret.hot-update.json',
+    'http://127.0.0.1:54329/_next/static/webpack/secret.hot-update.json',
+    'http://secret@127.0.0.1:3100/_next/static/webpack/secret.hot-update.json',
+    origin + '/api/app/secret.hot-update.json', origin + '/_next/static/chunks/secret.js',
+    origin + '/_next/static/webpack/' + 's'.repeat(16384) + '.hot-update.json']) {
+    const bad = { ...good, url: () => url }
+    page.emit('request', bad)
+    page.emit('response', { request: () => bad, status: () => 404 })
+    page.emit('requestfailed', bad)
+  }
+  page.emit('request', { ...good, frame: () => ({}) })
+  assert.deepEqual(probe.stop().events, [])
+})
+
+test('opaque events, named chunk failures, WebKit errors and actual runtime errors stay classified and fail-capable', options, () => {
+  const { page } = fixture(), original = []
+  page.on('pageerror', error => original.push(error))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const errors = [
+    { name: '', message: '[object Event]' },
+    { name: 'ChunkLoadError', message: 'Loading chunk secret failed.' },
+    { name: 'ChunkLoadError', message: 'Loading hot update chunk secret failed.' },
+    { name: 'TypeError', message: 'Load failed' },
+    { name: 'Error', message: 'Refused to connect due to Content Security Policy secret' },
+    { name: 'Error', message: 'Failed request /__nextjs_original-stack-frames?secret' },
+    new TypeError('secret app failure'), new SyntaxError('secret app failure'),
+    { name: 'secret', message: 'secret application failure', stack: 'secret' },
+    { name: 'Error', message: 'x'.repeat(4096) + 'Failed to fetch update manifest secret' },
+  ]
+  errors.forEach(error => page.emit('pageerror', error))
+  const result = probe.stop()
+  assert.deepEqual(result.events.map(e => e.category), ['opaque_event', 'chunk_load_error', 'hmr_chunk_load_error',
+    'network_load_error', 'content_security_policy_error', 'development_overlay_request_error',
+    'javascript_type_error', 'javascript_syntax_error', 'unclassified_error', 'unclassified_error'])
+  assert.deepEqual(result.events.slice(0, 3).map(e => e.errorName), ['Other', 'ChunkLoadError', 'ChunkLoadError'])
+  assert.deepEqual(original, errors)
+  assert.deepEqual(page.eventNames(), ['pageerror'])
+  assert.doesNotMatch(JSON.stringify(result), /secret|message|stack|ignored|waived/)
+})
+
+test('hot-update diagnostics retain the total event cap and own-listener cleanup', options, () => {
+  const { page, request } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const asset = request('/_next/static/webpack/secret.hot-update.json', null, page.mainFrame(), false)
+  for (let i = 0; i < 300; i++) page.emit('response', { request: () => asset, status: () => 404 })
+  const result = probe.stop()
+  assert.equal(result.events.length, 200)
+  assert.equal(result.dropped, 100)
+  assert.deepEqual(page.eventNames(), [])
+  page.emit('response', { request: () => asset, status: () => 404 })
+  assert.deepEqual(probe.stop(), result)
+})

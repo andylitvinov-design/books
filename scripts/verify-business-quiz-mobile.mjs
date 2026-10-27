@@ -11,6 +11,7 @@ const require=createRequire(import.meta.url)
 const origin=process.env.HH_PUBLIC_QA_ORIGIN||'http://127.0.0.1:3100'
 assertPublicJourneyRuntime(origin)
 const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||'playwright')
+const {expect}=require((process.env.HH_PLAYWRIGHT_PACKAGE||'playwright')+'/test')
 const dir='artifacts/business-quiz-mobile'
 await mkdir(dir,{recursive:true})
 const topics=['decisions','productivity','work-stress','money-beliefs']
@@ -201,7 +202,9 @@ async function verify(browserType,locale,width){
     await mentoring.click()
     await page.waitForURL(url=>url.pathname==='/'+locale+'/services/business-consulting'&&url.searchParams.get('businessFormat')==='mentoring')
     await form.waitFor({state:'visible'})
-    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'mentoring')
+    // The server-visible form starts as free; its mount effect restores the
+    // allowlisted query choice. Wait on that exact observable state, not time.
+    await expect(form.locator('[data-business-field="format"]')).toHaveValue('mentoring')
     assert.equal(await form.locator('[data-business-review-context]').count(),0,label+': fresh mentoring link cannot inherit an earlier topic')
     await consentClosed(form)
     await navigate('/explore/business')

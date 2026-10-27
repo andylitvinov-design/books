@@ -21,7 +21,17 @@ function decoded(value) {
   return result
 }
 
-export function publicJourneyRequestDecision({ url, method, body = '', navigation = false }, origin, sensitive = [], fixtures = {}) {
+// Reviewed source-authored RSC prefetches only, not destinations this journey
+// may navigate to. Keep this explicit set separate from passive source labels.
+const reviewedPublicPrefetchPaths = new Set([
+  '/', '/es',
+  ...['en', 'ru', 'es'].flatMap(locale => [
+    '/' + locale + '/masters',
+    '/' + locale + '/academy/reiki/yggdrasil/free-initiation',
+  ]),
+])
+export function publicJourneyRequestDecision({ url, method, body = '', navigation = false,
+  resourceType, prefetch, prefetchSignals }, origin, sensitive = [], fixtures = {}) {
   const contents = decoded(url) + '\n' + decoded(body)
   if (sensitive.some(value => value && contents.includes(value))) return 'private-text'
   let target
@@ -33,6 +43,23 @@ export function publicJourneyRequestDecision({ url, method, body = '', navigatio
   if (fixtures.anonymousTalismans === true && method === 'GET' && !navigation && !body &&
       target.pathname === '/api/holistic-support/talismans' && !target.search && !target.hash)
     return 'synthetic-anonymous-talismans'
+  // Exact db382 isolated evidence: these GETs originate from the authored
+  // wordmark/footer Links or root metadata. This is not an API/provider bypass.
+  const plainLocalRead = method === 'GET' && navigation === false && body === '' &&
+    !target.username && !target.password && !target.hash
+  if (plainLocalRead && target.pathname === '/holistic-house-app.webmanifest' &&
+      target.search === '' && resourceType === 'other' && prefetch === false &&
+      prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
+      prefetchSignals?.rsc === false) return 'allow'
+  if (plainLocalRead && reviewedPublicPrefetchPaths.has(target.pathname) &&
+      resourceType === 'fetch' && prefetch === true && prefetchSignals?.purposePrefetch === false &&
+      prefetchSignals?.nextRouterPrefetch === true && prefetchSignals?.rsc === true) {
+    // Next15.5.21 writes a literal 16-char base64url SHA256 prefix, or a
+    // legacy 1-5 lowercase base36 hash when crypto.subtle is unavailable.
+    // Check RAW syntax: forgiving URLSearchParams decoding must not admit a
+    // partially encoded private value followed by a malformed percent escape.
+    if (/^\?_rsc=(?:[0-9a-z]{1,5}|[A-Za-z0-9_-]{16})$/.test(target.search)) return 'allow'
+  }
   // Public route rendering may read its own static resources. API/auth/admin,
   // assessment runner and any unplanned destination remain closed, even on localhost.
   if (/^\/(?:_next\/|images\/|audio\/|fonts\/|favicon\.|icon\.|apple-icon\.|manifest\.)/.test(target.pathname)) return 'allow'
@@ -58,15 +85,30 @@ const diagnosticSourcePaths = new Map([
     ['/' + locale + '/academy/reiki/yggdrasil/free-initiation', 'remote-support-free-initiation-link'],
   ]),
 ])
+// Exact public generated-icon route sizes, for diagnostics only. Their GETs
+// remain unplanned and fatal; a label does not identify any prior request.
+const diagnosticGeneratedIconPaths = new Map([
+  ['/holistic-house-icon/192', 'public-app-icon-192'],
+  ['/holistic-house-icon/512', 'public-app-icon-512'],
+  ['/course-icon/192', 'public-course-icon-192'],
+  ['/course-icon/512', 'public-course-icon-512'],
+  ['/opora-course-icon/192', 'public-opora-course-icon-192'],
+  ['/opora-course-icon/512', 'public-opora-course-icon-512'],
+])
 // EN/ES freeMeditationVideos selects the authored English Sun recording;
 // AcademyCourseVideoPlaylist -> AcademyVideoPlayer emits this public poster.
 const diagnosticSunPoster = 'https://i.ytimg.com/vi/HqfixazXqRY/hqdefault.jpg'
 export function publicJourneyRequestDiagnostic(request, decision, origin) {
   let path = '', target
   try { target = new URL(request.url); path = target.pathname } catch {}
-  let sourceId = 'unclassified'
+  let sourceId = 'unclassified', routeShape = 'unclassified'
   if (target && !target.username && !target.password && !target.hash) {
-    if (origin && target.origin === origin) sourceId = diagnosticSourcePaths.get(path) || 'unclassified'
+    if (origin && target.origin === origin) {
+      sourceId = diagnosticSourcePaths.get(path) || diagnosticGeneratedIconPaths.get(path) || 'unclassified'
+      // This dynamic route may proxy upstream. Recognize structure only: never
+      // print its parameters, call it a safe source, or permit the request.
+      if (/^\/media\/[^/]+\/[^/]+$/.test(path)) routeShape = 'media-two-segment-route'
+    }
     else if (target.href === diagnosticSunPoster) sourceId = 'public-english-sun-poster'
   }
   const queryKeys = target ? [...target.searchParams.keys()] : []
@@ -80,6 +122,7 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
     category: path.startsWith('/api/') ? 'api' : /\.(?:png|jpe?g|webp|avif|svg|ico|woff2?|wav|mp3|css|js)$/i.test(path) ? 'static-asset' : /^\/(?:en|ru|es)(?:\/|$)/.test(path) ? 'localized-route' : 'other',
     path: decision === 'private-text' ? '[redacted]' : safeDiagnosticPaths.has(path) ? path : '[redacted]',
     sourceId: decision === 'private-text' ? 'redacted' : sourceId,
+    routeShape: decision === 'private-text' ? 'redacted' : routeShape,
     queryShape: decision === 'private-text' ? 'redacted' : queryShape,
     prefetchSignals: {
       purposePrefetch: request.prefetchSignals?.purposePrefetch === true,
