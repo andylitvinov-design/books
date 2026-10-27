@@ -9,6 +9,9 @@
  * node scripts/audit-profile-construct-links.mjs --csv > profile-axes-review.csv
  */
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
+import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
+import { auditAuthorItemContent } from '../lib/assessments/author-item-content-audit.js'
 import {
   PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, PROFILE_RESEARCH_AXES,
   buildProfileScaleGroups, profileAreasWithTests,
@@ -94,6 +97,50 @@ export function auditProfileConstructLinks() {
   return Object.freeze(result)
 }
 
+// The existing 73-family EN/RU source-item QA is joined to the new profile
+// taxonomy without reading any client data. Linkage/flags are review leads,
+// never proof of content validity, reliability or cross-cultural equivalence.
+export function buildAuthorAxisReview(report) {
+  const audit = auditAuthorItemContent(ASSESSMENT_DEFINITIONS, MONITORING_CATALOG)
+  const byDimension = new Map()
+  for (const link of report.sourceLinks) {
+    const id = [link.key,link.version,link.dimension].join('::')
+    const axes = byDimension.get(id) || new Set()
+    axes.add(link.facet)
+    byDimension.set(id, axes)
+  }
+  const rows = audit.rows.map(item => {
+    const facets = [...new Set(item.dimensionKeys.flatMap(dimension =>
+      [...(byDimension.get([item.key,item.version,dimension].join('::')) || [])]))]
+    return Object.freeze({
+      key: item.key, version: item.version, locale: item.locale,
+      itemId: item.itemId, itemOrder: item.itemOrder, text: item.text,
+      timeframe: item.timeframe, scorerDimensions: item.dimensionKeys,
+      researchFacets: facets, flags: item.flags,
+      dimensionMapping: facets.length ? 'source_scale_linked' : 'manual_construct_link_review',
+      reviewStatus: 'pending_qualified_content_review',
+      cognitiveInterviewStatus: 'not_completed',
+      psychometricValidation: 'not_established',
+    })
+  })
+  return Object.freeze({
+    methods: audit.families, editions: audit.languageVersions,
+    missingVersions: audit.missingVersions, items: rows.length,
+    flaggedItems: audit.candidatesForReview,
+    unlinkedItemRows: rows.filter(row => row.dimensionMapping === 'manual_construct_link_review').length,
+    notice: 'Reviewer queue only: NO independent validation has been established.',
+    rows: Object.freeze(rows),
+  })
+}
+
+export function authorAxisReviewCsv(review) {
+  const columns = ['key','version','locale','itemId','itemOrder','text','timeframe',
+    'scorerDimensions','researchFacets','flags','dimensionMapping','reviewStatus',
+    'cognitiveInterviewStatus','psychometricValidation']
+  return [columns.join(','),...review.rows.map(row =>
+    columns.map(column => quoteCsv(row[column])).join(','))].join('\n') + '\n'
+}
+
 const quoteCsv = value => {
   const raw = Array.isArray(value) ? value.join(';') : String(value ?? '')
   const safe = /^[\s]*[=+@-]/.test(raw) ? "'" + raw : raw
@@ -112,16 +159,24 @@ export function profileAxisCsv(report) {
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
   const report = auditProfileConstructLinks()
   if (process.argv.includes('--verify')) {
+    const review = buildAuthorAxisReview(report)
     const bad = report.unlinked.length || report.guestUnlinked.length ||
+      report.emptyResearchFacets.length ||
       report.counts.uniqueMethods !== report.counts.catalogue ||
       report.counts.researchFacets !== 31 ||
-      report.counts.profiles !== 4
+      report.counts.profiles !== 4 ||
+      review.methods !== 73 || review.editions !== 146 || review.missingVersions.length
     console.log(JSON.stringify({
       counts: report.counts, unlinked: report.unlinked, guestUnlinked: report.guestUnlinked,
       emptyGuestTopics: report.emptyGuestTopics, emptyResearchFacets: report.emptyResearchFacets,
+      authorReview: { methods: review.methods, editions: review.editions,
+        items: review.items, flaggedItems: review.flaggedItems,
+        manualConstructLinkReview: review.unlinkedItemRows },
     }, null, 2))
     if (bad) process.exitCode = 1
-  } else if (process.argv.includes('--csv')) process.stdout.write(profileAxisCsv(report))
+  } else if (process.argv.includes('--review-csv')) process.stdout.write(authorAxisReviewCsv(buildAuthorAxisReview(report)))
+  else if (process.argv.includes('--review-json')) process.stdout.write(JSON.stringify(buildAuthorAxisReview(report), null, 2) + '\n')
+  else if (process.argv.includes('--csv')) process.stdout.write(profileAxisCsv(report))
   else if (process.argv.includes('--json')) process.stdout.write(JSON.stringify(report, null, 2) + '\n')
   else console.log(JSON.stringify(report.counts, null, 2))
 }
