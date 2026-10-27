@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { SERVICE_PRODUCTS } from '../lib/commerce/catalog.js'
 import {
-  buildSquarePaymentForServices, configuredSquarePaymentLinks,
+  buildSquarePaymentForServices, configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad50,
   formatSquareCadAmount, normalizeSquarePaymentLink,
 } from '../lib/commerce/square-payment-links.js'
 
@@ -91,4 +91,37 @@ test('PayPal.Me discloses required PayPal sign-in and no guest card checkout in 
   assert.match(payments,/не гостевая оплата картой/)
   assert.match(payments,/pago con tarjeta como invitado/)
   assert.doesNotMatch(cart,/PayPal\.Me.*pay by card without/i)
+})
+
+// The owner supplied the public buy button for a confirmed live CA$50.00
+// "Session - Holistic House" checkout. This is NOT the €50 SKU conversion.
+test('standalone Square CAD 50 session link remains separate from EUR cart and manual-only', () => {
+  const link = configuredStandaloneSquareSessionCad50({ VERCEL_ENV: 'production' })
+  assert.deepEqual(link, {
+    url: 'https://square.link/u/Kv0TfvaP',
+    amountMinor: 5000,
+    currency: 'CAD',
+  })
+  assert.ok(Object.isFrozen(link))
+  assert.equal(normalizeSquarePaymentLink(link.url), link.url)
+  assert.equal(configuredStandaloneSquareSessionCad50({ VERCEL_ENV: 'preview' }), null)
+  assert.equal(configuredStandaloneSquareSessionCad50({ VERCEL_ENV: 'development' }), null)
+  assert.equal(configuredStandaloneSquareSessionCad50({
+    VERCEL_ENV: 'production', HH_SQUARE_CAD_50_SESSION_DISABLED: 'true',
+  }), null)
+  assert.equal(buildSquarePaymentForServices([ids[0]], {}), null)
+  assert.equal(buildSquarePaymentForServices([ids[1]], {}), null)
+
+  const page = read('app/[locale]/payments/page.tsx')
+  assert.match(page, /configuredStandaloneSquareSessionCad50/)
+  assert.match(page, /data-square-cad50-session-payment/)
+  assert.match(page, /data-square-cad50-session-checkout/)
+  assert.match(page, /data-square-cad50-session-receipt/)
+  assert.match(page, /standaloneSquareSession\.url/)
+  assert.match(page, /referrerPolicy="no-referrer"/)
+  assert.match(page, /Only use this CA\$50 link if Andrey/)
+  assert.match(page, /Это не цена консультации €50/)
+  assert.match(page, /No equivale a la consulta de €50/)
+  assert.match(page, /No automatic booking or payment verification/)
+  assert.doesNotMatch(page, /data-square-cad50-session-paid|window\.open|embedded-checkout-modal/)
 })
