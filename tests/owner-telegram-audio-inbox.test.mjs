@@ -135,8 +135,9 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   assert.equal(OWNER_AUDIO_DESTINATION_MINUTES,30)
   const keyboard=ownerAudioDestinationKeyboard()
   const callbacks=keyboard.inline_keyboard.flat()
-    .map(item=>item.callback_data).filter(Boolean)
+    .map(item=>item.callback_data).filter(value=>value?.startsWith('hh-audio:to:'))
   const expected=OWNER_AUDIO_FOLDERS.map(item=>'hh-audio:to:'+item.id)
+  assert.ok(keyboard.inline_keyboard.flat().some(item=>item.callback_data==='hh-audio:combine'))
   assert.deepEqual([...callbacks].sort(),[...expected].sort())
   assert.ok(keyboard.inline_keyboard.flat().every(item=>
     !item.callback_data||item.callback_data.length<=64))
