@@ -473,10 +473,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
       const signature = [...selectedScaleIds].sort().join("|");
       if (batterySignature !== signature) {
-        // Never recommend a questionnaire solely because its broad axis matches.
-        // Its source scale must also belong to the chosen topic.
+        // Keep both modes available: a Pro scale can cover an axis initially chosen
+        // in a monitoring test and vice versa, but ONLY within the selected topics.
         const selectedTestKeys = new Set(scaleGroups.flatMap(group => group.scales
-          .filter(scale => selectedScaleIds.includes(scale.id)).map(scale => scale.testKey)));
+          .filter(scale => selectedAxes.includes(scale.axis)).map(scale => scale.testKey)));
         const relevantTests = tests.filter(test => selectedTestKeys.has(test.key));
         setSelectedByMode({
           questionnaires: recommendProfileMode(relevantTests, selectedAxes, "questionnaires"),
