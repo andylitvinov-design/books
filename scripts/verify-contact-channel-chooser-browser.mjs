@@ -272,15 +272,6 @@ async function runEngine(name, engine) {
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
             const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
             await daoForm.waitFor({state:"visible",timeout:25000});
-            // SSR can expose visible form buttons before React hydrates their
-            // click handlers. Wait for the actual bound handler, not a fixed
-            // delay, before testing the critical no-consent CRM guard.
-            await page.waitForFunction(() => {
-              const button = document.querySelector(
-                'main[data-free-entry-landing="dao"] [data-compact-lead-form] button[data-compact-channel="whatsapp"]');
-              return Boolean(button && Object.keys(button).some(key =>
-                key.startsWith("__reactProps$") && typeof button[key]?.onClick === "function"));
-            }, null, {timeout:20000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
             assert.equal(await consent.isChecked(),false,"Dao opt-in must start unchecked");
@@ -298,9 +289,21 @@ async function runEngine(name, engine) {
             assert.equal(await daoForm.locator('a[data-compact-channel]').count(),0,
               "No external messenger links before a server-acknowledged request");
             // Negative consent path must never reach POST or a messenger.
-            // Count genuine DOM clicks without invoking React handlers or
-            // leaking the synthetic contact into public CI diagnostics.
-            await page.evaluate(() => {
+            // Initial HTML can be interactive-looking before hydration; the
+            // contact edit itself can also overlap a navigation/remount.
+            // Install the DOM click observer only AFTER the edit, on the
+            // actual document in which the user will tap the action.
+            const previous = submissions.length;
+            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
+            await page.waitForFunction(() => {
+              const form = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
+              const button = form?.querySelector('button[data-compact-channel="whatsapp"]');
+              const contact = form?.querySelector('input[name="contact"]');
+              return contact?.value === "qa-browser@example.test" && Boolean(button &&
+                Object.keys(button).some(key =>
+                  key.startsWith("__reactProps$") && typeof button[key]?.onClick === "function"));
+            }, null, {timeout:20000});
+            const clickDocumentOrigin = await page.evaluate(() => {
               window.__hhDaoClickEvents = 0;
               document.addEventListener("click", event => {
                 if (event.target instanceof Element &&
@@ -308,11 +311,10 @@ async function runEngine(name, engine) {
                   window.__hhDaoClickEvents++;
                 }
               }, {capture:true});
+              return performance.timeOrigin;
             });
             // Positive path intercepts POST above and stubs window.open here:
             // no real enquiry, popup, external request, or customer message.
-            const previous = submissions.length;
-            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
             await whatsapp.click();
             assert.equal(submissions.length,previous,"Contact alone cannot bypass Dao consent");
             const consentError = daoForm.getByRole("alert");
@@ -326,6 +328,7 @@ async function runEngine(name, engine) {
                 const contact = form?.querySelector('input[name="contact"]');
                 return {
                   domClicks: window.__hhDaoClickEvents ?? 0,
+                  documentReplacedSinceTapSetup: performance.timeOrigin !== clickDocumentOrigin,
                   reactHandlerPresent: Boolean(propsKey && typeof button[propsKey]?.onClick === "function"),
                   formConnected: Boolean(form?.isConnected),
                   buttonDisabled: Boolean(button?.disabled),
