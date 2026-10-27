@@ -81,3 +81,21 @@ Preserved prior owner bot audio callback/commands from live production; handled 
 **Если серверных провайдеров меньше двух:** не подменять общий ответ единственным мнением, не зацикливать меню и не говорить «успешно»; показать причины и кнопку «Проверить подключение». Синтетические unit tests проверяют интерфейс и логические ветки, но НЕ реальную доставку; последний live owner ledger перед этой правкой содержал только меню, статус и prompt без успешных completion receipts.
 
 **Релиз / проверка:** PR https://github.com/andylitvinov-design/books/pull/2104 на production branch `codex/public-book-library`; до мержа требуют зелёные targeted owner-ai, shared-Telegram CI и Vercel READY. После READY выполнить один реальный non-sensitive `/all Как упростить заявку на бесплатную консультацию и проверить подтверждение лида в CRM?`, убедиться в минимум двух настоящих статусах `ok`, provider-specific ID, cost=0, общем ответе + Telegram `message_id` и в прочтении владельцем на iPhone. Пока это не выполнено, статус end-to-end **BLOCKED**, даже если native menu стало коротким.
+
+## 2026-10-27 · Owner Telegram AI Council 4+1 (five distinct FREE-only models)
+
+Existing signed shared-practice webhook and `@Andydotbot` are reused; **no second webhook/bot, no extra credential or database migration**. After owner numeric chat+username checks, DB update-id claim and 4-per-day limiter, `/all <public question>` or `/council <public question>` dispatches four **independent** requests in parallel and a FIFTH independent model for synthesis.
+
+| Role | Exact locked OpenRouter ID |
+|---|---|
+| UX and visual audit | `nvidia/nemotron-3.5-super-vl:free` |
+| Product and strategy | `google/gemma-4-31b-it:free` |
+| Engineering and security | `cohere/north-mini-code:free` |
+| Skeptic and alternative hypothesis | `xingchen-agi/xing4.0-29b-a4b:free` |
+| Chief reasoning synthesizer | `nvidia/nemotron-3-ultra-550b-a55b:free` |
+
+These are chosen complementary candidates, NOT a scientifically verified objective five-best benchmark. OpenCode's application-only GLM/DeepSeek Free access does not give a free third-party HTTP API. Model roster is pinned to prevent a quiet switch to a paid model. Each explicit user question performs two read-only OpenRouter GETs for user-key identity and live catalog, rejects any model whose COMPLETE pricing is not zero, performs up to four parallel POSTs with `max_price=0`, `allow_fallbacks:false`, `data_collection:'deny'` and checks exact returned model ID, finish reason, `usage.cost===0`; only then a **fifth** distinct $0 model attempts a structured source-attributed conclusion. No retry of ambiguous POSTs or paid substitute. Provider privacy policies and free rate limits may refuse inference; show truthful partial/unavailable status.
+
+**Telegram owner behavior:** 1:1 owner-private `/all` and `/council` are recognized; `/ai` menu now foregrounds **4+1**; `ForceReply` binds the question. Real fifth-model summary is delivered to the same verified owner chat as a compact Telegram message, then four genuine reviewer texts and synthesis/status metadata are delivered as a Markdown attachment using the preexisting verified `sendOwnerDocument`. Failed attachments are NOT silently retried. Historical `/gemini`, `/mistral`, `/free` commands remain available when typed, and audio/client `/start`/`/stop` flows are untouched. Neither source prompts nor answers enter public Supabase or log, just sanitized per-update outcome statuses.
+
+**Acceptance gate:** `node --test tests/practitioner-owner-ai-five.test.mjs` + existing owner AI/Telegram regressions, CI and Vercel READY with exact production SHA. Actual *full* 4/4 responses + separately completed fifth model + Telegram `sendMessage`/`sendDocument` verified by the provider + owner's visual receipt remains **NOT TESTED** until the owner sends a real anonymous question to `https://t.me/Andydotbot`. A green build / mocked 5 messages alone is not E2E. Do not enable subscription payments, relax `data_collection:deny`, retransmit private health/client details, or alter webhook ownership to make a test green.
