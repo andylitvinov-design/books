@@ -20,8 +20,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: t.description,
     alternates: {
       canonical: `/${locale}/services/systemic-constellations`,
-      languages: { en: "/en/services/systemic-constellations", ru: "/ru/services/systemic-constellations", es: "/es/services/systemic-constellations" },
+      languages: { en: "/en/services/systemic-constellations", ru: "/ru/services/systemic-constellations", es: "/es/services/systemic-constellations", "x-default": "/en/services/systemic-constellations" },
     },
+    openGraph: {
+      type: "website",
+      locale: locale === "ru" ? "ru_RU" : locale === "es" ? "es_ES" : "en_CA",
+      title: t.title + " — Holistic House",
+      description: t.description,
+      url: `/${locale}/services/systemic-constellations`,
+    },
+    twitter: { card: "summary", title: t.title + " — Holistic House", description: t.description },
   };
 }
 
