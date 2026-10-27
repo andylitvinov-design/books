@@ -10,7 +10,7 @@ test("Hub links to the two dedicated pages; talisman media and practitioner resu
   const hub = read("app/[locale]/holistic-support/page.tsx");
   const topics = read("components/holistic-support-topic-filter.tsx");
   assert.match(hub, /data-holistic-talisman-catalog-link/);
-  assert.match(hub, /href=\{["]\/["] \+ locale \+ ["\/]talismans["]\}/);
+  assert.match(hub, /href=\{"\/" \+ locale \+ "\/talismans"\}/);
   assert.doesNotMatch(hub, /<TaoistTalismanCatalog/);
   assert.match(topics, /\/talismans/);
   assert.match(topics, /\/support-options\?topic=/);
