@@ -113,11 +113,13 @@ try{
  await writeFile(ownerTarget,ownerMp4)
  const ownerDecoded=spawnSync(binary,['-hide_banner','-i',ownerTarget,'-f','null','-'],{
    timeout:120000,encoding:'utf8',maxBuffer:128000})
+ // Container duration can include up to the 24s final-still safety pad;
+ // the decoded audio check below, not the MP4 end time, detects truncation.
  const containerMatch=ownerDecoded.stderr.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/)
  const containerSeconds=containerMatch
    ?Number(containerMatch[1])*3600+Number(containerMatch[2])*60+Number(containerMatch[3]):0
  if(ownerDecoded.status!==0||!/Video: h264/.test(ownerDecoded.stderr)||
-   !/Audio: aac/.test(ownerDecoded.stderr)||containerSeconds<131||containerSeconds>135)
+   !/Audio: aac/.test(ownerDecoded.stderr)||containerSeconds<131||containerSeconds>160)
    throw Error('VIDEO_11_AUDIO_3_PHOTO_NOT_FULL_MP4 duration='+
      containerSeconds+' decoderStatus='+ownerDecoded.status+
      ' H264='+/Video: h264/.test(ownerDecoded.stderr)+
