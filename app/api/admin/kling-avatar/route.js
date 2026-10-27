@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {requireAdminRequest} from '@/lib/prescriptions/admin';
 import {KLING_AVATAR_LIMITS, KlingAvatarInputError, submitKlingAvatar, queryKlingAvatar} from '@/lib/kling-avatar.mjs';
+import {checkKlingAccount} from '@/lib/kling-video.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -58,7 +59,12 @@ export async function GET(request){
   const settings=config();
   if(!settings.key)return json({ok:false,error:'not_configured'},503);
   try{
-    const taskId=new URL(request.url).searchParams.get('taskId');
+    const params=new URL(request.url).searchParams;
+    if(params.get('mode')==='connection') {
+      // Admin-only GET to Kling account usage. Not a generate call and needs no paid flag.
+      return json({ok:true,result:await checkKlingAccount({apiKey:settings.key})});
+    }
+    const taskId=params.get('taskId');
     return json({ok:true,result:await queryKlingAvatar(taskId,{apiKey:settings.key})});
   }catch(error){return json({ok:false,error:errorCode(error)},400);}
 }
