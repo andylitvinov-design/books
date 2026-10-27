@@ -46,7 +46,7 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
-  assert.match(component, /recommendProfileAxisBattery\(tests, scaleGroups,/)
+  assert.match(component, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
   // On Tests an explicit guest CTA launches only selected eligible test keys.
   // Ready separately offers one opt-in Google save without a duplicate guest action.
   assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
@@ -255,4 +255,33 @@ test('additional test finder scopes a single life profile before opening multipl
   assert.match(css, /\.extraProfileChoices\{display:grid/)
   assert.match(css, /\.extraScaleChoices\{display:flex/)
   assert.match(css, /@media\(max-width:450px\)\{\.extraProfileChoices\{grid-template-columns:1fr/)
+})
+
+test('Tests step keeps three plus five cards in place when checkboxes change and always displays topic relevance', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
+  assert.match(builder, /rankProfileAxisTests\(tests, scaleGroups, selectedScaleIds, batteryMode\)/)
+  assert.match(builder, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
+  assert.match(builder, /const featuredTestKeys = new Set\(/)
+  assert.match(slide, /recommendedTests\.map\(\(\{ test, matchPercent \}\) =>/)
+  assert.match(slide, /fiveMoreTests\.map\(\(\{ test, matchPercent \}\) =>/)
+  assert.match(slide, /data-profile-five-more-tests/)
+  assert.match(slide, /data-profile-additional-suggestion=\{test\.key\}/)
+  assert.match(slide, /checked=\{selectedKeys\.includes\(test\.key\)\}/)
+  assert.doesNotMatch(slide, /chosenTests\.map\(test\s*=>\s*<label/)
+  assert.doesNotMatch(slide, /\.filter\(test => !selectedKeys\.includes\(test\.key\)\)/)
+  assert.match(slide, /extraMatchPercent\(test\.key\)/)
+  assert.match(slide, /\{matchPercent\}%/)
+  assert.match(slide, /\{extraMatchPercent\(test\.key\)\}%/)
+  assert.match(builder, /selectedKeys\.join\(","\)/)
+  assert.match(builder, /selectedKeys\.length === 0 && recommendedTests\.length > 0/)
+  for (const text of ['3 key recommended tests', '5 more tests ranked by topic match',
+    '3 основных рекомендованных теста', 'Ещё 5 тестов по проценту соответствия',
+    '3 pruebas principales recomendadas', '5 pruebas más, ordenadas por coincidencia']) {
+    assert.ok(builder.includes(text), text)
+  }
+  for (const selector of ['.testSectionHeading', '.fiveMore', '.fitPill', '.fitNote']) {
+    assert.ok(css.includes(selector), selector)
+  }
 })
