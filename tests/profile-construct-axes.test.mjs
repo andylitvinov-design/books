@@ -321,7 +321,14 @@ test('collapsed topic preview preserves all distinct real facets before duplicat
     .map(scale => scale.researchAxisId).sort(),
     [...expected].sort(), 'zero secondary rows still lists every documented axis')
   const builder = readFileSync(new URL('../components/personality-profiles-builder.tsx', import.meta.url), 'utf8')
-  assert.match(builder, /const shortlist = previewProfileScales\(group\.scales, 8\)/)
+  // The legacy helper still covers all source facets for audit use, but the
+  // simple wizard now presents one topic axis, never source-scale variants.
+  const topics = builder.slice(builder.indexOf('{step === 2 && <section'),
+    builder.indexOf('{step === 3 && <section'))
+  assert.doesNotMatch(topics, /previewProfileScales|data-profile-source-scale/)
+  assert.match(topics, /group\.researchAxes\.map\(axis => <label/)
+  assert.match(topics, /data-profile-research-axis=\{axis\.id\}/)
+
 })
 
 // Execute the actual component's pure declarations and event handlers only.
@@ -468,4 +475,53 @@ test('actual upstream handlers clear only dependent drafts and unchanged back/fo
   assert.ok(scope.scaleGroups.every(group => group.researchAxes.every(axis => axis.id === 'goal::motivation') &&
     group.scales.every(scale => scale.researchAxisId === 'goal::motivation')),
   'choosing one Goal facet must not silently include clarity or confidence')
+})
+
+
+test('actual main-scale and topic handlers never leak other areas or test drafts', () => {
+  const visibleScaleGroups = [
+    { area: 'emotions', researchAxes: [{id:'emotions::stress'}, {id:'emotions::anxiety'},
+      {id:'emotions::mood'}] },
+    { area: 'goal', researchAxes: [{id:'goal::clarity'},{id:'goal::motivation'},
+      {id:'goal::confidence'}] },
+  ]
+  const scaleGroups = [{ area: 'emotions', scales: [
+    {id:'a::stress', researchAxisId:'emotions::stress'},
+    {id:'b::stress', researchAxisId:'emotions::stress'},
+    {id:'c::anxiety', researchAxisId:'emotions::anxiety'},
+  ] }]
+  const plain = value => JSON.parse(JSON.stringify(value))
+  const original = { selectedResearchIds: [], selectedScaleIds:['a::stress'],
+    selectedByMode:{questionnaires:['a'],pro:['saved-pro']},
+    batterySignature:'old-topic', showMore:true }
+  const run = (fn, arg, source = original) => {
+    const state = plain(source)
+    const ctx = { ...state, visibleScaleGroups, scaleGroups }
+    for (const key of ['SelectedResearchIds','SelectedScaleIds','SelectedByMode',
+      'BatterySignature','ShowMore']) {
+      const field = key[0].toLowerCase() + key.slice(1)
+      ctx['set' + key] = next => {
+        state[field] = plain(typeof next === 'function' ? next(state[field]) : next)
+      }
+    }
+    const handlers = actualWizardLogic([], ['toggleMainScale','toggleTopicAxis'], ctx)
+    handlers[fn](arg)
+    return state
+  }
+  const broad = run('toggleMainScale','emotions')
+  assert.deepEqual(broad.selectedResearchIds,
+    ['emotions::stress','emotions::anxiety','emotions::mood'])
+  assert.deepEqual(broad.selectedScaleIds, [])
+  assert.deepEqual(broad.selectedByMode, {questionnaires:[],pro:[]})
+  assert.equal(broad.batterySignature, '')
+  assert.equal(broad.showMore, false)
+  assert.deepEqual(run('toggleMainScale','emotions',broad).selectedResearchIds,[])
+  assert.deepEqual(run('toggleMainScale','goal'),original,'Goal keeps independent controls')
+  const selected = run('toggleTopicAxis','emotions::stress')
+  assert.deepEqual(selected.selectedScaleIds,['a::stress','b::stress'],
+    'one research topic matches only registered source scales in its own axis')
+  assert.deepEqual(selected.selectedByMode,{questionnaires:[],pro:[]})
+  assert.deepEqual(run('toggleTopicAxis','emotions::stress',selected).selectedScaleIds,[])
+  assert.deepEqual(run('toggleTopicAxis','emotions::unknown'),original,
+    'unknown/unsupported topics cannot add tests or reset the draft')
 })
