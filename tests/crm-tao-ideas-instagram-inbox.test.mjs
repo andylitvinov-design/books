@@ -157,6 +157,8 @@ test('production handler reuses signed HMAC and exactly one encrypted owner inbo
 });
 test('one @tao.ideas CRM Messages panel offers scoped approval, provider status and EN/RU/ES operator guide',()=>{
   const ui=source('components/app/crm-messenger.jsx');
+  const unified=source('components/app/messages-simple-inbox.jsx');
+  assert.match(unified,/instagram:'Instagram · @tao.ideas'/);
   const policy=source('lib/crm/messenger-policy.js');
   const provider=source('lib/crm/messenger-provider.js');
   assert.match(ui,/instagram:'Instagram · @tao.ideas'/);
