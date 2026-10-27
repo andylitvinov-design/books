@@ -1,17 +1,13 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests } from '../lib/profile/profile-scale-selection.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const builder = read('components/personality-profiles-builder.tsx')
 const css = read('components/personality-profiles-builder.module.css')
 
-const match = builder.match(/const focusAreas: Record<Focus, Area\[]> = \{([\s\S]*?)\n\};/)
-assert.ok(match, 'the focus-to-topic map must be declared explicitly')
-const focusAreas = Object.fromEntries(
-  [...match[1].matchAll(/^\s+(\w+): (\[[^\n]*\]),?$/gm)]
-    .map(([, focus, topics]) => [focus, JSON.parse(topics)]),
-)
+const focusAreas = PROFILE_FOCUS_AREAS
 const optionsFor = focuses => [...new Set(focuses.flatMap(focus => focusAreas[focus]))]
 
 test('each focus on slide one exposes only its own topics on slide two', () => {
@@ -28,10 +24,10 @@ test('each focus on slide one exposes only its own topics on slide two', () => {
 
 test('slide two shows only measured axes for its focus and clears stale test choices', () => {
   assert.match(builder, /const areasFor = \(focuses: Focus\[\]\) => \[\.\.\.new Set\(focuses.flatMap\(focus => focusAreas\[focus\]\)\)\]/)
-  assert.match(builder, /const visibleAreas = areasFor\(focuses\);/)
+  assert.match(builder, /const visibleAreas = profileAreasWithTests\(tests, focuses\) as Area\[\];/)
   assert.match(builder, /const activeAreas = areas.filter\(area => visibleAreas.includes\(area\)\);/)
   assert.match(builder, /const selectedAxes = selectedProfileAxes\(scaleGroups, selectedScaleIds\) as string\[\]/)
-  assert.match(builder, /if \(!visibleAreas.includes\(area\) \|\| !areaAxes\[area\]\.some\(axis => measurableAxes\.has\(axis\)\)\) return;/)
+  assert.match(builder, /if \(!visibleAreas.includes\(area\)\) return;/)
   const stepTwo = builder.split('{step === 1 && <section')[1]?.split('{step === 2 && <section')[0]
   assert.ok(stepTwo, 'topic slide must exist')
   assert.match(stepTwo, /\{visibleAreas\.map\(area =>/)
@@ -60,8 +56,8 @@ test('filtered focus summary is localized and mobile topics use compact full-wid
 })
 
 test('topic cards show only available axes; third step exposes source-declared scales', () => {
-  assert.match(builder, /const measurableAxes = useMemo\(\(\) => new Set\(tests\.flatMap\(test => test\.scales\.map\(scale => scale\.axis\)\)\), \[tests\]\)/)
-  assert.match(builder, /areaAxes\[area\]\.filter\(axis => measurableAxes\.has\(axis\)\)/)
+  assert.ok(Object.values(PROFILE_AREA_AXES).flat().includes('anxiety'))
+  assert.match(builder, /visibleScaleGroups\.find\(group => group\.area === area\)\?\.scales/)
   assert.match(builder, /axes\.map\(axis => axesCopy\[axis\]\?\.\[locale\] \|\| axis\)/)
   assert.match(builder, /disabled=\{!axes\.length\}/)
   assert.match(builder, /data-profile-scales-by-topic/)

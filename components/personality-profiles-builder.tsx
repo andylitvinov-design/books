@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
-import { buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes,
+import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
+  buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes,
   recommendProfileMode, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
@@ -15,30 +16,14 @@ type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connectio
 type TestMode = "questionnaires" | "pro";
 type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
 type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
-  questions: number | null; testKind: string; scales: PublicScale[] };
+  questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
 
-// Topics map to questionnaire dimensions, not diagnoses or financial outcomes.
-const areaAxes: Record<Area, readonly string[]> = {
-  traits: ["personality"],
-  support: ["resource", "self_support"],
-  emotions: ["stress", "mood", "emotional_regulation"],
-  recovery: ["sleep", "energy"],
-  body: ["embodiment"],
-  connection: ["relationships"],
-  work: ["clarity", "focus", "functioning"],
-  money: ["functioning", "meaning", "self_support"], // money choices, never a score of income/success
-  meaning: ["meaning"],
-};
-// Four life directions select existing measurable topics; meaning remains in personal growth.
-const focusAreas: Record<Focus, Area[]> = {
-  wellbeing: ["emotions", "recovery", "body"],
-  relationships: ["connection"],
-  work: ["work", "money"],
-  identity: ["traits", "support", "meaning"],
-};
+// Shared, source-backed topic taxonomy. All catalogue axes are mapped,
+// but only topics supported by eligible tests appear in the wizard.
+const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
+const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
-const allAxesFor = (areas: Area[]) => [...new Set(areas.flatMap(area => areaAxes[area]))];
 
 const axesCopy: Record<string, Record<Locale, string>> = {
   embodiment: { en: "Body awareness", ru: "Контакт с телом", es: "Conciencia corporal" },
@@ -95,7 +80,7 @@ const copy = {
       support: ["Resources & self-support", "Support · self-kindness"],
       emotions: ["Emotions & stress", "Mood · regulation"],
       recovery: ["Energy & rest", "Recovery · sleep"],
-      body: ["Body awareness", "Awareness · comfort"],
+      body: ["Body signals & energy", "Sensations · vitality"],
       connection: ["Relationships", "Connection · communication"],
       work: ["Work & focus", "Clarity · daily actions"],
       money: ["Money decisions", "Choices · habits, not income"],
@@ -178,7 +163,7 @@ const copy = {
       support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
       emotions: ["Эмоции и стресс", "Настроение · регуляция"],
       recovery: ["Энергия и отдых", "Восстановление · сон"],
-      body: ["Контакт с телом", "Осознанность · комфорт"],
+      body: ["Ощущения и энергия тела", "Самочувствие · энергия"],
       connection: ["Отношения", "Связь · общение"],
       work: ["Работа и фокус", "Ясность · действия"],
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
@@ -261,7 +246,7 @@ const copy = {
       support: ["Recursos y apoyo", "Apoyo · autocompasión"],
       emotions: ["Emociones y estrés", "Ánimo · regulación"],
       recovery: ["Energía y descanso", "Recuperación · sueño"],
-      body: ["Conciencia corporal", "Sensaciones · comodidad"],
+      body: ["Señales del cuerpo y energía", "Sensaciones · vitalidad"],
       connection: ["Relaciones", "Conexión · comunicación"],
       work: ["Trabajo y enfoque", "Claridad · acciones"],
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
@@ -387,9 +372,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   // Topics define the scope. The accordion selects exact source-declared
   // subscales; their question/time metadata always belongs to a real test.
-  const measurableAxes = useMemo(() => new Set(tests.flatMap(test => test.scales.map(scale => scale.axis))), [tests]);
-  const visibleAreas = areasFor(focuses);
+  const visibleAreas = profileAreasWithTests(tests, focuses) as Area[];
   const activeAreas = areas.filter(area => visibleAreas.includes(area));
+  const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes);
   const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as Array<{
     area: Area; scales: Array<{ id: string; key: string; label: string; axis: string;
       testKey: string; testTitle: string; testKind: string; scaleQuestions: number | null;
@@ -406,15 +391,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  const axesForExtraProfile = extraProfile
-    ? allAxesFor(focusAreas[extraProfile]).filter(axis => measurableAxes.has(axis))
-      .sort((a, b) => (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale))
-    : [];
+  const extraGroups = extraProfile
+    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) : [];
+  const axesForExtraProfile = [...new Set(extraGroups.flatMap(group => group.scales.map(scale => scale.axis)))]
+    .sort((a, b) => (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale));
   const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
+  const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
+    .filter(scale => effectiveExtraScales.includes(scale.axis)).map(scale => scale.testKey)));
   const extraMatches = tests
     .filter(test => !selectedKeys.includes(test.key))
     .filter(test => test.testKind === modeKind)
-    .filter(test => extraProfile !== null && test.axes.some(axis => effectiveExtraScales.includes(axis)))
+    .filter(test => extraProfile !== null && extraTestKeys.has(test.key))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
       [test.title, ...test.scales.map(scale => scale.label), ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
@@ -441,7 +428,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   function toggleArea(area: Area) {
-    if (!visibleAreas.includes(area) || !areaAxes[area].some(axis => measurableAxes.has(axis))) return;
+    if (!visibleAreas.includes(area)) return;
     setAreas(previous => previous.includes(area) ? previous.filter(item => item !== area) : [...previous, area]);
     setSelectedScaleIds([]);
     setScalesInitialized(false);
@@ -470,7 +457,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   function goForward() {
     if (step === 0 && focuses.length) {
-      setAreas(areasFor(focuses).filter(area => areaAxes[area].some(axis => measurableAxes.has(axis))));
+      setAreas(visibleAreas);
       setSelectedScaleIds([]);
       setScalesInitialized(false);
       setSelectedByMode({ questionnaires: [], pro: [] });
@@ -486,9 +473,14 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
       const signature = [...selectedScaleIds].sort().join("|");
       if (batterySignature !== signature) {
+        // Keep both modes available: a Pro scale can cover an axis initially chosen
+        // in a monitoring test and vice versa, but ONLY within the selected topics.
+        const selectedTestKeys = new Set(scaleGroups.flatMap(group => group.scales
+          .filter(scale => selectedAxes.includes(scale.axis)).map(scale => scale.testKey)));
+        const relevantTests = tests.filter(test => selectedTestKeys.has(test.key));
         setSelectedByMode({
-          questionnaires: recommendProfileMode(tests, selectedAxes, "questionnaires"),
-          pro: recommendProfileMode(tests, selectedAxes, "pro"),
+          questionnaires: recommendProfileMode(relevantTests, selectedAxes, "questionnaires"),
+          pro: recommendProfileMode(relevantTests, selectedAxes, "pro"),
         });
         setBatterySignature(signature);
         setBatteryMode("questionnaires");
@@ -628,7 +620,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </p>
         <div className={styles.areaGrid} data-profile-topic-options>
           {visibleAreas.map(area => {
-            const axes = areaAxes[area].filter(axis => measurableAxes.has(axis));
+            const axes = [...new Set(visibleScaleGroups.find(group => group.area === area)?.scales
+              .map(scale => scale.axis) || [])];
             return <button type="button" key={area} aria-pressed={areas.includes(area)}
               disabled={!axes.length} className={styles.areaCard} onClick={() => toggleArea(area)}>
               <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
