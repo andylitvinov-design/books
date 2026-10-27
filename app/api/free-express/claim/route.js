@@ -6,6 +6,7 @@ import { consumeRate, transaction } from '@/lib/app/database'
 import { openSealed } from '@/lib/app/crypto'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { freeExpressProof, withFreeExpressRequest } from '@/lib/practitioners/free-express-enquiry'
+import { createDirectMessages } from '@/lib/practitioners/direct-messages'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,8 +16,9 @@ export const preferredRegion = 'yul1'
 async function handle(request) {
   let auth
   try {
-    if (process.env.HH_FREE_EXPRESS_V2_ENABLED !== 'true')
-      throw new AppError('FEATURE_UNAVAILABLE', 503)
+    // A read or explicitly consented Google-account claim is independent of
+    // the gated v2 questionnaire/media flow. Authentication and the signed
+    // one-hour guest continuation remain mandatory for any new claim.
     const config = getAppConfig()
     requestOrigin(request, config)
     if (request.method === 'POST') requireSameOrigin(request, config)
@@ -76,9 +78,9 @@ async function handle(request) {
         // The row may be claimed by one and only one verified account.
         await db.query(
           `insert into app_private.free_express_account_links
-             (enquiry_id,account_id,reference_code,locale)
-           values($1,$2,$3,$4) on conflict (enquiry_id) do nothing`,
-          [row.id, actor.id, row.reference_code, row.locale],
+             (enquiry_id,account_id,reference_code,locale,recipient_practitioner_id)
+           values($1,$2,$3,$4,$5) on conflict (enquiry_id) do nothing`,
+          [row.id, actor.id, row.reference_code, row.locale, row.recipient_practitioner_id],
         )
         return (await db.query(
           'select enquiry_id from app_private.free_express_account_links where enquiry_id=$1 and account_id=$2',
@@ -86,7 +88,26 @@ async function handle(request) {
         )).rows[0]
       })
       if (!linked) throw new AppError('ENQUIRY_ALREADY_CLAIMED', 409)
-        result = { saved: true, referenceCode: row.reference_code }
+        // The visitor explicitly saved the request with their verified Google
+        // account. Start the EXISTING first-party member inbox as this signed-in
+        // client (never impersonate the client from the owner session).
+        // If messaging is unavailable, their original enquiry remains saved.
+        let inboxReady = false
+        try {
+          const recipient = await transaction(config, actor, async db =>
+            (await db.query(
+              `select slug from app.practitioners
+                where id=$1 and active and status in ('approved','submitted','changes_requested')
+                limit 1`, [row.recipient_practitioner_id],
+            )).rows[0])
+          if (recipient?.slug) {
+            const opened = await createDirectMessages(config).start(actor, recipient.slug)
+            inboxReady = Boolean(opened.threadId && !opened.blocked)
+          }
+        } catch {
+          // No message is sent. Client can still read their saved questionnaire.
+        }
+        result = { saved: true, referenceCode: row.reference_code, inboxReady }
       }
     }
     return auth.apply(NextResponse.json(result, { headers: PRIVATE_HEADERS }))

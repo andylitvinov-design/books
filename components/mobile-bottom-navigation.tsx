@@ -22,7 +22,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // paths, private account routes and documents must keep the bar hidden.
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
   const hidden = /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
-    || /^\/(?:ru|en)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
+    || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));
   useEffect(() => {
     const element = nav.current;

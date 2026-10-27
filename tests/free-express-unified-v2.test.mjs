@@ -88,14 +88,18 @@ test('backend RLS and account claims require verified scope and preserve existin
   const guest = root('app/api/free-express/route.js')
   const media = root('app/api/free-express/media/route.js')
   const claim = root('app/api/free-express/claim/route.js')
-  for (const r of [guest, media, claim]) assert.match(r, /HH_FREE_EXPRESS_V2_ENABLED/)
+  // Account-only signed claim stays available independently of the media wizard.
+  // Both private guest questionnaire and image APIs must remain gated.
+  for (const r of [guest, media]) assert.match(r, /HH_FREE_EXPRESS_V2_ENABLED/)
+  assert.doesNotMatch(claim, /HH_FREE_EXPRESS_V2_ENABLED/)
   for (const r of [guest, media, claim]) assert.match(r, /requireSameOrigin/)
   assert.match(claim, /actor = await auth\.verified\(\)/)
   assert.match(claim, /freeExpressProof\(request, config\)/)
   const owner = root('lib/practitioners/free-express-owner.js')
   assert.match(owner, /practitionerEmailAllowed\(actor\)/)
   assert.match(owner, /p\.trusted_auth_user_id=\$3/)
-  assert.match(root('components/app/practice-workspace.jsx'), /FreeExpressOwnerMedia/)
+  assert.match(root('components/app/practice-workspace.jsx'), /FreeExpressOwnerCase/)
+  assert.match(root('components/app/free-express-owner-case.jsx'), /FreeExpressOwnerMedia/)
 })
 
 test('private media are never public, decoded, EXIF-stripped and owner-scoped', () => {

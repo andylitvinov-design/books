@@ -7,7 +7,6 @@ import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
 import { SitewideLeadCapture } from "@/components/sitewide-lead-capture";
 import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
 import { AnalyticsConsent } from "@/components/analytics-consent";
-import { FirstPartyStatsNotice } from "@/components/first-party-stats-notice";
 import { PublicPageTraffic } from "@/components/public-page-traffic";
 import { Ga4Analytics } from "@/components/ga4-analytics";
 import { NativeLinkHandler } from "@/components/native-link-handler";
@@ -76,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><FirstPartyStatsNotice /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }

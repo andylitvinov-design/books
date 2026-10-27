@@ -7,6 +7,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
+import { createDirectMessages } from "@/lib/practitioners/direct-messages";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
@@ -99,10 +100,12 @@ export default async function MasterProfile({ params }: PageProps) {
   const config = getAppConfig();
   let articles: PublishedArticle[] = [];
   let publishedMeditations: PublishedMeditation[] = [];
+  let sharedAudios: {id:string;title:string;locale:'en'|'ru'|'es'}[] = [];
   // Both repositories return *only* approved public snapshots. No drafts, client data or media URLs.
-  const [articleResult, courseResult] = await Promise.allSettled([
+  const [articleResult, courseResult, audioResult] = await Promise.allSettled([
     createArticleRepository(config).publicByPractitioner(practitioner.slug),
     createPractitionerCourseRepository(config).catalog(),
+    createDirectMessages(config).publicAudios(practitioner.slug),
   ]);
   if (articleResult.status === "fulfilled") {
     articles = (articleResult.value as PublishedArticle[])
@@ -116,6 +119,7 @@ export default async function MasterProfile({ params }: PageProps) {
         ["en", "ru", "es"].includes(item.course.locale) && Boolean(item.course.title))
       .slice(0, 12);
   }
+  if (audioResult.status === 'fulfilled') sharedAudios = audioResult.value;
   // Reuse verified original media only for its actual author. Never invent translations or audio files.
   const originalVideos = practitioner.slug === "andy-litvinov"
     ? freeMeditationVideos(ru ? "ru" : es ? "es" : "en").map(item => ({
@@ -189,6 +193,13 @@ export default async function MasterProfile({ params }: PageProps) {
               {ru ? "Выбрать услугу" : es ? "Elegir un servicio" : "Choose a service"}
               <span aria-hidden="true">→</span>
             </Link>
+            {practitioner.canMessage && (
+              <Link className={styles.secondary}
+                href={'/' + locale + '/app/messages?to=' + encodeURIComponent(practitioner.slug)}
+                prefetch={false}>
+                {ru ? 'Написать сообщение' : es ? 'Enviar un mensaje' : 'Send a message'} →
+              </Link>
+            )}
             {hasEnergySupport && (
               <Link className={styles.secondary}
                 href={"/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(practitioner.slug)}>
@@ -280,7 +291,21 @@ export default async function MasterProfile({ params }: PageProps) {
               <PractitionerVideoGallery videos={videos} locale={locale} />
             </div>
           )}
-          {!publishedMeditations.length && !videos.length && (
+          {sharedAudios.length > 0 && (
+            <div className={styles.sharedAudioSection} aria-label={ru ? 'Аудиозаписи сообщества' : es ? 'Audios compartidos' : 'Shared audio recordings'}>
+              <h3>{ru ? 'Аудио · материалы мастера' : es ? 'Audios del profesional' : 'Audio from this practitioner'}</h3>
+              <div className={styles.sharedAudioGrid}>
+                {sharedAudios.map(item => (
+                  <article key={item.id} className={styles.sharedAudioCard}>
+                    <strong>{item.title}</strong><small>{item.locale.toUpperCase()}</small>
+                    <audio controls preload="none" aria-label={item.title}
+                      src={'/api/masters/' + encodeURIComponent(practitioner.slug) + '/shared-audio/' + item.id} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+          {!publishedMeditations.length && !videos.length && !sharedAudios.length && (
             <p className={styles.emptyServices}>
               {ru ? "Опубликованных аудио- и видеоматериалов пока нет." :
                 es ? "Todavía no hay grabaciones públicas." : "No published recordings yet."}

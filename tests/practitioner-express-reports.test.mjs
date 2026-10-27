@@ -53,7 +53,7 @@ test('only complete drafts can publish, with optimistic revisions', () => {
   assert.throws(()=>requireExpressReportReady({...body(),steps:''}),/REPORT_INCOMPLETE/)
   assert.deepEqual(validateExpressReportTransition({action:'publish',expectedRevision:1}),
     {action:'publish',expectedRevision:1})
-  for (const action of ['delete','send','pay','remedy'])
+  for (const action of ['delete','dispatch','pay','remedy'])
     assert.throws(()=>validateExpressReportTransition({action,expectedRevision:1}),/INVALID_REPORT_ACTION/)
   assert.throws(()=>validateExpressReportTransition({action:'revoke',expectedRevision:0}),/INVALID_REPORT_ACTION/)
   assert.throws(()=>validateExpressReportEdit({language:'en',issuedOn:'2026-10-25',content:body(),expectedRevision:'1'}),/INVALID_REVISION/)
@@ -95,4 +95,25 @@ test('only authenticated request clients receive express reports, not public lea
   assert.match(migration,/status='published' AND client_account_id=\(SELECT auth\.uid\(\)\)/)
   assert.match(migration,/WHERE r\.id=request_id AND r\.account_id=client_account_id/)
   assert.match(clientUi,/<ClientExpressReports locale=\{locale\} accountId=\{data\.account\.id\}/)
+})
+
+test('New express report opens a draft editor without an eligible request but cannot save it unlinked', () => {
+  const ui = read('components/app/practice-express-reports.jsx')
+  const practice = read('components/app/practice-workspace.jsx')
+  const css = read('components/app/practice-express-reports.module.css')
+  assert.match(ui, /function startNew\(\) \{[\s\S]*?setComposing\(true\)/)
+  assert.match(ui, /onClick=\{startNew\} aria-expanded=\{composing\}/)
+  assert.match(ui, /setEditorActivation\(value => value\+1\)/)
+  assert.match(ui, /ref=\{editorHeadingRef\} tabIndex=\{-1\}/)
+  assert.match(ui, /\{\(composing \|\| current\) && <form/)
+  assert.doesNotMatch(ui, /\{eligible\.length \? <form/)
+  assert.match(ui, /disabled=\{busy \|\| !requestId\}/)
+  assert.match(ui, /!eligible\.length && <div className=\{styles\.prerequisite\}/)
+  assert.match(ui, /\/services\/free-situation-review/)
+  assert.match(practice, /onOpenRequests=\{\(\)=>choosePanel\('requests'\)\}/)
+  assert.match(css, /\.prerequisiteActions/)
+  for (const language of ['en', 'ru', 'es']) {
+    assert.match(ui, new RegExp(language + ': \\{[\\s\\S]*?noClientTitle:'))
+  }
+  assert.match(ui, /setComposing\(true\)[\s\S]*?setRequestId\(item\.requestId\)/)
 })

@@ -234,10 +234,11 @@ async function exercise(engine, browserType, width) {
       await page.goto(origin + homePath(from), { waitUntil: 'domcontentloaded' });
       await expect(page).toHaveURL(origin + homePath(from));
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
-      const current = page.locator(`[data-video-slot="home-intro"][data-video-locale="${from}"]`);
+      const currentId = from === "en" ? "Dk0LBmOivQo" : "MIVLm1GUTtM";
+      const current = page.locator(`[data-personal-testimonials="home"] [data-testimonial-video-id="${currentId}"]`);
       await expect(current.locator('iframe')).toHaveCount(0);
       await current.locator('button.site-video-play').click();
-      const fromYouTubeId = from === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      const fromYouTubeId = currentId;
       await expect(current.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + fromYouTubeId + '\\?'));
       const countBefore = heldRequests;
       delayedRscGate = new Promise(resolve => { releaseHeldRsc = resolve; });
@@ -246,15 +247,16 @@ async function exercise(engine, browserType, width) {
       await expect.poll(() => heldRequests, { timeout: 15000 }).toBeGreaterThan(countBefore);
       transport.assertHealthy();
       // Before the navigation commits, the new language must not become a clickable
-      // optimistic player that will be discarded when the RSC response arrives.
+      // optimistic testimonial player that would be discarded after the RSC response.
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
-      const next = page.locator(`[data-video-slot="home-intro"][data-video-locale="${to}"]`);
+      const nextId = to === "en" ? "Dk0LBmOivQo" : "MIVLm1GUTtM";
+      const next = page.locator(`[data-personal-testimonials="home"] [data-testimonial-video-id="${nextId}"]`);
       await expect(next).toHaveCount(0);
       releaseHeldRsc();
       await expect(next).toHaveCount(1, { timeout: 20000 });
       transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
-      const toYouTubeId = to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      const toYouTubeId = nextId;
       await next.locator('button.site-video-play').click();
       await expect(next.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + toYouTubeId + '\\?'));
       const frame = await next.locator('iframe').elementHandle();

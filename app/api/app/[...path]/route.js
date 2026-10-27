@@ -26,6 +26,7 @@ import {sendBookingMasterEmail} from '@/lib/practitioners/booking-master-email'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
 import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
+import {dispatchExpressReportTelegramNotice} from '@/lib/app/express-report-telegram-dispatch'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
 import { createPractitionerEventsRepository } from '@/lib/practitioners/events-repository'
@@ -974,8 +975,18 @@ async function handle(request, { params }) {
       if (path.length === 2) return json(await reports.create(actor,body),201)
       if (path.length === 3) {
         requireUUID(path[2])
-        if (body.action === 'publish' || body.action === 'revoke')
-          return json(await reports.changeStatus(actor,path[2],body))
+        if (body.action === 'publish' || body.action === 'send' || body.action === 'revoke') {
+          const result = await reports.changeStatus(actor,path[2],body)
+          if (result.dispatchRequested === true) {
+            const reportId = result.report.id
+            after(async () => {
+              try { await dispatchExpressReportTelegramNotice(config,reportId) }
+              catch { console.error('HH_EXPRESS_REPORT_TG_DISPATCH_FAILED') }
+            })
+          }
+          delete result.dispatchRequested
+          return json(result)
+        }
         return json(await reports.edit(actor,path[2],body))
       }
       throw new AppError('NOT_FOUND',404)

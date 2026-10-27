@@ -14,6 +14,7 @@ const isolated = process.env.CI === 'true'
 const read = file => readFileSync(new URL('../supabase/migrations/' + file, import.meta.url),'utf8')
 const old = '20261019152000_hh_public_service_enquiries_secure.sql'
 const next = '20261026133321_hh_free_express_guest_continuation_rls_20261025.sql'
+const ownerReply = '20261026164817_hh_free_express_owner_account_reply_20261026.sql'
 const practitionerId = '246aa1a3-a371-5a83-9f4b-cd23ff027a76'
 const actorA = '10000000-0000-4000-8000-000000000001'
 const actorB = '10000000-0000-4000-8000-000000000002'
@@ -53,6 +54,7 @@ if (!isolated) {
       `)
       await db.query(read(old))
       await db.query(read(next))
+      await db.query(read(ownerReply))
       // A new rollback-only transaction starts AFTER the real migration COMMIT.
       await db.query('BEGIN')
       const rls = await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid='app.public_service_enquiries'::regclass")
@@ -105,9 +107,9 @@ if (!isolated) {
       await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:actorA})])
       await db.query(`
         insert into app_private.free_express_account_links
-          (enquiry_id,account_id,reference_code,locale)
-        values ($1,$2,'HH-A1B2C3D4E5F6','en')
-      `,[enquiryId,actorA])
+          (enquiry_id,account_id,reference_code,locale,recipient_practitioner_id)
+        values ($1,$2,'HH-A1B2C3D4E5F6','en',$3)
+      `,[enquiryId,actorA,practitionerId])
       assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,1)
       // The cabinet's signed-in guest is not the recipient practitioner.
       await db.query("select set_config('hh.public_enquiry_continuation',$1,true)",['20000000-0000-4000-8000-000000000099'])
@@ -117,6 +119,12 @@ if (!isolated) {
       assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,0)
       assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,0,
         'Other authenticated accounts cannot read the saved enquiry')
+      // Only this practitioner's verified active owner can see client-account
+      // linkage; a different authenticated user remains unable to read it.
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:practitionerOwner})])
+      assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,1)
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:actorB})])
+      assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,0)
       await db.query('SAVEPOINT wrong_account')
       await assert.rejects(db.query(`
         insert into app_private.free_express_account_links

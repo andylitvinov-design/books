@@ -1,0 +1,140 @@
+.shell{max-width:1100px;margin:0 auto;padding:clamp(12px,2vw,24px);font:14px/1.45 system-ui,sans-serif;color:#382d27;min-width:0}
+.shell[data-embedded="true"]{max-width:none;margin:0;padding:4px 2px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.head h1,.head h2{display:flex;align-items:center;gap:9px;font:600 clamp(24px,4vw,32px)/1.15 Georgia,serif;margin:0}
+.head h1 svg,.head h2 svg{color:#87495d}
+.head p{font-size:13px;color:#7c6b61;margin:5px 0 0}
+.head button,.chatHeader button,.publication button,.fileName button{border:1px solid #e3d5c6;background:#fffaf5;color:#593a34;border-radius:9px;min-height:40px;padding:8px 12px;font:600 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.refresh{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.layout{display:grid;grid-template-columns:minmax(210px,290px) minmax(0,1fr);gap:12px;align-items:start;min-height:440px}
+.conversations,.chat{border:1px solid #e8d9cb;background:#fffdf9;border-radius:16px;min-width:0;overflow:hidden;box-shadow:0 8px 18px #4936200a}
+.conversations{padding:9px;max-height:680px;overflow-y:auto}
+.conversations h2{font:700 12px/1.3 system-ui,sans-serif;color:#6b5046;margin:5px 8px 13px}
+.thread,.selected{display:flex;align-items:center;gap:9px;min-height:64px;border-radius:11px;border:1px solid transparent;background:transparent;color:inherit;width:100%;padding:8px;text-align:left;cursor:pointer}
+.selected{border-color:#ddbeae;background:#f8ebe3}
+.thread:hover{background:#fcf5ef}
+.avatar{height:38px;width:38px;border-radius:50%;display:grid;place-items:center;background:#f2d9c7;color:#784c3c;font:600 19px Georgia,serif;flex:none}
+.peer{display:grid;flex:1;min-width:0;gap:2px}
+.peer strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.peer small{font-size:11px;color:#806f63}
+.unread{min-width:21px;height:21px;padding:2px 6px;background:#7c3150;color:white;border-radius:12px;display:grid;place-items:center;font-size:11px;font-weight:700}
+.chat{display:flex;flex-direction:column;min-height:440px;max-height:760px}
+.placeholder{display:grid;place-content:center;justify-items:center;flex:1;min-height:350px;gap:8px;color:#846e61}
+.placeholder p{margin:0}
+.chatHeader{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid #eee3d8;min-height:56px}
+.chatHeader strong{font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.back{display:none}
+.feed{flex:1;min-height:200px;max-height:490px;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:11px;background:linear-gradient(170deg,#fffaf4 0%,#fffdfb 70%)}
+.received,.own{max-width:min(88%,480px);padding:10px 13px;border:1px solid #e7d4c9;background:#fff;border-radius:14px 14px 14px 4px;overflow-wrap:anywhere}
+.own{align-self:flex-end;background:#f1e1d7;border-color:#e1c3b3;border-radius:14px 14px 4px 14px}
+.feed article p{white-space:pre-wrap;margin:0 0 5px;font-size:13px;line-height:1.55}
+.feed article time{display:block;font-size:10px;color:#947b6d;text-align:right;margin-top:5px}
+.attachment{display:grid;gap:8px;min-width:0}
+.attachment img{display:block;max-width:100%;width:auto;max-height:280px;height:auto;object-fit:contain;border-radius:8px}
+.attachment audio{width:100%;min-width:200px;max-width:100%}
+.loadOlder{align-self:center;min-height:42px;padding:9px 14px;border:1px solid #d1c0b3;border-radius:10px;background:#fff8ee;color:#67463b;font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.loadOlder:disabled{opacity:.5;cursor:wait}
+.attachment button{justify-self:start;border:1px solid #ccad9d;border-radius:8px;padding:8px 9px;background:#fffcf9;color:#643e43;cursor:pointer}
+.compose{border-top:1px solid #eee2d6;padding:12px;display:grid;gap:9px}
+.compose>label:first-child{font:700 12px system-ui,sans-serif}
+.compose textarea{width:100%;resize:vertical;min-height:58px;max-height:160px;border:1px solid #ddcbbc;background:#fff;border-radius:10px;padding:10px;color:#332620;font:13px/1.4 system-ui,sans-serif}
+.actions{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.filePick{display:flex;align-items:center;gap:6px;min-height:42px;border:1px dashed #cda997;border-radius:10px;padding:8px 10px;color:#654936;cursor:pointer;position:relative;font:700 12px system-ui,sans-serif}
+.filePick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.send,.intro button,.publishForm button{display:flex;align-items:center;gap:7px;min-height:42px;border:0;border-radius:11px;background:#822c47;color:#fff;font:700 12px system-ui,sans-serif;padding:10px 15px;cursor:pointer}
+.send:disabled,.publishForm button:disabled,.intro button:disabled{opacity:.5;cursor:not-allowed}
+.notice,.intro{padding:12px;border:1px solid #dfd0c2;background:#fff8f1;border-radius:12px;margin-bottom:12px}
+.intro{display:flex;align-items:center;gap:13px}
+.intro svg{color:#826356;flex:none}
+.intro p{flex:1;margin:0;font-size:12px;color:#655146}
+.error{background:#fff2ed;color:#8b2425;border:1px solid #ebc6b5;padding:10px;border-radius:10px}
+.error code{display:block;word-break:break-word;font-size:11px}
+.hint{font-size:11px;color:#8b786b;margin:2px 0}
+.fileName{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;overflow-wrap:anywhere;color:#664b40}
+.permission{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.45;color:#554238}
+.permission input{margin-top:2px;flex:none;width:17px;height:17px;accent-color:#8f3757}
+.publication{display:grid;gap:7px;padding:7px 0;border-top:1px solid #e8d9cf;font-size:11px}
+.publication summary{cursor:pointer;text-decoration:underline;text-underline-offset:3px;color:#763b4d;font-weight:700}
+.publishForm{display:grid;gap:8px;margin-top:8px}
+.publishForm label:not(.permission){display:grid;gap:4px;font-size:11px}
+.publishForm input:not([type='checkbox']),.publishForm select{min-width:0;width:100%;min-height:38px;padding:7px;border:1px solid #d6bbac;background:white;border-radius:7px}
+.publishForm button{justify-self:start}
+.shell button:focus-visible,.shell input:focus-visible,.shell a:focus-visible,.shell summary:focus-visible,.shell textarea:focus-visible,.shell select:focus-visible{outline:3px solid #8b5274;outline-offset:2px}
+@media(max-width:710px){
+  .shell{padding:9px 7px}
+  .layout{grid-template-columns:minmax(0,1fr);gap:9px}
+  .conversations{max-height:180px;display:flex;overflow-x:auto;align-items:center;padding:6px;gap:6px}
+  .conversations h2{flex:none;margin:5px 10px}
+  .thread,.selected{flex:0 0 auto;min-width:145px;max-width:195px;border:1px solid #ead6c6}
+  .chat{min-height:420px}
+  .feed{max-height:420px;padding:10px}
+  .intro{flex-wrap:wrap}
+}
+@media(max-width:375px){
+  .head h1{font-size:23px}
+  .head p{font-size:11px}
+  .refresh{font-size:0;min-width:42px;justify-content:center}
+  .feed{padding:8px}
+  .received,.own{max-width:95%;padding:9px}
+  .actions{gap:6px}
+  .send{padding:8px}
+  .filePick{font-size:11px;padding:7px}
+}
+@media(prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important}}
+
+/* A real empty inbox should not occupy an entire phone viewport. */
+.emptySummary{padding:17px 14px;margin:5px 0 8px;border:1px dashed #d9c9b8;border-radius:13px;background:#fffaf5;color:#7e6659;font:500 13px/1.5 system-ui,sans-serif;text-align:center}
+
+/* One-screen member chat inside Messages, without stacked horizontal previews. */
+.shell[data-compact="true"]{position:relative;display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;margin:0;padding:0;background:#fffdf9}
+.shell[data-compact="true"] .head{flex:none;justify-content:flex-end;margin:0;padding:4px 9px;border-bottom:1px solid #e8e0d6;min-height:41px}
+.headActions{display:flex;align-items:center;gap:6px;margin-left:auto}
+.shell[data-compact="true"] .refresh{display:inline-flex;align-items:center;justify-content:center;width:34px;min-height:32px;padding:5px;border-radius:9px}
+.shell[data-compact="true"] .noticesPane{position:absolute;z-index:9;top:44px;left:8px;right:8px;max-height:55%;overflow:auto;padding:9px;border:1px solid #e2d4c7;border-radius:12px;background:#fffdf9;box-shadow:0 12px 30px #35261f24}
+.shell[data-compact="true"] .layout{display:grid;flex:1;min-height:0;gap:0;grid-template-columns:minmax(220px,32%) minmax(0,1fr)}
+.shell[data-compact="true"] .conversations,.shell[data-compact="true"] .chat{border:0;border-radius:0;box-shadow:none;min-height:0;max-height:none}
+.shell[data-compact="true"] .conversations{display:flex;flex-direction:column;align-items:stretch;gap:0;min-height:0;max-height:none;overflow:auto;padding:0;background:#fffbf6;border-right:1px solid #e8ded4}
+.shell[data-compact="true"] .conversations h2{display:none}
+.shell[data-compact="true"] .thread,.shell[data-compact="true"] .selected{flex:none;width:100%;min-width:0;max-width:none;min-height:63px;border:0;border-bottom:1px solid #f0e6dc;border-radius:0;padding:10px}
+.shell[data-compact="true"] .chat{display:flex;flex-direction:column;min-width:0;min-height:0}
+.shell[data-compact="true"] .chatHeader{flex:none;min-height:48px;padding:6px 9px}
+.shell[data-compact="true"] .back{display:inline-flex;gap:5px;align-items:center;min-height:34px;padding:6px 9px;font-size:0;border:0;background:#e9f3ed;color:#256253}
+.shell[data-compact="true"] .back svg{height:19px;width:19px}
+.shell[data-compact="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
+.shell[data-compact="true"] .compose{display:flex;flex:none;flex-direction:column;gap:4px;padding:7px 9px;background:#fffcf8}
+.shell[data-compact="true"] .compose>label:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.shell[data-compact="true"] .compose textarea{min-height:43px;max-height:104px;padding:9px 11px;resize:vertical;border-radius:11px}
+.shell[data-compact="true"] .compose .actions{display:flex;justify-content:space-between;gap:5px}
+.shell[data-compact="true"] .filePick{min-height:33px;padding:5px 9px;border-radius:9px;font-size:11px}
+.shell[data-compact="true"] .send{min-height:33px;padding:5px 11px;border-radius:9px}
+.shell[data-compact="true"] .compose>.hint{display:none}
+.shell[data-compact="true"] .emptySummary{margin:8px 10px}
+@media(max-width:760px){
+ .shell[data-compact="true"] .layout{display:flex;flex-direction:column}
+ .shell[data-compact="true"] .conversations{flex:1;max-height:none;display:flex;overflow:auto}
+ .shell[data-compact="true"] .layout[data-chat-open="true"] .conversations{display:none}
+ .shell[data-compact="true"] .layout[data-chat-open="false"] .chat{display:none}
+ .shell[data-compact="true"] .thread,.shell[data-compact="true"] .selected{max-width:none}
+}
+
+
+/* Reuse the same protected on-site conversation as a single selected pane. */
+.shell[data-simple-detail="true"]{width:100%;height:100%;max-width:none;margin:0;padding:0;display:flex;flex-direction:column;min-width:0;min-height:0}
+.shell[data-simple-detail="true"] .layout{display:flex;flex:1;min-height:0;max-height:none;gap:0;margin:0;padding:0}
+.shell[data-simple-detail="true"] .chat{display:flex;flex:1;min-height:0;max-height:none;width:100%;border:0;border-radius:0;box-shadow:none}
+.shell[data-simple-detail="true"] .chatHeader{border:0;min-height:0;padding:5px 12px}
+.shell[data-simple-detail="true"] .chatHeader .back{display:none}
+.shell[data-simple-detail="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;background:#fcfaf7}
+.shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
+.shell[data-simple-detail="true"] .placeholder{min-height:0}
+
+
+/* The shared one-window inbox also displays private on-site conversations. */
+@media(max-width:700px){
+  .shell[data-simple-detail="true"] .chat{min-height:0;overflow:hidden}
+  .shell[data-simple-detail="true"] .feed{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto}
+  .shell[data-simple-detail="true"] .compose{position:relative;z-index:2;margin-top:auto;flex:none;background:#fffdfb}
+  .shell[data-simple-detail="true"] .compose textarea{font:400 16px/1.4 system-ui,sans-serif;resize:none;max-height:110px}
+  .shell[data-simple-detail="true"] .actions{align-items:center}
+  .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
+}

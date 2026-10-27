@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
+import { FreeExpressGoogleClaim } from "@/components/free-express-google-claim";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import { emitPublicAnalyticsEvent, type PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -152,12 +153,14 @@ type Props = {
   publicTopic?: string;
   /** Public EN/RU/ES consultation offer label saved to CRM; no private notes. */
   publicServiceTitle?: string;
+  /** Only the confirmed free situation request may be saved via signed Google claim. */
+  allowSecureExpressClaim?: boolean;
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -508,6 +511,9 @@ export function ContactChannelChooser({
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
           </div>
         )}
+        {allowSecureExpressClaim && expressReview &&
+          <FreeExpressGoogleClaim locale={locale} referenceCode={saved?.referenceCode || null}
+            onRestored={ref=>setSaved({saved:true,referenceCode:ref})}/>}
         </div>
       </div>
     );
