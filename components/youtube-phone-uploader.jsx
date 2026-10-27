@@ -19,6 +19,7 @@ const copy = {
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
     config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
     setupTitle:'Первое подключение Google YouTube',
+    reusedConfig:'Google OAuth уже настроен для Holistic House. Повторно вводить Client ID не нужно. Выберите Google-аккаунт и подтвердите доступ. Если страница открыта внутри Telegram, используйте Safari.',
     setupHelp:'В Google Cloud включите YouTube Data API v3, создайте OAuth Client (тип Web application) и добавьте разрешённый JavaScript origin: https://holistichouse.vercel.app. Укажите здесь только публичный Client ID, без секрета.',
     setupGoogle:'Открыть Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
@@ -51,7 +52,7 @@ const copy = {
     stay:'Оставляйте Safari открытым, а экран активным до завершения передачи. После обновления страницы файлы придётся выбрать заново.',
     more:'Для нового канала сначала завершите или уберите незаконченные файлы из очереди.',
     errors:{
-      google_unavailable:'Не удалось открыть Google OAuth. Попробуйте Safari без блокировщиков.',
+      google_unavailable:'Google OAuth не открылся. Откройте страницу в Safari, а не во встроенном браузере Telegram, и повторите.',
       youtube_permission:'Разрешения Google отсутствуют или срок входа истёк. Переподключите YouTube.',
       youtube_quota:'Лимит загрузок YouTube исчерпан или действует ограничение канала.',
       wrong_channel:'Авторизован другой канал. Выберите правильный YouTube в окне Google.',
@@ -86,6 +87,7 @@ const copy = {
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
     config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
     setupTitle:'Connect Google YouTube once',
+    reusedConfig:'Google OAuth is already configured for Holistic House. No Client ID entry is needed. Select your Google account and approve channel access. If this page is inside Telegram, open it in Safari.',
     setupHelp:'In Google Cloud enable YouTube Data API v3, create a Web application OAuth client, and authorize this JavaScript origin: https://holistichouse.vercel.app. Enter the public Client ID only, never a secret.',
     setupGoogle:'Open Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
@@ -118,7 +120,7 @@ const copy = {
     stay:'Keep Safari open and the phone awake until transfer finishes. A page reload requires choosing the files again.',
     more:'Finish or remove incomplete uploads before changing channels.',
     errors:{
-      google_unavailable:'Google OAuth failed to open. Try Safari without blockers.',
+      google_unavailable:'Google OAuth failed to open. Use Safari instead of Telegram’s in-app browser and retry.',
       youtube_permission:'Missing Google permissions or expired sign-in. Reconnect YouTube.',
       youtube_quota:'YouTube upload quota or channel limit reached.',
       wrong_channel:'The wrong channel is authorized. Select the intended YouTube channel in Google.',
@@ -158,7 +160,7 @@ function mergeHistory(old, record) {
   return [record, ...old.filter(item => item.videoId !== record.videoId)]
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
-export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, initialChannels,
+export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, oauthSource='missing', initialChannels,
   initialHistory=[], historyReady=false}) {
   const t = copy[locale] || copy.ru
   const [target, setTarget] = useState('ru')
@@ -497,6 +499,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </div>
       {!enabled && !setupAvailable && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {enabled && oauthSource === 'owner_video' && <p className={styles.muted} role="status">{t.reusedConfig}</p>}
       {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
         type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
       {setupAvailable && showSetup && <div className={styles.pairing}>

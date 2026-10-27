@@ -10,9 +10,9 @@ test("focus-first: compact choice and optional preferences before published spec
   const route = read("app/[locale]/services/remote-energy-support/page.tsx");
   assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf('id="remote-intention"'));
   assert.ok(jsx.indexOf('id="remote-intention"') < jsx.indexOf('data-remote-find-options'));
-  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("masters.map((master) => {"));
+  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("matchingMasters.map((master) => {"));
   assert.match(jsx, /maxLength=\{1000\} rows=\{2\}/);
   assert.match(jsx, /master\.photo\s*\?\s*<img src=\{master\.photo\} alt=""/);
   assert.match(jsx, /master\.description \|\| t\.defaultDescription/);
@@ -35,7 +35,7 @@ test("focus-first: compact choice and optional preferences before published spec
 
 test("only published duration and price pairs are displayed, never invented options", () => {
   const jsx = read("components/remote-energy-support-booking.tsx");
-  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0\)/);
+  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0 &&/);
   assert.match(jsx, /REMOTE_SUPPORT_DURATIONS\.map/);
   assert.match(jsx, /disabled=\{!published\} checked=\{duration === minutes\}/);
   assert.match(jsx, /<span>\{minutes\} \{t\.minutes\}<\/span>/);

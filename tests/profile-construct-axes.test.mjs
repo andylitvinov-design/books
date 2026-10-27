@@ -168,7 +168,13 @@ test('EN/RU/ES use identical eligibility while retaining precise localized axis 
   }
   const raw=readFileSync(new URL('../components/personality-profiles-builder.tsx',import.meta.url),'utf8')
   assert.ok(raw.includes('data-profile-research-axis={axis.id}'))
-  assert.ok(raw.includes('profileResearchAxisLabel(axis.id, locale)'))
+  // The visual label can override the three goal facets, but every other
+  // construct still falls back to the existing localized source taxonomy.
+  assert.ok(raw.includes('researchLabel(axis.id, locale)'))
+  assert.ok(raw.includes('goalScaleLabels[locale][id] || profileResearchAxisLabel(id, locale)'))
+  for (const facet of ['clarity', 'motivation', 'confidence']) {
+    assert.ok(raw.includes('"goal::' + facet + '"'), facet + ' has its own scale choice')
+  }
   assert.ok(raw.includes('selectedProfileResearchAxes(scaleGroups, selectedScaleIds)'))
   assert.ok(!/setResearchScore|createPsychometricNorm|autoEnroll|patientAnswers/.test(raw),
     'research axes must remain a read-only selection classification')
@@ -316,4 +322,150 @@ test('collapsed topic preview preserves all distinct real facets before duplicat
     [...expected].sort(), 'zero secondary rows still lists every documented axis')
   const builder = readFileSync(new URL('../components/personality-profiles-builder.tsx', import.meta.url), 'utf8')
   assert.match(builder, /const shortlist = previewProfileScales\(group\.scales, 8\)/)
+})
+
+// Execute the actual component's pure declarations and event handlers only.
+// This deliberately excludes React rendering, authentication, network and scores.
+const wizardScriptCache = new Map()
+function actualWizardLogic(names, functions, context) {
+  const cacheKey = [...names, '|', ...functions].join(',')
+  if (wizardScriptCache.has(cacheKey)) return runInNewContext(wizardScriptCache.get(cacheKey), context, { timeout: 1000 })
+  const ts = createRequire(import.meta.url)('typescript')
+  const raw = readFileSync(new URL('../components/personality-profiles-builder.tsx', import.meta.url), 'utf8')
+  const source = ts.createSourceFile('profile.tsx', raw, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.deepEqual(source.parseDiagnostics, [])
+  const component = source.statements.find(node => ts.isFunctionDeclaration(node) &&
+    node.name?.text === 'PersonalityProfilesBuilder')
+  assert.ok(component?.body)
+  const declarations = component.body.statements.filter(ts.isVariableStatement)
+    .flatMap(statement => [...statement.declarationList.declarations])
+    .filter(node => ts.isIdentifier(node.name) && names.includes(node.name.text))
+  const handlers = component.body.statements.filter(node => ts.isFunctionDeclaration(node) &&
+    functions.includes(node.name?.text))
+  assert.deepEqual(declarations.map(node => node.name.text), names)
+  assert.deepEqual(handlers.map(node => node.name.text), functions)
+  const script = ts.transpileModule('(() => {\n' + declarations.map(node =>
+    `const ${node.name.text} = ${node.initializer.getText(source)};`).join('\n') + '\n' +
+    handlers.map(node => node.getText(source)).join('\n') +
+    '\nreturn {' + [...names, ...functions].join(',') + '};\n})()',
+  { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  wizardScriptCache.set(cacheKey, script)
+  return runInNewContext(script, context, { timeout: 1000 })
+}
+
+test('actual finder and checkbox handlers retain strict scope, one fit metric, stable rows and independent 12-key modes', () => {
+  const names = ['modeKind', 'rankedCandidates', 'recommendedKeys', 'recommendedTests', 'fiveMoreTests',
+    'featuredTestKeys', 'eligibleTestKeys', 'fitByKey', 'extraMatchPercent', 'remainingTestKeys', 'extraMatches', 'displayTests']
+  const keys = Array.from({ length: 15 }, (_, i) => 'match-' + String(i).padStart(2, '0'))
+  const entry = (key, extra = {}) => ({ key, title: key, minutes: 2, questions: 5, scales: [],
+    testKind: 'monitoring', selectable: true, free: true, startable: true, rightsStatus: 'cleared', ...extra })
+  const tests = [...keys.map(key => entry(key)), entry('unrelated'), entry('same-area-unselected'),
+    entry('professional', { testKind: 'professional' }), entry('paid', { free: false }),
+    entry('reference', { startable: false }), entry('restricted', { rightsStatus: 'restricted' })]
+  const scaleGroups = [{ area: 'work', scales: tests.map(test => ({ id: test.key + '::f',
+    testKey: test.key, label: 'Focus', researchAxisId: test.key === 'unrelated' ? 'connection::empathy'
+      : test.key === 'same-area-unselected' ? 'work::functioning' : 'work::focus' })) }]
+  const context = { tests, scaleGroups, selectedScaleIds: ['match-00::f'], selectedAxisRefs: ['work::focus'],
+    batteryMode: 'questionnaires', selectedKeys: [], showMore: false, search: '', timeFilter: 'all',
+    sortFilter: 'relevant', locale: 'en', recommendProfileTopThreeTests, rankProfileAxisTests, profileResearchAxisLabel }
+  const plain = value => JSON.parse(JSON.stringify(value))
+  const listSnapshot = result => plain({ primary: result.recommendedTests.map(item => item.test.key),
+    five: result.fiveMoreTests.map(item => item.test.key), overflow: result.displayTests.map(item => item.key) })
+  for (const locale of ['en', 'ru', 'es']) {
+    const evaluate = (extra = {}) => actualWizardLogic(names, ['toggleTest'], { ...context, locale,
+      setSelectedByMode: () => { throw new Error('unexpected selection update') }, ...extra })
+    const collapsed = evaluate()
+    assert.deepEqual(listSnapshot(collapsed), { primary: keys.slice(0, 3), five: keys.slice(3, 8), overflow: [] })
+    const expanded = evaluate({ showMore: true })
+    assert.deepEqual(listSnapshot(expanded).overflow, keys.slice(8))
+    const all = [...listSnapshot(expanded).primary, ...listSnapshot(expanded).five, ...listSnapshot(expanded).overflow]
+    assert.equal(new Set(all).size, 15, 'no duplicates across the three lists')
+    for (const key of keys) {
+      const ranked = expanded.rankedCandidates.find(item => item.key === key)
+      assert.equal(expanded.extraMatchPercent(key), ranked.matchPercent, 'one metric in every list')
+    }
+    for (const selectedKeys of [[], [keys[10]], keys.slice(0, 12)]) {
+      assert.deepEqual(listSnapshot(evaluate({ selectedKeys })), listSnapshot(collapsed))
+      assert.deepEqual(listSnapshot(evaluate({ selectedKeys, showMore: true })), listSnapshot(expanded),
+        'including the expanded tail: unchecking never removes or reorders a row')
+    }
+    assert.deepEqual(listSnapshot(evaluate({ selectedScaleIds: [], selectedAxisRefs: [], showMore: true })),
+      { primary: [], five: [], overflow: [] }, 'no chosen topics must not broaden the catalogue')
+    assert.deepEqual(listSnapshot(evaluate({ batteryMode: 'pro', showMore: true })),
+      { primary: ['professional'], five: [], overflow: [] })
+    assert.deepEqual(listSnapshot(evaluate({ showMore: true, search: keys[10] })).overflow, [keys[10]])
+    assert.deepEqual(listSnapshot(evaluate({ showMore: true, timeFilter: '1' })).overflow, [])
+    let selectedByMode = { questionnaires: [keys[0]], pro: ['professional'] }
+    const handler = evaluate({ setSelectedByMode: update => { selectedByMode = plain(update(selectedByMode)) } })
+    for (const key of ['unrelated', 'same-area-unselected', 'professional', 'paid', 'reference', 'restricted', 'missing'])
+      handler.toggleTest(key)
+    assert.deepEqual(selectedByMode, { questionnaires: [keys[0]], pro: ['professional'] },
+      'scope guard must reject invalid keys even when there is room below the cap')
+    selectedByMode = { questionnaires: keys.slice(0, 12), pro: ['professional'] }
+    handler.toggleTest(keys[12])
+    assert.deepEqual(selectedByMode, { questionnaires: keys.slice(0, 12), pro: ['professional'] })
+    handler.toggleTest(keys[0])
+    handler.toggleTest(keys[12])
+    assert.deepEqual(selectedByMode.questionnaires, [...keys.slice(1, 12), keys[12]])
+    assert.deepEqual(selectedByMode.pro, ['professional'], 'other mode must not change')
+  }
+})
+
+test('actual upstream handlers clear only dependent drafts and unchanged back/forward preserves unchecked choices', () => {
+  const tests = ['a', 'b', 'c'].map(key => ({ key, testKind: 'monitoring', minutes: 1 }))
+  const scaleGroups = [{ area: 'goal', scales: tests.map(test => ({ id: test.key + '::f', testKey: test.key,
+    researchAxisId: 'goal::motivation' })), researchAxes: [{ id: 'goal::motivation' }] }]
+  const initial = { tests, scaleGroups, visibleScaleGroups: scaleGroups, focuses: ['goal'],
+    selectedResearchIds: ['goal::motivation'], selectedScaleIds: ['a::f'], selectedAxes: ['energy'],
+    selectedByMode: { questionnaires: ['a'], pro: ['saved-pro'] }, batteryMode: 'questionnaires',
+    batterySignature: 'a::f', selectedKeys: [], step: 2, scalesInitialized: true, showMore: true,
+    recommendProfileTopThreeTests, defaultProfileScaleIds }
+  const plain = value => JSON.parse(JSON.stringify(value))
+  const setup = (extra = {}) => {
+    const state = { ...initial, ...extra }
+    for (const name of ['Focuses', 'SelectedResearchIds', 'SelectedScaleIds', 'SelectedByMode',
+      'BatteryMode', 'BatterySignature', 'Step', 'ScalesInitialized', 'ShowMore']) {
+      const key = name[0].toLowerCase() + name.slice(1)
+      state['set' + name] = update => { state[key] = plain(typeof update === 'function' ? update(state[key]) : update) }
+    }
+    const handlers = actualWizardLogic([], ['toggleFocus', 'toggleResearchAxis', 'toggleScale', 'goForward'],
+      { ...state, eligibleTestKeys: new Set() })
+    return { state, handlers }
+  }
+  let current = setup({ selectedByMode: { questionnaires: [], pro: [] } })
+  current.handlers.goForward()
+  assert.equal(current.state.step, 3)
+  assert.deepEqual(current.state.selectedByMode, { questionnaires: [], pro: [] },
+    'going back then forward without topic changes must not re-check tests')
+  current = setup({ batterySignature: '' })
+  current.handlers.goForward()
+  assert.deepEqual(current.state.selectedByMode, { questionnaires: ['a', 'b', 'c'], pro: [] })
+  current = setup({ step: 3, selectedKeys: [] })
+  current.handlers.goForward()
+  assert.equal(current.state.step, 3, 'zero checked tests cannot reach save step')
+  current = setup({ step: 3, selectedKeys: ['a'] })
+  current.handlers.goForward()
+  assert.equal(current.state.step, 4)
+  for (const [handler, key] of [['toggleScale', 'a::f'], ['toggleResearchAxis', 'goal::motivation'], ['toggleFocus', 'goal']]) {
+    current = setup()
+    current.handlers[handler](key)
+    assert.deepEqual(current.state.selectedByMode, { questionnaires: [], pro: [] }, handler)
+    assert.equal(current.state.batterySignature, '', handler)
+    assert.equal(current.state.showMore, false, handler)
+    assert.deepEqual(current.state.selectedScaleIds, [], handler)
+  }
+  for (const handler of ['toggleResearchAxis', 'toggleScale']) {
+    current = setup()
+    current.handlers[handler]('outside-chosen-scope')
+    assert.deepEqual(current.state.selectedByMode, initial.selectedByMode, 'invalid source choice must be a no-op')
+    assert.equal(current.state.batterySignature, 'a::f')
+  }
+  const scope = actualWizardLogic(['visibleAreas', 'visibleScaleGroups', 'activeAreas', 'scaleGroups'], [], {
+    tests: guest, focuses: ['goal'], selectedResearchIds: ['goal::motivation'],
+    areaAxes: PROFILE_AREA_AXES, profileAreasWithTests, buildProfileScaleGroups,
+  })
+  assert.ok(scope.scaleGroups.length > 0)
+  assert.ok(scope.scaleGroups.every(group => group.researchAxes.every(axis => axis.id === 'goal::motivation') &&
+    group.scales.every(scale => scale.researchAxisId === 'goal::motivation')),
+  'choosing one Goal facet must not silently include clarity or confidence')
 })

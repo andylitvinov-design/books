@@ -6,7 +6,7 @@ import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {uiLocaleCookie} from '@/lib/ui-locale'
-import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId} from '@/lib/youtube/upload-history-model.mjs'
+import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId, resolvePhoneYoutubeClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
 import styles from '@/components/youtube-phone-uploader.module.css'
 
@@ -32,9 +32,12 @@ export default async function YoutubeUploadPage() {
     ])
     telegramVideoConnected = await ownerVideoYoutubeConnected(getAppConfig())
   }catch{/* Authorisation remains unconfirmed. */}
+  // The client ID is public; the separate server-side OAuth secret never
+  // reaches the browser. Reuse the validated Web client to avoid double setup.
+  const ownerVideoClientId = telegramVideoConfigured ? process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID : null
   const environmentClientId = normalizeGoogleOauthClientId(process.env.HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID || '')
   const explicitlyDisabled = process.env.HH_YOUTUBE_PHONE_UPLOAD_ENABLED === 'false'
-  let clientId = environmentClientId || ''
+  let savedClientId = null
   const initialChannels = {
     ru:{id:RUSSIAN_CHANNEL_ID,name:'Академия Древних Культур',handle:'@shamanic_academy'},
     en:null,
@@ -47,7 +50,7 @@ export default async function YoutubeUploadPage() {
       const [channels,history,configuredClientId] = await Promise.all([
         store.channels(),store.list(),store.oauthConfig(),
       ])
-      if (!environmentClientId && configuredClientId) clientId = configuredClientId
+      savedClientId = configuredClientId
       initialChannels.en = channels.en
       initialHistory = history
       historyReady = true
@@ -55,8 +58,13 @@ export default async function YoutubeUploadPage() {
   } catch {
     // Connection details stay server-side. Never pretend an in-memory list is durable.
   }
-  const enabled = historyReady && !explicitlyDisabled && Boolean(normalizeGoogleOauthClientId(clientId))
-  const setupAvailable = historyReady && !environmentClientId && !explicitlyDisabled
+  const {clientId:configuredClientId,source:oauthSource} = resolvePhoneYoutubeClientId({
+    dedicatedId:environmentClientId,savedId:savedClientId,
+    ownerVideoId:ownerVideoClientId,ownerVideoConfigured:telegramVideoConfigured,
+  })
+  const enabled = historyReady && !explicitlyDisabled && Boolean(configuredClientId)
+  // Keep self-service available for a missing/stored phone-only client.
+  const setupAvailable = historyReady && !environmentClientId && !explicitlyDisabled && oauthSource !== 'owner_video'
   return <main className={'prescription-admin-shell ' + styles.page} data-youtube-upload-page>
     <PrescriptionAdminHeader initialLocale={locale}
       title={{en:'YouTube upload',ru:'Загрузка в YouTube'}}
@@ -89,7 +97,8 @@ export default async function YoutubeUploadPage() {
       {telegramVideoConfigured&&<Link prefetch={false} href="/api/admin/telegram-video/youtube/start" style={{fontSize:14}}>
         {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
     </section>
-    <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={clientId} setupAvailable={setupAvailable}
+    <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
+      oauthSource={oauthSource} setupAvailable={setupAvailable}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
   </main>
 }
