@@ -13,7 +13,7 @@ test("Holistic Support has an accessible audio and video meditation destination 
   for (const label of [
     "Meditation · Flight to the Sun", "Бесплатные подкачки", "Meditación · Flight to the Sun",
   ]) assert.ok(page.includes(label), "missing locale text " + label);
-  assert.match(read("components/holistic-support-topic-filter.tsx"), /if \(offer === "meditation"\) return "#meditation-practices"/);
+  assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
   assert.match(page, /href="#meditation-practices"/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(page, /data-holistic-audio-player/);
