@@ -144,7 +144,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
 
   return <section className="kling-studio" lang={lang} aria-label={t.title} id="kling-scene-studio">
     <div className="kling-studio-top">
-      <div><p className="site-video-field-label"><Sparkles size={17} aria-hidden="true" /> Kling 3.0</p><h2>{t.title}</h2><p>{t.intro}</p></div>
+      <div><p className="site-video-field-label"><Sparkles size={17} aria-hidden="true" /> Kling AI · Turbo / 3.0</p><h2>{t.title}</h2><p>{t.intro}</p></div>
       <div className="kling-studio-links"><a href="https://kling.ai/" target="_blank" rel="noopener noreferrer">{t.manual}<ExternalLink size={15} aria-hidden="true" /></a><a href="https://kling.ai/dev/api-key" target="_blank" rel="noopener noreferrer">{t.docs}<ExternalLink size={15} aria-hidden="true" /></a></div>
     </div>
     <div className="site-video-language-picker kling-studio-langs" role="group" aria-label={t.language}>
