@@ -45,10 +45,11 @@ assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="
   assert.match(gallery, /data-meditation-topic=\{topic\}/);
   assert.match(gallery, /video\.topics\.includes\(activeTopic\)/);
   assert.match(gallery, /setSelectedId\(null\)/);
-  assert.match(gallery, /<AcademyVideoPlayer/);
-  assert.match(gallery, /key=\{activeTopic \+ ":" \+ activeVideo\.id\}/);
+  assert.match(gallery, /data-open-meditation-app/);
+  assert.match(gallery, /\/meditations\?video=/);
   assert.match(gallery, /data-meditation-video-id=\{video\.id\}/);
   assert.match(galleryCss, /aspect-ratio:16\/9/);
+  assert.match(galleryCss, /\.openApp/);
   assert.match(galleryCss, /object-fit:cover/);
   assert.match(galleryCss, /@media\(max-width:430px\)/);
   assert.doesNotMatch(gallery, /autoplay=\{true\}|video\.mp3/);

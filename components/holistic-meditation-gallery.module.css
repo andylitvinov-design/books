@@ -57,3 +57,10 @@
   .videoCaption{padding:8px 11px 12px}
 }
 @media(prefers-reduced-motion:reduce){.filter{transition:none}}
+
+/* Full-screen app is the single playback surface: the discovery poster never changes size. */
+.openApp{position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#161b18;color:#fffaf1;text-decoration:none}
+.openApp>img{display:block;width:100%;height:100%;object-fit:cover;opacity:.88}
+.openAppLabel{position:absolute;inset:auto 11px 11px;display:flex;align-items:center;gap:9px;min-height:43px;padding:8px 12px;border-radius:10px;background:#2c392ddb;color:#fffaf3;font:800 13px/1.2 Arial,Helvetica,sans-serif}
+.openAppLabel svg{flex:none;fill:currentColor}
+.openApp:hover .openAppLabel{background:#624735}
