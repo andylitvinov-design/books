@@ -40,7 +40,7 @@ To enable Square payment links after owner verification:
 4. After confirming link ownership and **exact CAD amounts** on Square, set HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED=true and HH_SQUARE_CAD_AMOUNTS_APPROVED=true. Set HH_SQUARE_CAD_LINKS_ENABLED=true **last**. Turning any flag off is a kill switch.
 5. Provider URLs must be exact HTTPS square.link/u/… or checkout.square.site/… with no query, fragments, credentials or redirects supplied by users. All three links must be distinct, with increasing prices. The site fails closed if any mapping is missing or malformed.
 6. Verify a legitimate paid test/real charge with Square, check balance and refund reconciliation independently. Square links do **not** automatically settle the app's internal service-order ledger, so continue manual verification.
-7. The Square option remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured card button must never pretend to be ready.
+7. The **EUR-catalog Square cart option** remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured cart button must never pretend to be ready. A separately verified single-session CA$50 link is documented below and never mapped to EUR products.
 
 ## Legacy integrations
 - Existing Stripe Checkout / Stripe Payment Links remain unconfigured and are NOT displayed in the personal public cart. Never present Stripe signup as a prerequisite for personal PayPal.
@@ -66,6 +66,14 @@ To enable Square payment links after owner verification:
 - Both consultations EUR 150: https://paypal.me/psitrends/150EUR
 - The /en/payments, /ru/payments and /es/payments pages now have direct PayPal links; the combined amount comes only from the fixed catalog.
 - Owner must verify the public payee is their PayPal account and that a real Goods & Services transaction reaches that account. Successful redirect does not mean a payment arrived.
+
+### Owner-supplied standalone Square session link — 27 October 2026
+
+- On 27 Oct the owner supplied a Square Buy Button / public URL `https://square.link/u/Kv0TfvaP`. Independent live page readback: `Session - Holistic House`, seller display `Holistic House`, **CA$50.00**, Square-hosted checkout at `checkout.square.site/merchant/.../checkout/...`. Do not copy the Square-supplied pop-up script: its click binding relies on an unspecified DOM id; opening the canonical clean URL directly is sufficient.
+- The public `/{en,ru,es}/payments` page offers this **separate explicitly labelled CA$50 session payment** only on Vercel Production, with an optional emergency flag `HH_SQUARE_CAD_50_SESSION_DISABLED=true`. It does **not** mean the established **EUR €50/30min** price is now CAD $50, does **not** compute an FX quote and does **not** assign or settle any cart SKU or CRM order. Show the card in a distinct section with EN/RU/ES warnings: client must first agree a specific CA$50 amount/session with Andrey and inspect the exact recipient/final total on Square.
+- The clean public link is not a secret. It is intentionally reused in existing `lib/commerce/square-payment-links.js` via `configuredStandaloneSquareSessionCad50`, rather than activating the **three-link EUR-cart Square mode**. Other individual `HH_SQUARE_CAD_*_LINK` mappings remain fail-closed until separately approved.
+- After payment, client sends only transaction ID by WhatsApp. Owner must independently check the transaction inside their Square Dashboard, gross amount/currency/refund state, and match it to the agreed consultation before any `paid` or fulfilment update. A click, return URL or WhatsApp claim is not settlement. No provider-side charge, refund or settlement was initiated during integration.
+- Before treating this as a business-complete payment flow, confirm actual Square payout/KYC, any tax or refund terms, and a consented small real payment + refund or reconciliation. If the dashboard changes the live link's amount/payee, **disable the public link immediately** until it is re-verified. The single link should not be reused for a different price without updating the verified public label.
 
 ### Interac: do not create a web link
 - Customers click Request Interac for one consultation or ask via the validated cart for combined services.
