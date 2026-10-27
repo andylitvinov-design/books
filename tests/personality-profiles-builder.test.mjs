@@ -197,10 +197,11 @@ test('Tests slide keeps its three priority tests and optional extra tests visibl
     'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'data-profile-mode={mode}',
     'recommendedTests.map(test =>', 'checked={selectedKeys.includes(test.key)}',
     'disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}',
-    'scopeMatch(test.key).percent', 'extraMatches.slice(0, 5)',
-    'extraMatches.slice(5).filter(test => selectedKeys.includes(test.key))']) {
+    'scopeMatch(test.key).percent']) {
     assert.ok(slide.includes(phrase), phrase)
   }
+  assert.ok(builder.includes('extraMatches.slice(0, 5)'))
+  assert.ok(builder.includes('extraMatches.slice(5).filter(test => selectedKeys.includes(test.key))'))
   assert.ok(builder.includes('selectedScaleIds, "questionnaires", 3)'))
   assert.ok(builder.includes('selectedScaleIds, "pro", 3)'))
   assert.match(builder, /recommendedKeys = \[\.\.\.recommendProfileAxisBattery\(tests, scaleGroups,/)
