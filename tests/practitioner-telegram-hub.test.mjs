@@ -72,7 +72,7 @@ test('scheduler and private read/write boundaries retain existing cron jobs',()=
   assert.deepEqual(cfg.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
-    {path:'/api/internal/practice-telegram-digest',schedule:'0 19,20 * * *'},
+    {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
   ])
   const route=readFileSync(new URL('../app/api/internal/council-archive-telegram/route.js',import.meta.url),'utf8')
