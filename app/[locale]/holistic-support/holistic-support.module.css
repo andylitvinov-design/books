@@ -260,3 +260,19 @@
 .journeyChoiceText strong{font-size:17px}
 .journeyChoiceText small{font-size:10px}
 }
+/* At iPhone SE 320×568 the page header leaves limited height. The three
+   photographed choices carry the meaning themselves; hide only redundant
+   introductory copy and small icons so all choices remain visible and tappable. */
+@media(max-width:350px) and (max-height:620px){
+.journeyEyebrow,.journeyLead,.journeyChoiceIcon{display:none}
+.journeyContent{padding:9px 8px}
+.journeyContent h1{font-size:29px;line-height:1.02}
+.journeyPrompt{margin:8px 0 6px;font-size:14px;line-height:1.2}
+.journeyChoices{gap:5px}
+.journeyChoice{grid-template-columns:70px minmax(0,1fr) 15px;gap:6px;min-height:83px;padding:5px}
+.journeyChoicePhoto{width:70px;height:72px}
+.journeyChoiceText{gap:3px;padding:0}
+.journeyChoiceText strong{font-size:17px;line-height:1.13}
+.journeyChoiceText small{font-size:10px;line-height:1.2}
+.journeyArrow{width:15px;height:15px}
+}
