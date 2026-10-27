@@ -65,6 +65,7 @@ const copy = {
       identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
       goal: ["Goal Profile", "Clarity, motivation and confidence in one chosen goal. Self-ratings are saved privately; tests provide context."],
     },
+    goalScaleNote: "These three choices identify supporting topics. Your personal 0–10 goal ratings are separate, optional and private.",
     topicTitle: "Select the scales that matter to you",
     topicHelp: "Choose one or more research scales in each life direction. Goal clarity, motivation and confidence can be selected separately; no tests are selected here.",
     focusContext: "Selected interests",
@@ -150,6 +151,7 @@ const copy = {
       identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
       goal: ["Профиль цели", "Ясность, мотивация и уверенность в достижении выбранной цели. Личная самооценка сохраняется приватно."],
     },
+    goalScaleNote: "Эти три шкалы помогают выбрать темы для исследования. Ваши личные оценки цели от 0 до 10 — отдельное, добровольное и приватное действие.",
     topicTitle: "Выберите шкалы для исследования",
     topicHelp: "В каждом направлении выберите одну или несколько шкал. Ясность цели, мотивация и уверенность отмечаются отдельно. Тесты здесь пока не выбираются.",
     focusContext: "Выбранные направления",
@@ -235,6 +237,7 @@ const copy = {
       identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
       goal: ["Perfil de la meta", "Claridad, motivación y confianza en una meta elegida. Autoevaluación privada y pruebas complementarias."],
     },
+    goalScaleNote: "Estas tres opciones permiten explorar temas relacionados. Las puntuaciones personales de tu meta (0–10) son independientes, opcionales y privadas.",
     topicTitle: "Elige las escalas que quieres explorar",
     topicHelp: "Selecciona una o varias escalas en cada área. Claridad de la meta, motivación y confianza son opciones separadas. Aquí todavía no eliges pruebas.",
     focusContext: "Áreas elegidas",
@@ -717,6 +720,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <p className={styles.researchSelectedCount} role="status">
           {selectedResearchIds.length} {t.selected}
         </p>
+        {focuses.includes("goal") && <p className={styles.scaleSourceNote}>{t.goalScaleNote}</p>}
       </section>}
 
       {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-scales-step data-profile-topics-step>
