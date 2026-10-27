@@ -4,7 +4,8 @@ import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
-  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID}
+  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
+  ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
@@ -84,6 +85,13 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.equal(parsed(callback('hh-video:done')).action,'done')
  assert.equal(parsed(callback('hh-video:status')).action,'status')
  assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
+ const manifestButton=ownerVideoConfirmationButtons(fixed,966890850).inline_keyboard[0][0]
+ assert.match(manifestButton.text,/проверенный набор/)
+ assert.ok(manifestButton.callback_data.length<=64)
+ assert.deepEqual(
+   (({action,jobId,itemsUpdateId})=>({action,jobId,itemsUpdateId}))(parsed(callback(manifestButton.callback_data))),
+   {action:'confirm',jobId:fixed,itemsUpdateId:966890850})
+ assert.equal(parsed(callback('hh-video:c:'+fixed+':X')),null)
  assert.equal(parsed(callback('hh-video:publish:bad')),null)
  const spoof=callback('hh-video:done');spoof.callback_query.message.from.username='Attacker_bot'
  assert.equal(parsed(spoof),null)
@@ -101,7 +109,7 @@ test('strict ordered safe source limits and anti-duplication',()=>{
  assert.equal(VIDEO_AUDIO_LIMIT,15)
  assert.equal(safeVideoParts([...items,items[1]]),null)
  assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',16)]),null)
- assert.equal(safeVideoParts([part('audio',0,{duration:121})]),null)
+ assert.equal(safeVideoParts([part('audio',0,{duration:1801})]),null)
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
 })
@@ -145,14 +153,14 @@ test('15 photographs and 15 audio pieces are allowed and compose in their real m
  ]).flat()
  const totals=safeVideoParts(interleaved)
  assert.deepEqual(totals,{images:15,audios:15,bytes:69000,seconds:30})
- assert.equal(VIDEO_MAX_INPUT_BYTES,20_000_000)
- assert.equal(VIDEO_MAX_SECONDS,120)
+ assert.equal(VIDEO_MAX_INPUT_BYTES,90_000_000)
+ assert.equal(VIDEO_MAX_SECONDS,1800)
  assert.equal(safeVideoParts([...interleaved,part('photo',30)]),null)
  assert.equal(safeVideoParts([...interleaved,part('audio',30)]),null)
  assert.equal(safeVideoParts(interleaved.map((item,i)=>
-   i===1?{...item,duration:100}:item)),null)
+   i===1?{...item,duration:1800}:item)),null)
  assert.equal(safeVideoParts(interleaved.map(item=>
-   item.kind==='photo'?{...item,bytes:1_400_000}:item)),null)
+   item.kind==='photo'?{...item,bytes:5_000_000}:{...item,bytes:1_100_000})),null)
  assert.equal(safeVideoParts(interleaved.map(item=>
    item.kind==='photo'?{...item,bytes:1_250_000}:item))?.images,15)
  const mixed=[...interleaved].reverse()
@@ -167,6 +175,41 @@ test('15 photographs and 15 audio pieces are allowed and compose in their real m
  assert.ok(args.includes('libx264')&&args.includes('aac'))
 })
 
+test('full owner batch: 11 audio + 3 late photos exceeds old 120s cap, keeps all sources',()=>{
+ const audios=Array.from({length:11},(_,i)=>part('audio',i,{
+   duration:30,bytes:3_000_000
+ }))
+ const photos=Array.from({length:3},(_,i)=>part('photo',i+11,{
+   bytes:500_000
+ }))
+ const files=[...audios,...photos]
+ assert.deepEqual(safeVideoParts(files),{
+   images:3,audios:11,bytes:34_500_000,seconds:330
+ })
+ const plan=photoTimeline([...files].reverse())
+ assert.deepEqual(plan.map(p=>p.startMs),[0,110000,220000])
+ assert.deepEqual(plan.map(p=>p.durationMs),[110000,110000,110000])
+ const args=videoRenderArguments([...files].reverse(),'/tmp/full-owner-batch.mp4')
+ assert.equal(args.filter(x=>x==='-i').length,14)
+ assert.ok(args.some(x=>x.includes('concat=n=3:v=1')))
+ assert.ok(args.some(x=>x.includes('concat=n=11:v=0:a=1')))
+ assert.ok(args.includes('-shortest'))
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['110.000','110.000','134.000'])
+ assert.ok(args.includes('-r')&&args.includes('2'))
+ assert.equal(ownerVideoLimitReason(files,part('audio',20)), 'invalid')
+ const maxImages=Array.from({length:15},(_,i)=>part('photo',i))
+ assert.equal(ownerVideoLimitReason(maxImages,part('photo',16)),'photos')
+ const maxAudio=Array.from({length:15},(_,i)=>part('audio',i))
+ assert.equal(ownerVideoLimitReason(maxAudio,part('audio',16)),'audios')
+ assert.equal(ownerVideoLimitReason(files,part('audio',20,{duration:1600})),'seconds')
+ assert.equal(ownerVideoLimitReason(files,part('audio',20,{duration:30,bytes:57_000_000})),'bytes')
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/if\(event.action==='done'\)\{[\s\S]*await renderManifest\(config\)/)
+ assert.match(service,/if\(event.action==='confirm'\)\{[\s\S]*await reserveRender\(config,event\)/)
+ assert.match(service,/if\(event.itemsUpdateId!==Number\(row.last_update_id\)\)return \{state:'changed'\}/)
+ const webhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
+ assert.match(webhook,/export const maxDuration=300/)
+})
 test('FFmpeg command arguments use no shell and encode a single bounded 16:9 stream',()=>{
  const args=videoRenderArguments([part('photo',0),part('photo',1),part('audio',2)],'/tmp/output.mp4')
  assert.equal(args.at(-1),'/tmp/output.mp4')
@@ -186,7 +229,7 @@ test('photo positions follow cumulative audio durations in mixed Telegram messag
    [100,0,4000],[102,4000,3000],[104,7000,2000]
  ])
  const args=videoRenderArguments(unordered,'/tmp/output.mp4')
- assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['4.000','3.000','2.000'])
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['4.000','3.000','10.000'])
  assert.equal(plan.reduce((sum,p)=>sum+p.durationMs,0),9000)
 })
 test('consecutive photos split the following audio segment without reordering',()=>{
@@ -356,6 +399,11 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
  const doneHandler=service.split("if(event.action==='done'){")[1].split("if(event.action==='retry'){")[0]
  assert.match(doneHandler,/if\(batch.state==='reserved'\)\{[\s\S]*await ownerMessage\(owner/)
+ assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId\)/)
+ assert.match(service,/event.itemsUpdateId!==Number\(row.last_update_id\)/)
+ assert.match(service,/if\(event.action==='confirm'\)/)
+ assert.match(service,/if\(result.state==='limit'&&result.notify\)/)
+ assert.doesNotMatch(doneHandler.split("if(event.action==='confirm')")[0],/background:\(\)=>buildVideo/)
  assert.match(doneHandler,/background:\(\)=>buildVideo\(config,batch,owner,fetcher\)/)
  assert.match(service,/async function markPreviewDelivery\(config,jobId,confirmed\)/)
  assert.match(service,/!Number.isSafeInteger\(result.result\?\.message_id\)/)
