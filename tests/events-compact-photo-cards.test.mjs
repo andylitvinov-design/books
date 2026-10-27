@@ -140,5 +140,6 @@ for (const locale of ["en", "ru", "es"]) {
     tree = h.render();
     assert.equal(nodes(tree).filter(node => node.props?.["data-event-card"])[0]?.props["data-event-card"], "past");
     assert.equal(nodes(tree).filter(node => node.type === "a" && node.props.href === "https://example.org/register").length, 0);
+    assert.equal(nodes(tree).filter(node => node.props?.["data-event-ticket-checkout"]).length, 0);
   });
 }
