@@ -89,7 +89,7 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   audio.message.from.id=90000
   assert.equal(parseOwnerAudioCommand(audio,NOW),null)
   const prompt=ownerAudioHelpMessage()
-  assert.match(prompt.text,/Русский|English YouTube/)
+  assert.match(prompt.text,/выбери YouTube/)
   assert.match(prompt.text,/20 МБ/)
   assert.doesNotMatch(prompt.text,/файл уже сохранён/)
   const controls=prompt.reply_markup.inline_keyboard.flat()
