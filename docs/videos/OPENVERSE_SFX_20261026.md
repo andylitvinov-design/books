@@ -43,3 +43,20 @@ The search URL is https://api.openverse.org/v1/audio/ with exactly **license=cc0
 - Final QA -> Drive master archive -> explicit YouTube/Metricool publication approval. A generated MP4 is not a published video, and a CI pass is not proof of provider playback.
 
 Related: [Video SOP](https://github.com/andylitvinov-design/ai-projects-brain/issues/219), [Telegram owner video](https://github.com/andylitvinov-design/books/issues/2160).
+
+
+## Local scene-cut suggestion — 2026-10-27
+
+Optional **offline proposal stage** for finished, explicitly approved **non-sensitive/public** MP4s:
+
+~~~sh
+node scripts/propose-openverse-video-sfx.mjs /absolute/path/to/public-master.mp4
+~~~
+
+This calls only the existing bundled ffmpeg-static executable, **never** sends video, audio, speech, transcript or frames to Openverse/HeyGen, never downloads sounds or writes to the original MP4. A single local sibling *-sfx-proposal.json report is created with mode 0600; existing proposals are not overwritten. Input must be an ordinary local MP4 up to 250 MB and 120 seconds.
+
+The read-only FFmpeg scene detector finds strong hard cuts (scene threshold 0.30), ignores cuts at start/end and within 2 seconds of the previous cut, and proposes up to six **quiet** generic soft-transition cues. Proposed cues all reuse the same sound type and query, so the downstream Openverse script searches just once per type. No facial action recognition, semantic scene understanding, speech transcription or automatic sound placement outside montage cuts is claimed.
+
+If decision=no_scene_sfx_needed and plan=null, stop: **do not invent whooshes, clicks or ambience for talking-head videos**. If decision=review_required, inspect all cuts, listening/lip-sync and source licensing; only after explicit approval save **the nested plan object** as a separate approved-sfx-plan.json next to the MP4, then run the existing node scripts/openverse-video-sfx.mjs /absolute/path/to/approved-sfx-plan.json. The Openverse script will create a new MP4 with a different name and exact credits; it never auto-publishes.
+
+**Real approved public-master acceptance on 2026-10-27:** 2026-09-29_holistic-house_psychic-alchemy_en_avatarV_16x9_v03.mp4 (Google Drive master ID 1emF7Peqk8SFz0UVj3hm_k2RwUOa5xpi4), verified SHA-256 72df69bec19a2dd287a1e33dc19e3c48e3cd0039b04020a7457f67ba5a749422, 1920×1080, 26.760 seconds, single continuous Andrey talking-head shot, zero hard cuts at threshold 0.30. Decision: **no scene SFX**. The source video is unchanged. An independently generated synthetic two-scene MP4 provided a positive hard-cut test and preview-plan assertions. These tests do **not** certify subjective audiovisual QA or third-party license rights for a future different video.
