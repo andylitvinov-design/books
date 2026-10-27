@@ -317,11 +317,12 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  assert.match(videoButton.text,/Создать видео/)
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
    .some(x=>x.callback_data==='hh-video:start'))
+ const dotOwner={id:privateBase.id,is_bot:false}
  const dotCommand={update_id:2007,message:{
-   date:TIME/1000,chat:privateBase,from,message_id:47,text:'/video'}}
+   date:TIME/1000,chat:privateBase,from:dotOwner,message_id:47,text:'/video'}}
  assert.equal(parseOwnerVideoUpdate(dotCommand,{now:TIME,botUsername:'andydotbot'})?.action,'start')
  const dotCallback={update_id:2008,callback_query:{id:'video-start',
-   data:'hh-video:start',from,
+   data:'hh-video:start',from:dotOwner,
    message:{chat:privateBase,from:{is_bot:true,username:'Andydotbot'}}}}
  assert.equal(parseOwnerVideoUpdate(dotCallback,{now:TIME,botUsername:'andydotbot'})?.action,'start')
  assert.equal(parseOwnerVideoUpdate(dotCallback,{now:TIME,botUsername:'holistichouse_bot'}),null)
