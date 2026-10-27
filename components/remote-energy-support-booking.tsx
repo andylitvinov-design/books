@@ -287,7 +287,11 @@ export function RemoteEnergySupportBooking({
   const t = WORDS[locale];
   const router = useRouter();
   const [selectedServiceId, setSelectedServiceId] = useState(() =>
-    masters.find((master) => master.slug === preferredPractitioner)?.serviceId || ""
+    masters.find((master) => master.slug === preferredPractitioner)?.serviceId ||
+    // In the talisman catalog there is just one verified published contact:
+    // show the enquiry form immediately, without implying availability/payment.
+    (initialTalismanId && selectedKind === "talisman" && masters.length === 1
+      ? masters[0].serviceId : "")
   );
   const [goal, setGoal] = useState(initialGoal);
   const [requestKind, setRequestKind] = useState<SupportRequestKind>(selectedKind);
