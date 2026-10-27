@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { appFetch } from '@/lib/app/client-fetch'
-import { GOAL_RATING_KEYS, GOAL_RATING_LABELS, GOAL_SUPPORT_RULES } from '@/lib/profile/goal-profile'
+import { GOAL_RATING_KEYS, GOAL_RATING_LABELS, GOAL_SUPPORT_RULES, eligibleGoalSupportEntry } from '@/lib/profile/goal-profile'
+import { verifiedHistoryView } from '@/lib/assessments/verified-history'
 import styles from './goal-profile-panel.module.css'
 
 const COPY = {
@@ -58,16 +59,12 @@ const SERVICE_PATH = Object.freeze({
   motivation:'/services/imagery-therapy',
   confidence:'/coaching',
 })
-const safe = entry => entry?.selectable === true && entry.startable === true &&
-  entry.free === true && entry.rightsStatus === 'cleared' &&
-  entry.explicitOptIn !== true && entry.definition &&
-  ['professional','monitoring'].includes(entry.testKind)
 const supportingTests = (entries, key, results) => {
   const matches = []
   const seen = new Set()
   for (const rule of GOAL_SUPPORT_RULES.filter(item => item.facet === key)) {
     const test = entries?.get(rule.testKey)
-    if (!safe(test) || seen.has(test.key) || !(test.scaleGuide?.scales || []).some(scale => scale.axis === rule.axis)) continue
+    if (!eligibleGoalSupportEntry(test, rule) || seen.has(test.key)) continue
     seen.add(test.key)
     const complete = (results || []).some(result => result.definitionKey === test.key &&
       result.definitionVersion === test.definition.version)
@@ -98,10 +95,13 @@ export function GoalProfilePanel({ locale = 'en', accountId, entriesByKey, resul
     window.addEventListener('hh:goal-checkin-saved', reload)
     return () => { active = false; window.removeEventListener('hh:goal-checkin-saved', reload) }
   }, [accountId])
-  const rows = useMemo(() => GOAL_RATING_KEYS.map(key => ({
+  // Only the newest provenance-verified source result may count as completed.
+  // A forged or stale answer with the same test key is not evidence of a test.
+  const verifiedCurrent = useMemo(() => verifiedHistoryView(results).current, [results])
+  const rows = useMemo(() => GOAL_RATING_KEYS.map(key => ({ 
     key, label:GOAL_RATING_LABELS[key][lang], value:rating?.values?.[key] ?? null,
-    tests:supportingTests(entriesByKey, key, results),
-  })), [entriesByKey, results, rating, lang])
+    tests:supportingTests(entriesByKey, key, verifiedCurrent),
+  })), [entriesByKey, verifiedCurrent, rating, lang])
   const openGoals = () => {
     window.location.hash = 'hh-development-program'
     window.dispatchEvent(new HashChangeEvent('hashchange'))
