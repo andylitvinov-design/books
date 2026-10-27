@@ -7,7 +7,7 @@ import {
   PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, PROFILE_RESEARCH_AXES,
   buildProfileScaleGroups, defaultProfileScaleIds, profileAreasWithTests,
   selectedProfileResearchAxes, researchAxisForScale, profileResearchAxisLabel,
-  recommendProfileAxisBattery,
+  recommendProfileAxisBattery, previewProfileScales,
 } from '../lib/profile/profile-scale-selection.js'
 
 const accountEntries = buildExplorerEntries({ locale: 'en', audience: 'account' })
@@ -216,4 +216,26 @@ test('all 73 author-owned EN/RU families have an item-level qualified-review que
   const csv=authorAxisReviewCsv(review)
   assert.ok(csv.startsWith('key,version,locale,itemId,itemOrder,text,timeframe,'))
   assert.equal(csv.trimEnd().split('\n').length, review.items + 1)
+})
+
+test('collapsed topic preview preserves all distinct real facets before duplicate source alternatives', () => {
+  const traits = buildProfileScaleGroups(guest, ['traits'], PROFILE_AREA_AXES)[0]
+  assert.ok(traits.scales.length > 8, 'fixture must exercise collapsed source scales')
+  const shown = previewProfileScales(traits.scales, 8)
+  const expected = new Set(traits.researchAxes.map(axis => axis.id))
+  assert.equal(shown.length, 8, 'remain compact when eight rows cover the axes')
+  assert.deepEqual(new Set(shown.map(scale => scale.researchAxisId)), expected,
+    'every Big Five facet must be immediately visible before Show more')
+  for (const facet of ['extraversion','agreeableness','conscientiousness',
+    'emotional_reactivity','openness']) {
+    assert.ok(shown.some(scale => scale.researchAxisId === 'traits::' + facet),
+      'hidden Big Five facet: ' + facet)
+  }
+  assert.equal(new Set(shown.map(scale => scale.id)).size, shown.length,
+    'do not duplicate a source scale while selecting representatives')
+  assert.deepEqual(previewProfileScales(traits.scales, 0)
+    .map(scale => scale.researchAxisId).sort(),
+    [...expected].sort(), 'zero secondary rows still lists every documented axis')
+  const builder = readFileSync(new URL('../components/personality-profiles-builder.tsx', import.meta.url), 'utf8')
+  assert.match(builder, /const shortlist = previewProfileScales\(group\.scales, 8\)/)
 })
