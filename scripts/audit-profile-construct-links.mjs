@@ -23,7 +23,8 @@ const isScored = item => item.selectable === true && item.startable === true &&
 const isGuest = item => isScored(item) && item.guestEligible === true &&
   item.starterEligible !== false && item.free === true && item.explicitOptIn !== true
 const toSource = entry => ({
-  key: entry.key, title: entry.title, topics: entry.topics, testKind: entry.testKind,
+  key: entry.key, version: entry.definition?.version || entry.version,
+  title: entry.title, topics: entry.topics, testKind: entry.testKind,
   axes: entry.scaleGuide?.measurementAxes || [], minutes: entry.durationMinutes,
   questions: entry.questionCount, scales: (entry.scaleGuide?.scales || []).filter(scale =>
     scale && typeof scale.key === 'string' && typeof scale.axis === 'string' &&
