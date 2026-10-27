@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { GOAL_RATING_KEYS, GOAL_RATING_LABELS, GOAL_SUPPORT_RULES, goalSupportFacetForScale, eligibleGoalSupportEntry, normalizeGoalCheckin } from '../lib/profile/goal-profile.js'
 import { normalizeDevelopmentGoals, DEVELOPMENT_GOALS_VERSION, DEFAULT_DEVELOPMENT_TARGETS } from '../lib/profile/development-program.js'
-import { PROFILE_FOCUS_AREAS, PROFILE_RESEARCH_AXES, isProfileScaleRelevant } from '../lib/profile/profile-scale-selection.js'
+import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, PROFILE_RESEARCH_AXES,
+  buildProfileScaleGroups, isProfileScaleRelevant } from '../lib/profile/profile-scale-selection.js'
 import { PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER } from '../lib/assessments/portrait-sectors.js'
 
 const view = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8')
@@ -112,6 +113,41 @@ test('all three goal axes have real, rights-cleared free guest starter scales', 
     assert.equal(eligibleGoalSupportEntry({
       ...source.find(e=>e.key==='hh-weekly-pulse'),guestEligible:false
     }, GOAL_SUPPORT_RULES.find(r=>r.testKey==='hh-weekly-pulse'),'guest'),false)
+  }
+})
+
+test('all five focuses use source-scored eligible tests; goal has three real and non-interchangeable guest facets', () => {
+  for (const locale of ['en', 'ru', 'es']) {
+    const source = buildExplorerEntries({ locale:locale === 'es' ? 'en' : locale, audience:'guest' })
+      .filter(entry => entry.selectable && entry.startable && entry.guestEligible === true &&
+        entry.starterEligible !== false && entry.free === true &&
+        entry.rightsStatus === 'cleared' && entry.explicitOptIn !== true &&
+        entry.scaleGuide?.measurementAxes?.length)
+      .map(entry => ({
+        key:entry.key, version:entry.definition?.version, title:entry.title,
+        topics:entry.topics, testKind:entry.testKind,
+        axes:entry.scaleGuide.measurementAxes, minutes:entry.durationMinutes,
+        questions:entry.questionCount,
+        scales:entry.scaleGuide.scales.filter(scale =>
+          entry.scaleGuide.measurementAxes.includes(scale.axis)),
+      }))
+    const allAreas = [...new Set(Object.values(PROFILE_FOCUS_AREAS).flat())]
+    const groups = buildProfileScaleGroups(source, allAreas, PROFILE_AREA_AXES)
+    assert.deepEqual(new Set(groups.flatMap(group=>group.scales.map(row=>row.testKey))),
+      new Set(source.map(row=>row.key)),locale+': scored public test orphaned')
+    const goal = groups.find(group=>group.area==='goal')
+    assert.deepEqual(new Set(goal.researchAxes.map(axis=>axis.id)),
+      new Set(GOAL_RATING_KEYS.map(key=>'goal::'+key)),locale)
+    for(const scale of goal.scales) {
+      assert.ok(GOAL_SUPPORT_RULES.some(rule =>
+        rule.testKey === scale.testKey && rule.dimensionKey === scale.key &&
+        rule.axis === scale.axis && rule.facet === scale.researchAxisId.slice('goal::'.length)),
+        locale+': invented or wrong goal scale '+scale.testKey+'::'+scale.key)
+      assert.ok(source.some(test=>test.key === scale.testKey && test.version === 'v1'),
+        'missing registered guest scorer version '+scale.testKey)
+    }
+    assert.ok(goal.scales.length >= 3)
+    assert.ok(groups.every(group=>group.scales.every(row=>row.researchAxisId.startsWith(group.area+'::'))))
   }
 })
 
