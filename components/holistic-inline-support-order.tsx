@@ -182,14 +182,14 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindCh
         {searched && choice !== "consultation" && masters && (
           <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={masters}
             preferredPractitioner="" mode="inline" selectedKind={choice} initialGoal={topic}
-            compactFinder priceBudget={budget} onClearBudget={() => { setBudget("any"); setSearched(false); }}/>
+            compactFinder priceBudget={budget} onClearBudget={() => setBudget("any")}/>
         )}
         {searched && choice === "consultation" && consultations && <>
           <h4 className={styles.resultTitle}>{t.results}</h4>
           {budget !== "any" && <p className={styles.currencyNote}>{t.currencyNote}</p>}
           {!visibleConsultations.length ? <div className={styles.empty} role="status">
             <p>{t.empty}</p>
-            <button type="button" className={styles.retry} onClick={() => { setBudget("any"); setSearched(false); }}>
+            <button type="button" className={styles.retry} onClick={() => setBudget("any")}>
               {t.clear}
             </button>
             <Link href={"/" + locale + "/services"}>{t.explore}</Link>
@@ -201,9 +201,9 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindCh
               <div className={styles.offerFooter}>
                 <strong>{offer.pricingMode === "free" ||
                     (offer.pricingMode !== "contact" && offer.price === 0) ? t.free :
-                  offer.price !== null && offer.pricingMode !== "contact" ?
+                  offer.price !== null && offer.pricingMode !== "contact" && /^[A-Z]{3}$/.test(offer.currency) ?
                     (offer.pricingMode === "from" ? t.from + " " : "") +
-                    new Intl.NumberFormat(locale, { style: "currency", currency: offer.currency || "EUR" }).format(offer.price) :
+                    new Intl.NumberFormat(locale, { style: "currency", currency: offer.currency }).format(offer.price) :
                     t.onRequest}</strong>
                 <Link href={offer.href} prefetch={false}>{t.details} →</Link>
               </div>
