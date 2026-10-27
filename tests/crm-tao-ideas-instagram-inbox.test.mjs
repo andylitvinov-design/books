@@ -39,6 +39,8 @@ test('@tao.ideas has a single, narrowly approved CRM source; do not expose anoth
   assert.equal(messengerSetupStatus('instagram',production).configured,true);
   assert.equal(messengerSetupStatus('instagram',production).liveApproved,true);
   assert.equal(instagramTaoInboxApproved({...production,VERCEL_ENV:'preview'}),false);
+  assert.equal(channelTransportReady('instagram',{...production,VERCEL_ENV:'preview'}),false,
+    'preview cannot ingest @tao.ideas messages even if copied credentials are present');
   assert.equal(instagramTaoInboxApproved({...production,HH_CRM_MSG_INSTAGRAM_USERNAME:'other.brand'}),false);
   assert.equal(channelTransportReady('instagram',{...production,HH_CRM_MSG_INSTAGRAM_USERNAME:'other.brand'}),false);
   assert.equal(channelTransportReady('instagram',{...production,HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED:'false'}),false);
