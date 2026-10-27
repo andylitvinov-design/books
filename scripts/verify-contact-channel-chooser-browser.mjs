@@ -272,6 +272,15 @@ async function runEngine(name, engine) {
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
             const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
             await daoForm.waitFor({state:"visible",timeout:25000});
+            // SSR can expose visible form buttons before React hydrates their
+            // click handlers. Wait for the actual bound handler, not a fixed
+            // delay, before testing the critical no-consent CRM guard.
+            await page.waitForFunction(() => {
+              const button = document.querySelector(
+                'main[data-free-entry-landing="dao"] [data-compact-lead-form] button[data-compact-channel="whatsapp"]');
+              return Boolean(button && Object.keys(button).some(key =>
+                key.startsWith("__reactProps$") && typeof button[key]?.onClick === "function"));
+            }, null, {timeout:20000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
             assert.equal(await consent.isChecked(),false,"Dao opt-in must start unchecked");
