@@ -54,6 +54,15 @@ test("four real recording cards from published sources, not arbitrary stock samp
   assert.doesNotMatch(client, /<audio|autoplay=\{true\}|hardcodedYoutubeId|youtubeId: "[a-zA-Z0-9_-]{11}"/);
 });
 
+test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
+  assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
+  assert.ok(client.includes('theme !== "all"'));
+  assert.ok(client.includes('return themed.slice(0, 4)'));
+  assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
+  assert.ok(css.includes('.iframeWrap { position: relative'));
+  assert.ok(css.includes('aspect-ratio: 16 / 9'));
+});
+
 test("mobile mock structure and large-text 320–430 layout with no duplicate global nav", () => {
   for (const key of ["energy", "money", "relationships", "goals"]) {
     assert.ok(client.includes(key), key);
