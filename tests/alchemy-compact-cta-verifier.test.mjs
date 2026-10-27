@@ -98,7 +98,7 @@ for (const fault of ['contact-leak', 'missing-channel']) test('registered helper
 test('exact current source keeps compact consent-first runtime and the registered helper import', () => {
   const core = read('scripts/verify-app-r1.mjs'), form = read('components/alchemy-soul-lead-form.tsx')
   const runtime = read('components/contact-channel-chooser.tsx')
-  assert.match(core, /import \{ openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels \} from '.\/helpers\/contact-channel-verifier.mjs'/)
+  assert.match(core, /import \{ openRegisteredCompactPhoneChooser, assertPreparedContactChannels \} from '.\/helpers\/contact-channel-verifier.mjs'/)
   assert.equal((form.match(/compactPhone compactTrigger stayAfterSave/g) || []).length, 2)
   assert.match(form, /resetKey=\{selected\}/)
   assert.match(runtime, /if \(!consent\) \{[\s\S]*?return;/)

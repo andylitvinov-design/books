@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { registerContactChannelRequest, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -408,10 +408,12 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
-      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-        "Express rate preserved in approved draft: " + label);
+      const selectedTitle = (await choices.nth(1).innerText()).trim();
+      const {request} = await registerContactChannelRequest(target, expect, page);
+      assert.equal(request.serviceTitle, selectedTitle,
+        "Exact selected public tariff must survive registration: " + label);
+      assert.ok(request.serviceTitle.includes("€50"),
+        "Express rate preserved in the consented request before its thank-you receipt: " + label);
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
@@ -452,10 +454,14 @@ try {
     await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
-    const prepared = await assertPreparedContactChannels(chooser, expect);
-    assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-      "Business express €50 must survive messenger selection: " + label);
+    const expectedBusinessTitle = {
+      en: "Business Strategy & Archetypal Coaching",
+      ru: "Бизнес-консалтинг и архетипический коучинг",
+      es: "Consultoría de negocios y coaching arquetípico",
+    }[locale] + " · 30 min · €50";
+    const {request} = await registerContactChannelRequest(express, expect, page);
+    assert.equal(request.serviceTitle, expectedBusinessTitle,
+      "Business express service, duration and €50 must survive registration: " + label);
     await assertViewport(page, "business/" + label);
     await assertNoDevIssueOverlay(page, label);
     await page.screenshot({path: output + "/business-" + locale + "-express-request-390.png",fullPage:false,animations:"disabled"});
@@ -568,14 +574,14 @@ try {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
-            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            const selectedService = await main.locator('h1').innerText();
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
             assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
             await alternative.locator("summary").click();
             await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
             await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+            const {request} = await registerContactChannelRequest(capture, expect, page);
+            assert.equal(request.serviceTitle, selectedService, 'Prepared request must retain the selected service');
           }
         }
         await page.close();

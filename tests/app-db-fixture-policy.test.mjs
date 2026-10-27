@@ -88,9 +88,9 @@ test('fresh-service proof rejects wrong identity, wrong PostgreSQL version and a
   assert.throws(() => assertFreshIsolatedFixture(undefined, empty()), denied)
 })
 
-test('dependency closure uses only fourteen existing sources in prerequisite order', async () => {
+test('dependency closure uses only fifteen existing sources in prerequisite order', async () => {
   assert.equal(Object.isFrozen(ISOLATED_SCHEMA_DEPENDENCIES), true)
-  assert.equal(new Set(ISOLATED_SCHEMA_DEPENDENCIES).size, 14)
+  assert.equal(new Set(ISOLATED_SCHEMA_DEPENDENCIES).size, 15)
   const pathOf = part => ISOLATED_SCHEMA_DEPENDENCIES.find(path => path.includes(part))
   const before = (earlier, later) => {
     assert.ok(pathOf(earlier), earlier)
@@ -167,7 +167,7 @@ test('database CI runs pure fixture safety tests before the existing integration
   assert.match(databaseJob, /HH_APP_TEST_RUNTIME: isolated/)
 })
 
-test('read-path closure retains the original eight and exactly six unchanged schema sources', async () => {
+test('read-path closure retains the original eight and exactly seven unchanged schema sources', async () => {
   const original = [
     "supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql",
     "supabase/migrations/20261019152000_hh_public_service_enquiries_secure.sql",
@@ -202,6 +202,10 @@ test('read-path closure retains the original eight and exactly six unchanged sch
     {
       "path": "supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql",
       "sha": "d14756fdb7318d569c874cf0664202e5d9790122"
+    },
+    {
+      "path": "supabase/migrations/20261021162000_hh_practitioner_course_builder.sql",
+      "sha": "97102d50aff61a910eafb7a5b60b845ce5de9eb1"
     }
   ]
   // This is a bounded source-wiring test, not proof of live PostgreSQL behavior.
@@ -232,4 +236,44 @@ test('read-path closure retains the original eight and exactly six unchanged sch
     "   assertIsolated()\n" +
     "   await db.query(await readFile(new URL('../../'+path,import.meta.url),'utf8'))\n" +
     " }"), 'Guarded setup executes the unchanged files in explicit list order')
+})
+
+
+test('learning-journey course reads use the existing restricted schema and local Storage double', async () => {
+  const journey = await read('lib/app/learning-journey-repository.js')
+  // Read source only: never import the database repository in this pure suite.
+  assert.match(journey, /return transaction\(config, actor, async db =>/)
+  assert.match(journey, /app\.practitioner_courses c[\s\S]*as authored_draft/)
+  assert.match(journey, /app\.practitioner_courses c[\s\S]*as authored_published/)
+  assert.deepEqual([...new Set([...journey.matchAll(/\b(?:from|join)\s+(app(?:_private)?\.[a-z_]+)/g)].map(match => match[1]))].sort(), [
+    'app.accounts', 'app.assessment_results', 'app.consultation_requests',
+    'app.practitioner_courses', 'app.practitioners', 'app.service_offerings',
+    'app_private.academy_course_progress',
+  ])
+  const path = 'supabase/migrations/20261021162000_hh_practitioner_course_builder.sql'
+  assert.equal(ISOLATED_SCHEMA_DEPENDENCIES.at(-1), path)
+  const sql = await read(path)
+  assert.match(sql, /create table if not exists app\.practitioner_courses/)
+  assert.match(sql, /create table if not exists app\.practitioner_course_assets/)
+  for (const table of ['practitioner_courses', 'practitioner_course_assets'])
+    assert.ok(sql.includes('alter table app.' + table + ' enable row level security;'))
+  assert.match(sql, /revoke all on app\.practitioner_courses,app\.practitioner_course_assets from public,anon,authenticated;/)
+  assert.match(sql, /p\.trusted_auth_user_id=\(select auth\.uid\(\)\)/)
+  assert.match(sql, /and \(select app_private\.account_active\(\)\)/)
+  assert.match(sql, /values\('hh-practitioner-course-media','hh-practitioner-course-media',false,25000000,/)
+  assert.match(sql, /on conflict \(id\) do nothing;/)
+  assert.doesNotMatch(sql, /storage\.objects|create\s+(?:role|extension)/i)
+  const setup = await read('tests/helpers/app-db-setup.mjs')
+  const loop = setup.indexOf('for(const path of ISOLATED_SCHEMA_DEPENDENCIES)')
+  for (const prerequisite of [
+    'create function auth.uid()', '20261002164037_hh_app_r1_foundation.sql',
+    '20261005164140_hh_master_network_r2.sql',
+    'create schema storage;create table storage.buckets',
+  ]) assert.ok(setup.indexOf(prerequisite) >= 0 && setup.indexOf(prerequisite) < loop, prerequisite)
+  const foundation = await read('supabase/migrations/20261002164037_hh_app_r1_foundation.sql')
+  assert.match(foundation, /create table app\.practitioners\(/)
+  assert.match(foundation, /create function app_private\.account_active\(\)/)
+  assert.match(foundation, /create role hh_app_backend nologin nobypassrls/)
+  const network = await read('supabase/migrations/20261005164140_hh_master_network_r2.sql')
+  assert.match(network, /alter table app\.practitioners[\s\S]*add column if not exists status/)
 })

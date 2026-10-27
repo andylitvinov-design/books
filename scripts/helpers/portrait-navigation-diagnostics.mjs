@@ -5,6 +5,12 @@ const HMR_ACTIONS = new Set(['building', 'built', 'sync', 'serverComponentChange
 const HMR_EVENTS = new Set(['client-full-reload', 'client-reload-page', 'server-component-reload-page'])
 const ERROR_NAMES = new Set(['Error', 'TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'EvalError', 'URIError', 'AggregateError', 'DOMException', 'ChunkLoadError', 'AbortError', 'SecurityError', 'NetworkError', 'InvalidStateError'])
 const PHASES = new Set(['goto-start', 'goto-complete', 'goto-failed', 'signed-in', 'success', 'failure'])
+const PORTRAIT_READS = new Map([
+  ['/api/app/journey', 'journey'],
+  ['/api/app/express-reports', 'express-reports'],
+  ['/api/app/development-goals', 'development-goals'],
+  ['/api/free-express/claim', 'free-express-claim'],
+])
 
 // Fixed classes only. A tooling-looking error remains an error: this observer
 // never exempts it from the verifier's original pageerror gate.
@@ -16,6 +22,7 @@ function classifyPortraitError(error) {
   if (/Failed to fetch update manifest\b/.test(text)) return 'hmr_manifest_fetch_error'
   if (/__nextjs_original-stack-frames\b/.test(text)) return 'development_overlay_request_error'
   if (/Content Security Policy|violates? [^\n]*content security policy/i.test(text)) return 'content_security_policy_error'
+  if (/\bdue to access control checks\.(?:\n|$)/.test(text)) return 'access_control_error'
   if (/Frame load interrupted|navigation [^\n]*interrupted by another navigation|NS_BINDING_ABORTED/i.test(text)) return 'navigation_interrupted'
   if (/^(?:TypeError: )?Load failed(?:\n|$)/.test(text)) return 'network_load_error'
   if (error?.name === 'ChunkLoadError' || /^ChunkLoadError:/.test(text)) return 'chunk_load_error'
@@ -37,6 +44,8 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
   if (runtime !== 'isolated' || !sanitizePathname('/', origin)) throw new Error('Isolated loopback diagnostics only')
   const started = performance.now(), events = [], listeners = []
   let stopped = false, dropped = 0, observedSockets = 0
+  const reads = new WeakMap()
+  let readSequence = 0, readLimitReported = false
   const add = event => {
     if (stopped) return
     if (events.length >= 200) { dropped++; return }
@@ -68,9 +77,39 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     if (!match) return
     add({ type, asset: match[1] === 'json' ? 'manifest' : 'chunk', ...extra })
   }
+  // Only the four read effects mounted by Profile. Request identity is local
+  // and monotonic, not a browser, account or server ID. Missing request events
+  // remain missing evidence; an access-control label is not an abort verdict.
+  const startRead = request => {
+    if (request.isNavigationRequest() || request.frame() !== page.mainFrame() || reads.has(request)) return
+    const raw = request.url()
+    if (typeof raw !== 'string' || raw.length > 16384) return
+    const url = new URL(raw), base = new URL(origin)
+    if (url.origin !== base.origin || url.username || url.password) return
+    const endpoint = PORTRAIT_READS.get(url.pathname)
+    if (!endpoint || request.method() !== 'GET') return
+    if (readSequence >= 64) {
+      if (!readLimitReported) { readLimitReported = true; add({ type: 'portrait-read-limit' }) }
+      return
+    }
+    const type = request.resourceType()
+    const read = { requestId: ++readSequence, endpoint, resourceType: type === 'fetch' || type === 'xhr' ? type : 'other', responded: false, terminal: false }
+    reads.set(request, read)
+    add({ type: 'portrait-read-request', requestId: read.requestId, endpoint, method: 'GET', resourceType: read.resourceType })
+  }
+  const updateRead = (type, request, extra = {}) => {
+    const read = reads.get(request)
+    if (!read || read.terminal) return
+    if (type === 'portrait-read-response') {
+      if (read.responded) return
+      read.responded = true
+    } else read.terminal = true
+    add({ type, requestId: read.requestId, endpoint: read.endpoint, ...extra })
+  }
   listen('request', request => {
     navigationRequest('navigation-request', request)
     hotUpdateRequest('hmr-asset-request', request)
+    startRead(request)
   })
   listen('response', response => {
     const status = response.status()
@@ -79,11 +118,14 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     }
     navigationRequest('navigation-response', response.request(), extra)
     hotUpdateRequest('hmr-asset-response', response.request(), extra)
+    updateRead('portrait-read-response', response.request(), extra)
   })
+  listen('requestfinished', request => updateRead('portrait-read-finished', request))
   listen('requestfailed', request => {
     const extra = { category: classifyPortraitError(request.failure()?.errorText) }
     navigationRequest('navigation-failed', request, extra)
     hotUpdateRequest('hmr-asset-failed', request, extra)
+    updateRead('portrait-read-failed', request, extra)
   })
   listen('framenavigated', frame => {
     if (frame !== page.mainFrame()) return

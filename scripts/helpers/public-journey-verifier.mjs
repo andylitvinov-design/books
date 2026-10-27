@@ -30,8 +30,10 @@ const reviewedPublicPrefetchPaths = new Set([
     '/' + locale + '/academy/reiki/yggdrasil/free-initiation',
   ]),
 ])
-export function publicJourneyRequestDecision({ url, method, body = '', navigation = false,
-  resourceType, prefetch, prefetchSignals }, origin, sensitive = [], fixtures = {}) {
+const reviewedAdvancedRunesPath = '/academy/reiki-yggdrasil/source/advanced-runes.png'
+export function publicJourneyRequestDecision(request, origin, sensitive = [], fixtures = {}) {
+  const { url, method, body = '', navigation = false, resourceType, prefetch, prefetchSignals,
+    hasAuthHeaders, hasPrefetchHeaders } = request
   const contents = decoded(url) + '\n' + decoded(body)
   if (sensitive.some(value => value && contents.includes(value))) return 'private-text'
   let target
@@ -47,6 +49,14 @@ export function publicJourneyRequestDecision({ url, method, body = '', navigatio
   // wordmark/footer Links or root metadata. This is not an API/provider bypass.
   const plainLocalRead = method === 'GET' && navigation === false && body === '' &&
     !target.username && !target.password && !target.hash
+  // One verified repository PNG, opted into only by the Business verifier.
+  // Exact raw URL prevents query/fragment/encoding/normalization variants.
+  if (fixtures.reviewedAdvancedRunesImage === true && plainLocalRead &&
+      request.body === '' && request.navigation === false &&
+      url === origin + reviewedAdvancedRunesPath && target.search === '' &&
+      resourceType === 'image' && hasAuthHeaders === false && hasPrefetchHeaders === false && prefetch === false &&
+      prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
+      prefetchSignals?.rsc === false) return 'allow'
   if (plainLocalRead && target.pathname === '/holistic-house-app.webmanifest' &&
       target.search === '' && resourceType === 'other' && prefetch === false &&
       prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
@@ -102,12 +112,27 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
   let path = '', target
   try { target = new URL(request.url); path = target.pathname } catch {}
   let sourceId = 'unclassified', routeShape = 'unclassified'
+  let imagePathShape = 'unclassified', imagePathDepth = 'unclassified'
   if (target && !target.username && !target.password && !target.hash) {
     if (origin && target.origin === origin) {
       sourceId = diagnosticSourcePaths.get(path) || diagnosticGeneratedIconPaths.get(path) || 'unclassified'
       // This dynamic route may proxy upstream. Recognize structure only: never
       // print its parameters, call it a safe source, or permit the request.
       if (/^\/media\/[^/]+\/[^/]+$/.test(path)) routeShape = 'media-two-segment-route'
+      // Passive syntax only, not a source identity or request permission. Never
+      // decode, print, hash or retain any unknown path segment or query value.
+      if (request.resourceType === 'image') {
+        if (/[^\x21-\x7e]|%/.test(path)) imagePathShape = 'nonliteral-path'
+        else if (path.includes('//')) imagePathShape = 'empty-segment-path'
+        else {
+          imagePathDepth = path === '/' ? 'root' : /^\/[^/]+\/?$/.test(path) ? 'one' :
+            /^\/[^/]+\/[^/]+\/?$/.test(path) ? 'two' : 'three-or-more'
+          const leaf = path.slice(path.lastIndexOf('/') + 1)
+          imagePathShape = path === '/' ? 'root' : path.endsWith('/') ? 'trailing-slash' :
+            /\.(?:png|jpe?g|webp|avif|svg|ico|gif|bmp|tiff?|apng|heic|jxl)$/i.test(leaf) ? 'image-suffix' :
+            leaf.includes('.') ? 'other-dot-suffix' : 'extensionless'
+        }
+      }
     }
     else if (target.href === diagnosticSunPoster) sourceId = 'public-english-sun-poster'
   }
@@ -123,6 +148,8 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
     path: decision === 'private-text' ? '[redacted]' : safeDiagnosticPaths.has(path) ? path : '[redacted]',
     sourceId: decision === 'private-text' ? 'redacted' : sourceId,
     routeShape: decision === 'private-text' ? 'redacted' : routeShape,
+    imagePathShape: decision === 'private-text' ? 'redacted' : imagePathShape,
+    imagePathDepth: decision === 'private-text' ? 'redacted' : imagePathDepth,
     queryShape: decision === 'private-text' ? 'redacted' : queryShape,
     prefetchSignals: {
       purposePrefetch: request.prefetchSignals?.purposePrefetch === true,
@@ -144,6 +171,20 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
       prefetch: headers.purpose === 'prefetch' || headers['next-router-prefetch'] === '1',
       prefetchSignals: { purposePrefetch: headers.purpose === 'prefetch',
         nextRouterPrefetch: headers['next-router-prefetch'] === '1', rsc: headers.rsc === '1' } }
+    if (fixtures.reviewedAdvancedRunesImage === true && info.url === origin + reviewedAdvancedRunesPath) {
+      // headers() can omit cookies. Read complete headers only for this exact
+      // opted-in public asset; retain no values and fail closed on missing data.
+      info.hasAuthHeaders = true
+      info.hasPrefetchHeaders = true
+      try {
+        const completeHeaders = await request.allHeaders?.()
+        if (completeHeaders && typeof completeHeaders === 'object' && !Array.isArray(completeHeaders)) {
+          const names = Object.keys(completeHeaders).map(name => name.toLowerCase())
+          info.hasAuthHeaders = names.some(name => ['authorization', 'proxy-authorization', 'cookie'].includes(name))
+          info.hasPrefetchHeaders = names.some(name => ['purpose', 'sec-purpose', 'next-router-prefetch', 'rsc'].includes(name))
+        }
+      } catch {}
+    }
     const decision = publicJourneyRequestDecision(info, origin, sensitive, fixtures)
     if (decision === 'allow') return route.continue()
     if (decision === 'synthetic-anonymous-talismans') {

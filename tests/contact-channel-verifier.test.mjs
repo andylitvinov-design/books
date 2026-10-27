@@ -259,14 +259,14 @@ test('release retains explicit paid selection, free internal action, reset, priv
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {
   const app = read('scripts/verify-app-r1.mjs');
   assert.match(app, /data-sitewide-capture="core-service"/);
-  assert.match(app, /openContactChannelChooser\(capture,expect\)/);
-  assert.match(app, /message.includes\(names\[locale\]\)/);
-  assert.match(app, /openContactChannelChooser\(ready,expect\)/);
+  assert.match(app, /verifyHypnotherapyRequest\(servicePage,expect,\{origin,locale,channel:/);
+  assert.match(read('scripts/helpers/hypnotherapy-request-verifier.mjs'), /assert.equal\(body.serviceTitle, hypnotherapyService\(locale\)\)/);
+  assert.match(app, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
   assert.match(app, /const order=promo.locator\('a\[data-contact-channel="whatsapp"\]'\)/);
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openRegisteredContactChannelChooser\(capture, expect, page\)/);
+  assert.match(production, /registerContactChannelRequest\(capture, expect, page\)/);
   assert.match(production, /Prepared request must retain the selected service/);
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
@@ -350,40 +350,46 @@ test('actual core JSX has one footer section with one chooser and the matching s
   }
 });
 
-function assertFreeReviewCallerContract(source, compact = false) {
+function assertFreeReviewCallerContract(source, compact = false, helper = '') {
   if (!compact) {
     assert.ok(source.includes(`a[href="/' + locale + '/coaching/intake?topic=personal"]`));
     assert.match(source, /preview\.locator\("form,textarea"\)\.count\(\), 0/);
     assert.match(source, /The private answers are entered only in the protected questionnaire/);
     return;
   }
-  assert.match(source, compact ? /openContactChannelChooser\(ready,expect\)/ : /openContactChannelChooser\(ready, expect\)/);
-  assert.match(source, compact ? /assertPreparedContactChannels\(readyChooser,expect\)/ : /assertPreparedContactChannels\(readyChooser, expect\)/);
-  for (const channel of ['whatsapp', 'telegram']) assert.ok(source.includes('!' + channel + 'Text.includes(marker)'), channel + ' must reject private answer markers');
-  assert.match(source, /decodedPageUrl\.includes\(marker\)/);
-  assert.doesNotMatch(source, /ready\.getByRole\('button'\)\.click/);
-  if (compact) {
-    assert.match(source, /name:\s*copy\.copyButton,\s*exact:\s*true/);
-    assert.match(source, /Analytics event metadata never contains answers/);
-    assert.match(source, /Temporary analytics hold must emit no acquisition events/);
-  }
+  assert.match(source, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
+  assert.match(source, /assertFreeReviewLanding\(publicPage,expect,locale\)/);
+  assert.match(helper, /assertFreeReviewPreparedUrls\(urls, \[\.\.\.markers, t\.focus\]\)/);
+  assert.match(helper, /!decodeURIComponent\(url\.href\)\.includes\(marker\)/);
+  assert.match(helper, /!decodeURIComponent\(page\.url\(\)\)\.includes\(marker\)/);
+  assert.match(helper, /!JSON\.stringify\(evidence\)\.includes\(marker\)/);
+  assert.match(helper, /assert\.deepEqual\(evidence\.events, \[\], 'The temporary analytics hold emits no acquisition events'\)/);
+  assert.match(helper, /\/coaching\/intake\?topic=personal/);
+  assert.match(helper, /intake\.locator\('form, textarea, input\[type="file"\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(helper, /assert\.equal\(guard\.submissions\.length, 0, 'A phone without explicit consent never submits'\)/);
 }
 
-test('free-review callers preserve legacy copy privacy and current protected questionnaire entry', () => {
+test('free-review callers preserve current private questionnaire entry, consented synthetic receipt and external-answer privacy', () => {
+  const helper = read('scripts/helpers/free-review-private-handoff-verifier.mjs');
   for (const [path, compact] of [['scripts/verify-app-r1.mjs', true], ['scripts/verify-public-services-production.mjs', false]]) {
     const source = read(path);
-    assertFreeReviewCallerContract(source, compact);
+    assertFreeReviewCallerContract(source, compact, helper);
     const mutations = compact ? [
-      source.replace(/openContactChannelChooser\(ready,\s*expect\)/, 'ready'),
-      source.replace('!telegramText.includes(marker)', 'true'),
-      source.replace(/name:\s*copy\.copyButton,\s*exact:\s*true/g, ''),
+      [source.replace('verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,', 'retiredFlow(publicPage,expect,{origin,locale,'), helper],
+      [source.replace('assertFreeReviewLanding(publicPage,expect,locale)', 'retiredLanding(publicPage,expect,locale)'), helper],
+      [source, helper.replace('assertFreeReviewPreparedUrls(urls, [...markers, t.focus])', 'assertFreeReviewPreparedUrls(urls, [])')],
+      [source, helper.replace('!decodeURIComponent(url.href).includes(marker)', 'true')],
+      [source, helper.replace('!JSON.stringify(evidence).includes(marker)', 'true')],
+      [source, helper.replace("assert.deepEqual(evidence.events, [], 'The temporary analytics hold emits no acquisition events')", 'void evidence.events')],
+      [source, helper.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private')],
+      [source, helper.replace("assert.equal(guard.submissions.length, 0, 'A phone without explicit consent never submits')", 'void guard.submissions')],
     ] : [
-      source.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private'),
-      source.replace('preview.locator("form,textarea").count(), 0', 'preview.locator("form,textarea").count(), 1'),
+      [source.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private'), helper],
+      [source.replace('preview.locator("form,textarea").count(), 0', 'preview.locator("form,textarea").count(), 1'), helper],
     ];
-    for (const changed of mutations) {
-      assert.notEqual(changed, source, 'Negative control must alter the actual caller');
-      assert.throws(() => assertFreeReviewCallerContract(changed, compact), path);
+    for (const [changed, changedHelper] of mutations) {
+      assert.ok(changed !== source || changedHelper !== helper, 'Negative control must alter the actual caller/helper');
+      assert.throws(() => assertFreeReviewCallerContract(changed, compact, changedHelper), path);
     }
   }
   const intake = read('components/free-drawing-intake.tsx');

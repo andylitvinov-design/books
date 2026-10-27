@@ -67,6 +67,9 @@ export const ISOLATED_SCHEMA_DEPENDENCIES = Object.freeze([
   'supabase/migrations/20261025173000_hh_practitioner_express_reports.sql',
   'supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',
   'supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',
+  // Learning-journey authored-course EXISTS reads; prerequisites already precede this loop.
+  // Assets/private bucket remain the unchanged SQL's local Storage double only.
+  'supabase/migrations/20261021162000_hh_practitioner_course_builder.sql',
 ])
 
 export function monitoringRegistryDiagnostic(definition) {

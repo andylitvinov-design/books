@@ -51,6 +51,8 @@ jobs:
       - name: Broad unit tests (fatal)
         id: unit_tests
         shell: bash
+        env:
+          HH_TEST_REDIS_CONTAINER: ${{ job.services.redis.id }}
         run: |
           set -euo pipefail
           (umask 077; mkdir -p "$RUNNER_TEMP/ia-unit-local"; : > "$RUNNER_TEMP/ia-unit-local/unit.log")

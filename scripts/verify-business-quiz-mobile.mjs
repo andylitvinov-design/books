@@ -39,7 +39,7 @@ async function verify(browserType,locale,width){
     viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,reducedMotion:'reduce',
     serviceWorkers:'block',
   })
-  const fence=await installPublicJourneyFence(context,origin)
+  const fence=await installPublicJourneyFence(context,origin,[],{reviewedAdvancedRunesImage:true})
   const page=await context.newPage()
   const errors=[]
   page.on('pageerror',err=>errors.push(err.message))

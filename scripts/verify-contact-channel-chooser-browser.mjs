@@ -342,25 +342,51 @@ async function runEngine(name, engine) {
             await daoForm.waitFor({state:"visible",timeout:25000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
+            assert.equal(await consent.isChecked(),false,"Dao consent must start unchecked");
+            const submit = daoForm.locator('button[data-compact-channel="whatsapp"]');
+            assert.equal(await daoForm.locator('button[data-compact-channel]').count(),2,
+              "Dao retains both authored contact channels");
+            assert.equal(await submit.getAttribute("type"),"button");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
-            // The network request is intercepted above; synthetic consent
-            // validates the CRM handoff without touching a real lead/account.
+            // CompactLeadCapture validates on the channel click, rather than
+            // disabling a retired submit button. Neither invalid contact nor
+            // missing consent may create a request or saved receipt.
             const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
-            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
+            const contact = daoForm.locator('input[name="contact"]');
+            const saved = page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]');
+            const validation = {
+              en: ["Enter a valid email or an international phone number starting with +.","Please agree to a personal reply before continuing."],
+              ru: ["Укажите email или номер телефона с международным кодом +.","Подтвердите согласие на личный ответ по заявке."],
+              es: ["Introduce un correo válido o un teléfono internacional que empiece por +.","Confirma que aceptas recibir una respuesta personal."],
+            }[locale];
+            await contact.fill("not-a-contact");
+            await submit.click();
+            const error = daoForm.locator('[role="alert"]');
+            await error.waitFor({state:"visible"});
+            assert.equal(await error.innerText(),validation[0]);
+            assert.equal(submissions.length,previous,"Invalid contact must never save a Dao request");
+            assert.equal(await saved.count(),0,"No receipt before a consented save");
+            await contact.fill("qa-browser@example.test");
+            await submit.click();
+            await error.waitFor({state:"visible"});
+            assert.equal(await error.innerText(),validation[1]);
+            assert.equal(submissions.length,previous,"Contact cannot bypass consent");
+            assert.equal(await consent.isChecked(),false);
+            assert.equal(await saved.count(),0,"No receipt without consent");
+            // The first-party POST is still intercepted by the context fence;
+            // the existing inert popup never visits or sends to a provider.
             await consent.check();
             await submit.click();
-            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            await saved.waitFor({state:"visible",timeout:10000});
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
             assert.equal(enquiry.locale,locale);
             assert.equal(enquiry.contactConsent,true);
-            assert.equal(enquiry.contact.email,"qa-browser@example.test");
+            assert.deepEqual(enquiry.contact,{displayName:"",email:"qa-browser@example.test",phone:""});
+            assert.equal(enquiry.description,"Preferred reply channel: WhatsApp");
             assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
+            assert.equal(enquiry.website,"");
             assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
           }
           if (name === "chromium" && width === 390 && locale === "en") {

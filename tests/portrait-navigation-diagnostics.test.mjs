@@ -320,3 +320,145 @@ test('hot-update diagnostics retain the total event cap and own-listener cleanup
   page.emit('response', { request: () => asset, status: () => 404 })
   assert.deepEqual(probe.stop(), result)
 })
+
+const readPaths = ['/api/app/journey', '/api/app/express-reports', '/api/app/development-goals', '/api/free-express/claim']
+const readAliases = ['journey', 'express-reports', 'development-goals', 'free-express-claim']
+function readRequest(page, path = readPaths[0], overrides = {}) {
+  const forbidden = () => { throw new Error('private data must not be inspected') }
+  return {
+    url: () => origin + path, frame: () => page.mainFrame(), isNavigationRequest: () => false,
+    method: () => 'GET', resourceType: () => 'fetch', failure: () => ({ errorText: 'ERR_ABORTED secret' }),
+    headers: forbidden, allHeaders: forbidden, postData: forbidden, postDataJSON: forbidden,
+    ...overrides,
+  }
+}
+const withoutTime = events => events.map(({ atMs, ...event }) => event)
+
+test('four read aliases preserve per-request identity, headers and distinct terminal outcomes', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const requests = [...readPaths, ...readPaths].map(path => readRequest(page, path + '?account=secret#secret'))
+  requests.forEach(request => page.emit('request', request))
+  for (let i = 0; i < 4; i++) {
+    page.emit('response', { request: () => requests[i], status: () => 200, body: () => { throw Error('forbidden') } })
+    page.emit('requestfinished', requests[i])
+  }
+  for (const request of requests.slice(4)) page.emit('requestfailed', request)
+  const events = withoutTime(probe.stop().events)
+  assert.deepEqual(events.slice(0, 8), [...readAliases, ...readAliases].map((endpoint, i) => ({
+    type: 'portrait-read-request', requestId: i + 1, endpoint, method: 'GET', resourceType: 'fetch',
+  })))
+  assert.deepEqual(events.slice(8, 16), readAliases.flatMap((endpoint, i) => [
+    { type: 'portrait-read-response', requestId: i + 1, endpoint, status: 200 },
+    { type: 'portrait-read-finished', requestId: i + 1, endpoint },
+  ]))
+  assert.deepEqual(events.slice(16), readAliases.map((endpoint, i) => ({
+    type: 'portrait-read-failed', requestId: i + 5, endpoint, category: 'request_aborted',
+  })))
+  assert.doesNotMatch(JSON.stringify(events), /secret|account|token|https?:|headers|body|query|fragment/)
+})
+
+test('read lifecycle distinguishes successful headers from body interruption and server failures', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const interrupted = readRequest(page), denied = readRequest(page, readPaths[1])
+  page.emit('request', interrupted)
+  page.emit('response', { request: () => interrupted, status: () => 200 })
+  page.emit('requestfailed', interrupted)
+  page.emit('request', denied)
+  page.emit('response', { request: () => denied, status: () => 503 })
+  page.emit('requestfinished', denied)
+  assert.deepEqual(withoutTime(probe.stop().events).map(event => [event.type, event.requestId, event.status ?? event.category ?? null]), [
+    ['portrait-read-request', 1, null], ['portrait-read-response', 1, 200], ['portrait-read-failed', 1, 'request_aborted'],
+    ['portrait-read-request', 2, null], ['portrait-read-response', 2, 503], ['portrait-read-finished', 2, null],
+  ])
+})
+
+test('read scope rejects other origins, protocols, ports, credentials, frames, methods and paths', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const invalid = [
+    ...['https://127.0.0.1:3100/api/app/journey', 'http://external.invalid/api/app/journey',
+      'http://127.0.0.1:54329/api/app/journey', 'http://secret@127.0.0.1:3100/api/app/journey',
+      'http://127.0.0.1:3100/api/app/journey/secret', 'http://127.0.0.1:3100/api/app/%6aourney',
+      origin + '/api/app/journey?' + 's'.repeat(16384), origin + '/api/app/bootstrap',
+      origin + '/api/free-express/claim/secret'].map(url => ({ url: () => url })),
+    { frame: () => ({}) }, { method: () => 'POST' }, { method: () => 'DELETE' },
+  ]
+  for (const override of invalid) {
+    const request = readRequest(page, readPaths[0], override)
+    page.emit('request', request)
+    page.emit('response', { request: () => request, status: () => 200 })
+    page.emit('requestfinished', request); page.emit('requestfailed', request)
+  }
+  const navigation = readRequest(page, readPaths[0], { isNavigationRequest: () => true, redirectedFrom: () => null })
+  page.emit('request', navigation)
+  assert.ok(probe.stop().events.every(event => !event.type.startsWith('portrait-read')))
+  assert.equal(probe.stop().events.filter(event => event.type === 'diagnostic-unavailable').length, 0)
+})
+
+test('read identities do not duplicate starts, responses, terminals or invent missed requests', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const request = readRequest(page), missed = readRequest(page, readPaths[1])
+  const response = { request: () => request, status: () => 200 }
+  page.emit('response', { request: () => missed, status: () => 200 }); page.emit('requestfinished', missed)
+  page.emit('request', request); page.emit('request', request)
+  page.emit('response', response); page.emit('response', response)
+  page.emit('requestfinished', request); page.emit('requestfailed', request); page.emit('requestfinished', request)
+  page.emit('response', response); page.emit('request', request)
+  assert.deepEqual(probe.stop().events.map(event => event.type), ['portrait-read-request', 'portrait-read-response', 'portrait-read-finished'])
+})
+
+test('read resource and response values stay fixed or bounded, never copied from arbitrary metadata', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  for (const [i, resourceType] of ['fetch', 'xhr', 'secret'].entries()) {
+    const request = readRequest(page, readPaths[i], { resourceType: () => resourceType })
+    page.emit('request', request)
+    page.emit('response', { request: () => request, status: () => [0, 600, 'secret'][i] })
+  }
+  const events = probe.stop().events
+  assert.deepEqual(events.filter(event => event.type === 'portrait-read-request').map(event => event.resourceType), ['fetch', 'xhr', 'other'])
+  assert.deepEqual(events.filter(event => event.type === 'portrait-read-response').map(event => event.status), [null, null, null])
+  assert.doesNotMatch(JSON.stringify(events), /secret/)
+})
+
+test('read request budget stays finite and cleanup preserves original listeners', options, () => {
+  const { page } = fixture(), original = []
+  page.on('requestfinished', request => original.push(request))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const requests = Array.from({ length: 80 }, () => readRequest(page))
+  requests.forEach(request => page.emit('request', request))
+  requests.forEach(request => page.emit('requestfinished', request))
+  const result = probe.stop()
+  assert.deepEqual(result.events.filter(event => event.type === 'portrait-read-request').map(event => event.requestId), Array.from({ length: 64 }, (_, i) => i + 1))
+  assert.equal(result.events.filter(event => event.type === 'portrait-read-limit').length, 1)
+  assert.equal(result.events.filter(event => event.type === 'portrait-read-finished').length, 64)
+  assert.equal(result.dropped, 0)
+  assert.deepEqual(page.eventNames(), ['requestfinished']); assert.equal(original.length, 80)
+  page.emit('requestfinished', requests[0]); assert.equal(original.length, 81)
+  assert.deepEqual(probe.stop(), result)
+})
+
+test('read events share the unchanged 200-event cap rather than creating an unbounded ledger', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  for (let i = 0; i < 195; i++) page.emit('load')
+  for (let i = 0; i < 4; i++) {
+    const request = readRequest(page)
+    page.emit('request', request); page.emit('response', { request: () => request, status: () => 200 }); page.emit('requestfinished', request)
+  }
+  const result = probe.stop()
+  assert.equal(result.events.length, 200); assert.equal(result.dropped, 7)
+  assert.deepEqual(page.eventNames(), [])
+})
+
+test('access-control text remains a failure class, not an inferred cancellation or an ignored page error', options, () => {
+  const { page } = fixture(), original = []
+  page.on('pageerror', error => original.push(error))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const error = { name: 'Fetch API cannot load http', message: '/127.0.0.1:3100/api/app/journey?secret due to access control checks.', stack: 'secret' }
+  page.emit('pageerror', error)
+  const request = readRequest(page, readPaths[0], { failure: () => ({ errorText: 'secret due to access control checks.' }) })
+  page.emit('request', request); page.emit('requestfailed', request)
+  const result = probe.stop()
+  assert.equal(result.events[0].category, 'access_control_error'); assert.equal(result.events[0].errorName, 'Other')
+  assert.equal(result.events.at(-1).category, 'access_control_error')
+  assert.deepEqual(original, [error]); assert.deepEqual(page.eventNames(), ['pageerror'])
+  assert.doesNotMatch(JSON.stringify(result), /secret|http|stack|ignored|waived|benign|request_aborted/)
+})
