@@ -465,7 +465,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
   const [theme, setTheme] = useState<Theme>("all");
-  const [meditationCategory, setMeditationCategory] = useState<MeditationCategory>("energy");
+  // Until a category is chosen, follow the visitor’s existing lowest check-in.
+  const [meditationCategoryOverride, setMeditationCategoryOverride] = useState<MeditationCategory | null>(null);
   const [allMeditationCategoriesOpen, setAllMeditationCategoriesOpen] = useState(false);
   const meditationCategoryRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -502,6 +503,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
     focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
+  const meditationCategory: MeditationCategory = meditationCategoryOverride ?? (
+    focus === "money" ? "money" : focus === "relationships" ? "relationships"
+      : focus === "goals" ? "meaning" : "energy");
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, videos, locale]);
@@ -600,7 +604,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
-    setTheme("all"); setProgram("all"); setMaster("all"); setMeditationCategory("all");
+    setTheme("all"); setProgram("all"); setMaster("all"); setMeditationCategoryOverride("all");
     setSelectedId(null); setPlaying(false);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
@@ -627,7 +631,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const chooseMeditationCategory = (value: MeditationCategory) => {
-    setMeditationCategory(value);
+    setMeditationCategoryOverride(value);
     // A new primary direction must not inherit stale Programme/Master filters.
     setTheme("all"); setProgram("all"); setMaster("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
   };
@@ -686,7 +690,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const showJourneyVideo = () => {
     if (!journeyVideoAllowed) { openGoalFilter(); return; }
     setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
-    setTheme("all"); setProgram("all"); setMaster("all");
+    setTheme("all"); setProgram("all"); setMaster("all"); setMeditationCategoryOverride("all");
     setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
     scrollToSupport("support-meditation-player");
   };
