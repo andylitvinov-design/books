@@ -34,7 +34,7 @@ test("original screenshot: three zones in one compact row and 4 prominent 2x2 ac
   assert.match(client, /choices\.filter\(item => item\.id !== "pump"\)/);
   assert.match(client, /data-support-tool="pump"/);
   assert.match(client, /className=\{styles\.toolShortcuts\}/);
-  assert.match(client, /\/masters/);
+  assert.match(client, /data-support-tool="masters"/);
   assert.match(client, /className=\{styles\.recommendShort\}/);
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /URL\.createObjectURL/);
@@ -80,4 +80,23 @@ test("progress is derived from local opens and four self-ratings, never fake str
   assert.match(client, /className=\{styles\.progressStarted\}/);
   assert.match(client, /className=\{styles\.progressAverage\}/);
   assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);
+});
+
+
+test("approved screenshot uses scenic video first; every category has matching thumbnail navigation", () => {
+  const masters = read("components/holistic-support-master-gallery.tsx");
+  const talisman = read("components/holistic-support-talisman-viewer.tsx");
+  const talismanCss = read("components/holistic-support-talisman-viewer.module.css");
+  assert.ok(client.indexOf('data-support-player data-playing=') <
+    client.indexOf('id="support-meditation-gallery"'),
+    "big original meditation player must precede thumbnails");
+  assert.match(client, /data-support-tool="masters"/);
+  assert.match(client, /HolisticSupportMasterGallery locale=\{locale\} kind=\{choice\}/);
+  assert.match(client, /HolisticSupportMasterGallery locale=\{locale\} kind="consultation"/);
+  assert.match(masters, /data-support-master-hero/);
+  assert.match(masters, /data-support-master-rail/);
+  assert.match(masters, /data-support-master-request/);
+  assert.match(masters, /data-support-offer-request/);
+  assert.match(talisman, /data-support-talisman-rail/);
+  assert.match(talismanCss, /\.rail\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 });

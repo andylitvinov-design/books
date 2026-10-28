@@ -5,6 +5,11 @@ on:
     paths:
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/holistic-support-master-gallery.tsx'
+      - 'components/holistic-support-master-gallery.module.css'
+      - 'components/holistic-support-talisman-viewer.tsx'
+      - 'components/holistic-support-talisman-viewer.module.css'
+      - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
@@ -13,6 +18,11 @@ on:
     paths:
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/holistic-support-master-gallery.tsx'
+      - 'components/holistic-support-master-gallery.module.css'
+      - 'components/holistic-support-talisman-viewer.tsx'
+      - 'components/holistic-support-talisman-viewer.module.css'
+      - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
@@ -43,7 +53,7 @@ jobs:
       - name: Test source contracts and TSX
         run: |
           node --test tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs
-          npx eslint components/holistic-support-mobile.tsx scripts/verify-holistic-support-mock-fidelity.mjs
+          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |
