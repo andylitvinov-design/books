@@ -628,9 +628,12 @@
   .reviewSection{min-height:0;padding:12px 9px 15px}
 }
 
-/* Spanish has longer request labels: preserve the photo and 44px tap targets
-   on the shortest 320x568 iPhone viewport without clipping the form. */
+/* Spanish and Russian request labels need a small-height 320px viewport
+   treatment: keep the full CRM form, illustration and 44px touch targets.
+   CI 2026-10-27 measured RU request 492px against a 488px acceptance cap. */
 @media(max-width:350px) and (max-height:650px){
- .page[lang="es"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
- .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
+ .page[lang="es"] .requestSection,
+ .page[lang="ru"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
+ .page[lang="es"] .requestText>.panelPhoto,
+ .page[lang="ru"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }

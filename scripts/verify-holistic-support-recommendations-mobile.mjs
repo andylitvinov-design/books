@@ -23,12 +23,46 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
+          // Public synthetic fixtures must not be intercepted by an installed service worker.
+          serviceWorkers: "block",
         });
         const errors = [];
+        const interceptedDirectories = [];
+        const directoryHttpStatuses = [];
+        const blockedApiWrites = [];
         page.on("pageerror", err => errors.push(err.message));
+        page.on("response", response => {
+          if (new URL(response.url()).pathname === "/api/public/remote-energy-support-masters")
+            directoryHttpStatuses.push(response.status());
+        });
+        // Never let synthetic gallery or unopened order dialogs send CRM/payment
+        // mutations. Record only method/path (no bodies or personal data).
+        // The narrower public-directory fixture below is registered last, so
+        // it retains priority over this fail-closed guard for GET requests.
+        await page.route("**/api/**", async route => {
+          const request = route.request();
+          const url = new URL(request.url());
+          if (url.origin === origin && !["GET", "HEAD"].includes(request.method())) {
+            blockedApiWrites.push({ method: request.method(), path: url.pathname });
+            await route.abort("blockedbyclient");
+            return;
+          }
+          await route.fallback();
+        });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
         await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+          // The last-registered directory fixture has priority over the broad
+          // /api/** guard. Never return a synthetic success for a non-GET write.
+          if (route.request().method() !== "GET") {
+            blockedApiWrites.push({
+              method: route.request().method(),
+              path: new URL(route.request().url()).pathname,
+            });
+            await route.abort("blockedbyclient");
+            return;
+          }
           const kind = new URL(route.request().url()).searchParams.get("kind");
+          interceptedDirectories.push(kind === "consultation" ? "consultation" : "masters");
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
@@ -47,14 +81,16 @@ for (const engine of [chromium, webkit]) {
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
-          assert.equal(await launch.count(), 1, label + " one left-side picker");
+          const launch = root.locator('section:has([data-support-photo]) [data-support-recommendations]');
+          assert.equal(await launch.count(), 1, label + " one recommendation action alongside photo");
+          assert.equal(await assessment.locator("[data-support-goal-filter-trigger]").count(), 1,
+            label + " separate goal filter remains below the self-score scales");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four editable self-scores");
-          assert.equal(await root.locator(".focusSelector").count(), 0,
-            label + " no old focus control");
+          assert.equal(await root.locator("[data-support-active-focus]").count(), 1,
+            label + " one non-editable focus summary; no duplicate focus picker");
           assert.equal(await root.locator('[data-support-detailed-analysis]').count(), 0,
             label + " old left Tests CTA replaced");
           assert.equal(await gallery.locator("[data-support-video]").count(), 4,
@@ -181,6 +217,8 @@ for (const engine of [chromium, webkit]) {
           await root.locator('[data-support-tool="masters"]').click();
           const masterViewer = root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]');
           await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          assert.ok(interceptedDirectories.includes("masters"),
+            label + " master gallery must use intercepted synthetic directory, not live API");
           assert.equal(await masterViewer.locator('[data-support-master-thumb]').count(),2,
             label + " published fixture masters selectable under large profile");
           await masterViewer.locator('[data-support-master-thumb="qa-energy-two"]').click();
@@ -196,6 +234,8 @@ for (const engine of [chromium, webkit]) {
           await root.locator('[data-support-tool="consultation"]').click();
           const consultViewer=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
           await consultViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          assert.ok(interceptedDirectories.includes("consultation"),
+            label + " consultation gallery must use intercepted synthetic directory, not live API");
           assert.equal(await consultViewer.locator('[data-support-master-thumb]').count(),2,
             label+" two published service offerings available in miniature gallery");
           assert.equal(await consultViewer.locator('[data-support-offer-request]').count(),1,
@@ -216,6 +256,11 @@ for (const engine of [chromium, webkit]) {
             await photo.locator('img[class*="photoPreview"]').waitFor({ state:"visible" });
             await page.screenshot({ path: output + "/" + engine.name() + "-" + locale + "-390.png" });
           }
+          assert.ok(directoryHttpStatuses.length >= 2 && directoryHttpStatuses.every(status => status === 200),
+            label + " all public directory responses are synthetic HTTP 200: " + JSON.stringify(directoryHttpStatuses));
+          assert.deepEqual(blockedApiWrites, [],
+            label + " no CRM/payment/API writes before a consented enquiry: " +
+              JSON.stringify(blockedApiWrites));
           assert.deepEqual(errors, [], label + " no JS exceptions");
           evidence.push({ locale, width, engine:engine.name(), firstId, fourVideos:true,
             highestNeed:"money=1", railAboveHero:true, noAutoplay:true, quoteNotSubmitted:true });

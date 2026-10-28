@@ -9,7 +9,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   public-services:
-    runs-on: ubuntu-latest
+    # Pin Ubuntu 24.04 for stable Playwright Chromium/WebKit dependencies.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CI: 'true'

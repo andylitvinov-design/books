@@ -21,14 +21,72 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          // Playwright page.route cannot intercept requests handled by a service worker.
+          // Block SWs so fixture-only directory GETs never fall through to local API (503).
+          serviceWorkers: "block",
         });
         const errors = [];
+        const unexpectedWrites = [];
+        // The route handler, not a passive request event, proves a write was
+        // intercepted before transport. Keep only synthetic method/path metadata.
+        const blockedWrites = [];
+        const fixtureCalls = [];
+        // Record only synthetic directory transport metadata for failure diagnosis.
+        // No client data, query text, credentials, or response bodies are logged.
+        const directoryPath = "/api/public/remote-energy-support-masters";
+        const directoryNetwork = [];
+        page.on("requestfailed", request => {
+          const requestUrl = new URL(request.url());
+          if (requestUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "failed", kind: requestUrl.searchParams.get("kind"),
+              reason: request.failure()?.errorText || "unknown" });
+        });
+        page.on("response", response => {
+          const responseUrl = new URL(response.url());
+          if (responseUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "response", kind: responseUrl.searchParams.get("kind"),
+              status: response.status() });
+        });
+        page.on("request", request => {
+          const requestUrl = new URL(request.url());
+          if (requestUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "request", kind: requestUrl.searchParams.get("kind"),
+              method: request.method() });
+        });
         page.on("pageerror", error => errors.push(error.message));
+        page.on("request", request => {
+          const url = new URL(request.url());
+          // Do not store external hostnames, paths, query strings or request
+          // bodies: only whether an attempted write crossed the local origin.
+          if (!["GET", "HEAD"].includes(request.method()))
+            unexpectedWrites.push(request.method() + " " +
+              (url.origin === origin ? url.pathname : "[external-origin]"));
+        });
+        // Fail closed *before transport* for both first-party and third-party
+        // writes. The older same-origin-only guard could not prevent a direct
+        // POST to an external collection endpoint before consent.
+        await page.route(url => ["http:", "https:"].includes(url.protocol), async route => {
+          if (!["GET", "HEAD"].includes(route.request().method())) {
+            const url = new URL(route.request().url());
+            blockedWrites.push(route.request().method() + " " +
+              (url.origin === origin ? url.pathname : "[external-origin]"));
+            await route.abort("blockedbyclient");
+            return;
+          }
+          await route.fallback();
+        });
         // Synthetic public catalog only: proves UI without using personal accounts,
         // posting enquiries, charging, or assuming real provider availability.
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        // This narrower route takes priority; it must never fulfill a write.
+        await page.route(url => url.origin === origin && url.pathname === directoryPath, async route => {
+          if (route.request().method() !== "GET") {
+            await route.abort("blockedbyclient");
+            return;
+          }
           const requestUrl = new URL(route.request().url());
           const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
+          fixtureCalls.push({ kind: isConsultation ? "consultation" : "masters",
+            locale: requestUrl.searchParams.get("locale") });
           const consultations = [
             { serviceId: "test-eur20", title: "Synthetic €20 consultation", practitionerName: "Fixture",
               description: "Published session test record", areaKey: "business_money",
@@ -54,6 +112,47 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
         try {
+          // Verify interception in a synthetic same-origin HTML document before
+          // loading the application. The application's CSP may reject a fetch
+          // without issuing a request, which cannot prove Playwright route safety.
+          if (locale === "en" && width === 320) {
+            const probeDocumentPath = "/__hh-read-only-qa-document";
+            await page.route(origin + probeDocumentPath, route => route.fulfill({
+              status: 200, contentType: "text/html",
+              body: "<!doctype html><html><body>Read-only QA network guard</body></html>",
+            }));
+            const documentResponse = await page.goto(origin + probeDocumentPath,
+              { waitUntil: "domcontentloaded", timeout: 15000 });
+            assert.equal(documentResponse?.status(), 200, label + " synthetic probe document");
+          }
+          // Negative controls for both first-party and cross-origin writes.
+          // The .invalid hostname is reserved and must never be contacted:
+          // the Playwright route aborts the POST before any network transport.
+          // Exercise once per engine, without user data or production tokens.
+          if (locale === "en" && width === 320) {
+            for (const probe of [
+              { url: "/__hh-read-only-qa-probe", record: "POST /__hh-read-only-qa-probe" },
+              { url: "https://hh-read-only-probe.invalid/__hh-read-only-qa-probe",
+                record: "POST [external-origin]" },
+            ]) {
+              const outcome = await page.evaluate(async url => {
+                try {
+                  const result = await fetch(url, { method: "POST", body: "synthetic-only" });
+                  return "HTTP " + result.status;
+                } catch {
+                  return "blocked";
+                }
+              }, probe.url);
+              assert.equal(outcome, "blocked", label + " blocks synthetic POST before transport");
+              assert.equal(blockedWrites.filter(value => value === probe.record).length, 1,
+                label + " intercepts exactly one intentional POST before transport");
+              // Remove only this known synthetic probe from both ledgers;
+              // any unsolicited write still fails the final assertion.
+              blockedWrites.splice(blockedWrites.indexOf(probe.record), 1);
+              const observedIndex = unexpectedWrites.indexOf(probe.record);
+              if (observedIndex !== -1) unexpectedWrites.splice(observedIndex, 1);
+            }
+          }
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
@@ -81,6 +180,26 @@ for (const engine of [chromium, webkit]) {
               label + " opens inline talisman enquiry");
             assert.equal(await expert.locator('[data-holistic-order-trigger="expert"]').count(), 1,
               label + " opens inline energy support");
+            // Exercise both real disclosure actions without posting a request.
+            for (const [kind, action] of [
+              ["talisman", talisman.locator('[data-holistic-order-trigger="talisman"]')],
+              ["energy", expert.locator('[data-holistic-order-trigger="expert"]')],
+            ]) {
+              const bounds = await action.boundingBox();
+              assert.ok(bounds && bounds.height >= 44 && bounds.width >= 44,
+                label + " " + kind + " mobile action >= 44px");
+              await action.click();
+              assert.equal(await action.getAttribute("aria-expanded"), "true",
+                label + " " + kind + " opens");
+              const inline = panel.locator('[data-holistic-inline-order="' + kind + '"]');
+              await inline.waitFor({ state: "visible", timeout: 15000 });
+              assert.equal(await inline.locator("#holistic-inline-order-title").count(), 1,
+                label + " " + kind + " accessible order title");
+              await inline.locator('button[aria-label]').first().click();
+              await inline.waitFor({ state: "hidden", timeout: 15000 });
+              assert.equal(await action.getAttribute("aria-expanded"), "false",
+                label + " " + kind + " closes");
+            }
             const currentTitle = (await meditation.locator("h3").innerText()).trim();
             assert.ok(currentTitle.length > 8 && currentTitle !== previousMeditationTitle,
               label + " topic-specific meditation card");
@@ -107,23 +226,51 @@ for (const engine of [chromium, webkit]) {
           assert.ok(firstScreen.width >= width - 24, label + " full-width request");
           assert.ok(firstScreen.height < 540, label + " one mobile-screen request height");
 
+          // A click starts an async directory request. Waiting only for the first
+          // article races React clearing stale results between fetches (CI #40568273832).
+          // Require the exact synthetic offers before asserting; never mask a missing offer.
+          const verifyConsultations = async (expected, scenario) => {
+            const sorted = [...expected].sort();
+            try {
+              // WebKit can throttle requestAnimationFrame polling for an offscreen
+              // disclosure; timed polling still requires the exact result set.
+              await page.waitForFunction(titles => {
+                const results = document.querySelector("#holistic-inline-order #holistic-inline-results");
+                if (!results || results.hidden) return false;
+                const actual = [...results.querySelectorAll("article h5")]
+                  .map(node => (node.textContent || "").trim()).sort();
+                return actual.length === titles.length &&
+                  actual.every((title, index) => title === titles[index]);
+              }, sorted, { polling: 250, timeout: 20000 });
+            } catch (error) {
+              // Fixture-only diagnostics; never log actual practitioner/client data.
+              const state = await finder.locator("#holistic-inline-results").evaluate(node => ({
+                hidden: node.hidden,
+                titles: [...node.querySelectorAll("article h5")].map(el => (el.textContent || "").trim()),
+                status: (node.querySelector('[role="status"],[role="alert"]')?.textContent || "").slice(0, 180),
+                kind: document.querySelector("#holistic-inline-order")?.getAttribute("data-holistic-inline-order"),
+                selectedTopic: document.querySelector("#holistic-inline-order [data-support-theme][aria-pressed=true]")?.getAttribute("data-support-theme"),
+                selectedBudget: document.querySelector("#holistic-inline-order [data-support-budget][aria-pressed=true]")?.getAttribute("data-support-budget"),
+              })).catch(() => ({ unavailable: true }));
+              throw new Error(label + " " + scenario + " fixture mismatch: " +
+                JSON.stringify({ expected: sorted, state, routedFixtures: fixtureCalls, directoryNetwork, pageErrors: errors }), { cause: error });
+            }
+            const actual = (await finder.locator("#holistic-inline-results article h5").allInnerTexts())
+              .map(title => title.trim()).sort();
+            assert.deepEqual(actual, sorted, label + " " + scenario);
+          };
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
-            label + " EUR 20 excludes CAD 15 and EUR 100");
+          await verifyConsultations(["Synthetic €20 consultation"], "EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
-            label + " EUR 100 includes 2 EUR offers, not CAD");
+          await verifyConsultations(["Synthetic €20 consultation", "Synthetic €100 consultation"],
+            "EUR 100 includes both EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
           await finder.locator('[data-support-budget="free"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
-            label + " free relationship consultation");
+          await verifyConsultations(["Synthetic free introduction"], "free relationship consultation");
 
           await finder.locator('[data-support-choice="talisman"]').click();
           await finder.locator('[data-support-budget="20"]').click();
@@ -142,6 +289,18 @@ for (const engine of [chromium, webkit]) {
           await root.screenshot({ path: "artifacts/holistic-topic-mobile/" +
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
+          assert.deepEqual(unexpectedWrites, [], label + " no unsolicited CRM, booking or payment writes");
+          assert.deepEqual(blockedWrites, [], label + " no unsolicited write intercepted before transport");
+          // CI #40620636035 proved all 18 UI flows after blocking service workers.
+          // Guard against a future silent fall-through to the real (unconfigured)
+          // directory endpoint: synthetic browser QA must only see fixture HTTP 200.
+          assert.ok(fixtureCalls.some(call => call.kind === "consultation" && call.locale === locale),
+            label + " must use locale-specific synthetic consultation transport");
+          assert.ok(directoryNetwork.some(event => event.event === "response" && event.status === 200),
+            label + " must receive an intercepted directory response");
+          assert.deepEqual(directoryNetwork.filter(event =>
+            event.event === "failed" || (event.event === "response" && event.status !== 200)), [],
+            label + " no failed or real directory responses in fixture-only QA");
           evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, overflow: false });
         } finally {
           await page.close();

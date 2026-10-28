@@ -67,7 +67,8 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      // Readiness is asserted below against hydrated Alchemy controls; media traffic is not a release gate.
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "domcontentloaded", timeout: 45000 });
       const main = page.locator('main[data-core-service-detail="alchemy"]');
       await visible(main.locator("h1"));
       await expect(main).toHaveAttribute("lang", "es");
