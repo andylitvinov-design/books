@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useMemo, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowUpRight, Check, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, SlidersHorizontal } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import facetsData from "@/data/academy/meditation-filter-facets-20261028.json";
+import { coreServiceOffers } from "@/data/core-service-offers";
+import { rankClientServices } from "@/lib/holistic-support/client-intent-model.mjs";
 import { rankMeditationCatalog } from "@/lib/holistic-support/meditation-catalog-ranker.mjs";
 import type {
   MeditationCatalogRecord, MeditationMatch, MeditationRequest,
@@ -19,6 +21,18 @@ type VideoLanguage = "en" | "ru" | "es";
 
 const copy = {
   en: {
+    matchLabels:{exact:"Specific match",partial:"Partial match",topic:"Topic match",related:"Related topic",unspecified:"Explore"},
+    servicesHeading:"Other ways to explore this goal",
+    servicesIntro:"Optional published services, ranked by the same request. No automatic booking, payment or sharing of answers.",
+    servicesFree:"Free written step",servicesPaid:"Personal service · enquire first",
+    servicesOnlyFree:"Show only free services",servicesAction:"Service details",
+    advanced:"More preferences",advancedNote:"Unknown video details never count as confirmed matches.",
+    exactOnly:"Only complete matches to my selected details",
+    includeApprox:"Include unverified duration estimates",
+    experience:"Experience",intensityLabel:"Intensity",postureLabel:"Posture",musicLabel:"Soundtrack",
+    intensityOptions:{gentle:"Gentle",moderate:"Moderate",intense:"Intense"},
+    musicOptions:{voice_only:"Voice only",music_under_voice:"Voice with music",ambient_only:"Music only"},
+    noService:"No related published service for these preferences.",
     title: "Choose a meditation for your situation",
     intro: "Select your goal and preferences. Matching happens on this device only.",
     goals: { money: "Money", energy: "Energy", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
@@ -52,6 +66,18 @@ const copy = {
     audioOptions: { en: "English", ru: "Russian", es: "Spanish" },
   },
   ru: {
+    matchLabels:{exact:"Точное совпадение",partial:"Частичное совпадение",topic:"По основной теме",related:"Смежная тема",unspecified:"Обзор"},
+    servicesHeading:"Другие способы работы с этой задачей",
+    servicesIntro:"Необязательные опубликованные услуги по тому же запросу. Подбор не создаёт запись, оплату и не передаёт ваши ответы мастеру.",
+    servicesFree:"Бесплатный письменный вариант",servicesPaid:"Личная услуга · условия уточняются",
+    servicesOnlyFree:"Только бесплатные услуги",servicesAction:"Подробнее об услуге",
+    advanced:"Дополнительные предпочтения",advancedNote:"Если параметры видео неизвестны, они не считаются подтверждённым совпадением.",
+    exactOnly:"Только полные совпадения по выбранным уточнениям",
+    includeApprox:"Учитывать примерную, непроверенную длительность",
+    experience:"Опыт",intensityLabel:"Интенсивность",postureLabel:"Положение тела",musicLabel:"Звук",
+    intensityOptions:{gentle:"Мягкая",moderate:"Умеренная",intense:"Интенсивная"},
+    musicOptions:{voice_only:"Только голос",music_under_voice:"Голос и музыка",ambient_only:"Только музыка"},
+    noService:"Опубликованных услуг по этим предпочтениям пока нет.",
     title: "Подобрать медитацию под ваш запрос",
     intro: "Выберите цель и предпочтения. Подбор выполняется только в вашем браузере.",
     goals: { money: "Деньги", energy: "Энергия", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
@@ -85,6 +111,18 @@ const copy = {
     audioOptions: { en: "английский", ru: "русский", es: "испанский" },
   },
   es: {
+    matchLabels:{exact:"Coincidencia específica",partial:"Coincidencia parcial",topic:"Por tema",related:"Tema relacionado",unspecified:"Explorar"},
+    servicesHeading:"Otras formas de explorar tu objetivo",
+    servicesIntro:"Servicios publicados y opcionales, ordenados por la misma petición. No se reserva, paga ni envían respuestas automáticamente.",
+    servicesFree:"Opción escrita gratuita",servicesPaid:"Servicio individual · consultar condiciones",
+    servicesOnlyFree:"Solo servicios gratuitos",servicesAction:"Detalles del servicio",
+    advanced:"Preferencias adicionales",advancedNote:"Los detalles desconocidos no cuentan como coincidencias confirmadas.",
+    exactOnly:"Solo coincidencias completas con mis preferencias",
+    includeApprox:"Incluir duraciones aproximadas sin verificar",
+    experience:"Experiencia",intensityLabel:"Intensidad",postureLabel:"Postura",musicLabel:"Audio",
+    intensityOptions:{gentle:"Suave",moderate:"Moderada",intense:"Intensa"},
+    musicOptions:{voice_only:"Solo voz",music_under_voice:"Voz con música",ambient_only:"Solo música"},
+    noService:"No hay servicios publicados relacionados con estas preferencias.",
     title: "Encuentra una meditación para tu situación",
     intro: "Elige una meta y preferencias. La selección ocurre solo en tu navegador.",
     goals: { money: "Dinero", energy: "Energía", relationships: "Relaciones", goals: "Metas", meaning: "Sentido" },
@@ -140,6 +178,13 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
   const [maxDurationMinutes, setMaxDurationMinutes] = useState(0);
   const [timeOfDay, setTimeOfDay] = useState("any");
   const [spiritualStyle, setSpiritualStyle] = useState("any");
+  const [experienceLevel, setExperienceLevel] = useState("any");
+  const [intensity, setIntensity] = useState("any");
+  const [posture, setPosture] = useState("any");
+  const [musicStyle, setMusicStyle] = useState("any");
+  const [exactOnly, setExactOnly] = useState(false);
+  const [includeApprox, setIncludeApprox] = useState(false);
+  const [freeServicesOnly, setFreeServicesOnly] = useState(false);
   const [applied, setApplied] = useState<MeditationRequest | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -150,6 +195,8 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
   function reset() {
     setGoal("energy"); setLanguage(locale); setSituations([]); setStates([]); setTechniques([]);
     setSourceKind("all"); setMaxDurationMinutes(0); setTimeOfDay("any"); setSpiritualStyle("any");
+    setExperienceLevel("any"); setIntensity("any"); setPosture("any"); setMusicStyle("any");
+    setExactOnly(false); setIncludeApprox(false); setFreeServicesOnly(false);
     setApplied(null); setSelectedId(null);
   }
   function apply(event: FormEvent<HTMLFormElement>) {
@@ -157,9 +204,10 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     setApplied({
       goal, language, situations, desiredStates: states, techniques, sourceKind,
       maxDurationMinutes: maxDurationMinutes || undefined,
-      // If duration comes from the video's title alone, it is marked approximate.
-      allowUnverifiedDuration: Boolean(maxDurationMinutes),
-      timeOfDay, spiritualStyle, maxRisk: "unknown", limit: 12,
+      // An unverified "10 min" title is NOT a confirmed runtime.
+      allowUnverifiedDuration: includeApprox,
+      timeOfDay, spiritualStyle, experienceLevel, intensity, musicStyle, posture,
+      exactOnly, avoidBinaural: true, maxRisk: "unknown", limit: 12,
     });
     setSelectedId(null);
   }
@@ -167,6 +215,11 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     applied ? rankMeditationCatalog({ videos, publishedSourceIds, request: applied }) : [],
     [applied, videos, publishedSourceIds]);
   const active = found.find(match => match.video.youtube_id === selectedId) ?? found[0];
+  const services = useMemo(() => applied ? rankClientServices({
+    offers:coreServiceOffers(locale),
+    request:{...applied,paymentPreference:freeServicesOnly?"free":"any"},
+    limit:3,
+  }) : [],[applied,locale,freeServicesOnly]);
   const selectedInfo = (key: FilterKind, value: string) => {
     const f = facet(key).find(item => item.facet_key === value);
     return f ? titleOf(f, locale) : value;
@@ -245,7 +298,45 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
             </select>
           </label>
         </div>
-        {maxDurationMinutes>0 ? <p className={styles.durationNote}>* {t.approx}</p> : null}
+        <details className={styles.advanced} data-meditation-advanced>
+          <summary>{t.advanced}</summary>
+          <p className={styles.durationNote}>{t.advancedNote}</p>
+          <div className={styles.selects}>
+            <label>{t.experience}
+              <select value={experienceLevel} onChange={e => {setExperienceLevel(e.target.value);setApplied(null);}}>
+                <option value="any">{t.all}</option>
+                {facet("level").map(option=><option key={option.facet_key} value={option.facet_key}>{titleOf(option,locale)}</option>)}
+              </select>
+            </label>
+            <label>{t.intensityLabel}
+              <select value={intensity} onChange={e => {setIntensity(e.target.value);setApplied(null);}}>
+                <option value="any">{t.all}</option>
+                {(["gentle","moderate","intense"] as const).map(v=><option key={v} value={v}>{t.intensityOptions[v]}</option>)}
+              </select>
+            </label>
+            <label>{t.postureLabel}
+              <select value={posture} onChange={e => {setPosture(e.target.value);setApplied(null);}}>
+                <option value="any">{t.all}</option>
+                {facet("posture").filter(x=>x.facet_key!=="unknown").map(option=><option key={option.facet_key} value={option.facet_key}>{titleOf(option,locale)}</option>)}
+              </select>
+            </label>
+            <label>{t.musicLabel}
+              <select value={musicStyle} onChange={e => {setMusicStyle(e.target.value);setApplied(null);}}>
+                <option value="any">{t.all}</option>
+                {(["voice_only","music_under_voice","ambient_only"] as const).map(v=><option key={v} value={v}>{t.musicOptions[v]}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className={styles.optionCheck}>
+            <input type="checkbox" checked={exactOnly} onChange={e=>{setExactOnly(e.target.checked);setApplied(null);}}/>
+            {t.exactOnly}
+          </label>
+          {maxDurationMinutes>0 ? <label className={styles.optionCheck}>
+            <input type="checkbox" checked={includeApprox} onChange={e=>{setIncludeApprox(e.target.checked);setApplied(null);}} />
+            {t.includeApprox}
+          </label> : null}
+        </details>
+        {maxDurationMinutes>0 && includeApprox ? <p className={styles.durationNote}>* {t.approx}</p> : null}
         <div className={styles.actions}>
           <button type="submit" className={styles.primary}><SlidersHorizontal size={17} aria-hidden="true"/>{t.find}</button>
           <button type="button" className={styles.reset} onClick={reset}>{t.clear}</button>
@@ -282,7 +373,9 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
                   {active.video.duration_hint_minutes && !active.durationVerified ? (
                     <p className={styles.subtle}>≈ {active.video.duration_hint_minutes} min · {t.approx}</p>) : null}
                   {active.playback === "youtube_only" ? <p className={styles.subtle}>{t.sourceNote}</p> : null}
-                  {active.matchType === "related" ? <p className={styles.subtle}>{t.related}</p> : null}
+                  <p className={styles.matchType} data-meditation-match-quality={active.matchType}>
+                    {t.matchLabels[active.matchType]}
+                  </p>
                   <strong>{t.reason}</strong>
                   <ul className={styles.reasons}>
                     {active.reasons.length
@@ -302,7 +395,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
                     <span className={styles.itemNumber}>{String(index+1).padStart(2,"0")}</span>
                     <span className={styles.itemCopy}>
                       <strong>{match.video.title}</strong>
-                      <small>{match.video.creator} · {match.playback === "youtube_only" ? "YouTube" : "Holistic House"}</small>
+                      <small>{match.video.creator} · {t.matchLabels[match.matchType]} · {match.playback === "youtube_only" ? "YouTube" : "Holistic House"}</small>
                     </span>
                     <span className={styles.playArrow} aria-hidden="true">›</span>
                   </button>
@@ -310,6 +403,34 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
               </ol>
             </div>
           )}
+        </section>
+      ) : null}
+      {applied ? (
+        <section className={styles.serviceSection} data-meditation-related-services aria-label={t.servicesHeading}>
+          <div className={styles.serviceHeading}>
+            <h4>{t.servicesHeading}</h4>
+            <p>{t.servicesIntro}</p>
+            <label className={styles.optionCheck}>
+              <input type="checkbox" checked={freeServicesOnly}
+                onChange={event=>setFreeServicesOnly(event.target.checked)} />
+              {t.servicesOnlyFree}
+            </label>
+          </div>
+          {services.length ? (
+            <div className={styles.serviceCards}>
+              {services.map(({offer,free,matchType}) => (
+                <article className={styles.serviceCard} key={offer.id} data-request-service-id={offer.id}>
+                  <span className={styles.serviceTag}>{free ? t.servicesFree : t.servicesPaid}</span>
+                  <h5>{offer.title}</h5>
+                  <p>{offer.promise}</p>
+                  <small>{t.matchLabels[matchType]}</small>
+                  <a href={offer.href} className={styles.serviceLink}>
+                    {t.servicesAction}<ArrowRight size={14} aria-hidden="true"/>
+                  </a>
+                </article>
+              ))}
+            </div>
+          ) : <p className={styles.empty}>{t.noService}</p>}
         </section>
       ) : null}
     </div>
