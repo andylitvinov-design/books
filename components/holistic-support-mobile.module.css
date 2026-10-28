@@ -426,6 +426,15 @@
   .consultOptions { grid-template-columns: minmax(0,1fr); }
   .consultOptions a { min-height: 73px; font-size: 17px; }
 }
+
+@media (min-width: 351px) and (max-width: 640px) {
+  /* Equal-looking reference cards need a few extra pixels for full Russian
+     words: do not let "Медитация"/"Талисман" overflow or split. */
+  .topGrid { grid-template-columns: minmax(0,1.12fr) minmax(0,.83fr) minmax(0,1.27fr); }
+  .toolButton,.toolButton:last-child { font-size: clamp(9.2px,2.49vw,10.9px); padding: 4px 1px; }
+  .toolCompact { letter-spacing: -.02em; }
+}
+
 @media (max-width: 350px) {
   .topGrid { grid-template-columns: minmax(0,1.16fr) minmax(0,.83fr) minmax(0,1.15fr); gap: 4px; }
   .assessment,.tools { padding: 7px 4px 6px; border-radius: 13px; }
