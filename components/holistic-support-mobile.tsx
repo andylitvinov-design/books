@@ -628,7 +628,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   };
   const chooseMeditationCategory = (value: MeditationCategory) => {
     setMeditationCategory(value);
-    setTheme("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
+    // A new primary direction must not inherit stale Programme/Master filters.
+    setTheme("all"); setProgram("all"); setMaster("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
   };
   const scrollMeditationCategories = () => {
     const rail = meditationCategoryRef.current;
