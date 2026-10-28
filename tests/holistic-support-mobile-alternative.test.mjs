@@ -348,3 +348,56 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   assert.match(talismanCss, /height: 282px; min-height: 282px; max-height: 282px/);
   assert.match(css, /\.hero \{ min-height: 288px;/);
 });
+
+
+test("mobile Reiki center retains the photo with Main/Filter/Description/Video-audio tabs and verified public media", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const css = read("components/holistic-support-master-gallery.module.css");
+  const directory = read("lib/practitioners/public-remote-support-masters.ts");
+  const booking = read("components/remote-energy-support-booking.tsx");
+  for (const attr of ["data-support-reiki-central","data-support-reiki-tab",
+    "data-support-reiki-panel","data-support-reiki-filter","data-support-reiki-media",
+    "data-support-reiki-main","data-support-reiki-apply"]) assert.ok(gallery.includes(attr),attr);
+  for (const label of ["Главное","Фильтр","Описание","Видео / аудио",
+    "Main","Description","Video / audio","Inicio","Descripción","Vídeo / audio"]) {
+    assert.ok(gallery.includes(label),label);
+  }
+  assert.match(gallery, /data-support-master-hero=\{selected && reikiFormat === "session"/);
+  assert.match(css, /\.reikiStage:not\(\[data-active-tab="filter"\]\)/);
+  assert.match(css, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(css, /@media \(max-width:350px\)/);
+  assert.match(directory, /isPublicPresentationUrl/);
+  assert.match(directory, /intro\.media\.kind === "external"/);
+  assert.doesNotMatch(directory, /presentations:\s*service\.serviceIntroductions/);
+  assert.match(booking, /initialIntention\?: string/);
+  assert.match(booking, /const \[intention, setIntention\] = useState\(initialIntention\)/);
+  assert.match(gallery, /initialIntention=\{kind === "healing" \? filteredRequest : ""\}/);
+});
+
+test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const css = read("components/holistic-support-master-gallery.module.css");
+  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+    "Личный разбор текстом","Личный разбор голосом",
+    "В течение суток","В течение 3 дней","В выбранный час",
+    "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
+  for (const section of ["data-support-reiki-format","data-support-reiki-price",
+    "data-support-reiki-timing","data-support-reiki-report",
+    "data-support-reiki-provider","data-support-reiki-certificate"]) assert.ok(gallery.includes(section),section);
+  assert.match(gallery, /reikiFormat === "session" \? <fieldset[\s\S]*?data-support-reiki-provider/);
+  assert.match(gallery, /: <label className=\{styles\.reikiCertificate\} data-support-reiki-certificate>/);
+  assert.match(gallery, /setReikiRole\("any"\); setReikiCertificate\(false\)/);
+  assert.match(gallery, /reikiPrice === "all" \|\| reikiPrice === "free"/);
+  assert.match(gallery, /!reikiCertificate/);
+  assert.match(gallery, /matchesReikiEuroPrice\(master, reikiPrice, option\.price\)/);
+  assert.match(gallery, /master\.currency !== "EUR"/);
+  assert.match(gallery, /price > 20 && price <= 50/);
+  assert.match(gallery, /price > 50 && price <= 100/);
+  assert.match(gallery, /price > 100/);
+  assert.match(gallery, /priceOptions: matchingPriceOptions/);
+  assert.match(gallery, /REIKI_FREE_COURSE_PATH/);
+  assert.match(gallery, /free-initiation#initiation-choices/);
+  assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
+  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
+});

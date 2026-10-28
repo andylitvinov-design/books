@@ -27,6 +27,8 @@ export type EnergySupportMaster = {
   priceOptions: {duration: 10 | 20 | 30 | 60; price: number}[];
   reviewCount: number;
   reviewAverage: number;
+  /** Validated external introductions from an approved public service. */
+  presentations?: { type: "audio" | "video"; url: string }[];
 };
 
 const WORDS = {
@@ -270,7 +272,7 @@ function localDateToday() {
 
 export function RemoteEnergySupportBooking({
   locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
-  initialGoal = "", initialTalismanId = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
+  initialGoal = "", initialIntention = "", initialTalismanId = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
@@ -278,6 +280,8 @@ export function RemoteEnergySupportBooking({
   mode?: "inline" | "standalone";
   selectedKind?: SupportRequestKind;
   initialGoal?: string;
+  /** Shown for review; never submitted until the user confirms the secure enquiry. */
+  initialIntention?: string;
   initialTalismanId?: string;
   onKindChange?: (kind: SupportRequestKind) => void;
   compactFinder?: boolean;
@@ -301,7 +305,7 @@ export function RemoteEnergySupportBooking({
     if (initialGoal) setGoal(initialGoal);
     setCatalogId(initialTalismanId);
   }, [selectedKind, initialGoal, initialTalismanId]);
-  const [intention, setIntention] = useState("");
+  const [intention, setIntention] = useState(initialIntention);
   const [showResults, setShowResults] = useState(mode === "inline" || Boolean(preferredPractitioner));
   const [method, setMethod] = useState("");
   const [format, setFormat] = useState<Format>("asynchronous");

@@ -5,6 +5,16 @@ import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import type { EnergySupportMaster } from "@/components/remote-energy-support-booking";
 
+/** Allow only intentionally public external presentation providers. Never expose uploaded private assets. */
+function isPublicPresentationUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password &&
+      ["youtube.com", "www.youtube.com", "www.youtube-nocookie.com", "youtu.be",
+        "vimeo.com", "player.vimeo.com", "soundcloud.com", "www.soundcloud.com"].includes(url.hostname);
+  } catch { return false; }
+}
+
 // Single published-only source for the standalone wizard and the in-page wizard.
 // No personal profile fields beyond those already public on the master's page.
 export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es"): Promise<EnergySupportMaster[]> {
@@ -29,6 +39,15 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
         currency: service.currency || "",
         reviewCount: 0,
         reviewAverage: 0,
+        presentations: [
+          ...(service.serviceIntroductions || [])
+            .filter(intro => intro.language === locale && intro.media.kind === "external" &&
+              isPublicPresentationUrl(intro.media.url))
+            .map(intro => ({ type: intro.type, url: (intro.media as {kind:"external";url:string}).url })),
+          ...(record.profile.videoPresentation?.kind === "external" &&
+            isPublicPresentationUrl(record.profile.videoPresentation.url)
+              ? [{ type: "video" as const, url: record.profile.videoPresentation.url }] : []),
+        ],
         priceOptions: service.priceOptions?.length
           ? service.priceOptions
           : ([10, 20, 30, 60].includes(service.durationMinutes || 0) &&

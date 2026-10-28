@@ -241,6 +241,58 @@ for (const browserType of [chromium, webkit]) {
           const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
           assert.ok(Math.abs(masterHeight-geometry.hero[0].height)<=10,
             label+" Reiki hero matches compact meditation hero");
+          // User's filter belongs INSIDE the original large photo, not in a second hero.
+          const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
+          assert.equal(await tab("main").count(),1,label+" central Main tab");
+          assert.equal(await tab("filter").count(),1,label+" central Filter tab");
+          assert.equal(await tab("description").count(),1,label+" central Description tab");
+          assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          await tab("filter").click();
+          const reikiFilter=healing.locator('[data-support-reiki-filter]');
+          await reikiFilter.waitFor({state:"visible"});
+          assert.equal(await reikiFilter.locator('[data-support-reiki-format] button').count(),3,
+            label+" session initiation training all available");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),6,
+            label+" five price ranges plus All");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').count(),3,
+            label+" brief text voice report");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" provider preference only for sessions");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" session has no certificate toggle");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),0,
+            label+" courses never show session practitioner selector");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" courses show certificate preference");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').check();
+          assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
+            label+" no fictional certified training offers");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" initiation may request a certificate");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" return to session resets certificate and restores provider");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" certificate absent in session");
+          await reikiFilter.locator('[data-support-reiki-report] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').nth(2)
+            .getAttribute("aria-pressed"),"true",label+" voice preference selectable");
+          await reikiFilter.locator('[data-support-reiki-timing] button').nth(1).click();
+          await reikiFilter.locator('[data-support-reiki-provider] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider] button').nth(1)
+            .getAttribute("aria-pressed"),"true",label+" Reiki master preference selectable");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          await tab("media").click();
+          assert.equal(await healing.locator('[data-support-reiki-media]').count(),1,
+            label+" media tab does not autoplay or invent a video");
+          await tab("description").click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="description"]').count(),1,
+            label+" original stage shows description");
+          await tab("main").click();
+          assert.equal(await healing.locator('[data-support-reiki-main]').count(),1,
+            label+" original photo returns without a new panel");
           await healing.locator('[data-support-reiki-focus="strength"]').click();
           await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
           assert.equal(await healing.locator('[data-support-master-request]').count(),0,
