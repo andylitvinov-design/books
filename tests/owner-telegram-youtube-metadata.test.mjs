@@ -7,6 +7,8 @@ import {parseOwnerVideoUpdate} from '../lib/practitioners/owner-telegram-video-m
 import {ownerRuSnippetUpdateBody,ownerRuYoutubeMetadata,
  changeOwnerRuYoutubeMetadata} from '../lib/practitioners/owner-telegram-video-visibility.mjs'
 import {VIDEO_RU_CHANNEL_ID} from '../lib/practitioners/owner-telegram-video-model.mjs'
+import {updateOwnerYoutubeHistoryTitle} from '../lib/youtube/owner-youtube-history-title.mjs'
+import {validateHistoryRecord} from '../lib/youtube/upload-history-model.mjs'
 
 const JOB='b6e8526e-c251-4dd5-a9ca-2886c430f912'
 const VIDEO='Yt123456abc'
@@ -149,4 +151,27 @@ test('source code holds owner-only durable staged metadata and verifies provider
  assert.match(editor,/verifyUncertainOwnerDotMetadata/)
  const safeRead=editor.slice(editor.indexOf('export async function verifyUncertainOwnerDotMetadata'))
  assert.doesNotMatch(safeRead,/changeOwnerRuYoutubeMetadata|method:'PUT'|uploadUnlistedRu/)
+})
+
+test('confirmed title updates existing RU YouTube history without losing visibility',async()=>{
+ const KEY='holistic-house:youtube:phone-history:v1'
+ const original=validateHistoryRecord({
+   target:'ru',channelId:VIDEO_RU_CHANNEL_ID,videoId:VIDEO,
+   title:'Original owner video',privacyStatus:'public',requestedVisibility:'unlisted'
+ },VIDEO_RU_CHANNEL_ID,'2026-10-28T19:11:07.634Z')
+ const store=new Map([[KEY+':'+VIDEO,JSON.stringify(original)]])
+ const command=async ([op,key,id,value])=>{
+   assert.equal(key,KEY)
+   if(op==='HGET')return store.get(key+':'+id)||null
+   if(op==='HSET'){store.set(key+':'+id,value);return 0}
+   throw Error('UNEXPECTED_COMMAND')
+ }
+ const updated=await updateOwnerYoutubeHistoryTitle(VIDEO,'Новое имя',{command})
+ assert.equal(updated.title,'Новое имя')
+ assert.equal(updated.privacyStatus,'public')
+ assert.equal(updated.uploadedAt,original.uploadedAt)
+ assert.equal(updated.channelId,original.channelId)
+ assert.equal(updated.requestedVisibility,'unlisted')
+ assert.equal(await updateOwnerYoutubeHistoryTitle('AbcDef12345','Name',{command}),null)
+ await assert.rejects(()=>updateOwnerYoutubeHistoryTitle('bad','Name',{command}),/YOUTUBE_INVALID_TITLE/)
 })
