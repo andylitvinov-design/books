@@ -107,6 +107,34 @@ for (const browserType of [chromium, webkit]) {
             await root.locator('[data-support-play]').click();
             const src = await root.locator('[data-support-player] iframe').getAttribute("src");
             assert.match(src??"", /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?autoplay=1/,label+" consent-to-play original");
+
+            // Verify the owner's Goals / Meaning -> Egyptian/Greek/Maya path on
+            // real mobile Chromium and WebKit, EN/RU/ES, without starting media.
+            const themeSelect=root.locator('[data-support-filter="theme"] select');
+            const programSelect=root.locator('[data-support-filter="program"] select');
+            await themeSelect.selectOption("goals");
+            assert.equal(await themeSelect.inputValue(),"goals",label+" goals theme chosen");
+            assert.equal(await root.locator("[data-support-video]").count(),4,label+" four themed videos");
+            const featured=await root.locator("[data-support-video]").evaluateAll(cards=>
+              cards.map(card=>card.getAttribute("data-support-video")));
+            assert.deepEqual(featured,
+              ["J_15bfhzOuU","7ROoZxXysWY","qipPFBpRNF8","9w6AmFXaL2U"],
+              label+" one original per ancient tradition");
+            for(const [course,total] of [["egypt",7],["greek-demeter",5],["greek-dionysus",7],["maya",6]]) {
+              await programSelect.selectOption(course);
+              assert.equal(await themeSelect.inputValue(),"goals",label+" programme preserves Goals");
+              assert.equal(await root.locator("[data-support-video]").count(),4,label+" first page "+course);
+              assert.match(await root.locator('[data-support-magical-courses] a').getAttribute("href")??"",
+                /\/academy\//,label+" real Academy course route "+course);
+              const buttons=root.locator('[data-support-video-pager] button');
+              assert.equal(await buttons.count(),2,label+" pager "+course);
+              await buttons.last().click();
+              assert.equal(await root.locator("[data-support-video]").count(),total-4,
+                label+" remaining source-verified lessons "+course);
+              await buttons.first().click();
+              assert.equal(await root.locator("[data-support-video]").count(),4,
+                label+" return to original first four "+course);
+            }
           }
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
