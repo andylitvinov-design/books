@@ -76,7 +76,7 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);
   assert.match(ui,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume\)/);
+  assert.match(ui,/startPresetAudio\(music,soundVolume\)/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);
   assert.match(audio,/linearRampToValueAtTime\(0, at \+ \.7\)/);
