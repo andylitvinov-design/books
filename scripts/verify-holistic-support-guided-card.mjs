@@ -44,7 +44,8 @@ for (const engine of [chromium, webkit]) {
         }, null, { timeout: 30000 });
 
         assert.equal(await root.locator("[data-support-mobile-bottom-nav]").count(), 1, name + " original dock");
-        assert.equal(await root.locator("[data-support-scale]").count(), 5, name + " five linked ratings");
+        assert.equal(await root.locator("[data-support-scale]").count(), 4, name + " four linked ratings");
+        assert.equal(await root.locator('[data-support-scale="goals"]').count(), 0, name + " no separate Goals scale");
         assert.equal(await root.locator('[data-support-scale="meaning"] input[type="range"]').count(), 1,
           name + " separate Meaning rating stays visible");
         assert.equal(await root.locator("[data-support-tool]").count(), 7, name + " original tools");
@@ -67,7 +68,7 @@ for (const engine of [chromium, webkit]) {
               return { selector, left: r.left, right: r.right, width: r.width, height: r.height, y: r.top };
             })).flat() };
         });
-        // Regression: a fifth rating must not make the original left header a tall,
+        // Regression: the Meaning rating replaces Goals rather than making a tall,
         // skinny column or push its CTA beyond the matched three-column band.
         const header = await page.evaluate(() => {
           const rect = selector => {
@@ -91,7 +92,7 @@ for (const engine of [chromium, webkit]) {
         assert.ok(header.left.height / header.left.width <= maxRatio,
           name + " left card remains compact, not a narrow tower: " + JSON.stringify(header));
         assert.ok(header.labelFits,
-          name + " all five labels fit without cropping");
+          name + " all four labels fit without cropping");
         assert.ok(header.cta.bottom <= header.left.bottom + 2,
           name + " goal-filter button stays inside left card");
         assert.ok(header.left.right <= header.profile.left + 4 &&
