@@ -21,8 +21,14 @@ const phoneValid = (value: string) => /^\+[1-9][0-9]{7,14}$/.test(value.replace(
 const providerHost = (value: string) => {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && ["paypal.me","square.link","checkout.square.site"].includes(url.hostname)
-      && !url.username && !url.password && !url.port ? url.href : null;
+    const matched = url.hostname === "paypal.me"
+      ? /^\/psitrends\/[1-9][0-9]*(?:\.[0-9]{2})?EUR$/.test(url.pathname)
+      : url.hostname === "square.link"
+        ? /^\/u\/[A-Za-z0-9_-]{5,120}$/.test(url.pathname)
+        : url.hostname === "checkout.square.site"
+          ? /^\/[A-Za-z0-9_-]{5,120}$/.test(url.pathname) : false;
+    return url.protocol === "https:" && matched && !url.username &&
+      !url.password && !url.port && !url.search && !url.hash ? url.href : null;
   } catch { return null; }
 };
 const copy = {
@@ -362,6 +368,11 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
               </button>}
           <p className={styles.accountNote}>{profile ? t.googleHint : t.authNotice}</p>
         </section>
+        <label className={styles.agree} data-talisman-reply-consent>
+          <input type="checkbox" checked={consent}
+            onChange={event => setConsent(event.target.checked)} />
+          {t.consent}
+        </label>
         <section className={styles.paymentStep} data-talisman-payment-ready={payable ? "true" : "false"}>
           <p className={styles.stepLabel}>2 · {t.checkoutTitle}</p>
           {!pricing?.available || !approvedMethods.length
@@ -393,7 +404,7 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
           <p className={styles.stepLabel}>{t.fallback}</p>
           <label className={styles.oneContact}>{t.contactLabel}
             <input value={contact} onChange={event => {setContact(event.target.value);operationId.current=null;}}
-              inputMode="email" type="text" maxLength={160} placeholder={t.contactPlaceholder}
+              inputMode="text" type="text" maxLength={160} placeholder={t.contactPlaceholder}
               autoComplete="email" data-talisman-contact />
           </label>
         </div>}
@@ -410,11 +421,6 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
               </label>
             </div>
           </details>
-          <label className={styles.agree}>
-            <input type="checkbox" checked={consent}
-              onChange={event => setConsent(event.target.checked)} required />
-            {t.consent}
-          </label>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           {reference ? <div className={styles.receipt} role="status" data-talisman-quote-saved>
             <h2>{t.success}</h2><p>{t.reference}: <strong>{reference}</strong></p>
