@@ -161,6 +161,9 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(widget, /<label className=\{styles\.choice\} data-express-focus=\{area\}/);
   assert.match(widget, /type="radio" name="express-review-focus" value=\{area\}/);
   assert.match(widget, /checked=\{focus === area\} onChange=\{\(\) => setFocus\(area\)\}/);
+  // WebKit can skip the nested radio's forwarded change after tapping the
+  // label; a single label click must also update the controlled focus.
+  assert.match(widget, /onClick=\{\(\) => \{ if \(!focusLocked\) setFocus\(area\); \}\}/);
   // Validate a single real click, not retries or programmatic radio selection.
   assert.match(script, /async function tapFocusAndVerify\(page, enquiry, focus\)/);
   assert.match(script, /await enquiry\.locator\('\[data-express-focus=/);
