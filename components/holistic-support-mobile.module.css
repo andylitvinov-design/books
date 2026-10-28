@@ -663,6 +663,20 @@
 }
 
 
+/* If a visitor selects only external catalogs (or no types at all), do
+   not show an unrelated video as a fabricated recommendation. */
+.goalNoInline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  min-width: 0; padding: 16px; border-top: 1px solid #e2e9dd;
+  color: #426551; background: #fafcf6; font-size: 13px; }
+.goalNoInline p { flex: 1; margin: 0; line-height: 1.4; }
+.goalNoInline button { min-height: 42px; padding: 8px 12px; border: 1px solid #b5daca;
+  border-radius: 10px; background: #edf8ef; color: #12644d; font-weight: 800; font-size: 13px; }
+.goalEmptyNotice { margin: 0; padding: 8px 10px; border: 1px solid #e1e2d5;
+  border-radius: 10px; color: #556e5e; background: #fffdf8; font-size: 13px; }
+@media (max-width: 640px) {
+  .goalNoInline { padding: 11px 9px; }
+  .goalNoInline button { width: 100%; }
+}
 /* Real, source-backed cross-category suggestions after the goal filter. */
 .goalResults { display: grid; gap: 10px; min-width: 0; padding: 13px 16px;
   border-bottom: 1px solid #cfdfd0; background: linear-gradient(145deg,#f1f9ee,#fffdf5); }
