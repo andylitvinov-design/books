@@ -150,6 +150,14 @@
 .audioRights input{width:19px;height:19px;min-width:19px;accent-color:#088d6c;margin-top:0}
 @media(max-width:380px){.audioUpload input[type=file]{flex-basis:100%}.audioUploadLabel{width:100%}.audioSelection{align-items:flex-start}}
 
+/* Native file inputs and media controls have their own intrinsic iOS width.
+   They must not extend a 320–430px viewport beyond the editor card. */
+@media(max-width:759px){
+  .studio{width:100%;overflow-x:clip}
+  .musicCard,.audioUpload,.audioSelection{max-width:100%;min-width:0}
+  .audioUpload input[type=file]{min-width:0;max-width:100%;overflow:hidden}
+  .musicCard audio[data-video-audio-player]{max-width:100%;min-width:0}
+}
 /* Home/Support visual parity — one existing editor, one real media canvas.
    On 320–430px the three-column check-in/portrait/tools matches the site's
    compact support home, while the actual video takes the whole hero. */
