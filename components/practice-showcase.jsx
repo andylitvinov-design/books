@@ -146,6 +146,9 @@ function destination(locale, key) {
     practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
+    diagnostic:root + '?panel=services&create=1&starter=diagnostic',
+    energy:root + '?panel=services&create=1&starter=energy',
+    personal:root + '?panel=services&create=1&starter=personal',
     meditation:root + '?panel=materials&materialTab=courses&create=1&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
     reiki:root + '?panel=services&create=1&starter=reiki',
@@ -209,10 +212,23 @@ export default function PracticeShowcase({ locale = 'en' }) {
     const controller = new AbortController()
     void checkSession(controller.signal)
     const params = new URLSearchParams(window.location.search)
+    const start = params.get('start')
+    if (['diagnostic','energy','personal','meditation'].includes(start)) setPendingAction(start)
     if (params.get('auth') === 'cancelled' || params.get('auth') === 'failed')
       setNotice(t.authCancelled)
     return () => controller.abort()
   }, [checkSession, t.authCancelled])
+
+  // A public Pro "Create" click carries only a known offer category. The
+  // guest sees this same showcase with the Google dialog; a signed-in user
+  // continues directly to the existing verified editor, not a second dashboard.
+  useEffect(() => {
+    if (!signedIn) return
+    const start = new URLSearchParams(window.location.search).get('start')
+    if (!['diagnostic','energy','personal','meditation'].includes(start)) return
+    setPendingAction('')
+    router.replace(destination(locale, start))
+  }, [signedIn, locale, router])
 
   function openAction(key) {
     if (busy) return
