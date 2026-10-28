@@ -12,7 +12,7 @@ Scope: existing [`/{en|ru|es}/app/messages`](https://holistichouse.vercel.app/ru
 
 ## Security and backend
 
-- Additive migration `20261028162000_hh_request_bound_voice_media.sql`: new `app.practitioner_request_media` table, FORCE RLS, only `hh_app_backend` column-limited grants; no browser SQL access.
+- Additive migration `20261028162155_hh_request_bound_voice_media_20261028.sql`: new `app.practitioner_request_media` table, FORCE RLS, only `hh_app_backend` column-limited grants; no browser SQL access.
 - Participant check reused from existing `lib/practitioners/client-messages.js`: owner of the actual consultation request or its verified active assigned practitioner only. Outsiders receive 404; client cannot view private master notes.
 - Two-stage upload: `POST /api/app/practitioner-client-messages/media` intent → ≤3MB same-origin bounded PUT for iPhone, or existing signed private Storage upload for larger files → server checks actual stored size, MIME and byte signature → complete → message send attaches the same asset once, atomically.
 - Auth cookies, account-ID binding, same-origin enforcement, rate limit, no upsert, 3 pending intents max, capped file size and 120-second mic recorder. Message operation ID survives a lost response; a conflicting asset cannot be attached twice.
