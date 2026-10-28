@@ -262,7 +262,7 @@ test('redaction accepts only fixed aliases and numeric/boolean schema, never raw
   const safe = sanitizePublicPickerActionDiagnostic(raw, { action: privateText, locale: privateText, result: privateText, setup: privateText, capture: privateText, cleanup: privateText })
   assert.ok(!JSON.stringify(safe).includes('SECRET')); assert.ok(!JSON.stringify(safe).includes('https:')); assert.ok(!JSON.stringify(safe).includes('amor'))
   assert.equal(safe.action, 'unknown'); assert.equal(safe.initial.queryLength, null); assert.equal(safe.current.queryLength, 120)
-  assert.equal(safe.events.length, 64); assert.equal(safe.counts.length, 9)
+  assert.equal(safe.events.length, 64); assert.equal(safe.counts.length, 10)
   assert.equal(safe.initial.box.x, null); assert.equal(safe.initial.box.width, -1000000); assert.equal(safe.current.x, 1000000)
 })
 
@@ -272,4 +272,65 @@ test('collection caller wraps the unchanged native click, empty-search and press
   assert.ok(source.includes(`await withPublicPickerActionDiagnostics(page, root.locator('[data-test-collection="sexuality"]'), { action: 'collection-sexuality', locale }, async () => {\n${operation}\n    })`))
   for (const contract of ['toEqual(expectedSearch)', 'readSelection(picker), preserved', 'assert.deepEqual(writes, []', 'toHaveURL(currentUrl)']) assert.ok(source.includes(contract))
   assert.doesNotMatch(source, /force:\s*true|dispatchEvent|\.fill\(''\)/)
+})
+
+
+test('relative time, scrollend, dock and viewport scalars observe movement without attributing its cause', async () => {
+  const h = fixture()
+  let time = 9000, clearance = '0px'
+  h.win.performance = { now: () => time }
+  h.doc.body = {}
+  h.win.getComputedStyle = node => { assert.equal(node, h.doc.body); return { getPropertyValue: name => { assert.equal(name, '--ia222-bottom-height'); return clearance } } }
+  h.win.visualViewport = { offsetTop: 0, offsetLeft: 0, width: 390, height: 844, secret: 'PRIVATE' }
+  await withPublicPickerActionDiagnostics(h.page, h.target, h.options, async () => {
+    time += 12.5; h.original.top = -19; h.doc.activeElement = h.original
+    h.emit('pointerdown')
+    time += 2; clearance = '69px'; h.win.scrollY = 350; h.original.top = 331
+    h.emit('focusin'); h.emit('scroll')
+    time += 8; h.emit('scrollend')
+    await h.operation()
+  }, { log: h.log })
+  const d = h.logs[0], down = d.events.find(e => e.type === 'pointerdown'), end = d.events.find(e => e.type === 'scrollend')
+  assert.equal(d.initial.elapsedMs, 0); assert.equal(d.initial.dockClearance, 0)
+  assert.equal(down.elapsedMs, 12.5); assert.equal(down.focusFullyVisible, false)
+  assert.equal(end.elapsedMs, 22.5); assert.equal(end.dockClearance, 69); assert.equal(end.focusFullyVisible, true)
+  assert.deepEqual(end.dockBox, { x: 20, y: 200, width: 200, height: 40 })
+  assert.deepEqual(end.visualViewport, { offsetTop: 0, offsetLeft: 0, width: 390, height: 844 })
+  assert.equal(d.counts[9], 2); assert.equal(activeListeners(h), 0); assert.equal(h.leases.size, 0)
+  assert.ok(!JSON.stringify(d).includes('PRIVATE'))
+})
+
+test('new observation fields reject hostile strings, nonfinite values and arbitrary nested keys', () => {
+  const secret = 'SECRET https://private.invalid/client?token=private'
+  const row = { elapsedMs: -2, dockClearance: secret, focusFullyVisible: secret,
+    dockBox: { x: secret, y: NaN, width: Infinity, height: -Infinity, secret },
+    visualViewport: { offsetTop: secret, offsetLeft: NaN, width: Infinity, height: secret, secret }, secret }
+  const d = sanitizePublicPickerActionDiagnostic({ initial: row, current: { elapsedMs: Infinity }, events: [row] }, {})
+  assert.equal(d.initial.elapsedMs, null); assert.equal(d.current.elapsedMs, null)
+  assert.equal(d.initial.dockClearance, null); assert.equal(d.initial.focusFullyVisible, null)
+  assert.deepEqual(d.initial.dockBox, { x: null, y: null, width: null, height: null })
+  assert.deepEqual(d.initial.visualViewport, { offsetTop: null, offsetLeft: null, width: null, height: null })
+  assert.ok(!JSON.stringify(d).includes('SECRET')); assert.ok(!JSON.stringify(d).includes('private'))
+})
+
+test('missing optional platform geometry yields unknown, not invented evidence', async () => {
+  const h = fixture()
+  await withPublicPickerActionDiagnostics(h.page, h.target, h.options, h.operation, { log: h.log })
+  assert.equal(h.logs[0].initial.elapsedMs, null)
+  assert.equal(h.logs[0].initial.visualViewport, null)
+  assert.equal(h.logs[0].initial.dockClearance, null)
+})
+
+
+test('invalid or empty active-element geometry is unknown rather than falsely visible', async () => {
+  for (const overrides of [{ x: NaN }, { y: Infinity }, { width: 0 }, { height: -1 }, { width: undefined }, { viewportWidth: 0 }, { viewportHeight: NaN }]) {
+    const h = fixture()
+    h.input.getBoundingClientRect = () => ({ x: 0, y: 0, width: 100, height: 20, ...overrides })
+    if ('viewportWidth' in overrides) h.win.innerWidth = overrides.viewportWidth
+    if ('viewportHeight' in overrides) h.win.innerHeight = overrides.viewportHeight
+    await withPublicPickerActionDiagnostics(h.page, h.target, h.options, h.operation, { log: h.log })
+    assert.equal(h.logs[0].initial.focusFullyVisible, null)
+    assert.equal(h.logs[0].current.focusFullyVisible, null)
+    assert.equal(activeListeners(h), 0)
+  }
 })

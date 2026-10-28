@@ -65,7 +65,7 @@ test('actual native finally closes context and drains late interception after th
   const realClose=f.context.close
   f.context.close=async()=>{await f.request('late during disposal');await realClose()}
   await assert.rejects(runInNewContext('(async()=>{try{throw Error("action failed")}finally{'+cleanup+'}})()',{
-    context:f.context,settleDisclosure:f.settle,disclosureViolations:f.violations,failures,key:'ru/390x844',console:{error:()=>{}},
+    context:f.context,settleDisclosure:f.settle,disclosureViolations:f.violations,disclosureDiagnostics:[],caseDiagnostics:[],locale:"ru",width:390,height:844,failures,key:'ru/390x844',console:{error:()=>{}},
   }),/action failed/)
   assert.ok(f.events.includes('context closed'))
   assert.ok(f.events.includes('aborted late during disposal'))

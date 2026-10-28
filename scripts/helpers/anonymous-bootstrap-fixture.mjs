@@ -16,6 +16,7 @@ export const anonymousBootstrapDenial = Object.freeze({
 const browserHeaders = new Set(['accept','accept-encoding','accept-language','cache-control','connection','dnt','host','origin','pragma','priority','referer','user-agent',
   'sec-ch-ua','sec-ch-ua-mobile','sec-ch-ua-platform','sec-fetch-dest','sec-fetch-mode','sec-fetch-site']);
 
+const credentialClasses = new Set(['none','authorization','cookie','account-id','api-key','session','multiple','unclassified']);
 const diagnosticPhases = new Set(['setup','tantra','yggdrasil','academy','dao-entry','dao-save','dao-receipt','temple']);
 const diagnosticReasons = new Set(['phase','already-denied','method','resource','navigation','body','frame','headers-unavailable','duplicate-header','auth-session-header','prefetch-header','unrecognized-header','host','referer','origin','fetch-site','request-unavailable','fulfilled']);
 const diagnosticFrames = new Set(['tantra','yggdrasil','academy','dao','temple']);
@@ -46,6 +47,24 @@ const ownArrayLength = value => {
   const length = ownData(value,'length');
   return typeof length === 'number' && integer(length) && length >= 0 ? length : null;
 };
+// Names only, own data only; never inspect header or cookie values.
+export function anonymousCredentialClass(names) {
+  try {
+    const length = ownArrayLength(names);
+    if (length === null || length > 128) return 'unclassified';
+    let found = 'none';
+    for (let i = 0; i < length; i++) {
+      const name = ownData(names, '' + i);
+      if (typeof name !== 'string' || name.length > 256) return 'unclassified';
+      const lower = name.toLowerCase();
+      const next = lower === 'authorization' ? 'authorization' : lower === 'cookie' ? 'cookie'
+        : lower === 'x-hh-account-id' ? 'account-id' : lower === 'x-api-key' ? 'api-key'
+        : lower === 'x-session' ? 'session' : 'none';
+      if (next !== 'none') found = found === 'none' || found === next ? next : 'multiple';
+    }
+    return found;
+  } catch { return 'unclassified'; }
+}
 const outputObject = values => assign(create(null),values);
 const outputArray = () => setPrototype([],null);
 const unavailableSnapshot = () => outputObject({snapshotState:'unavailable',scenarioPhase:'unclassified',denialState:'unexpected',decisions:outputArray(),blocked:outputArray(),blockedTruncated:false});
@@ -64,7 +83,7 @@ export function bootstrapFixtureFailureDetails(fixture, blocked, phase) {
     for (let index = 0; index < 16 && index < decisionLength; index++) {
       const entry = ownData(observations,''+index);
       decisions[index] = outputObject({
-        reason:fixed(ownData(entry,'reason'),diagnosticReasons),scenarioPhase:fixed(ownData(entry,'scenarioPhase'),diagnosticPhases),
+        reason:fixed(ownData(entry,'reason'),diagnosticReasons),credentialClass:fixed(ownData(entry,'credentialClass'),credentialClasses),scenarioPhase:fixed(ownData(entry,'scenarioPhase'),diagnosticPhases),
         framePageAtDecision:fixed(ownData(entry,'framePageAtDecision'),diagnosticFrames),denialState:ownData(entry,'denialState') === 'used' ? 'used' : 'unused',
       });
     }
@@ -100,7 +119,7 @@ export function createAnonymousAcademyBootstrapFixture(origin, locale) {
   let denials = 0;
   const observations = [];
   const diagnosticState = {denials:0,observations};
-  const record = (reason, phase, route) => {
+  const record = (reason, phase, route, credentialClass = 'none') => {
     if (observations.length >= 16) return;
     try {
       const request = route.request();
@@ -112,10 +131,10 @@ export function createAnonymousAcademyBootstrapFixture(origin, locale) {
           if (raw === origin + '/' + locale + '/' + path) framePageAtDecision = alias;
         }
       } catch { /* Detached frame is unknown observation context. */ }
-      observations.push({reason,scenarioPhase:fixed(phase,diagnosticPhases),framePageAtDecision,denialState:denials === 0 ? 'unused' : 'used'});
+      observations.push({reason,credentialClass:fixed(credentialClass,credentialClasses),scenarioPhase:fixed(phase,diagnosticPhases),framePageAtDecision,denialState:denials === 0 ? 'unused' : 'used'});
     } catch { /* Passive observation must never alter the original decision. */ }
   };
-  const reject = (reason,phase,route) => { record(reason,phase,route); return false; };
+  const reject = (reason,phase,route,credentialClass) => { record(reason,phase,route,credentialClass); return false; };
   const fixture = {
     get denials() { return denials; },
     get observations() { return observations.map(entry => ({...entry})); },
@@ -140,7 +159,7 @@ export function createAnonymousAcademyBootstrapFixture(origin, locale) {
           const lower = names.map(name => name.toLowerCase());
           const reason = lower.some(name => ['authorization','cookie','x-hh-account-id','x-api-key','x-session'].includes(name)) ? 'auth-session-header'
             : lower.some(name => ['purpose','sec-purpose','next-router-prefetch','rsc'].includes(name)) ? 'prefetch-header' : 'unrecognized-header';
-          return reject(reason,phase,route);
+          return reject(reason,phase,route,anonymousCredentialClass(names));
         }
         const value = key => headers[names.find(name => name.toLowerCase() === key)];
         if (value('host') !== undefined && value('host') !== new URL(origin).host) return reject('host',phase,route);

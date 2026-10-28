@@ -11,7 +11,8 @@ export function installPublicPickerActionProbe(target, { action, token }) {
   // Closed-through is one bounded tombstone, not a retained list of IDs.
   if (token <= registry.closedThrough || registry.probes.has(token) || registry.probes.size >= 8) return false
   const picker = target.closest('[data-prelogin-test-picker]')
-  const types = ['pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'scroll']
+  const types = ['pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'scroll', 'scrollend']
+  const startedAt = win.performance?.now()
   const events = [], listeners = [], counts = types.map(() => 0)
   let dropped = 0, observationErrors = 0, disposed = false, lease = null, probe
   const finite = value => typeof value === 'number' && Number.isFinite(value)
@@ -37,6 +38,22 @@ export function installPublicPickerActionProbe(target, { action, token }) {
   }
   const snapshot = (event = null, phase = 'snapshot') => {
     const root = currentPicker(), control = currentTarget(root), box = rect(control)
+    // Correlation only: scroll/scrollend and geometry do not identify the cause
+    // of a scroll. Visibility here is containment in the layout viewport, not
+    // proof that a keyboard, dock or other overlay leaves the focus unobscured.
+    const dock = doc.querySelector('.ia222-bottom-navigation, .mobile-bottom-navigation')
+    const dockBox = rect(dock)
+    const rawClearance = doc.body ? win.getComputedStyle(doc.body).getPropertyValue('--ia222-bottom-height').trim() : ''
+    const dockClearance = /^-?(?:\d+(?:\.\d+)?|\.\d+)px$/.test(rawClearance) ? finite(Number(rawClearance.slice(0, -2))) : null
+    const vv = win.visualViewport
+    const visualViewport = vv ? { offsetTop: finite(vv.offsetTop), offsetLeft: finite(vv.offsetLeft), width: finite(vv.width), height: finite(vv.height) } : null
+    const activeBox = rect(doc.activeElement)
+    const validFocusGeometry = activeBox && Object.values(activeBox).every(value => typeof value === 'number' && Number.isFinite(value))
+      && activeBox.width > 0 && activeBox.height > 0
+      && Number.isFinite(win.innerWidth) && win.innerWidth > 0 && Number.isFinite(win.innerHeight) && win.innerHeight > 0
+    const focusFullyVisible = validFocusGeometry ? activeBox.x >= 0 && activeBox.y >= 0 && activeBox.x + activeBox.width <= win.innerWidth && activeBox.y + activeBox.height <= win.innerHeight : null
+    const now = win.performance?.now()
+    const elapsedMs = typeof startedAt === 'number' && typeof now === 'number' ? finite(Math.max(0, now - startedAt)) : null
     const input = root?.querySelector('#hh-test-hero-search')
     const selected = Array.from(root?.querySelectorAll('[data-test-collection][aria-pressed="true"]') || [])
     const collection = selected.length > 1 ? 'multiple' : !selected.length ? 'none'
@@ -47,6 +64,7 @@ export function installPublicPickerActionProbe(target, { action, token }) {
     const hitX = x ?? (box && box.x + box.width / 2), hitY = y ?? (box && box.y + box.height / 2)
     const hit = hitX !== null && hitY !== null ? doc.elementFromPoint(hitX, hitY) : null
     return {
+      elapsedMs, dockClearance, dockBox, visualViewport, focusFullyVisible,
       type: event ? types[types.indexOf(event.type)] || 'unknown' : 'snapshot', phase,
       trusted: event?.isTrusted === true, defaultPrevented: event?.defaultPrevented === true,
       target: alias(event?.target, root, control), focus: alias(doc.activeElement, root, control), hit: alias(hit, root, control),
@@ -105,16 +123,22 @@ export function sanitizePublicPickerActionDiagnostic(raw, { action, locale, resu
   const record = value => {
     if (!value || typeof value !== 'object') return null
     const out = {
-      type: pick(value.type, ['snapshot', 'pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'scroll']),
+      type: pick(value.type, ['snapshot', 'pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'click', 'focusin', 'focusout', 'scroll', 'scrollend']),
       phase: pick(value.phase, ['snapshot', 'capture', 'bubble']),
       target: alias(value.target), focus: alias(value.focus), hit: alias(value.hit),
       pressed: value.pressed === true ? true : value.pressed === false ? false : null,
       depth: count(value.depth, 7), collection: pick(value.collection, ['none', 'sleep', 'sexuality', 'other', 'multiple']),
       queryLength: count(value.queryLength, 120), box: value.box ? {} : null,
+      elapsedMs: typeof value.elapsedMs === 'number' && value.elapsedMs >= 0 ? finite(value.elapsedMs) : null,
+      dockClearance: finite(value.dockClearance), dockBox: value.dockBox ? {} : null,
+      visualViewport: value.visualViewport ? {} : null,
+      focusFullyVisible: typeof value.focusFullyVisible === 'boolean' ? value.focusFullyVisible : null,
     }
     for (const key of ['trusted', 'defaultPrevented', 'originalConnected', 'pickerConnected', 'sameTarget', 'samePicker']) out[key] = value[key] === true
     for (const key of ['x', 'y', 'button', 'scrollX', 'scrollY', 'viewportWidth', 'viewportHeight', 'documentHeight']) out[key] = finite(value[key])
     if (out.box) for (const key of ['x', 'y', 'width', 'height']) out.box[key] = finite(value.box[key])
+    if (out.dockBox) for (const key of ['x', 'y', 'width', 'height']) out.dockBox[key] = finite(value.dockBox[key])
+    if (out.visualViewport) for (const key of ['offsetTop', 'offsetLeft', 'width', 'height']) out.visualViewport[key] = finite(value.visualViewport[key])
     return out
   }
   return {
@@ -124,7 +148,7 @@ export function sanitizePublicPickerActionDiagnostic(raw, { action, locale, resu
     cleanup: pick(cleanup, ['completed', 'rejected', 'timed_out']),
     initial: record(raw?.initial), current: record(raw?.current),
     events: Array.isArray(raw?.events) ? raw.events.slice(-64).map(record) : [],
-    counts: Array.isArray(raw?.counts) ? raw.counts.slice(0, 9).map(value => count(value)) : [],
+    counts: Array.isArray(raw?.counts) ? raw.counts.slice(0, 10).map(value => count(value)) : [],
     dropped: count(raw?.dropped), observationErrors: count(raw?.observationErrors),
   }
 }

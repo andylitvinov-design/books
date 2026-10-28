@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 import {anonymousBootstrapDenial} from '../scripts/helpers/anonymous-bootstrap-fixture.mjs';
-import {createAnonymousPortraitBootstrapFixture,portraitBootstrapPattern,anonymousPortraitCopy} from '../scripts/helpers/anonymous-portrait-bootstrap-fixture.mjs';
+import {appendPortraitFixtureFailure,createAnonymousPortraitBootstrapFixture,portraitBootstrapPattern,anonymousPortraitCopy} from '../scripts/helpers/anonymous-portrait-bootstrap-fixture.mjs';
 import {removeAnonymousPortraitAdditions} from './helpers/anonymous-portrait-source-normalization.mjs';
 // VM arrays cross realms; browser serialization returns plain host arrays.
 const vmAssert={...assert,deepEqual:(a,b,...rest)=>assert.deepEqual(JSON.parse(JSON.stringify(a)),JSON.parse(JSON.stringify(b)),...rest)};
@@ -124,7 +124,7 @@ test('main additions erase exactly to current source while preserving original e
 });
 
 function intentHarness(locale,{clickThrows=false,noProbe=false,extraConsole=null}={}){
- const source=read('scripts/verify-public-services-production.mjs'),events=[],listeners=new Map(),diagnostics={console:[],apiReadObservations:[],anonymousPortraitDenials:[],pageErrors:[]},portraitFixtures=new WeakMap(),approvedPortraitConsole=new WeakSet();
+ const source=read('scripts/verify-public-services-production.mjs'),events=[],listeners=new Map(),diagnostics={console:[],apiReadObservations:[],anonymousPortraitDenials:[],anonymousPortraitFailures:[],pageErrors:[]},portraitFixtures=new WeakMap(),approvedPortraitConsole=new WeakSet();
  let routeHandler,open=false;const failure=new Error('SYNTHETIC_CLICK_FAILURE');
  const emit=(name,value)=>{for(const fn of listeners.get(name)||[])fn(value)};
  const title={kind:'title'},close={first:()=>close,click:async()=>{events.push('close');open=false}};
@@ -150,7 +150,7 @@ function intentHarness(locale,{clickThrows=false,noProbe=false,extraConsole=null
  const attach=node(source,n=>ts.isVariableDeclaration(n)&&n.name.getText()==='attachDiagnostics').initializer.getText();
  runInNewContext('('+attach+')',{pages:new Set(),portraitFixtures,diagnostics,origin,URL,attachPublicApiReadDiagnostics:()=>{}})(pageDouble);
  const begin=source.indexOf('      const portraitFixture = createAnonymousPortraitBootstrapFixture(page, origin, locale);'),end=source.indexOf('      const siteMenu = header.locator(',begin);assert.ok(begin>0&&end>begin);
- const invoke=runInNewContext('(async()=>{'+source.slice(begin,end)+'})',{page:pageDouble,origin,locale,createAnonymousPortraitBootstrapFixture,portraitBootstrapPattern,anonymousPortraitCopy,portraitFixtures,approvedPortraitConsole,diagnostics,cabinetEntry,expect,assert:vmAssert,visible:async value=>assert.equal(value,title)});
+ const invoke=runInNewContext('(async()=>{'+source.slice(begin,end)+'})',{page:pageDouble,origin,locale,appendPortraitFixtureFailure,createAnonymousPortraitBootstrapFixture,portraitBootstrapPattern,anonymousPortraitCopy,portraitFixtures,approvedPortraitConsole,diagnostics,cabinetEntry,expect,assert:vmAssert,visible:async value=>assert.equal(value,title)});
  return{invoke,events,diagnostics,approvedPortraitConsole,clean:()=>{assert.equal(routeHandler,null);assert.equal(portraitFixtures.has(pageDouble),false)},failure};
 }
 test('actual eight intent blocks install before click, account only their exact401 console, and preserve unrelated503 fatality',async()=>{
@@ -166,7 +166,7 @@ test('actual eight intent blocks install before click, account only their exact4
  assert.throws(()=>runInNewContext(fatal,{assert:vmAssert,diagnostics:combined,approvedPortraitConsole}));assert.equal(approvedPortraitConsole.has(unrelated),false);
 });
 test('actual intent block cleans up on native click failure and never accepts an unobserved probe',async()=>{
- const throwing=intentHarness('en',{clickThrows:true});await assert.rejects(throwing.invoke(),error=>error===throwing.failure);throwing.clean();assert.deepEqual(throwing.events,['route','click','unroute','off-response']);
+ const throwing=intentHarness('en',{clickThrows:true});await assert.rejects(throwing.invoke(),error=>error===throwing.failure);throwing.clean();assert.equal(throwing.diagnostics.anonymousPortraitFailures.length,1);assert.deepEqual(throwing.events,['route','click','unroute','off-response']);
  const absent=intentHarness('ru',{noProbe:true});await assert.rejects(absent.invoke());absent.clean();assert.equal(absent.diagnostics.anonymousPortraitDenials.length,0);
 });
 

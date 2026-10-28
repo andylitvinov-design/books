@@ -290,6 +290,34 @@ try {
         assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
+      } catch (error) {
+        // Failure-only observation: retain no question text, DOM dump, URL, or provider data.
+        // Do not insert waits, retries, or synthetic input into the real interaction sequence.
+        let state = null;
+        try {
+          state = await page.evaluate(expected => {
+            const guide = document.querySelector("[data-home-conversation-guide]");
+            const dialog = guide?.querySelector("[data-home-guide-dialog]");
+            const input = dialog?.querySelector("textarea");
+            const send = dialog?.querySelector('button[type="submit"]');
+            const active = document.activeElement;
+            return {
+              dialogPresent: Boolean(dialog),
+              phase: ["ready", "conversation"].includes(guide?.getAttribute("data-guide-phase"))
+                ? guide.getAttribute("data-guide-phase") : "other",
+              inputPresent: Boolean(input),
+              inputLength: input ? input.value.length : null,
+              expectedLength: expected.length,
+              matchesExpected: input ? input.value === expected : false,
+              sendDisabled: send ? send.disabled : null,
+              active: input && active === input ? "textarea" : send && active === send ? "send"
+                : dialog && active === dialog ? "dialog" : dialog?.contains(active) ? "dialog-child" : "outside",
+            };
+          }, scenario.text);
+        } catch { /* Preserve the original browser failure even if the page is unavailable. */ }
+        evidence.failure = { scenarioIndex: scenarios.indexOf(scenario), locale: scenario.locale,
+          width, pageErrorCount: errors.length, state };
+        throw error;
       } finally {
         await context.close();
       }

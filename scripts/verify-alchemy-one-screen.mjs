@@ -21,12 +21,15 @@ const cases = [
 ];
 const report = [];
 const failures = [];
+const disclosureDiagnostics = [];
 const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
     const context = await browser.newContext({viewport:{width,height}, serviceWorkers:"block"});
     const page = await context.newPage();
     const disclosureViolations = [];
+    const caseDiagnostics = [];
+    let disclosurePhase = "unknown";
     let settleDisclosure = async () => {};
     page.on("pageerror", error => disclosureViolations.push("page error: " + String(error)));
     const key = locale + "/" + width + "x" + height;
@@ -122,12 +125,17 @@ try {
         assert.equal(await trigger.count(), 1, "one Book disclosure");
         await trigger.waitFor({state:"visible"});
         assert.equal(await trigger.getAttribute("aria-expanded"), "false", "initially collapsed");
-        settleDisclosure = await installAlchemyDisclosureGuard(context, page, origin, disclosureViolations);
+        settleDisclosure = await installAlchemyDisclosureGuard(context, page, origin, disclosureViolations, {
+          phase: () => disclosurePhase,
+          emit: record => caseDiagnostics.push(record),
+        });
+        disclosurePhase = "opening-contact";
           await trigger.click();
           assert.equal(await trigger.getAttribute("aria-expanded"), "true", "Book opens contact");
           const contact = booking.locator('form[data-booking-step="contact"]');
           assert.equal(await contact.count(), 1, "one contact step");
           await contact.waitFor({state:"visible"});
+          disclosurePhase = "contact-open";
           const phone = contact.locator('[data-phone-country-input] input[type="tel"]');
           const consent = contact.locator('input[type="checkbox"]');
           const submit = contact.locator('button[type="submit"]');
@@ -145,9 +153,11 @@ try {
           assert.equal(await consent.isChecked(), false, "no implicit consent");
           assert.equal(await submit.isDisabled(), true, "unpaid empty submit disabled");
           assert.equal(await booking.locator('[data-booking-step="pending"],[data-booking-step="confirmed"],[data-booking-cta="pay"],[data-booking-payment-options],[data-booking-messenger],a[data-contact-channel]').count(), 0, "no premature receipt, payment or messenger");
+          disclosurePhase = "closing-contact";
           await trigger.click();
           assert.equal(await trigger.getAttribute("aria-expanded"), "false", "authored close");
           await contact.waitFor({state:"hidden"});
+          disclosurePhase = "contact-closed";
       }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
@@ -156,15 +166,19 @@ try {
       } else {
         console.log("PASS Alchemy "+engine+" "+key+" ten chapters and twelve full-width vertical reviews pass with no overflowing controls");
       }
+      disclosurePhase = "sample-navigation";
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
+      disclosurePhase = "sample-ready";
       assert.equal(sampleResponse?.status(),200,key+": sample report");
       assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
     } catch (error) {
       failures.push(key+": "+String(error));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
     } finally {
+      disclosurePhase = "context-disposal";
       try { await context.close(); } finally { await settleDisclosure(); }
       if (disclosureViolations.length) {
+        disclosureDiagnostics.push({locale,width,height,observations:caseDiagnostics});
         failures.push(key + ": " + disclosureViolations.join("; "));
         console.error("ALCHEMY_DISCLOSURE_FAIL " + key + " " + disclosureViolations.join("; "));
       }
@@ -173,6 +187,6 @@ try {
 } finally { await browser.close(); }
 const destination="artifacts/public-services-production";
 await mkdir(destination,{recursive:true});
-await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures},null,2)+"\n");
+await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures,disclosureDiagnostics},null,2)+"\n");
 assert.deepEqual(failures, [], "Alchemy viewport acceptance: "+failures.join(" | "));
 

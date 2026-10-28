@@ -1,4 +1,4 @@
-import { createAnonymousPortraitBootstrapFixture, portraitBootstrapPattern, anonymousPortraitCopy } from "./helpers/anonymous-portrait-bootstrap-fixture.mjs";
+import { appendPortraitFixtureFailure, createAnonymousPortraitBootstrapFixture, portraitBootstrapPattern, anonymousPortraitCopy } from "./helpers/anonymous-portrait-bootstrap-fixture.mjs";
 import { attachPublicApiReadDiagnostics } from "./helpers/public-api-read-diagnostics.mjs";
 import { verifyFreeReviewCurrentFlow, verifyFreeDiagnosisHub } from './helpers/free-entry-current-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
@@ -19,7 +19,7 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], anonymousPortraitDenials: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], anonymousPortraitDenials: [], anonymousPortraitFailures: [], pageErrors: [], devIssueOverlay: false };
 const portraitFixtures = new WeakMap(), approvedPortraitConsole = new WeakSet();
 let failure;
 try {
@@ -196,6 +196,7 @@ try {
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
       diagnostics.anonymousPortraitDenials.push(portraitFixture.finish(approvedPortraitConsole));
       } finally {
+        appendPortraitFixtureFailure(diagnostics.anonymousPortraitFailures, portraitFixture);
         await page.unroute(portraitBootstrapPattern, portraitFixture.route);
         page.off("response", portraitFixture.observeResponse);
         portraitFixtures.delete(page);

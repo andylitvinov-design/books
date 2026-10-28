@@ -30,6 +30,11 @@ const edits=[
   }
 ];
 export function removeAnonymousPortraitAdditions(source){
+ for(const [after,before] of [
+  ['import { appendPortraitFixtureFailure, createAnonymousPortraitBootstrapFixture,','import { createAnonymousPortraitBootstrapFixture,'],
+  ['anonymousPortraitDenials: [], anonymousPortraitFailures: [],','anonymousPortraitDenials: [],'],
+  ['        appendPortraitFixtureFailure(diagnostics.anonymousPortraitFailures, portraitFixture);\n',''],
+ ]){assert.equal(source.split(after).length-1,1,'One exact diagnostic-only addition');source=source.replace(after,before)}
  for(const {after,before} of edits){assert.equal(source.split(after).length-1,1,'One exact portrait verifier addition');source=source.replace(after,before)}
  return source;
 }

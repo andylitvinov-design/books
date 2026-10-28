@@ -12,10 +12,28 @@ const compact = value => value.replace(/\s+/g, '');
 // unchanged ceil(height) <= innerHeight - 80 assertion, never an estimate here.
 function layoutContract(input) {
   const root = postcss.parse(input);
-  const media = root.nodes.filter(node => node.type !== 'comment').at(-1);
-  assert.equal(media.type, 'atrule');
-  assert.equal(media.name, 'media');
-  assert.equal(compact(media.params), '(min-width:1024px)');
+  const targets = root.nodes.filter(node => node.type === 'atrule' && node.name === 'media' && compact(node.params) === '(min-width:1024px)');
+  assert.equal(targets.length, 1, 'one exact reviewed desktop media block');
+  const media = targets[0];
+  // The independently reviewed RU short-screen request padding may follow.
+  // No arbitrary or overlapping tail rule is accepted by this source proof.
+  const tail = root.nodes.slice(root.nodes.indexOf(media) + 1).filter(node => node.type !== 'comment');
+  assert.ok(tail.length <= 1, 'no additional CSS tail overrides');
+  if (tail.length) {
+    const mobile = tail[0];
+    assert.equal(mobile.type, 'atrule');
+    assert.equal(mobile.name, 'media');
+    assert.equal(compact(mobile.params), '(max-width:350px)and(max-height:650px)');
+    const requestRules = mobile.nodes.filter(node => node.type !== 'comment');
+    assert.equal(requestRules.length, 1, 'only reviewed RU request padding');
+    assert.equal(requestRules[0].type, 'rule');
+    assert.equal(requestRules[0].selector.trim().replace(/\s+/g, " "), '.page[lang="ru"] .requestSection');
+    assert.deepEqual(requestRules[0].nodes.map(declaration => {
+      assert.equal(declaration.type, 'decl');
+      assert.equal(Boolean(declaration.important), false);
+      return [declaration.prop, compact(declaration.value)];
+    }), [['padding-top', '8px'], ['padding-bottom', '8px']]);
+  }
   const rules = media.nodes.filter(node => node.type !== 'comment');
   const expected = [
     ['.panel.optionsSection', {
@@ -109,3 +127,30 @@ test('desktop contract rejects mobile spill, lost specificity, clipping, shrinki
     assert.throws(() => layoutContract(parsed.root.toString()), { code: 'ERR_ASSERTION' });
   }
 });
+
+test('desktop extractor accepts only the exact reviewed disjoint RU tail and rejects scope/cascade mutations', () => {
+  const original = layoutContract(css);
+  const tail = original.root.nodes.filter(node => node.type !== 'comment').at(-1);
+  assert.notEqual(tail, original.media);
+  const withoutTail = original.root.clone();
+  withoutTail.nodes.at(-1).remove();
+  layoutContract(withoutTail.toString());
+  const mutations = [
+    ({ root }) => { root.nodes.at(-1).params = '(max-width:1024px) and (max-height:650px)'; },
+    ({ root }) => { root.nodes.at(-1).params = '(max-width:350px)'; },
+    ({ root }) => { root.nodes.at(-1).nodes[0].selector = '.requestSection'; },
+    ({ root }) => { root.nodes.at(-1).nodes[0].selector = '.page[lang="ru"].requestSection'; },
+    ({ root }) => { root.nodes.at(-1).nodes[0].selector = '.page[lang="es"] .requestSection'; },
+    ({ root }) => { root.nodes.at(-1).nodes[0].selector = '.page[lang="ru"] .optionsSection'; },
+    ({ root }) => { root.nodes.at(-1).nodes[0].append({prop:'display',value:'none'}); },
+    ({ root }) => { root.nodes.at(-1).nodes[0].nodes[0].important = true; },
+    ({ root }) => { root.nodes.at(-1).append({selector:'.panel',nodes:[{prop:'padding',value:'0'}]}); },
+    ({ root }) => { root.append({selector:'.optionsSection',nodes:[{prop:'display',value:'none'}]}); },
+    ({ root,media }) => { root.append(media.clone()); },
+  ];
+  for (const mutate of mutations) {
+    const parsed = layoutContract(css); mutate(parsed);
+    assert.throws(() => layoutContract(parsed.root.toString()), {code:'ERR_ASSERTION'});
+  }
+});
+

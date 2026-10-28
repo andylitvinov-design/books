@@ -134,6 +134,13 @@ const diagnosticGeneratedIconPaths = new Map([
 // EN/ES freeMeditationVideos selects the authored English Sun recording;
 // AcademyCourseVideoPlaylist -> AcademyVideoPlayer emits this public poster.
 const diagnosticSunPoster = 'https://i.ytimg.com/vi/HqfixazXqRY/hqdefault.jpg'
+// Source-only alias: TelegramDiagnosticEntry mounts this exact read. It remains
+// unplanned and aborted; this label neither identifies an old redacted request
+// nor authorizes a backend/provider call.
+const diagnosticTelegramAvailabilityPath = '/api/public/telegram-diagnostic'
+const diagnosticJourneyPhases = new Set([
+  'business-initial', 'business-paid', 'business-return', 'business-mentoring', 'business-free',
+])
 export function publicJourneyRequestDiagnostic(request, decision, origin) {
   let path = '', target
   try { target = new URL(request.url); path = target.pathname } catch {}
@@ -145,7 +152,15 @@ export function publicJourneyRequestDiagnostic(request, decision, origin) {
   let imagePathShape = 'unclassified', imagePathDepth = 'unclassified'
   if (target && !target.username && !target.password && !target.hash) {
     if (origin && target.origin === origin) {
-      sourceId = diagnosticSourcePaths.get(path) || diagnosticGeneratedIconPaths.get(path) || 'unclassified'
+      if (typeof request.url === 'string' && request.url.length <= 8192 &&
+          /^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin) &&
+          request.url === origin + diagnosticTelegramAvailabilityPath &&
+          request.method === 'GET' && request.resourceType === 'fetch' &&
+          request.navigation === false && request.body === '' && request.prefetch === false &&
+          request.prefetchSignals?.purposePrefetch === false &&
+          request.prefetchSignals?.nextRouterPrefetch === false && request.prefetchSignals?.rsc === false)
+        sourceId = 'public-telegram-diagnostic-availability'
+      sourceId = diagnosticSourcePaths.get(path) || diagnosticGeneratedIconPaths.get(path) || sourceId
       if (request.url === origin + reviewedRemoteSupportIntroPath) sourceId = 'public-remote-support-intro-basic-program'
       // This dynamic route may proxy upstream. Recognize structure only: never
       // print its parameters, call it a safe source, or permit the request.
@@ -195,6 +210,7 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
   const blockedResources = []
   const requestDiagnostics = []
   let anonymousTalismanReads = 0
+  let diagnosticPhase = 'unclassified'
   await context.route('**/*', async route => {
     const request = route.request()
     const headers = request.headers?.() || {}
@@ -229,10 +245,11 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
     // Never save the URL/body: a failing implementation might contain private text.
     if (decision === 'external-resource') blockedResources.push(decision)
     else violations.push(decision)
-    if (requestDiagnostics.length < 20) requestDiagnostics.push(publicJourneyRequestDiagnostic(info, decision, origin))
+    if (requestDiagnostics.length < 20) requestDiagnostics.push({ ...publicJourneyRequestDiagnostic(info, decision, origin), phase: diagnosticPhase })
     await route.abort('blockedbyclient')
   })
   return {
+    setDiagnosticPhase(phase) { diagnosticPhase = diagnosticJourneyPhases.has(phase) ? phase : 'unclassified' },
     assertNoSideEffects(label) { assert.deepEqual(violations, [], label + ': no private-text, API, write or external navigation attempt; redacted request samples ' + JSON.stringify(requestDiagnostics)) },
     summary() { return { violations: [...violations], blockedExternalResources: blockedResources.length,
       anonymousTalismanReads, requestDiagnostics: [...requestDiagnostics] } },

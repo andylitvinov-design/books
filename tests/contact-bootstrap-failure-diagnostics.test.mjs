@@ -27,10 +27,11 @@ test('exact candidate rejection reasons are fixed, bounded observations without 
   const fixture=createAnonymousAcademyBootstrapFixture(origin,'en'),request=route(overrides);
   assert.equal(await fixture.tryFulfill(request,'academy'),false);assert.equal(fixture.denials,0);assert.deepEqual(request.actions,[]);
   assert.equal(fixture.observations.length,1);assert.equal(fixture.observations[0].reason,reason);
-  assert.doesNotMatch(JSON.stringify(fixture.observations),/SYNTHETIC_PRIVATE|x-unknown|token=|127\.0\.0\.1|authorization|cookie/);
+  for(const entry of fixture.observations)assert.ok(['none','authorization','cookie','account-id','api-key','session','multiple','unclassified'].includes(entry.credentialClass));
+  assert.doesNotMatch(JSON.stringify(fixture.observations.map(({credentialClass,...rest})=>rest)),/SYNTHETIC_PRIVATE|x-unknown|token=|127\.0\.0\.1|authorization|cookie/);
  }
  const unused=createAnonymousAcademyBootstrapFixture(origin,'en');assert.deepEqual(unused.observations,[]);
- assert.equal(await unused.tryFulfill(route(),'dao-save'),false);assert.deepEqual(unused.observations,[{reason:'phase',scenarioPhase:'dao-save',framePageAtDecision:'academy',denialState:'unused'}]);
+ assert.equal(await unused.tryFulfill(route(),'dao-save'),false);assert.deepEqual(unused.observations,[{reason:'phase',credentialClass:'none',scenarioPhase:'dao-save',framePageAtDecision:'academy',denialState:'unused'}]);
 });
 
 test('observations never promote URL variants and cap independently of the unchanged per-fixture allowance',async()=>{
@@ -75,7 +76,7 @@ test('actual final gates save diagnostics before unchanged count or blocked fail
 
 test('erasing every passive fixture addition recovers the exact current policy preimage',()=>{
  let source=read('scripts/helpers/anonymous-bootstrap-fixture.mjs').replace("import { types as nodeTypes } from 'node:util';\n",'');
- const declarations=source.indexOf('const diagnosticPhases = '),factory=source.indexOf('export function createAnonymousAcademyBootstrapFixture');assert.ok(declarations>0&&factory>declarations);source=source.slice(0,declarations)+source.slice(factory);
+ const declarations=source.indexOf('const credentialClasses = '),factory=source.indexOf('export function createAnonymousAcademyBootstrapFixture');assert.ok(declarations>0&&factory>declarations);source=source.slice(0,declarations)+source.slice(factory);
  const observations=source.indexOf('  const observations = [];'),returned=source.indexOf('  const fixture = {\n    get denials()',observations);assert.ok(observations>0&&returned>observations);source=source.slice(0,observations)+source.slice(returned);source=source.replace('  const fixture = {\n    get denials()','  return {\n    get denials()').replace('      diagnosticState.denials = denials;\n','').replace('  weakSet(diagnosticStates,fixture,diagnosticState);\n  return fixture;\n','');
  source=source.replace('    get observations() { return observations.map(entry => ({...entry})); },\n','')
   .replace("      if (denials !== 0) return reject('already-denied',phase,route);\n      if (phase !== 'academy') return reject('phase',phase,route);","      if (denials !== 0 || phase !== 'academy') return false;");

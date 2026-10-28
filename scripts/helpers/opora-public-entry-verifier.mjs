@@ -47,6 +47,44 @@ export function classifyOporaBlockedEndpoint(rawUrl, origin) {
  return 'unclassified'
 }
 
+// OPORA-only passive console categories. Never retain console text, arguments,
+// locations, stacks or request data. These labels diagnose, never exempt errors.
+export function classifyOporaConsole(text) {
+ if (typeof text !== 'string' || text.length > 4096) return 'unclassified'
+ if (/hydration failed|hydration mismatch|hydrated but some attributes|server rendered HTML didn't match|text content did not match/i.test(text)) return 'hydration'
+ if (/validateDOMNesting|cannot be a descendant of|cannot contain a nested|cannot be a child of/i.test(text)) return 'dom_nesting'
+ if (/Each child in a list should have a unique|Encountered two children with the same key/i.test(text)) return 'react_key'
+ if (/result of get(?:Server)?Snapshot should be cached/i.test(text)) return 'uncached_snapshot'
+ if (/Maximum update depth exceeded|Too many re-renders/i.test(text)) return 'render_loop'
+ return 'unclassified'
+}
+
+export function observeOporaConsole(page, { runtime } = {}) {
+ if (runtime !== 'isolated') throw new Error('Isolated OPORA console diagnostics only')
+ const events = [], started = Date.now()
+ let stopped = false, dropped = 0, unreadable = 0, cleanupErrors = 0
+ const increment = value => Math.min(value + 1, 1000000)
+ const onConsole = message => {
+  if (stopped) return
+  try {
+   const type = message.type()
+   if (type !== 'error' && type !== 'warning') return
+   if (events.length >= 64) { dropped = increment(dropped); return }
+   const category = classifyOporaConsole(message.text())
+   events.push({ atMs: Math.max(0, Math.min(Date.now() - started, 3600000)), type, category })
+  } catch { unreadable = increment(unreadable) }
+ }
+ try { page.on('console', onConsole) }
+ catch { stopped = true; try { page.off('console', onConsole) } catch {} ; throw new Error('OPORA console observer unavailable') }
+ return { stop() {
+  if (!stopped) {
+   stopped = true
+   try { page.off('console', onConsole) } catch { cleanupErrors = increment(cleanupErrors) }
+  }
+  return { schemaVersion: 1, events: events.map(event => ({ ...event })), dropped, unreadable, cleanupErrors }
+ } }
+}
+
 // This anonymous preview must not start OAuth, create a course or send anything
 // to a provider. Fall through to existing fences for allowed local reads.
 export function createOporaGuestPreviewGuard(origin) {
@@ -124,7 +162,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
  const maxPages = 32, maxCloses = 16, closureTimeoutMs = 5000
  const owned = new Set(), watched = new Map(), parents = new Map(), ownershipChecks = new Set(), pageErrors = [], cleanupErrors = []
  let page, primaryError, primaryFailed = false, routeInstalled = false, generation = 0, ownershipFailure
- let navigation, diagnosticLocale = null, diagnosticStage = 'owned-page'
+ let navigation, consoleDiagnostic, diagnosticLocale = null, diagnosticStage = 'owned-page'
  let reconciling = false
  const ownershipFault = message => { ownershipFailure ||= new Error(message) }
  const watch = target => {
@@ -226,6 +264,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
   // warm, retry, navigate, intercept requests or excuse any original failure.
   // A missing observer is diagnostic-only; it must not replace the real gate.
   try { navigation = observePortraitNavigation(page, { origin, runtime }) } catch {}
+  try { consoleDiagnostic = observeOporaConsole(page, { runtime }) } catch {}
   const viewport = callerPage.viewportSize()
   assert.ok(viewport, 'The OPORA preview requires the caller mobile viewport')
   await page.setViewportSize(viewport)
@@ -294,12 +333,14 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
   try {
    navigation?.mark('failure')
    console.log('SYNTHETIC_OPORA_NAVIGATION_DIAGNOSTIC', JSON.stringify({ locale: diagnosticLocale, stage: diagnosticStage,
-    observation: navigation ? navigation.stop() : { unavailable: true } }))
+    observation: navigation ? navigation.stop() : { unavailable: true },
+    consoleObservation: consoleDiagnostic ? consoleDiagnostic.stop() : { unavailable: true } }))
   } catch { /* Diagnostics must preserve the original assertion. */ }
  } finally {
   // Successful journeys stay quiet. Stop even if evidence recording failed;
   // the separate ownership/pageerror guards remain active through cleanup.
   try { navigation?.stop() } catch {}
+  try { consoleDiagnostic?.stop() } catch {}
   // Only a bounded closure of the observed owned-page graph is certified.
   // Failed/incomplete ancestry, caps or closes retain the fence and listeners.
   const deadline = Date.now() + closureTimeoutMs

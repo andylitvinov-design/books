@@ -590,3 +590,22 @@ test('passive diagnostics never swallow a page error or alter either native prog
  assert.doesNotMatch(JSON.stringify(fixture.evidence), /never-retain/)
  assert.equal(fixture.pages[0].eventNames().length, 0)
 })
+
+test('OPORA console categories precede owned cleanup without masking fatal request guard', async () => {
+ const fixture = lifecycleFixture({ onExplore: async ({ page }) => {
+  page.emit('console', { type: () => 'error', text: () => 'Hydration failed SECRET https://private.invalid/?secret=SECRET' })
+  await fixture.context.dispatch(fixture.origin + '/__nextjs_original-stack-frames', 'POST')
+ }, onClose: ({ page }) => assert.equal(page.listenerCount('console'), 0) })
+ await assert.rejects(fixture.run(), /must not attempt authentication, writes or provider requests/)
+ assert.equal(fixture.requests.find(request => request.method === 'POST').aborted,true)
+ assert.equal(fixture.requests.find(request => request.method === 'POST').forwarded,false)
+ assert.equal(fixture.evidence[0].consoleObservation.events[0].category,'hydration')
+ assert.doesNotMatch(JSON.stringify(fixture.evidence),/SECRET|private.invalid/)
+ assert.equal(fixture.pages[0].eventNames().length,0)
+})
+test('a console event alone remains diagnostic-only and successful journey stays quiet', async () => {
+ const fixture=lifecycleFixture({onExplore:({page})=>page.emit('console',{type:()=> 'warning',text:()=> 'Unknown SECRET'})})
+ await fixture.run()
+ assert.equal(fixture.evidence.length,0)
+ assert.equal(fixture.pages[0].eventNames().length,0)
+})

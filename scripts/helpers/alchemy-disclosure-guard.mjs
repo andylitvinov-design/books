@@ -1,9 +1,29 @@
 // Install before the first Book click; retain until the owned context is closed.
-export async function installAlchemyDisclosureGuard(context, page, origin, violations) {
+export async function installAlchemyDisclosureGuard(context, page, origin, violations, diagnostic = {}) {
+  let emitted = 0
+  const safe = read => { try { return read() } catch { return undefined } }
+  const enumValue = (value, values, fallback = "unknown") => values.includes(value) ? value : fallback
+  const observe = (event, request) => {
+    // Observation phase is not proof of the request initiator. Never emit raw
+    // URLs, paths, queries, payloads, headers, exception text or arbitrary enums.
+    if (emitted >= 8) return
+    emitted++
+    const record = {
+      event,
+      phase: enumValue(safe(() => diagnostic.phase()), ["opening-contact", "contact-open", "closing-contact", "contact-closed", "sample-navigation", "sample-ready", "context-disposal"]),
+      method: enumValue(safe(() => request.method()), ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], "OTHER"),
+      origin: safe(() => new URL(request.url()).origin === origin ? "same" : "external") ?? "invalid",
+      resource: enumValue(safe(() => request.resourceType()), ["document", "stylesheet", "image", "media", "font", "script", "texttrack", "xhr", "fetch", "eventsource", "websocket", "manifest", "other"]),
+      ownership: safe(() => request.frame().page() === page ? "primary" : "other") ?? "unavailable",
+    }
+    // Diagnostics cannot replace a primary failure or interrupt abort/disposal.
+    try { Promise.resolve(diagnostic.emit?.(record)).catch(() => {}) } catch {}
+  }
   const pending = new Set()
   const track = operation => {
     const promise = Promise.resolve().then(operation).catch(error => {
-      violations.push("booking guard error: " + String(error))
+      violations.push("booking guard error")
+      observe("guard-error")
     })
     pending.add(promise)
     promise.finally(() => pending.delete(promise))
@@ -12,6 +32,7 @@ export async function installAlchemyDisclosureGuard(context, page, origin, viola
   context.on("page", popup => {
     if (popup !== page) {
       violations.push("unexpected booking popup")
+      observe("unexpected-popup")
       track(() => popup.close())
     }
   })
@@ -23,6 +44,7 @@ export async function installAlchemyDisclosureGuard(context, page, origin, viola
         !["GET", "HEAD"].includes(request.method()) ||
         new URL(request.url()).origin !== origin) {
       violations.push("unexpected booking disclosure network request")
+      observe("request-blocked", request)
       await route.abort()
     } else await route.continue()
   }))

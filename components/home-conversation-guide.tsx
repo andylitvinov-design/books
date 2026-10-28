@@ -438,7 +438,12 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus({ preventScroll: true }));
+    const frame = window.requestAnimationFrame(() => {
+      const dialog = dialogRef.current;
+      // Opening must not take focus back after the visitor has begun using the dialog.
+      if (!dialog || dialog.contains(document.activeElement)) return;
+      dialog.focus({ preventScroll: true });
+    });
     function onDialogKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();

@@ -9,6 +9,8 @@ import { assertPublicJourneyRuntime, installPublicJourneyFence, assertHolisticCo
   from "./helpers/public-journey-verifier.mjs";
 import { withHolisticDaoActionDiagnostics } from "./helpers/holistic-dao-action-diagnostics.mjs";
 
+import { verifyCurrentGallery } from "./helpers/holistic-gallery-verifier.mjs";
+
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -103,46 +105,8 @@ async function verify(engine, locale, width) {
     assert.equal(await tab.getAttribute("aria-current"), "page");
 
 
-    // Meditation acceptance: two equal viewport cards, no seven-row mobile list.
-    const videoStage = page.locator('[data-holistic-meditation-screen="video"]');
-    const audioStage = page.locator('[data-holistic-meditation-screen="audio"]');
-    assert.equal(await videoStage.count(), 1, label + ": one video stage");
-    assert.equal(await audioStage.count(), 1, label + ": one audio stage");
-    const geometryForMeditations = await page.evaluate(() => {
-      const video = document.querySelector('[data-holistic-meditation-screen="video"]');
-      const audio = document.querySelector('[data-holistic-meditation-screen="audio"]');
-      const v = video.getBoundingClientRect(), a = audio.getBoundingClientRect();
-      return { videoHeight:v.height, audioHeight:a.height, width:document.documentElement.scrollWidth, expected:innerHeight-142 };
-    });
-    assert.ok(Math.abs(geometryForMeditations.videoHeight - geometryForMeditations.expected) <= 2,
-      label + ": video card occupies mobile safe viewport " + JSON.stringify(geometryForMeditations));
-    assert.ok(Math.abs(geometryForMeditations.videoHeight - geometryForMeditations.audioHeight) <= 2,
-      label + ": audio / video equal-height cards");
-    assert.ok(geometryForMeditations.width <= width + 2,
-      label + ": meditation cards do not overflow page width");
-    assert.equal(await videoStage.locator('iframe').count(), 0, label + ": no YouTube iframe before Play");
-    assert.equal(await videoStage.locator('a[href="#meditation-audio"]').count(), 1,
-      label + ": keyboard-usable next-stage anchor");
-    assert.equal(await audioStage.locator('audio[controls] source[type="audio/wav"]').getAttribute('src'),
-      '/audio/holistic-house-soft-melody-gentle-waves-96s.wav',
-      label + ": original instrumental WAV wired without autoplay");
-    const selectedVideo = videoStage.locator('[data-academy-course-playlist]');
-    assert.equal(await selectedVideo.getAttribute('data-video-lesson-count'),locale==="ru"?"7":"1",
-      label + ": source-backed locale-only recording count");
-    if (locale === "ru") {
-      await videoStage.locator('[data-academy-course-playlist] nav button').last().click();
-      assert.match(await videoStage.locator('[aria-live="polite"]').innerText(), /.+/,
-        label + ": next video swaps actual selected recording");
-      assert.equal(await videoStage.locator('button[aria-pressed="true"]').count(), 1,
-        label + ": one active video choice");
-    }
-    if (width === 320) {
-      await page.setViewportSize({width, height:568});
-      const shortHeight = await videoStage.evaluate(node => node.getBoundingClientRect().height);
-      assert.ok(Math.abs(shortHeight - (568-142)) <= 2,
-        label + ": 320x568 viewport card has safe height");
-      await page.setViewportSize({width, height:844});
-    }
+    // Current gallery UI only: no playback/fullscreen acceptance claim.
+    await verifyCurrentGallery(page, locale, width, label);
 
     const insight = engineCard.locator("[data-ideas-tao]");
     const diagnostic = engineCard.locator("[data-ideas-free-diagnostic]");

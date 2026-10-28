@@ -72,6 +72,7 @@ async function verify(browserType,locale,width){
     assert.equal(await form.locator('form').count(),1,label+': no success receipt on navigation')
   }
   try{
+    fence.setDiagnosticPhase('business-initial')
     await navigate('/explore/business')
     const direction=page.locator('[data-direction-offers="business"]')
     await direction.waitFor({state:'visible'})
@@ -163,6 +164,7 @@ async function verify(browserType,locale,width){
     // Both original same-screen assertions precede any diagnostic observation.
     if(failures.length>selectedFailures)await recordGeometry(page,'selected-needs',[freeBox,paidBox])
     if(snap)await page.screenshot({path:dir+'/01-current-direction-and-needs.png',fullPage:false})
+    fence.setDiagnosticPhase('business-paid')
     await paidCta.click()
     await page.waitForURL(url=>url.pathname==='/'+locale+'/services/business-consulting')
     // A generic source CTA must reach all three real choices; never silently
@@ -208,8 +210,10 @@ async function verify(browserType,locale,width){
     }
     await noOverflow('paid destination')
     if(snap)await page.screenshot({path:dir+'/02-consent-closed-paid-form.png',fullPage:false})
+    fence.setDiagnosticPhase('business-return')
     await navigate('/explore/business')
     await extras.locator('summary').click()
+    fence.setDiagnosticPhase('business-mentoring')
     await mentoring.click()
     await page.waitForURL(url=>url.pathname==='/'+locale+'/services/business-consulting'&&url.searchParams.get('businessFormat')==='mentoring')
     await form.waitFor({state:'visible'})
@@ -218,7 +222,9 @@ async function verify(browserType,locale,width){
     await expect(form.locator('[data-business-field="format"]')).toHaveValue('mentoring')
     assert.equal(await form.locator('[data-business-review-context]').count(),0,label+': fresh mentoring link cannot inherit an earlier topic')
     await consentClosed(form)
+    fence.setDiagnosticPhase('business-return')
     await navigate('/explore/business')
+    fence.setDiagnosticPhase('business-free')
     await freeCta.click()
     await page.waitForURL('**/'+locale+'/services/free-situation-review?topic=business',{timeout:30000})
     assert.equal(new URL(page.url()).pathname,'/'+locale+'/services/free-situation-review')
