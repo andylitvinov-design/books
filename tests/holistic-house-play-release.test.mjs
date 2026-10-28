@@ -107,6 +107,10 @@ test('Play candidate workflow is manual, guarded, private, API 36 and never publ
   assert.match(release, /bundleRelease assembleRelease/)
   assert.match(release, /apksigner/)
   assert.match(release, /certificate SHA-256 digest:/)
+  assert.match(release, /HH_EXPECTED_WEBSITE_CERT_SHA256/)
+  assert.match(release, /APK signing fingerprint differs from approved release certificate/)
+  assert.match(release, /protected release Environment/)
+
   assert.match(release, /targetSdkVersion:'36'/)
   assert.match(release, /Holistic-House-Android-v/)
   assert.match(release, /HH-Website-APK-/)
