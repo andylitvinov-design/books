@@ -552,6 +552,17 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         const previousSession = Boolean(session)
         if (!session) {
           session = await beginUpload(entry.file,auth.value,metadata,controller.signal)
+          if(entry.meditationId){
+            // Persist an irreversible server lock before sending the first video byte.
+            // A browser crash after transfer must never silently create a duplicate.
+            const locked=await fetch('/api/admin/practitioners/meditations/youtube-start',{
+              method:'POST',credentials:'same-origin',cache:'no-store',
+              headers:{'content-type':'application/json'},
+              body:JSON.stringify({id:entry.meditationId,language:entry.target,channelId:desired.id}),
+              signal:controller.signal})
+            const payload=await locked.json().catch(()=>({}))
+            if(!locked.ok)throw Error(payload.error||'MEDITATION_YOUTUBE_LOCKED')
+          }
           sessions.current.set(entry.id,session)
         }
         let offset = 0
