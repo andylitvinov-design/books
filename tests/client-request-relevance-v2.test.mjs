@@ -65,7 +65,8 @@ test("incomplete metadata never satisfies strict style or playback limits",()=>{
  assert.equal(rankMeditationCatalog({videos:[moneyListing],request:simple("money",{
    experienceLevel:"beginner",maxDurationMinutes:10,
  })}).length,0);
- const titleHint=rankMeditationCatalog({videos:[moneyListing],request:simple("money",{
+ const withTitleHint={...moneyListing,duration_hint_minutes:10,duration_basis:"title_only"};
+ const titleHint=rankMeditationCatalog({videos:[withTitleHint],request:simple("money",{
   maxDurationMinutes:10,allowUnverifiedDuration:true,
  })});
  assert.equal(titleHint.length,1);
