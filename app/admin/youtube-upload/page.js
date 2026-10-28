@@ -17,9 +17,10 @@ export const metadata = {
   manifest:'/youtube-phone-upload.webmanifest',
 }
 
-export default async function YoutubeUploadPage() {
+export default async function YoutubeUploadPage({searchParams}) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
+  const importTelegramCut=(await searchParams)?.import==='telegramCut'
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
@@ -98,7 +99,7 @@ export default async function YoutubeUploadPage() {
         {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
     </section>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
-      oauthSource={oauthSource} setupAvailable={setupAvailable}
+      oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
   </main>
 }
