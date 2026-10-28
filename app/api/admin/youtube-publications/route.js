@@ -34,6 +34,14 @@ export async function POST(request){
      }
      return privateJson({...result,queued:result.start},202)
    }
+   if(data.action==='start'){
+     onlyKeys(data,['action','id'])
+     // Only CAS-approved jobs can start; never restart unknown provider outcomes.
+     after(async()=>{try{
+       await uploadOwnerApprovedPublication(config,data.id)
+     }catch{console.error('HH_OWNER_PUBLICATION_AFTER_FAILED')}})
+     return privateJson({queued:true},202)
+   }
    if(data.action==='verify'){
      onlyKeys(data,['action','id'])
      // Read-only verification of a known YouTube ID, never an upload.
