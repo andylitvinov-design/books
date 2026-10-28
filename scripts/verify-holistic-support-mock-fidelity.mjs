@@ -479,6 +479,35 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
+          const learning=root.locator('[data-support-learning-catalog]');
+          await learning.waitFor({state:"visible",timeout:8000});
+          assert.equal(await learning.locator('[data-learning-direction]').count(),3,
+            label+" exactly three real learning directions");
+          await learning.locator('[data-learning-cost="paid"]').click();
+          assert.ok(await learning.locator('[data-learning-item]').count()>=2,
+            label+" paid Reiki options use confirmed personal initiation prices");
+          assert.ok(await learning.locator('[data-learning-price="priced"]').count()>=2,
+            label+" never show unknown-price programs as paid");
+          await learning.locator('[data-learning-cost="free"]').click();
+          assert.ok(await learning.locator('[data-learning-price="free"]').count()>=1,
+            label+" free training options are source-backed");
+          await learning.locator('[data-learning-direction="temple"]').click();
+          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
+            label+" temple filter stays in-place");
+          await learning.locator('[data-learning-direction="magic"]').click();
+          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
+            label+" magic and Tarot preserve source-backed records");
+          await learning.locator('[data-learning-topic="runes"]').click();
+          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
+            label+" rune topic filters in-place");
+          await learning.locator('[data-learning-filters-toggle]').click();
+          assert.equal(await learning.locator('[data-learning-filters-toggle]').getAttribute('aria-expanded'),
+            "true",label+" additional filters expand");
+          const learningOverflow=await page.evaluate(()=>
+            document.documentElement.scrollWidth-document.documentElement.clientWidth);
+          assert.ok(learningOverflow<=3,label+" learning filters fit the mobile viewport");
+          if(width===390) await learning.screenshot({
+            path:output+"/"+browserType.name()+"-"+locale+"-learning-390.png"});
           assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
             label+" Academy course routes still work");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
