@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-video-library.module.css";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 
 export type AcademyVideoLesson = { id: string; title: string; unavailable?: boolean };
 export type AcademyVideoChapter = { id: string; title: string; videos: AcademyVideoLesson[] };
@@ -124,6 +125,10 @@ export function AcademyVideoLibraryClient({
   groups: AcademyVideoGroup[];
 }) {
   const t = ui[locale];
+  const videoIds = groups.flatMap(group => group.programs.flatMap(program => program.courses.flatMap(course => course.chapters.flatMap(chapter => chapter.videos.filter(lesson=>!lesson.unavailable).map(lesson=>lesson.id)))));
+  const stars = useCatalogRatings("video", videoIds);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
   const [openProgram, setOpenProgram] = useState<string | null>(groups[0]?.programs[0]?.id ?? null);
   const [openCourse, setOpenCourse] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
@@ -153,6 +158,13 @@ export function AcademyVideoLibraryClient({
           <a href="#academy-video-en">EN</a>
           <a href="#academy-video-ru">RU ↓</a>
         </nav>
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",margin:"10px 0 16px"}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars}/>
+        <label style={{display:"inline-flex",alignItems:"center",gap:7,fontSize:13}}>
+          <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>
+          {locale==="ru"?"Сначала лучшие оценки":locale==="es"?"Mejor valorados primero":"Highest rated first"}
+        </label>
       </div>
       {groups.map((group) => {
         const videoCount = group.programs.reduce((sum, program) => sum + programVideoCount(program), 0);
@@ -226,7 +238,9 @@ export function AcademyVideoLibraryClient({
                                   {course.chapters.map((chapter) => (
                                     <section className={styles.chapter} key={chapter.id}>
                                       {chapter.title ? <h4>{chapter.title}</h4> : null}
-                                      {chapter.videos.map((lesson, index) => {
+                                      {(sortRated ? sortByStars(chapter.videos,lesson=>lesson.id,stars.ratings) : chapter.videos).map((lesson, index) => {
+                                        if(minimumStars && !stars.loading && !stars.unavailable &&
+                                          (lesson.unavailable || !matchesStarFilter(stars.ratings[lesson.id],minimumStars)))return null;
                                         const key = course.id + "/" + chapter.id + "/" + lesson.id;
                                         const playing = playingVideo === key;
                                         return (
@@ -250,6 +264,8 @@ export function AcademyVideoLibraryClient({
                                                 </a>
                                               </div>
                                             )}
+                                            {!lesson.unavailable && <CatalogStarRating locale={locale} summary={stars.ratings[lesson.id]}
+                                              onRate={value=>stars.rate(lesson.id,value)} unavailable={stars.unavailable} compact/>}
                                             {playing ? (
                                               <div className={styles.player}>
                                                 <div className={styles.frame}>
