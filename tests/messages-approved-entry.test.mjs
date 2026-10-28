@@ -28,6 +28,7 @@ test('approved Messenger preserves existing CRM plus direct and client request a
   assert.match(simple,/<DirectMessageInbox/)
   assert.match(simple,/<PracticeRequestConversation/)
   assert.match(orders,/data-orders-clients-hub/)
+  assert.match(orders,/if\(value==='orders'\)url\.searchParams\.set\('section','orders'\)/)
   assert.match(page,/<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/)
   assert.doesNotMatch(page,/fetch\(|localStorage|sessionStorage|forcePaid|sendOneMessengerMessage/)
 })
