@@ -81,3 +81,13 @@ These should extend issue #2480 media taxonomy and existing editorial records ra
 - [ ] Browser account-owner Google OAuth and cross-account A/B readback; private RLS and no PII in network/pixels.
 - [ ] EN/RU/ES × iPhone 320/375/390/430; original recording click/audio; real provider delivery if relevant.
 - [ ] Vercel READY, exact branch/commit and canonical domain.
+
+## Shared public video/service finder adapter (PR extension)
+
+The **same axis-offer matching engine** now participates, only when a visitor **manually** chooses a canonical research facet, in the existing public HolisticMeditationFinder and rankClientServices. The 62 existing public filters (situation, desired outcome, technique, original audio language, duration, risk, experience, provenance) remain independent. videoFacetAxisLinks maps already curated video situation/outcome/technique metadata to eligible profile facets; that is **editorial topical overlap**, not a claim to measure or change the test axis. A match reason shows the precise chosen axis.
+
+The meditation catalog ranker applies axis relevance **after** existing editorial/rights, public RLS, language and format playback guards; a match NEVER releases an unapproved candidate. Service URLs remain the same published service routes; no payment intent, CRM writes, personal test scores or client identity arrive at the public finder. The optional axis is chosen anew by a visitor; it is NOT copied from private cabinet results into public URLs.
+
+New shared module has matching TypeScript declarations; existing meditations ranker/service model and public finder reuse the exact registered topic::facet id keys. No new media or CRM table.
+
+**Remaining verification:** exact-head branch test workflow, TypeScript, lint, build, existing meditation filter regressions, 320–430px public finder EN/RU/ES plus signed-in private cabinet E2E and real playback. Preview deploy was intentionally canceled by the current project ignored-build policy; do not bypass budget settings.
