@@ -367,7 +367,8 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /const supportedMethods = kind === "healing" && reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\] : null/);
+  assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
@@ -422,7 +423,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
 test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/holistic-support-master-gallery.module.css");
-  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+  for (const label of ["Сессия","Инициация","Программа","Краткий",
     "Личный разбор текстом","Личный разбор голосом",
     "В течение суток","В течение 3 дней","В выбранный час",
     "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
