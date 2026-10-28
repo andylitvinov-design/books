@@ -50,7 +50,9 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
     session.discard=Boolean(discard)
     if(session.timer)clearTimeout(session.timer)
     try{if(session.recorder.state!=='inactive')session.recorder.stop()}catch{stopTracks(session.stream)}
-    if(mounted.current)setPhase('idle')
+    // Wait for the final MediaRecorder dataavailable/onstop before starting
+    // another take; otherwise a late callback could replace the new draft.
+    if(mounted.current)setPhase(discard?'idle':'finalizing')
   }
   async function begin(){
     if(disabled||phase!=='idle')return
@@ -95,7 +97,7 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
       <button type="button" onClick={()=>finish(true)} className={styles.discard} aria-label={t.cancel}><Trash2 size={18}/></button>
     </div>:<button type="button" className={styles.start}
       disabled={disabled||phase==='pending'} onClick={begin} aria-label={t.start}>
-      <Mic size={17} aria-hidden="true"/>{phase==='pending'?t.pending:t.start}
+      <Mic size={17} aria-hidden="true"/>{phase==='pending'?t.pending:phase==='finalizing'?t.stop:t.start}
     </button>}
     {phase==='recording'&&<span className={styles.hint} role="status">{t.recording} {t.limit}</span>}
     {error&&<span className={styles.error} role="alert">{error}</span>}
