@@ -544,7 +544,7 @@ for (const browserType of [chromium, webkit]) {
                 fits:Boolean(caption && caption.scrollWidth<=caption.clientWidth+2)};
             }));
           assert.equal(consultChips.length,5,label+" published consultation categories");
-          assert.ok(consultChips.every(item=>item.height>=40 && item.height<=52 && item.fits && item.aria),
+          assert.ok(consultChips.every(item=>item.height>=44 && item.height<=52 && item.fits && item.aria),
             label+" compact, non-broken, accessible 44px service chips "+JSON.stringify(consultChips));
           await root.locator('[data-support-tool="tests"]').click();
           const testsPanel=root.locator('[data-support-tests-panel]');
