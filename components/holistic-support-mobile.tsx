@@ -13,7 +13,8 @@ import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { HolisticSupportMobileNav } from "@/components/holistic-support-mobile-nav";
-import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection, type GoalSelection } from "@/components/holistic-support-goal-filter";
+import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
+  type GoalSelection, type GoalSector, type GoalSectorSnapshot } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -237,6 +238,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
   const [goalSelection, setGoalSelection] = useState<GoalSelection | null>(null);
+  // Local-only accepted diagnostic sectors, maintained when the filter closes.
+  const [goalSavedSectors, setGoalSavedSectors] =
+    useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>({});
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -330,7 +334,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
+  const saveGoalSector = (sector: GoalSector, value: GoalSectorSnapshot) => {
+    setGoalSavedSectors(previous => ({ ...previous, [sector]: value }));
+  };
   const applyGoalFilter = (value: GoalSelection) => {
+    if (value.savedSectors) setGoalSavedSectors(value.savedSectors);
     // Never infer a 1–10 self-rating from income or reserve amounts. Meaning
     // remains separate from Goals; Money uses its own stability rating.
     const nextScores = { ...scores };
@@ -349,7 +357,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
-  const resetGoalFilter = () => { setGoalSelection(null); setRecommendation(null); setTheme("all"); };
+  const resetGoalFilter = () => {
+    setGoalSavedSectors({}); setGoalSelection(null); setRecommendation(null); setTheme("all");
+  };
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
@@ -521,6 +531,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
           </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
+            savedSectors={goalSavedSectors} onSave={saveGoalSector}
             onClose={() => setGoalFilterOpen(false)} /> : scene ? (
             <>
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
