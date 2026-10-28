@@ -159,7 +159,7 @@ const reikiUi = {
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
-    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Курс обучения" },
+    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Программа" },
     price: "Цена", prices: { all: "Все", free: "Free", low: "0–20 €", mid: "21–50 €", high: "51–100 €", premium: "100+ €" },
     time: "Желаемый срок", times: { day: "В течение суток", days: "В течение 3 дней", chosen: "В выбранный час" },
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
