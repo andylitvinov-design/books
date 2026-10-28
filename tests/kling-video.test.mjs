@@ -146,13 +146,37 @@ test('admin integration is auth-gated, opt-in-only, with no publish or key in cl
 });
 
 
-test('owner money-flow image preset is no-charge until explicit media and paid consent', () => {
+test('owner money-flow preset is clearly selected and cannot generate a paid job by itself', () => {
   const ui=readFileSync(new URL('../components/kling-scene-studio.tsx', import.meta.url), 'utf8');
+  const css=readFileSync(new URL('../app/site-video-admin.css', import.meta.url), 'utf8');
   assert.match(ui,/key: "wealth"/);
-  assert.match(ui,/andy-about\.png/);
-  assert.match(ui,/setMode\(personal \? "image" : "text"\)/);
-  assert.match(ui,/setDuration\(personal \? 5 : 3\)/);
-  assert.match(ui,/setResolution\("720p"\)/);
-  assert.match(ui,/setImageApproved\(false\)/);
-  assert.match(ui,/setApproved\(false\)/);
+  assert.match(ui,/andy-about\\.png/);
+  assert.match(ui,/setMode\\(wealth \\? "image" : "text"\\)/);
+  assert.match(ui,/setDuration\\(wealth \\? 5 : 3\\)/);
+  assert.match(ui,/setImageApproved\\(false\\)/);
+  assert.match(ui,/setApproved\\(false\\)/);
+  assert.match(ui,/aria-pressed=\\{selectedKey === scene\\.key\\}/);
+  assert.match(ui,/klingScene/);
+  assert.match(ui,/unoptimized loading="lazy"/);
+  assert.match(css,/\.kling-studio-photo img \\{[^}]*height: auto/);
+  assert.match(ui,/connected \\? <>/);
+  assert.match(ui,/labels\\.paidOff/);
+});
+
+test('iPhone no-credit video uses only public photo, device MediaRecorder and explicit save', () => {
+  const local=readFileSync(new URL('../lib/wealth-video-local.ts', import.meta.url), 'utf8');
+  const ui=readFileSync(new URL('../components/kling-scene-studio.tsx', import.meta.url), 'utf8');
+  assert.match(local,/\/images\/holistic-house\/andy-about\\.png/);
+  assert.match(local,/canvas\\.captureStream\\(20\\)/);
+  assert.match(local,/new MediaRecorder\\(stream/);
+  assert.match(local,/video\/mp4/);
+  assert.match(local,/video\/webm/);
+  assert.match(local,/const naturalRatio = photo\\.naturalWidth \/ photo\\.naturalHeight/);
+  assert.match(local,/ctx\\.drawImage\\(photo, -fittedW\/2, -fittedH\/2, fittedW, fittedH\\)/);
+  assert.doesNotMatch(local,/klingai\\.com|openai\\.com|fetch\\(|https:\/\//);
+  assert.match(ui,/createFreeWealthClip\\(lang/);
+  assert.match(ui,/download=\\{\\`holistic-house-money-flow-/);
+  assert.match(ui,/localVideo\\.extension/);
+  assert.match(ui,/URL\\.revokeObjectURL/);
+  assert.match(ui,/role="status"/);
 });
