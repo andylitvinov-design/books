@@ -1,0 +1,1469 @@
+{
+  "version": 1,
+  "scope": "Curated video index only; no client data or transcript/sound copies",
+  "collected_on": "2026-10-28",
+  "release_policy": "All records candidate; rights/embed/content QA required before publish",
+  "videos": [
+    {
+      "youtube_id": "HqfixazXqRY",
+      "title": "Sun Flight Meditation. Step 1",
+      "creator": "Andrey / AATA",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=HqfixazXqRY",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/english-guided-meditations.ts",
+      "audio_language": "en",
+      "goals": [
+        "energy",
+        "meaning",
+        "goals"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77,
+        "goals": 59
+      },
+      "user_situations": [
+        "spiritual_exploration",
+        "need_motivation"
+      ],
+      "desired_states": [
+        "reflection",
+        "energy",
+        "clarity"
+      ],
+      "techniques": [
+        "visualization",
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Авторский оригинал, владелец подтвердил ID 2026-10-16; полный playback/длительность этой проверки не выполнены."
+    },
+    {
+      "youtube_id": "w2BN-HYmHUk",
+      "title": "Tantra Reiki Practice",
+      "creator": "Andrey / AATA",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=w2BN-HYmHUk",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/english-guided-meditations.ts",
+      "audio_language": "en",
+      "goals": [
+        "energy",
+        "relationships",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "relationships": 77,
+        "meaning": 59
+      },
+      "user_situations": [
+        "spiritual_exploration",
+        "relationships_tension"
+      ],
+      "desired_states": [
+        "connection",
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Подтверждено владельцем 2026-10-09, не подменять чужой записью."
+    },
+    {
+      "youtube_id": "80xZ7jN6o2Y",
+      "title": "Meditation - Reiki Yggdrasil Class.",
+      "creator": "Andrey / AATA",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=80xZ7jN6o2Y",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/english-guided-meditations.ts",
+      "audio_language": "en",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "reflection",
+        "energy"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Подтверждено владельцем 2026-10-09."
+    },
+    {
+      "youtube_id": "_IOX0E8N-To",
+      "title": "Kundalini Reiki Meditation. www.aata.pro",
+      "creator": "Andrey / AATA",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=_IOX0E8N-To",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/english-guided-meditations.ts",
+      "audio_language": "en",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Подтверждено владельцем 2026-10-16."
+    },
+    {
+      "youtube_id": "lOkX_8TM-FA",
+      "title": "Медитация на Солнце 1",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=lOkX_8TM-FA",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "goals",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "goals": 77,
+        "meaning": 59
+      },
+      "user_situations": [
+        "need_motivation",
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "visualization",
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Исторический verified_legacy_public_embed PsiMaster, архив videos/strength-protection; сохраняем RU-only."
+    },
+    {
+      "youtube_id": "DPdDGnU4DL8",
+      "title": "Медитация на Солнце 2",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=DPdDGnU4DL8",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "goals",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "goals": 77,
+        "meaning": 59
+      },
+      "user_situations": [
+        "need_motivation",
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "visualization",
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Исторический PsiMaster RU-only, часть серии Солнца; content QA pending."
+    },
+    {
+      "youtube_id": "1oshNCVzHR8",
+      "title": "Медитация на Солнце 3",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=1oshNCVzHR8",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "visualization",
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Исторический PsiMaster RU-only, часть серии Солнца; content QA pending."
+    },
+    {
+      "youtube_id": "uN5BFjdKVvY",
+      "title": "Жизненная Сила — бесплатная медитация",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=uN5BFjdKVvY",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "low_energy",
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Источник PsiMaster verified_legacy_public_embed; эффект не гарантируется."
+    },
+    {
+      "youtube_id": "h8r_fIVWM0U",
+      "title": "Круг Огня — бесплатная медитация",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=h8r_fIVWM0U",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration",
+        "low_energy"
+      ],
+      "desired_states": [
+        "energy",
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "unknown",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Источник PsiMaster verified_legacy_public_embed; огненная символика — не медицинский метод."
+    },
+    {
+      "youtube_id": "95peObUizeE",
+      "title": "Марафоны Энергопрактик Онлайн",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=95peObUizeE",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "unknown",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Архивный ролик из плейлиста, название похоже на обзор марафона. Проверить, действительно ли это медитация; иначе исключить."
+    },
+    {
+      "youtube_id": "ZYGjw0PtvdM",
+      "title": "Марафон Чисток. Практика работы с Чакрой Аджна",
+      "creator": "PsiMaster / Andrey",
+      "source_kind": "original",
+      "source_url": "https://www.youtube.com/watch?v=ZYGjw0PtvdM",
+      "source_evidence_url": "https://github.com/andylitvinov-design/books/blob/codex/public-book-library/data/academy/holistic-support-meditations.ts",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "spiritual_exploration"
+      ],
+      "desired_states": [
+        "reflection"
+      ],
+      "techniques": [
+        "energy_symbolic"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "practice",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "esoteric",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [
+        "esoteric_language"
+      ],
+      "claims_risk": "moderate",
+      "metadata_confidence": "owner_source",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Архив, аджна/чакра и чистки — символическое содержание, не медицинская процедура."
+    },
+    {
+      "youtube_id": "9r8jXUvsi3w",
+      "title": "20 minute yoga nidra | reset your nervous system",
+      "creator": "Ally Boothroyd | Sarovara Yoga",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=9r8jXUvsi3w",
+      "source_evidence_url": "https://www.youtube.com/watch?v=9r8jXUvsi3w",
+      "audio_language": "en",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "stress",
+        "emotional_overload",
+        "sleep_difficulty"
+      ],
+      "desired_states": [
+        "rest",
+        "calm",
+        "grounding"
+      ],
+      "techniques": [
+        "yoga_nidra",
+        "body_scan"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 20,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "lying",
+      "experience_level": "beginner",
+      "intensity": "gentle",
+      "spiritual_style": "open",
+      "music_style": "voice_only",
+      "voice_style": "soft",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Автор подтверждает body scan, voice only, 20 min по названию. Формулировка 'reset nervous system' не медицинское обещание."
+    },
+    {
+      "youtube_id": "waC2GIaDKCc",
+      "title": "30 Minute Yoga Nidra | Reset Your Nervous System",
+      "creator": "Ally Boothroyd | Sarovara Yoga",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=waC2GIaDKCc",
+      "source_evidence_url": "https://www.youtube.com/watch?v=waC2GIaDKCc",
+      "audio_language": "en",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "stress",
+        "emotional_overload",
+        "sleep_difficulty"
+      ],
+      "desired_states": [
+        "rest",
+        "calm",
+        "grounding"
+      ],
+      "techniques": [
+        "yoga_nidra",
+        "body_scan"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 30,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "lying",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Метаданные 30min, body scan; наличие музыки/звуков повторно проверить."
+    },
+    {
+      "youtube_id": "qbPE5zaiNqs",
+      "title": "Guided Meditation: Embodying Loving Awareness | Tara Brach",
+      "creator": "Tara Brach",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=qbPE5zaiNqs",
+      "source_evidence_url": "https://www.youtube.com/watch?v=qbPE5zaiNqs",
+      "audio_language": "en",
+      "goals": [
+        "relationships",
+        "meaning",
+        "energy"
+      ],
+      "goal_weights": {
+        "relationships": 95,
+        "meaning": 77,
+        "energy": 59
+      },
+      "user_situations": [
+        "self_criticism",
+        "relationships_tension",
+        "emotional_overload"
+      ],
+      "desired_states": [
+        "self_compassion",
+        "connection",
+        "acceptance"
+      ],
+      "techniques": [
+        "loving_kindness",
+        "breath",
+        "visualization"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "gentle",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Публичное описание Tara Brach 2026-04-09: дыхание, внутреняя улыбка, sky imagery, loving awareness; duration not confirmed."
+    },
+    {
+      "youtube_id": "TSrQCIYlcV8",
+      "title": "Guided Meditation: Embodying Loving Awareness with Tara Brach",
+      "creator": "Tara Brach",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=TSrQCIYlcV8",
+      "source_evidence_url": "https://www.youtube.com/watch?v=TSrQCIYlcV8",
+      "audio_language": "en",
+      "goals": [
+        "relationships",
+        "meaning"
+      ],
+      "goal_weights": {
+        "relationships": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "self_criticism",
+        "relationships_tension"
+      ],
+      "desired_states": [
+        "self_compassion",
+        "connection"
+      ],
+      "techniques": [
+        "loving_kindness"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "candidate",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Похожая по теме запись Tara Brach (2024); требуется проверка отличий от 2026 версии и QA."
+    },
+    {
+      "youtube_id": "fYSh2Jklr8I",
+      "title": "Self love ~ Self Forgiveness ~ Self Acceptance ~ 10 minute guided meditation",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=fYSh2Jklr8I",
+      "source_evidence_url": "https://www.youtube.com/watch?v=fYSh2Jklr8I",
+      "audio_language": "en",
+      "goals": [
+        "relationships",
+        "meaning"
+      ],
+      "goal_weights": {
+        "relationships": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "self_criticism",
+        "relationships_tension"
+      ],
+      "desired_states": [
+        "self_compassion",
+        "acceptance",
+        "confidence"
+      ],
+      "techniques": [
+        "affirmation",
+        "loving_kindness"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Заявленная длительность из названия. Проверка содержания и встраивания нужна."
+    },
+    {
+      "youtube_id": "XGmoBdZpVqY",
+      "title": "A 10 Minute Morning Meditation for Self Love",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=XGmoBdZpVqY",
+      "source_evidence_url": "https://www.youtube.com/watch?v=XGmoBdZpVqY",
+      "audio_language": "en",
+      "goals": [
+        "relationships",
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "relationships": 95,
+        "energy": 77,
+        "meaning": 59
+      },
+      "user_situations": [
+        "self_criticism",
+        "need_motivation"
+      ],
+      "desired_states": [
+        "self_compassion",
+        "confidence"
+      ],
+      "techniques": [
+        "affirmation"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "morning",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Содержание, реальная длительность, права на встраивание и воспроизведение не проверены; не показывать публично до QA."
+    },
+    {
+      "youtube_id": "x6dYoegBt7I",
+      "title": "10 Minute Focus Guided Meditation",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=x6dYoegBt7I",
+      "source_evidence_url": "https://www.youtube.com/watch?v=x6dYoegBt7I",
+      "audio_language": "en",
+      "goals": [
+        "goals",
+        "money",
+        "energy"
+      ],
+      "goal_weights": {
+        "goals": 95,
+        "money": 77,
+        "energy": 59
+      },
+      "user_situations": [
+        "low_focus",
+        "hard_decision",
+        "income_uncertainty"
+      ],
+      "desired_states": [
+        "focus",
+        "clarity"
+      ],
+      "techniques": [
+        "focus",
+        "breath"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "day",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "music_under_voice",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "YouTube-описание Great Meditation (2024-05-15) подтверждает 10 минут; тематически про внимание, не доход."
+    },
+    {
+      "youtube_id": "vceXCrOTUe0",
+      "title": "Improve Memory and Focus (Guided Meditation)",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=vceXCrOTUe0",
+      "source_evidence_url": "https://www.youtube.com/watch?v=vceXCrOTUe0",
+      "audio_language": "en",
+      "goals": [
+        "goals"
+      ],
+      "goal_weights": {
+        "goals": 95
+      },
+      "user_situations": [
+        "low_focus"
+      ],
+      "desired_states": [
+        "focus",
+        "clarity"
+      ],
+      "techniques": [
+        "focus"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Описание упоминает 10 минут и улучшение памяти; эффективность не утверждать."
+    },
+    {
+      "youtube_id": "QfLD2_yy2AU",
+      "title": "Guided Meditation for Thankfulness, Gratitude & Appreciation",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=QfLD2_yy2AU",
+      "source_evidence_url": "https://www.youtube.com/watch?v=QfLD2_yy2AU",
+      "audio_language": "en",
+      "goals": [
+        "meaning",
+        "relationships",
+        "energy"
+      ],
+      "goal_weights": {
+        "meaning": 95,
+        "relationships": 77,
+        "energy": 59
+      },
+      "user_situations": [
+        "loss_of_meaning",
+        "relationships_tension"
+      ],
+      "desired_states": [
+        "gratitude",
+        "connection",
+        "reflection"
+      ],
+      "techniques": [
+        "gratitude"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Время ориентировочно по описанию; точная длина без metadata QA не подтверждена."
+    },
+    {
+      "youtube_id": "4P2SCgwXVxc",
+      "title": "10 Minute Guided Meditation for Gratitude",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=4P2SCgwXVxc",
+      "source_evidence_url": "https://www.youtube.com/watch?v=4P2SCgwXVxc",
+      "audio_language": "en",
+      "goals": [
+        "meaning",
+        "relationships"
+      ],
+      "goal_weights": {
+        "meaning": 95,
+        "relationships": 77
+      },
+      "user_situations": [
+        "loss_of_meaning"
+      ],
+      "desired_states": [
+        "gratitude",
+        "reflection"
+      ],
+      "techniques": [
+        "gratitude"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Содержание, реальная длительность, права на встраивание и воспроизведение не проверены; не показывать публично до QA."
+    },
+    {
+      "youtube_id": "NTYuQ3tMSIA",
+      "title": "A Positive Day Ahead | 10 Minute Guided Meditation",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=NTYuQ3tMSIA",
+      "source_evidence_url": "https://www.youtube.com/watch?v=NTYuQ3tMSIA",
+      "audio_language": "en",
+      "goals": [
+        "goals",
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "goals": 95,
+        "energy": 77,
+        "meaning": 59
+      },
+      "user_situations": [
+        "need_motivation",
+        "low_energy"
+      ],
+      "desired_states": [
+        "motivation",
+        "clarity"
+      ],
+      "techniques": [
+        "affirmation"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "morning",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "candidate",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Уточнить метаданные и длину; не отмечать published без независимой проверки."
+    },
+    {
+      "youtube_id": "fWfG5gXHK5Y",
+      "title": "Guided Meditation when Stressing over Money",
+      "creator": "Great Meditation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=fWfG5gXHK5Y",
+      "source_evidence_url": "https://www.youtube.com/watch?v=fWfG5gXHK5Y",
+      "audio_language": "en",
+      "goals": [
+        "money",
+        "energy"
+      ],
+      "goal_weights": {
+        "money": 95,
+        "energy": 77
+      },
+      "user_situations": [
+        "money_worries",
+        "income_uncertainty",
+        "stress"
+      ],
+      "desired_states": [
+        "calm",
+        "acceptance",
+        "clarity"
+      ],
+      "techniques": [
+        "breath",
+        "reflection"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "По YouTube описанию 2022-05-25 о тревоге из-за денег, не обещает роста дохода. Отличный money-worry match."
+    },
+    {
+      "youtube_id": "8Cx-cTU1Y9k",
+      "title": "GUIDED MEDITATION for Money Worries",
+      "creator": "The Honest Guys - Meditations - Relaxation",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=8Cx-cTU1Y9k",
+      "source_evidence_url": "https://www.youtube.com/watch?v=8Cx-cTU1Y9k",
+      "audio_language": "en",
+      "goals": [
+        "money",
+        "energy"
+      ],
+      "goal_weights": {
+        "money": 95,
+        "energy": 77
+      },
+      "user_situations": [
+        "money_worries",
+        "income_uncertainty",
+        "stress"
+      ],
+      "desired_states": [
+        "calm",
+        "hope",
+        "clarity"
+      ],
+      "techniques": [
+        "visualization"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "music_under_voice",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Описание The Honest Guys 2015-04-28 упоминает financial worries, peace/clarity/hope, музыка Rick Clarke. Длительность unknown."
+    },
+    {
+      "youtube_id": "okYUCEsHQCk",
+      "title": "Медитация от 7 минут. Сканирование тела",
+      "creator": "MEDITARI",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=okYUCEsHQCk",
+      "source_evidence_url": "https://www.youtube.com/watch?v=okYUCEsHQCk",
+      "audio_language": "ru",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "stress",
+        "emotional_overload"
+      ],
+      "desired_states": [
+        "grounding",
+        "calm",
+        "rest"
+      ],
+      "techniques": [
+        "body_scan"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 7,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "either",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "secular",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "low",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "'от 7 минут' не означает точную длину 7:00; проверить actual."
+    },
+    {
+      "youtube_id": "jU7lFvLJKKc",
+      "title": "Освобождение от тревоги за 10 минут: медитация «осознанное дыхание»",
+      "creator": "Приют для чувствительных душ",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=jU7lFvLJKKc",
+      "source_evidence_url": "https://www.youtube.com/watch?v=jU7lFvLJKKc",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "stress",
+        "overthinking",
+        "emotional_overload"
+      ],
+      "desired_states": [
+        "calm",
+        "grounding"
+      ],
+      "techniques": [
+        "breath"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "beginner",
+      "intensity": "unknown",
+      "spiritual_style": "secular",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Название с обещанием избавления от тревоги; позиционировать как практику внимания, не лечение."
+    },
+    {
+      "youtube_id": "u7l82BPQaIU",
+      "title": "Успокаивающая медитация от тревоги, стресса на 15 минут",
+      "creator": "Путь к себе с Валентиной Лубсановой",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=u7l82BPQaIU",
+      "source_evidence_url": "https://www.youtube.com/watch?v=u7l82BPQaIU",
+      "audio_language": "ru",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "stress",
+        "overthinking"
+      ],
+      "desired_states": [
+        "calm",
+        "reflection"
+      ],
+      "techniques": [
+        "breath",
+        "visualization"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 15,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "spiritual",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "В исходном YouTube описании главы доходят до 16:14 — не принимать 15 минут за точную длину. Проверить перед фильтром ≤15."
+    },
+    {
+      "youtube_id": "beqlbgNtwSk",
+      "title": "Выход из стресса за 15 минут: Твой личный аудио-дзен",
+      "creator": "Coherence / Когерентность",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=beqlbgNtwSk",
+      "source_evidence_url": "https://www.youtube.com/watch?v=beqlbgNtwSk",
+      "audio_language": "ru",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "stress",
+        "emotional_overload"
+      ],
+      "desired_states": [
+        "calm",
+        "rest"
+      ],
+      "techniques": [
+        "breath"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 15,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [
+        "binaural_sound",
+        "medical_claims_review"
+      ],
+      "claims_risk": "high",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "В описании заявления про кортизол и бинауральные частоты; строгая редакционная проверка, возможно исключить."
+    },
+    {
+      "youtube_id": "EpMXNJiFOt4",
+      "title": "Meditación guiada CALMA en momentos de Incertidumbre y Ansiedad | 10 minutos MINDFULNESS",
+      "creator": "Encontrando el balance en mi vida",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=EpMXNJiFOt4",
+      "source_evidence_url": "https://www.youtube.com/watch?v=EpMXNJiFOt4",
+      "audio_language": "es",
+      "goals": [
+        "energy",
+        "goals"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "goals": 77
+      },
+      "user_situations": [
+        "stress",
+        "overthinking",
+        "hard_decision"
+      ],
+      "desired_states": [
+        "calm",
+        "clarity"
+      ],
+      "techniques": [
+        "breath",
+        "focus"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "open",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Из YouTube-метаданных 2024-11-12: 10 минут спокойствия и работы с неопределённостью, не терапия."
+    },
+    {
+      "youtube_id": "xtxz5BBUlwU",
+      "title": "Calma la ANSIEDAD en SOLO 10 min | Meditación Guiada para Soltar el Control",
+      "creator": "Encontrando el balance en mi vida",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=xtxz5BBUlwU",
+      "source_evidence_url": "https://www.youtube.com/watch?v=xtxz5BBUlwU",
+      "audio_language": "es",
+      "goals": [
+        "energy",
+        "meaning"
+      ],
+      "goal_weights": {
+        "energy": 95,
+        "meaning": 77
+      },
+      "user_situations": [
+        "stress",
+        "emotional_overload",
+        "overthinking"
+      ],
+      "desired_states": [
+        "calm",
+        "acceptance"
+      ],
+      "techniques": [
+        "breath",
+        "reflection"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 10,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "any",
+      "posture": "unknown",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "spiritual",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [
+        "crisis_claims_review"
+      ],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "Источник сам предупреждает не слушать за рулём; содержит обещания успокоения тревоги и духовные элементы. Отбор не медицинский."
+    },
+    {
+      "youtube_id": "5eaGPbI2hLk",
+      "title": "DORMIR EN 15 MINUTOS | Meditación GUIADA para Relajarte PROFUNDAMENTE",
+      "creator": "Mindfulness Amitaba",
+      "source_kind": "external",
+      "source_url": "https://www.youtube.com/watch?v=5eaGPbI2hLk",
+      "source_evidence_url": "https://www.youtube.com/watch?v=5eaGPbI2hLk",
+      "audio_language": "es",
+      "goals": [
+        "energy"
+      ],
+      "goal_weights": {
+        "energy": 95
+      },
+      "user_situations": [
+        "sleep_difficulty",
+        "stress"
+      ],
+      "desired_states": [
+        "rest",
+        "calm"
+      ],
+      "techniques": [
+        "breath",
+        "relaxation"
+      ],
+      "subtopics": [],
+      "duration_hint_minutes": 15,
+      "duration_basis": "title_only",
+      "content_type": "guided",
+      "time_of_day": "bedtime",
+      "posture": "lying",
+      "experience_level": "unspecified",
+      "intensity": "unknown",
+      "spiritual_style": "unspecified",
+      "music_style": "unknown",
+      "voice_style": "unknown",
+      "safety_flags": [],
+      "claims_risk": "moderate",
+      "metadata_confidence": "public_listing",
+      "editorial_status": "candidate",
+      "embed_status": "unverified",
+      "rights_status": "pending_embed_check",
+      "review_notes": "15 минут из названия, реальный сон не гарантируется; нужна проверка аудио и длины."
+    }
+  ]
+}
