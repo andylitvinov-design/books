@@ -271,9 +271,9 @@ function matchesConsultationCategory(offer: PublishedConsultation, category: Con
 // practitioner-uploaded photos and must never be presented as service evidence.
 const APPROVED_EDITORIAL_GALLERIES = {
   "alchemy-of-soul": [
+    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
     "/images/holistic-house/distance-homeopathy.webp",
     "/images/holistic-house/homeopathy-still-life.svg",
-    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
   ],
   "business-situation-constellation": [
     "/images/holistic-house/books-library.webp",
@@ -291,8 +291,8 @@ const APPROVED_EDITORIAL_GALLERIES = {
     "/images/holistic-house/course-start-heron.webp",
   ],
   "free-intro-availability-request": [
-    "/images/holistic-house/andy-about.png",
     "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+    "/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp",
     "/images/holistic-house/hero-olive-incense.webp",
   ],
 } as const;

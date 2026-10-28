@@ -110,6 +110,19 @@ test("empty guided-imagery filter retains a legitimate source page and reset cle
   assert.match(css, /\.consultDetailsLink/);
   assert.match(css, /\.consultFallback/);
 });
+test("curated mobile service media is source-owned and remains under 200 KiB per image", () => {
+  const editorial = gallery.split("const APPROVED_EDITORIAL_GALLERIES = {")[1]?.split("} as const;")[0];
+  assert.ok(editorial, "editorial asset registry exists");
+  assert.doesNotMatch(editorial, /\.png["']/i, "no full-resolution PNG in a 44px mobile thumbnail");
+  const unique = [...new Set([...editorial.matchAll(/"\/(images\/holistic-house\/[^"]+\.(?:webp|svg))"/g)]
+    .map(match => match[1]))];
+  assert.ok(unique.length >= 8, "photographic variety without downloading third-party assets");
+  for (const path of unique) {
+    const size = readFileSync(new URL("../public/" + path, import.meta.url)).byteLength;
+    assert.ok(size > 1000 && size <= 200 * 1024, path + " must have an economical original");
+  }
+});
+
 test("modified TSX and published source transpile without parser errors", () => {
   for (const [name, text] of [
     ["gallery.tsx", gallery], ["public-remote-support-masters.ts", publicOffers],
