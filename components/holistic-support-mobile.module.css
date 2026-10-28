@@ -594,3 +594,43 @@
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }
+
+/* Historical PsiMaster courses: always visible in mobile Courses mode.
+   Thumbnails reuse original verified source-video posters. */
+.mysteryPicker { padding: 12px 16px 13px; border-bottom: 1px solid #d7d8c9; background: linear-gradient(125deg,#eef4eb,#fbf5e9); }
+.mysteryPickerHeading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 3px 9px; margin-bottom: 10px; }
+.mysteryPickerHeading strong { color: #254b3c; font-size: 16px; font-weight: 850; }
+.mysteryPickerHeading span { color: #685c4a; font-size: 12px; }
+.mysteryPickerGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mysteryPickerCard { position: relative; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; overflow: hidden; min-width: 0; min-height: 111px; padding: 10px; cursor: pointer; text-align: left; border-radius: 14px; border: 2px solid #e6eadf; color: #fff; background: #183c32; transition: border-color .16s ease, box-shadow .16s ease; }
+.mysteryPickerCard > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.mysteryPickerCard::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,rgba(6,31,29,.94) 0%,rgba(13,45,38,.35) 72%,rgba(13,45,38,.18)); }
+.mysteryPickerCard > span { position: relative; z-index: 1; display: grid; gap: 3px; min-width: 0; }
+.mysteryPickerCard strong { font-size: clamp(15px,2.4vw,21px); font-weight: 850; line-height: 1.15; overflow-wrap: anywhere; }
+.mysteryPickerCard small { color: #e5f4ec; font-size: 11px; font-weight: 700; }
+.mysteryPickerCard[aria-pressed="true"] { border-color: #1fb988; box-shadow: 0 0 0 2px #0b885f; }
+.mysteryPickerCard:focus-visible { outline: 3px solid #d69d3f; outline-offset: 2px; }
+.heroCourseLink { display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 14px; min-height: 43px; padding: 9px 14px; border-radius: 11px; border: 1px solid #dbf3e7; color: #fff; background: #134e3cbb; font-size: 15px; font-weight: 800; text-decoration: none; }
+.heroCourseLink:hover { background: #086f4f; }
+.heroCourseLink:focus-visible { outline: 3px solid #f2c572; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .mysteryPicker { padding: 9px 11px 11px; }
+  .mysteryPickerHeading { margin-bottom: 7px; }
+  .mysteryPickerHeading strong { font-size: 14px; }
+  .mysteryPickerHeading span { font-size: 10px; }
+  .mysteryPickerGrid { gap: 6px; }
+  .mysteryPickerCard { min-height: 88px; padding: 8px 6px; border-radius: 12px; }
+  .mysteryPickerCard strong { font-size: 14px; }
+  .mysteryPickerCard small { font-size: 10px; }
+  .heroCourseLink { font-size: 13px; min-height: 44px; }
+}
+@media (max-width: 350px) {
+  .mysteryPicker { padding: 8px 6px; }
+  .mysteryPickerGrid { gap: 4px; }
+  .mysteryPickerCard { min-height: 82px; padding: 6px 4px; border-radius: 10px; }
+  .mysteryPickerCard strong { font-size: 12px; }
+  .mysteryPickerCard small { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mysteryPickerCard { transition: none; }
+}
