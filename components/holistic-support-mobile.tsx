@@ -12,8 +12,9 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
-import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
-  type GoalSelection, type GoalSector, type GoalSectorSnapshot } from "@/components/holistic-support-goal-filter";
+import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
+  type GoalSelection, type GoalSector, type GoalSectorSnapshot,
+  type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -70,8 +71,21 @@ const copy = {
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
     goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
-    goalResultLabels: { meditation: "Meditations", tests: "Tests", courses: "Courses", talismans: "Talismans", masters: "Masters" },
-    goalResultHints: { meditation: "Original recordings", tests: "Free self-exploration", courses: "Existing learning paths", talismans: "Symbolic options", masters: "Published profiles" },
+    goalResultLabels: {
+      meditation: "Videos & meditations", consultation: "Consultations",
+      tests: "Tests", courses: "Courses", talismans: "Talismans",
+      healing: "Energy support", masters: "Masters",
+      initiations: "Initiations", mandala: "Video mandalas",
+    },
+    goalResultHints: {
+      meditation: "Original recordings", consultation: "Session requests",
+      tests: "Free self-exploration", courses: "Existing learning paths",
+      talismans: "Symbolic options", healing: "Reiki practitioners",
+      masters: "Published profiles", initiations: "Existing Reiki program",
+      mandala: "Existing mandala studio",
+    },
+    goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
+    goalExternalOnly: "Use the selected links above to explore these published formats.",
     goalSector: { energy: "Energy", money: "Money", love: "Love", goals: "Goals", meaning: "Meaning" },
     goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", goals: "Take the next step", meaning: "Find your inner direction" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
@@ -119,8 +133,21 @@ const copy = {
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
     goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
-    goalResultLabels: { meditation: "Медитации", tests: "Тесты", courses: "Курсы", talismans: "Талисманы", masters: "Мастера" },
-    goalResultHints: { meditation: "Авторские записи", tests: "Самоисследование", courses: "Программы обучения", talismans: "Символические практики", masters: "Каталог специалистов" },
+    goalResultLabels: {
+      meditation: "Видео и медитации", consultation: "Консультации",
+      tests: "Тесты", courses: "Курсы", talismans: "Талисманы",
+      healing: "Энергоподдержка", masters: "Мастера",
+      initiations: "Инициации", mandala: "Видеомандалы",
+    },
+    goalResultHints: {
+      meditation: "Авторские записи", consultation: "Заявка на сессию",
+      tests: "Самоисследование", courses: "Программы обучения",
+      talismans: "Символические практики", healing: "Рейки и мастера",
+      masters: "Каталог специалистов", initiations: "Программа Рейки",
+      mandala: "Студия видеомандал",
+    },
+    goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
+    goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
     goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", goals: "Цели", meaning: "Смыслы" },
     goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", goals: "Двигайся к своей цели", meaning: "Найди внутренний смысл" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
@@ -168,8 +195,21 @@ const copy = {
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
     goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
-    goalResultLabels: { meditation: "Meditaciones", tests: "Pruebas", courses: "Cursos", talismans: "Talismanes", masters: "Guías" },
-    goalResultHints: { meditation: "Grabaciones originales", tests: "Exploración personal", courses: "Aprendizaje disponible", talismans: "Opciones simbólicas", masters: "Perfiles publicados" },
+    goalResultLabels: {
+      meditation: "Vídeos y meditaciones", consultation: "Consultas",
+      tests: "Pruebas", courses: "Cursos", talismans: "Talismanes",
+      healing: "Apoyo energético", masters: "Guías",
+      initiations: "Iniciaciones", mandala: "Mandala en vídeo",
+    },
+    goalResultHints: {
+      meditation: "Grabaciones originales", consultation: "Solicitar una sesión",
+      tests: "Exploración personal", courses: "Aprendizaje disponible",
+      talismans: "Opciones simbólicas", healing: "Maestros de Reiki",
+      masters: "Perfiles publicados", initiations: "Programa Reiki",
+      mandala: "Estudio de mandalas",
+    },
+    goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
+    goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
     goalSector: { energy: "Energía", money: "Dinero", love: "Amor", goals: "Metas", meaning: "Sentido" },
     goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", goals: "Da el siguiente paso", meaning: "Encuentra tu dirección interior" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
@@ -240,6 +280,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   // Local-only accepted diagnostic sectors, maintained when the filter closes.
   const [goalSavedSectors, setGoalSavedSectors] =
     useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>({});
+  const [goalRecommendationFormats, setGoalRecommendationFormats] =
+    useState<GoalRecommendationFormat[]>(() => [...GOAL_RECOMMENDATION_FORMATS]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -338,6 +380,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   };
   const applyGoalFilter = (value: GoalSelection) => {
     if (value.savedSectors) setGoalSavedSectors(value.savedSectors);
+    const formats = value.recommendationFormats ?? [...GOAL_RECOMMENDATION_FORMATS];
+    setGoalRecommendationFormats(formats);
+    // The featured panel must follow chosen formats, not display an unwanted video.
+    const inlineChoice: Partial<Record<GoalRecommendationFormat, Choice>> = {
+      meditation: "meditation", consultation: "consultation", tests: "tests",
+      courses: "pump", talismans: "talisman", healing: "healing", masters: "masters",
+    };
+    const firstInline = GOAL_RECOMMENDATION_FORMATS.find(id =>
+      formats.includes(id) && inlineChoice[id]);
     // Never infer a 1–10 self-rating from income or reserve amounts. Meaning
     // remains separate from Goals; Money uses its own stability rating.
     const nextScores = { ...scores };
@@ -350,14 +401,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
       }
     }
     setScores(nextScores); setRecommendation(nextScores); setGoalSelection(value);
-    setGoalFilterOpen(false); setChoice("meditation");
+    setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const resetGoalFilter = () => {
-    setGoalSavedSectors({}); setGoalSelection(null); setRecommendation(null); setTheme("all");
+    setGoalSavedSectors({}); setGoalRecommendationFormats([...GOAL_RECOMMENDATION_FORMATS]);
+    setGoalSelection(null); setRecommendation(null); setTheme("all");
   };
   const startVideo = () => {
     if (!selected) return;
@@ -383,6 +435,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
   const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
+  const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
+  const goalHasInlineFormat = activeGoalFormats.some(id =>
+    ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
   const scene = choice === "meditation" || choice === "pump";
 
   return (
@@ -531,7 +586,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector}
-            onClose={() => setGoalFilterOpen(false)} /> : scene ? (
+            selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
+            onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat ? (
+            <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
+              <p>{activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}</p>
+              <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
+            </div>
+          ) : scene ? (
             <>
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
                 <Filter size={16} aria-hidden="true" />
