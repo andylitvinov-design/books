@@ -17,7 +17,7 @@ const options=ids=>ids.map(id=>({id,title:id,promise:"Published "+id,href:"/en/s
   alchemy:"alchemy-of-soul",hypnotherapy:"hypnotherapy-course",business:"business-consulting",
 }[id])}));
 const money=catalog.find(x=>x.youtube_id==="fWfG5gXHK5Y");
-const moneyListing={...money,discovery_status:"link_only",metadata_checked_at:"2026-10-28T10:00:00Z"};
+const moneyListing={...money,discovery_status:"link_only",metadata_checked_at:"2026-10-28T10:00:00Z",youtube_oembed_checked_at:"2026-10-28T10:00:00Z"};
 const simple=(goal,more={})=>({goal,language:"en",...more});
 
 test("one canonical five-goal model powers videos and services",()=>{
