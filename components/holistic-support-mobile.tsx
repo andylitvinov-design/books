@@ -389,11 +389,12 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation" }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", initialTheme = "all" }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
   initialChoice?: SupportMobileChoice;
+  initialTheme?: Theme;
 }) {
   const t = copy[locale];
   // Single owner for the five synchronized check-ins in both UI locations.
@@ -420,7 +421,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
-  const [theme, setTheme] = useState<Theme>("all");
+  const [theme, setTheme] = useState<Theme>(initialTheme);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);

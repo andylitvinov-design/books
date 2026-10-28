@@ -44,6 +44,7 @@ test('EN/RU/ES deep links contain only allowlisted editorial keys',()=>{
     assert.equal(offers.length,4)
     assert.ok(offers.every(x=>x.href.startsWith('/'+locale+'/')&&!x.href.includes('private-result')))
     assert.equal(offers.find(x=>x.id==='test').href,'/'+locale+'/client/tests?journey=business')
+    assert.equal(offers.find(x=>x.id==='video').href,'/'+locale+'/holistic-support/mobile?view=meditation&topic=business')
   }
 })
 test('account history + result page both expose discussion; no additional data transport',()=>{
