@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users, CalendarDays, Clock3, GraduationCap, Mic, Zap } from "lucide-react";
-import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { listReikiPublicOffers, matchReikiPublicOffers, type ReikiPublicOffer } from "@/lib/academy/reiki-public-offers";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
 import { matchReikiVariants } from "@/lib/practitioners/reiki-offer.mjs";
@@ -154,6 +154,14 @@ const reikiUi = {
     mediaNone: "No approved video or audio introduction has been published for this provider.",
     mediaOpen: "Open", provider: "Provider profile", request: "Request published session",
     choose: "Select filters",
+    offersSession: "Reiki sessions", offersInitiation: "Reiki initiations", offersCourse: "Reiki learning programmes",
+    offersCount: "offers", sessionTitle: "Reiki support session", offerPublished: "Published service",
+    author: "Practitioner", metaTiming: "Timing", metaReport: "Report", metaCertificate: "Certificate",
+    unconfirmed: "to confirm", askPrice: "Price on request", minutes: "min",
+    sessionCta: "Request session", initiationCta: "Explore initiation", courseCta: "Open programme",
+    cardSource: "Existing Academy programme · no booking or payment",
+    noCertificate: "No offer has a confirmed certificate for these choices.",
+    viewAll: "Reset conditions", waiting: "Loading published sessions…",
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
@@ -176,6 +184,14 @@ const reikiUi = {
     mediaNone: "У исполнителя пока нет опубликованной видео- или аудиопрезентации.",
     mediaOpen: "Открыть", provider: "Профиль исполнителя", request: "Запросить сессию",
     choose: "Подобрать по фильтру",
+    offersSession: "Сессии Рейки", offersInitiation: "Инициации Рейки", offersCourse: "Программы обучения Рейки",
+    offersCount: "предложений", sessionTitle: "Сессия Рейки-поддержки", offerPublished: "Опубликованная услуга",
+    author: "Практик", metaTiming: "Срок", metaReport: "Отчёт", metaCertificate: "Сертификат",
+    unconfirmed: "уточняется", askPrice: "Цена по запросу", minutes: "мин",
+    sessionCta: "Запросить сессию", initiationCta: "Открыть инициацию", courseCta: "Открыть программу",
+    cardSource: "Действующая программа Академии · не запись и не оплата",
+    noCertificate: "Нет предложений с подтверждённой выдачей сертификата.",
+    viewAll: "Сбросить условия", waiting: "Загружаем опубликованные сессии…",
   },
   es: {
     tabs: { main: "Inicio", filter: "Filtro", description: "Descripción", media: "Vídeo / audio" },
@@ -198,6 +214,14 @@ const reikiUi = {
     mediaNone: "Aún no hay presentación de vídeo o audio publicada.",
     mediaOpen: "Abrir", provider: "Perfil del profesional", request: "Solicitar sesión",
     choose: "Elegir filtros",
+    offersSession: "Sesiones Reiki", offersInitiation: "Iniciaciones Reiki", offersCourse: "Programas de formación Reiki",
+    offersCount: "ofertas", sessionTitle: "Sesión de apoyo Reiki", offerPublished: "Servicio publicado",
+    author: "Profesional", metaTiming: "Plazo", metaReport: "Informe", metaCertificate: "Certificado",
+    unconfirmed: "por confirmar", askPrice: "Precio por consultar", minutes: "min",
+    sessionCta: "Solicitar sesión", initiationCta: "Ver iniciación", courseCta: "Abrir programa",
+    cardSource: "Programa existente · sin reserva ni pago",
+    noCertificate: "No hay ofertas con certificado confirmado.",
+    viewAll: "Restablecer filtros", waiting: "Cargando sesiones publicadas…",
   },
 } as const;
 
@@ -380,7 +404,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     if (!orderOpen && dialog.open) dialog.close();
   }, [orderOpen]);
 
-  const supportedMethods = kind === "healing" && reikiFormat === "session" ? REIKI_METHODS[reikiFocus] : null;
+  const supportedMethods = kind === "healing" ? REIKI_METHODS[reikiFocus] : null;
   const offersMethod = (value: string) => !supportedMethods ||
     supportedMethods.some(name => name.toLowerCase() === value.toLowerCase());
   const methods = [...new Set((masters || []).flatMap(master => master.methods || [])
