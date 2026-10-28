@@ -264,6 +264,17 @@ for (const browserType of [chromium, webkit]) {
             label+" return restores Money selections");
           assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
             label+" return restores Money tasks");
+          // A later edit to the global check-in makes a previously accepted
+          // sector stale until it is explicitly saved again.
+          const topMoney=root.locator('[data-support-scale="money"] input[type="range"]');
+          await topMoney.focus(); await topMoney.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" check-in changes in upper-left remain live during accepted review");
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),0,
+            label+" accepted badge disappears when global score changes");
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" saving again accepts updated top rating");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
           const formats=filter.locator('[data-support-goal-format]');
