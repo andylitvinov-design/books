@@ -132,7 +132,8 @@ test("Google account button, one-contact fallback and trusted purchase CTA are s
   assert.match(cart,/data-talisman-pay-now/);
   assert.match(cart,/data-talisman-payment-pending/);
   assert.match(cart,/sourcePath: "\/" \+ locale \+ "\/holistic-support"/);
-  assert.match(viewer,/pendingBrowserTalismanGoogleReturn/);
+  assert.match(viewer,/consumeBrowserTalismanGoogleReturn/);
+  assert.doesNotMatch(viewer,/fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|autoplay=1/);
   assert.match(mobile,/pendingBrowserTalismanGoogleReturn\(\) \? "talisman" : "healing"/);
   assert.doesNotMatch(mobile,/localStorage|sessionStorage|navigator\.sendBeacon/);
   assert.match(price,/configuredTalismanBasket/);
