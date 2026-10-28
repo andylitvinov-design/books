@@ -20,7 +20,8 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support\\\/mobile/);
+  assert.ok(nav.includes("holistic-support\\/") && nav.includes("(?:mobile|mandala)"),
+    "global navigation hides on the dedicated mobile/mandala Support shell");
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
@@ -421,7 +422,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
 test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/holistic-support-master-gallery.module.css");
-  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+  for (const label of ["Сессия","Инициация","Программа","Краткий",
     "Личный разбор текстом","Личный разбор голосом",
     "В течение суток","В течение 3 дней","В выбранный час",
     "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
