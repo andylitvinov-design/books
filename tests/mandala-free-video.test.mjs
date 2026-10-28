@@ -104,7 +104,9 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
   assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
-  assert.match(renderer, /ctx\.drawImage\(src,-pw\/2,-ph\*\.55,pw,ph\)/);
+  // The renderer now preserves decoded portrait aspect ratio instead of
+  // forcing fixed width/height offsets; keep the actual image-layer contract.
+  assert.ok(renderer.includes("ctx.drawImage(src,-src.width*scale/2,-src.height*scale/2,src.width*scale,src.height*scale);"));
   assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
