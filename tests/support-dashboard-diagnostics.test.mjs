@@ -127,10 +127,10 @@ const insertedBlock = `          if (!(geometry.hero[0].y-geometry.a[0].y<285)) 
             catch { /* Diagnostics must not replace the original fatal assertion. */ }
           }
 `
-test('verifier is exact d36e preimage after removing only diagnostic additions', () => {
+test('verifier is exact canonical99c preimage after removing only diagnostic additions', () => {
   assert.equal(verifier.split(insertedImport).length, 2); assert.equal(verifier.split(insertedBlock).length, 2)
   const before = verifier.replace(insertedImport, '').replace(insertedBlock, '')
-  assert.equal(createHash('sha1').update(`blob ${Buffer.byteLength(before)}\0`).update(before).digest('hex'), '5e8478605df4acbd8561a7cedb7f7a1223e3ec1d')
+  assert.equal(createHash('sha1').update(`blob ${Buffer.byteLength(before)}\0`).update(before).digest('hex'), '4d070dce94b992f4ddee7ed89cece31c4f6e895d')
   assert.match(verifier, /geometry\.hero\[0\]\.height>=268/)
 })
 test('actual verifier block never runs on pass and preserves original assertion after throwing observer', async () => {

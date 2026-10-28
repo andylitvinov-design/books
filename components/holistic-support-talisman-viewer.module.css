@@ -127,3 +127,66 @@
   .thumb { flex-basis: 128px; }
 }
 @media(prefers-reduced-motion:reduce) { .viewer * { scroll-behavior: auto; transition: none; } }
+
+
+/* Unified Support stage: same scenic hero + miniature shelf as original videos.
+   Keep real Fu artwork, accessible swipe/arrow controls and quote dialog. */
+.hero{min-height:428px;background:radial-gradient(circle at 78% 40%,#d9b071,#547b62 42%,#143e34 100%)}
+.shade{background:linear-gradient(90deg,#102d2af5,#153b33df 38%,#173b3261 74%,#24160a15),
+  linear-gradient(0deg,#082a24ef,transparent 61%)}
+.photoStage{inset:55px 3% 65px 40%}
+.heroCopy{width:min(63%,480px);min-height:290px;padding:70px 0 9px}
+.heroCopy h2{font-family:Arial,Helvetica,sans-serif;font-weight:900;
+  font-size:clamp(31px,4.4vw,51px);line-height:1.05;letter-spacing:-.034em;text-shadow:0 2px 10px #102a2775}
+.heroCopy p{font-size:clamp(14px,1.9vw,18px);line-height:1.32;-webkit-line-clamp:3}
+.actions{margin-top:1px}
+.request{min-height:64px;background:linear-gradient(105deg,#078a60,#20b580);font-size:clamp(16px,2.5vw,23px)}
+.details{min-height:60px;font-size:clamp(13px,1.7vw,17px)}
+.dots{display:none}
+.more{padding:19px 17px 18px}
+.heading{margin-bottom:12px}
+.heading h3{font-size:clamp(19px,2.5vw,27px)}
+.rail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;
+  overflow:visible;padding:3px 3px 12px;scroll-snap-type:none}
+.thumb{position:relative;isolation:isolate;display:flex;flex:none;justify-content:flex-end;
+  align-items:flex-start;flex-direction:column;min-width:0;width:100%;height:174px;
+  padding:9px;gap:0;border:3px solid transparent;border-radius:15px;overflow:hidden;
+  background:linear-gradient(145deg,#b18a50,#557a5c);color:#fff;scroll-snap-align:none}
+.thumbPhoto{position:absolute;z-index:-2;inset:0;width:100%;height:100%;border-radius:0;overflow:hidden}
+.thumbPhoto img{width:100%;height:100%;object-fit:cover}
+.thumb::after{content:"";position:absolute;z-index:-1;inset:0;
+  background:linear-gradient(0deg,#0a271ce8,transparent 65%)}
+.thumbTitle{position:relative;z-index:1;display:-webkit-box;max-height:60px;
+  min-height:0;padding:0;color:#fff;font-family:Arial,Helvetica,sans-serif;
+  font-size:clamp(12px,1.85vw,17px);font-weight:850;line-height:1.2;
+  text-shadow:0 1px 6px #000a;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.thumbMarker{display:none}
+.thumb[aria-pressed="true"]{border-color:#1eaf79;box-shadow:0 0 0 2px #b5efc6,0 5px 18px #146b4d3c}
+.note{font-size:12px}
+@media(max-width:640px){
+  .hero{min-height:357px;padding:9px 11px 14px;border-radius:17px}
+  .photoStage{inset:50px 1% 72px 40%}
+  .heroCopy{width:64%;min-height:255px;padding:74px 0 8px}
+  .heroCopy h2{font-size:clamp(25px,6.75vw,36px);margin:9px 0 7px}
+  .heroCopy p{font-size:clamp(12px,3.2vw,15px);line-height:1.24;-webkit-line-clamp:3}
+  .price{font-size:11px}
+  .carouselControls{right:7px;top:46%}
+  .request,.details{min-height:53px;border-radius:13px}
+  .request{font-size:clamp(13px,3.9vw,18px)}
+  .details{font-size:clamp(11px,3.15vw,14px)}
+  .more{padding:13px 10px 15px}
+  .heading{margin-bottom:8px}
+  .heading h3{font-size:clamp(18px,4.7vw,22px)}
+  .rail{gap:6px;padding-bottom:8px}
+  .thumb{min-width:0;width:100%;height:clamp(113px,32vw,158px);padding:5px;border-radius:12px}
+  .thumbTitle{font-size:clamp(10px,2.85vw,14px);line-height:1.14;overflow-wrap:anywhere}
+  .note{font-size:11px}
+}
+@media(max-width:350px){
+  .hero{min-height:348px}
+  .heroCopy{width:65%;min-height:249px}
+  .heroCopy h2{font-size:24px}
+  .heroCopy p{-webkit-line-clamp:2}
+  .thumb{height:112px}
+  .thumbTitle{font-size:10px}
+}

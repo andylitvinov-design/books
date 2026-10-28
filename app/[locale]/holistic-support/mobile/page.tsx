@@ -32,9 +32,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     metadataBase: metadataBaseFor(),
     title: pageTitle[locale] + " | Holistic House",
-    description: locale === "ru" ? "Личный фокус, медитации, тесты, талисманы и поддержка в одном мобильном пространстве." :
-      locale === "es" ? "Tu enfoque, meditaciones, autoevaluación, talismanes y apoyo en una sola pantalla." :
-      "Choose a focus, watch original meditations and explore existing support in one mobile space.",
+    description: locale === "ru" ? "Оцени четыре сферы, подбери оригинальные медитации по минимальным оценкам и исследуй поддержку." :
+      locale === "es" ? "Valora cuatro áreas y descubre meditaciones originales según tus puntuaciones más bajas." :
+      "Rate four life areas and explore original meditations ranked by your lowest self-ratings.",
     robots: { index: false, follow: true }, // an alternative UI, not a competing SEO page
     alternates: {
       canonical: "/" + locale + "/holistic-support/mobile",

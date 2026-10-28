@@ -35,7 +35,36 @@ jobs:
       - name: Real SDK PKCE and callback cookie regressions
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths
-        run: npm run lint
+        id: repository_lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          evidence="$RUNNER_TEMP/app-r1-lint"
+          mkdir -p "$evidence"
+          git ls-tree -rz --name-only HEAD > "$evidence/tracked-paths"
+          export HH_LINT_CHECKOUT_SHA="$(git rev-parse HEAD)"
+          export HH_LINT_CHECKOUT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          export HH_LINT_CHECKOUT_PARENTS="$(git show -s --format=%P HEAD)"
+          set +e
+          npm run lint -- --format ./scripts/format-eslint-diagnostics.mjs --output-file "$evidence/summary.json" >/dev/null 2>&1
+          lint_exit=$?
+          set -e
+          summary_written=false
+          if [ -s "$evidence/summary.json" ]; then summary_written=true; fi
+          printf '{"exitCode":%s,"summaryWritten":%s,"checkoutSha":"%s","checkoutTree":"%s","checkoutParents":"%s"}\n' "$lint_exit" "$summary_written" "$HH_LINT_CHECKOUT_SHA" "$HH_LINT_CHECKOUT_TREE" "$HH_LINT_CHECKOUT_PARENTS" > "$evidence/exit.json"
+          printf 'ESLint exit code: %s\n' "$lint_exit"
+          exit "$lint_exit"
+      - name: Upload bounded lint metadata only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-r1-lint-diagnostics
+          path: |
+            ${{ runner.temp }}/app-r1-lint/summary.json
+            ${{ runner.temp }}/app-r1-lint/exit.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Production-mode build, app flags absent
         run: npm run build
         env: {NEXT_TELEMETRY_DISABLED: '1'}
