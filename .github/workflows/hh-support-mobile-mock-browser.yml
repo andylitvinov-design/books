@@ -19,7 +19,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-support-mobile-mock
+  # Keep push and each PR independent: an unrelated PR must not cancel
+  # production visual verification for this exact published commit.
+  group: hh-support-mobile-mock-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   mobile-visual-parity:
