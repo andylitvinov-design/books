@@ -8,12 +8,27 @@ const showcase = read('components/practice-showcase.jsx')
 const css = read('components/practice-showcase.module.css')
 const auth = read('app/api/app/[...path]/route.js')
 const editor = read('components/app/practice-workspace.jsx')
+const rootLayout = read('app/layout.tsx')
+const middleware = read('middleware.ts')
 
 test('public practitioner preview is a dedicated locale page, not the private /app route', () => {
   assert.match(page, /SUPPORTED_LOCALES = \['en', 'ru', 'es'\]/)
   assert.match(page, /<PracticeShowcase locale=\{locale\}/)
   assert.match(page, /index: false/)
   assert.ok(!page.includes('redirect(\'/ru/app/practice\')'))
+})
+
+test('public preview renders per request so strict CSP permits interactive hydration', () => {
+  // Next.js force-static erases root request headers. The HTML then has no
+  // nonce while middleware requires nonce + strict-dynamic for its JS chunks.
+  // Static pre-render made all guest buttons inert, despite HTTP 200/build READY.
+  assert.match(page, /export const dynamic = 'force-dynamic'/)
+  assert.match(page, /export const revalidate = 0/)
+  assert.doesNotMatch(page, /force-static/)
+  assert.match(rootLayout, /const nonce = \(await headers\(\)\)\.get\("x-nonce"\)/)
+  assert.match(rootLayout, /nonce=\{nonce\}/)
+  assert.match(middleware, /const nonce = crypto\.randomUUID\(\)/)
+  assert.match(middleware, /'strict-dynamic'/)
 })
 
 test('guest preview loads no private practitioner data on the server', () => {
