@@ -59,12 +59,21 @@ try {
       const focus = dialog.locator("[data-remote-focus-chip]").first();
       await focus.click();
       await dialog.locator("#remote-method").selectOption({label:"Tantra Reiki"});
-      const date = await page.evaluate(() => {
-        const d = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
-        return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-      });
-      await dialog.locator("#remote-date").fill(date);
-      await dialog.locator("#remote-time").fill("15:00");
+      // A contact enquiry is valid even without date or time. For a chosen
+      // time, both fields must be present and the preference must be future.
+      if (locale === "en" || locale === "ru") {
+        const date = await page.evaluate(() => {
+          const d = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+          return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        });
+        await dialog.locator("#remote-date").fill(date);
+        if (locale === "en") await dialog.locator("#remote-time").fill("15:00");
+      }
+      if (locale === "ru") {
+        await dialog.locator('button[type="submit"]').last().click();
+        await dialog.getByText("Выберите и дату, и время или оставьте оба поля пустыми.").waitFor();
+        await dialog.locator("#remote-date").fill("");
+      }
       await dialog.locator('button[type="submit"]').last().click();
       const contact = dialog.locator("[data-remote-public-order-contact]");
       await contact.waitFor({state:"visible"});
@@ -94,6 +103,8 @@ try {
       assert.equal(requests[0].contact.phone,"+14165551234");
       assert.match(requests[0].serviceTitle,/Reiki support · Andy · 30 min/);
       assert.match(requests[0].description,/Tantra Reiki/);
+      if (locale !== "en") assert.match(requests[0].description,/По согласованию|Por acordar/,
+        locale+": no fabricated date/time for an unscheduled enquiry");
       assert.equal(await page.locator("[data-cart-verified-paypal-checkout]").count(),0);
       assert.deepEqual(errors,[],locale+": no uncaught JS errors");
       if (locale==="ru") await page.screenshot({
