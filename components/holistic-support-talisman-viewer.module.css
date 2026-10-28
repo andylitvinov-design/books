@@ -48,9 +48,11 @@
 .details { flex: 0 0 auto; border: 1px solid #f4e6d1a8; background: #173d35a6; color: white; }
 .details:hover { background: #173d35; }
 .dots { display: flex; justify-content: center; gap: 10px; padding-top: 11px; }
-.dots button { width: 10px; height: 10px; padding: 0; border: 1px solid #f4eadbd9; border-radius: 50%;
-  background: #f4eadd70; cursor: pointer; }
-.dots button[aria-pressed="true"] { background: white; box-shadow: 0 0 0 2px #fff8; }
+.dots button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0;
+  border-radius: 50%; background: transparent; cursor: pointer; }
+.dots button::before { content: ""; width: 10px; height: 10px; border: 1px solid #f4eadbd9;
+  border-radius: 50%; background: #f4eadd70; }
+.dots button[aria-pressed="true"]::before { background: white; box-shadow: 0 0 0 2px #fff8; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
 .heading h3 { margin: 0; color: #263a2f; font-size: clamp(19px,2.5vw,27px); font-weight: 850; }
 .heading button { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 6px 0;
@@ -98,7 +100,7 @@
   .heroCopy p { margin-bottom: 7px; font-size: clamp(12px,3.15vw,14px); line-height: 1.25; -webkit-line-clamp: 4; }
   .price { font-size: 10px; line-height: 1.22; }
   .carouselControls { right: 8px; top: 46%; gap: 8px; }
-  .carouselControls button { width: 42px; height: 42px; }
+  .carouselControls button { width: 44px; height: 44px; }
   .actions { gap: 7px; }
   .request,.details { min-height: 55px; padding: 8px 9px; border-radius: 14px; font-size: clamp(14px,4vw,19px); gap: 6px; }
   .request svg { width: 19px; height: 19px; flex: none; }
