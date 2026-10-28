@@ -62,7 +62,7 @@ The ranking point total is **NOT an estimated therapeutic response, percentile, 
 
 ## Source interpretation guardrails
 
-Only the exact test, original dimension, definition version, instrument language and an independently reviewed reference interval could justify a below/within/above reference label. Without that: unknown. Raw score position within the questionnaire scale is not a normative percentile. No averaging across versions, tests, score directions or languages. Descriptive personality traits are not deficiencies; generic stress/resource is not a finance scale; private intimacy/sexual wellbeing does not trigger paid offers. No diagnosis, medication or homeopathy benefit claims.
+Only the exact test key (including guarded finance/self-support source-specific dimension), original dimension, definition version, instrument language and an independently reviewed reference interval could justify a below/within/above reference label. Without that: unknown. Raw score position within the questionnaire scale is not a normative percentile. No averaging across versions, tests, score directions or languages. Descriptive personality traits are not deficiencies; generic stress/resource is not a finance scale; private intimacy/sexual wellbeing does not trigger paid offers. No diagnosis, medication or homeopathy benefit claims.
 
 All matching is browser-local. No health/test results in URL, public Supabase, analytics/pixels, YouTube, CRM, email, Telegram/WhatsApp/push or external AI. No new migrations, authentication flow, external paid calls or media generation in this release. Existing client/guest rights and authorized published catalogs remain in control.
 
