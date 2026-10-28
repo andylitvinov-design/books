@@ -229,6 +229,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         href: "/" + locale + "/academy/" + record.routeKey,
         courseHref: originalVideo ? "/" + locale + "/academy/" + originalVideo.routeKey : undefined,
         takeLabel: originalVideo ? entry.videoCta : undefined,
+        actionLabel: originalVideo ? entry.videoCta : action.program,
         image: originalVideo ? recordImage(originalVideo) : recordImage(record, index),
         archiveKind: "course" as const,
       }];
