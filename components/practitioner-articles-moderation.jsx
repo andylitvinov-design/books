@@ -14,7 +14,16 @@ export default function ArticlesModeration(){
   {items.map(item=><section className="client-detail-card" key={item.id}>
    <p className="prescription-admin-eyebrow">{item.status} · {item.draft.locale} · {item.practitionerSlug}</p>
    <h2>{item.draft.title||item.slug}</h2><p>{item.draft.excerpt}</p>
-   <details><summary>Read submitted body</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.draft.body}</pre><p>{(item.draft.sourceUrls||[]).join(' · ')}</p></details>
+   <details><summary>Read submitted body and linked media</summary>
+    <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.draft.body}</pre>
+    <p>{(item.draft.sourceUrls||[]).join(' · ')}</p>
+    {(item.draft.media||[]).length>0&&<div>
+     <strong>Review every linked asset and confirm publication rights before approval.</strong>
+     <ul>{item.draft.media.map((media,index)=><li key={index}>
+      {media.type}: <a href={media.url} target="_blank" rel="noopener noreferrer nofollow">{media.url}</a>
+     </li>)}</ul>
+    </div>}
+   </details>
    {item.published?.title&&<p>Currently published: {item.published.title} · {item.published.locale}</p>}
    <div className="practitioner-cabinet-actions">
     <button disabled={busy} onClick={()=>action(item.id,'approve')}>Approve & publish</button>

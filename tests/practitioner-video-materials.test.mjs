@@ -56,16 +56,20 @@ test('material editor saves each action to the server before confirming success'
 })
 
 test('videos share profile editorial review; public page uses only approved author materials',async()=>{
- const [contracts,repo,publicPage,cabinet,gallery,articlesRepo,articleEditor]=await Promise.all([
+ const [contracts,repo,publicPage,cabinet,gallery,feed,articlesRepo,articleEditor]=await Promise.all([
   'lib/practitioners/contracts.js','lib/practitioners/repository.js','app/[locale]/masters/[slug]/page.tsx',
   'components/app/practice-workspace.jsx','components/practitioner-video-gallery.tsx',
+  'components/practitioner-public-feed.tsx',
   'lib/practitioners/article-repository.js','components/app/practitioner-articles.jsx',
  ].map(f=>readFile(new URL('../'+f,import.meta.url),'utf8')))
  assert.match(contracts,/videoMaterials:validateVideoMaterials/)
  assert.match(repo,/public_profile=\$2/)
  assert.match(repo,/draft_profile=\$2/)
  assert.match(publicPage,/profile\.videoMaterials/)
- assert.match(publicPage,/PractitionerVideoGallery/)
+ assert.match(publicPage,/PractitionerPublicFeed/)
+ assert.match(feed,/youtube-nocookie\.com/)
+ assert.match(feed,/playing\?<iframe/)
+ assert.match(feed,/onClick=\{\(\)=>setPlaying\(true\)\}/)
  assert.match(publicPage,/publicByPractitioner\((?:p|practitioner)\.slug\)/)
  assert.match(articlesRepo,/a\.published->>'locale' in \('en','ru','es'\)/)
  assert.match(articlesRepo,/publicSql/)

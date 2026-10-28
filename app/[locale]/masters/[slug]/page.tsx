@@ -13,14 +13,15 @@ import { freeMeditationVideos } from "@/data/academy/holistic-support-meditation
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
-import PractitionerVideoGallery from "@/components/practitioner-video-gallery";
+import PractitionerPublicFeed from "@/components/practitioner-public-feed";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
 import styles from "./profile.module.css";
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
-type PublishedMeditation = {
+type PublishedCourse = {
   slug: string;
   practitionerSlug: string;
+  publishedAt?: string | null;
   course: {
     title: string;
     description?: string;
@@ -32,7 +33,7 @@ type PublishedArticle = {
   id: string;
   slug: string;
   publishedAt?: string | null;
-  published: { title: string; excerpt: string; locale: string; coverPath?: string };
+  published: { title: string; excerpt?: string; locale: "en" | "ru" | "es"; coverPath?: string; body?: string; kind?: string; media?: Array<{source?: string; type?: string; url?: string; assetId?: string}> };
 };
 
 export const dynamic = "force-dynamic";
@@ -99,7 +100,7 @@ export default async function MasterProfile({ params }: PageProps) {
   );
   const config = getAppConfig();
   let articles: PublishedArticle[] = [];
-  let publishedMeditations: PublishedMeditation[] = [];
+  let publishedCourses: PublishedCourse[] = [];
   let sharedAudios: {id:string;title:string;locale:'en'|'ru'|'es'}[] = [];
   // Both repositories return *only* approved public snapshots. No drafts, client data or media URLs.
   const [articleResult, courseResult, audioResult] = await Promise.allSettled([
@@ -110,14 +111,13 @@ export default async function MasterProfile({ params }: PageProps) {
   if (articleResult.status === "fulfilled") {
     articles = (articleResult.value as PublishedArticle[])
       .sort((a, b) => Number(b.published.locale === locale) - Number(a.published.locale === locale))
-      .slice(0, 12);
+      .slice(0, 30);
   }
   if (courseResult.status === "fulfilled") {
-    publishedMeditations = (courseResult.value as PublishedMeditation[])
+    publishedCourses = (courseResult.value as PublishedCourse[])
       .filter(item => item.practitionerSlug === practitioner.slug &&
-        (item.course?.contentType === "audio_meditation" || item.course?.contentType === "video_meditation") &&
-        ["en", "ru", "es"].includes(item.course.locale) && Boolean(item.course.title))
-      .slice(0, 12);
+        ["en", "ru", "es"].includes(item.course?.locale) && Boolean(item.course?.title))
+      .slice(0, 40);
   }
   if (audioResult.status === 'fulfilled') sharedAudios = audioResult.value;
   // Reuse verified original media only for its actual author. Never invent translations or audio files.
@@ -211,8 +211,7 @@ export default async function MasterProfile({ params }: PageProps) {
 
         <nav className={styles.sectionNav} aria-label={ru ? "Разделы профиля" : es ? "Secciones del perfil" : "Profile sections"}>
           <a href="#practitioner-services">{ru ? "Услуги" : es ? "Servicios" : "Services"}</a>
-          <a href="#practitioner-meditations">{ru ? "Медитации" : es ? "Meditaciones" : "Meditations"}</a>
-          <a href="#practitioner-articles">{ru ? "Статьи" : es ? "Artículos" : "Articles"}</a>
+          <a href="#practitioner-feed">{ru ? "Лента" : es ? "Publicaciones" : "Feed"}</a>
           <a href="#practitioner-about">{ru ? "О мастере" : es ? "Acerca de" : "About"}</a>
         </nav>
 
@@ -225,6 +224,18 @@ export default async function MasterProfile({ params }: PageProps) {
             />
           </div>
         )}
+
+        {/* Preserve existing bookmarks when the separate media/article sections become one feed. */}
+        <span id="practitioner-meditations" className={styles.legacyFeedAnchor} aria-hidden="true" />
+        <span id="practitioner-articles" className={styles.legacyFeedAnchor} aria-hidden="true" />
+        <PractitionerPublicFeed
+          locale={locale as "en" | "ru" | "es"}
+          masterSlug={practitioner.slug}
+          articles={articles}
+          courses={publishedCourses}
+          videos={videos}
+          audios={sharedAudios}
+        />
 
         <section className={styles.services} id="practitioner-services" aria-labelledby="practitioner-services-heading">
           <header className={styles.sectionHeading}>
@@ -247,71 +258,6 @@ export default async function MasterProfile({ params }: PageProps) {
           )}
         </section>
 
-
-        <section id="practitioner-meditations" className={styles.meditations} aria-labelledby="practitioner-meditations-heading">
-          <header className={styles.sectionHeading}>
-            <div>
-              <p className={styles.kicker}>{ru ? "ПРАКТИКИ" : es ? "PRÁCTICAS" : "GUIDED PRACTICES"}</p>
-              <h2 id="practitioner-meditations-heading">
-                {ru ? "Медитации · аудио и видео" : es ? "Meditaciones · audio y vídeo" : "Meditations · audio & video"}
-              </h2>
-            </div>
-            <span className={styles.count}>{publishedMeditations.length + videos.length}</span>
-          </header>
-          <p className={styles.sectionLead}>
-            {ru ? "Авторские записи и опубликованные практики. Выберите запись для прослушивания или просмотра." :
-              es ? "Grabaciones originales y prácticas publicadas. El idioma del material se indica por separado." :
-                "Original recordings and published practices. Each item shows its original language."}
-          </p>
-          {publishedMeditations.length > 0 && (
-            <div className={styles.meditationGrid}>
-              {publishedMeditations.map(item => (
-                <Link key={item.slug} className={styles.meditationCard}
-                  href={"/" + item.course.locale + "/courses/masters/" + item.slug} prefetch={false}>
-                  <span className={styles.meditationArtwork} aria-hidden="true">
-                    {item.course.contentType === "audio_meditation" ? "♫" : "▶"}
-                  </span>
-                  <span className={styles.meditationCopy}>
-                    <small>
-                      {item.course.contentType === "audio_meditation" ?
-                        (ru ? "Аудиомедитация" : es ? "Meditación en audio" : "Audio meditation") :
-                        (ru ? "Видеомедитация" : es ? "Meditación en vídeo" : "Video meditation")}
-                      {" · "}{item.course.locale.toUpperCase()}
-                    </small>
-                    <strong>{item.course.title}</strong>
-                    {item.course.description && <span>{item.course.description}</span>}
-                    <em>{ru ? "Открыть практику" : es ? "Abrir práctica" : "Open practice"} →</em>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-          {videos.length > 0 && (
-            <div className={styles.approvedVideoGallery}>
-              <PractitionerVideoGallery videos={videos} locale={locale} />
-            </div>
-          )}
-          {sharedAudios.length > 0 && (
-            <div className={styles.sharedAudioSection} aria-label={ru ? 'Аудиозаписи сообщества' : es ? 'Audios compartidos' : 'Shared audio recordings'}>
-              <h3>{ru ? 'Аудио · материалы мастера' : es ? 'Audios del profesional' : 'Audio from this practitioner'}</h3>
-              <div className={styles.sharedAudioGrid}>
-                {sharedAudios.map(item => (
-                  <article key={item.id} className={styles.sharedAudioCard}>
-                    <strong>{item.title}</strong><small>{item.locale.toUpperCase()}</small>
-                    <audio controls preload="none" aria-label={item.title}
-                      src={'/api/masters/' + encodeURIComponent(practitioner.slug) + '/shared-audio/' + item.id} />
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
-          {!publishedMeditations.length && !videos.length && !sharedAudios.length && (
-            <p className={styles.emptyServices}>
-              {ru ? "Опубликованных аудио- и видеоматериалов пока нет." :
-                es ? "Todavía no hay grabaciones públicas." : "No published recordings yet."}
-            </p>
-          )}
-        </section>
 
         <section id="practitioner-about" className={styles.about} aria-labelledby="practitioner-about-heading">
           <div>
@@ -365,47 +311,6 @@ export default async function MasterProfile({ params }: PageProps) {
           </details>
         )}
 
-        <section id="practitioner-articles" className={styles.articles} aria-labelledby="practitioner-articles-heading">
-          <header className={styles.sectionHeading}>
-            <div>
-              <p className={styles.kicker}>{ru ? "ПУБЛИКАЦИИ" : es ? "PUBLICACIONES" : "PUBLICATIONS"}</p>
-              <h2 id="practitioner-articles-heading">
-                {ru ? "Мои статьи" : es ? "Mis artículos" : "My articles"}
-              </h2>
-            </div>
-            <span className={styles.count}>{articles.length}</span>
-          </header>
-          <p className={styles.sectionLead}>
-            {ru ? "Статьи и идеи мастера — только после проверки и публикации." :
-              es ? "Ideas y artículos del profesional, tras su publicación." :
-                "Articles and insights shared by this practitioner after publication."}
-          </p>
-          {articles.length > 0 ? (
-            <div className={styles.articleGrid}>
-              {articles.map(article => (
-                <article className={styles.articleCard} key={article.id}>
-                  {article.published.coverPath ? (
-                    <img className={styles.articleCover} src={article.published.coverPath} alt=""
-                      width={400} height={192} loading="lazy" />
-                  ) : <div className={styles.articleCoverPlaceholder} aria-hidden="true">✦</div>}
-                  <div className={styles.articleCopy}>
-                    <small>{article.published.locale.toUpperCase()}</small>
-                    <h3>{article.published.title}</h3>
-                    <p>{article.published.excerpt}</p>
-                    <Link href={"/" + article.published.locale + "/articles/" + article.slug}>
-                      {ru ? "Читать статью" : es ? "Leer artículo" : "Read article"} →
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.emptyServices}>
-              {ru ? "Опубликованных статей пока нет." :
-                es ? "Todavía no hay artículos publicados." : "No published articles yet."}
-            </p>
-          )}
-        </section>
         <section className={styles.finalCta}>
           <div>
             <p className={styles.kicker}>{ru ? "СДЕЛАЙТЕ ПЕРВЫЙ ШАГ" : es ? "DA EL PRIMER PASO" : "YOUR NEXT STEP"}</p>

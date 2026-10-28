@@ -55,7 +55,7 @@ function CoachingAudioFolders({courses,locale,busy,onOpen}) {
 export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenCoachingAudio,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,meditationType='',shortcut=null,onTabChange}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
-  videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
+  videos:'Видео',articles:'Публикации',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
   title:'Название',url:'Ссылка YouTube / Vimeo',description:'Краткое описание',language:'Язык видео',
   addToList:'Сохранить видео',update:'Сохранить изменения',cancel:'Отмена',editBtn:'Изменить',deleteBtn:'Убрать',
   published:'Опубликовано',pending:'Черновик',empty:'Вы пока не добавили видео.',
@@ -64,7 +64,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'После модерации видео появятся на вашей публичной странице. Уже опубликованные материалы останутся видимыми до одобрения обновлений.',
   invalid:'Укажите корректную ссылку YouTube или Vimeo.',duplicate:'Это видео уже есть в материалах.',saving:'Сохраняем…',saved:'Видео сохранено в материалах как черновик.',removed:'Видео удалено из материалов.',saveFailed:'Не удалось сохранить видео. Попробуйте ещё раз.',conflict:'Профиль изменился в другой вкладке. Обновите страницу и повторите сохранение.',confirmRemove:'Удалить это видео из материалов?',autoSaved:'Видео сохраняются сразу. Для публикации на сайте отправьте их на проверку.',
  }:es?{
-  videos:'Vídeos',articles:'Artículos',add:'+ Añadir vídeo',new:'Nuevo vídeo',edit:'Editar vídeo',
+  videos:'Vídeos',articles:'Publicaciones',add:'+ Añadir vídeo',new:'Nuevo vídeo',edit:'Editar vídeo',
   title:'Título',url:'Enlace de YouTube / Vimeo',description:'Descripción breve',language:'Idioma del vídeo',
   addToList:'Guardar vídeo',update:'Guardar cambios',cancel:'Cancelar',editBtn:'Editar',deleteBtn:'Quitar',
   published:'Publicado',pending:'Borrador',empty:'Aún no has añadido vídeos.',
@@ -73,7 +73,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Los vídeos aparecerán en tu perfil público después de aprobarlos. Las versiones ya publicadas permanecerán visibles hasta la revisión.',
   invalid:'Introduce un enlace válido de YouTube o Vimeo.',duplicate:'Este vídeo ya está en tus materiales.',saving:'Guardando…',saved:'Vídeo guardado en tus materiales como borrador.',removed:'Vídeo eliminado de tus materiales.',saveFailed:'No se pudo guardar el vídeo. Inténtalo de nuevo.',conflict:'El perfil cambió en otra pestaña. Actualiza la página y vuelve a intentarlo.',confirmRemove:'¿Eliminar este vídeo de tus materiales?',autoSaved:'Los vídeos se guardan de inmediato. Envíalos a revisión para publicarlos.',
  }:{
-  videos:'Videos',articles:'Articles',add:'+ Add video',new:'New video',edit:'Edit video',
+  videos:'Videos',articles:'Publications',add:'+ Add video',new:'New video',edit:'Edit video',
   title:'Title',url:'YouTube / Vimeo link',description:'Short description',language:'Video language',
   addToList:'Save video',update:'Save changes',cancel:'Cancel',editBtn:'Edit',deleteBtn:'Remove',
   published:'Published',pending:'Draft',empty:'You have not added any videos yet.',
@@ -203,7 +203,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <p>{ru?'Все материалы и программы — в одном месте.':es?'Tus materiales y programas, en un solo lugar.':'All your resources and programs in one place.'}</p>
   </header>
   <nav className={styles.tabs} role="tablist" aria-label={ru?'Тип материала':es?'Tipo de material':'Material type'} data-unified-material-nav>
-    <button type="button" role="tab" aria-selected={tab==='articles'} onClick={()=>chooseTab('articles')}><FileText size={19} aria-hidden="true"/><span>{ru?'Статьи':es?'Artículos':'Articles'}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='articles'} onClick={()=>chooseTab('articles')}><FileText size={19} aria-hidden="true"/><span>{ru?'Публикации':es?'Publicaciones':'Publications'}</span></button>
     <button type="button" role="tab" aria-selected={tab==='services'} onClick={()=>chooseTab('services')}><Leaf size={19} aria-hidden="true"/><span>{ru?'Услуги':es?'Servicios':'Services'}</span></button>
     <button type="button" role="tab" aria-selected={tab==='courses'} onClick={()=>chooseTab('courses')} data-practice-materials-courses-tab><BookOpen size={19} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span></button>
     {isOwner&&<button type="button" role="tab" aria-selected={tab==='audio'} onClick={()=>chooseTab('audio')} data-practice-materials-audio-tab><Headphones size={19} aria-hidden="true"/><span>{ru?'Аудио':es?'Audio':'Audio'}</span></button>}

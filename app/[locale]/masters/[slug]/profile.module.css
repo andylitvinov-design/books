@@ -194,3 +194,5 @@
 @media (prefers-reduced-motion: reduce){
   .sectionNav{scroll-behavior:auto}
 }
+
+.legacyFeedAnchor{display:block;height:0;scroll-margin-top:5rem}
