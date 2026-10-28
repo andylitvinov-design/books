@@ -9,6 +9,7 @@ import {
 
 const sample = (override = {}) => ({
  key:"energy",dimensionKey:"weekly.energy",resultId:"verified-result",
+ definitionKey:"hh-weekly-pulse",definitionVersion:"v1",instrumentLocale:"en",
  rawValue:3,min:0,max:10,mode:"directional",sourceTitle:"Weekly Pulse",
  measuredAt:"2026-10-25T10:00:00Z",...override,
 });
@@ -31,6 +32,7 @@ test("score provenance and raw values are validated; no below-average fiction",(
  assert.deepEqual(verifiedAxisEvidence([sample({resultId:""})]),[]);
  assert.deepEqual(verifiedAxisEvidence([sample({rawValue:50})]),[]);
  assert.deepEqual(verifiedAxisEvidence([sample({measuredAt:"bad"})]),[]);
+ assert.deepEqual(verifiedAxisEvidence([sample({definitionVersion:""})]),[]);
  const valid=verifiedAxisEvidence([sample(),sample()]);
  assert.equal(valid.length,1);
  assert.equal(valid[0].axisRef,"recovery::energy");
@@ -44,7 +46,8 @@ test("score provenance and raw values are validated; no below-average fiction",(
  assert.equal(sourceBandPosition({...measurements,rawValue:9},sourceBand),"above_reference");
 });
 test("financial dimensions cannot be faked from a generic resource scale",()=>{
- assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resource.self_support"})])[0].axisRef,"support::resources");
+ assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resource.self_support",definitionKey:"hh-resource-pulse"})])[0].axisRef,"support::self_support");
+ assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.other"})])[0].axisRef,"support::resources");
  assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.financial_wellbeing.cfpb_short"})])[0].axisRef,"money::financial_wellbeing");
  assert.equal(verifiedAxisEvidence([sample({key:"stress",dimensionKey:"state.money_pressure.difficulty"})])[0].axisRef,"money::money_pressure");
 });
@@ -123,5 +126,6 @@ test("client integration is opt-in, local only, responsive, and reused from comp
  assert.match(myTests,/buildPortraitRecommendations\(results \|\| \[\], locale\)/);
  assert.match(myTests,/<PersonalAxisMatches measurements=\{axisModel\?\.measurements \|\| \[\]\}/);
  assert.match(portrait,/<PersonalAxisMatches measurements=\{model\.measurements\}/);
+ assert.match(read("lib/profile/portrait-recommendations.js"),/definitionVersion: value.definitionVersion/);
  assert.ok(!ui.includes("localStorage") && !ui.includes("fetch(") && !ui.includes("analytics"));
 });
