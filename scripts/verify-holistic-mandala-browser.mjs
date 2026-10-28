@@ -172,6 +172,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
           assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 16);
+          const hdMoney = moneySelector.locator('[data-mandala-money-option="wealth-sunrise"]');
+          await hdMoney.click();
+          const newClip=hdMoney.locator('video[data-real-mp4]');
+          await page.waitForFunction(() => {
+            const v=document.querySelector('[data-mandala-scene-preview="wealth-sunrise"]');
+            return v && v.videoWidth>=900 && v.currentTime>.15;
+          },undefined,{timeout:30000});
+          assert.match(await newClip.getAttribute("data-real-mp4")||"",/film-collection-v2\/wealth-sunrise\.mp4$/);
           const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
           await infinity.click();
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
