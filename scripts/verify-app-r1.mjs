@@ -434,6 +434,7 @@ async function verifyPublicServiceConversionJourneys(){
   for(const [slug,kind,names] of services){
    const servicePage=await publicContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
+   try {
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
@@ -510,6 +511,20 @@ async function verifyPublicServiceConversionJourneys(){
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
     }
+   }
+   } catch(error) {
+    try {
+     // Capture the owned synthetic public page, not the unused outer page.
+     // Exact URL equality rejects redirects, query strings and fragments.
+     if(/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)
+       && ['en','ru'].includes(locale)
+       && ['dao-health-profile','alchemy-of-soul','hypnotherapy-course'].includes(slug)
+       && servicePage.url()===origin+'/'+locale+'/services/'+slug) {
+      await boundedBestEffort(()=>servicePage.screenshot({
+       path:output+'/failure-public-service-synthetic-only.png',fullPage:false,timeout:5000,
+      }))
+     }
+    } finally { throw error }
    }
    await servicePage.close()
   }
