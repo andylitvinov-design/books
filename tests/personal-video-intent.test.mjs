@@ -42,6 +42,13 @@ test("EN/ES stems and explicit user control",()=>{
   assert.equal(suggest("relationships","Deseo amor con confianza",love,"es").sceneId,"warm-connection");
   assert.equal(suggest("goals","I want new beginnings",goals,"en").sceneId,"open-door");
 });
+test("Spanish scene keywords match composed, decomposed and unaccented wishes",()=>{
+  for (const wish of ["Mañana", "MAN\u0303ANA", "manana"]) {
+    const result=suggest("life",wish,life,"es");
+    assert.equal(result.sceneId,"meadow-morning",wish);
+    assert.equal(result.matched,true,wish);
+  }
+});
 test("only selects from available theme scenes, never arbitrary or absent scenes",()=>{
   assert.equal(suggest("money","больше клиентов",["golden-rain","abundance-tree"]).sceneId,"golden-rain");
   assert.equal(suggest("money","больше клиентов",["abundance-tree"]).sceneId,"abundance-tree");
