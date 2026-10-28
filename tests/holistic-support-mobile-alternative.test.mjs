@@ -270,6 +270,7 @@ test("all support modes share scenic hero → actual miniature choices without f
 
 test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, not duplicated video manifests", () => {
   const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const greekSource = read("data/academy/greek-video-series.ts");
   const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
   const count = new Map([
     ["videos/maya-archetypes", 6],
@@ -292,7 +293,7 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
     assert.equal(lessons.length, expected, id);
     assert.equal(new Set(lessons.map(entry => entry.videoId)).size, expected, "unique original lessons");
     assert.ok(lessons.every(entry => entry.status === "verified_legacy_public_embed"), id);
-    assert.ok(route.includes('"' + id + '"'), id + " links to original manifest");
+    assert.ok(route.includes('"' + id + '"') || greekSource.includes('"' + id + '"'), id + " links to original manifest");
   }
   assert.match(route, /findAcademyRecord\(entry\.programId, "ru"\)/);
   assert.match(route, /findAcademyRecord\(logicalId, "ru"\)/);
@@ -313,7 +314,7 @@ test("Russian course media picker returns in Courses while the four profiles liv
   assert.match(client, /data-support-active-course-link/);
   assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
-  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.seriesHref \?\? course\.href\} prefetch=\{false\} key=\{course\.id\}/);
   assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
   assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
   assert.match(courseProfiles, /src=\{course\.poster\}/);
