@@ -207,8 +207,7 @@ export function HolisticSupportTalismanViewer({
         <p className={styles.note}>{t.instructions} {t.note}</p>
       </section>
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="support-talisman-order-title"
-        onClose={() => setOrderOpen(false)}
-        onClick={event => { if (event.target === event.currentTarget) setOrderOpen(false); }}>
+        onClose={() => setOrderOpen(false)}>
         <div className={styles.dialogTop}>
           <h2 id="support-talisman-order-title">{t.orderTitle}</h2>
           <button type="button" onClick={() => setOrderOpen(false)} aria-label={t.close}>
