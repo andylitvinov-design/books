@@ -60,6 +60,21 @@ test("explicit chosen axis controls ranking; source values do not imply urgency"
  assert.equal(a[0].hasSourceMeasurement,true);
  assert.ok(!JSON.stringify(a).includes("rawValue"));
 });
+test("two selected axes reward real intersections, with no cross-test averaging",()=>{
+ const same=[{...offer("recovery::energy","video:both"),
+   axisLinks:[{ref:"recovery::energy",strength:3},{ref:"recovery::sleep",strength:2}]},
+   offer("recovery::energy","video:only")];
+ const hits=rankAxisOffers({chosenAxes:["recovery::energy","recovery::sleep"],offers:same});
+ assert.equal(hits[0].id,"video:both");
+ assert.deepEqual(hits[0].matchedAxes.map(x=>x.ref),["recovery::energy","recovery::sleep"]);
+ assert.ok(hits[0].score>hits[1].score);
+ const explicit=rankAxisOffers({chosenAxis:"recovery::energy",chosenAxes:["recovery::sleep"],
+    offers:same,goalRatings:{"recovery::energy":{current:2,desired:8}}});
+ const invalid=rankAxisOffers({chosenAxis:"recovery::energy",chosenAxes:["recovery::sleep"],
+    offers:same,goalRatings:{"recovery::energy":{current:-4,desired:50}}});
+ assert.ok(explicit[0].score>invalid[0].score);
+ assert.equal(rankAxisOffers({chosenAxes:[],offers:same}).length,0);
+});
 test("published catalogue is re-used; no guessed paid checkouts or unapproved source videos",()=>{
  const services=[
   {id:"business",title:"Business",href:"/ru/services/business-consulting"},
@@ -98,6 +113,9 @@ test("client integration is opt-in, local only, responsive, and reused from comp
  assert.match(ui,/data-personal-axis-matching/);
  assert.match(ui,/PROFILE_RESEARCH_AXES/);
  assert.match(ui,/data-axis-context/);
+ assert.match(ui,/data-axis-secondary-controls/);
+ assert.match(ui,/data-axis-personal-gap/);
+ assert.match(ui,/chosenAxes:selectedAxes/);
  assert.match(ui,/data-axis-offer-kind/);
  assert.match(ui,/sourceLanguage:"en"/);
  assert.match(css,/@media\(max-width:480px\)/);
