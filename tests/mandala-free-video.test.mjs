@@ -17,7 +17,8 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /recorder\.start\(500\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
-  assert.match(video, /loadLocalImage\(snapshot\)/);
+  assert.match(video, /loadSceneImage\(snapshot\)/);
+  assert.match(video, /const BACKGROUND_CLIP = "local-money-background-only"/);
   assert.match(video, /sourceRef\.current !== snapshot/);
   assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
