@@ -26,9 +26,12 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
   assert.match(css, /\.tools \{ grid-area: tools;/);
   assert.match(css, /\.profile \{ grid-area: profile;/);
   assert.match(css, /\.scaleList \{ display: flex; flex-direction: column;/);
-  assert.match(css, /\.toolButton \{ min-width: 0; min-height: 104px/);
-  assert.match(css, /\.photo \{ flex: none; align-self: center;/);
+  assert.match(css, /\.toolButton \{ display: flex; flex-direction: row;/);
+  assert.match(css, /\.photo \{ width: min\(100%,100px\);/);
   assert.match(client, /className=\{styles\.recommendShort\}/);
+  assert.match(client, /support-mock-portrait\.webp/);
+  assert.match(client, /support-mock-hero\.webp/);
+  assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: minmax\(0,1fr\);/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
   assert.match(client, /aria-label=\{t.options\[id\]\}/);
   assert.match(client, /type="range" min="1" max="10"/);
