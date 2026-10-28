@@ -158,7 +158,7 @@ function destination(locale, key) {
     masters:'/' + appLocale + '/masters',
     clients:root + '?panel=clients',
     requests:root + '?panel=requests',
-    messages:'/' + appLocale + '/app/messages',
+    messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',
     analytics:root + '?panel=analytics',
