@@ -449,7 +449,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else shareProfile()
   }
   return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined}
-    data-practice-one-screen data-practice-showcase-inner={showcaseEntry||undefined}>
+    data-practice-one-screen data-practice-design="unified-20261028" data-practice-showcase-inner={showcaseEntry||undefined}>
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
         <Link href={showcaseEntry?'/'+locale+'/practice':'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
