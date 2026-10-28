@@ -417,8 +417,8 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            for (const input of await filter.locator('[data-support-goal-format] input:checked').all()) {
-              await input.uncheck();
+            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
+              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
             }
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
