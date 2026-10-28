@@ -28,7 +28,6 @@ const mysteryCollections = [
     programId: "mysteries/maya-aztec/feathered-serpent",
     videoIds: ["videos/maya-archetypes"],
     shortTitle: "Майя",
-    poster: "/library/maya-mysteries/media/post-244-1.jpg",
     topics: ["energy", "business"],
   },
   {
@@ -36,7 +35,6 @@ const mysteryCollections = [
     programId: "mysteries/egypt/high-wisdom",
     videoIds: ["videos/egypt-osiris"],
     shortTitle: "Египет",
-    poster: "/library/maya-egregor-gods/media/post-203-1.jpg",
     topics: ["energy", "health"],
   },
   {
@@ -44,7 +42,6 @@ const mysteryCollections = [
     programId: "mysteries/greece-rome/beauty-and-power",
     videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
     shortTitle: "Греция",
-    poster: "/academy/reiki-yggdrasil/source/temple-studies.png",
     topics: ["love", "energy"],
   },
 ] as const;
@@ -120,7 +117,8 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
         id: entry.id,
         title: academyDisplayTitle(curriculum, "ru"),
         shortTitle: entry.shortTitle,
-        poster: entry.poster,
+        // A verified first lesson provides a truthful source thumbnail.
+        poster: "https://i.ytimg.com/vi/" + encodeURIComponent(courseVideos[0].id) + "/hqdefault.jpg",
         href: "/ru/academy/" + curriculum.routeKey,
         videoCount: courseVideos.length,
         videoGroups,
