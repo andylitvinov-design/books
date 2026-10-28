@@ -25,7 +25,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <ArrowLeft size={20} aria-hidden="true" />
         </Link>
         <span>Holistic House</span>
-        <button type="button" aria-expanded={settingsOpen} aria-controls="mandala-support-settings"
+        <button type="button" aria-label={t.settings} aria-expanded={settingsOpen} aria-controls="mandala-support-settings"
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={20} aria-hidden="true" /></button>
       </header>
       {settingsOpen ? (
