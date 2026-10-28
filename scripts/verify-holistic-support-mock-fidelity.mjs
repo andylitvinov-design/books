@@ -213,6 +213,28 @@ for (const browserType of [chromium, webkit]) {
           // three selectors and the existing quote dialog at all iPhone sizes.
           const categories=talisman.locator("[data-support-talisman-category]");
           assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const compactSizes=await talisman.evaluate(el=>{
+            const category=el.querySelector('[data-support-talisman-category-switcher]')?.getBoundingClientRect();
+            const first=el.querySelector('[data-support-talisman-category]')?.getBoundingClientRect();
+            const filters=el.querySelector('[data-support-talisman-filters]')?.getBoundingClientRect();
+            const artwork=el.querySelector('[data-support-talisman-artwork]')?.getBoundingClientRect();
+            return {categoryHeight:category?.height,cardWidth:first?.width,cardHeight:first?.height,
+              filtersHeight:filters?.height,artWidth:artwork?.width,artHeight:artwork?.height};
+          });
+          assert.ok(compactSizes.categoryHeight<=158 && compactSizes.cardWidth<=96 &&
+            compactSizes.cardHeight<=90 && compactSizes.filtersHeight<=65,
+            label+" compact 4-up categories and filters: "+JSON.stringify(compactSizes));
+          assert.ok(compactSizes.artWidth>=100 && compactSizes.artHeight>=125,
+            label+" featured source artwork must remain clearly visible");
+          assert.equal(await talisman.locator('[data-support-talisman-artwork] img').count(),1,
+            label+" original Fu image must be framed once, not swapped for fake jewellery");
+          const expand=talisman.locator('[aria-controls="talisman-category-options"]');
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"true",
+            label+" All categories expands six choices without adding a catalogue");
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"false",
+            label+" compact carousel returns after expanding");
           const catRail=talisman.locator("[data-support-talisman-categories]");
           assert.ok(await catRail.evaluate(el=>el.scrollWidth>el.clientWidth),
             label+" more categories must really exist beyond the visible row");
@@ -225,6 +247,8 @@ for (const browserType of [chromium, webkit]) {
           await talisman.locator('[data-support-talisman-category="money"]').click();
           assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-prosperity",label+" money selects the existing prosperity artwork");
+          if(width===390) await talisman.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-premium-talisman-390.png",
+            animations:"disabled",timeout:12000});
           await talisman.locator('[data-support-talisman-filter="master"]').click();
           assert.equal(await talisman.locator("#talisman-master-note").isVisible(),true,
             label+" maker disclosure does not invent a named master");
