@@ -57,8 +57,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
         const categoryControls=page.locator("[data-video-theme]");
-        assert.equal(await categoryControls.count(),4,"exactly four actual themes");
-        for(const id of ["money","energy","relationships","goals"]){
+        assert.equal(await categoryControls.count(),6,"six real themes including life and health");
+        for(const id of ["money","energy","life","health","relationships","goals"]){
           const select=page.locator('[data-video-theme="'+id+'"]');
           await select.click();
           await page.waitForFunction(key=>
@@ -144,7 +144,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
-          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
+          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 16);
           const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
           await infinity.click();
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
