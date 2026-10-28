@@ -10,6 +10,8 @@ const auth = read('app/api/app/[...path]/route.js')
 const editor = read('components/app/practice-workspace.jsx')
 const rootLayout = read('app/layout.tsx')
 const middleware = read('middleware.ts')
+const promoBanner = read('components/sitewide-antistress-banner.tsx')
+const siteBottomNavigation = read('components/mobile-bottom-navigation.tsx')
 
 test('public practitioner preview is a dedicated locale page, not the private /app route', () => {
   assert.match(page, /SUPPORTED_LOCALES = \['en', 'ru', 'es'\]/)
@@ -75,6 +77,64 @@ test('creation shortcuts use existing protected editors, including meditation ty
   assert.match(editor, /const meditation=params\.get\('meditation'\)/)
   assert.match(editor, /\['audio','video'\]\.includes\(meditation\)/)
   assert.match(editor, /\['profile','requests','analytics','events'\]\.includes/)
+})
+
+test('approved phone mock owns its header and five-tab bar without the sitewide chrome', () => {
+  // The public promo and seven-item site navigation previously displaced and
+  // obscured the compact practitioner mockup on real iPhone screenshots.
+  assert.match(promoBanner, /\\/practice\\/\\?\\
+  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css, /@media \(max-width: 354px\)/)
+  assert.match(css, /safe-area-inset-bottom/)
+  assert.match(showcase, /countUnknown:'—'/)
+  assert.match(showcase, /item\.status === 'published'/)
+})
+|practice\\\\/\\?\\$/)
+  assert.ok(siteBottomNavigation.includes('practice\\\\/?
+  assert.match(showcase, /<nav className=\\{styles\\.bottomNav\\}/)
+  assert.match(showcase, /TABS\\.map\\(/)
+  assert.doesNotMatch(showcase, /<div className=\\{styles\\.eyebrow\\}/)
+  assert.doesNotMatch(showcase, /<h2>\\{t\\.creations\\}<\\/h2>/)
+  assert.doesNotMatch(showcase, /<aside className=\\{styles\\.gate\\}/)
+})
+
+test('approved phone mock uses compact one-row profile, six visible category covers and two action rows', () => {
+  assert.match(css, /\\.screen \\.identity \\{ grid-template-columns:54px minmax\\(0,1fr\\) 124px/)
+  assert.match(css, /\\.screen \\.metrics \\{ grid-column:auto/)
+  assert.match(css, /\\.screen \\.quickTile \\{ min-height:63px/)
+  assert.match(css, /\\.screen \\.quickTile \\{ display:flex; flex-direction:row/)
+  assert.match(css, /\\.screen \\.offerRail \\{ display:grid; grid-template-columns:repeat\\(6,minmax\\(0,1fr\\)\\)/)
+  assert.match(css, /\\.screen \\.hero \\{ min-height:190px/)
+  assert.match(css, /@media\\(max-width:354px\\)/)
+  assert.match(showcase, /pendingAction && !signedIn/)
+  assert.match(showcase, /onClick=\\{\\(\\) => void openAction\\(key\\)\\}/)
+})
+
+test('mobile design respects iPhone safe area and creates no mock private records', () => {
+  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css, /@media \(max-width: 354px\)/)
+  assert.match(css, /safe-area-inset-bottom/)
+  assert.match(showcase, /countUnknown:'—'/)
+  assert.match(showcase, /item\.status === 'published'/)
+})
+))
+  assert.match(showcase, /<nav className=\\{styles\\.bottomNav\\}/)
+  assert.match(showcase, /TABS\\.map\\(/)
+  assert.doesNotMatch(showcase, /<div className=\\{styles\\.eyebrow\\}/)
+  assert.doesNotMatch(showcase, /<h2>\\{t\\.creations\\}<\\/h2>/)
+  assert.doesNotMatch(showcase, /<aside className=\\{styles\\.gate\\}/)
+})
+
+test('approved phone mock uses compact one-row profile, six visible category covers and two action rows', () => {
+  assert.match(css, /\\.screen \\.identity \\{ grid-template-columns:54px minmax\\(0,1fr\\) 124px/)
+  assert.match(css, /\\.screen \\.metrics \\{ grid-column:auto/)
+  assert.match(css, /\\.screen \\.quickTile \\{ min-height:63px/)
+  assert.match(css, /\\.screen \\.quickTile \\{ display:flex; flex-direction:row/)
+  assert.match(css, /\\.screen \\.offerRail \\{ display:grid; grid-template-columns:repeat\\(6,minmax\\(0,1fr\\)\\)/)
+  assert.match(css, /\\.screen \\.hero \\{ min-height:190px/)
+  assert.match(css, /@media\\(max-width:354px\\)/)
+  assert.match(showcase, /pendingAction && !signedIn/)
+  assert.match(showcase, /onClick=\\{\\(\\) => void openAction\\(key\\)\\}/)
 })
 
 test('mobile design respects iPhone safe area and creates no mock private records', () => {
