@@ -58,7 +58,12 @@ test("local-only scores remain private and explanations have full EN/RU/ES parit
   assert.match(client, /setProfileSector\(goalSelection\?\.sector \?\? \(\{/);
   assert.match(client, /scores\[focus\]\}\/10/);
   assert.doesNotMatch(client, /journeyCategory\[focus\].*scores|journeyCategory\[focus\].*concerns/);
-  assert.doesNotMatch(client, /\.setItem\(|sendBeacon\(|fetch\("/);
+  assert.doesNotMatch(client, /\.setItem\(|sendBeacon\(/);
+  // A photo goes to the private Cabinet only after an explicit Save click.
+  const photoRequests = client.match(/fetch\("\/api\/app\/support-photo"/g) || [];
+  assert.equal(photoRequests.length, 2, "private photo GET and explicit Save POST");
+  assert.equal(client.split('fetch("').length - 1, photoRequests.length,
+    "scores and viewing history must never be sent to another endpoint");
 });
 
 test("five rows fit the existing compact responsive card without a new app shell", () => {
