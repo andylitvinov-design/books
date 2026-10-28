@@ -237,7 +237,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const info = spawnSync("ffprobe", [
             "-v", "error", "-show_entries", "stream=codec_type,codec_name", "-of", "json", "-",
           ], { input: videoBytes, encoding: "utf8" });
-          assert.equal(info.status, 0, "ffprobe reads the real downloadable video: "+info.stderr);
+          assert.equal(info.status, 0, "ffprobe reads the real downloadable video: "+(info.error?.message || info.stderr));
           const streams = JSON.parse(info.stdout).streams || [];
           assert.ok(streams.some(stream => stream.codec_type === "video"), "recording has a video track");
           assert.ok(streams.some(stream => stream.codec_type === "audio"), "recording has a real audio track");
