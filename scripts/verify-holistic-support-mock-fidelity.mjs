@@ -335,6 +335,34 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(!layout.applyClipped && !layout.resetClipped && !layout.saveClipped &&
               !layout.nextClipped,
             label+" full action labels must remain visible: "+JSON.stringify(layout));
+          const readability=await filter.evaluate(el=>{
+            const rail=el.querySelector('[data-support-goal-sectors]');
+            const details=el.querySelector('[data-support-goal-details]');
+            const heading=details.querySelector('#goal-problems');
+            const option=details.querySelector('[data-goal-concern]');
+            const optionInput=option.querySelector('input');
+            const sector=rail.querySelector('[data-goal-sector]');
+            const right=details.getBoundingClientRect(),left=rail.getBoundingClientRect();
+            const optionBoxes=[...details.querySelectorAll('[data-goal-concern],[data-goal-task]')];
+            return {
+              leftWidth:left.width,rightWidth:right.width,
+              headingFont:parseFloat(getComputedStyle(heading).fontSize),
+              optionFont:parseFloat(getComputedStyle(option).fontSize),
+              sectorFont:parseFloat(getComputedStyle(sector).fontSize),
+              checkboxWidth:optionInput.getBoundingClientRect().width,
+              contentOverflow:optionBoxes.some(item=>{
+                const rect=item.getBoundingClientRect();
+                return rect.left<right.left-2||rect.right>right.right+2;
+              }),
+            };
+          });
+          assert.ok(readability.rightWidth>=readability.leftWidth*1.85,
+            label+" narrower left rail must give more room to questions: "+JSON.stringify(readability));
+          assert.ok(readability.headingFont>=14.4 && readability.optionFont>=12 &&
+            readability.sectorFont>=11.4 && readability.checkboxWidth>=17,
+            label+" readable iPhone goal labels and tap targets: "+JSON.stringify(readability));
+          assert.equal(readability.contentOverflow,false,
+            label+" large option labels must wrap within right column");
           if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
           const filterOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth);
