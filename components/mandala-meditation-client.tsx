@@ -396,7 +396,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
               </details>
             </div>
           </div>
-          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} />
+          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl} />
           <div className={styles.videoPane}>
             <h2><Play size={17} aria-hidden="true" />{t.music}</h2>
             <div className={styles.topicFilters} role="group" aria-label={t.filter}>

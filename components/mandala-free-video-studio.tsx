@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Download, Film, Pause, Play, Sparkles, Square, X } from "lucide-react";
-import { moneyScenes, paintMoneyScene } from "@/lib/mandala/money-flow-effects";
+import { moneyScenes } from "@/lib/mandala/money-flow-effects";
+import { paintCinematicMoneyFrame } from "@/lib/mandala/cinematic-money-video";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
-type Aspect = "square" | "portrait";
+type Aspect = "square" | "portrait" | "landscape";
+type Quality = "hd" | "fullhd";
 type Result = { url: string; extension: "mp4" | "webm"; bytes: number };
 type Job = {
   recorder: MediaRecorder;
@@ -21,8 +23,11 @@ type Job = {
 
 const translations = {
   en: {
-    heading: "Your free personal video",
-    description: "Animate this mandala and your photo without an AI subscription.",
+    heading: "Your cinematic personal video",
+    description: "A large personal portrait, golden coins with depth and luminous moving scenery. Record a real video locally without AI fees.",
+    photoNote: "Your photograph stays still; coins and scenery move. A clear portrait or transparent PNG looks best.",
+    quality: "Video quality", hd: "HD · 720p (faster)", fullhd: "Full HD · 1080p",
+    landscape: "Wide · 16:9",
     moneyHeading: "Money flow · 12 visual stories", moneyIntro: "Choose a symbolic flow around your own photograph. Four favourites first.",
     allMoney: "See all 12 looks", lessMoney: "Show four favourites", moneyNote: "A creative attention exercise, not a promise of income.",
     previewPlay: "Preview movement", previewPause: "Pause preview",
@@ -40,8 +45,11 @@ const translations = {
     preparingResult: "Recording…",
   },
   ru: {
-    heading: "Ваше бесплатное личное видео",
-    description: "Оживите мандалу и фотографию без подписки на нейросеть.",
+    heading: "Ваше кинематографичное личное видео",
+    description: "Крупный портрет, объёмные золотые монеты, светящиеся пейзажи и настоящее движение в видео. Бесплатная запись на устройстве.",
+    photoNote: "Фото остаётся неподвижным, движутся монеты и окружение. Лучше подходит портрет или PNG без фона.",
+    quality: "Качество видео", hd: "HD · 720p (быстрее)", fullhd: "Full HD · 1080p",
+    landscape: "Горизонтальный · 16:9",
     moneyHeading: "Денежный поток · 12 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
     allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
     previewPlay: "Посмотреть движение", previewPause: "Пауза",
@@ -59,8 +67,11 @@ const translations = {
     preparingResult: "Запись…",
   },
   es: {
-    heading: "Tu vídeo personal gratis",
-    description: "Anima el mandala y tu foto sin pagar una suscripción de IA.",
+    heading: "Tu vídeo personal cinematográfico",
+    description: "Retrato grande, monedas doradas con profundidad y paisajes luminosos en movimiento. Graba un vídeo real gratis en tu dispositivo.",
+    photoNote: "Tu foto permanece inmóvil; se mueven las monedas y el entorno. Usa un retrato claro o un PNG sin fondo.",
+    quality: "Calidad de vídeo", hd: "HD · 720p (más rápido)", fullhd: "Full HD · 1080p",
+    landscape: "Horizontal · 16:9",
     moneyHeading: "Flujo de prosperidad · 12 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
     allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
     previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
@@ -81,6 +92,26 @@ const translations = {
 
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
 const durations = [10, 20, 30] as const;
+
+function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
+  const edge = quality === "fullhd" ? 1080 : 720;
+  if (aspect === "square") return [edge, edge];
+  if (aspect === "landscape") return [Math.round(edge * 16 / 9), edge];
+  return [edge, Math.round(edge * 16 / 9)];
+}
+
+// Genuine still frames from the identical cinematic renderer used for video.
+// No fake play icons or misleading pictures of actors.
+function CinematicSceneThumbnail({ scene, photo, title }: {
+  scene: MoneySceneId; photo: HTMLImageElement | null; title: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d", { alpha: false });
+    if (ctx) paintCinematicMoneyFrame(ctx, photo, scene, 3.2, "landscape", title);
+  }, [scene, photo, title]);
+  return <canvas className={styles.moneyFlowThumb} width={220} height={132} aria-hidden="true" ref={canvasRef} />;
+}
 
 function chooseMime(): string {
   if (typeof MediaRecorder === "undefined") return "";
@@ -105,10 +136,14 @@ function loadLocalImage(url: string): Promise<HTMLImageElement> {
 // already composited in the local mandala PNG; no pixel is transmitted.
 function paint(
   ctx: CanvasRenderingContext2D, art: HTMLImageElement,
-  effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null,
+  effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null, title: string,
 ) {
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
+  if (moneyScene) {
+    paintCinematicMoneyFrame(ctx, art, moneyScene, time, aspect, title);
+    return;
+  }
   const centerX = width / 2;
   const centerY = height / 2;
   const size = width * 0.96;
@@ -179,7 +214,6 @@ function paint(
     }
   }
   ctx.restore();
-  if (moneyScene) paintMoneyScene(ctx, moneyScene, time);
   if (aspect === "portrait") {
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(244,219,169,.85)";
@@ -199,15 +233,16 @@ function stopJob(job: Job, cancelled: boolean) {
   else job.stream.getTracks().forEach(track => track.stop());
 }
 
-export function MandalaFreeVideoStudio({ locale, frameUrl }: {
-  locale: PublicLocale; frameUrl: string | null;
+export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
+  locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
 }) {
   const t = translations[locale];
   const [effect, setEffect] = useState<Effect>("glow");
-  const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>(null);
+  const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
+  const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(10);
   const [recording, setRecording] = useState(false);
   const [notice, setNotice] = useState("");
@@ -215,8 +250,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
-  const sourceRef = useRef(frameUrl);
-  sourceRef.current = frameUrl;
+  const source = moneyScene && photoUrl ? photoUrl : frameUrl;
+  const signature = JSON.stringify([source, frameUrl, photoUrl, moneyScene, effect, aspect, duration, quality]);
+  const sourceRef = useRef(signature);
+  sourceRef.current = signature;
+  // Decode a user's photo once for all 12 preview cards. This avoids 12
+  // duplicate high-resolution photo decodes and private portrait copies on iOS.
+  const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
+  const sharedThumbnailPhoto = thumbnailPhoto && thumbnailPhoto.url === photoUrl ? thumbnailPhoto.image : null;
+  useEffect(() => {
+    let disposed = false;
+    if (!photoUrl) return;
+    void loadLocalImage(photoUrl).then(image => {
+      if (!disposed) setThumbnailPhoto({ url: photoUrl, image });
+    }).catch(() => {
+      if (!disposed) setThumbnailPhoto(null);
+    });
+    return () => { disposed = true; };
+  }, [photoUrl]);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -242,31 +293,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
-  }, [frameUrl, effect, moneyScene, aspect, duration]);
+  }, [frameUrl, photoUrl, effect, moneyScene, aspect, duration, quality]);
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
   useEffect(() => {
-    if (!frameUrl || jobRef.current) return;
+    if (!source || jobRef.current) return;
     let cancelled = false;
     let animation = 0;
     let startedAt = 0;
     let lastFrame = -1000;
-    void loadLocalImage(frameUrl).then(image => {
+    void loadLocalImage(source).then(image => {
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width = aspect === "portrait" ? 540 : 540;
+      canvas.width = aspect === "landscape" ? 960 : 540;
       canvas.height = aspect === "portrait" ? 960 : 540;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paint(ctx, image, effect, 0, aspect, moneyScene);
+      const caption = moneyScene ? moneyScenes.find(item => item.id === moneyScene)?.label[locale] || "" : "";
+      paint(ctx, image, effect, 0, aspect, moneyScene, caption);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paint(ctx, image, effect, (now - startedAt) / 1000, aspect, moneyScene);
+          paint(ctx, image, effect, (now - startedAt) / 1000, aspect, moneyScene, caption);
           lastFrame = now;
         }
         animation = window.requestAnimationFrame(draw);
@@ -274,35 +326,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [frameUrl, effect, moneyScene, aspect, previewPlaying]);
+  }, [source, effect, moneyScene, locale, aspect, previewPlaying]);
 
   async function createVideo() {
-    if (!frameUrl || jobRef.current || recording) return;
-    const snapshot = frameUrl;
+    if (!source || jobRef.current || recording) return;
+    const snapshot = source;
+    const snapshotKey = signature;
     setNotice(t.preparing);
     setResult(null);
     let stream: MediaStream | null = null;
     try {
       const image = await loadLocalImage(snapshot);
-      if (sourceRef.current !== snapshot || !aliveRef.current) return;
+      if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
       if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
         setNotice(t.unsupported);
         return;
       }
-      canvas.width = 540;
-      canvas.height = aspect === "portrait" ? 960 : 540;
+      const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
-      paint(ctx, image, effect, 0, aspect, moneyScene);
-      stream = canvas.captureStream(15);
+      const caption = moneyScene ? moneyScenes.find(item => item.id === moneyScene)?.label[locale] || "" : "";
+      paint(ctx, image, effect, 0, aspect, moneyScene, caption);
+      const framesPerSecond = quality === "fullhd" ? 12 : 15;
+      stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
 
       const mimeType = chooseMime();
+      if (!mimeType) throw new Error("Recording format unsupported");
       const recorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
-        videoBitsPerSecond: 1_400_000,
+        videoBitsPerSecond: quality === "fullhd" ? 5_000_000 : 3_000_000,
       });
       const chunks: Blob[] = [];
       const job: Job = { recorder, stream, animation: 0, timeout: 0, cancelled: false };
@@ -341,8 +398,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
       let lastFrame = -1000;
       const animate = (now: number) => {
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
-        if (now - lastFrame >= 1000 / 15) {
-          paint(ctx, image, effect, Math.min(duration, (now - start) / 1000), aspect, moneyScene);
+        if (now - lastFrame >= 1000 / framesPerSecond) {
+          paint(ctx, image, effect, Math.min(duration, (now - start) / 1000), aspect, moneyScene, caption);
           lastFrame = now;
         }
         job.animation = requestAnimationFrame(animate);
@@ -364,8 +421,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
       <h2><Film size={21} aria-hidden="true" />{t.heading}<span className={styles.freeVideoBadge}>$0</span></h2>
       <p className={styles.freeVideoIntro}>{t.description}</p>
       <div className={styles.freeVideoPreview}>
-        <canvas ref={canvasRef} width={540} height={960} aria-label={t.heading}
-          style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : "1 / 1", display: result ? "none" : "block" }} />
+        <canvas ref={canvasRef} width={540} height={960} aria-label={t.heading} data-mandala-cinematic-canvas
+          style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
       </div>
       <section className={styles.moneyFlowSection} data-mandala-money-effects aria-label={t.moneyHeading}>
@@ -376,10 +433,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
             <button type="button" key={scene.id} data-mandala-money-option={scene.id}
               disabled={recording} aria-pressed={moneyScene === scene.id}
               onClick={() => { setMoneyScene(scene.id); setPreviewPlaying(false); }}>
-              <span className={styles.moneyFlowIcon} aria-hidden="true">
-                <span>{scene.symbol}</span><small>{index + 1}</small>
-              </span>
-              <span>{scene.label[locale]}</span>
+              <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]} photo={sharedThumbnailPhoto} />
+              <span className={styles.moneyFlowText}><strong>{scene.label[locale]}</strong><small>{String(index + 1).padStart(2, "0")} · VIDEO</small></span>
             </button>
           ))}
         </div>
@@ -398,6 +453,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
         </div>
         <p className={styles.moneyFlowNote}>{t.moneyNote}</p>
       </section>
+      <p className={styles.freeVideoPrivacy}>{t.photoNote}</p>
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
         <div className={styles.freeVideoOptions}>
@@ -413,6 +469,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
           <div className={styles.freeVideoOptions}>
             <button type="button" aria-pressed={aspect === "square"} onClick={() => setAspect("square")}><Square size={14} aria-hidden="true" />{t.square}</button>
             <button type="button" aria-pressed={aspect === "portrait"} onClick={() => setAspect("portrait")}>{t.portrait}</button>
+            <button type="button" aria-pressed={aspect === "landscape"} onClick={() => setAspect("landscape")}>{t.landscape}</button>
           </div>
         </fieldset>
         <fieldset className={styles.freeVideoFieldset} disabled={recording}>
@@ -423,6 +480,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
           </div>
         </fieldset>
       </div>
+      <fieldset className={styles.freeVideoFieldset} disabled={recording}>
+        <legend>{t.quality}</legend>
+        <div className={styles.freeVideoOptions} data-mandala-quality>
+          <button type="button" aria-pressed={quality === "hd"} onClick={() => setQuality("hd")}>{t.hd}</button>
+          <button type="button" aria-pressed={quality === "fullhd"} onClick={() => setQuality("fullhd")}>{t.fullhd}</button>
+        </div>
+      </fieldset>
       {recording ? (
         <button type="button" className={styles.freeVideoAction} onClick={() => {
           const job = jobRef.current;
@@ -430,12 +494,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
           setNotice("");
         }}><X size={17} aria-hidden="true" />{t.cancel}</button>
       ) : (
-        <button type="button" className={styles.freeVideoAction} disabled={!frameUrl}
+        <button type="button" className={styles.freeVideoAction} disabled={!source}
           onClick={createVideo} data-mandala-video-generate>
           <Sparkles size={17} aria-hidden="true" />{t.generate}
         </button>
       )}
-      {!frameUrl ? <p className={styles.freeVideoNotice}>{t.imagePending}</p> : null}
+      {!source ? <p className={styles.freeVideoNotice}>{t.imagePending}</p> : null}
       {notice ? <p className={styles.freeVideoNotice} role="status" aria-live="polite">{notice}</p> : null}
       {result && <a href={result.url} className={styles.freeVideoDownload}
         download={"holistic-house-personal-mandala." + result.extension} data-mandala-video-download>
