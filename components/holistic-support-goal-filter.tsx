@@ -164,7 +164,7 @@ const ui = {
     desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
     ratingHelp: "Four indicators for this area. Self-ratings 1–10; money fields use actual amounts.",
     now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
-    currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown",
+    currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown. Changing currency clears income values.",
     clear: "Reset filter", close: "Close filter",
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
   },
@@ -173,7 +173,7 @@ const ui = {
     desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
     ratingHelp: "Четыре показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
     now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
-    currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно; можно оставить пустым",
+    currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно. Смена валюты очищает суммы дохода без конвертации.",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
   },
@@ -182,7 +182,7 @@ const ui = {
     desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
     ratingHelp: "Cuatro indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
     now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
-    currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional; déjalo vacío si no sabes",
+    currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional. Cambiar moneda borra los ingresos sin convertirlos.",
     clear: "Restablecer filtro", close: "Cerrar filtro",
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
   },
@@ -316,7 +316,11 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
           {sector === "money" ? <label className={styles.currencyLabel}>
             {t.currency}
             <select data-goal-currency value={currency}
-              onChange={event => setCurrency(event.target.value as GoalCurrency)}>
+              onChange={event => {
+                // No exchange-rate conversion: changing currency clears only cash amounts.
+                setCurrency(event.target.value as GoalCurrency);
+                setAmounts(previous => ({ ...previous, monthlyIncome: { current: null, desired: null } }));
+              }}>
               {(["CAD", "EUR", "USD", "GBP"] as GoalCurrency[]).map(id =>
                 <option key={id} value={id}>{id}</option>)}
             </select>
