@@ -40,7 +40,7 @@ test("original four-pillar video header includes visible meditation, Master, Pro
   assert.match(css, /\.heroMode \{ display: flex;/);
   assert.match(css, /\.heroFilter select \{ position: absolute;[\s\S]*?opacity: 0;/);
   assert.match(client, /className=\{styles\.filterValue\}/);
-  for(const name of ["master", "program", "theme"]) assert.match(client, new RegExp("t\\\\."+name));
+  for (const name of ["master", "program", "theme"]) assert.ok(client.includes("t." + name), name);
   assert.match(css, /\.hero\[data-playing="true"\] \.heroFilters/);
   assert.match(client, /data-support-player data-playing=/);
 });
