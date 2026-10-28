@@ -246,7 +246,7 @@
      tucks against the category icon instead of squeezing the label. */
   .scaleHeading { display: block; }
   .focusOption { position: absolute; z-index: 2; left: -24px; top: 15px;
-    min-width: 26px; min-height: 30px; padding: 0; gap: 0;
+    min-width: 24px; min-height: 24px; padding: 0; gap: 0;
     border: 1px solid #9cbca8; background: #fffcf7; box-shadow: 0 2px 5px #173e3422; }
   .focusOption span { display: none; }
   .focusOption input[type="radio"] { flex-basis: 17px; width: 17px; height: 17px; }
@@ -438,7 +438,7 @@
   .profile { gap: 7px; }
   .photo { width: min(100%,82px); }
   .photoPlaceholder strong { font-size: 9px; }
-  .focusOption { min-width: 24px; min-height: 28px; left: -22px; top: 15px; }
+  .focusOption { min-width: 22px; min-height: 21px; left: -21px; top: 12px; }
   .focusOption input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
   .recommendButton { min-height: 55px; font-size: 11px; }
   .hero { min-height: 366px; padding: 10px; }
