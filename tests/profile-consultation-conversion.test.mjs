@@ -28,7 +28,7 @@ test('signed-in Profile always shows saved reports and one local free-consultati
   assert.doesNotMatch(profile, /freeIntroConsultationHref/)
   assert.ok(profile.includes("href={'/' + locale + '/services/free-situation-review#request-free-review'}"))
   assert.ok(profile.includes("href={'/' + locale + '/services'}"))
-  assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data\.account\.id\}/)
+  assert.match(workspace, /reportsContent=\{<><PersonalAnalysisPanel key=\{data\.account\.id\} locale=\{locale\} reports=\{reportTimeline\(data\.savedReports\)\} savedSessions=\{data\.savedSessions \|\| \[\]\} embedded \/><ClientExpressReports locale=\{locale\} accountId=\{data\.account\.id\}\/><\/>\}/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.doesNotMatch(profile, /localStorage|sessionStorage|Math\.random\(/)
 })

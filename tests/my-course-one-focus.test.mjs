@@ -1,3 +1,4 @@
+import { assertReviewSessionGuard } from './helpers/course-current-source-contracts.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -63,5 +64,5 @@ test('navigation is controlled, accessible and mobile-first, with no new storage
   assert.match(css,/@media\(max-width:620px\)/)
   assert.match(css,/@media\(max-width:360px\)/)
   assert.doesNotMatch(today,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
-  assert.match(today,/onSession=\{body=>submit\('session',body,undefined,'inline'\)\}/)
+  assertReviewSessionGuard(today)
 })

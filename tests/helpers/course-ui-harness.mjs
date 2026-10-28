@@ -1,3 +1,4 @@
+import * as antiStressBlueprint from '../../lib/inner-growth/anti-stress-blueprint.js'
 import * as phaseOutcomes from '../../lib/inner-growth/trauma-phase-outcomes.js'
 import * as measureContract from '../../lib/inner-growth/anti-stress-measurement-contract.js'
 import * as phaseCatalog from '../../lib/inner-growth/trauma-phase-catalog.js'
@@ -26,7 +27,7 @@ import * as oporaV5 from '../../lib/inner-growth/anti-stress-skills-v5.js'
 import * as oporaV6 from '../../lib/inner-growth/anti-stress-skills-v6.js'
 import * as oporaV7 from '../../lib/inner-growth/anti-stress-skills-v7.js'
 
-const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
+const sources = Object.fromEntries(['opora-first-week-invite', 'course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
@@ -63,8 +64,9 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
   const jsx = (type, props, key) => renderedChildren.has(type) ? type(props) : ({ type, props, key })
   const modules = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-    'next/link': moduleFor('Link'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
+    'next/image': moduleFor('Image'), 'next/link': moduleFor('Link'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
+    '@/lib/inner-growth/anti-stress-blueprint': antiStressBlueprint,
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
     '@/lib/inner-growth/anti-stress-skills-v5':oporaV5, '@/lib/inner-growth/anti-stress-skills-v6':oporaV6, '@/lib/inner-growth/anti-stress-skills-v7':oporaV7,
@@ -81,7 +83,6 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome, '@/lib/inner-growth/anti-stress-day-one':dayOne,
     './opora-module-activity':{default:()=>null}, './opora-state-journey':moduleFor('OporaStateJourney'),'./anti-stress-practice-lab': {default:stub('AntiStressPracticeLab')},
     './course-lesson-result': {default:stub('CourseLessonResult')},
-    './opora-first-week-invite': moduleFor('OporaFirstWeekInvite'),
     './antistress-module-finder': {default:stub('AntiStressModuleFinder')},
     './anti-stress-method-activity': {default:stub('AntiStressMethodActivity')},
     './anti-stress-day-one': { default: stub('DayOneExercise'), DayOneChoices: stub('DayOneChoices'), DayOneFocusPicker: stub('DayOneFocusPicker') },
@@ -131,6 +132,11 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
   if (!Object.hasOwn(modules, './course-immersive-start')) {
     modules['./course-immersive-start'] = loadComponent('course-immersive-start')
     renderedChildren.add(modules['./course-immersive-start'].default)
+  }
+  // Render the real stateless consent screen; never auto-accept enrolment.
+  if (!Object.hasOwn(modules, './opora-first-week-invite')) {
+    modules['./opora-first-week-invite'] = loadComponent('opora-first-week-invite')
+    renderedChildren.add(modules['./opora-first-week-invite'].default)
   }
   const exported = loadComponent(name)
   const component = exported.default || exported.AccountTestBattery

@@ -81,8 +81,16 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  for (const lifecycle of ["prebuild", "predev"]) {
+    const command = config.scripts[lifecycle];
+    // Prerequisite generators may precede artwork, but every stage stays fail-fast.
+    assert.doesNotMatch(command, /\|\||;|(?<!&)&(?!&)/);
+    const stages = command.split(" && ");
+    assert.equal(stages.filter(stage => stage === "node scripts/build-public-card-artwork.mjs").length, 1,
+      lifecycle + " must build the pinned artwork exactly once");
+    assert.ok(stages.every(stage => /^(?:node (?:scripts\/[\w-]+\.mjs|--test tests\/[\w.-]+\.mjs)|npm run test:[\w:-]+)$/.test(stage)),
+      lifecycle + " must not hide failures behind shell wrappers");
+  }
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 

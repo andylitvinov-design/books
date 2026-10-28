@@ -1,3 +1,4 @@
+import { assertCourseContinuationModes, assertOporaFlowNavigation } from './helpers/course-current-source-contracts.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -63,7 +64,7 @@ test('XP is earned for saved lessons, never for psychological severity or test s
 
 test('guided tests remain original instrument and autosave while course links launch one-question mode', () => {
   assert.match(courseSteps, /\?mode=guided&course=1/)
-  assert.match(runner, /\?mode=guided&course=1/)
+  assertCourseContinuationModes(runner)
   assert.match(runner, /initialMode=\{searchParams\.get\('mode'\) === 'quick' \? 'quick' : searchParams\.get\('mode'\) === 'guided' \? 'guided' : null\}/)
   // An explicit Guided URL opens the one-question runner directly, for courses and regular tests.
   assert.match(runner, /initialMode === 'guided' \? 'guided' : 'quick'/)
@@ -115,7 +116,7 @@ test('every lesson screen exposes Back, including the first and the saved receip
   assert.match(oporaV6, /onClick=\{afterSave\?\(\)=>setStep\(slides\.length-1\):step===0\?onClose:back\}/)
   assert.match(oporaV6, /if\(reviewOnly\)\{setStep\(slides\.length\);return\}/)
   assert.match(oporaV7, /onClick=\{step===0\?onClose:back\}/)
-  assert.match(oporaV7, /:inPreview\?backFromPreview:\(\)=>setStep\(displayScenes\.length-1\)/)
+  assertOporaFlowNavigation(oporaV7)
   assert.match(quest, /if\(step===0\)onClose\(\)/)
   assert.match(quest, /step === 5 && <>/)
 })
@@ -141,7 +142,7 @@ test('previous completed days reopen a no-write lesson, not an XP-earning sessio
   assert.match(daily, /context\(actor,reviewedSession\.id,'course\.session_note'\)/)
   assert.match(route, /new URL\(request\.url\)\.searchParams\.get\('reviewDay'\)/)
   assert.match(oporaV6, /reviewOnly\?0:hasSaved\?OPORA54_PRE_SAVE_KEYS\.length:0/)
-  assert.match(oporaV7, /reviewOnly\?0:hasSaved\?displayScenes\.length:0/)
+  assertOporaFlowNavigation(oporaV7)
   assert.match(standard, /reviewOnly \? 0 : alreadyDone \? slides\.length : 0/)
   assert.match(standard, /if \(reviewOnly \|\| !Number\.isInteger\(severity\)/)
   const css = read('components/app/course-quest.module.css')

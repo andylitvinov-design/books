@@ -75,12 +75,14 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   const sessionTargetCall = 'consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)'
   const supportDraftRead = 'readRemoteSupportDraft(window.sessionStorage, service.id)'
   const supportDraftDelete = 'window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)'
+  // An exact reviewed comment is documentation, not an additional storage operation.
+  const storageDocumentation = '// navigation; no sensitive intention is written to sessionStorage or URLs.'
   const assertNoAssessmentStorage = source => {
     assert.doesNotMatch(source, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY/)
     assert.equal(source.split(sessionTargetCall).length - 1, 2)
     assert.equal(source.split(supportDraftRead).length - 1, 2)
     assert.equal(source.split(supportDraftDelete).length - 1, 1)
-    assert.doesNotMatch(source.replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, ''), /sessionStorage|localStorage/)
+    assert.doesNotMatch(source.replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, '').replaceAll(storageDocumentation, ''), /sessionStorage|localStorage/)
   }
   assertNoAssessmentStorage(workspace)
   for (const forbidden of [

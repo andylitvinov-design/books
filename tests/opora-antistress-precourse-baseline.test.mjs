@@ -1,3 +1,4 @@
+import { assertBaselineSelection } from './helpers/course-current-source-contracts.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -67,7 +68,7 @@ test('the private step-2 interface visibly leads through starting tests before t
   assert.match(root,/Weekly Pulse baseline/)
   assert.match(wizard,/data-course-antistress-pretests/)
   assert.match(wizard,/data-course-required-baseline/)
-  assert.match(wizard,/withAntistressRequiredBaseline\(confirmedKeys\.length/)
+  assertBaselineSelection(wizard, { getCourseProgram, withAntistressRequiredBaseline })
   assert.match(wizard,/if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
   assert.match(wizard,/confirmed && baselineConfirmed && pending\.length===0/)
   assert.match(wizard,/pending\.length===0&&baselineConfirmed/)
