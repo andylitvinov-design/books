@@ -179,7 +179,8 @@ export function PersonalExpressEnquiry({
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
               <label className={styles.choice} data-express-focus={area} key={area}
-                data-selected={focus === area ? "true" : "false"}>
+                data-selected={focus === area ? "true" : "false"}
+                onClick={() => { if (!focusLocked) setFocus(area); }}>
                 <input type="radio" name="express-review-focus" value={area}
                   checked={focus === area} onChange={() => setFocus(area)} />
                 {area === "situation" ? <MessageCircle size={19} aria-hidden="true" /> : <HeartPulse size={19} aria-hidden="true" />}
