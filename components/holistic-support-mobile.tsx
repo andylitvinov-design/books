@@ -54,7 +54,7 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "talisman", Icon: Sparkles },
   { id: "pump", Icon: RotateCcw },
 ];
-const focusTopics: Record<Focus, MeditationTopic> = {
+const focusTopics: Record<Focus, SupportMobileTopic> = {
   energy: "energy", money: "business", relationships: "love", goals: "goals",
 };
 const focusRequest: Record<Focus, string> = {
