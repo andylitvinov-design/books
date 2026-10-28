@@ -14,13 +14,28 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
   const path = '/' + locale + '/app/tests'
-  const link = page.locator('nav a[href="' + path + '"]:visible').first()
-  await expect(link).toBeVisible()
-  await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
-  await expect(link).toHaveAttribute('href', path)
-  await link.click()
+  await openCabinetAccountLink(page, expect, { path, label: locale === 'ru' ? 'Тесты' : 'Tests' })
   await expect(page).toHaveURL(origin + path, { timeout: 30000 })
   await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+}
+
+async function openCabinetAccountLink(page, expect, { path, label }) {
+  // Tests and My Profile remain in the Account menu; the mobile dock
+  // intentionally has different destinations. Open the real disclosure first.
+  const menu = page.locator('details.hh-account-menu:visible')
+  await expect(menu).toHaveCount(1)
+  await expect(menu).toBeVisible()
+  const summary = menu.locator(':scope > summary')
+  await expect(summary).toHaveCount(1)
+  await expect(summary).toBeVisible()
+  if (await menu.getAttribute('open') === null) await summary.click()
+  await expect(menu).toHaveAttribute('open', '')
+  const link = menu.locator(':scope > div > a[href="' + path + '"]')
+  await expect(link).toHaveCount(1)
+  await expect(link).toBeVisible()
+  await expect(link).toHaveText(label)
+  await expect(link).toHaveAttribute('href', path)
+  await link.click()
 }
 
 export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'en', current } = {}) {
