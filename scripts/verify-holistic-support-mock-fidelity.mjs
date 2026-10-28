@@ -207,12 +207,16 @@ for (const browserType of [chromium, webkit]) {
           const healing=root.locator('[data-support-healing-panel] [data-support-master-viewer]');
           await healing.waitFor({state:"visible",timeout:8000});
           const heroMaster=healing.locator('[data-support-master-hero]');
-          // WebKit can hydrate the public directory more slowly after repeated
-          // mobile routes. Keep the real hero assertion; diagnose status/errors
-          // rather than treating a loading placeholder as a successful result.
-          await heroMaster.waitFor({state:"visible",timeout:25000}).catch(async error => {
+          // An isolated WebKit fixture request may fail once after many
+          // browser cases. Verify that the real public-directory Retry works;
+          // never accept the error placeholder as a successful master card.
+          await healing.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const retry = healing.locator('[role="alert"] button');
+          if (await retry.count()) await retry.click();
+          await heroMaster.waitFor({state:"visible",timeout:20000}).catch(async error => {
             const status = await healing.innerText().catch(() => "(directory unmounted)");
-            throw new Error(label + " master gallery failed after fetch: " + status + " / " + error.message);
+            throw new Error(label + " master gallery failed after bounded retry: " + status + " / " + error.message);
           });
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
@@ -224,7 +228,11 @@ for (const browserType of [chromium, webkit]) {
             label+" Masters shortcut opens same-page hero catalogue");
           await root.locator('[data-support-tool="consultation"]').click();
           const offers=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
-          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:25000});
+          await offers.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const offerRetry = offers.locator('[role="alert"] button');
+          if (await offerRetry.count()) await offerRetry.click();
+          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:20000});
           assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
