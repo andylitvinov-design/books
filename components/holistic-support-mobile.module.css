@@ -232,16 +232,20 @@
     font-weight: 850; letter-spacing: -.03em; text-wrap: balance;
   }
   .subText { display: none; }
-  .allFocus { display: flex; justify-content: center; gap: 5px; min-height: 29px; padding: 3px 2px; font-size: clamp(9px,2.6vw,11px); line-height: 1.1; text-align: center; }
+  .allFocus { display: flex; justify-content: center; gap: 5px; min-height: 25px; padding: 2px; font-size: clamp(9px,2.6vw,11px); line-height: 1.1; text-align: center; }
   .allFocus input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
-  .scaleList { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+  .scaleList { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
   .scaleRow { display: grid; grid-template-columns: 23px minmax(0,1fr) 25px;
     align-items: center; gap: 3px; min-height: 42px; }
   .scaleIcon { width: 23px; height: 28px; flex: none; border-radius: 10px; }
   .scaleIcon svg { width: 17px; height: 17px; }
-  .scaleDetail { display: grid; gap: 0; min-width: 0; }
-  .scaleHeading { gap: 2px; }
-  .focusOption { min-width: 28px; min-height: 32px; padding: 0; gap: 0; }
+  .scaleDetail { position: relative; display: grid; gap: 0; min-width: 0; }
+  /* Keep the full scale label/slider readable on 320px: the focus check
+     tucks against the category icon instead of squeezing the label. */
+  .scaleHeading { display: block; }
+  .focusOption { position: absolute; z-index: 2; left: -24px; top: 15px;
+    min-width: 26px; min-height: 30px; padding: 0; gap: 0;
+    border: 1px solid #9cbca8; background: #fffcf7; box-shadow: 0 2px 5px #173e3422; }
   .focusOption span { display: none; }
   .focusOption input[type="radio"] { flex-basis: 17px; width: 17px; height: 17px; }
   .scaleLabel { font-size: clamp(11px,3vw,13px); font-weight: 800;
@@ -419,7 +423,7 @@
   .profile { gap: 7px; }
   .photo { width: min(100%,82px); }
   .photoPlaceholder strong { font-size: 9px; }
-  .focusOption { min-width: 24px; min-height: 30px; }
+  .focusOption { min-width: 24px; min-height: 28px; left: -22px; top: 15px; }
   .focusOption input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
   .recommendButton { min-height: 55px; font-size: 11px; }
   .hero { min-height: 366px; padding: 10px; }
