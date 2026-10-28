@@ -1,3 +1,4 @@
+import { emitCoreSummary } from './core-stage-evidence.mjs'
 import { boundedBestEffort } from './browser-failure-evidence.mjs'
 
 let nextProbeToken = 0
@@ -154,7 +155,7 @@ export function sanitizePublicPickerActionDiagnostic(raw, { action, locale, resu
 }
 
 export async function withPublicPickerActionDiagnostics(page, target, options, operation, {
-  log = console.error, timeoutMs = 1000,
+  log = console.error, timeoutMs = 1000, diagnosticSink,
 } = {}) {
   const token = ++nextProbeToken
   let installed = false
@@ -185,5 +186,9 @@ export async function withPublicPickerActionDiagnostics(page, target, options, o
     }, token), timeoutMs)
     try { log('PUBLIC_PICKER_ACTION_DIAGNOSTIC', JSON.stringify(sanitizePublicPickerActionDiagnostic(raw, { ...options, result, setup, capture, cleanup, installed }))) }
     catch { /* Diagnostics must not replace the original result/error. */ }
+    if (diagnosticSink) {
+      try { emitCoreSummary(diagnosticSink, 'picker', { action: options.action, locale: options.locale,
+        result, setup, capture, cleanup, installed }) } catch { /* Preserve the operation result. */ }
+    }
   }
 }

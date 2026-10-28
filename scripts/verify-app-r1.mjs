@@ -1,3 +1,4 @@
+import { createCoreStageEvidence } from './helpers/core-stage-evidence.mjs'
 import { assertCabinetGuestSignin } from './helpers/cabinet-guest-signin-verifier.mjs'
 import { precompileOporaPublicRoutes } from './helpers/opora-public-route-precompile.mjs'
 import { withPublicServiceNavigationDiagnostics } from './helpers/public-service-navigation-diagnostics.mjs'
@@ -61,6 +62,7 @@ const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due
 page.on('pageerror',capturePageError)
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
+const coreStageEvidence=createCoreStageEvidence()
 let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false, historyNavigationDiagnostics=null
 function passed(name){checks.push(name);console.log('PASS '+name)}
 /**
@@ -572,16 +574,21 @@ async function verifyPublicServiceConversionJourneys(){
 }
 
 try {
+ coreStageEvidence.mark('gestures')
  await assertNativeCompactChannelGestures(browser,expect,{origin})
  passed('native compact channel mouse/touch gestures and navigation restoration without network')
  // Preserve the anonymous OPORA deep link, explicit consent boundary, and
  // all seven-skill/14-day checks through its real full-programme link.
- await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})
+ coreStageEvidence.mark('opora')
+ await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output,diagnosticSink:coreStageEvidence.opora})
+ coreStageEvidence.mark('opora-viewport-reset')
  await page.setViewportSize({width:390,height:844})
  passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
 
+ coreStageEvidence.mark('services')
  await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
+ coreStageEvidence.mark('picker-en')
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
  guestPickerFailurePage=guestPickerPage
@@ -688,12 +695,14 @@ try {
  await expect(recommendationPriority).toHaveCount(1)
  const shorterPriority=recommendationPriority.getByRole('button',{name:'Shorter tests. Prioritize shorter questionnaires',exact:true})
  await expect(shorterPriority).toHaveCount(1)
+ coreStageEvidence.mark('picker-depth')
  await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{
   await shorterPriority.click()
   await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
- })
+ },{diagnosticSink:coreStageEvidence.picker})
  await optional.locator('summary').click()
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
+ coreStageEvidence.mark('picker-catalog')
  await picker.getByRole('button',{name:'Browse full database'}).click()
  await expect(guestPickerPage.getByRole('heading',{name:'Find the tests that fit you'})).toBeVisible()
  const fullTypeFilters=guestPickerPage.locator('[data-test-kind-filter]').first()
@@ -712,6 +721,7 @@ try {
  assert.match(guestPickerPage.url(),/\/en\/client$/)
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'en')
  await exercisePublicCollections(guestPickerPage,expect,'en',{focus:['stress'],depth:'quick'})
+ coreStageEvidence.mark('picker-ru')
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await assertPublicPickerEntrance(guestPickerPage,'ru')
@@ -734,6 +744,7 @@ try {
  await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'})).toBeVisible()
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'ru')
  await exercisePublicCollections(guestPickerPage,expect,'ru',{focus:['stress'],depth:'balanced'})
+ coreStageEvidence.mark('picker-es')
  await guestPickerPage.goto(origin+'/es/client/tests')
  await expect(guestPickerPage).toHaveURL(origin+'/es/client/tests')
  await expect(guestPickerPage.locator('main[lang="es"]')).toBeVisible()
@@ -741,17 +752,25 @@ try {
  await assertPublicPickerEntrance(guestPickerPage,'es')
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'es')
  await exercisePublicCollections(guestPickerPage,expect,'es')
+ coreStageEvidence.mark('picker-close')
  await guestPickerContext.close()
  guestPickerFailurePage=null
  passed('pre-login test picker, optional filters, recommendations and full database')
 
+ coreStageEvidence.mark('cabinet-entry')
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
+ coreStageEvidence.mark('cabinet-signin')
  await (await assertCabinetGuestSignin(page,expect,{origin})).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
+ coreStageEvidence.mark('cabinet-consents')
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
+ coreStageEvidence.mark('cabinet-create')
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();
+ coreStageEvidence.mark('cabinet-portrait')
  await assertCabinetPortrait(page,expect,{origin});
  await expect(page.locator('[data-profile-report-archive]')).toBeVisible();
+ coreStageEvidence.mark('cabinet-my-tests')
  await openCabinetMyTests(page,expect,{origin});
+ coreStageEvidence.mark('cabinet-dashboard')
  await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
  const firstPicker=await assertAccountPickerDisclosure(page,expect,{expanded:false});
@@ -760,19 +779,31 @@ try {
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile'})).toBeVisible();
+ coreStageEvidence.mark('cabinet-screenshot')
  await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});
+ coreStageEvidence.mark('cabinet-compact-picker')
  await assertCompactAccountPicker(await openAccountTestPicker(page,expect),expect);
+ coreStageEvidence.mark('cabinet-picker-toggle')
  await firstPicker.toggle.click();
+ coreStageEvidence.mark('cabinet-picker-disclosure')
  await assertAccountPickerDisclosure(page,expect,{expanded:false});
+ coreStageEvidence.mark('cabinet-insights-open')
  await openInsightsProfileTools();
+ coreStageEvidence.mark('cabinet-insights-heading')
  await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
+ coreStageEvidence.mark('cabinet-insights-expand')
  await page.locator('[data-profile-extra-tools] > summary').click();
+ coreStageEvidence.mark('cabinet-insights-state')
  await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();
+ coreStageEvidence.mark('cabinet-insights-link')
  await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();
+ coreStageEvidence.mark('cabinet-profile-click')
  await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile',exact:true}).click();
+ coreStageEvidence.mark('cabinet-profile-assert')
  await assertCabinetPortrait(page,expect,{origin});
  passed('supported SDK PKCE callback opens private reports, then real My tests and detailed Insights navigation')
 
+ coreStageEvidence.mark('after-cabinet-navigation')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -1458,7 +1489,7 @@ try {
  await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,coreStageEvidence:coreStageEvidence.snapshot(),realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
  } catch(error){
  primaryFailure=true
@@ -1468,7 +1499,7 @@ try {
   error, stage:historyDiagnosticStage,
   elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
   log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
-  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
+  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,coreStageEvidence:coreStageEvidence.snapshot(),historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
   screenshot:()=>screenshotEvidence(guestPickerFailurePage||page,{path:output+'/failure-synthetic-only.png',fullPage:true,...(guestPickerFailurePage?{mask:[guestPickerFailurePage.locator('input,textarea,[contenteditable]')]}:{})}),
  }) } finally { throw error }
 } finally {

@@ -8,7 +8,9 @@ const source=readFileSync(new URL('../scripts/verify-app-r1.mjs',import.meta.url
 function depthOperation(script=source){
   const marker=" await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{"
   assert.equal(script.split(marker).length,2,'Exactly one passive depth diagnostic wraps the original operation')
-  const start=script.indexOf(marker)+marker.length,end=script.indexOf('\n })',start)
+  const terminator="\n },{diagnosticSink:coreStageEvidence.picker})"
+  assert.equal(script.split(terminator).length,2,'Exactly one source-fixed synchronous diagnostic sink closes this operation')
+  const start=script.indexOf(marker)+marker.length,end=script.indexOf(terminator,start)
   assert.ok(end>start)
   const operation=script.slice(start,end)
   assert.equal(operation.trim(),"await shorterPriority.click()\n  await expect(shorterPriority).toHaveAttribute('aria-pressed','true')")
@@ -21,6 +23,9 @@ test('Shorter diagnostic retains one normal native click and exact pressed asser
   const expect=target=>({toHaveAttribute:async(name,value)=>{assert.equal(target,shorterPriority);assert.equal(name,'aria-pressed');assert.equal(value,'true');calls.push('exact-pressed')}})
   await new Function('shorterPriority','expect','return(async()=>{'+operation+'})()')(shorterPriority,expect)
   assert.deepEqual(calls,['native-click','exact-pressed'])
+  const terminator="\n },{diagnosticSink:coreStageEvidence.picker})"
+  for(const changed of [source.replace(terminator,'\n })'),source+terminator])
+    assert.throws(()=>depthOperation(changed),{code:'ERR_ASSERTION'})
   for(const changed of [source.replace('await shorterPriority.click()',"await shorterPriority.click({force:true})"),source.replace("await expect(shorterPriority).toHaveAttribute('aria-pressed','true')",'')])
     assert.throws(()=>depthOperation(changed),{code:'ERR_ASSERTION'})
 })

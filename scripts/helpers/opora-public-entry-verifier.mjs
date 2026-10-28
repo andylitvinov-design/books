@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { emitCoreSummary } from './core-stage-evidence.mjs'
 import { observePortraitNavigation } from './portrait-navigation-diagnostics.mjs'
 
 // Independent expectations for the approved seven-day invitation, not values
@@ -154,7 +155,7 @@ async function assertMobileWidth(page, locale, phase) {
 }
 
 export async function verifyOporaPublicEntry(callerPage, expect, { origin, screenshotEvidence, output,
- runtime = process.env.HH_APP_TEST_RUNTIME,
+ runtime = process.env.HH_APP_TEST_RUNTIME, diagnosticSink,
 }) {
  const guard = createOporaGuestPreviewGuard(origin), context = callerPage.context()
  // Limits bound failure cleanup, not successful programme/content assertions.
@@ -163,6 +164,14 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
  const owned = new Set(), watched = new Map(), parents = new Map(), ownershipChecks = new Set(), pageErrors = [], cleanupErrors = []
  let page, primaryError, primaryFailed = false, routeInstalled = false, generation = 0, ownershipFailure
  let navigation, consoleDiagnostic, diagnosticLocale = null, diagnosticStage = 'owned-page'
+ let cleanupStage = 'not-started'
+ const reportSummary = phase => {
+  if (!diagnosticSink) return
+  try { emitCoreSummary(diagnosticSink, 'opora', { phase, stage: diagnosticStage, locale: diagnosticLocale || 'unknown',
+   category: phase === 'complete' ? 'none' : 'unclassified_error', cleanupStage,
+   blockedCount: guard.blocked.length, pageErrorCount: pageErrors.length, cleanupErrorCount: cleanupErrors.length,
+   ownedCount: owned.size, routeInstalled, primaryFailed }) } catch { /* Preserve original errors. */ }
+ }
  let reconciling = false
  const ownershipFault = message => { ownershipFailure ||= new Error(message) }
  const watch = target => {
@@ -336,6 +345,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
     observation: navigation ? navigation.stop() : { unavailable: true },
     consoleObservation: consoleDiagnostic ? consoleDiagnostic.stop() : { unavailable: true } }))
   } catch { /* Diagnostics must preserve the original assertion. */ }
+  reportSummary('primary')
  } finally {
   // Successful journeys stay quiet. Stop even if evidence recording failed;
   // the separate ownership/pageerror guards remain active through cleanup.
@@ -366,9 +376,12 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
    }
   }
   try {
+   cleanupStage = 'close-owned'
    await closeOwned()
+   cleanupStage = 'drain'
    await drain(deadline)
    const beforeRemoval = generation
+   cleanupStage = 'fence-removal'
    try { await until(() => context.unroute('**/*', guard.route), deadline, 'fence removal'); routeInstalled = false }
    catch (error) {
     // Removal failure has an uncertain result, so restore rather than assume
@@ -377,6 +390,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
     await restoreFence()
     throw error
    }
+   cleanupStage = 'post-removal'
    // Page/popup events can be delivered during unroute. Never use a stale
    // pre-removal live set or silently detach a newly adopted descendant.
    if (generation !== beforeRemoval || ownershipChecks.size || guard.hasPending() || liveOwned().length) {
@@ -394,8 +408,11 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
     assertClean()
     throw new Error('OPORA preview late ownership after removal; request fence retained')
    }
+   cleanupStage = 'final-clean-check'
    assertClean()
+   cleanupStage = 'detach'
    detach()
+   cleanupStage = 'complete'
   } catch (error) {
    cleanupErrors.push(error)
    // A failed request/page assertion after all pages closed need not leave a
@@ -408,6 +425,8 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
    }
   }
  }
+ if (cleanupErrors.length) reportSummary('cleanup')
+ else if (!primaryFailed) reportSummary('complete')
  if (primaryFailed) throw primaryError
  if (cleanupErrors.length) throw cleanupErrors[0]
 }

@@ -7,8 +7,9 @@ import { antiStressBlueprint } from '../lib/inner-growth/anti-stress-blueprint.j
 import { OPORA_PUBLIC_ENTRY, assertOporaGuestPreviewSnapshot, createOporaGuestPreviewGuard, verifyOporaPublicEntry } from '../scripts/helpers/opora-public-entry-verifier.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const importVerifier = source => import('data:text/javascript,' + encodeURIComponent(source.replace(
- "'./portrait-navigation-diagnostics.mjs'", JSON.stringify(new URL('../scripts/helpers/portrait-navigation-diagnostics.mjs', import.meta.url).href))))
+const importVerifier = source => import('data:text/javascript,' + encodeURIComponent(
+ ['portrait-navigation-diagnostics','core-stage-evidence'].reduce((text, name) =>
+  text.replace("'./" + name + ".mjs'", JSON.stringify(new URL('../scripts/helpers/' + name + '.mjs', import.meta.url).href)), source)))
 const inviteSource = read('components/app/opora-first-week-invite.jsx')
 const mutate = (source, from, to) => {
  assert.equal(source.split(from).length - 1, 1, 'Mutation must change one precise source site')
