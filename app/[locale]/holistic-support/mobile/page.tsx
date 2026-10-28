@@ -94,7 +94,7 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
   const originalVideos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
       ...video,
-      topics: [...video.topics.filter((topic): topic is SupportMobileTopic => topic !== "health"),
+      topics: [...video.topics.filter((topic): topic is "business" | "love" | "energy" => topic !== "health"),
         ...(index < 3 ? ["goals" as const] : [])],
       program: index < 3 ? "sun" : "energy",
       author: "psimaster",
