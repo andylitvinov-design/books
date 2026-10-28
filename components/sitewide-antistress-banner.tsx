@@ -84,6 +84,9 @@ const reviewCopy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 /** Restore the original top navy/burgundy bar independently of the compact course offers. */
 const isDistractionSensitivePage = (pathname: string) =>
+  // The alternative Support screen is an immersive mobile application.
+  // Suppress the sitewide promo ribbon only there; standard Support keeps it.
+  /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname) ||
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
   // Keep the fire landing hero and its CTA inside the first phone viewport.

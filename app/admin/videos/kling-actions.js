@@ -25,6 +25,13 @@ export async function generateKlingSceneAction(input) {
   if (!apiKey) return { ok: false, error: 'not_configured' };
   try {
     const scene = normalizeKlingScene(input);
+    // Cheapest verified presets by modality: text 3.0 3s silent or
+    // approved public image 2.5 Turbo 5s, both at 720p.
+    // Premium 1080p/longer clips require a separate, OFF-by-default flag.
+    const budgetDuration = scene.mode === 'image' ? 5 : 3;
+    if (process.env.HH_KLING_PREMIUM_RENDER_ENABLED !== 'true' &&
+        (scene.duration !== budgetDuration || scene.resolution !== '720p'))
+      return { ok: false, error: 'low_cost_only' };
     return { ok: true, result: await submitKlingScene(scene, { apiKey }) };
   } catch (error) {
     // A timed-out provider request might have been accepted; preserve caller's
