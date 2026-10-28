@@ -92,3 +92,12 @@ test("The primary Order button opens the existing consented quote cart, never fa
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
     .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
 });
+
+test("compact front talisman viewer raises artwork and keeps rating UI only in full catalogue", () => {
+  assert.doesNotMatch(viewer,/useCatalogRatings\(|<StarFilter|<CatalogStarRating|data-support-talisman-rating|data-support-talisman-star-filters/);
+  assert.match(styles,/\.categoryFrame:not\(\[data-expanded="true"\]\) \.categoryRail \{ height:64px/);
+  assert.match(styles,/height:56px;min-height:0;max-height:56px/);
+  assert.match(styles,/\.filterChip \{ min-height:44px/);
+  assert.match(viewer,/TaoistTalismanCart locale=\{locale\} inline/);
+  assert.match(mobile,/data-support-talisman-experience/);
+});

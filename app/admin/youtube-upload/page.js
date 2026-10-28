@@ -3,6 +3,7 @@ import {cookies} from 'next/headers'
 import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
+import AdminYoutubePublications from '@/components/admin-youtube-publications'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {uiLocaleCookie} from '@/lib/ui-locale'
@@ -99,6 +100,7 @@ export default async function YoutubeUploadPage({searchParams}) {
       {telegramVideoConfigured&&<Link prefetch={false} href="/api/admin/telegram-video/youtube/start" style={{fontSize:14}}>
         {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
     </section>
+    <AdminYoutubePublications locale={locale}/>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>

@@ -5,7 +5,8 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const server=read('lib/app/personal-videos.js')
 const list=read('app/api/app/personal-videos/route.js')
 const item=read('app/api/app/personal-videos/[id]/route.js')
-const schema=read('supabase/migrations/20261028154730_hh_account_personal_videos_private_20261028.sql')
+const schema=read('supabase/migrations/20261028161029_hh_account_personal_videos_private_20261028.sql')
+const consentMigration=read('supabase/migrations/20261028165914_hh_personal_video_consent_purpose_20261028.sql')
 const gallery=read('components/app/my-personal-videos.jsx')
 const shell=read('components/app/app-workspace.jsx')
 const route=read('app/[locale]/app/[[...path]]/page.jsx')
@@ -68,10 +69,24 @@ test('canceled 2h signed uploads keep their storage quota until safe cleanup',()
   assert.match(server,/status<>'deleted' or released_at is null/)
   assert.match(server,/daily\.n>=6/)
   assert.match(server,/storage\.remove\(\[file\.object_key\]\)/)
-  assert.match(server,/released_at=case when ready_at is not null then now\(\) else null end/)
+  assert.match(server,/set status='deleted',deleted_at=now\(\),released_at=null/)
 })
 test('no client image or wish in personal videos API input or storage schema',()=>{
   assert.doesNotMatch(server,/photoUrl|wishText|clientMessage|rawPrompt|faceImage/i)
   assert.doesNotMatch(schema,/photo_url|raw_photo|client_wish|test_result|health_history/i)
   assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent'\]/)
+})
+
+test('video save consent has a valid purpose while preserving all previous purposes',()=>{
+  for(const old of ['necessary_app_processing','adult_attestation','marketing','practitioner_sharing']){
+    assert.match(consentMigration,new RegExp(old));
+  }
+  assert.match(consentMigration,/personal_video_cloud_save_v1/)
+  assert.match(consentMigration,/drop constraint if exists consent_events_purpose_check/)
+  assert.match(consentMigration,/add constraint consent_events_purpose_check/)
+})
+test('deleted ready masters also keep reservation until token expiration and re-delete',()=>{
+  assert.match(server,/status='deleted' and released_at is null and created_at<now\(\)-interval '3 hours'/)
+  assert.doesNotMatch(server,/status='deleted' and ready_at is null and released_at is null/)
+  assert.match(server,/released_at=null where id=\$1 and account_id=\$2 and status='deleting'/)
 })

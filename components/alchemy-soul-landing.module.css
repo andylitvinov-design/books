@@ -636,5 +636,5 @@
 }
 
 
-/* The legacy consultation service keeps its original verified review identity. */
-.reviewSection{max-width:1120px;margin:22px auto;padding:0 clamp(12px,3vw,25px)}
+/* Narrative service feedback is separate from Alchemy video testimonials. Never reuse .reviewSection. */
+.serviceReviewWrap{display:block;box-sizing:border-box;min-width:0;width:100%;max-width:1120px;margin:22px auto;padding:0}

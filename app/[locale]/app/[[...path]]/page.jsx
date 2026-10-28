@@ -35,11 +35,20 @@ export async function generateMetadata({ params, searchParams }) {
   referrer: 'no-referrer',
   }
 }
-export default async function AppPage({ params }) {
+export default async function AppPage({ params, searchParams }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
   // Personal reports are the first stop in the signed-in Cabinet.
   if (path.length === 0) redirect('/' + locale + '/app/portrait')
+  // A plain Practice tab/bookmark opens the approved practitioner dashboard,
+  // not the legacy personal Cabinet sign-in. Explicit editor panels keep their
+  // existing server-verified account scope, ownership and moderation checks.
+  if (path[0] === 'practice' && path.length === 1) {
+    const query = (await searchParams) || {}
+    const privateEditorIntent = ['panel','materialTab','create','starter','meditation','requestId']
+      .some(key => Object.hasOwn(query, key))
+    if (!privateEditorIntent) redirect('/' + locale + '/practice')
+  }
   // Backward-compatible saved-document links now open the exact original
   // report renderer, rather than an abbreviated dashboard item.
   if (path[0] === 'documents') {

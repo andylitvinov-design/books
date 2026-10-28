@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } fr
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
-  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, X, Zap,
+  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
@@ -45,7 +45,7 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters";
+type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
@@ -54,7 +54,7 @@ const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
 const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
-  { id: "consultation", Icon: TestTubeDiagonal },
+  { id: "consultation", Icon: MessageCircle },
   { id: "talisman", Icon: Sparkles },
   { id: "pump", Icon: RotateCcw },
   { id: "healing", Icon: HandHeart },
@@ -80,9 +80,9 @@ const copy = {
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
-    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters" },
-    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters" },
-    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Reiki" },
+    options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
+    optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
+    optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     masterProfile: "Open master profile", videoMaster: "Meditation guide",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
@@ -93,8 +93,8 @@ const copy = {
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
     youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
     notAvailable: "No verified recordings match those filters. Try All.",
-    testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
-    tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
+    testsTitle: "Explore your situation", testsIntro: "Choose an existing free self-check or a personality profile. These tests support reflection, not medical diagnosis.",
+    testsShort: "Tests", tests: "Open free tests", testsProfiles: "Personality profiles", testsProfilesHint: "Explore existing profile questionnaires", testsGuide: "How tests work", testsGuideHint: "Understand privacy and results", testsPrivacy: "Your ratings and photo on this screen are not sent to the tests catalogue.", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
     talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
     energyTitle: "Courses & programmes", energyIntro: "Explore original lessons here or continue to the Academy catalogue.",
     coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
@@ -129,9 +129,9 @@ const copy = {
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
-    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера" },
-    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера" },
-    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Рейки" },
+    options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
+    optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
+    optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     masterProfile: "Открыть страницу мастера", videoMaster: "Мастер медитаций",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
@@ -142,8 +142,8 @@ const copy = {
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
     youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
-    testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
-    tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
+    testsTitle: "Исследуй свой запрос", testsIntro: "Выбери бесплатный тест или профиль личности. Результаты помогают в самоисследовании, но не заменяют диагностику.",
+    testsShort: "Тесты", tests: "Открыть тесты", testsProfiles: "Профили личности", testsProfilesHint: "Существующие опросники и типологии", testsGuide: "О тестах", testsGuideHint: "Как проходят тесты и сохраняются результаты", testsPrivacy: "Оценки и фото с этого экрана не передаются в каталог тестов.", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
     talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
     energyTitle: "Курсы и программы", energyIntro: "Авторские уроки и действующий каталог Академии.",
     coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
@@ -178,9 +178,9 @@ const copy = {
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
-    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías" },
-    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías" },
-    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Reiki" },
+    options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
+    optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
+    optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     masterProfile: "Abrir perfil del guía", videoMaster: "Guía de meditación",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
@@ -191,8 +191,8 @@ const copy = {
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
     youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
-    testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
-    tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
+    testsTitle: "Explora tu situación", testsIntro: "Elige un test gratuito o un perfil de personalidad. Son herramientas de reflexión, no de diagnóstico.",
+    testsShort: "Tests", tests: "Abrir tests gratuitos", testsProfiles: "Perfiles de personalidad", testsProfilesHint: "Cuestionarios y perfiles disponibles", testsGuide: "Sobre los tests", testsGuideHint: "Privacidad y resultados", testsPrivacy: "Tus puntuaciones y foto de esta pantalla no se envían al catálogo de tests.", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
     talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
     energyTitle: "Cursos y programas", energyIntro: "Clases originales y catálogo completo de la Academia.",
     coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
@@ -357,6 +357,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
+    // The separate Tests panel replaces the content below the mobile tools.
+    // Reveal it after React commits the selection, including on small iPhones.
+    if (value === "tests") window.requestAnimationFrame(() =>
+      document.getElementById("support-tests-panel")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      }));
   };
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
@@ -462,6 +469,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                 onClick={() => changeChoice("masters")} aria-label={t.healingMasters}>
                 <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
               </button>
+              <button type="button" className={styles.testsShortcut} data-support-tool="tests"
+                aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
+                onClick={() => changeChoice("tests")}>
+                <TestTubeDiagonal size={15} aria-hidden="true" />{t.testsShort}
+              </button>
             </div>
           </section>
         </div>
@@ -484,10 +496,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                 <Play size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
               </button>
-              <Link href={"/" + locale + "/tests"} prefetch={false} data-support-goal-action="tests">
+              <button type="button" data-support-goal-action="tests" aria-pressed={choice === "tests"}
+                aria-controls="support-tests-panel" onClick={() => changeChoice("tests")}>
                 <TestTubeDiagonal size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
-              </Link>
+              </button>
               <Link href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
                 : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
                 <BookOpen size={21} aria-hidden="true" />
@@ -638,6 +651,31 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                 </div>
               </div> : null}
             </>
+          ) : choice === "tests" ? (
+            <section className={styles.testsPanel} id="support-tests-panel"
+              data-support-tests-panel aria-labelledby="support-tests-title">
+              <div className={styles.testsHero}>
+                <span className={styles.testsEyebrow}><TestTubeDiagonal size={18} aria-hidden="true" />{t.testsShort}</span>
+                <h2 id="support-tests-title">{t.testsTitle}</h2>
+                <p>{t.testsIntro}</p>
+                <Link href={"/" + locale + "/client/tests"} prefetch={false} className={styles.testsPrimary}
+                  data-support-open-tests>{t.tests}<ArrowRight size={18} aria-hidden="true" /></Link>
+              </div>
+              <div className={styles.testsLinks}>
+                <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+                  data-support-tests-personality>
+                  <UserRound size={22} aria-hidden="true" />
+                  <span><strong>{t.testsProfiles}</strong><small>{t.testsProfilesHint}</small></span>
+                  <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+                <Link href={"/" + locale + "/tests"} prefetch={false} data-support-tests-guide>
+                  <BookOpen size={22} aria-hidden="true" />
+                  <span><strong>{t.testsGuide}</strong><small>{t.testsGuideHint}</small></span>
+                  <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              </div>
+              <p className={styles.testsNotice}><ShieldCheck size={17} aria-hidden="true" />{t.testsPrivacy}</p>
+            </section>
           ) : choice === "talisman" ? (
             <div data-support-talisman-experience>
               <HolisticSupportTalismanViewer key={focus} locale={locale} focus={focus}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { getPublicServiceReviewHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./practitioner-reviews.module.css";
 
 type PublicReview = {
@@ -129,7 +129,7 @@ export function PractitionerReviews({
                       </div>
                     </div>
                     {service && <Link className={styles.service} href={
-                      getPublicServiceDetailHref(locale, practitionerSlug, service.slug) + "#reviews"
+                      getPublicServiceReviewHref(locale, practitionerSlug, service.slug)
                     }>{service.title}</Link>}
                     <p className={styles.body}>{review.body}</p>
                     {review.updatedAt !== review.createdAt && <small className={styles.note}>{t.edited}</small>}
@@ -155,7 +155,7 @@ export function PractitionerReviews({
           <div className={styles.serviceLinks}>
             {services.map(service => (
               <Link key={service.id} href={
-                getPublicServiceDetailHref(locale, practitionerSlug, service.slug) + "#reviews"
+                getPublicServiceReviewHref(locale, practitionerSlug, service.slug)
               }>
                 <span>{service.title}</span><strong>{t.write} →</strong>
               </Link>

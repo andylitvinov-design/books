@@ -59,7 +59,7 @@ type PublishedConsultation = {
 type DirectoryResponse = { masters?: EnergySupportMaster[]; consultations?: PublishedConsultation[] };
 const words = {
   en: {
-    masters: "Masters", healing: "Reiki support", consultation: "Test / session",
+    masters: "Masters", healing: "Reiki support", consultation: "Consultation",
     verified: "Published practitioner", publicOffer: "Published service", online: "Online",
     method: "Method", allMethods: "All practices", price: "Price", allPrices: "All offers",
     freeOnly: "Free", paidOnly: "With a published price",
@@ -83,7 +83,7 @@ const words = {
     prev: "Previous", next: "Next", close: "Close request", requestTitle: "Request support",
   },
   ru: {
-    masters: "Мастера", healing: "Рейки поддержка", consultation: "Тест / сессия",
+    masters: "Мастера", healing: "Рейки поддержка", consultation: "Консультация",
     verified: "Опубликованный мастер", publicOffer: "Опубликованная услуга", online: "Онлайн",
     method: "Метод", allMethods: "Все практики", price: "Цена", allPrices: "Все предложения",
     freeOnly: "Бесплатно", paidOnly: "С опубликованной ценой",
@@ -107,7 +107,7 @@ const words = {
     prev: "Назад", next: "Вперёд", close: "Закрыть заявку", requestTitle: "Запросить поддержку",
   },
   es: {
-    masters: "Maestros", healing: "Apoyo Reiki", consultation: "Test / sesión",
+    masters: "Maestros", healing: "Apoyo Reiki", consultation: "Consulta",
     verified: "Profesional publicado", publicOffer: "Servicio publicado", online: "En línea",
     method: "Método", allMethods: "Todas las prácticas", price: "Precio", allPrices: "Todas",
     freeOnly: "Gratis", paidOnly: "Con precio publicado",
@@ -137,7 +137,7 @@ const words = {
 const reikiUi = {
   en: {
     tabs: { main: "Main", filter: "Filter", description: "Description", media: "Video / audio" },
-    format: "Format", formats: { session: "Session", initiation: "Initiation", course: "Training course" },
+    format: "Format", formats: { session: "Session", initiation: "Initiation", course: "Programme" },
     price: "Price", prices: { all: "Any", free: "Free", low: "€0–20", mid: "€21–50", high: "€51–100", premium: "€100+" },
     time: "Preferred timing", times: { day: "Within 24h", days: "Within 3 days", chosen: "Chosen hour" },
     report: "Requested report", reports: { brief: "Brief", text: "Personal text review", voice: "Personal voice review" },
@@ -159,7 +159,7 @@ const reikiUi = {
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
-    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Курс обучения" },
+    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Программа" },
     price: "Цена", prices: { all: "Все", free: "Free", low: "0–20 €", mid: "21–50 €", high: "51–100 €", premium: "100+ €" },
     time: "Желаемый срок", times: { day: "В течение суток", days: "В течение 3 дней", chosen: "В выбранный час" },
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
@@ -181,7 +181,7 @@ const reikiUi = {
   },
   es: {
     tabs: { main: "Inicio", filter: "Filtro", description: "Descripción", media: "Vídeo / audio" },
-    format: "Formato", formats: { session: "Sesión", initiation: "Iniciación", course: "Curso de formación" },
+    format: "Formato", formats: { session: "Sesión", initiation: "Iniciación", course: "Programa" },
     price: "Precio", prices: { all: "Todos", free: "Gratis", low: "0–20 €", mid: "21–50 €", high: "51–100 €", premium: "100+ €" },
     time: "Plazo preferido", times: { day: "En 24 horas", days: "En 3 días", chosen: "Hora elegida" },
     report: "Informe", reports: { brief: "Breve", text: "Análisis personal escrito", voice: "Análisis personal por voz" },
@@ -218,6 +218,8 @@ const consultationUi = {
     heading: "Services", subtitle: "Choose your direction", all: "All services",
     categories: { all: "Consultations", psycho: "Psycho-homeopathy", imagery: "Guided imagery",
       constellations: "Systemic constellations", business: "Business consulting" },
+    categoryShort: { all: "Sessions", psycho: "Homeopathy", imagery: "Imagery",
+      constellations: "Constellations", business: "Business" },
     master: "Practitioner", allMasters: "All practitioners", format: "Format", allFormats: "Any format",
     price: "Price", reset: "Reset", showNext: "More service categories",
     online: "Online", inPerson: "In person", hybrid: "Online / in person",
@@ -232,6 +234,8 @@ const consultationUi = {
     heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
     categories: { all: "Консультации", psycho: "Психогомеопатия", imagery: "Гайдед имажери",
       constellations: "Системные расстановки", business: "Бизнес-консалтинг" },
+    categoryShort: { all: "Консультации", psycho: "Гомеопатия", imagery: "Имажери",
+      constellations: "Расстановки", business: "Бизнес" },
     master: "Мастер", allMasters: "Все мастера", format: "Формат", allFormats: "Все форматы",
     price: "Цена", reset: "Сбросить", showNext: "Следующие категории услуг",
     online: "Онлайн", inPerson: "Очно", hybrid: "Онлайн / очно",
@@ -246,6 +250,8 @@ const consultationUi = {
     heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
     categories: { all: "Consultas", psycho: "Psicohomeopatía", imagery: "Imágenes guiadas",
       constellations: "Constelaciones sistémicas", business: "Consultoría empresarial" },
+    categoryShort: { all: "Consultas", psycho: "Homeopatía", imagery: "Imágenes",
+      constellations: "Constelaciones", business: "Empresas" },
     master: "Profesional", allMasters: "Todos", format: "Formato", allFormats: "Cualquier formato",
     price: "Precio", reset: "Restablecer", showNext: "Más categorías",
     online: "En línea", inPerson: "Presencial", hybrid: "En línea / presencial",
@@ -530,6 +536,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
     setMethod(""); setSelectedId(null); setOrderOpen(false);
   };
+  // Both type selectors drive the existing published-offer filters, not a new booking flow.
+  const chooseReikiFormat = (value: ReikiFormat, showMain = false) => {
+    setReikiFormat(value); setReikiPrice("all"); setReikiTime("any");
+    setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
+    setMethod(""); setSelectedId(null); setOrderOpen(false);
+    if (showMain) setReikiTab("main");
+  };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
       data-support-master-hero={selected ? id(selected) : undefined}
@@ -570,8 +583,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <div className={styles.reikiOptions} data-cols="three">
               {(["session", "initiation", "course"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiFormat === value}
-                  onClick={() => { setReikiFormat(value); setReikiRole("any"); setReikiCertificate(false);
-                    setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
+                  onClick={() => chooseReikiFormat(value)}>
                   {value === "session" ? <UserRound size={17} aria-hidden="true"/> :
                     value === "initiation" ? <Sparkles size={17} aria-hidden="true"/> :
                     <GraduationCap size={17} aria-hidden="true"/>}
@@ -703,6 +715,17 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>;
         })}
       </div>}
+      {kind === "healing" && <div className={styles.reikiQuickFormat} role="group"
+        aria-label={r.format} data-support-reiki-quick-format>
+        {(["session", "initiation", "course"] as const).map(value =>
+          <button type="button" key={value} data-support-reiki-quick-kind={value}
+            aria-pressed={reikiFormat === value} onClick={() => chooseReikiFormat(value, true)}>
+            {value === "session" ? <UserRound size={16} aria-hidden="true"/> :
+              value === "initiation" ? <Sparkles size={16} aria-hidden="true"/> :
+              <GraduationCap size={16} aria-hidden="true"/>}
+            <span>{r.formats[value]}</span>
+          </button>)}
+      </div>}
       {consultations && <section className={styles.consultBrowse} aria-label={c.heading}
         data-support-consultation-categories>
         <div className={styles.consultHeading}>
@@ -715,11 +738,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             {CONSULTATION_CATEGORIES.map(({ id: category, Icon }) =>
               <button type="button" key={category} className={styles.consultCategory}
                 data-support-consultation-category={category}
-                aria-pressed={consultCategory === category}
+                aria-pressed={consultCategory === category} aria-label={c.categories[category]}
                 onClick={() => { setConsultCategory(category); setSelectedId(null);
                   setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
                 <Icon size={25} aria-hidden="true"/>
-                <span>{c.categories[category]}</span>
+                <span>{c.categoryShort[category]}</span>
               </button>)}
           </div>
           <button type="button" className={styles.consultCategoryNext} aria-label={c.showNext}
