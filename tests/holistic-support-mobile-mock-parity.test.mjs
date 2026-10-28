@@ -39,7 +39,7 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
 });
 
 test("original four-pillar video header includes visible meditation, Master, Program and Topic", () => {
-  assert.match(css, /grid-template-columns: minmax\(0,1.19fr\) repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns: minmax\(0,1.18fr\) repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /\.heroMode \{ display: flex;/);
   assert.match(css, /\.heroFilter select \{ position: absolute;[\s\S]*?opacity: 0;/);
   assert.match(client, /className=\{styles\.filterValue\}/);
