@@ -63,7 +63,7 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
   assert.match(ui,/maxLength=\{160\}/);
-  assert.match(ui,/href="#personal-video-result"/);
+  assert.match(ui,/id="personal-video-result"/);
 });
 
 test("sound preview is user-clicked, volume-controlled, and fades during final export",()=>{
