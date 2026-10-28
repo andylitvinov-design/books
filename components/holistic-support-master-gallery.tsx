@@ -421,7 +421,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     // or verified practitioner role. Never infer an offered variant from preferences.
     if (reikiFormat !== "session" || reikiTime !== "any" ||
       reikiRole !== "any" || reikiReport !== "brief") return false;
-    return master.priceOptions.some(option => matchesReikiEuroPrice(master, reikiPrice, option.price));
+    return master.priceOptions.some(option => Number.isFinite(option.price) && option.price > 0 &&\n      matchesReikiEuroPrice(master, reikiPrice, option.price));
   });
   const consultationMasters = [...new Set((offers || []).map(offer => offer.practitionerName))].sort();
   const consultationFormats = [...new Set((offers || []).map(offer => offer.deliveryFormat).filter(Boolean))];
