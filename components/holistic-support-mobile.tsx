@@ -259,6 +259,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
+  const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
@@ -297,6 +298,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </div>
 
 
+                      <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
@@ -336,12 +343,16 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span><span className={styles.toolMicro}>{t.optionsMicro[id as keyof typeof t.optionsMicro]}</span>
                 </button>
               ))}
-            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+
+            </div>
+            <div className={styles.toolShortcuts} aria-label={t.coursesAll}>
+              <button type="button" data-support-tool="pump" aria-pressed={choice === "pump"}
+                onClick={() => changeChoice("pump")}>
+                <BookOpen size={15} aria-hidden="true" />{t.optionsCompact.pump}
+              </button>
+              <Link href={"/" + locale + "/masters"} prefetch={false}>
+                <HandHeart size={15} aria-hidden="true" />{t.healingMasters}
+              </Link>
             </div>
           </section>
         </div>
@@ -512,11 +523,14 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <h2 id="support-mobile-progress-heading">{t.progress}</h2>
           <div className={styles.progressGrid}>
-            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
-              <strong>{progressCount}/{progressTotal}</strong>
+            <div className={styles.progressStarted}>
+              <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
+                <strong>{progressCount}/{progressTotal}</strong>
+              </div>
+              <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div><strong>{t.started}</strong><span>{t.private}</span></div>
-            <div className={styles.progressFocus}><FocusIcon size={27} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressFocus}><FocusIcon size={25} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>
