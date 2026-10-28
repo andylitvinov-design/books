@@ -137,7 +137,7 @@ const reikiUi = {
     report: "Requested report", reports: { brief: "Brief", text: "Personal text review", voice: "Personal voice review" },
     role: "Preferred provider", roles: { practitioner: "Practitioner", master: "Reiki master" },
     certificate: "Request a certificate", certificateNote: "Only for initiation or training; issuance must be confirmed.",
-    preferences: "Timing, report and provider role are preferences to confirm, not verified availability.",
+    preferences: "Timing, report and practitioner are preferences; confirm before booking.",
     heading: "Find Reiki support", intro: "Published options, with conditions confirmed before a request.",
     heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
     show: "Show available options", count: "Published matching offers", resetFilters: "Reset filters",
@@ -159,7 +159,7 @@ const reikiUi = {
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
     role: "Исполнитель", roles: { practitioner: "От практика", master: "От Рейки-мастера" },
     certificate: "С выдачей сертификата", certificateNote: "Только для инициации и курса. Выдача уточняется отдельно.",
-    preferences: "Срок, вид отчёта и квалификация — пожелания, доступность нужно подтвердить.",
+    preferences: "Срок, отчёт и исполнитель — пожелания; подтвердим отдельно.",
     heading: "Подбор Рейки-поддержки", intro: "Опубликованные предложения. Условия подтверждаются при заявке.",
     heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
     show: "Показать варианты", count: "Опубликованных совпадений", resetFilters: "Сбросить",
@@ -181,7 +181,7 @@ const reikiUi = {
     report: "Informe", reports: { brief: "Breve", text: "Análisis personal escrito", voice: "Análisis personal por voz" },
     role: "Profesional preferido", roles: { practitioner: "Practicante", master: "Maestro Reiki" },
     certificate: "Solicitar certificado", certificateNote: "Solo para iniciación o curso; se confirma aparte.",
-    preferences: "Plazo, informe y cualificación son preferencias no verificadas.",
+    preferences: "Plazo, informe y profesional se confirman antes de reservar.",
     heading: "Encuentra apoyo Reiki", intro: "Opciones publicadas, condiciones por confirmar.",
     heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
     show: "Ver opciones", count: "Ofertas publicadas compatibles", resetFilters: "Restablecer",
@@ -434,7 +434,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <input type="checkbox" checked={reikiCertificate}
               onChange={event => setReikiCertificate(event.target.checked)}/>
           </label>}
-          <p className={styles.reikiPreferences} role="status">{r.preferences} {r.notBooked}</p>
+          <p className={styles.reikiPreferences} role="status">{r.preferences}</p>
           <button type="button" className={styles.reikiApply} data-support-reiki-apply
             onClick={() => setReikiTab("main")}>
             <Filter size={19} aria-hidden="true"/>{r.show}
