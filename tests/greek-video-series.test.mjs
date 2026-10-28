@@ -64,7 +64,7 @@ test("Video Blogs have two standalone, filterable original channels, episodes be
   assert.match(library, /const seriesVideoIds = new Set/);
   assert.match(feed, /data-library-series-filter=\{series\.id\}/);
   assert.match(feed, /data-library-video-series=\{item\.seriesId\}/);
-  assert.match(feed, /item\.seriesOrder \?\? Number\.MAX_SAFE_INTEGER/);
+  assert.match(feed, /a\.seriesOrder \?\? Number\.MAX_SAFE_INTEGER/);
   assert.match(feed, /selectedSeries === "all" \|\| item\.seriesId === selectedSeries/);
   assert.match(feed, /seriesTitle: "Видеоблоги по каналам"/);
   assert.match(feed, /className=\{styles\.seriesHeading\}/);
