@@ -594,3 +594,31 @@
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }
+
+
+/* Central quick action uses the existing private, local Video Mandala studio. */
+.videoMandalaShortcut {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; max-width: 175px; width: 100%; padding: 7px 9px;
+  border: 1px solid #9ed8b9; border-radius: 14px; background: #e5f5e9;
+  color: #086b4d; font-size: 13px; line-height: 1.15; font-weight: 850;
+  text-align: center; text-decoration: none; overflow-wrap: anywhere;
+  box-shadow: 0 4px 11px #1f7a5a19;
+}
+.videoMandalaShortcut svg { flex: none; }
+.videoMandalaShortcut:hover, .videoMandalaShortcut:focus-visible {
+  background: #d3eddf; outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .profile > .videoMandalaShortcut {
+    align-self: center; width: 100%; min-width: 0; min-height: 44px;
+    padding: 5px 2px; gap: 3px; border-radius: 10px;
+    font-size: clamp(9.5px,2.65vw,12px); line-height: 1.12;
+    white-space: normal;
+  }
+  .profile > .videoMandalaShortcut svg { width: 14px; height: 14px; }
+}
+@media (max-width: 350px) {
+  .profile > .videoMandalaShortcut { font-size: 9.5px; padding: 5px 1px; gap: 2px; }
+  .profile > .videoMandalaShortcut svg { width: 12px; height: 12px; }
+}
