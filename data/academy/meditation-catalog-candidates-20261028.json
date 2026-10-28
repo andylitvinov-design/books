@@ -879,8 +879,8 @@
         "focus"
       ],
       "subtopics": [],
-      "duration_hint_minutes": 10,
-      "duration_basis": "title_only",
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
       "content_type": "guided",
       "time_of_day": "any",
       "posture": "unknown",
@@ -928,8 +928,8 @@
         "gratitude"
       ],
       "subtopics": [],
-      "duration_hint_minutes": 10,
-      "duration_basis": "title_only",
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
       "content_type": "guided",
       "time_of_day": "any",
       "posture": "unknown",
@@ -1070,8 +1070,8 @@
         "reflection"
       ],
       "subtopics": [],
-      "duration_hint_minutes": 10,
-      "duration_basis": "title_only",
+      "duration_hint_minutes": null,
+      "duration_basis": "unknown",
       "content_type": "guided",
       "time_of_day": "any",
       "posture": "unknown",
