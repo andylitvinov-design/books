@@ -570,6 +570,19 @@
   }
   .toolButton[aria-pressed="true"] { background: linear-gradient(135deg,#01a374,#006f53);
     color: #fff; border-color: #56b99d; box-shadow: 0 5px 15px #087b522d; }
+  /* .page button { font: inherit } outranked the old .toolButton rule,
+     so iPhone rendered 16px captions and pushed them outside 55px tiles.
+     This intentionally more specific selector fixes the actual cause. */
+  .page .toolButton {
+    font-size: clamp(12px,3.23vw,14px);
+    line-height: 1.1;
+    font-weight: 800;
+  }
+  .page .recommendButton {
+    font-size: clamp(12px,3.25vw,14px);
+    line-height: 1.13;
+    font-weight: 800;
+  }
   .toolButton svg { width: 21px; height: 21px; flex: none; }
   .toolLong { display: none; }
   .toolCompact { display: block; min-width: 0; max-width: 100%;
@@ -612,6 +625,8 @@
   .toolGrid { grid-template-rows: repeat(2,52px); gap: 4px; }
   .toolButton,.toolButton:last-child { min-height: 52px; height: 52px;
     gap: 2px; padding: 3px 2px; font-size: 11.2px; }
+  .page .toolButton { font-size: 11.5px; line-height: 1.1; }
+  .page .recommendButton { font-size: 11.5px; line-height: 1.12; }
   .toolButton svg { width: 19px; height: 19px; }
   .toolGrid > .detailedAnalysisLink { height: 52px; min-height: 52px;
     padding: 3px 2px; font-size: 11.2px; }
