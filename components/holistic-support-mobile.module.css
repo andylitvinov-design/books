@@ -661,3 +661,8 @@
   .profile > .videoMandalaShortcut { font-size: 9.5px; padding: 5px 1px; gap: 2px; }
   .profile > .videoMandalaShortcut svg { width: 12px; height: 12px; }
 }
+
+.voiceVideoEntry{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;margin:9px 0 12px;padding:10px 14px;background:#e8eddf;border:1px solid #b7c8ae;border-radius:13px;color:#315447;text-decoration:none;font:750 13px/1.3 Arial,sans-serif}
+.voiceVideoEntry:hover{background:#dbe7d5}
+.voiceVideoEntry:focus-visible{outline:3px solid #987147;outline-offset:3px}
+.voiceVideoEntry span{font-size:20px}

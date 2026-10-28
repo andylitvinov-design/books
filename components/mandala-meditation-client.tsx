@@ -45,7 +45,7 @@ const copy = {
     invalid: "Please choose a JPG, PNG or WebP image up to 10 MB.",
     intent: "Your intention (optional)", intentPlaceholder: "What would you like to give attention to?",
     photoAlt: "Your chosen photo or goal", empty: "Your image or intention",
-    selection: "Choose your mandala", imageAdjust: "Adjust image",
+    selection: "Choose your mandala", imageAdjust: "Adjust image", advanced: "Mandala settings and original guided meditations",
     png: "Save my mandala · PNG", pngPrepare: "Prepare image · PNG", pngError: "Could not prepare the image. Try another photo.",
     zoom: "Zoom", horizontal: "Move left / right", vertical: "Move up / down",
     circle: "Circle", square: "Square", focus: "Enter meditation mode", leave: "Close meditation mode",
@@ -65,7 +65,7 @@ const copy = {
     invalid: "Выберите JPG, PNG или WebP размером до 10 МБ.",
     intent: "Ваше намерение (необязательно)", intentPlaceholder: "Чему вы хотите уделить внимание?",
     photoAlt: "Ваше фото или изображение цели", empty: "Ваш образ или цель",
-    selection: "Выберите мандалу", imageAdjust: "Настроить изображение",
+    selection: "Выберите мандалу", imageAdjust: "Настроить изображение", advanced: "Дополнительно: мандала и авторские медитации",
     png: "Сохранить мандалу · PNG", pngPrepare: "Подготовить PNG", pngError: "Не получилось сохранить изображение. Попробуйте другое фото.",
     zoom: "Масштаб", horizontal: "Сдвиг по горизонтали", vertical: "Сдвиг по вертикали",
     circle: "Круг", square: "Квадрат", focus: "Режим медитации", leave: "Закрыть режим медитации",
@@ -85,7 +85,7 @@ const copy = {
     invalid: "Elige una imagen JPG, PNG o WebP de hasta 10 MB.",
     intent: "Tu intención (opcional)", intentPlaceholder: "¿A qué quieres prestar atención?",
     photoAlt: "Tu foto o imagen del objetivo", empty: "Tu imagen u objetivo",
-    selection: "Elige un mandala", imageAdjust: "Ajustar imagen",
+    selection: "Elige un mandala", imageAdjust: "Ajustar imagen", advanced: "Más opciones: mandala y meditaciones originales",
     png: "Guardar mandala · PNG", pngPrepare: "Preparar imagen · PNG", pngError: "No se pudo preparar la imagen. Prueba otra foto.",
     zoom: "Zoom", horizontal: "Mover horizontalmente", vertical: "Mover verticalmente",
     circle: "Círculo", square: "Cuadrado", focus: "Modo meditación", leave: "Salir del modo meditación",
@@ -292,6 +292,12 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       data-mandala-meditation data-mandala-focus={focusMode ? "true" : "false"}
       role={focusMode ? "dialog" : undefined} aria-modal={focusMode ? true : undefined}
       aria-label={focusMode ? t.focus : undefined}>
+      <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
+        className={styles.hiddenPhotoInput} onChange={handleImage}/>
+      <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
+        onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
+      <details className={styles.advancedWorkbench} data-mandala-advanced>
+        <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
         <Link href={"/" + locale + "/holistic-support#meditation-practices"} className={styles.back} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
@@ -349,12 +355,11 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
             <div className={styles.editorCard}>
               <label className={styles.fieldLabel} htmlFor="mandala-photo">{t.upload}</label>
               <div className={styles.photoActions}>
-                <label className={styles.uploadButton}>
+                <button type="button" className={styles.uploadButton}
+                  onClick={() => fileInput.current?.click()}>
                   <ImagePlus size={18} aria-hidden="true" />
                   {imageUrl ? t.change : t.upload}
-                  <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
-                    className={styles.fileInput} onChange={handleImage} />
-                </label>
+                </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
                   onClick={() => { setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
@@ -396,7 +401,6 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
               </details>
             </div>
           </div>
-          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl} />
           <div className={styles.videoPane}>
             <h2><Play size={17} aria-hidden="true" />{t.music}</h2>
             <div className={styles.topicFilters} role="group" aria-label={t.filter}>
@@ -426,6 +430,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
           </div>
         </div>
       </div>
+      </details>
       <p className={styles.caution}>{t.caution}</p>
     </section>
   );

@@ -192,6 +192,28 @@
 @media(max-width:350px){.moneyFlowSection{padding:8px}.moneyFlowGrid{gap:6px}.moneyFlowGrid button{padding:4px 4px 7px}.moneyFlowText strong{font-size:11px}.freeVideoPreview{max-height:390px}.freeVideoPreview canvas,.freeVideoPreview video{max-height:370px}}
 
 
+/* Video-first mobile editor: original Mandala/meditation source retained in
+   one accessible advanced disclosure, never recreated or uploaded. */
+.workshop{width:min(980px,calc(100% - 22px));padding:10px 0 44px}
+.page{background:radial-gradient(circle at 52% 0%,#e7f2e8,#f7f8ef 45%,#faf7ed 100%)}
+.advancedWorkbench{margin:15px 0 5px;min-width:0;border:1px solid #dfeadd;background:rgba(255,253,247,.95);border-radius:17px;padding:8px 12px}
+.advancedWorkbench>summary{cursor:pointer;display:flex;align-items:center;min-height:47px;color:#285b47;font:800 13px/1.35 Arial,Helvetica,sans-serif}
+.advancedWorkbench[open]>summary{margin-bottom:10px;border-bottom:1px solid #e4ede0}
+.advancedWorkbench .header{margin-bottom:15px}
+.advancedWorkbench .workspace{min-width:0}
+.hiddenPhotoInput{position:absolute;left:0;top:0;clip-path:inset(50%);width:1px;height:1px;opacity:0;pointer-events:none}
+.focus .advancedWorkbench{border:0;padding:0;background:transparent}
+.focus .advancedWorkbench>summary{display:none}
+.focus :global([data-mandala-free-video]){display:none}
+@media(max-width:759px){
+  .workshop{width:calc(100% - 20px);padding:10px 0 56px}
+  .mandalaStandardHeader{display:none}
+  .advancedWorkbench{padding:7px 11px}
+  .advancedWorkbench .workspace{grid-template-columns:1fr}
+}
+@media(max-width:350px){.workshop{width:calc(100% - 12px)}}
+
+
 /* Actual moving scene clips are selectable, not weak decorative icons.
    Cards stay cinematic at iPhone widths through a swipeable gallery. */
 .moneyFlowMedia{display:block;position:relative;overflow:hidden;width:100%;aspect-ratio:5/3;border-radius:9px;background:#142831;isolation:isolate}
