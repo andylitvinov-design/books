@@ -222,29 +222,74 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
   return [edge, Math.round(edge * 16 / 9)];
 }
 
-// Genuine still frames from the identical cinematic renderer used for video.
-// No fake play icons or misleading pictures of actors.
-function CinematicSceneThumbnail({ scene, photo, title }: {
-  scene: MoneySceneId; photo: HTMLImageElement | null; title: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const ctx = canvasRef.current?.getContext("2d", { alpha: false });
-    if (ctx) paintCinematicMoneyFrame(ctx, photo, scene, 3.2, "portrait", title);
-  }, [scene, photo, title]);
-  return <canvas className={styles.moneyFlowThumb} width={176} height={228} aria-hidden="true" ref={canvasRef} />;
+// A selected template is a real, moving preview of the same local footage
+// used in the final file. Only one card runs at ~7fps on a mobile viewport.
+function useThumbnailVisible(ref: React.RefObject<HTMLCanvasElement | null>): boolean {
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{
+    const canvas=ref.current;
+    if(!canvas)return;
+    if(typeof IntersectionObserver==="undefined"){setVisible(true);return;}
+    const observer=new IntersectionObserver(([entry])=>setVisible(Boolean(entry?.isIntersecting)),
+      {threshold:0.05,rootMargin:"80px"});
+    observer.observe(canvas);
+    return ()=>observer.disconnect();
+  },[ref]);
+  return visible;
 }
 
-
-function ThemedSceneThumbnail({ theme, scene, photo, title }: {
-  theme: OtherTheme; scene: LocalSceneId; photo: HTMLImageElement | null; title: string;
-}) {
+function CinematicSceneThumbnail({scene,photo,title,playing}:{
+  scene:MoneySceneId;photo:HTMLImageElement|null;title:string;playing:boolean;
+}){
   const ref=useRef<HTMLCanvasElement>(null);
+  const visible=useThumbnailVisible(ref);
   useEffect(()=>{
-    const context=ref.current?.getContext("2d", { alpha:false });
-    if(context) paintThemedVideoFrame(context, photo, theme, scene, 3.2, title);
-  },[theme,scene,photo,title]);
-  return <canvas ref={ref} width={176} height={228} className={videoStyles.templateArt} aria-hidden="true"/>;
+    const ctx=ref.current?.getContext("2d",{alpha:false});
+    if(!ctx)return;
+    paintCinematicMoneyFrame(ctx,photo,scene,3.2,"portrait",title);
+    if(!playing||!visible)return;
+    let raf=0,start=0,last=0,stopped=false;
+    const draw=(now:number)=>{
+      if(stopped)return;
+      if(!start)start=now;
+      if(!document.hidden&&now-last>=140){
+        paintCinematicMoneyFrame(ctx,photo,scene,3.2+((now-start)/1000)%6,"portrait",title);
+        last=now;
+      }
+      raf=window.requestAnimationFrame(draw);
+    };
+    raf=window.requestAnimationFrame(draw);
+    return()=>{stopped=true;window.cancelAnimationFrame(raf);};
+  },[scene,photo,title,playing,visible]);
+  return <canvas ref={ref} className={videoStyles.templateArt} width={176} height={228}
+    data-mandala-scene-preview={scene} data-scene-playing={playing&&visible?"true":"false"} aria-hidden="true"/>;
+}
+
+function ThemedSceneThumbnail({theme,scene,photo,title,playing}:{
+  theme:OtherTheme;scene:LocalSceneId;photo:HTMLImageElement|null;title:string;playing:boolean;
+}){
+  const ref=useRef<HTMLCanvasElement>(null);
+  const visible=useThumbnailVisible(ref);
+  useEffect(()=>{
+    const ctx=ref.current?.getContext("2d",{alpha:false});
+    if(!ctx)return;
+    paintThemedVideoFrame(ctx,photo,theme,scene,3.2,title);
+    if(!playing||!visible)return;
+    let raf=0,start=0,last=0,stopped=false;
+    const draw=(now:number)=>{
+      if(stopped)return;
+      if(!start)start=now;
+      if(!document.hidden&&now-last>=140){
+        paintThemedVideoFrame(ctx,photo,theme,scene,3.2+((now-start)/1000)%6,title);
+        last=now;
+      }
+      raf=window.requestAnimationFrame(draw);
+    };
+    raf=window.requestAnimationFrame(draw);
+    return()=>{stopped=true;window.cancelAnimationFrame(raf);};
+  },[theme,scene,photo,title,playing,visible]);
+  return <canvas ref={ref} width={176} height={228} className={videoStyles.templateArt}
+    data-scene-playing={playing&&visible?"true":"false"} aria-hidden="true"/>;
 }
 
 function chooseMime(hasAudio = false): string {
@@ -770,8 +815,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-mandala-money-option={money.id} data-video-template={money.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={moneyScene===money.id}
-              onClick={()=>{setMoneyScene(money.id);setPreviewPlaying(false);}}>
-              <CinematicSceneThumbnail scene={money.id} title={name} photo={sharedThumbnailPhoto}/>
+              data-video-template-playing={moneyScene===money.id&&previewPlaying?"true":"false"}
+              onClick={()=>{
+                if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
+                else{setMoneyScene(money.id);setPreviewPlaying(true);}
+              }}>
+              <CinematicSceneThumbnail scene={money.id} title={name} photo={sharedThumbnailPhoto}
+                playing={moneyScene===money.id&&previewPlaying&&!recording}/>
+              <span className={videoStyles.tilePlay} aria-hidden="true">
+                {moneyScene===money.id&&previewPlaying?<Pause size={18}/>:<Play size={18} fill="currentColor"/>}
+              </span>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{name}</span>
               {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
@@ -783,9 +836,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setOtherScene(other.id);setPreviewPlaying(false);}}>
+              data-video-template-playing={otherScene===other.id&&previewPlaying?"true":"false"}
+              onClick={()=>{
+                if(otherScene===other.id&&previewPlaying)setPreviewPlaying(false);
+                else{setOtherScene(other.id);setPreviewPlaying(true);}
+              }}>
               <ThemedSceneThumbnail theme={theme} scene={other.id}
-                title={other.label[locale]} photo={sharedThumbnailPhoto}/>
+                title={other.label[locale]} photo={sharedThumbnailPhoto}
+                playing={otherScene===other.id&&previewPlaying&&!recording}/>
+              <span className={videoStyles.tilePlay} aria-hidden="true">
+                {otherScene===other.id&&previewPlaying?<Pause size={18}/>:<Play size={18} fill="currentColor"/>}
+              </span>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
               {otherScene===other.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
