@@ -44,6 +44,6 @@ jobs:
           git add public/videos/holistic-house/money-films-v1
           git diff --cached --quiet && exit 0
           git commit -m 'assets(video): 12 licensed, remixed genuine cinematic MP4 loops and posters'
-          git fetch origin feat/real-money-mp4-library-20261028 --depth=150
+          git fetch --no-tags origin '+refs/heads/feat/real-money-mp4-library-20261028:refs/remotes/origin/feat/real-money-mp4-library-20261028'
           git rebase origin/feat/real-money-mp4-library-20261028
           git push origin HEAD:refs/heads/feat/real-money-mp4-library-20261028
