@@ -294,9 +294,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </label>;
               })}
             </div>
-            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
-              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
-            </button>
+            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
@@ -321,6 +324,9 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </select><ChevronDown size={18} aria-hidden="true" />
               </span>
             </label>
+            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
+              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
+            </button>
           </section>
 
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
@@ -344,12 +350,6 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 <HandHeart size={15} aria-hidden="true" />{t.healingMasters}
               </Link>
             </div>
-            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
           </section>
         </div>
 
