@@ -5,6 +5,12 @@ on:
     paths:
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/support-mandala-comparison.tsx'
+      - 'components/support-mandala-comparison.module.css'
+      - 'lib/holistic-support/mandala-progress.js'
+      - 'tests/support-inline-mandala.test.mjs'
+      - 'tests/support-mandala-progress.test.mjs'
+      - 'scripts/verify-support-inline-mandala-mobile.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
@@ -13,15 +19,19 @@ on:
     paths:
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/support-mandala-comparison.tsx'
+      - 'components/support-mandala-comparison.module.css'
+      - 'lib/holistic-support/mandala-progress.js'
+      - 'tests/support-inline-mandala.test.mjs'
+      - 'tests/support-mandala-progress.test.mjs'
+      - 'scripts/verify-support-inline-mandala-mobile.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
 permissions:
   contents: read
 concurrency:
-  # Keep push and each PR independent: an unrelated PR must not cancel
-  # production visual verification for this exact published commit.
-  group: hh-support-mobile-mock-${{ github.ref }}
+  group: hh-support-mobile-mock
   cancel-in-progress: true
 jobs:
   mobile-visual-parity:
@@ -42,8 +52,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs
-          npx eslint components/holistic-support-mobile.tsx scripts/verify-holistic-support-mock-fidelity.mjs
+          node --test tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/support-inline-mandala.test.mjs tests/support-mandala-progress.test.mjs
+          npx eslint components/holistic-support-mobile.tsx components/support-mandala-comparison.tsx lib/holistic-support/mandala-progress.js scripts/verify-holistic-support-mock-fidelity.mjs scripts/verify-support-inline-mandala-mobile.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |
@@ -62,11 +72,14 @@ jobs:
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs
+          node scripts/verify-support-inline-mandala-mobile.mjs
       - name: Keep only public synthetic geometry and screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: holistic-support-mock-browser
-          path: artifacts/holistic-support-mock-fidelity/
+          path: |
+            artifacts/holistic-support-mock-fidelity/
+            artifacts/holistic-inline-mandala/
           retention-days: 3
           if-no-files-found: warn
