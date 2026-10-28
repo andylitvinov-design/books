@@ -228,7 +228,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const matchingVideos = useMemo(() => {
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
+    const wanted = theme !== "all" ? theme : choice === "pump" ? "energy" : focusTopics[focus];
     const themed = filtered.filter(video => video.topics.includes(wanted));
     // On Goals / Meaning, feature one real recording from each ancient tradition
     // before offering the remaining episodes. Every lesson remains reachable.
@@ -277,12 +277,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   };
   const changeProgram = (next: Program) => {
     setProgram(next); setPlaying(false); setSelectedId(null); setVideoPage(0);
-    if (next !== "all" && ancientPrograms.includes(next)) setTheme("goals");
+    if (next !== "all" && ancientPrograms.includes(next)) { setTheme("goals"); setChoice("meditation"); }
     else if (next === "energy") setTheme("energy");
     else setTheme("all");
   };
   const changeTheme = (next: Theme) => {
     setTheme(next); setProgram("all"); setVideoPage(0);
+    if (choice === "pump" && next !== "energy") setChoice("meditation");
     setPlaying(false); setSelectedId(null);
   };
   const activeProgramValues = programOrder.filter(key => videos.some(video => video.program === key));
