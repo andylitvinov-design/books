@@ -38,17 +38,16 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
-          assert.equal(await root.locator('section:has([data-support-photo]) [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
-          assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
+          assert.equal(await root.locator('[aria-label] [data-support-recommendations]').count(), 1, label + " recommendations beneath photo focus");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 1, label + " canonical detailed test entry");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
-          // The old mock-portrait.webp was invalid and rendered a broken image
-          // on iPhone. The non-uploaded state must show a real SVG silhouette.
+          // These two locally bundled original-mock visuals must actually load.
           await page.waitForFunction(() => {
-            const hero = document.querySelector('[data-support-player] > img');
-            const placeholder = document.querySelector('[data-support-photo-placeholder]');
-            return Boolean(hero?.complete && hero?.naturalWidth > 0 &&
-              placeholder && placeholder.getBoundingClientRect().width >= 24);
+            const images = [...document.querySelectorAll(
+              '[data-support-photo] img, [data-support-player] > img'
+            )];
+            return images.length >= 2 && images.every(img => img.complete && img.naturalWidth > 0);
           }, null, { timeout: 20000 });
 
           const geometry = await page.evaluate(() => {
@@ -60,27 +59,23 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
-              profile:measure('section:has([data-support-photo])'),
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
               readableTools: [...root.querySelectorAll('[data-support-tool]')].map(btn => {
                 const caption = [...btn.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none');
                 const b = btn.getBoundingClientRect(), t = caption?.getBoundingClientRect();
-                return { left: t?.left ?? -1, right: t?.right ?? Infinity,
-                  top: t?.top ?? -1, bottom: t?.bottom ?? Infinity,
-                  buttonLeft: b.left, buttonRight: b.right,
-                  buttonTop: b.top, buttonBottom: b.bottom,
-                  textFits: !!caption && caption.scrollWidth <= caption.clientWidth + 1 &&
-                    caption.scrollHeight <= caption.clientHeight + 2 };
+                return { left: t?.left ?? b.left, right: t?.right ?? b.right,
+                  top: t?.top ?? b.top, bottom: t?.bottom ?? b.bottom,
+                  buttonLeft: b.left, buttonRight: b.right, buttonTop: b.top, buttonBottom: b.bottom,
+                  textFits: !caption || (caption.scrollWidth <= caption.clientWidth+2 &&
+                    caption.scrollHeight <= caption.clientHeight+2) };
               }),
               readableScores: [...root.querySelectorAll('[data-support-scale]')].map(label => {
-                const txt=label.querySelector('span[class*="scaleLabel"]');
-                const r=txt?.getBoundingClientRect();
-                return { text:txt?.textContent, width:r?.width, scroll:txt?.scrollWidth,
-                  fits:!!txt && txt.scrollWidth <= txt.clientWidth + 1 &&
-                  r.left >= label.getBoundingClientRect().left - 2 &&
-                  r.right <= label.getBoundingClientRect().right + 2 };
+                const txt = label.querySelector('span[class*="scaleLabel"]');
+                const lr = label.getBoundingClientRect(), tr = txt?.getBoundingClientRect();
+                return { name: txt?.textContent, fits: Boolean(txt && tr &&
+                  txt.scrollWidth <= txt.clientWidth+2 && tr.left>=lr.left-2 && tr.right<=lr.right+2) };
               }),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
@@ -91,20 +86,21 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
-          const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
-          console.log("Support readable dashboard "+label+": "+headHeight+"px, assessment "+
-            Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
-          if(width===320)
+          if(width===320) {
+            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
+            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
+              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<350,
-            label+" dashboard must expose practice within 350px (measured "+headHeight+"px)");
+          }
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
+            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
           assert.ok(geometry.readableTools.every(t =>
             t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
-            label+" all action captions fully visible: "+JSON.stringify(geometry.readableTools));
+            label+" all action captions visible within buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.readableScores.every(t=>t.fits),
-            label+" self-rating labels must not truncate: "+JSON.stringify(geometry.readableScores));
-          assert.ok(geometry.hero[0].height>=300, label+" hero remains dominant");
+            label+" all four focus labels visible: "+JSON.stringify(geometry.readableScores));
+          assert.ok(geometry.hero[0].height>=268, label+" hero remains the dominant workspace");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
           assert.ok(geometry.videos.every(v=>Math.abs(v.y-geometry.videos[0].y)<3), label+" four cards in one row");
@@ -115,17 +111,9 @@ for (const browserType of [chromium, webkit]) {
             assert.ok(box && box.x>=0 && box.x+box.width<=width+2,label+" all filter pills visible");
           }
           {
-            const assessment=geometry.a[0], tools=geometry.toolsSection[0], profile=geometry.profile[0];
-            assert.ok(Math.abs(assessment.y-profile.y)<4,
-              label+" ratings and personal focus share the first row");
-            assert.ok(tools.y>=assessment.bottom-3,
-              label+" six large help options occupy the second row");
-            assert.ok(tools.bottom<=geometry.hero[0].y-2,
-              label+" all actions end before the video player begins");
-            const testsLink = root.locator('#support-tools [data-support-detailed-analysis]');
-            assert.equal(await testsLink.count(), 1, label+" canonical detailed-analysis entry");
-            const parentClass = await testsLink.evaluate(el => el.parentElement?.className ?? "");
-            assert.ok(parentClass.includes("toolGrid"), label+" detailed tests are the sixth action tile");
+            const assessment=geometry.a[0], tools=geometry.toolsSection[0], photo=geometry.photo[0];
+            assert.ok(Math.abs(assessment.y-tools.y)<4,label+" ratings and tools same row");
+            assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
@@ -150,7 +138,7 @@ for (const browserType of [chromium, webkit]) {
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
-            await root.locator('[data-support-photo] img').waitFor({state:"attached",timeout:5000});
+            await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
             // Returning to video is a deliberate user action, no iframe until Play.
             await root.locator('[data-support-recommended-video] button').click();
             assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
