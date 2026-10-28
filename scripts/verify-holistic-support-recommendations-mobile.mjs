@@ -75,6 +75,20 @@ for (const engine of [chromium, webkit]) {
           await viewer.locator('[data-support-talisman-thumb="fu-harmony"]').click();
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-harmony", label + ": tapping an illustration returns to the selected symbol");
+          // Dispatch native touch events against React's hydrated viewer; this
+          // exercises the real swipe handlers rather than only checking arrows.
+          await viewer.locator("[data-support-talisman]").evaluate(element => {
+            const first = new Touch({ identifier: 1, target: element, clientX: 270, clientY: 240 });
+            const last = new Touch({ identifier: 1, target: element, clientX: 120, clientY: 240 });
+            element.dispatchEvent(new TouchEvent("touchstart", {
+              bubbles: true, touches: [first], targetTouches: [first], changedTouches: [first],
+            }));
+            element.dispatchEvent(new TouchEvent("touchend", {
+              bubbles: true, touches: [], targetTouches: [], changedTouches: [last],
+            }));
+          });
+          assert.notEqual(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + ": real touch-start/end swipe changes the design");
           await viewer.locator('[data-support-talisman-filter="goal"] select').selectOption("money");
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-prosperity", label + ": changing goal ranks an existing design, not a new SKU");
