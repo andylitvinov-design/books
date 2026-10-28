@@ -509,9 +509,26 @@ for (const browserType of [chromium, webkit]) {
             label+" session, initiation and course share one visible format switch");
           const findButton=marketplace.locator('[data-support-reiki-find]');
           assert.equal(await findButton.count(),1,label+" original detailed service picker stays discoverable");
+          const marketGeometry=await marketplace.evaluate(element => {
+            const rect=element.getBoundingClientRect();
+            const formatButtons=Array.from(element.querySelectorAll('[data-support-reiki-quick-kind]'))
+              .map(button=>button.getBoundingClientRect().height);
+            const focuses=element.querySelector('[data-support-reiki-filters]');
+            return {left:rect.left,right:rect.right,width:rect.width,
+              height:rect.height,scrollWidth:element.scrollWidth,
+              formatButtons,focusHeight:focuses?.getBoundingClientRect().height || 0};
+          });
+          assert.ok(marketGeometry.left>=8 && marketGeometry.right<=width-8,
+            label+" Reiki marketplace keeps breathing room on both phone edges: "+JSON.stringify(marketGeometry));
+          assert.ok(marketGeometry.scrollWidth<=Math.ceil(marketGeometry.width)+2,
+            label+" Reiki marketplace does not overflow horizontally: "+JSON.stringify(marketGeometry));
+          assert.ok(marketGeometry.formatButtons.every(height=>height>=43 && height<=50),
+            label+" the three Reiki formats remain finger-sized, not oversized");
+          assert.ok(marketGeometry.focusHeight>=58 && marketGeometry.focusHeight<=86,
+            label+" four Reiki intentions stay compact: "+JSON.stringify(marketGeometry));
           const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
-          assert.ok(masterHeight>=330 && masterHeight<=460,
-            label+" Reiki uses a readable scenic sales card, not a clipped 288px filter card: "+masterHeight);
+          assert.ok(masterHeight>=290 && masterHeight<=350,
+            label+" Reiki scenic service card is compact without clipping its request button: "+masterHeight);
           // Advanced options remain available with the original published-offer filters.
           const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
           assert.equal(await tab("main").count(),1,label+" central Main tab");
