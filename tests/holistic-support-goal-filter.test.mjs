@@ -124,7 +124,9 @@ test("recommendations lead to existing resources without pretending a booking or
   assert.match(client, /activeGoalFormats\.length === 0/);
   assert.match(client, /goalHasInlineFormat/);
   assert.match(client, /setGoalRecommendationFormats\(formats\)/);
-  assert.match(client, /money: "incomeStability"/);
+  assert.match(client, /goalSectorCheckinKey\[sector\]/);
+  assert.match(client, /checkinOrder: CheckinArea\[\]/);
+  assert.match(client, /onCheckinChange\(id, Number\(event\.target\.value\)\)/);
   for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones",
     "Консультации и сессии", "Видео и медитации", "Видеомандалы",
     "Consultations & sessions", "Consultas y sesiones"]) {
@@ -158,7 +160,16 @@ test("no medical inference, URL health params, storage, hidden CRM send or fabri
   for (const source of [editor, read("lib/holistic-support/goal-filter.js")]) {
     assert.doesNotMatch(source, /fetch\(|localStorage|sessionStorage|sendBeacon|URLSearchParams|\/api\/|diagnos\w*\(|Found 24|Найдено 24/);
   }
-  assert.match(client, /value\.sector !== "meaning"/);
+  assert.match(client, /setRecommendation\(\{ energy: scores\.energy, money: scores\.money,/);
+  assert.doesNotMatch(client, /nextScores\[goalSectorFocus|value\.ratings\[primary/);
+  assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
+  assert.match(editor, /meaning: "meaning"/);
+  assert.match(editor, /data-support-goal-checkin=\{sector\}/);
+  assert.match(editor, /data-support-goal-checkin-input value=\{currentCheckin\}/);
+  assert.match(editor, /onCheckinChange\(sector, Number\(event\.target\.value\)\)/);
+  assert.match(editor, /accepted\[id\]\?\.checkin === scores\[goalSectorCheckinKey\[id\]\]/);
+  assert.match(editor, /checkin: currentCheckin/);
+  assert.match(css, /\.sharedCheckin \{ display: grid;/);
   assert.match(client, /rankSupportGoalVideos/);
 });
 test("new TSX parses with no diagnostics", () => {
