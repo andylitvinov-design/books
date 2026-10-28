@@ -117,10 +117,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator('[data-mandala-video-strength="bright"]').click();
         await page.locator('[data-mandala-video-caption-mode="custom"]').click();
         await page.locator("#mandala-video-caption").fill("Safe personal intention");
-        await page.locator('[data-mandala-video-aspect="landscape"]').click();
+        const landscapeOption = page.locator('[data-mandala-video-aspect="landscape"]');
+        await landscapeOption.click();
+        await page.waitForFunction(() =>
+          document.querySelector('[data-mandala-video-aspect="landscape"]')?.getAttribute("aria-pressed") === "true",
+          undefined, { timeout: 8000 });
         await page.locator('[data-mandala-video-duration="10"]').click();
-        assert.equal(await page.locator('[data-mandala-video-aspect="landscape"]').getAttribute("aria-pressed"),
-          "true", engine + " 16:9 option must remain selected");
+        assert.equal(await landscapeOption.getAttribute("aria-pressed"),
+          "true", engine + " 16:9 option must remain selected after duration change");
         try {
           await page.waitForFunction(() => {
             const canvas = document.querySelector("[data-mandala-free-video] canvas");
