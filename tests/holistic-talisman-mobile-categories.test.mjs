@@ -25,6 +25,17 @@ test("Talisman categories are a horizontal, six-direction carousel on the existi
   assert.match(styles, /@media \(max-width:350px\)/);
   assert.match(styles, /height: 288px; min-height: 288px/);
   assert.match(styles, /height: 282px; min-height: 282px/);
+  const mainCss = read("components/holistic-support-mobile.module.css");
+  assert.match(mainCss, /\.toolButton\[data-support-tool="talisman"\]\[aria-pressed="true"\]/);
+  assert.match(mainCss, /#9551da,#6934b3/);
+  assert.match(viewer, /data-support-talisman-artwork/);
+  assert.match(viewer, /className=\{styles\.artworkRing\}/);
+  assert.match(styles, /\.artworkRing \{[^}]*border: 6px solid/);
+  assert.match(styles, /\.artworkLabel \{/);
+  assert.match(viewer, /heroTitle = selected\[locale\]\.title\.replace/);
+  assert.match(viewer, /aria-expanded=\{allCategoriesOpen\}/);
+  assert.match(viewer, /data-expanded=\{allCategoriesOpen \? "true" : "false"\}/);
+  assert.match(styles, /\.categoryFrame\[data-expanded="true"\] \.categoryRail/);
 });
 
 test("Master, tradition and description controls are operable and honest about published data", () => {
