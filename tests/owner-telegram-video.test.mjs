@@ -714,7 +714,7 @@ test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite ta
  assert.ok(oauth.includes("where practitioner_id=$1 and target='ru'"))
  assert.ok(oauth.includes('[PRACTITIONER_ID,channelId,encrypted]'))
  assert.ok(oauth.includes('channelId!==VIDEO_RU_CHANNEL_ID'))
- assert.ok(oauth.includes('seal({refreshToken},ENCRYPTION_CONTEXT,config)'))
+ assert.ok(oauth.includes('seal({refreshToken,visibility:visibility===true},ENCRYPTION_CONTEXT,config)'))
  assert.ok(oauth.includes('openSealed(row.token_ciphertext,ENCRYPTION_CONTEXT,config)'))
  assert.ok(!oauth.includes('on conflict(practitioner_id) do update set'))
  // Never delete/re-pair the unrelated English consent when reconnecting RU.
