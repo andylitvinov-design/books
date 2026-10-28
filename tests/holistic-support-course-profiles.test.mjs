@@ -45,7 +45,8 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
   assert.match(home, /onTests=\{\(\) => changeChoice\("tests"\)\}/);
   assert.match(home, /onFillProfile=\{openCourseProfileFilter\}/);
   assert.match(home, /onRecommendations=\{showCourseProfileRecommendations\}/);
-  assert.match(home, /if \(!saved\) \{ openCourseProfileFilter\(sector\); return; \}/);
+  assert.match(home, /if \(!saved \|\| saved\.checkin !== scores\[goalSectorCheckinKey\[sector\]\]\) \{/);
+  assert.match(home, /openCourseProfileFilter\(sector\); return;/);
   assert.match(home, /applyGoalFilter\(\{ \.\.\.saved, sector, savedSectors: goalSavedSectors/);
   assert.match(filter, /preferredSector\?: GoalSector/);
   assert.match(filter, /initialSector = preferredSector \?\? initial\?\.sector/);

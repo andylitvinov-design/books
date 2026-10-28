@@ -49,7 +49,8 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
-          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 5,
+            label + " five independent top check-in sliders, including Meaning");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
@@ -135,7 +136,7 @@ for (const browserType of [chromium, webkit]) {
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
             label+" all action captions visible within buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.readableScores.every(t=>t.fits),
-            label+" all four focus labels visible: "+JSON.stringify(geometry.readableScores));
+            label+" all five focus labels visible: "+JSON.stringify(geometry.readableScores));
           assert.ok(geometry.hero[0].height>=268, label+" hero remains the dominant workspace");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
@@ -182,6 +183,43 @@ for (const browserType of [chromium, webkit]) {
             return !!title && title.getBoundingClientRect().top >= 59;
           }, null, {timeout:4000});
           assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          // Live two-way sync between upper-left check-ins and the new compact
+          // first slider in the filter, without dragging the separate axes.
+          const checkinPairs = [
+            ["energy","energy"], ["money","money"],
+            ["love","relationships"], ["goals","goals"], ["meaning","meaning"],
+          ];
+          for (const [sector, key] of checkinPairs) {
+            await filter.locator('[data-goal-sector="'+sector+'"]').click();
+            const inside=filter.locator('[data-support-goal-checkin-input]');
+            const top=root.locator('[data-support-scale="'+key+'"] input[type="range"]');
+            assert.equal(await inside.inputValue(),await top.inputValue(),
+              label+" "+sector+" inherits the exact top-left score");
+            assert.equal(await filter.locator('[data-support-goal-checkin="'+sector+'"]').count(),1,
+              label+" one shared slider ahead of concerns for "+sector);
+            const placement=await filter.locator('[data-support-goal-details]').evaluate(el=>{
+              const a=el.querySelector('[data-support-goal-checkin]')?.getBoundingClientRect();
+              const b=el.querySelector('#goal-problems')?.getBoundingClientRect();
+              return {firstBottom:a?.bottom,problemsTop:b?.top,visible:a?.width>0};
+            });
+            assert.ok(placement.visible && placement.firstBottom<=placement.problemsTop+2,
+              label+" shared score comes before category questions: "+JSON.stringify(placement));
+            if(width===390 || sector==="meaning" || sector==="love") {
+              await inside.focus(); await inside.press("End");
+              assert.equal(await top.inputValue(),"10",
+                label+" dragging goal-filter "+sector+" immediately updates top card");
+              await top.focus(); await top.press("Home"); await top.press("ArrowRight");
+              assert.equal(await inside.inputValue(),"2",
+                label+" editing top-left "+key+" immediately updates filter");
+            }
+          }
+          // Meaning is its own assessment, not an alias of Goals.
+          const meaningTop=root.locator('[data-support-scale="meaning"] input[type="range"]');
+          await filter.locator('[data-goal-sector="meaning"]').click();
+          await meaningTop.focus(); await meaningTop.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10");
+          assert.notEqual(await root.locator('[data-support-scale="goals"] input[type="range"]').inputValue(),
+            "10",label+" Meaning never overwrites the Goals check-in");
           await filter.locator('[data-goal-sector="money"]').click();
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
             await filter.locator('[data-goal-concern="'+concern+'"] input').check();
@@ -226,6 +264,17 @@ for (const browserType of [chromium, webkit]) {
             label+" return restores Money selections");
           assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
             label+" return restores Money tasks");
+          // A later edit to the global check-in makes a previously accepted
+          // sector stale until it is explicitly saved again.
+          const topMoney=root.locator('[data-support-scale="money"] input[type="range"]');
+          await topMoney.focus(); await topMoney.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" check-in changes in upper-left remain live during accepted review");
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),0,
+            label+" accepted badge disappears when global score changes");
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" saving again accepts updated top rating");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
           const formats=filter.locator('[data-support-goal-format]');

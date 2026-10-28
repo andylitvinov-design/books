@@ -950,3 +950,24 @@
   .journeyContent small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .journeyHeading .goalResultsHeading h2 { font-size: 14px; }
 }
+
+
+/* The fifth assessment is the real Meaning score; never a Goals alias.
+   Compress five compact rows without shrinking labels or the bottom CTA. */
+.scaleIcon[data-tone="meaning"] { color: #7654b6; background: #e9e2f5; }
+.scaleValue[data-tone="meaning"] { background: #e9e2f5; }
+.scaleRow[data-support-scale="meaning"] input { accent-color: #8059bf; }
+@media (max-width: 640px) {
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 13px 18px; min-height: 31px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10px,2.95vw,12px); }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 19px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .page .assessment .scaleRow { grid-template-rows: 13px 17px; min-height: 30px; }
+  .page .assessment .scaleLabel { font-size: 10.3px; }
+  .page .assessment .scaleRow input { height: 17px; }
+}

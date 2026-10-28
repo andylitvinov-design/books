@@ -13,7 +13,8 @@ import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
-import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
+import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
+  goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
@@ -48,6 +49,9 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
+// Meaning is a separate fifth check-in; the published video topic engine
+// continues to use the original four-focus ranking.
+type CheckinArea = Focus | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
@@ -55,11 +59,12 @@ type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
+const checkinOrder: CheckinArea[] = [...focusOrder, "meaning"];
 // Existing public Test Explorer recognizes these non-sensitive editorial journey IDs.
 const journeyCategory: Record<Focus, string> = {
   energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
 };
-const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
+const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target, meaning: Flower2 };
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
   { id: "consultation", Icon: MessageCircle },
@@ -388,7 +393,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
-  const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
+  // Single owner for the five synchronized check-ins in both UI locations.
+  const [scores, setScores] = useState<Record<CheckinArea, number>>({
+    energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5,
+  });
   const [choice, setChoice] = useState<Choice>(initialChoice);
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
@@ -486,6 +494,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
     }));
+  const onCheckinChange = (id: CheckinArea, value: number) => {
+    if (!Number.isInteger(value) || value < 1 || value > 10) return;
+    setScores(previous => ({ ...previous, [id]: value }));
+    // Invalidate previously applied rankings, never drop accepted category
+    // answers or selected resource formats.
+    setRecommendation(null); setGoalSelection(null);
+  };
   const onRecommendations = () => {
     // Keep the user's chosen focus and formats; recommend only verified content.
     setRecommendation({ ...scores });
@@ -521,18 +536,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     };
     const firstInline = GOAL_RECOMMENDATION_FORMATS.find(id =>
       formats.includes(id) && inlineChoice[id]);
-    // Never infer a 1–10 self-rating from income or reserve amounts. Meaning
-    // remains separate from Goals; Money uses its own stability rating.
-    const nextScores = { ...scores };
-    const primary = { energy: "vitality", money: "incomeStability",
-      love: "connection", goals: "goalClarity" } as const;
-    if (value.sector !== "meaning") {
-      const now = value.ratings[primary[value.sector]]?.current;
-      if (Number.isInteger(now) && now >= 1 && now <= 10) {
-        nextScores[goalSectorFocus[value.sector]] = now;
-      }
-    }
-    setScores(nextScores); setRecommendation(nextScores); setGoalSelection(value);
+    // Three "Now → Want" measures remain independent. Applying them must
+    // never overwrite the dedicated check-in, which syncs on every drag.
+    setRecommendation({ energy: scores.energy, money: scores.money,
+      relationships: scores.relationships, goals: scores.goals });
+    setGoalSelection(value);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
@@ -543,7 +551,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const saved = goalSavedSectors[sector];
     // Do not claim a tailored report before the visitor accepts the
     // relevant self-rating. Reuse the existing consent-free local editor.
-    if (!saved) { openCourseProfileFilter(sector); return; }
+    if (!saved || saved.checkin !== scores[goalSectorCheckinKey[sector]]) {
+      openCourseProfileFilter(sector); return;
+    }
     if (sector !== "goals") setActiveCourseProfile(sector);
     setProfileSector(sector);
     applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
@@ -577,7 +587,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
-  const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
+  const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
   const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
@@ -650,15 +660,16 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
             <p className={styles.subText}>{t.scoreGuide}</p>
             <div className={styles.scaleList}>
-              {focusOrder.map(id => {
+              {checkinOrder.map(id => {
                 const Icon = scoreIcons[id];
+                const label = id === "meaning" ? t.goalSector.meaning : t.foci[id];
                 return <label className={styles.scaleRow} key={id} data-support-scale={id}>
                   <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
                   <span className={styles.scaleDetail}>
-                    <span className={styles.scaleLabel}>{t.foci[id]}</span>
+                    <span className={styles.scaleLabel}>{label}</span>
                     <input type="range" min="1" max="10" step="1" value={scores[id]}
-                      aria-label={t.foci[id]} aria-valuetext={scores[id] + " / 10"}
-                      onChange={event => { setRecommendation(null); setGoalSelection(null); setScores(previous => ({ ...previous, [id]: Number(event.target.value) })); }} />
+                      aria-label={label} aria-valuetext={scores[id] + " / 10"}
+                      onChange={event => onCheckinChange(id, Number(event.target.value))} />
                   </span>
                   <output className={styles.scaleValue} data-tone={id}>{scores[id]}</output>
                 </label>;
@@ -883,6 +894,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
+            onCheckinChange={(sector, value) => onCheckinChange(goalSectorCheckinKey[sector], value)}
             selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
             onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
