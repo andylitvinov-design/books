@@ -214,6 +214,11 @@ for (const browserType of [chromium, webkit]) {
             label+" chosen currency preserved when editing");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" factual income draft survives editing");
+          await filter.locator('[data-goal-currency]').selectOption("USD");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" changing currency must not silently convert or relabel prior income");
+          assert.equal(await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').inputValue(),"1",
+            label+" reserve months remain unaffected by currency");
           await filter.locator('[data-support-goal-reset]').click();
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
