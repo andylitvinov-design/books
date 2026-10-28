@@ -108,7 +108,7 @@ try{
  await writeFile(portraitTarget,portraitMp4)
  const portraitInfo=spawnSync(binary,['-hide_banner','-i',portraitTarget,'-f','null','-'],{
    timeout:30000,encoding:'utf8',maxBuffer:128000})
- if(portraitInfo.status!==0||!/1920x1080 \\[SAR 1:1 DAR 16:9\\]/.test(portraitInfo.stderr))
+ if(portraitInfo.status!==0||!/1920x1080 \[SAR 1:1 DAR 16:9\]/.test(portraitInfo.stderr))
    throw Error('VIDEO_PORTRAIT_GEOMETRY_METADATA_FAILED')
  const strip=spawnSync(binary,['-hide_banner','-loglevel','error','-i',portraitTarget,
    '-frames:v','1','-vf','crop=1920:2:0:540,format=rgb24',
