@@ -166,6 +166,31 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     return () => controller.abort();
   }, [locale, consultations, attempt]);
 
+  // Reopen the same approved master after the existing Google OAuth redirect.
+  // The OAuth marker contains only public service title/path, never a client's
+  // private intention or the signed-in account details.
+  useEffect(() => {
+    if (consultations || !masters?.length) return;
+    try {
+      const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+      if (pending?.path !== window.location.pathname ||
+          typeof pending.service !== "string" ||
+          !pending.service.startsWith("Reiki support · ")) return;
+      const master = masters.find(item => pending.service.startsWith(
+        "Reiki support · " + item.name.slice(0, 72) + " · "));
+      if (!master) return;
+      if (kind === "healing") {
+        const focus = REIKI_FOCI.find(value => master.methods.some(name =>
+          REIKI_METHODS[value].some(allowed => allowed.toLowerCase() === name.toLowerCase())));
+        if (!focus) return;
+        setReikiFocus(focus);
+      }
+      setMethod("");
+      setSelectedId(master.serviceId);
+      setOrderOpen(true);
+    } catch { /* Invalid session markers never expose account information. */ }
+  }, [masters, consultations, kind]);
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
