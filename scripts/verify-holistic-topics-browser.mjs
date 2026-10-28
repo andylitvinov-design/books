@@ -225,6 +225,16 @@ for (const engine of [chromium, webkit]) {
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
           assert.deepEqual(unexpectedWrites, [], label + " no unsolicited CRM, booking or payment writes");
+          // CI #40620636035 proved all 18 UI flows after blocking service workers.
+          // Guard against a future silent fall-through to the real (unconfigured)
+          // directory endpoint: synthetic browser QA must only see fixture HTTP 200.
+          assert.ok(fixtureCalls.some(call => call.kind === "consultation" && call.locale === locale),
+            label + " must use locale-specific synthetic consultation transport");
+          assert.ok(directoryNetwork.some(event => event.event === "response" && event.status === 200),
+            label + " must receive an intercepted directory response");
+          assert.deepEqual(directoryNetwork.filter(event =>
+            event.event === "failed" || (event.event === "response" && event.status !== 200)), [],
+            label + " no failed or real directory responses in fixture-only QA");
           evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, overflow: false });
         } finally {
           await page.close();
