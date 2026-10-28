@@ -5,7 +5,6 @@ import test from 'node:test';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
 import * as uiLocale from '../lib/ui-locale.js';
-import { isSupportedLocale, getHomeopathyLocaleParams } from '../data/remedies.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const source = read('scripts/verify-es-public-site.mjs');
@@ -32,8 +31,34 @@ function load(path, imports, transform = value => value) {
 const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
 common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
+const blocked = name => () => assert.fail(`No ${name} in rendering fixture`);
+const { compactNavigationIcons } = load('components/compact-navigation-icons.ts', common);
+const { CartNavLink } = load('components/commerce/cart-nav-link.tsx', {
+  ...common,
+  '@/lib/commerce/cart': { restoreServiceCart: blocked('cart storage'), SERVICE_CART_STORAGE_KEY: 'synthetic-cart', SERVICE_CART_UPDATED_EVENT: 'synthetic-cart-update' },
+  './cart-nav-link.module.css': { default: {} },
+});
+let fixtureId = 0;
+const { SiteSearch } = load('components/site-search.tsx', {
+  ...common, react: { ...common.react, useId: () => `synthetic-search-${++fixtureId}` },
+  'next/navigation': { useRouter: () => ({ push: blocked('router navigation') }) },
+  './site-search.module.css': { default: {} },
+});
+const { HomePersonalSpaceNavEntry } = load('components/home-personal-space.tsx', {
+  ...common, 'next/image': { default: props => jsx('img', props) },
+  'next/navigation': { usePathname: () => canonical },
+  react: { ...common.react, createContext: value => ({ value }), useContext: () => null, useCallback: fn => fn },
+  '@/lib/app/client-fetch': { appFetch: blocked('account request') },
+  '@/lib/native/client': { isNativeHolisticHouse: () => false },
+  '@/lib/home-personal-space.mjs': { homeSpaceSummary: blocked('private summary') },
+  './home-personal-space.module.css': { default: {} },
+});
 const { SiteNavigation } = load('components/site-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },
+  '@/components/commerce/cart-nav-link': { CartNavLink },
+  '@/components/site-search': { SiteSearch },
+  './compact-navigation-icons': { compactNavigationIcons },
+  './home-personal-space': { HomePersonalSpaceNavEntry },
   '@/lib/ui-locale': uiLocale, '@/lib/public-locales': publicLocales,
   '@/lib/site-navigation-model': navigationModel,
   './use-navigation-locale': { useNavigationLocale: locale => locale },
@@ -51,6 +76,7 @@ const { PublicGrowthCourses } = load('components/public-growth-courses.tsx', {
 });
 const { MobileBottomNavigation } = load('components/mobile-bottom-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },
+  './compact-navigation-icons': { compactNavigationIcons },
   '@/lib/site-navigation-model': navigationModel, './use-navigation-locale': { useNavigationLocale: () => 'es' },
 });
 function matches(node, selector) {
@@ -76,9 +102,9 @@ function query(tree, selector) {
   }
   return [...new Set(selection)];
 }
-// Model only visibility rules that affect these source-rendered controls. CSS
-// selectors still include hidden nodes; role queries exclude closed disclosures
-// and compact-width direct links, as the real browser does.
+// Model only the tested header rules and closed disclosures, with an empty cart.
+// CSS queries include hidden nodes; role queries exclude them. This is a source
+// fixture, not a full stylesheet or browser-layout verification.
 function visibleNodes(tree, width) {
   const visible = new Set();
   function visit(node, hidden = false, parent) {
@@ -86,7 +112,7 @@ function visibleNodes(tree, width) {
     if (!node || typeof node !== 'object') return;
     const classes = String(node.props.className || '').split(' ');
     const compactDirect = width <= 1140 && parent?.props.className === 'site-navigation'
-      && node.type === 'a' && !classes.includes('site-library-entry');
+      && node.type === 'a' && !classes.includes('site-cabinet-entry');
     hidden ||= Boolean(node.props.hidden) || node.props['aria-hidden'] === 'true' || compactDirect;
     if (!hidden) visible.add(node);
     const children = [node.props.children].flat(Infinity);
@@ -95,12 +121,17 @@ function visibleNodes(tree, width) {
   visit(tree);
   return visible;
 }
-async function scenario(fault, { width = 1365, verifier = helper } = {}) {
+async function scenario(fault, { width = 1365, verifier = helper, extraStart = false } = {}) {
   const catalog = PublicGrowthCourses({ locale: 'es' });
   const bottom = MobileBottomNavigation({ initialLocale: 'es' });
   const metadata = jsx('link', { rel: 'canonical', href: 'https://holistichouse.vercel.app' + canonical });
   const tree = [catalog, bottom, metadata];
   const one = selector => { const selected = query(tree, selector); assert.equal(selected.length, 1, selector); return selected[0]; };
+  let pageUrl = origin + canonical, responseStatus = 200, responseUrl = origin + canonical;
+  const preimage = JSON.stringify(tree);
+  if (fault === 'legacy URL') pageUrl = origin + '/es/courses';
+  if (fault === 'redirect response') responseStatus = 308;
+  if (fault === 'wrong response URL') responseUrl = origin + '/es/courses';
   if (fault === 'wrong canonical') metadata.props.href = 'https://holistichouse.vercel.app/es/courses';
   if (fault === 'duplicate canonical') tree.push({ ...metadata });
   if (fault === 'missing catalog') delete catalog.props['data-public-my-courses'];
@@ -133,13 +164,28 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   if (fault === 'missing course cabinet') delete one('[data-course-cabinet]').props['data-course-cabinet'];
   if (fault === 'missing skill') one('[data-opora-stress-seven-skills] ol').props.children.pop();
   if (fault === 'missing daily plan') delete one('[data-opora-14-day-public-plan]').props['data-opora-14-day-public-plan'];
-  if (fault === 'wrong active') one('[data-nav-item="academy"]').props['aria-current'] = undefined;
-  if (fault === 'duplicate active') one('[data-nav-item="tests"]').props['aria-current'] = 'page';
+  const courses = one('.mobile-bottom-navigation [data-nav-item="courses"]');
+  const profile = one('.mobile-bottom-navigation [data-nav-item="profile"]');
+  if (fault === 'missing active' || fault === 'wrong active') delete courses.props['aria-current'];
+  if (fault === 'wrong active' || fault === 'duplicate active') profile.props['aria-current'] = 'page';
+  if (fault === 'wrong courses destination') courses.props.href = '/es/academy/free-ai-courses';
+  if (fault === 'wrong courses accessible name') courses.props['aria-label'] = 'Academia';
+  if (extraStart) {
+    // This duplicate is deliberate, not a claim that the current header shares the hero label.
+    catalog.props.children.push(jsx('a', { href: '/es/services/free-situation-review', children: 'Empezar gratis' }));
+    assert.equal(nodes(hero).filter(node => node.type === 'a' && text(node) === 'Empezar gratis').length, 1);
+    assert.equal(nodes(catalog).filter(node => node.type === 'a' && text(node) === 'Empezar gratis').length, 2);
+  }
   const visible = visibleNodes(tree, width);
+  const freeStartVisible = visible.has(freeStart);
   if (fault === 'wrong free-start visibility') {
     if (visible.has(freeStart)) visible.delete(freeStart);
     else visible.add(freeStart);
   }
+  // Fail before running the verifier if a typo or stale selector made a mutant a no-op.
+  if (fault) assert.ok(JSON.stringify(tree) !== preimage || pageUrl !== origin + canonical
+    || responseStatus !== 200 || responseUrl !== origin + canonical
+    || visible.has(freeStart) !== freeStartVisible, 'Mutation was not applied: ' + fault);
   const locator = selected => ({ selected,
     locator: selector => locator(query(selected, selector)),
     getByRole(role, options) { return locator(selected.flatMap(nodes).filter(node =>
@@ -148,7 +194,7 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   });
   const page = { ...locator(tree), viewportSize: () => ({ width, height: 900 }) };
   const expect = actual => ({
-    async toHaveURL(url) { assert.equal(actual, page); assert.equal(url, origin + canonical); assert.notEqual(fault, 'legacy URL'); },
+    async toHaveURL(url) { assert.equal(actual, page); assert.equal(pageUrl, url); },
     async toHaveCount(count) { assert.equal(actual.selected.length, count); },
     async toHaveAttribute(name, value) { assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props[name], value); },
     async toHaveAccessibleName(value) { assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props['aria-label'] ?? text(actual.selected[0]), value); },
@@ -156,46 +202,106 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
     async toHaveText(value) { assert.equal(actual.selected.length, 1); assert.equal(text(actual.selected[0]), value); },
     async toBeVisible() { assert.equal(actual.selected.length, 1); assert.ok(visible.has(actual.selected[0])); },
   });
-  const response = { status: () => fault === 'redirect response' ? 308 : 200, url: () => origin + (fault === 'wrong response URL' ? '/es/courses' : canonical) };
-  await new Function('assert', 'expect', 'origin', verifier + '; return assertSpanishCourseCatalog;')(assert, expect, origin)(page, response);
+  const response = { status: () => responseStatus, url: () => responseUrl };
+  try {
+    await new Function('assert', 'expect', 'origin', verifier + '; return assertSpanishCourseCatalog;')(assert, expect, origin)(page, response);
+  } catch (cause) {
+    // Negative cases must fail the real verification assertions, never fixture setup or loading.
+    assert.equal(cause.code, 'ERR_ASSERTION');
+    throw Object.assign(new Error('Spanish catalog contract rejected fixture', { cause }), { code: 'ES_CATALOG_CONTRACT' });
+  }
   const enrollment = nodes(catalog).filter(node => node.type === 'a' && node.props.href === '/en/app/course?program=stress');
   assert.ok(enrollment.length >= 4);
   assert.ok(enrollment.every(node => node.props.prefetch === false), 'The public catalog must not prefetch private enrollment');
   if (!fault) {
     const starts = nodes(catalog).filter(node => node.type === 'a' && text(node) === 'Empezar gratis');
-    assert.equal(starts.length, 3, 'Real JSX includes the direct header, closed site menu and course hero actions');
-    assert.equal(starts.filter(node => visible.has(node)).length, width > 1140 ? 2 : 1, 'Reproduce desktop collision and compact navigation visibility');
+    assert.equal(starts.length, extraStart ? 2 : 1, 'Only the course hero uses this label unless explicitly injected');
+    assert.equal(starts.filter(node => visible.has(node)).length, extraStart ? 2 : 1);
+    assert.equal(text(freeStart), 'Revisión gratis');
+    assert.ok(visible.has(one('.site-navigation > .site-cabinet-entry')), 'Cabinet remains visible at compact widths');
   }
 }
-for (const width of [390, 1365]) {
+for (const width of [390, 767, 768, 1140, 1141, 1365]) {
   test(width + 'px actual Spanish catalog and header JSX satisfy separately scoped free-start and enrollment contracts', () => scenario(undefined, { width }));
 }
-test('real header fixture exposes the old whole-catalog selector failure on desktop', async () => {
+const rejectedContract = { code: 'ES_CATALOG_CONTRACT' };
+for (const width of [390, 1365]) test(width + 'px scoped hero ignores an explicitly injected out-of-hero label duplicate', async () => {
+  await scenario(undefined, { width });
+  await scenario(undefined, { width, extraStart: true });
   const unscoped = helper.replace("const start = hero.getByRole(", "const start = catalog.getByRole(");
   assert.notEqual(unscoped, helper);
-  await assert.rejects(scenario(undefined, { width: 1365, verifier: unscoped }));
-  await scenario(undefined, { width: 390, verifier: unscoped });
+  await assert.rejects(scenario(undefined, { width, extraStart: true, verifier: unscoped }), rejectedContract);
 });
-test('desktop free-start verifier rejects a wrong accessible name', () => assert.rejects(scenario('wrong free-start accessible name')));
+test('desktop free-start verifier rejects a wrong accessible name', () => assert.rejects(scenario('wrong free-start accessible name'), rejectedContract));
+test('unapplied fixture faults cannot masquerade as verifier rejections', async () => {
+  await assert.rejects(scenario('stale selector'), error => error.code === 'ERR_ASSERTION' && error.message.includes('Mutation was not applied'));
+});
 test('fixture compact-header breakpoint agrees with actual source CSS', () => {
   const css = read('app/holistic-house-home.css');
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.house-header--services \.site-navigation > a \{ display: none; \}/);
-  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-library-entry\) \{ display: none; \}/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-cabinet-entry\) \{ display: none; \}/);
 });
-for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'wrong active', 'duplicate active', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
-  test(width + 'px actual Spanish catalog verifier rejects ' + fault, () => assert.rejects(scenario(fault, { width })));
+for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'missing active', 'wrong active', 'duplicate active', 'wrong courses destination', 'wrong courses accessible name', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
+  test(width + 'px actual Spanish catalog verifier rejects ' + fault, () => assert.rejects(scenario(fault, { width }), rejectedContract));
 }
-async function verifyLegacyRedirect(locale, transform) {
+function replaceOnce(value, before, after) {
+  assert.equal(value.split(before).length - 1, 1, 'Source mutation must match exactly once: ' + before);
+  const changed = value.replace(before, after);
+  assert.notEqual(changed, value);
+  return changed;
+}
+async function legacyRedirect(locale, transform) {
   const imports = { 'next/navigation': { permanentRedirect(path) { throw new Error('PERMANENT:' + path); }, notFound() { throw new Error('NOT_FOUND'); } },
-    '@/data/remedies': { isSupportedLocale, getHomeopathyLocaleParams }, '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
+    '@/data/academy/catalog': { isPublicLocale: value => publicLocales.publicLocales.includes(value) },
+    '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
     '@/lib/spanish-metadata': { spanishMetadata: () => ({}) } };
   const route = load(locale === 'es' ? 'app/es/courses/page.tsx' : 'app/[locale]/courses/page.tsx', imports, transform);
-  await assert.rejects(async () => route.default({ params: Promise.resolve({ locale }) }), { message: 'PERMANENT:/' + locale + '/academy/free-ai-courses' });
+  try { await route.default({ params: Promise.resolve({ locale }) }); }
+  catch (error) { assert.match(error.message, /^PERMANENT:/); return error.message.slice('PERMANENT:'.length); }
+  assert.fail('Legacy route did not perform a permanent redirect');
 }
 for (const locale of ['en', 'ru', 'es']) {
-  test(locale + ' legacy page executes its exact permanent canonical redirect', () => verifyLegacyRedirect(locale));
-  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', () => assert.rejects(verifyLegacyRedirect(locale, value => value.replaceAll('/academy/free-ai-courses', '/academy/unrelated'))));
+  const destination = '/' + locale + (locale === 'es' ? '/academy/free-ai-courses' : '/academy');
+  test(locale + ' legacy page executes its exact permanent canonical redirect', async () => assert.equal(await legacyRedirect(locale), destination));
+  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', async () => {
+    const before = locale === 'es' ? 'permanentRedirect("/es/academy/free-ai-courses")' : 'permanentRedirect(`/${locale}/academy`)';
+    const actual = await legacyRedirect(locale, value => replaceOnce(value, before, 'permanentRedirect("/es/academy/unrelated")'));
+    assert.equal(actual, '/es/academy/unrelated', 'The actual route executed the injected mutation');
+    assert.throws(() => assert.equal(actual, destination), { code: 'ERR_ASSERTION' });
+  });
 }
+function verifyFreeAiBranch(value = read('app/[locale]/academy/[[...slug]]/page.tsx')) {
+  const file = ts.createSourceFile('page.tsx', value, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const page = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'AcademyPage');
+  assert.ok(page?.body, 'Actual AcademyPage declaration exists');
+  const branches = page.body.statements.filter(node => ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)
+    && node.expression.left.getText(file) === 'key' && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+    && ts.isStringLiteral(node.expression.right) && node.expression.right.text === 'free-ai-courses');
+  assert.equal(branches.length, 1, 'Exactly one free-ai-courses branch exists on the actual page');
+  const code = ts.transpileModule('function render(key, locale) {' + branches[0].getText(file) + '}', {
+    fileName: 'branch.tsx', compilerOptions: { jsx: ts.JsxEmit.React, jsxFactory: 'jsx', jsxFragmentFactory: 'Fragment', target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const render = runInNewContext(code + '; render', { jsx: (type, props, ...children) => ({ type, props, children }), Fragment: 'Fragment',
+    PublicGrowthCourses: 'Growth', PublicPractitionerCourses: 'Practitioner' });
+  for (const locale of ['en', 'ru', 'es']) {
+    const rendered = render('free-ai-courses', locale);
+    assert.equal(rendered?.type, 'Fragment');
+    assert.equal(JSON.stringify(rendered.children.map(node => [node.type, node.props.locale])), JSON.stringify([['Growth', locale], ['Practitioner', locale]]));
+    assert.equal(render('unrelated', locale), undefined);
+  }
+}
+test('actual free-ai-courses branch renders Growth and Practitioner with the requested locale', () => verifyFreeAiBranch());
+for (const [name, before, after] of [
+  ['wrong route', 'if (key === "free-ai-courses") return', 'if (key === "unrelated") return'],
+  ['missing Growth', '<PublicGrowthCourses locale={locale} />', ''],
+  ['missing Practitioner', '<PublicPractitionerCourses locale={locale} />', ''],
+  ['wrong Growth locale', '<PublicGrowthCourses locale={locale} />', '<PublicGrowthCourses locale="en" />'],
+  ['wrong Practitioner locale', '<PublicPractitionerCourses locale={locale} />', '<PublicPractitionerCourses locale="ru" />'],
+]) test('free-ai-courses branch rejects applied source mutation: ' + name, () => {
+  verifyFreeAiBranch();
+  const changed = replaceOnce(read('app/[locale]/academy/[[...slug]]/page.tsx'), before, after);
+  assert.throws(() => verifyFreeAiBranch(changed), { code: 'ERR_ASSERTION' });
+});
 test('Spanish audit checks both redirect and direct canonical catalog without indexing the redirect', () => {
   const routes = source.match(/const routes = \[([^;]+)\];/)?.[1];
   assert.ok(routes.includes("'/es/courses'"));
@@ -205,7 +311,7 @@ test('Spanish audit checks both redirect and direct canonical catalog without in
   assert.match(source, /new URL\(href\)\.pathname === '\/es\/courses'/);
   assert.match(source, /assert\.deepEqual\(unselectedClientRequests,\[\]/);
   assert.match(source, /assert\.deepEqual\(errors,\[\]/);
-  assert.match(read('app/[locale]/academy/[[...slug]]/page.tsx'), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\} \/>/);
+  verifyFreeAiBranch();
 });
 
 test('actual Spanish request observer blocks speculative EN/RU discovery roots and tests, but not explicit ES navigation', () => {
