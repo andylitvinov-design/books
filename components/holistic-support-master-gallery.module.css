@@ -124,3 +124,59 @@
   .thumb{flex-basis:118px;min-height:117px}
 }
 @media(prefers-reduced-motion:reduce){.viewer *{scroll-behavior:auto;transition:none}}
+
+
+/* Match the original meditation stage footprint, not the taller legacy catalog. */
+.hero { min-height: 442px; }
+@media (max-width: 640px) {
+  .hero { height: 288px; min-height: 288px; max-height: 288px; padding: 9px 10px 14px; }
+  .photoStage { inset: 47px 1% 55px 37%; }
+  .copy { flex: 1 1 auto; min-height: 0; width: 65%; padding: 61px 0 5px; }
+  .copy h2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; font-size: clamp(23px,6.25vw,31px); line-height: 1.04; margin: 6px 0 4px; }
+  .copy p { -webkit-line-clamp: 2; margin: 0 0 5px; font-size: 11.5px; line-height: 1.2; }
+  .eyebrow { font-size: 10px; padding: 4px 6px; }
+  .actions { flex: none; }
+  .primary { min-height: 52px; font-size: clamp(12px,3.55vw,17px); }
+  .secondary { min-height: 50px; }
+  .arrows { top: 43%; }
+}
+@media (max-width: 350px) {
+  .hero { height: 282px; min-height: 282px; max-height: 282px; }
+  .copy { min-height: 0; padding-top: 59px; }
+  .copy h2 { font-size: 22px; }
+  .copy p { -webkit-line-clamp: 2; font-size: 11px; }
+}
+
+
+/* Four public-intention filters precede the compact Reiki stage. */
+.reikiFocusBar {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px;
+  margin: 0; padding: 10px 11px; background: #f6f7ee;
+}
+.reikiFocusButton {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 0; min-height: 63px; padding: 7px 5px; gap: 4px;
+  border: 1px solid #bfd9c7; border-radius: 14px; background: #fdfcf6;
+  color: #284333; text-align: center; cursor: pointer;
+}
+.reikiFocusButton strong { font-size: 12px; line-height: 1.12; overflow-wrap: anywhere; }
+.reikiFocusButton small { color: #577361; font-size: 10px; line-height: 1.18; overflow-wrap: anywhere; }
+.reikiFocusButton[aria-pressed="true"] {
+  border-color: #15a075; background: linear-gradient(125deg,#0da578,#056e55);
+  color: white; box-shadow: 0 4px 10px #1277592d;
+}
+.reikiFocusButton[aria-pressed="true"] small { color: #e4f8ea; }
+.reikiFocusButton:focus-visible { outline: 3px solid #d39c43; outline-offset: 2px; }
+.unavailableMethod { font-weight: 800; color: #166b4a; }
+@media (max-width: 640px) {
+  .reikiFocusBar { gap: 4px; padding: 8px 8px 7px; }
+  .reikiFocusButton { min-height: 62px; padding: 5px 2px; gap: 3px; border-radius: 10px; }
+  .reikiFocusButton strong { font-size: clamp(9.7px,2.8vw,12px); line-height: 1.12; }
+  .reikiFocusButton small { font-size: clamp(8.3px,2.32vw,10px); line-height: 1.12; }
+}
+@media (max-width: 350px) {
+  .reikiFocusBar { gap: 3px; padding-inline: 5px; }
+  .reikiFocusButton strong { font-size: 9.1px; }
+  .reikiFocusButton small { font-size: 8.2px; }
+}
