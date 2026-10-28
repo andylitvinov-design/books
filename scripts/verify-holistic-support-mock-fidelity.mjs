@@ -42,12 +42,13 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
-          // These two locally bundled original-mock visuals must actually load.
+          // The old mock-portrait.webp was invalid and rendered a broken image
+          // on iPhone. The non-uploaded state must show a real SVG silhouette.
           await page.waitForFunction(() => {
-            const images = [...document.querySelectorAll(
-              '[data-support-photo] img, [data-support-player] > img'
-            )];
-            return images.length >= 2 && images.every(img => img.complete && img.naturalWidth > 0);
+            const hero = document.querySelector('[data-support-player] > img');
+            const placeholder = document.querySelector('[data-support-photo-placeholder]');
+            return Boolean(hero?.complete && hero?.naturalWidth > 0 &&
+              placeholder && placeholder.getBoundingClientRect().width >= 24);
           }, null, { timeout: 20000 });
 
           const geometry = await page.evaluate(() => {
@@ -68,7 +69,17 @@ for (const browserType of [chromium, webkit]) {
                 return { left: t?.left ?? -1, right: t?.right ?? Infinity,
                   top: t?.top ?? -1, bottom: t?.bottom ?? Infinity,
                   buttonLeft: b.left, buttonRight: b.right,
-                  buttonTop: b.top, buttonBottom: b.bottom };
+                  buttonTop: b.top, buttonBottom: b.bottom,
+                  textFits: !!caption && caption.scrollWidth <= caption.clientWidth + 1 &&
+                    caption.scrollHeight <= caption.clientHeight + 2 };
+              }),
+              readableScores: [...root.querySelectorAll('[data-support-scale]')].map(label => {
+                const txt=label.querySelector('span[class*="scaleLabel"]');
+                const r=txt?.getBoundingClientRect();
+                return { text:txt?.textContent, width:r?.width, scroll:txt?.scrollWidth,
+                  fits:!!txt && txt.scrollWidth <= txt.clientWidth + 1 &&
+                  r.left >= label.getBoundingClientRect().left - 2 &&
+                  r.right <= label.getBoundingClientRect().right + 2 };
               }),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
@@ -88,9 +99,11 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
             label+" five readable 43px action rows plus detailed tests must expose the player early");
           assert.ok(geometry.readableTools.every(t =>
-            t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
+            t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
-            label+" all action captions contained by their buttons: "+JSON.stringify(geometry.readableTools));
+            label+" all action captions fully visible: "+JSON.stringify(geometry.readableTools));
+          assert.ok(geometry.readableScores.every(t=>t.fits),
+            label+" self-rating labels must not truncate: "+JSON.stringify(geometry.readableScores));
           assert.ok(geometry.hero[0].height>=300, label+" hero remains dominant");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
