@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
+import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
   ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
-import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
@@ -107,7 +107,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
  assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
  assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
- assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[0][0].callback_data,'hh-video:publish:'+fixed)
+ assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed)
 })
 test('strict ordered safe source limits and anti-duplication',()=>{
  const items=[part('photo',0),part('audio',1)]
@@ -444,7 +444,7 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
  assert.match(migration,/revoke all on app_private.telegram_owner_video_drafts from public, anon, authenticated, hh_app_inbox/)
  assert.match(migration,/current_setting\('hh.owner_video_manager',true\)='1'/)
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- assert.match(service,/video_bytes=\$4,items='\[\]'::jsonb/)
+ assert.match(service,/video_bytes=\$4,source_seconds=\$5,trim_start_seconds=0,items='\[\]'::jsonb/)
  assert.match(service,/insert into app_private.telegram_owner_video_drafts/)
  assert.match(service,/listOwnerTelegramVideoDrafts/)
  assert.match(service,/getOwnerTelegramVideoDraftFile/)
@@ -529,3 +529,56 @@ test('Vercel installs pinned FFmpeg and ships its binary with the private Dot we
  const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
  assert.match(workflow,/ensure-owner-video-renderer\.mjs --verify-trace/)
 })
+
+
+test('owner cut starts at exact numeric or clock second and old approval cannot authorize new version',()=>{
+ const fixed='b6e8526e-c251-4dd5-a9ca-2886c430f912'
+ const msg=text=>({update_id:1320,message:{date:TIME/1000,chat:privateBase,
+   from,message_id:57,text}})
+ assert.equal(parseVideoCutSeconds('75'),75)
+ assert.equal(parseVideoCutSeconds('01:15'),75)
+ assert.equal(parseVideoCutSeconds('0:45'),45)
+ assert.equal(parseVideoCutSeconds('00:01:15'),75)
+ assert.equal(parseVideoCutSeconds('0'),0)
+ for(const bad of ['','-1','1.5','1;rm','1800','33:12','99:99','0x2f','2:2',' '])
+   assert.equal(parseVideoCutSeconds(bad),null)
+ assert.equal(parsed(msg('/video_cut 75'))?.trimStartSeconds,75)
+ assert.equal(parsed(msg('/video_cut 01:15'))?.trimStartSeconds,75)
+ assert.equal(parsed(msg('/video_cut@holistichouse_bot 0'))?.trimStartSeconds,0)
+ assert.equal(parsed(msg('/video_cut@foreignbot 75')),null)
+ assert.equal(parsed(msg('/video_cut -7'))?.trimStartSeconds,null)
+ const original=ownerVideoPreviewButtons(fixed,0)
+ const cut=ownerVideoPreviewButtons(fixed,75)
+ assert.equal(original.inline_keyboard[0][0].callback_data,'hh-video:cut:'+fixed)
+ assert.equal(original.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed)
+ assert.equal(cut.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed+':23')
+ assert.ok(cut.inline_keyboard.flat().every(b=>!b.callback_data||b.callback_data.length<=64))
+ assert.equal(parsed(callback(cut.inline_keyboard[0][0].callback_data))?.action,'cut_help')
+ assert.deepEqual(
+   (({action,jobId,trimStartSeconds})=>({action,jobId,trimStartSeconds}))(
+     parsed(callback(cut.inline_keyboard[1][0].callback_data))),
+   {action:'publish',jobId:fixed,trimStartSeconds:75})
+ assert.equal(parsed(callback(original.inline_keyboard[1][0].callback_data))?.trimStartSeconds,0)
+ assert.equal(parsed(callback('hh-video:publish:'+fixed+':zzz')),null)
+ assert.throws(()=>ownerVideoPreviewButtons(fixed,1800),/INVALID_VIDEO_JOB/)
+ const source=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(source,/event\.trimStartSeconds!==Number\(row\.trim_start_seconds\)/)
+ assert.match(source,/row\.state!=='preview'/)
+ assert.match(source,/state='trimming'/)
+ assert.match(source,/background:\(\)=>cutVideo\(config,batch,owner,fetcher\)/)
+ assert.match(source,/original\.storage_path!==ownerVideoMediaPath\(row\.job_id\)/)
+ assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0\)/)
+ assert.match(source,/trim_start_seconds=\$5/)
+ assert.match(source,/VIDEO_TRIM_INTERRUPTED/)
+ assert.doesNotMatch(source,/onBeginUpload:[\s\S]*trimOwnerTelegramVideo\(/)
+ const sql=readFileSync(new URL('../supabase/migrations/20261028003500_hh_owner_video_trim_before_youtube.sql',import.meta.url),'utf8')
+ assert.match(sql,/add column if not exists source_seconds/)
+ assert.match(sql,/add column if not exists trim_start_seconds/)
+ assert.match(sql,/trimming/)
+ assert.match(sql,/force row level security/i)
+ assert.match(sql,/drop constraint if exists telegram_owner_video_jobs_storage_path_check/)
+ assert.doesNotMatch(sql,/disable row level security|grant\s+.*\s+to\s+anon|drop table/i)
+ // Render exists only as an owner-authenticated post-preview action; no
+ // direct client route, token, unreviewed upload or bypass.
+ assert.equal(typeof trimOwnerTelegramVideo,'function')
+});
