@@ -9,6 +9,13 @@ export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
 export type GoalCurrency = "CAD" | "EUR" | "USD" | "GBP";
+// Only existing, published site paths / in-page viewers are offered.
+// This is a presentation preference, not authorization to book or contact anyone.
+export const GOAL_RECOMMENDATION_FORMATS = [
+  "meditation", "consultation", "tests", "courses", "talismans",
+  "healing", "masters", "initiations", "mandala",
+] as const;
+export type GoalRecommendationFormat = typeof GOAL_RECOMMENDATION_FORMATS[number];
 export type GoalSectorSnapshot = {
   concerns: string[];
   tasks: string[];
@@ -20,6 +27,7 @@ export type GoalSelection = GoalSectorSnapshot & {
   sector: GoalSector;
   // Accepted categories stay only in this page's React state, never on a server.
   savedSectors?: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+  recommendationFormats?: GoalRecommendationFormat[];
 };
 type Item = { id: string; en: string; ru: string; es: string };
 type Axis = Item & { unit: "score" | "currency" | "months" };
@@ -167,6 +175,14 @@ const ui = {
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
+    formatTitle: "4. What would you like to receive?",
+    formatHelp: "All formats are included. Uncheck anything you don't want to see.",
+    formatLabels: {
+      meditation: "Videos & meditations", consultation: "Consultations & sessions",
+      tests: "Tests", courses: "Courses & programs", talismans: "Talismans",
+      healing: "Reiki & energy support", masters: "Masters",
+      initiations: "Initiations", mandala: "Video mandalas",
+    },
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
   },
   ru: {
@@ -178,6 +194,14 @@ const ui = {
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
+    formatTitle: "4. Что включить в рекомендации?",
+    formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
+    formatLabels: {
+      meditation: "Видео и медитации", consultation: "Консультации и сессии",
+      tests: "Тесты", courses: "Курсы и программы", talismans: "Талисманы",
+      healing: "Рейки и энергоподдержка", masters: "Мастера",
+      initiations: "Инициации", mandala: "Видеомандалы",
+    },
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
   },
   es: {
@@ -189,6 +213,14 @@ const ui = {
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
+    formatTitle: "4. ¿Qué quieres en las recomendaciones?",
+    formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
+    formatLabels: {
+      meditation: "Vídeos y meditaciones", consultation: "Consultas y sesiones",
+      tests: "Pruebas", courses: "Cursos y programas", talismans: "Talismanes",
+      healing: "Reiki y apoyo energético", masters: "Guías",
+      initiations: "Iniciaciones", mandala: "Mandala en vídeo",
+    },
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
   },
 } as const;
@@ -209,6 +241,8 @@ type Props = {
   scores: Record<"energy" | "money" | "relationships" | "goals", number>;
   initial: GoalSelection | null;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+  selectedFormats: GoalRecommendationFormat[];
+  onSelectedFormatsChange: (formats: GoalRecommendationFormat[]) => void;
   onSave: (sector: GoalSector, value: GoalSectorSnapshot) => void;
   onApply: (value: GoalSelection) => void;
   onReset: () => void;
@@ -216,7 +250,8 @@ type Props = {
 };
 
 export function HolisticSupportGoalFilter({
-  locale, scores, initial, savedSectors, onSave, onApply, onReset, onClose,
+  locale, scores, initial, savedSectors, selectedFormats, onSelectedFormatsChange,
+  onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
   const initialSector = initial?.sector ?? "energy";
@@ -292,6 +327,9 @@ export function HolisticSupportGoalFilter({
     onSave(sector, snapshot); // no API, session storage, or analytics
   }
   function nextSector() {
+    // Advance is an explicit acceptance: commit the current snapshot BEFORE
+    // switching. Works even when the visitor never clicked the separate Save.
+    saveCurrent();
     const index = sectorOrder.findIndex(item => item.id === sector);
     changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
@@ -303,11 +341,13 @@ export function HolisticSupportGoalFilter({
     const snapshot = snapshotCurrent();
     const all = { ...accepted, [sector]: snapshot };
     onSave(sector, snapshot);
-    onApply({ ...snapshot, sector, savedSectors: all });
+    onApply({ ...snapshot, sector, savedSectors: all,
+      recommendationFormats: [...selectedFormats] });
   }
   function reset() {
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     setDrafts({}); setAccepted({}); setDirty({});
+    onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);
     onReset();
   }
   return (
@@ -423,6 +463,23 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.next} data-support-goal-next
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
+        <fieldset className={styles.formatFieldset} data-support-goal-formats>
+          <legend>{t.formatTitle}</legend>
+          <p className={styles.formatHelp}>{t.formatHelp}</p>
+          <div className={styles.formatGrid}>
+            {GOAL_RECOMMENDATION_FORMATS.map(id => (
+              <label key={id} className={styles.formatChoice}
+                data-support-goal-format={id} data-checked={selectedFormats.includes(id)}>
+                <input type="checkbox" checked={selectedFormats.includes(id)}
+                  onChange={() => onSelectedFormatsChange(selectedFormats.includes(id)
+                    ? selectedFormats.filter(item => item !== id)
+                    : GOAL_RECOMMENDATION_FORMATS.filter(item =>
+                        item === id || selectedFormats.includes(item)))} />
+                <span>{t.formatLabels[id]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
         </button>

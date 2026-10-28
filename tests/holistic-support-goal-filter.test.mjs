@@ -32,6 +32,9 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(editor, /data-goal-accepted=\{id\}/);
   assert.match(editor, /saveCurrent\(\)/);
   assert.match(editor, /nextSector\(\)/);
+  const nextBody = editor.split("function nextSector() {")[1]?.split("function apply(")[0];
+  assert.ok(nextBody && nextBody.indexOf("saveCurrent();") < nextBody.indexOf("changeSector("),
+    "Next must commit current sector before switching");
   assert.match(editor, /savedSectors: all/);
   assert.match(client, /goalSavedSectors/);
   assert.match(client, /onSave=\{saveGoalSector\}/);
@@ -65,6 +68,8 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(css, /\.panel \.apply \{/);
   assert.match(css, /\.panel \.reset \{/);
   assert.match(css, /\.panel \.sector \{/);
+  assert.match(css, /\.formatFieldset \{/);
+  assert.match(css, /\.formatChoice\[data-checked="true"\]/);
   assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
   assert.match(editor, /data-support-goal-actions/);
   assert.match(css, /prefers-reduced-motion/);
@@ -93,18 +98,36 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(editor, /onSave\(sector, snapshot\)/);
   assert.match(editor, /setDirty\(previous/);
   assert.match(editor, /setDrafts\(\{\}\); setAccepted\(\{\}\); setDirty\(\{\}\)/);
+  assert.match(editor, /onSelectedFormatsChange\(\[\.\.\.GOAL_RECOMMENDATION_FORMATS\]\)/);
+  assert.match(editor, /data-support-goal-formats/);
+  assert.match(editor, /GOAL_RECOMMENDATION_FORMATS\.map\(id/);
+  assert.match(editor, /checked=\{selectedFormats\.includes\(id\)\}/);
+  assert.match(css, /\.formatGrid \{ display: grid;/);
+  assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); gap: 5px/);
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
 test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
-  for (const kind of ["meditation","tests","courses","talismans","masters"]) {
+  for (const kind of ["meditation","consultation","tests","courses","talismans",
+    "healing","masters","initiations","mandala"]) {
     assert.match(client, new RegExp('data-support-goal-action="' + kind + '"'));
   }
   assert.match(client, /\/tests"/);
   assert.match(client, /\/explore\/business"/);
   assert.match(client, /changeChoice\("talisman"\)/);
   assert.match(client, /changeChoice\("masters"\)/);
+  assert.match(client, /changeChoice\("consultation"\)/);
+  assert.match(client, /changeChoice\("healing"\)/);
+  assert.match(client, /academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(client, /holistic-support\/mandala/);
+  assert.match(client, /activeGoalFormats\.includes\("meditation"\)/);
+  assert.match(client, /activeGoalFormats\.includes\("consultation"\)/);
+  assert.match(client, /activeGoalFormats\.length === 0/);
+  assert.match(client, /goalHasInlineFormat/);
+  assert.match(client, /setGoalRecommendationFormats\(formats\)/);
   assert.match(client, /money: "incomeStability"/);
-  for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones"]) {
+  for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones",
+    "Консультации и сессии", "Видео и медитации", "Видеомандалы",
+    "Consultations & sessions", "Consultas y sesiones"]) {
     assert.ok(editor.includes(text), text);
   }
   assert.doesNotMatch(client, /92% match|Найдено 32|Found 32/);
