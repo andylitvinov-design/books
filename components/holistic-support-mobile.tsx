@@ -81,6 +81,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     freeVideo: "Create a personal video for free", freeVideoHint: "Choose a topic, moving scene and photo · save the real video on your device.",
+    freeVoice: "Free video with my photo and voice",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navProgress: "My progress", navSettings: "Settings",
@@ -119,6 +120,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     freeVideo: "Создать своё видео бесплатно", freeVideoHint: "4 темы, анимационные шаблоны и ваше фото · видео сохраняется на телефон.",
+    freeVoice: "Бесплатное видео с моим фото и голосом",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navProgress: "Мой прогресс", navSettings: "Настройки",
@@ -157,6 +159,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     freeVideo: "Crea tu vídeo personal gratis", freeVideoHint: "Elige tema, escenas animadas y foto · guarda un vídeo real en tu móvil.",
+    freeVoice: "Vídeo gratis con mi foto y voz",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navProgress: "Mi progreso", navSettings: "Ajustes",
@@ -354,6 +357,11 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {scene ? (
             <>
+              <Link className={styles.freeVideoEntry} data-support-voice-video-entry
+                href={"/"+locale+"/video-studio"} prefetch={false}>
+                <span aria-hidden="true">♫</span><span><strong>{t.freeVoice}</strong><small>{t.freeVideoHint}</small></span>
+                <ArrowRight size={20} aria-hidden="true"/>
+              </Link>
               <Link className={styles.freeVideoEntry} data-support-free-personal-video
                 href={"/"+locale+"/holistic-support/mandala"} prefetch={false}>
                 <span aria-hidden="true">✧</span><span><strong>{t.freeVideo}</strong><small>{t.freeVideoHint}</small></span>
