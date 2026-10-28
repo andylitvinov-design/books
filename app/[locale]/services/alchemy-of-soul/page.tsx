@@ -58,7 +58,7 @@ export default async function AlchemyOfTheSoulPage({ params }: Props) {
       <AlchemySoulLanding locale={locale as PublicLocale} />
       {reviewService && (
         <div className={styles.reviewSection}>
-          <ServiceReviews serviceId={reviewService.service.id} locale={locale} />
+          <ServiceReviews serviceId={reviewService.service.id} locale={locale} sectionId="service-reviews" />
         </div>
       )}
       <details className={styles.guideDisclosure} data-alchemy-extended-guide>

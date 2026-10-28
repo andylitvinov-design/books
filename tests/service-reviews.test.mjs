@@ -92,7 +92,7 @@ test('practitioner public review summary reuses published service rows without p
   assert.match(directory,/listPublicSummariesForPractitioners/)
   assert.match(component,/credentials: "same-origin"/)
   assert.match(component,/data.summary.count \? data.summary.average.toFixed\(1\) : "—"/)
-  assert.match(component,/getPublicServiceDetailHref\(locale, practitionerSlug, service.slug\) \+ "#reviews"/)
+  assert.match(component,/getPublicServiceReviewHref\(locale, practitionerSlug, service.slug\)/)
   assert.match(grid,/className=\{styles.profileReviewLink\}/)
   assert.match(grid,/master.reviewSummary\?\.count/)
   assert.match(grid,/No reviews yet/)
@@ -119,4 +119,26 @@ test('remote energy booking and published service detail show the existing moder
   assert.match(booking,/<ServiceReviews serviceId=\{reviewMaster\.serviceId\} locale=\{locale\} verifiedOnly \/>/)
   assert.match(booking,/masters\.find\(item => item\.slug === practitioner\)/)
   assert.match(detail,/verifiedOnly=\{service\.slug === "remote-energy-support"\}/)
+})
+
+
+test('Alchemy video testimonials and service reviews have distinct anchors',async()=>{
+  const [alchemy,landing,form,grid,reviewList]=await Promise.all([
+    readFile('components/alchemy-soul-landing.tsx','utf8'),
+    readFile('app/[locale]/services/alchemy-of-soul/page.tsx','utf8'),
+    readFile('components/service-reviews.tsx','utf8'),
+    readFile('components/master-network-explorer.tsx','utf8'),
+    readFile('components/practitioner-reviews.tsx','utf8'),
+  ])
+  const {getPublicServiceReviewHref}=await import('../lib/practitioners/public-service-links.js')
+  assert.match(alchemy,/id="reviews" data-alchemy-panel="reviews"/)
+  assert.match(landing,/sectionId="service-reviews"/)
+  assert.match(form,/sectionId="reviews"/)
+  assert.match(form,/id=\{sectionId\}/)
+  assert.match(form,/aria-labelledby=\{headingId\}/)
+  assert.match(grid,/const reviewHref = getPublicServiceReviewHref/)
+  assert.match(reviewList,/getPublicServiceReviewHref/)
+  assert.equal(getPublicServiceReviewHref('es','andy-litvinov','homeopathy-consultation'),'/es/services/alchemy-of-soul#service-reviews')
+  assert.equal(getPublicServiceReviewHref('ru','andy-litvinov','remote-energy-support'),'/ru/services/andy-litvinov/remote-energy-support#reviews')
+  assert.equal(getPublicServiceReviewHref('en','another-master','homeopathy-consultation'),'/en/services/another-master/homeopathy-consultation#reviews')
 })

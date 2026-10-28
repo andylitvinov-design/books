@@ -81,9 +81,10 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
   if(code==="INVALID_REVIEW"||code==="INVALID_RATING")return t.errorInvalid;
   return t.genericError;
 }
-export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean}){
+export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false,sectionId="reviews"}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean;sectionId?:"reviews"|"service-reviews"}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
+  const headingId=sectionId==="reviews"?"service-reviews-heading":"alchemy-service-reviews-heading";
   const stars=useCatalogRatings("service",[serviceId]);
   const [data,setData]=useState<ReviewPayload|null>(null);
   const [page,setPage]=useState(1);
@@ -159,9 +160,9 @@ export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=fal
   }
   const dateLocale=language==="ru"?"ru-RU":language==="es"?"es-ES":"en-CA";
   return (
-    <section id="reviews" className={styles.root} aria-labelledby="service-reviews-heading">
+    <section id={sectionId} className={styles.root} aria-labelledby={headingId}>
       <div className={styles.header}>
-        <div><p className={styles.kicker}>{t.kicker}</p><h2 id="service-reviews-heading">{t.title}</h2></div>
+        <div><p className={styles.kicker}>{t.kicker}</p><h2 id={headingId}>{t.title}</h2></div>
         <div>
           <CatalogStarRating locale={language} summary={stars.ratings[serviceId]}
             onRate={readOnly?undefined:value=>stars.rate(serviceId,value)} unavailable={stars.unavailable}/>
