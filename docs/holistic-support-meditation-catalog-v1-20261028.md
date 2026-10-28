@@ -3,9 +3,10 @@
 ## Status / scope
 - **Catalog database exists in Supabase project `holistichouse`**: `public.hh_meditation_catalog_v1` (31 records, all `candidate`) and `public.hh_meditation_facets_v1` (62 localized filters).
 - 11 owner/legacy source-backed recordings + 20 third-party YouTube research candidates: EN 17, RU 11, ES 3.
-- **ZERO candidate videos are publicly readable**. Anonymous RLS smoke: videos=0, facet options=62. No site UI or live playback claim.
+- **Discovery phase enabled 28 Oct:** exactly **five external videos** are publicly readable as explicitly labelled **link-only** YouTube recommendations (never embedded), after title/channel metadata checks; 15 other external candidates stay private, and 11 historic owner records remain staged in this table. Anonymous RLS smoke: five link-only rows, 62 filter options. Five external YouTube destinations are not verified to play as inline iframe.
+- Existing 11 owner source IDs are loaded from verified `englishGuidedMeditations` + `freeMeditationVideos("ru")` and used for legacy click-to-play only. Never approve unreviewed archive records by merely copying IDs.
 - Reuse `freeMeditationVideos(locale)` and `HolisticMeditationGallery` for the existing published owner playlists. The new table is a curation/relevance layer and must NOT silently override those sources.
-- All third-party videos require content/playback/embeddability/licensing checks. **Public YouTube video is not downloadable or reuploadable**. Official privacy-enhanced YouTube player only after user click, with creator credit + fallback YouTube URL.
+- All third-party inline **embeds** still require content/playback/embeddability/licensing checks. Five verified-title videos are link-only: user opens original YouTube page; no third-party iframe, copy, downloading or reupload. For owner source-backed videos the original click-to-play privacy-enhanced YouTube player remains available.
 - No health, test or emotional responses sent to YouTube, analytics pixels, CRM or external messengers. Visitor filters remain local-only.
 
 ## Files and provenance
@@ -56,3 +57,14 @@ Examples from new third-party research:
 - Historical archive items marked `content_type='unknown'` are deliberately excluded from the matching engine until independently classified.
 - No YouTube API key purchased, no content downloaded, no paid render, no analytics of individual visitor concerns.
 - Local matching module is staged and not yet wired to the live HolisticMeditationGallery.
+
+## Implementation release update — 2026-10-28
+
+- Page integration: `app/[locale]/holistic-support/page.tsx` asynchronously loads public RLS metadata using `loadMeditationDiscovery` and passes it to the **existing** `HolisticMeditationGallery`. No new public menu entry or duplicate gallery.
+- The new `HolisticMeditationFinder` appears when a visitor chooses **Find a meditation for me**. It filters client-side across five sectors, situation, desired state, practice, audio-language, creator, time of day, style and approximate duration; shows match explanations. No user selections or scores are sent to CRM, pixels or Supabase.
+- The approved owner videos continue in the native no-autoplay player. Externally sourced candidate videos are **metadata-only link recommendations** and always open at the original YouTube page; currently five link-only external records approved by RLS (not endorsed for in-site playback). Hidden candidates remain hidden.
+- SQL migration `20261028100500_hh_meditation_link_discovery_v1.sql` was independently applied to production Supabase on 2026-10-28, alongside the two pre-existing seed/schema migrations. RLS check with `set local role anon` returned **exactly five** named external records.
+- Independent Vercel Sandbox on the exact PR sources (sandbox `hh-meditation-2391-qa`, stopped after verification) passed **19/19 targeted tests, ESLint 0 warnings/errors, `tsc --noEmit` no errors** after fixes. GitHub Actions targeted CI remained queued at that point; do not mislabel full CI green.
+- Deployment, canonical alias and real Safari/Chromium clicks require separate verification **after** squash merge. A successful GitHub merge is not proof of live playback.
+
+The remaining 15 external candidates must pass manual content, embedding and audio/duration QA before promotion. If YouTube forbids embedding or transcription is unavailable, retain `link_only` or `private_review` respectively.
