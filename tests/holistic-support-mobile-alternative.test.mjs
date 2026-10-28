@@ -44,7 +44,7 @@ test("four real recording cards from published sources, not arbitrary stock samp
   assert.match(route, /englishGuidedMeditations/);
   assert.match(route, /youtubeId!/);
   assert.match(read("data/academy/english-guided-meditations.ts"), /key: "kundalini-reiki"/);
-  assert.match(client, /\.slice\(0, 4\)/);
+  assert.match(client, /matchingVideos\.slice\(safePage \* 4, safePage \* 4 \+ 4\)/);
   assert.match(client, /data-support-video=\{video\.id\}/);
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(client, /onClick=\{startVideo\}/);
