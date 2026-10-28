@@ -144,7 +144,7 @@ const reikiUi = {
     role: "Preferred provider", roles: { practitioner: "Practitioner", master: "Reiki master" },
     certificate: "Request a certificate", certificateNote: "Only for initiation or training; issuance must be confirmed.",
     preferences: "Published offers describe the master's conditions; actual availability is confirmed separately.",
-    heading: "Find Reiki support", intro: "Published options, with conditions confirmed before a request.",
+    heading: "Find Reiki support", intro: "Published Reiki sessions, initiations and courses. Confirm details before requesting.",
     heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
     show: "Show available options", count: "Options to explore", resetFilters: "Reset filters",
     notBooked: "No booking, payment or certificate is created by choosing.",
@@ -166,7 +166,7 @@ const reikiUi = {
     role: "Исполнитель", roles: { practitioner: "От практика", master: "От Рейки-мастера" },
     certificate: "С выдачей сертификата", certificateNote: "Только для инициации и курса. Выдача уточняется отдельно.",
     preferences: "Фильтр сверяет опубликованные условия мастера. Наличие времени и выдача сертификата подтверждаются отдельно.",
-    heading: "Подбор Рейки-поддержки", intro: "Опубликованные предложения. Условия подтверждаются при заявке.",
+    heading: "Подбор Рейки-поддержки", intro: "Опубликованные сессии мастеров, инициации и курсы Рейки. Условия подтверждаются при заявке.",
     heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
     show: "Показать варианты", count: "Вариантов для просмотра", resetFilters: "Сбросить",
     notBooked: "Выбор не означает запись, оплату или выдачу сертификата.",
@@ -188,7 +188,7 @@ const reikiUi = {
     role: "Profesional preferido", roles: { practitioner: "Practicante", master: "Maestro Reiki" },
     certificate: "Solicitar certificado", certificateNote: "Solo para iniciación o curso; se confirma aparte.",
     preferences: "Las condiciones provienen de ofertas publicadas. Horarios y certificados se confirman por separado.",
-    heading: "Encuentra apoyo Reiki", intro: "Opciones publicadas, condiciones por confirmar.",
+    heading: "Encuentra apoyo Reiki", intro: "Sesiones, iniciaciones y cursos Reiki publicados. Confirma los detalles al solicitar.",
     heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
     show: "Ver opciones", count: "Opciones para explorar", resetFilters: "Restablecer",
     notBooked: "Elegir no reserva, paga ni concede certificados.",
@@ -544,7 +544,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     if (showMain) setReikiTab("main");
   };
   const reikiStage = kind === "healing" ? (
-    <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
+    <section className={styles.reikiStage} data-support-reiki-central data-support-reiki-sales-hero data-active-tab={reikiTab}
       data-support-master-hero={selected ? id(selected) : undefined}
       aria-label={r.heading}>
       <div className={styles.reikiStageArt} aria-hidden="true">
@@ -676,7 +676,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           <h2>{reikiFormat === "session" ? r.heroTitle : selectedMaster?.name || reikiLearningLabel}</h2>
           <p>{reikiFormat === "session"
             ? selectedMaster ? selectedMaster.name + " · " +
-              (selectedMaster.description || selectedMaster.bio || r.intro) : r.intro
+              (selectedMaster.description || selectedMaster.bio || r.intro) : r.photoHint
             : selectedMaster ? selectedMaster.name + " · " +
               (selectedMaster.description || selectedMaster.bio || reikiLearningIntro) : reikiLearningIntro}</p>
           {selectedMaster && <strong className={styles.reikiSelectedPrice}>{displayPrice}</strong>}
@@ -703,29 +703,43 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   return (
     <div className={styles.viewer} data-support-master-viewer data-support-directory-kind={kind}>
-      {kind === "healing" && reikiFormat === "session" && <div className={styles.reikiFocusBar} role="group"
-        aria-label={t.reikiFocus} data-support-reiki-filters>
-        {REIKI_FOCI.map(value => {
-          const option = t.reikiOptions[value];
-          return <button type="button" key={value} className={styles.reikiFocusButton}
-            data-support-reiki-focus={value} aria-pressed={reikiFocus === value}
-            aria-label={option.label + " · " + option.method}
-            onClick={() => { setReikiFocus(value); setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
-            <strong>{option.label}</strong><small>{option.method}</small>
-          </button>;
-        })}
-      </div>}
-      {kind === "healing" && <div className={styles.reikiQuickFormat} role="group"
-        aria-label={r.format} data-support-reiki-quick-format>
-        {(["session", "initiation", "course"] as const).map(value =>
-          <button type="button" key={value} data-support-reiki-quick-kind={value}
-            aria-pressed={reikiFormat === value} onClick={() => chooseReikiFormat(value, true)}>
-            {value === "session" ? <UserRound size={16} aria-hidden="true"/> :
-              value === "initiation" ? <Sparkles size={16} aria-hidden="true"/> :
-              <GraduationCap size={16} aria-hidden="true"/>}
-            <span>{r.formats[value]}</span>
-          </button>)}
-      </div>}
+      {kind === "healing" && <section className={styles.reikiBrowse}
+        aria-labelledby="reiki-marketplace-heading" data-support-reiki-marketplace>
+        <div className={styles.reikiBrowseHeading}>
+          <div>
+            <h2 id="reiki-marketplace-heading">{t.healing}</h2>
+            <p>{r.intro}</p>
+          </div>
+          <button type="button" className={styles.reikiFindButton}
+            data-support-reiki-find aria-expanded={reikiTab === "filter"}
+            aria-controls="reiki-active-panel" onClick={() => setReikiTab("filter")}>
+            <SlidersHorizontal size={17} aria-hidden="true"/>{r.choose}
+          </button>
+        </div>
+        <div className={styles.reikiQuickFormat} role="group"
+          aria-label={r.format} data-support-reiki-quick-format>
+          {(["session", "initiation", "course"] as const).map(value =>
+            <button type="button" key={value} data-support-reiki-quick-kind={value}
+              aria-pressed={reikiFormat === value} onClick={() => chooseReikiFormat(value, true)}>
+              {value === "session" ? <UserRound size={18} aria-hidden="true"/> :
+                value === "initiation" ? <Sparkles size={18} aria-hidden="true"/> :
+                <GraduationCap size={18} aria-hidden="true"/>}
+              <span>{r.formats[value]}</span>
+            </button>)}
+        </div>
+        {reikiFormat === "session" && <div className={styles.reikiFocusBar} role="group"
+          aria-label={t.reikiFocus} data-support-reiki-filters>
+          {REIKI_FOCI.map(value => {
+            const option = t.reikiOptions[value];
+            return <button type="button" key={value} className={styles.reikiFocusButton}
+              data-support-reiki-focus={value} aria-pressed={reikiFocus === value}
+              aria-label={option.label + " · " + option.method}
+              onClick={() => { setReikiFocus(value); setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
+              <strong>{option.label}</strong><small>{option.method}</small>
+            </button>;
+          })}
+        </div>}
+      </section>}
       {consultations && <section className={styles.consultBrowse} aria-label={c.heading}
         data-support-consultation-categories>
         <div className={styles.consultHeading}>
