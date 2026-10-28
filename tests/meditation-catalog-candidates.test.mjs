@@ -64,7 +64,7 @@ test("previously published original IDs are recommended without promoting archiv
 });
 test("verified public listing suggests original YouTube link only; no iframe without full QA",()=>{
  const link=videos.find(x=>x.youtube_id==="fWfG5gXHK5Y");
- const publicLink={...link,discovery_status:"link_only",metadata_checked_at:"2026-10-28T00:00:00Z"};
+ const publicLink={...link,discovery_status:"link_only",metadata_checked_at:"2026-10-28T00:00:00Z",youtube_oembed_checked_at:"2026-10-28T00:00:00Z"};
  const hits=rankMeditationCatalog({videos:[publicLink],request:{
    language:"en",goal:"money",situations:["money_worries"],desiredStates:["calm"],
  }});
@@ -74,6 +74,8 @@ test("verified public listing suggests original YouTube link only; no iframe wit
  const noDate=rankMeditationCatalog({videos:[{...publicLink,metadata_checked_at:null}],
    request:{language:"en",goal:"money"}});
  assert.equal(noDate.length,0);
+ const noOembed=rankMeditationCatalog({videos:[{...publicLink,youtube_oembed_checked_at:null}],request:{language:"en",goal:"money"}});
+ assert.equal(noOembed.length,0);
  const unsafe=rankMeditationCatalog({videos:[{...publicLink,claims_risk:"high"}],
    request:{language:"en",goal:"money",maxRisk:"high",includeHighClaims:true}});
  assert.equal(unsafe.length,0);

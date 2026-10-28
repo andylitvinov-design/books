@@ -68,3 +68,15 @@ Examples from new third-party research:
 - Deployment, canonical alias and real Safari/Chromium clicks require separate verification **after** squash merge. A successful GitHub merge is not proof of live playback.
 
 The remaining 15 external candidates must pass manual content, embedding and audio/duration QA before promotion. If YouTube forbids embedding or transcription is unavailable, retain `link_only` or `private_review` respectively.
+
+
+## 28 October 2026 — verified YouTube discovery expansion & browser E2E
+
+The external catalog was re-audited against **YouTube's official public oEmbed API**:
+- All **20 of 20** external IDs returned HTTP 200 plus a real title and author/channel. This proves public video metadata is available, **not** full-content approval, true audio language, accurate running time, permission to embed, or successful audio playback.
+- Supabase migration `20261028112000_hh_meditation_oembed_verified_links.sql` sets `youtube_oembed_checked_at` for the 20 and makes exactly **19 low/moderate-risk external items visible as metadata-only `link_only`**. The high-risk claim candidate `beqlbgNtwSk` remains private.
+- Public RLS query under `SET LOCAL ROLE anon`: **19 visible**, **0 high-risk visible**, **0 unverified visible** (28 Oct 2026). Metadata-only links open the **original creator's YouTube page**; external iframes remain disabled.
+- Application checks an oEmbed timestamp **in addition to RLS and existing source checks** before presenting a third-party recommendation. This is a separate defense-in-depth safeguard.
+- Live browser Chromium 390px EN: clicked picker, switched goal to money, submitted, received 3 relevant links, no horizontal overflow or browser JS errors (2026-10-28). A CI Chromium/WebKit 320/375/390/430 EN/RU/ES journey script was added to the existing meditation workflow to cover the remaining responsive interactions.
+
+**Important:** Click-to-play for the published teacher's original videos remains supported. Actual YouTube iframe audio/video decoding on physical iPhone is not asserted until real device playback is observed. The provider's official YouTube link is retained as fallback. See YouTube embedding guidance: https://support.google.com/youtube/answer/171780.
