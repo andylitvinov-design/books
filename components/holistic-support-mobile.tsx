@@ -304,7 +304,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </select><ChevronDown size={18} aria-hidden="true" />
               </span>
             </label>
-            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations>
+            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
               <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
             </button>
           </section>
