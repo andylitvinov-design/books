@@ -109,3 +109,14 @@ test('legacy consultation canonical route retains the same approved review ident
   assert.match(landing,/<ServiceReviews serviceId=\{reviewService.service.id\} locale=\{locale\}/)
   assert.match(component,/title:"Отзывы о мастере и услуге"/)
 })
+
+test('remote energy booking and published service detail show the existing moderated review form',async()=>{
+  const [booking,detail]=await Promise.all([
+    readFile('app/[locale]/services/remote-energy-support/page.tsx','utf8'),
+    readFile('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx','utf8'),
+  ])
+  assert.match(booking,/reviewMaster\.serviceId/)
+  assert.match(booking,/<ServiceReviews serviceId=\{reviewMaster\.serviceId\} locale=\{locale\} verifiedOnly \/>/)
+  assert.match(booking,/masters\.find\(item => item\.slug === practitioner\)/)
+  assert.match(detail,/verifiedOnly=\{service\.slug === "remote-energy-support"\}/)
+})
