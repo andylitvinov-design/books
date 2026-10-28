@@ -32,6 +32,9 @@ test("Categories are localized and meaningful; Meaning never pretends there is a
   ]) assert.ok(mobile.includes(label), label);
   assert.match(mobile, /meditationCategory === "meaning" \? filtered\.filter\(video => video\.program === "sun"\)/);
   assert.match(mobile, /meditationCategoryTopics\[meditationCategory\]/);
+  assert.match(mobile, /meditationCategoryOverride \?\? \(/);
+  assert.match(mobile, /focus === "money" \? "money"/);
+  assert.match(mobile, /setMeditationCategoryOverride\("all"\)/);
   assert.match(mobile, /meditationCategoryRelated: "Близкие оригинальные практики Солнца/);
   assert.match(mobile, /data-support-meditation-category-related role="status"/);
   assert.match(mobile, /setTheme\("all"\); setProgram\("all"\); setMaster\("all"\); setGoalSelection\(null\); setSelectedId\(null\); setPlaying\(false\)/);
