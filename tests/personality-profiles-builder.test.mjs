@@ -186,7 +186,6 @@ test('browse free tests opens the real catalogue and positions the existing pers
 test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overflow finder', () => {
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  const route = read('app/[locale]/personality-profiles/page.tsx')
   const catalogue = read('lib/profile/guest-profile-tests.ts')
   const slide = builder.slice(builder.indexOf('profile-inline-stage-3'), builder.indexOf('profile-inline-stage-4'))
   const primary = slide.indexOf('data-profile-recommended-tests')
@@ -218,7 +217,6 @@ test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overf
 })
 
 test('all additional tests inherit only chosen facets and the existing server guest rights', () => {
-  const page = read('app/[locale]/personality-profiles/page.tsx')
   const catalogue = read('lib/profile/guest-profile-tests.ts')
   const builder = read('components/personality-profiles-builder.tsx')
   for (const flag of ['entry.selectable === true', 'entry.startable === true',

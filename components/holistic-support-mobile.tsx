@@ -921,7 +921,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], profileTes
           ) : choice === "pump" ? (
             <HolisticSupportCourseProfiles locale={locale} courses={courses}
               profileTests={profileTests} testSector={inlineTestSector}
-              savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
+              savedSectors={goalSavedSectors} active={activeCourseProfile}
+              onSelect={sector => { setActiveCourseProfile(sector); setInlineTestSector(null); }}
               onTests={() => setInlineTestSector(activeCourseProfile)}
               onFillProfile={openCourseProfileFilter}
               onRecommendations={showCourseProfileRecommendations} />

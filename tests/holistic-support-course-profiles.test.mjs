@@ -43,6 +43,7 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
     assert.ok(profiles.includes(label), label);
   }
   assert.match(home, /onTests=\{\(\) => setInlineTestSector\(activeCourseProfile\)\}/);
+  assert.match(home, /setActiveCourseProfile\(sector\); setInlineTestSector\(null\)/);
   assert.match(home, /profileTests=\{profileTests\} testSector=\{inlineTestSector\}/);
   assert.match(profiles, /data-support-profile-inline-tests/);
   assert.match(profiles, /<PersonalityProfilesBuilder key=\{testSector\}/);
