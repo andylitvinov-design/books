@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 
-import { HolisticSupportMobile, type SupportMobileVideo } from "@/components/holistic-support-mobile";
+import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
-import { isPublicLocale } from "@/data/academy/catalog";
+import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -19,6 +19,32 @@ const englishThemes: Record<string, MeditationTopic[]> = {
   "reiki-yggdrasil": ["energy", "health"],
   "kundalini-reiki": ["energy", "health"],
 };
+
+// Source pointers only: curricula and video chapters already live in Academy.
+ // Do not clone the original course, media or enrolment records here.
+const mysteryCollections = [
+  {
+    id: "maya",
+    programId: "mysteries/maya-aztec/feathered-serpent",
+    videoIds: ["videos/maya-archetypes"],
+    shortTitle: "Майя",
+    topics: ["energy", "business"],
+  },
+  {
+    id: "egypt",
+    programId: "mysteries/egypt/high-wisdom",
+    videoIds: ["videos/egypt-osiris"],
+    shortTitle: "Египет",
+    topics: ["energy", "health"],
+  },
+  {
+    id: "greek",
+    programId: "mysteries/greece-rome/beauty-and-power",
+    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
+    shortTitle: "Греция",
+    topics: ["love", "energy"],
+  },
+] as const;
 
 const pageTitle = {
   en: "Holistic Support · Mobile",
@@ -52,13 +78,62 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
 
+  const originalMysteryCourses: SupportMobileCourse[] = [];
+
+  // Russian original audio is discoverable only in RU. Each course and lesson
+  // resolves from the already-preserved source manifests, not a second catalogue.
+  if (locale === "ru") {
+    for (const entry of mysteryCollections) {
+      const curriculum = findAcademyRecord(entry.programId, "ru");
+      if (!curriculum || curriculum.sourceLocale !== "ru") continue;
+      const courseVideos: SupportMobileVideo[] = [];
+      const videoGroups: SupportMobileCourse["videoGroups"] = [];
+      for (const logicalId of entry.videoIds) {
+        const record = findAcademyRecord(logicalId, "ru");
+        if (!record || record.sourceLocale !== "ru") continue;
+        const seen = new Set<string>();
+        const sourceMedia = [...mediaForRecord(record)].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+        for (const media of sourceMedia) {
+          const id = youtubeIdFromUrl(media.mediaUrl);
+          if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id) || seen.has(id)) continue;
+          seen.add(id);
+          courseVideos.push({
+            id,
+            title: media.lessonTitle || academyDisplayTitle(record, "ru"),
+            topics: [...entry.topics],
+            program: entry.id,
+            author: "psimaster",
+            sourceLanguage: "ru",
+          });
+        }
+        if (seen.size) videoGroups.push({
+          title: academyDisplayTitle(record, "ru"),
+          href: "/ru/academy/" + record.routeKey,
+          count: seen.size,
+        });
+      }
+      if (!courseVideos.length) continue;
+      originalMysteryCourses.push({
+        id: entry.id,
+        title: academyDisplayTitle(curriculum, "ru"),
+        shortTitle: entry.shortTitle,
+        // A verified first lesson provides a truthful source thumbnail.
+        poster: "https://i.ytimg.com/vi/" + encodeURIComponent(courseVideos[0].id) + "/hqdefault.jpg",
+        href: "/ru/academy/" + curriculum.routeKey,
+        videoCount: courseVideos.length,
+        videoGroups,
+        videos: courseVideos,
+      });
+    }
+  }
+
   const videos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
-      ...video,
-      program: index < 3 ? "sun" : "energy",
-      author: "psimaster",
-      sourceLanguage: "ru",
-    }))
+        ...video,
+        program: index < 3 ? "sun" : "energy",
+        author: "psimaster",
+        sourceLanguage: "ru",
+      }))
     : englishGuidedMeditations
       .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
       .map((video): SupportMobileVideo => ({
@@ -71,6 +146,6 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
       }));
 
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} />
   );
 }
