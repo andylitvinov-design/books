@@ -364,6 +364,15 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
   }
   assert.match(gallery, /data-support-master-hero=\{selected && reikiFormat === "session"/);
   assert.match(css, /\.reikiStage:not\(\[data-active-tab="filter"\]\)/);
+  // A shared mobile-page rule sets font:inherit on all buttons. Reiki selectors
+  // must win that cascade or the real iPhone UI inflates into 100px tall tiles.
+  assert.match(css, /\.reikiStage \.reikiStageTab \{/);
+  assert.match(css, /\.reikiStage \.reikiOptions button \{/);
+  assert.match(gallery, /data-support-reiki-photo-intro/);
+  assert.match(gallery, /reikiStageBackdrop\} src="\/images\/holistic-house\/reiki-approved-sunrise-v3\.webp"/);
+  const sunrise = readFileSync(new URL("../public/images/holistic-house/reiki-approved-sunrise-v3.webp", import.meta.url));
+  assert.ok(sunrise.byteLength > 20_000, "hero must use the approved full-quality image, not 3 KB thumbnail");
+  assert.match(gallery, /const PRICE_BANDS: Exclude<ReikiPrice, "all">\[\]/);
   assert.match(css, /height: 288px; min-height: 288px; max-height: 288px/);
   assert.match(css, /@media \(max-width:350px\)/);
   assert.match(directory, /isPublicPresentationUrl/);

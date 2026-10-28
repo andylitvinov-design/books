@@ -693,3 +693,8 @@
   .goalResultGrid > :is(button,a) small { font-size: 10px; }
   .goalResultGrid > :last-child { grid-column: 1 / -1; }
 }
+
+/* Keep the last Reiki filter action accessible above the fixed mobile navigation. */
+@media (max-width: 640px) {
+  .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
+}

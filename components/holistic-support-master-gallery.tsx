@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users, CalendarDays, Clock3, GraduationCap, Mic, Zap } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -17,7 +17,8 @@ type ReikiPrice = "all" | "free" | "low" | "mid" | "high" | "premium";
 type ReikiTime = "any" | "day" | "days" | "chosen";
 type ReikiReport = "brief" | "text" | "voice";
 type ReikiRole = "any" | "practitioner" | "master";
-const PRICE_BANDS: ReikiPrice[] = ["all", "free", "low", "mid", "high", "premium"];
+// "All" is restored with the visible Reset button, leaving five compact price chips.
+const PRICE_BANDS: Exclude<ReikiPrice, "all">[] = ["free", "low", "mid", "high", "premium"];
 function matchesReikiEuroPrice(master: EnergySupportMaster, band: ReikiPrice, price: number) {
   if (band === "all") return true;
   if (master.currency !== "EUR" || !Number.isFinite(price)) return false;
@@ -139,8 +140,9 @@ const reikiUi = {
     report: "Requested report", reports: { brief: "Brief", text: "Personal text review", voice: "Personal voice review" },
     role: "Preferred provider", roles: { practitioner: "Practitioner", master: "Reiki master" },
     certificate: "Request a certificate", certificateNote: "Only for initiation or training; issuance must be confirmed.",
-    preferences: "Timing, report and provider role are preferences to confirm, not verified availability.",
+    preferences: "Timing, report and practitioner are preferences; confirm before booking.",
     heading: "Find Reiki support", intro: "Published options, with conditions confirmed before a request.",
+    heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
     show: "Show available options", count: "Published matching offers", resetFilters: "Reset filters",
     notBooked: "No booking, payment or certificate is created by choosing.",
     initiation: "Explore a Reiki initiation", course: "Free Reiki Practitioner course",
@@ -160,8 +162,9 @@ const reikiUi = {
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
     role: "Исполнитель", roles: { practitioner: "От практика", master: "От Рейки-мастера" },
     certificate: "С выдачей сертификата", certificateNote: "Только для инициации и курса. Выдача уточняется отдельно.",
-    preferences: "Срок, вид отчёта и квалификация — пожелания, доступность нужно подтвердить.",
+    preferences: "Срок, отчёт и исполнитель — пожелания; подтвердим отдельно.",
     heading: "Подбор Рейки-поддержки", intro: "Опубликованные предложения. Условия подтверждаются при заявке.",
+    heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
     show: "Показать варианты", count: "Опубликованных совпадений", resetFilters: "Сбросить",
     notBooked: "Выбор не означает запись, оплату или выдачу сертификата.",
     initiation: "Инициация Рейки", course: "Бесплатный курс Reiki Practitioner",
@@ -181,8 +184,9 @@ const reikiUi = {
     report: "Informe", reports: { brief: "Breve", text: "Análisis personal escrito", voice: "Análisis personal por voz" },
     role: "Profesional preferido", roles: { practitioner: "Practicante", master: "Maestro Reiki" },
     certificate: "Solicitar certificado", certificateNote: "Solo para iniciación o curso; se confirma aparte.",
-    preferences: "Plazo, informe y cualificación son preferencias no verificadas.",
+    preferences: "Plazo, informe y profesional se confirman antes de reservar.",
     heading: "Encuentra apoyo Reiki", intro: "Opciones publicadas, condiciones por confirmar.",
+    heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
     show: "Ver opciones", count: "Ofertas publicadas compatibles", resetFilters: "Restablecer",
     notBooked: "Elegir no reserva, paga ni concede certificados.",
     initiation: "Iniciación Reiki", course: "Curso gratuito Reiki Practitioner",
@@ -457,11 +461,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
       data-support-master-hero={selected && reikiFormat === "session" ? id(selected) : undefined}
       aria-label={r.heading}>
-      <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/support-mock-hero.webp"
-        alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 900px"/>
-      {reikiFormat === "session" && selectedMaster?.photo &&
-        <Image className={styles.reikiStagePortrait} src={selectedMaster.photo}
-          alt="" fill unoptimized sizes="(max-width: 640px) 45vw, 400px"/>}
+      <div className={styles.reikiStageArt} aria-hidden="true">
+        <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+          alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 900px"/>
+      </div>
       <div className={styles.reikiStageShade} aria-hidden="true"/>
       <div className={styles.reikiStageTabs} role="tablist" aria-label={r.heading}>
         {(["main", "filter", "description", "media"] as const).map(tab => (
@@ -477,6 +480,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>
         ))}
       </div>
+      {reikiTab === "filter" && <div className={styles.reikiPhotoIntro} data-support-reiki-photo-intro>
+        <span className={styles.reikiPill}><HandHeart size={14} aria-hidden="true"/>{t.healing}</span>
+        <strong>{r.heroTitle}</strong>
+        <small>{r.photoHint}</small>
+      </div>}
       <div id="reiki-active-panel" className={styles.reikiStageContent} role="tabpanel"
         aria-labelledby={"reiki-tab-" + reikiTab} data-support-reiki-panel={reikiTab}>
         {reikiTab === "filter" ? <div className={styles.reikiFilterSheet} data-support-reiki-filter>
@@ -490,7 +498,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {(["session", "initiation", "course"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiFormat === value}
                   onClick={() => { setReikiFormat(value); setReikiRole("any"); setReikiCertificate(false);
-                    setSelectedId(null); setOrderOpen(false); }}>{r.formats[value]}</button>)}
+                    setSelectedId(null); setOrderOpen(false); }}>
+                  {value === "session" ? <UserRound size={17} aria-hidden="true"/> :
+                    value === "initiation" ? <Sparkles size={17} aria-hidden="true"/> :
+                    <GraduationCap size={17} aria-hidden="true"/>}
+                  <span>{r.formats[value]}</span>
+                </button>)}
             </div>
           </fieldset>
           <fieldset className={styles.reikiFieldset} data-support-reiki-price>
@@ -508,7 +521,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <div className={styles.reikiOptions} data-cols="three">
               {(["days", "day", "chosen"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiTime === value}
-                  onClick={() => setReikiTime(value === reikiTime ? "any" : value)}>{r.times[value]}</button>)}
+                  onClick={() => setReikiTime(value === reikiTime ? "any" : value)}>
+                  {value === "days" ? <CalendarDays size={17} aria-hidden="true"/> :
+                    value === "day" ? <Zap size={17} aria-hidden="true"/> :
+                    <Clock3 size={17} aria-hidden="true"/>}
+                  <span>{r.times[value]}</span>
+                </button>)}
             </div>
           </fieldset>
           <fieldset className={styles.reikiFieldset} data-support-reiki-report>
@@ -516,7 +534,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <div className={styles.reikiOptions} data-cols="three">
               {(["brief", "text", "voice"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiReport === value}
-                  onClick={() => setReikiReport(value)}>{r.reports[value]}</button>)}
+                  onClick={() => setReikiReport(value)}>
+                  {value === "voice" ? <Mic size={17} aria-hidden="true"/> : <FileText size={17} aria-hidden="true"/>}
+                  <span>{r.reports[value]}</span>
+                </button>)}
             </div>
           </fieldset>
           {reikiFormat === "session" ? <fieldset className={styles.reikiFieldset} data-support-reiki-provider>
@@ -524,14 +545,18 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <div className={styles.reikiOptions} data-cols="two">
               {(["practitioner", "master"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiRole === value}
-                  onClick={() => setReikiRole(value === reikiRole ? "any" : value)}>{r.roles[value]}</button>)}
+                  onClick={() => setReikiRole(value === reikiRole ? "any" : value)}>
+                  {value === "master" ? <ShieldCheck size={17} aria-hidden="true"/> :
+                    <UserRound size={17} aria-hidden="true"/>}
+                  <span>{r.roles[value]}</span>
+                </button>)}
             </div>
           </fieldset> : <label className={styles.reikiCertificate} data-support-reiki-certificate>
             <span><strong>5. {r.certificate}</strong><small>{r.certificateNote}</small></span>
             <input type="checkbox" checked={reikiCertificate}
               onChange={event => setReikiCertificate(event.target.checked)}/>
           </label>}
-          <p className={styles.reikiPreferences} role="status">{r.preferences} {r.notBooked}</p>
+          <p className={styles.reikiPreferences} role="status">{r.preferences}</p>
           <button type="button" className={styles.reikiApply} data-support-reiki-apply
             onClick={() => setReikiTab("main")}>
             <Filter size={19} aria-hidden="true"/>{r.show}
@@ -564,9 +589,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <Link href={reikiLearningPath} className={styles.reikiInlineLink}>{r.learn}<ArrowRight size={16}/></Link>}
         </div> : <div className={styles.reikiTabCopy} data-support-reiki-main>
           <span className={styles.reikiPill}><HandHeart size={15}/>{t.healing}</span>
-          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
-          <p>{reikiFormat === "session" ?
-            selectedMaster?.description || selectedMaster?.bio || r.intro : reikiLearningIntro}</p>
+          <h2>{reikiFormat === "session" ? r.heroTitle : reikiLearningLabel}</h2>
+          <p>{reikiFormat === "session"
+            ? selectedMaster ? selectedMaster.name + " · " +
+              (selectedMaster.description || selectedMaster.bio || r.intro) : r.intro
+            : reikiLearningIntro}</p>
           {reikiFormat === "session" && <strong className={styles.reikiSelectedPrice}>{displayPrice}</strong>}
           <div className={styles.reikiMainActions}>
             {reikiFormat === "session" && selectedMaster && cheapest ?
@@ -765,7 +792,8 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {consultations ? t.exploreServices : t.exploreMasters}<ArrowRight size={17} aria-hidden="true"/>
             </Link>
           </div>
-          <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail>
+          <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail
+            data-single={kind === "healing" && entries.length === 1 ? "true" : "false"}>
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;
