@@ -56,6 +56,8 @@
 .detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
 .detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
 .detailedAnalysisLink:hover { background: #e1f0e3; }
+.detailedFull { display: inline; }
+.detailedCompact { display: none; }
 .recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid #cddfca; border-radius: 20px; background: #f8fbf4; box-shadow: 0 6px 18px #1c54251a; }
 .recommendationLead h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: #164c37; font-size: clamp(19px, 2.4vw, 24px); line-height: 1.25; }
 .recommendationLead p { margin: 6px 0 0; color: #496353; font-size: 15px; line-height: 1.45; }
@@ -209,8 +211,6 @@
 .camera { z-index: 2; }
 .focusCaptionLong { display: inline; }
 .focusCaptionShort { display: none; }
-.detailedFull { display: inline; }
-.detailedCompact { display: none; }
 
 @media (max-width: 640px) {
   .page { background: linear-gradient(150deg,#dce9e2 0%,#f5f1e7 52%,#fcf7ed 100%); }
@@ -431,6 +431,7 @@
   .toolGrid { gap: 3px; }
   .toolButton { min-height: 39px; line-height: 1.05; }
   .topGrid { margin-bottom: 5px; }
+
   .toolGrid { gap: 5px; }
   .toolButton { gap: 4px; padding: 4px; min-height: 43px; font-size: 11px; }
   .toolButton svg { width: 20px; height: 20px; flex-basis: 20px; }
@@ -451,4 +452,45 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }
+}
+
+
+/* Optional in-place before/after mandala between the original video hero and
+   its source-backed gallery. The existing mobile three-zone header is untouched. */
+.mandalaEntry {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 10px 20px; min-width: 0; padding: 13px 20px;
+  border-bottom: 1px solid #e3e5d7;
+  background: linear-gradient(112deg,#f0f5e9,#fdf8ea);
+}
+.mandalaEntry p {
+  flex: 1 1 220px; max-width: 370px; margin: 0; color: #526e5a;
+  font-size: 13px; line-height: 1.4;
+}
+.mandalaToggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 1 auto; gap: 9px; min-width: 0; min-height: 51px; padding: 10px 17px;
+  border: 1px solid #0c7957; border-radius: 14px;
+  background: #0d8462; color: white; font-size: 16px;
+  font-weight: 850; line-height: 1.22;
+  box-shadow: 0 4px 12px #0b6f4b29;
+}
+.mandalaToggle:hover { background: #076b4f; }
+.mandalaToggle svg { flex: none; }
+.mandalaToggle svg:last-child { transition: transform .22s ease; }
+.mandalaToggle[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.mandalaReveal { display: block; min-width: 0; animation: showMandala .35s ease-out both; }
+.mandalaReveal[hidden] { display: none; }
+@keyframes showMandala {
+  from { opacity: 0; transform: translateY(-9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 640px) {
+  .mandalaEntry { display: grid; justify-items: stretch; gap: 6px; padding: 10px 11px; }
+  .mandalaToggle { width: 100%; min-height: 46px; padding: 9px 11px; font-size: clamp(14px, 4vw, 16px); }
+  .mandalaEntry p { font-size: 12px; text-align: center; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mandalaReveal { animation: none; }
+  .mandalaToggle svg:last-child { transition: none; }
 }
