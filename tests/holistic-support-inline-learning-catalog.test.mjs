@@ -30,7 +30,7 @@ test("filter controls preserve free, confirmed paid, price not listed and archiv
   assert.match(catalog, /item\.cost === "free"/);
   assert.match(catalog, /item\.cost === "archive"/);
   assert.match(catalog, /item\.cost === "ask"/);
-  assert.match(catalog, /value === "paid" \? item\.cost === "priced"/);
+  assert.match(catalog, /cost === "paid" \? item\.cost === "priced"/);
   assert.match(catalog, /new Intl\.NumberFormat\(locale/);
   assert.match(catalog, /onClick=\{\(\) => toggleExpanded\(item\.id\)\}/);
   assert.match(catalog, /href=\{item\.href\}/);
