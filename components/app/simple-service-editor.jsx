@@ -287,6 +287,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   }
   const chooseReikiKind=kind=>{
     mark()
+    if(kind!=='session')setMethodsText('')
     setDraft(prev=>({...prev,areaKey:'energy_spiritual',offeringType:kind==='course'?'course':'session',
       reikiOffer:{...prev.reikiOffer,kind,role:kind==='session'?'practitioner':null,variants:[]}}))
   }
@@ -295,7 +296,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const reikiPrices=reiki?reikiOfferPricing({...reiki,variants:reiki.variants
     .filter(v=>v.price!==''&&v.price!=null).map(variant=>({...variant,price:Number(variant.price)}))}):null
   const makePayload=()=>({
-    ...draft,languages:commas(languagesText),methods:commas(methodsText),
+    ...draft,languages:commas(languagesText),methods:isReiki&&reiki.kind!=='session'?[]:commas(methodsText),
     benefits:lines(benefitsText,5),faq:lines(faqText,6),
     areaKey:isReiki?'energy_spiritual':draft.areaKey,
     offeringType:isReiki?(reiki.kind==='course'?'course':'session'):draft.offeringType,
@@ -615,9 +616,9 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
               </label>)}
             </div>
           </fieldset>
-          <label className={styles.field}><span>{c.methods}</span>
+          {!isReiki&&<label className={styles.field}><span>{c.methods}</span>
             <input value={methodsText} disabled={locked} onChange={event=>{mark();setMethodsText(event.target.value)}}/>
-          </label>
+          </label>}
           <label className={styles.field}><span>{c.benefits}</span>
             <textarea rows={3} value={benefitsText} disabled={locked}
               onChange={event=>{mark();setBenefitsText(event.target.value)}}/>
