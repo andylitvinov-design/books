@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
-  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
+  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, Filter,
   Coins, Compass, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
 } from "lucide-react";
@@ -12,6 +12,8 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
+import { HolisticSupportGoalFilter, goalSectorFocus, type GoalSelection } from "@/components/holistic-support-goal-filter";
+import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
@@ -50,6 +52,11 @@ const copy = {
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
+    goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
+    goalSector: { energy: "Energy", money: "Money", love: "Love", goals: "Goals", meaning: "Meaning" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", goals: "Take the next step", meaning: "Find your inner direction" },
+    goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
+    goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
@@ -87,6 +94,11 @@ const copy = {
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
+    goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
+    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", goals: "Цели", meaning: "Смыслы" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", goals: "Двигайся к своей цели", meaning: "Найди внутренний смысл" },
+    goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
+    goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
@@ -124,6 +136,11 @@ const copy = {
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
+    goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
+    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", goals: "Metas", meaning: "Sentido" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", goals: "Da el siguiente paso", meaning: "Encuentra tu dirección interior" },
+    goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
+    goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
@@ -177,6 +194,8 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
+  const [goalFilterOpen, setGoalFilterOpen] = useState(false);
+  const [goalSelection, setGoalSelection] = useState<GoalSelection | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -202,13 +221,17 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     event.target.value = "";
   };
 
-  // Internal lowest domain is used only for contextual headings and the existing
-  // symbolic catalogue, never selected through a separate UI control.
-  const focus: Focus = focusOrder.reduce((lowest, domain) =>
+  // Quick matching follows the lowest self-ratings. An explicitly applied goal
+  // overrides the browsing focus without changing the existing scoring engine.
+  const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
     scores[domain] < scores[lowest] ? domain : lowest, focusOrder[0]);
+  const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, videos, locale]);
+  const goalMatch = useMemo(() => goalSelection
+    ? rankSupportGoalVideos({ selection: goalSelection, videos, locale })
+    : null, [goalSelection, videos, locale]);
   const recommended = useMemo(() => recommendation
     ? recommendSupportContent({ focus, scores: recommendation, videos,
       talismans: TAOIST_TALISMANS, locale })
@@ -220,6 +243,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
       (program === "all" || video.program === program));
     const eligible = choice === "pump" ? filtered.filter(video => video.topics.includes("energy"))
       : theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
+    if (goalMatch && choice === "meditation") {
+      const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
+      return eligible.slice().sort((a, b) =>
+        (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+    }
     if (suggested && choice === "meditation") {
       const order = new Map(suggested.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
@@ -227,7 +256,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
     return eligible.slice(0, 4);
-  }, [videos, master, program, theme, choice, suggested]);
+  }, [videos, master, program, theme, choice, suggested, goalMatch]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
@@ -236,18 +265,42 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const onRecommendations = () => {
     // Show the matches ONLY in the existing original-meditations gallery.
     setRecommendation({ ...scores });
+    setGoalSelection(null); setGoalFilterOpen(false);
     setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
     window.requestAnimationFrame(() => document.getElementById("support-meditation-gallery")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
+  const openGoalFilter = () => {
+    setPlaying(false); setGoalFilterOpen(true);
+    window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
+      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+  };
+  const applyGoalFilter = (value: GoalSelection) => {
+    // The top four gauges reflect the first "Now" axis only for their matching
+    // domain. Meaning is distinct and never conflated with the Goals gauge.
+    const nextScores = { ...scores };
+    if (value.sector !== "meaning") {
+      const first = Object.values(value.ratings)[0]?.current;
+      if (Number.isInteger(first) && first >= 1 && first <= 10) {
+        nextScores[goalSectorFocus[value.sector]] = first;
+      }
+    }
+    setScores(nextScores); setRecommendation(nextScores); setGoalSelection(value);
+    setGoalFilterOpen(false); setChoice("meditation");
+    setTheme("all"); setProgram("all"); setMaster("all");
+    setSelectedId(null); setPlaying(false);
+    window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
+      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+  };
+  const resetGoalFilter = () => { setGoalSelection(null); setRecommendation(null); setTheme("all"); };
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const changeChoice = (value: Choice) => {
-    setChoice(value); setPlaying(false); setSelectedId(null);
+    setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("energy"); setProgram("all"); }
   };
   const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
@@ -285,7 +338,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                     <span className={styles.scaleLabel}>{t.foci[id]}</span>
                     <input type="range" min="1" max="10" step="1" value={scores[id]}
                       aria-label={t.foci[id]} aria-valuetext={scores[id] + " / 10"}
-                      onChange={event => { setRecommendation(null); setScores(previous => ({ ...previous, [id]: Number(event.target.value) })); }} />
+                      onChange={event => { setRecommendation(null); setGoalSelection(null); setScores(previous => ({ ...previous, [id]: Number(event.target.value) })); }} />
                   </span>
                   <output className={styles.scaleValue} data-tone={id}>{scores[id]}</output>
                 </label>;
@@ -293,12 +346,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </div>
 
 
-            <button type="button" className={styles.recommendButton}
-              data-support-recommendations aria-label={t.recommend} aria-controls="support-meditation-gallery"
-              onClick={onRecommendations}>
-              <Sparkles size={19} aria-hidden="true" />
-              <span className={styles.recommendLong}>{t.recommend}</span>
-              <span className={styles.recommendShort}>{t.recommendCompact}</span>
+            <button type="button" className={styles.goalFilterTrigger}
+              data-support-goal-filter-trigger aria-expanded={goalFilterOpen} aria-controls="support-goal-filter"
+              onClick={openGoalFilter}>
+              <Filter size={19} aria-hidden="true" />{t.goalFilter}
             </button>
           </section>
 
@@ -314,6 +365,17 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
+            <div className={styles.focusSelector} data-support-active-focus aria-label={t.focusLabel}>
+              <span className={styles.focusCaption}>{t.focusLabelShort}</span>
+              <span className={styles.focusValue}><FocusIcon size={19} aria-hidden="true" /><strong>{t.foci[focus]}</strong></span>
+            </div>
+            <button type="button" className={styles.recommendButton}
+              data-support-recommendations aria-label={t.recommend} aria-controls="support-meditation-gallery"
+              onClick={onRecommendations}>
+              <Sparkles size={19} aria-hidden="true" />
+              <span className={styles.recommendLong}>{t.recommend}</span>
+              <span className={styles.recommendShort}>{t.recommendCompact}</span>
+            </button>
           </section>
 
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
@@ -343,8 +405,17 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         </div>
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
-          {scene ? (
+          {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
+            initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
+            onClose={() => setGoalFilterOpen(false)} /> : scene ? (
             <>
+              {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
+                <Filter size={16} aria-hidden="true" />
+                <span><strong>{t.goalFilter}: {t.goalSector[goalSelection.sector]}</strong>
+                  {goalSelection.tasks.length ? " · " + goalSelection.tasks.length + "/3" : ""}</span>
+                <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
+                <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
+              </div> : null}
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -367,7 +438,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </label>
                   <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
                     <strong className={styles.filterValue}>{t.themes[theme]}</strong>
-                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
+                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setGoalSelection(null); setPlaying(false); setSelectedId(null); }}>
                       {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
                         <option key={key} value={key}>{t.themes[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
@@ -381,7 +452,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{choice === "pump" ? t.energyTitle : t.heroTitle[focus]}</h2>
+                    <h2>{choice === "pump" ? t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
                       data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
@@ -394,7 +465,11 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>
                   <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
-                {suggested && choice === "meditation" ? <p className={styles.gallerySelection}
+                {goalSelection && goalMatch && choice === "meditation" ?
+                  <p className={styles.gallerySelection} data-support-goal-basis role="status">
+                    {t.goalSector[goalSelection.sector]}. {goalMatch.matchedVideo ? t.goalMatch : t.goalRelated}
+                  </p> : null}
+                {!goalSelection && suggested && choice === "meditation" ? <p className={styles.gallerySelection}
                   data-support-meditation-basis role="status">
                   {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}
                 </p> : null}
