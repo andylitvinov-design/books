@@ -5,8 +5,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users, CalendarDays, Clock3, GraduationCap, Mic, Zap } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { filterPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
+import { HolisticReikiOfferShelf } from "@/components/holistic-reiki-offer-shelf";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
+import { matchReikiVariants } from "@/lib/practitioners/reiki-offer.mjs";
 import styles from "./holistic-support-master-gallery.module.css";
 
 type Kind = "masters" | "healing" | "consultation";
@@ -129,8 +132,8 @@ const words = {
   },
 } as const;
 
-// Only real EUR prices and published Reiki methods determine matching offers.
-// Timing, report, credentials and certificates lack a verified offer source.
+// Real EUR prices and the same published Reiki variant must satisfy every chosen filter.
+// Session times are advertised conditions, never confirmed appointment slots.
 const reikiUi = {
   en: {
     tabs: { main: "Main", filter: "Filter", description: "Description", media: "Video / audio" },
@@ -140,10 +143,10 @@ const reikiUi = {
     report: "Requested report", reports: { brief: "Brief", text: "Personal text review", voice: "Personal voice review" },
     role: "Preferred provider", roles: { practitioner: "Practitioner", master: "Reiki master" },
     certificate: "Request a certificate", certificateNote: "Only for initiation or training; issuance must be confirmed.",
-    preferences: "Timing, report and practitioner are preferences; confirm before booking.",
+    preferences: "Published offers describe the master's conditions; actual availability is confirmed separately.",
     heading: "Find Reiki support", intro: "Published options, with conditions confirmed before a request.",
     heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
-    show: "Show available options", count: "Published matching offers", resetFilters: "Reset filters",
+    show: "Show available options", count: "Options to explore", resetFilters: "Reset filters",
     notBooked: "No booking, payment or certificate is created by choosing.",
     initiation: "Explore a Reiki initiation", course: "Free Reiki Practitioner course",
     initiationNote: "See the original initiation request. Timing and certificate are not yet verified.",
@@ -162,10 +165,10 @@ const reikiUi = {
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
     role: "Исполнитель", roles: { practitioner: "От практика", master: "От Рейки-мастера" },
     certificate: "С выдачей сертификата", certificateNote: "Только для инициации и курса. Выдача уточняется отдельно.",
-    preferences: "Срок, отчёт и исполнитель — пожелания; подтвердим отдельно.",
+    preferences: "Фильтр сверяет опубликованные условия мастера. Наличие времени и выдача сертификата подтверждаются отдельно.",
     heading: "Подбор Рейки-поддержки", intro: "Опубликованные предложения. Условия подтверждаются при заявке.",
     heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
-    show: "Показать варианты", count: "Опубликованных совпадений", resetFilters: "Сбросить",
+    show: "Показать варианты", count: "Вариантов для просмотра", resetFilters: "Сбросить",
     notBooked: "Выбор не означает запись, оплату или выдачу сертификата.",
     initiation: "Инициация Рейки", course: "Бесплатный курс Reiki Practitioner",
     initiationNote: "Запрос инициации на действующей странице. Срок и сертификат пока не подтверждены.",
@@ -184,10 +187,10 @@ const reikiUi = {
     report: "Informe", reports: { brief: "Breve", text: "Análisis personal escrito", voice: "Análisis personal por voz" },
     role: "Profesional preferido", roles: { practitioner: "Practicante", master: "Maestro Reiki" },
     certificate: "Solicitar certificado", certificateNote: "Solo para iniciación o curso; se confirma aparte.",
-    preferences: "Plazo, informe y profesional se confirman antes de reservar.",
+    preferences: "Las condiciones provienen de ofertas publicadas. Horarios y certificados se confirman por separado.",
     heading: "Encuentra apoyo Reiki", intro: "Opciones publicadas, condiciones por confirmar.",
     heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
-    show: "Ver opciones", count: "Ofertas publicadas compatibles", resetFilters: "Restablecer",
+    show: "Ver opciones", count: "Opciones para explorar", resetFilters: "Restablecer",
     notBooked: "Elegir no reserva, paga ni concede certificados.",
     initiation: "Iniciación Reiki", course: "Curso gratuito Reiki Practitioner",
     initiationNote: "Consulta la solicitud original. Plazo y certificado aún sin verificar.",
@@ -221,6 +224,9 @@ const consultationUi = {
     order: "Request service", details: "Details", published: "Published service",
     media: "View approved introduction", photos: "Service photos",
     notice: "A request is not a confirmed booking or payment.",
+    priceOnRequest: "Price on request", editorialPhotos: "Related Holistic House illustrations",
+    servicePage: "Full service details", imageryFallback: "No separately published guided imagery offer matches these filters. Explore the existing guided imagery service page.",
+    imageryExplore: "Explore guided imagery",
   },
   ru: {
     heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
@@ -232,6 +238,9 @@ const consultationUi = {
     order: "Заказать", details: "Подробнее", published: "Опубликованная услуга",
     media: "Открыть опубликованную презентацию", photos: "Фото услуги",
     notice: "Заявка не означает подтверждённую запись или оплату.",
+    priceOnRequest: "Цена по запросу", editorialPhotos: "Иллюстрации Holistic House",
+    servicePage: "Открыть страницу услуги", imageryFallback: "Отдельная опубликованная услуга образной работы по этим фильтрам не найдена. Можно посмотреть существующую страницу метода.",
+    imageryExplore: "Подробнее об образной работе",
   },
   es: {
     heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
@@ -243,6 +252,9 @@ const consultationUi = {
     order: "Solicitar", details: "Detalles", published: "Servicio publicado",
     media: "Ver presentación publicada", photos: "Fotos del servicio",
     notice: "Solicitar no confirma una reserva ni realiza un pago.",
+    priceOnRequest: "Precio a consultar", editorialPhotos: "Ilustraciones de Holistic House",
+    servicePage: "Página del servicio", imageryFallback: "No hay una oferta independiente publicada de imágenes guiadas para estos filtros. Consulta la página existente.",
+    imageryExplore: "Explorar imágenes guiadas",
   },
 } as const;
 
@@ -257,16 +269,58 @@ function matchesConsultationCategory(offer: PublishedConsultation, category: Con
     case "business": return /business|бизнес|empresa|negocio|consulting|консалтинг|consultor/.test(source);
   }
 }
-function consultationCover(offer: PublishedConsultation) {
-  if (offer.photos?.[0]) return offer.photos[0];
-  if (matchesConsultationCategory(offer, "imagery")) return "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp";
-  if (matchesConsultationCategory(offer, "constellations")) return "/images/holistic-house/video-posters/constellations-en-v1.webp";
-  if (matchesConsultationCategory(offer, "business")) return "/images/holistic-house/hero-olive-incense.webp";
-  if (/andrey|andy|андре/i.test(offer.practitionerName)) {
-    return "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp";
-  }
-  return "/images/holistic-house/hero-olive-incense.webp";
+// Editorial images are already published in our own public site. They are NOT
+// practitioner-uploaded photos and must never be presented as service evidence.
+const APPROVED_EDITORIAL_GALLERIES = {
+  "alchemy-of-soul": [
+    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+    "/images/holistic-house/distance-homeopathy.webp",
+    "/images/holistic-house/homeopathy-still-life.svg",
+  ],
+  "business-situation-constellation": [
+    "/images/holistic-house/books-library.webp",
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/homepage-constellations.svg",
+  ],
+  "personal-constellation-session": [
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/homepage-constellations.svg",
+    "/images/holistic-house/hero-olive-incense.webp",
+  ],
+  "free-wu-xing-diagnostic": [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/homepage-botanical.svg",
+    "/images/holistic-house/course-start-heron.webp",
+  ],
+  "free-intro-availability-request": [
+    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+    "/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp",
+    "/images/holistic-house/hero-olive-incense.webp",
+  ],
+} as const;
+
+function consultationDisplayImages(offer: PublishedConsultation): string[] {
+  if (offer.photos?.length) return offer.photos;
+  // Key by the canonical published service URL, never by names / guesses about a
+  // provider. Do not show Andrey's portrait for another practitioner's offer.
+  const suffix = offer.href.split("/").pop() || "";
+  const isApprovedOwner = offer.href.includes("/services/andy-litvinov/") ||
+    offer.href.endsWith("/services/alchemy-of-soul");
+  const gallery = isApprovedOwner && Object.prototype.hasOwnProperty.call(APPROVED_EDITORIAL_GALLERIES, suffix)
+    ? APPROVED_EDITORIAL_GALLERIES[suffix as keyof typeof APPROVED_EDITORIAL_GALLERIES]
+    : null;
+  return gallery ? [...gallery] : ["/images/holistic-house/hero-olive-incense.webp"];
 }
+function consultationCover(offer: PublishedConsultation) {
+  return consultationDisplayImages(offer)[0];
+}
+// The existing authenticated request form accepts this published service ID
+// and retains it through Google OAuth. A link does not create a lead/payment.
+function consultationRequestHref(offer: PublishedConsultation, locale: PublicLocale) {
+  const accountLocale = locale === "es" ? "en" : locale;
+  return "/" + accountLocale + "/app/consultations?service=" + encodeURIComponent(offer.serviceId);
+}
+
 function consultationFormatName(format: string, locale: PublicLocale) {
   if (format === "online") return consultationUi[locale].online;
   if (format === "in_person" || format === "offline") return consultationUi[locale].inPerson;
@@ -330,7 +384,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     const controller = new AbortController();
     setFailed(false); setMasters(null); setOffers(null); setSelectedId(null);
     const url = "/api/public/remote-energy-support-masters?locale=" + locale +
-      (consultations ? "&kind=consultation" : "");
+      (consultations ? "&kind=consultation" : kind === "healing" ? "&kind=reiki" : "");
     fetch(url, { credentials: "omit", signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error("PUBLIC_DIRECTORY_UNAVAILABLE");
       return await response.json() as DirectoryResponse;
@@ -345,7 +399,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
       }
     }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [locale, consultations, attempt]);
+  }, [locale, consultations, kind, attempt]);
 
   // Reopen the same approved master after the existing Google OAuth redirect.
   // The OAuth marker contains only public service title/path, never a client's
@@ -379,16 +433,25 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     if (!orderOpen && dialog.open) dialog.close();
   }, [orderOpen]);
 
-  const supportedMethods = kind === "healing" ? REIKI_METHODS[reikiFocus] : null;
+  const supportedMethods = kind === "healing" && reikiFormat === "session" ? REIKI_METHODS[reikiFocus] : null;
   const offersMethod = (value: string) => !supportedMethods ||
     supportedMethods.some(name => name.toLowerCase() === value.toLowerCase());
   const methods = [...new Set((masters || []).flatMap(master => master.methods || [])
     .filter((value): value is string => Boolean(value) && offersMethod(value)))];
-  const visibleMasters = (masters || []).filter(master =>
-    (!method || master.methods.includes(method)) &&
-    (!supportedMethods || master.methods.some(offersMethod)) &&
-    (kind !== "healing" || master.priceOptions.some(option =>
-      matchesReikiEuroPrice(master, reikiPrice, option.price))));
+  const matchingReikiOptions = (master: EnergySupportMaster) =>
+    matchReikiVariants(master.reikiOffer, { kind: reikiFormat, price: reikiPrice, time: reikiTime,
+      report: reikiReport, role: reikiRole, certificate: reikiCertificate });
+  const visibleMasters = (masters || []).filter(master => {
+    if (method && !master.methods.includes(method)) return false;
+    if (supportedMethods && !master.methods.some(offersMethod)) return false;
+    if (kind !== "healing") return true;
+    if (master.reikiOffer) return matchingReikiOptions(master).length > 0;
+    // Legacy remote-support prices do not contain a certificate, report, deadline
+    // or verified practitioner role. Never infer an offered variant from preferences.
+    if (reikiFormat !== "session" || reikiTime !== "any" ||
+      reikiRole !== "any" || reikiReport !== "brief") return false;
+    return master.priceOptions.some(option => matchesReikiEuroPrice(master, reikiPrice, option.price));
+  });
   const consultationMasters = [...new Set((offers || []).map(offer => offer.practitionerName))].sort();
   const consultationFormats = [...new Set((offers || []).map(offer => offer.deliveryFormat).filter(Boolean))];
   const visibleOffers = (offers || []).filter(offer => {
@@ -423,26 +486,36 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const matchingPriceOptions = selectedMaster?.priceOptions.filter(option =>
     Number.isFinite(option.price) && option.price > 0 &&
     (kind !== "healing" || matchesReikiEuroPrice(selectedMaster, reikiPrice, option.price))) || [];
+  const matchingStructured = selectedMaster?.reikiOffer && kind === "healing"
+    ? matchingReikiOptions(selectedMaster) : [];
   const cheapest = [...matchingPriceOptions].sort((a, b) => a.price - b.price)[0];
+  const cheapestStructured = [...matchingStructured].sort((a, b) => a.price - b.price)[0];
   const currentPrice = selectedOffer
     ? (selectedOffer.pricingMode === "free" || (selectedOffer.price === 0 && selectedOffer.pricingMode !== "contact")
       ? t.freeOnly
       : selectedOffer.pricingMode !== "contact" && selectedOffer.price !== null
         ? publishedPrice(selectedOffer.price, selectedOffer.currency, locale) : null)
-    : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
-  const displayPrice = currentPrice || t.quote;
+    : cheapestStructured && selectedMaster?.reikiOffer
+      ? publishedPrice(cheapestStructured.price, selectedMaster.reikiOffer.currency, locale)
+      : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
+  const displayPrice = currentPrice || (consultations ? consultationUi[locale].priceOnRequest : t.quote);
   const c = consultationUi[locale];
-  const currentConsultPhoto = selectedOffer?.photos?.[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
+  const consultPhotoSet = selectedOffer ? consultationDisplayImages(selectedOffer) : [];
+  const currentConsultPhoto = consultPhotoSet[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
   const consultationPrice = (offer: PublishedConsultation) =>
     offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact")
       ? t.freeOnly
       : offer.pricingMode !== "contact" && offer.price !== null
-        ? publishedPrice(offer.price, offer.currency, locale) || t.quote : t.quote;
+        ? publishedPrice(offer.price, offer.currency, locale) || c.priceOnRequest : c.priceOnRequest;
 
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
   const reikiLearningMatches = (reikiPrice === "all" || reikiPrice === "free") && !reikiCertificate;
-  const reikiCount = reikiFormat === "session" ? visibleMasters.length : Number(reikiLearningMatches);
+  // Academy pages do not promise certificates. Only verified structured service
+  // variants qualify when the visitor explicitly requests one.
+  const reikiAcademyOffers = kind === "healing" && reikiFormat !== "session" && !reikiCertificate
+    ? filterPublicReikiAcademyOffers(locale, { kind: reikiFormat, price: reikiPrice }) : [];
+  const reikiCount = visibleMasters.length + reikiAcademyOffers.length;
   const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
     : "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#initiation-choices";
   const reikiLearningLabel = reikiFormat === "course" ? r.course : r.initiation;
@@ -459,7 +532,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
-      data-support-master-hero={selected && reikiFormat === "session" ? id(selected) : undefined}
+      data-support-master-hero={selected ? id(selected) : undefined}
       aria-label={r.heading}>
       <div className={styles.reikiStageArt} aria-hidden="true">
         <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
@@ -498,7 +571,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {(["session", "initiation", "course"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiFormat === value}
                   onClick={() => { setReikiFormat(value); setReikiRole("any"); setReikiCertificate(false);
-                    setSelectedId(null); setOrderOpen(false); }}>
+                    setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
                   {value === "session" ? <UserRound size={17} aria-hidden="true"/> :
                     value === "initiation" ? <Sparkles size={17} aria-hidden="true"/> :
                     <GraduationCap size={17} aria-hidden="true"/>}
@@ -564,16 +637,15 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>
         </div> : reikiTab === "description" ? <div className={styles.reikiTabCopy}>
           <span className={styles.reikiPill}>{r.details}</span>
-          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
-          <p>{reikiFormat === "session" ?
-            selectedMaster?.description || selectedMaster?.bio || t.description : reikiLearningIntro}</p>
+          <h2>{selectedMaster?.name || (reikiFormat === "session" ? r.heading : reikiLearningLabel)}</h2>
+          <p>{selectedMaster?.description || selectedMaster?.bio || (reikiFormat === "session" ? t.description : reikiLearningIntro)}</p>
           <p>{r.preferences} {r.notBooked}</p>
-          {selectedMaster && reikiFormat === "session" &&
+          {selectedMaster &&
             <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
         </div> : reikiTab === "media" ? <div className={styles.reikiTabCopy} data-support-reiki-media>
           <span className={styles.reikiPill}>{r.tabs.media}</span>
-          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
-          {reikiFormat === "session" && selectedMaster?.presentations?.length ?
+          <h2>{selectedMaster?.name || (reikiFormat === "session" ? r.heading : reikiLearningLabel)}</h2>
+          {selectedMaster?.presentations?.length ?
             <div className={styles.reikiMediaLinks}>
               {selectedMaster.presentations.map((media, i) =>
                 <a key={i} href={media.url} target="_blank" rel="noopener noreferrer"
@@ -583,24 +655,29 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
                   <ArrowRight size={15}/>
                 </a>)}
             </div> : <p>{r.mediaNone}</p>}
-          {reikiFormat === "session" && selectedMaster &&
+          {selectedMaster &&
             <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
-          {reikiFormat !== "session" &&
+          {reikiFormat !== "session" && !selectedMaster && reikiLearningMatches &&
             <Link href={reikiLearningPath} className={styles.reikiInlineLink}>{r.learn}<ArrowRight size={16}/></Link>}
         </div> : <div className={styles.reikiTabCopy} data-support-reiki-main>
           <span className={styles.reikiPill}><HandHeart size={15}/>{t.healing}</span>
-          <h2>{reikiFormat === "session" ? r.heroTitle : reikiLearningLabel}</h2>
+          <h2>{reikiFormat === "session" ? r.heroTitle : selectedMaster?.name || reikiLearningLabel}</h2>
           <p>{reikiFormat === "session"
             ? selectedMaster ? selectedMaster.name + " · " +
               (selectedMaster.description || selectedMaster.bio || r.intro) : r.intro
-            : reikiLearningIntro}</p>
-          {reikiFormat === "session" && <strong className={styles.reikiSelectedPrice}>{displayPrice}</strong>}
+            : selectedMaster ? selectedMaster.name + " · " +
+              (selectedMaster.description || selectedMaster.bio || reikiLearningIntro) : reikiLearningIntro}</p>
+          {selectedMaster && <strong className={styles.reikiSelectedPrice}>{displayPrice}</strong>}
           <div className={styles.reikiMainActions}>
-            {reikiFormat === "session" && selectedMaster && cheapest ?
+            {selectedMaster?.serviceHref && cheapestStructured ?
+              <Link className={styles.reikiApply} data-support-reiki-request href={selectedMaster.serviceHref}>
+                {r.request}<ArrowRight size={17}/></Link> :
+              reikiFormat === "session" && selectedMaster && cheapest ?
               <button type="button" className={styles.reikiApply}
                 data-support-reiki-request onClick={() => setOrderOpen(true)}>{r.request}<ArrowRight size={17}/></button> :
-              reikiFormat !== "session" && reikiLearningMatches ?
-                <Link className={styles.reikiApply} href={reikiLearningPath}>{r.learn}<ArrowRight size={17}/></Link> :
+              reikiFormat !== "session" && !selectedMaster && (reikiAcademyOffers.length > 0 || reikiLearningMatches) ?
+                <a className={styles.reikiApply} href="#support-reiki-offers"
+                  data-support-reiki-open-offers>{r.show}<ArrowRight size={17}/></a> :
                 <button type="button" className={styles.reikiApply}
                   onClick={() => setReikiTab("filter")}>{r.choose}<Filter size={17}/></button>}
             <button type="button" className={styles.reikiSecondary}
@@ -614,7 +691,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   return (
     <div className={styles.viewer} data-support-master-viewer data-support-directory-kind={kind}>
-      {kind === "healing" && <div className={styles.reikiFocusBar} role="group"
+      {kind === "healing" && reikiFormat === "session" && <div className={styles.reikiFocusBar} role="group"
         aria-label={t.reikiFocus} data-support-reiki-filters>
         {REIKI_FOCI.map(value => {
           const option = t.reikiOptions[value];
@@ -686,27 +763,37 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         </div>
       </section>}
       {reikiStage}
-      {kind === "healing" && reikiFormat !== "session" ? <section className={styles.reikiLearning} data-support-reiki-learning>
-        <h3>{reikiLearningLabel}</h3>
-        <p>{reikiLearningMatches ? reikiLearningIntro : r.learningNone}</p>
-        <Link href={reikiLearningPath} prefetch={false}>{r.learn}<ArrowRight size={18}/></Link>
-      </section> : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
+      {kind === "healing" ? <HolisticReikiOfferShelf
+        locale={locale} format={reikiFormat} price={reikiPrice}
+        time={reikiTime} report={reikiReport} role={reikiRole}
+        certificate={reikiCertificate}
+        masters={visibleMasters} academyOffers={reikiAcademyOffers}
+        allMasters={masters || []} selectedId={selectedId || selectedMaster?.serviceId || null}
+        loading={!ready} failed={failed}
+        onSelectMaster={itemId => select(itemId)}
+        onRequestMaster={itemId => { select(itemId); setOrderOpen(true); }}
+        onReset={() => { setReikiFocus("love"); resetReikiFilters(); }}
+        onRetry={() => setAttempt(previous => previous + 1)}/>
+      : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
         <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div> : !selected ? <div className={styles.status} role="status">
-        <p>{kind === "healing" && reikiPrice !== "all" ? r.learningNone :
-          kind === "healing" ? t.reikiUnavailable : t.empty}</p>
-        {kind === "healing" && <p className={styles.unavailableMethod} data-support-reiki-unavailable>
-          {t.reikiOptions[reikiFocus].label} · {t.reikiOptions[reikiFocus].method}
+        <p>{t.empty}</p>
+        {consultations && consultCategory === "imagery" && <p className={styles.consultFallback}>
+          {c.imageryFallback}{" "}
+          <Link href={"/" + locale + "/services/imagery-therapy"} prefetch={false}>
+            {c.imageryExplore}<ArrowRight size={16} aria-hidden="true"/>
+          </Link>
         </p>}
         <button type="button" onClick={() => {
           setMethod(""); setPriceFilter("all"); setSelectedId(null);
-          if (kind === "healing") { setReikiFocus("love"); resetReikiFilters(); }
-        }}>{kind === "healing" ? t.reikiSeeAvailable : t.reset}</button>
+          if (consultations) { setConsultCategory("all"); setConsultMaster("");
+            setConsultFormat(""); setConsultPhotoIndex(0); setConsultDetailsOpen(false); }
+        }}>{t.reset}</button>
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
-        {kind !== "healing" && <section className={styles.hero} data-support-master-hero={id(selected)}
+        <section className={styles.hero} data-support-master-hero={id(selected)}
           data-support-consultation-hero={consultations ? "true" : undefined}
           id={consultations ? "support-consultation-featured" : undefined}
           aria-label={selectedMaster?.name || selectedOffer?.title}
@@ -751,21 +838,25 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               target="_blank" rel="noopener noreferrer" aria-label={c.media}>
               <PlayCircle size={25} aria-hidden="true"/>
             </a>}
-          {selectedOffer && selectedOffer.photos?.length > 1 && <div className={styles.consultPreviews}
-            role="group" aria-label={c.photos}>
-            {selectedOffer.photos.slice(0,4).map((photo, photoIndex) =>
-              <button key={photo} type="button" aria-pressed={photoIndex === consultPhotoIndex}
+          {selectedOffer && consultPhotoSet.length > 1 && <div className={styles.consultPreviewGroup}>
+            <small>{selectedOffer.photos?.length ? c.photos : c.editorialPhotos}</small>
+            <div className={styles.consultPreviews}
+              role="group" data-support-consultation-previews aria-label={selectedOffer.photos?.length ? c.photos : c.editorialPhotos}>
+            {consultPhotoSet.slice(0,4).map((photo, photoIndex) =>
+              <button key={photo} type="button" data-support-consultation-photo={photoIndex}
+                aria-pressed={photoIndex === consultPhotoIndex}
                 onClick={() => setConsultPhotoIndex(photoIndex)}>
                 <Image src={photo} alt="" fill unoptimized sizes="70px"/>
                 <span className="sr-only">{photoIndex+1}</span>
               </button>)}
+            </div>
           </div>}
           {entries.length > 1 && <div className={styles.arrows} role="group" aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
             <button type="button" onClick={() => step(-1)} aria-label={t.prev} data-support-master-prev><ChevronLeft size={22}/></button>
             <button type="button" onClick={() => step(1)} aria-label={t.next} data-support-master-next><ChevronRight size={22}/></button>
           </div>}
           <div className={styles.actions}>
-            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} prefetch={false}
+            {selectedOffer ? <Link className={styles.primary} href={consultationRequestHref(selectedOffer, locale)} prefetch={false}
               data-support-offer-request>
               <ShoppingCart size={21} aria-hidden="true"/>{c.order}<ArrowRight size={21} aria-hidden="true"/>
             </Link> : selectedMaster && cheapest ? <button type="button" className={styles.primary}
@@ -777,12 +868,15 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               onClick={() => setConsultDetailsOpen(open => !open)}>{c.details}</button>}
             {selectedMaster && <Link className={styles.secondary} href={profileLink}>{t.details}</Link>}
           </div>
-        </section>}
+        </section>
         {selectedOffer && consultDetailsOpen && <div id="support-consultation-details"
           className={styles.consultDetails} data-support-consultation-details>
           <strong>{selectedOffer.title}</strong>
           <p>{selectedOffer.description || t.consultNote}</p>
           <p>{selectedOffer.practitionerName} · {consultationFormatName(selectedOffer.deliveryFormat, locale)}</p>
+          <Link className={styles.consultDetailsLink} href={selectedOffer.href} prefetch={false}>
+            {c.servicePage}<ArrowRight size={16} aria-hidden="true"/>
+          </Link>
           <small>{c.notice}</small>
         </div>}
         <section className={styles.more} aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
@@ -793,7 +887,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             </Link>
           </div>
           <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail
-            data-single={kind === "healing" && entries.length === 1 ? "true" : "false"}>
+            data-single="false">
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;

@@ -21,7 +21,9 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // /client and /client/tests are public test-selection pages; other client
   // paths, private account routes and documents must keep the bar hidden.
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
-  const hidden = /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname)
+  // The public practitioner showcase owns a compact five-item bottom bar.
+  const hidden = /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
+    || /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname)
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));

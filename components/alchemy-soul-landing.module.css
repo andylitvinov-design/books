@@ -634,3 +634,7 @@
  .page[lang="es"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
  .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }
+
+
+/* The legacy consultation service keeps its original verified review identity. */
+.reviewSection{max-width:1120px;margin:22px auto;padding:0 clamp(12px,3vw,25px)}

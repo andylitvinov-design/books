@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReikiOffer } from "@/lib/practitioners/reiki-offer.mjs";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { useRouter } from "next/navigation";
@@ -21,12 +22,16 @@ export type EnergySupportMaster = {
   title: string;
   photo: string;
   serviceId: string;
+  /** Moderated title of the published practitioner service. */
+  serviceTitle?: string;
   methods: string[];
   bio: string;
   description: string;
   languages: string[];
   currency: string;
   priceOptions: {duration: 10 | 20 | 30 | 60; price: number}[];
+  reikiOffer?: ReikiOffer | null;
+  serviceHref?: string;
   reviewCount: number;
   reviewAverage: number;
   /** Validated external introductions from an approved public service. */

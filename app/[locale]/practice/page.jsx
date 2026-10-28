@@ -3,7 +3,10 @@ import PracticeShowcase from '@/components/practice-showcase'
 
 const SUPPORTED_LOCALES = ['en', 'ru', 'es']
 
-export const dynamic = 'force-static'
+// This page must render with the per-request CSP nonce from the root layout.
+// Static HTML drops the nonce under strict-dynamic, blocking hydration and ALL buttons.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateMetadata({ params }) {
   const { locale } = await params

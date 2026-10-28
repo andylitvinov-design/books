@@ -25,6 +25,7 @@ export async function generateMetadata({ params, searchParams }) {
         ? (locale === 'ru' ? 'Греческий коучинг' : 'Greek Goal Planning')
         : (locale === 'ru' ? 'Личная коуч-сессия' : 'Personal Coaching Session'),
     labs: locale === 'ru' ? 'Мои лабораторные анализы' : 'My laboratory results',
+    videos: locale === 'ru' ? 'Мои видео' : 'My Videos',
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
@@ -49,7 +50,7 @@ export default async function AppPage({ params }) {
     }
   }
   if (path[0] === 'coaching' && path.length === 2 && !['egyptian','greek'].includes(path[1])) notFound()
-  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business','coaching','labs'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business','coaching','labs','videos'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a

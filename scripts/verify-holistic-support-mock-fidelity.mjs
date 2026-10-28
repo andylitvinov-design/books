@@ -213,6 +213,30 @@ for (const browserType of [chromium, webkit]) {
           // three selectors and the existing quote dialog at all iPhone sizes.
           const categories=talisman.locator("[data-support-talisman-category]");
           assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const labels=await talisman.evaluate(el=>{
+            const cards=Array.from(el.querySelectorAll('[data-support-talisman-category]')).slice(0,4);
+            const arrow=el.querySelector('[data-support-talisman-categories-next]');
+            const arrowLeft=arrow?.getBoundingClientRect().left ?? 0;
+            return cards.map(card=>{
+              const name=card.querySelector('span');
+              const rect=card.getBoundingClientRect();
+              return {text:name?.textContent,aria:card.getAttribute('aria-label'),
+                whiteSpace:name ? getComputedStyle(name).whiteSpace : '',
+                overflow:(name?.scrollWidth ?? 0)-(name?.clientWidth ?? 0),
+                fitsBeforeArrow:rect.right <= arrowLeft+2,
+                height:rect.height};
+            });
+          });
+          const expectedShortLabels={
+            en:["Strength","Money","Love","Goals"],
+            ru:["Сила","Деньги","Любовь","Цель"],
+            es:["Fuerza","Dinero","Amor","Metas"],
+          }[locale];
+          assert.deepEqual(labels.map(item=>item.text),expectedShortLabels,
+            label+" short words instead of torn-up 3-line talisman titles");
+          assert.ok(labels.every(item=>item.aria && item.aria !== item.text &&
+              item.whiteSpace==="nowrap" && item.overflow<=1 && item.fitsBeforeArrow),
+            label+" four fully readable single-line categories with full accessible names: "+JSON.stringify(labels));
           const compactSizes=await talisman.evaluate(el=>{
             const category=el.querySelector('[data-support-talisman-category-switcher]')?.getBoundingClientRect();
             const first=el.querySelector('[data-support-talisman-category]')?.getBoundingClientRect();
@@ -427,12 +451,25 @@ for (const browserType of [chromium, webkit]) {
             label+" courses never show session practitioner selector");
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
             label+" courses show certificate preference");
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),4,
+            label+" four real Academy training cards, including free practitioner programme");
+          assert.equal(await healing.locator('[data-reiki-academy-cta="reiki-practitioner-course"]').count(),1,
+            label+" one canonical free programme CTA");
           await reikiFilter.locator('[data-support-reiki-certificate] input').check();
           assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
             label+" no fictional certified training offers");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
             label+" initiation may request a certificate");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" three real linked initiation pathways appear on selection");
+          await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" 21–50 EUR selects only published-price Tantra initiation");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="tantra-initiation"]').count(),1,
+            label+" canonical Tantra €50 level-one option");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
           await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
             label+" return to session resets certificate and restores provider");

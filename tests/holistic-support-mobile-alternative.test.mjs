@@ -331,10 +331,10 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
-  assert.match(gallery, /data-support-reiki-unavailable/);
+  assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
   assert.match(gallery, /setReikiFocus\("love"\)/);
   assert.match(gallery, /onClick=\{\(\) => \{ setReikiFocus\(value\); setMethod\(""\);/);
   assert.match(gallery, /<RemoteEnergySupportBooking/);
@@ -362,7 +362,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
     "Main","Description","Video / audio","Inicio","Descripción","Vídeo / audio"]) {
     assert.ok(gallery.includes(label),label);
   }
-  assert.match(gallery, /data-support-master-hero=\{selected && reikiFormat === "session"/);
+  assert.match(gallery, /data-support-master-hero=\{selected \? id\(selected\)/);
   assert.match(css, /\.reikiStage:not\(\[data-active-tab="filter"\]\)/);
   // A shared mobile-page rule sets font:inherit on all buttons. Reiki selectors
   // must win that cascade or the real iPhone UI inflates into 100px tall tiles.
