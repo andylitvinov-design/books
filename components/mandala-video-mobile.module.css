@@ -380,3 +380,118 @@
   .heroBody h2{max-width:82%}
 }
 @media(prefers-reduced-motion:reduce){.heroPromo,.heroCanvas{transition:none}}
+
+
+/* Video catalog — aligned with the approved Talisman card hierarchy.
+   Existing renderer and controls remain untouched; only presentation changes. */
+.catalogShell{min-width:0;margin:13px 0 14px;padding:14px 13px 13px;border:1px solid #e6e1d3;border-radius:23px;background:linear-gradient(150deg,#fffaf0 0%,#f9f7ee 75%,#f4f4e9 100%);box-shadow:0 8px 25px rgba(28,53,38,.08)}
+.catalogHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 11px}
+.catalogHeading>div{min-width:0}
+.catalogHeading h2{font:800 clamp(21px,3.3vw,30px)/1.1 Arial,Helvetica,sans-serif;color:#1d3932;letter-spacing:-.028em}
+.catalogHeading p{margin-top:4px;color:#788177;font-size:12px;line-height:1.25}
+.catalogHeading button{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:none;border:0;background:transparent;color:#14795c;font-weight:750;font-size:12px;padding:7px 0;text-align:right}
+.categoryRail{display:flex;align-items:stretch;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding:4px;padding:3px 3px 10px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+.categoryRail button{display:flex;flex:0 0 clamp(91px,20%,135px);align-items:center;justify-content:center;flex-direction:column;gap:7px;min-width:0;min-height:86px;padding:12px 5px 9px;scroll-snap-align:start;border:1px solid #d9e4dc;border-radius:16px;background:#eef7f2;color:#098869;font-size:12px;font-weight:800;line-height:1.15;transition:box-shadow .15s ease,transform .15s ease;text-align:center}
+.categoryRail button:active{transform:scale(.98)}
+.categoryRail button[data-tone="money"]{background:#fffaeb;border-color:#ecd69b;color:#bd8b20}
+.categoryRail button[data-tone="relationships"]{background:#fff0f3;border-color:#efc2d3;color:#d94e75}
+.categoryRail button[data-tone="goals"]{background:#f5edff;border-color:#e2c8ef;color:#9252c0}
+.categoryRail button[data-tone="health"]{background:#eef7f1;border-color:#c9e1d8;color:#148a6a}
+.categoryRail button[aria-pressed="true"]{border:3px solid currentColor;padding:10px 3px 7px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 3px 11px rgba(41,83,63,.15)}
+.catalogFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}
+.catalogFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:54px;padding:7px 9px;border:1px solid #dedfd6;border-radius:13px;background:#fdfcf7;color:#23483a;font-weight:800;font-size:11px}
+.catalogFilters label>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalogFilters select{width:100%;min-width:0;padding:3px 13px 3px 0;border:0;outline:none;background:transparent;color:#6f7a6f;font:500 11px/1.2 Arial,Helvetica,sans-serif;text-overflow:ellipsis;cursor:pointer}
+.catalogFilters select:focus-visible{outline:2px solid #009a75;outline-offset:2px;border-radius:4px}
+.catalogFilters select:disabled{opacity:.5;cursor:not-allowed}
+.catalogShell .hero{position:relative;min-height:318px;margin:0;border-radius:22px;border-color:#506858;background:#0c302a}
+.catalogShell .heroPromo{background-image:linear-gradient(105deg,rgba(10,49,38,.38),rgba(8,40,31,.38)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp');background-position:center;background-size:cover}
+.catalogShell .heroPromo::after{display:none}
+.catalogShell .hero[data-video-theme-active="money"] .heroPromo{background-image:linear-gradient(90deg,rgba(25,36,27,.22),rgba(13,32,26,.44)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg')}
+.catalogShell .hero[data-video-theme-active="relationships"] .heroPromo{background-image:linear-gradient(120deg,rgba(57,30,46,.42),rgba(11,44,36,.48)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .heroPromo{background-image:linear-gradient(105deg,rgba(10,46,43,.39),rgba(16,35,55,.42)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-video-theme-active="health"] .heroPromo{background-image:linear-gradient(105deg,rgba(15,45,32,.37),rgba(7,48,38,.37)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.catalogShell .heroShade{background:linear-gradient(90deg,rgba(4,27,22,.24),rgba(7,35,28,.38) 46%,rgba(4,30,25,.87)),linear-gradient(0deg,rgba(4,25,21,.55),transparent 48%)}
+.catalogShell .heroOverlay{display:flex;flex-direction:column;min-height:318px;gap:6px;padding:12px 14px 14px;overflow:visible}
+.catalogShell .heroTabs{display:flex;justify-content:flex-end;gap:5px;margin:0 0 3px}
+.catalogShell .heroTabs>*{flex:0 1 auto;min-width:0;min-height:29px;padding:4px 9px;border-color:rgba(219,243,228,.48);font:750 10px/1.15 Arial,Helvetica,sans-serif;background:rgba(10,54,43,.52)}
+.catalogShell .heroTabs>.heroMode{background:linear-gradient(110deg,#079a72,#11b389)}
+.catalogShell .heroThemes:not([hidden]){top:50px;left:10px;right:10px}
+.catalogShell .heroMain{display:grid;grid-template-columns:minmax(0,.90fr) minmax(0,1.10fr);gap:14px;align-items:center;flex:1;min-width:0}
+.catalogShell .heroVisual{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;min-width:0}
+.catalogShell .videoOrb{width:min(100%,200px);aspect-ratio:1;border-radius:50%;border:8px double rgba(255,220,141,.9);box-shadow:0 0 0 2px rgba(244,211,124,.54),0 0 22px rgba(255,202,106,.57),inset 0 0 18px rgba(252,214,124,.5);background:radial-gradient(circle,transparent 10%,rgba(12,56,36,.12) 70%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') 50% 50% / cover;transition:opacity .2s ease}
+.catalogShell .hero[data-video-theme-active="money"] .videoOrb{background-image:radial-gradient(circle,transparent 35%,rgba(84,44,9,.18)),url('/images/holistic-house/mandala-gold-reference.webp')}
+.catalogShell .hero[data-video-theme-active="relationships"] .videoOrb{background-image:radial-gradient(circle,rgba(251,158,188,.14),rgba(33,58,42,.1)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .videoOrb{background-image:radial-gradient(circle,transparent 25%,rgba(10,55,45,.1)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-hero-promo="false"] .videoOrb{opacity:0}
+.catalogShell .heroAudio{justify-content:center;min-height:31px;max-width:100%;padding:5px 10px;font-size:10px;font-weight:800;background:rgba(8,39,31,.81);white-space:normal;text-align:center;line-height:1.12}
+.catalogShell .heroDetails{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;gap:6px;min-width:0}
+.catalogShell .heroGoal{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid rgba(240,213,135,.5);background:rgba(13,55,42,.5);color:#ecd69d;font-size:10px;font-weight:750;line-height:1.15}
+.catalogShell .heroDetails h2{margin:0;color:#fff;font:800 clamp(21px,3.2vw,34px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.03em;overflow-wrap:normal;text-wrap:balance;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.catalogShell .heroDetails p{margin:0;color:#f2f3e8;font-size:12px;line-height:1.32;max-width:32ch}
+.catalogShell .heroFeature,.catalogShell .heroSound{display:inline-flex;align-items:center;gap:4px;width:auto;max-width:100%;min-height:20px;padding:2px 7px;border-radius:99px;border:1px solid rgba(221,249,231,.42);background:rgba(5,39,29,.59);color:#e4f5e9;font:700 10px/1.15 Arial,Helvetica,sans-serif;white-space:normal}
+.catalogShell .heroActions{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,.82fr);gap:7px;margin-top:8px}
+.catalogShell .heroCreate{display:flex;width:100%;min-width:0;min-height:49px;padding:7px 11px;margin:0;font-size:14px;border:2px solid #b5e9cb;border-radius:13px;box-shadow:0 3px 0 rgba(2,40,26,.4)}
+.catalogShell .heroMore{display:flex;align-items:center;justify-content:center;min-width:0;min-height:49px;padding:8px 7px;border:1px solid rgba(209,237,224,.75);border-radius:13px;background:rgba(6,38,31,.56);color:#fff;text-decoration:none;font-weight:750;font-size:13px}
+.catalogShell .hero+.backgroundMode{margin:11px 0 10px}
+.catalogShell .backgroundMode{background:rgba(253,252,245,.9)}
+.catalogShell .templates{margin:10px 0 0;padding:12px 8px 4px;border:0;border-top:1px solid #e3e4d7;border-radius:0;background:transparent;box-shadow:none}
+.catalogShell .templates .sectionHeading h3{font-size:16px}
+.catalogShell .templateRail{grid-auto-columns:clamp(88px,24%,165px);gap:8px;padding-bottom:4px}
+.catalogShell .templateTile{border-radius:13px}
+@media(max-width:760px){
+  .catalogShell{padding:12px 10px}
+  .catalogHeading h2{font-size:23px}
+  .catalogHeading p{font-size:11px}
+  .catalogHeading button{font-size:11px}
+  .categoryRail button{flex-basis:clamp(78px,24%,112px);min-height:76px;padding:9px 4px;font-size:11px}
+  .catalogShell .hero{min-height:315px;margin-top:0;border-radius:19px;overflow:hidden}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 10px 11px}
+  .catalogShell .heroMain{gap:9px}
+  .catalogShell .heroTabs>*{min-height:26px;padding:3px 6px;font-size:9px}
+  .catalogShell .videoOrb{width:min(100%,154px);border-width:6px}
+  .catalogShell .heroDetails h2{font-size:clamp(20px,5.8vw,29px)}
+  .catalogShell .heroDetails p{font-size:11px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:45px;font-size:12px}
+  .catalogShell .heroThemes:not([hidden]){top:43px}
+}
+@media(max-width:390px){
+  .catalogShell{padding:10px 8px}
+  .catalogHeading{gap:5px;margin-bottom:8px}
+  .catalogHeading h2{font-size:22px}
+  .catalogHeading p{font-size:10px}
+  .catalogHeading button{font-size:10px}
+  .categoryRail{gap:6px;padding-bottom:8px}
+  .categoryRail button{flex-basis:77px;min-height:71px;gap:5px;border-radius:12px;font-size:10px}
+  .categoryRail button svg{width:20px;height:20px}
+  .catalogFilters{gap:4px;margin-bottom:9px}
+  .catalogFilters label{min-height:49px;padding:6px 5px;border-radius:10px;font-size:10px}
+  .catalogFilters select{font-size:10px}
+  .catalogShell .hero{min-height:315px}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 7px}
+  .catalogShell .heroTabs{gap:3px}
+  .catalogShell .heroTabs>*{min-height:27px;padding:3px 4px;font-size:8.5px}
+  .catalogShell .heroMain{grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr);gap:6px}
+  .catalogShell .videoOrb{width:min(100%,133px);border-width:5px}
+  .catalogShell .heroDetails{gap:5px}
+  .catalogShell .heroGoal{padding:4px 6px;font-size:9px}
+  .catalogShell .heroDetails h2{font-size:clamp(18px,5.5vw,23px)}
+  .catalogShell .heroDetails p{font-size:10px}
+  .catalogShell .heroFeature,.catalogShell .heroSound{font-size:9px;min-height:18px}
+  .catalogShell .heroAudio{font-size:9px;padding:5px 6px}
+  .catalogShell .heroActions{gap:5px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:44px;padding:6px 5px;font-size:11px}
+  .catalogShell .heroCreate svg{width:15px;height:15px}
+  .catalogShell .templates .sectionHeading h3{font-size:14px}
+}
+@media(max-width:345px){
+  .catalogHeading h2{font-size:20px}
+  .catalogHeading button{font-size:9px}
+  .catalogShell .heroDetails h2{font-size:18px}
+  .catalogShell .heroDetails p{font-size:9px}
+  .catalogShell .heroMain{gap:4px}
+  .catalogShell .heroTabs>*{font-size:8px;padding:3px}
+  .catalogShell .heroGoal{font-size:8px}
+  .catalogShell .heroAudio{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.catalogShell .videoOrb,.categoryRail button{transition:none}}
