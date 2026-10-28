@@ -44,8 +44,12 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
-          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1,
-            label + " recommendations below the four self-rating scales");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
+            label + " goal filter beneath the self-ratings");
+          assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
+            label + " current focus beneath the portrait");
+          assert.equal(await root.locator('[data-support-recommendations]').count(), 1,
+            label + " quick match beneath the portrait");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
@@ -146,6 +150,26 @@ for (const browserType of [chromium, webkit]) {
             label+" theme chosen by minimum, not a Focus selector");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
+          // The scenic workspace itself expands into a five-sector goal editor.
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          const filter=root.locator('[data-support-goal-filter]');
+          await filter.waitFor({state:"visible",timeout:8000});
+          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          await filter.locator('[data-goal-sector="money"]').click();
+          await filter.locator('[data-goal-concern="income"] input').check();
+          await filter.locator('[data-goal-task="stableIncome"] input').check();
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),6,label+" now/want sliders");
+          await filter.locator('[data-support-goal-apply]').click();
+          await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
+            label+" real published recordings preserved");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          await root.locator('[data-support-goal-reset]').click();
+          assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
+            label+" reset restores sector");
+          await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
+          assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
