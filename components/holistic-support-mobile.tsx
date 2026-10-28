@@ -830,6 +830,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <button type="button" className={styles.journeyStart} onClick={openGoalFilter}>
               <Sparkles size={17} aria-hidden="true" />{t.journey.start}<ArrowRight size={17} aria-hidden="true" />
             </button>
+            {goalSelection && activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
+              role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
             {goalSelection ? <details className={styles.journeyMore} data-support-journey-other>
               <summary>{t.journey.other} <ChevronDown size={16} aria-hidden="true" /></summary>
             <div className={styles.goalResultGrid}>
@@ -892,8 +894,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <span><strong>{t.goalResultLabels.mandala}</strong><small>{t.goalResultHints.mandala}</small></span>
               </Link> : null}
             </div>
-            {activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
-              role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
             </details> : null}
           </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
