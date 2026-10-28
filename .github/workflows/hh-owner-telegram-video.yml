@@ -19,6 +19,7 @@ on:
       - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
       - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
       - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
       - "tests/youtube-owner-publications.test.mjs"
       - "app/api/admin/telegram-video/**"
       - "app/api/app/crm/messenger/webhook/**"
@@ -53,6 +54,7 @@ on:
       - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
       - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
       - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
       - "tests/youtube-owner-publications.test.mjs"
       - ".github/workflows/hh-owner-telegram-video.yml"
 permissions:
