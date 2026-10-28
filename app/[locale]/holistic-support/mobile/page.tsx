@@ -7,6 +7,9 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
+import { buildSupportLearningCatalog, type PublishedLearningCourse } from "@/lib/holistic-support/learning-catalog";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
 
@@ -164,7 +167,18 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         masterProfile: andreyMasterProfile(locale),
       }));
 
+  // One read-only, published-only query for the existing approved master course
+  // catalogue. Gracefully keep the canonical Academy offerings when its database
+  // is unavailable; never fall back to drafts or private practitioners.
+  let publishedCourses: PublishedLearningCourse[] = [];
+  try {
+    publishedCourses = await createPractitionerCourseRepository(getAppConfig()).catalog();
+  } catch {
+    publishedCourses = [];
+  }
+  const learningItems = buildSupportLearningCatalog(locale, originalMysteryCourses, publishedCourses);
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice}
+      learningItems={learningItems} />
   );
 }

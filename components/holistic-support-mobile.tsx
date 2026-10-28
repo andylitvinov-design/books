@@ -12,6 +12,7 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
+import type { LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -266,10 +267,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation" }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], learningItems = [], initialChoice = "meditation" }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
+  learningItems?: LearningCatalogItem[];
   initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
@@ -651,7 +653,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
             </div>
           ) : choice === "pump" ? (
-            <HolisticSupportCourseProfiles locale={locale} courses={courses}
+            <HolisticSupportCourseProfiles locale={locale} courses={courses} learningItems={learningItems}
               savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
               onTests={() => changeChoice("tests")}
               onFillProfile={openCourseProfileFilter}

@@ -11,6 +11,7 @@ import type { GoalSector, GoalSectorSnapshot } from "@/components/holistic-suppo
 import type { PublicLocale } from "@/lib/public-locales";
 import type { SupportMobileCourse } from "@/components/holistic-support-mobile";
 import styles from "./holistic-support-course-profiles.module.css";
+import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 
 export type CourseProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
 
@@ -23,7 +24,7 @@ const profiles = [
 
 const content = {
   ru: {
-    heading: "Выбери свой профиль",
+    heading: "Выбери свой профиль", goalPicker: "Дополнительно: подобрать обучение по целям",
     profile: {
       energy: { label: "Профиль здоровья", short: "Здоровье", hint: "Энергия и самочувствие",
         title: "Здоровье и жизненная энергия", description: "Оцени своё состояние, сон и внутренние ресурсы. Выбери, с чего начать." },
@@ -41,7 +42,7 @@ const content = {
     others: "Другие обучающие программы", open: "Открыть курс", videos: "видео",
   },
   en: {
-    heading: "Choose your profile",
+    heading: "Choose your profile", goalPicker: "Optional: find learning by your goals",
     profile: {
       energy: { label: "Health profile", short: "Health", hint: "Energy and wellbeing",
         title: "Health and vital energy", description: "Reflect on how you feel, your sleep and personal resources. Choose where to begin." },
@@ -59,7 +60,7 @@ const content = {
     others: "Other learning programmes", open: "Open course", videos: "videos",
   },
   es: {
-    heading: "Elige tu perfil",
+    heading: "Elige tu perfil", goalPicker: "Opcional: buscar formación según tus objetivos",
     profile: {
       energy: { label: "Perfil de salud", short: "Salud", hint: "Energía y bienestar",
         title: "Salud y energía vital", description: "Explora cómo te sientes, tu descanso y tus recursos personales." },
@@ -79,10 +80,11 @@ const content = {
 } as const;
 
 export function HolisticSupportCourseProfiles({
-  locale, courses, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
+  locale, courses, learningItems, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
 }: {
   locale: PublicLocale;
   courses: SupportMobileCourse[];
+  learningItems: LearningCatalogItem[];
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
   active: CourseProfileSector;
   onSelect: (sector: CourseProfileSector) => void;
@@ -93,7 +95,10 @@ export function HolisticSupportCourseProfiles({
   const t = content[locale];
   const current = t.profile[active];
 
-  return <section className={styles.root} data-support-course-profiles aria-labelledby="support-course-profiles-title">
+  return <section className={styles.root} data-support-course-profiles aria-label={t.academy}>
+    <HolisticSupportLearningCatalog locale={locale} items={learningItems} />
+    <details className={styles.profileDisclosure} data-learning-goal-picker>
+      <summary>{t.goalPicker}</summary>
     <h2 className={styles.visuallyHidden} id="support-course-profiles-title">{t.heading}</h2>
     <div className={styles.profiles} role="group" aria-label={t.heading}>
       {profiles.map(({ id, Icon }) => <button type="button" key={id} className={styles.profile}
@@ -144,5 +149,6 @@ export function HolisticSupportCourseProfiles({
         </div>
       </details> : null}
     </div>
+    </details>
   </section>;
 }
