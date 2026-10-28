@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } fr
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, Filter,
   Coins, Compass, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
-  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
+  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, X, Zap,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
