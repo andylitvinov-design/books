@@ -123,8 +123,10 @@ for (const browserType of [chromium, webkit]) {
               label+" six large help options occupy the second row");
             assert.ok(tools.bottom<=geometry.hero[0].y-2,
               label+" all actions end before the video player begins");
-            assert.equal(await root.locator('#support-tools .toolGrid > [data-support-detailed-analysis]').count(),1,
-              label+" detailed tests are the sixth action");
+            const testsLink = root.locator('#support-tools [data-support-detailed-analysis]');
+            assert.equal(await testsLink.count(), 1, label+" canonical detailed-analysis entry");
+            const parentClass = await testsLink.evaluate(el => el.parentElement?.className ?? "");
+            assert.ok(parentClass.includes("toolGrid"), label+" detailed tests are the sixth action tile");
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
