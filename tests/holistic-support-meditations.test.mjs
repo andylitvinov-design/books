@@ -21,7 +21,11 @@ test("Holistic Support displays a video-only themed gallery in EN/RU/ES", () => 
   const filter = read("components/holistic-support-topic-filter.tsx");
   assert.match(filter, /id === "meditation" \? \(\s*<Link href="#meditation-practices" prefetch=\{false\}/);
   assert.match(page, /id="meditation-practices"/);
-  assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\} \/>/);
+  assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\}/);
+  assert.match(page, /catalogVideos=\{meditationDiscovery\.videos\}/);
+  assert.match(page, /publishedSourceIds=\{meditationDiscovery\.publishedSourceIds\}/);
+  assert.match(page, /loadMeditationDiscovery\(locale\)/);
+  assert.match(gallery, /data-meditation-finder-toggle/);
   assert.doesNotMatch(page, /id="meditation-audio"|data-holistic-audio-player|<audio|holistic-house-soft-melody-gentle-waves-96s/);
   assert.doesNotMatch(page, /meditationAudioTitle|meditationAudioMissing|meditationSourceToggle|meditationToAudio/);
   assert.match(page, /data-holistic-russian-archive/);

@@ -240,11 +240,23 @@ function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
       'Ray-only acceptance must not render the separate Goal Profile boundary')
     return tree
   })
+  const isVisible = (target, root, hidden = false) => {
+    if (Array.isArray(root)) return root.some(child => isVisible(target, child, hidden))
+    if (!root || typeof root !== 'object') return false
+    const concealed = hidden || Boolean(root.props.hidden)
+    if (root === target) return !concealed
+    return isVisible(target, root.props.children, concealed)
+  }
   const locator = query => ({
     list: query,
     locator(selector) {
       return locator(() => query().flatMap(root => {
         const all = nodes(root)
+        const view = selector.match(/^\[data-portrait-view="(axes|chart)"\]$/)
+        if (view) return all.filter(node => node.type === 'button' && node.props['data-portrait-view'] === view[1])
+        if (selector === '[data-testid="portrait-axes-panel"]') return all.filter(node => node.props['data-testid'] === 'portrait-axes-panel')
+        const radar = selector.match(/^\[data-radar-mode="(detail|summary)"\]$/)
+        if (radar) return all.filter(node => node.type === 'svg' && node.props['data-radar-mode'] === radar[1])
         if (selector === '[data-portrait-sectors]') return all.filter(node => node.props['data-portrait-sectors'])
         if (selector === '[data-portrait-sector]') return all.filter(node => node.props['data-portrait-sector'])
         if (selector === '[data-portrait-sector-all]') return all.filter(node => node.props['data-portrait-sector-all'])
@@ -262,7 +274,7 @@ function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
     getByRole(role, { name, exact }) { assert.equal(exact, true); return locator(() => query().flatMap(nodes).filter(node => node.type === role && accessibleText(node) === name)) },
     nth(index) { return locator(() => query().slice(index, index + 1)) },
     async getAttribute(name) { assert.equal(query().length, 1); return String(query()[0].props[name]) },
-    async click() { assert.equal(query().length, 1); query()[0].props.onClick() },
+    async click() { const found = query(); assert.equal(found.length, 1); assert.ok(isVisible(found[0], tree), 'Clicked ray control must be visible'); found[0].props.onClick() },
     async check() { assert.equal(query().length, 1); const node = query()[0]; assert.ok(!node.props.disabled); if (!node.props.checked) node.props.onChange() },
     async uncheck() { assert.equal(query().length, 1); const node = query()[0]; assert.ok(!node.props.disabled); if (node.props.checked) node.props.onChange() },
     async evaluateAll(fn) {
@@ -280,6 +292,7 @@ function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
   const expect = value => ({
     async toHaveCount(count) { assert.equal(value.list().length, count) },
     async toHaveAttribute(name, expected) { assert.equal(await value.getAttribute(name), expected) },
+    async toBeVisible() { const found = value.list(); assert.equal(found.length, 1); assert.ok(isVisible(found[0], tree), 'Ray panel must not be hidden by itself or an ancestor') },
     async toBeChecked() { assert.equal(value.list()[0].props.checked, true) },
   })
   return { portrait: locator(() => [render()]), expect }

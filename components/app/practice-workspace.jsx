@@ -174,16 +174,22 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials'){
       setActivePanel('materials')
-      if(params.get('materialTab')==='courses'&&params.get('create')==='1')setProCourseStart(true)
+      if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
+        setProCourseStart(true)
+        const meditation=params.get('meditation')
+        if(['audio','video'].includes(meditation))setMeditationType(meditation)
+      }
     }
     if(params.get('panel')==='services'){
       setActivePanel('services')
       if(params.get('create')==='1'){
         const starter=params.get('starter')
-        setProStarter(['session','intro','workshop','diagnostic','energy','personal'].includes(starter)?starter:'')
+        setProStarter(['session','intro','workshop','diagnostic','energy','personal','reiki'].includes(starter)?starter:'')
         setNewServiceRequest(current=>current+1)
       }
     }
+    // The public practitioner showroom passes only allowlisted panel choices.
+    if(['profile','requests','analytics','events'].includes(params.get('panel')))setActivePanel(params.get('panel'))
     if(params.get('panel')==='marketing')setActivePanel('marketing')
     if(params.get('panel')==='express-reports')setActivePanel('express-reports')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
@@ -226,6 +232,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const creationCopy=ru?{
     eyebrow:'ВАША ПРАКТИКА',title:'Что хотите предложить людям?',subtitle:'Начните с одного предложения — остальное можно добавить позже.',
     service:'Разместить услугу',serviceDetail:'Сессия, диагностика или персональная поддержка',
+    reiki:'Создать услугу Рейки',reikiDetail:'Поддержка · инициация · курс, цены и сертификаты',
     meditation:'Добавить медитацию',meditationDetail:'Запись голоса или видео для ваших клиентов',
     audio:'Аудиомедитация',audioDetail:'Записать или загрузить аудио',
     video:'Видеомедитация',videoDetail:'Загрузить видео',
@@ -235,6 +242,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   }:locale==='es'?{
     eyebrow:'TU PRÁCTICA',title:'¿Qué quieres compartir?',subtitle:'Empieza con una propuesta. Puedes añadir más después.',
     service:'Publicar un servicio',serviceDetail:'Sesión, diagnóstico o apoyo personal',
+    reiki:'Crear servicio Reiki',reikiDetail:'Apoyo · iniciación · curso, precios y certificados',
     meditation:'Añadir una meditación',meditationDetail:'Audio o vídeo para tus clientes',
     audio:'Meditación en audio',audioDetail:'Grabar o subir un audio',
     video:'Meditación en vídeo',videoDetail:'Subir un vídeo',
@@ -244,6 +252,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   }:{
     eyebrow:'YOUR PRACTICE',title:'What would you like to share?',subtitle:'Start with one offering. You can always add more later.',
     service:'List a service',serviceDetail:'A session, personal review or one-to-one support',
+    reiki:'Create Reiki service',reikiDetail:'Support · initiation · course, prices & certificates',
     meditation:'Add a meditation',meditationDetail:'Share a guided audio or video practice',
     audio:'Audio meditation',audioDetail:'Record or upload your audio',
     video:'Video meditation',videoDetail:'Upload a guided video',
@@ -254,8 +263,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   useEffect(()=>{
     if(!data?.practiceActivated||!creationGoal)return
     // Registration already creates the first service; do not open a duplicate draft.
-    if(creationGoal==='service'){
-      if(!data.services?.length)addService()
+    if(['service','reiki'].includes(creationGoal)){
+      if(!data.services?.length)addService(creationGoal==='reiki'?'reiki':'')
     } else startMeditation(creationGoal)
     setCreationGoal('')
   },[data?.practiceActivated,creationGoal])
@@ -326,20 +335,21 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     setPanelRoute('materials',tab)
     setError('')
   }
-  function addService(){
+  function addService(starter=''){
+    setProStarter(typeof starter==='string'?starter:'')
     setActivePanel('services')
     setPanelRoute('services')
     setNewServiceRequest(current=>current+1)
     setError('')
   }
-  function startService(){
+  function startService(starter=''){
     if(!data?.practiceActivated){
-      setCreationGoal('service')
+      setCreationGoal(starter==='reiki'?'reiki':'service')
       document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
       return
     }
     if(data.serviceQuota?.canAdd===false){setError('SERVICE_LIMIT_REACHED');return}
-    addService()
+    addService(starter)
   }
   function startMeditation(kind){
     if(!['audio','video'].includes(kind))return
@@ -459,11 +469,18 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </header>
       <div className="hh-practice-first-actions-grid">
         <button type="button" className="hh-practice-first-action is-service" data-create-practice-service
-          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={startService}>
+          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={()=>startService()}>
           <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
           <span className="hh-practice-first-action-copy"><strong>{serviceQuota.canAdd||needsOnboarding?creationCopy.service:creationCopy.limit}</strong>
             <small>{creationCopy.serviceDetail}</small>
             <small data-practice-service-quota>{marketplaceCopy.hobby+' · '+serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+        <button type="button" className="hh-practice-first-action is-reiki" data-create-practice-reiki
+          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={()=>startService('reiki')}>
+          <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{creationCopy.reiki}</strong>
+            <small>{creationCopy.reikiDetail}</small></span>
           <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
         </button>
         <button type="button" className="hh-practice-first-action is-meditation" data-create-practice-meditation

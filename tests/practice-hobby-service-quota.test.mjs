@@ -33,7 +33,9 @@ test('My Practice exposes Add service and quota before metrics/analytics on mobi
   const analytics=view.indexOf('<PracticeServiceStatistics ')
   assert.ok(cta>0&&quota>cta&&buttonEnd>quota&&overview>buttonEnd&&analytics>overview,
     'Create service and its live quota must appear before metrics and analytics')
-  assert.match(action,/onClick=\{startService\}/)
+  const reikiCreation=view.indexOf('data-create-practice-reiki')
+  assert.ok(reikiCreation>buttonEnd&&overview>reikiCreation,'Reiki creation remains before overview')
+  assert.match(action,/onClick=\{\(\)=>startService\(\)\}/)
   const quotaExpression=action.match(/data-practice-service-quota>\{([^}]+)\}/)?.[1]
   const disabledExpression=action.match(/disabled=\{([^}]+)\}/)?.[1]
   const quotaSource=view.match(/const serviceQuota=([^\n]+)/)?.[1]

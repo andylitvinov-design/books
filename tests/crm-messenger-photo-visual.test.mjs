@@ -46,7 +46,7 @@ function assertImagePreviewScope(source){
   function check(pathname,expectedOwner=false,expectedMandala=false){
     // Unrelated image-origin capabilities are neutralized, never evaluated.
     const result=script.runInNewContext({pathname,academyVideoPage:false,publicVideoDocument:false,
-      listingImageOrigin:'',eventsPosterImageOrigin:'',practitionerCourseMediaOrigin:'',reikiPhotoOrigin:''},{timeout:100})
+      listingImageOrigin:'',eventsPosterImageOrigin:'',practitionerCourseMediaOrigin:'',reikiPhotoOrigin:'',directMessageStorageOrigin:''},{timeout:100})
     assert.equal(result.owner,expectedOwner,'owner route scope: '+pathname)
     assert.equal(result.mandala,expectedMandala,'existing public route scope: '+pathname)
     assert.equal(result.image,"img-src 'self' data: https://www.google-analytics.com"+
@@ -83,6 +83,10 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
     assert.equal(guardedPaths.test(path),false,path)
   }
   assertImagePreviewScope(middleware)
+  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''\)/)
+  assert.match(middleware,/directMessageStorageOrigin/)
+  assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
+  assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
   assert.match(middleware,/"frame-src 'none'"/)
   assert.match(middleware,/"object-src 'none'"/)
 })

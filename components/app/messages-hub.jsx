@@ -1,6 +1,7 @@
 'use client'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
+import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
@@ -26,6 +27,7 @@ const COPY={
 }
 const VALID_TABS=new Set(['chats','requests'])
 export default function MessagesHub({locale='en'}){
+  const searchParams=useSearchParams()
   const t=COPY[locale]||COPY.en
   const [tab,setTab]=useState('chats')
   const [refreshKey,setRefreshKey]=useState(0)
@@ -58,7 +60,7 @@ export default function MessagesHub({locale='en'}){
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
     const slug=params.get('to')||''
     if(/^[a-z0-9-]{2,90}$/.test(slug))setRecipientIntent({slug,accountId:''})
-  },[])
+  },[searchParams])
   useEffect(()=>{
     const controller=new AbortController()
     // Verify owner access without waiting for practice/business requests.
@@ -154,7 +156,12 @@ export default function MessagesHub({locale='en'}){
   }
   // Owner-only one-window inbox. Preserve the existing authenticated provider
   // link check and member two-tab UI; no duplicate CRM or public send action.
-  if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
+  if(ownerAccountId)return <div className={styles.hub}
+    data-private-direct-order-chat={recipientIntent?.accountId===ownerAccountId||undefined}>
+    {<a href={'/'+locale+'/app/messages?section=clients'}>
+      {locale==='ru'?'← К клиентам':locale==='es'?'← Clientes':'← Clients'}
+    </a>}
+    <MessagesSimpleInbox key={ownerAccountId} locale={locale}
     accountId={ownerAccountId} requests={requestData?.requests||[]}
     businessEnquiries={requestData?.businessEnquiries||[]}
     telegramUrl={telegramUrl}
@@ -162,6 +169,7 @@ export default function MessagesHub({locale='en'}){
     onRecipientConsumed={consumeRecipient}
     websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
     onReload={()=>setRefreshKey(n=>n+1)}/>
+  </div>
   if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>

@@ -45,7 +45,7 @@ function assertImagePreviewScope(source){
   function check(pathname,expectedOwner=false,expectedMandala=false){
     // Unrelated image-origin capabilities are neutralized, never evaluated.
     const result=script.runInNewContext({pathname,academyVideoPage:false,publicVideoDocument:false,
-      listingImageOrigin:'',eventsPosterImageOrigin:'',practitionerCourseMediaOrigin:'',reikiPhotoOrigin:''},{timeout:100})
+      listingImageOrigin:'',eventsPosterImageOrigin:'',practitionerCourseMediaOrigin:'',reikiPhotoOrigin:'',directMessageStorageOrigin:''},{timeout:100})
     assert.equal(result.owner,expectedOwner,'owner route scope: '+pathname)
     assert.equal(result.mandala,expectedMandala,'existing public route scope: '+pathname)
     assert.equal(result.image,"img-src 'self' data: https://www.google-analytics.com"+
@@ -71,7 +71,7 @@ test('owner sees one compact messenger rather than nested Requests + CRM + autom
   const hub=read('components/app/messages-hub.jsx')
   const simple=read('components/app/messages-simple-inbox.jsx')
   const css=read('components/app/messages-simple-inbox.module.css')
-  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
+  assert.match(hub,/if\(ownerAccountId\)return <div[\s\S]*?<MessagesSimpleInbox/)
   assert.match(hub,/ownerBootstrapPending&&!data/)
   assert.match(simple,/data-simple-messages/)
   assert.match(simple,/className=\{styles\.window\}/)
@@ -146,7 +146,7 @@ test('website consultation remains accessible and manual WhatsApp/email are neve
 test('owner account change remounts one-screen inbox before old private conversation state can render',()=>{
   const hub=read('components/app/messages-hub.jsx')
   const simple=read('components/app/messages-simple-inbox.jsx')
-  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox key=\{ownerAccountId\}/)
+  assert.match(hub,/if\(ownerAccountId\)return <div[\s\S]*?<MessagesSimpleInbox key=\{ownerAccountId\}/)
   assert.match(hub,/const sameAccount=!data\|\|!ownerInfo\|\|data\.accountId===ownerInfo\.accountId/)
   assert.match(simple,/setSelectedKey\(''\);setOpenDetail\(false\)/)
   assert.match(simple,/setDirectThreads\(\[\]\);setPortraits\(\{\}\)/)
@@ -194,5 +194,135 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(card,/kind==='direct'&&validSlug\(item\.peerMasterSlug\)/)
   assert.match(card,/\/masters\/'\+masterSlug/)
   assertImagePreviewScope(middleware)
+  assert.match(middleware,/const ownerMessengerImages =/)
+  assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''/)
+  assert.match(middleware,/directMessageStorageOrigin/)
+  assert.match(middleware,/ownerMessengerImages\) \? ' blob:' : ''/)
+  assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
+})
+
+// Evaluate the callbacks extracted from current JSX, not a parallel model.
+function sourceCallable(path,name,context){
+  const source=read(path),ast=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(ast.parseDiagnostics.length,0)
+  const found=[]
+  const visit=node=>{
+    if(ts.isFunctionDeclaration(node)&&node.name?.text===name)found.push(node)
+    if(ts.isVariableDeclaration(node)&&node.name.getText(ast)===name&&node.initializer){
+      const init=node.initializer
+      found.push(ts.isCallExpression(init)&&init.expression.getText(ast)==='useCallback'?init.arguments[0]:init)
+    }
+    ts.forEachChild(node,visit)
+  };visit(ast);assert.equal(found.length,1,name+' uniquely extracted')
+  return vm.runInNewContext('('+found[0].getText(ast)+')',context)
+}
+function scopeHarness(){
+  const scope={current:{accountId:'owner-a',slug:'master-one'}},events=[]
+  const ctx={accountId:'owner-a',recipientScope:scope,onRecipientConsumed:()=>events.push('consume'),
+    setSelectedKey:value=>events.push(value),setOpenDetail:value=>events.push(['open',value]),setShowCard:()=>{}}
+  ctx.consumeRecipient=sourceCallable('components/app/messages-simple-inbox.jsx','consumeRecipient',ctx)
+  ctx.isRecipientCurrent=sourceCallable('components/app/messages-simple-inbox.jsx','isRecipientCurrent',ctx)
+  const started=sourceCallable('components/app/messages-simple-inbox.jsx','onRecipientStarted',ctx)
+  return {ctx,scope,events,started}
+}
+test('actual owner recipient callback consumes once and rejects replay, wrong recipient and account switch',()=>{
+  const h=scopeHarness()
+  assert.equal(h.started('thread-one','wrong-master','owner-a'),false)
+  assert.equal(h.started('thread-one','master-one','owner-b'),false)
+  assert.deepEqual(h.events,[])
+  assert.equal(h.started('thread-one','master-one','owner-a'),true)
+  assert.equal(h.scope.current,null)
+  assert.equal(h.started('thread-one','master-one','owner-a'),false)
+  assert.equal(h.events.filter(value=>value==='consume').length,1)
+  assert.equal(h.events.filter(value=>value==='direct:thread-one').length,1)
+  const switched=scopeHarness();switched.ctx.accountId='owner-b'
+  assert.equal(switched.started('thread-one','master-one','owner-a'),false)
+  assert.deepEqual(switched.events,[])
+})
+function directStartHarness(){
+  let resolvePost
+  const h=scopeHarness(),events=[]
+  const ctx={busy:false,startPending:{current:false},destination:'master-one',accountId:'owner-a',
+    lifetime:{current:1},recipientSlug:'master-one',expectedAccountId:'owner-a',
+    isRecipientCurrent:h.ctx.isRecipientCurrent,onRecipientStarted:h.started,
+    setBusy:value=>events.push(['busy',value]),setError:value=>events.push(['error',value]),
+    post:()=>{events.push('post');return new Promise(resolve=>{resolvePost=resolve})},
+    getThreads:async()=>{events.push('threads');return {threads:[{id:'thread-one'}]}},
+    openThread:()=>{throw new Error('controlled flow must not open an unguarded detail')},
+    setDestination:()=>{throw new Error('parent owns controlled consumption')}}
+  return {h,ctx,events,start:sourceCallable('components/app/direct-message-inbox.jsx','start',ctx),
+    resolve:()=>resolvePost({threadId:'thread-one'})}
+}
+test('actual direct start ignores double click and replay after successful one-shot handoff',async()=>{
+  const x=directStartHarness(),pending=x.start()
+  await x.start();assert.equal(x.events.filter(v=>v==='post').length,1)
+  x.resolve();await pending
+  assert.equal(x.h.events.filter(v=>v==='direct:thread-one').length,1)
+  await x.start();assert.equal(x.events.filter(v=>v==='post').length,1)
+})
+test('actual direct start discards pending response on account switch, cancellation and unmount',async()=>{
+  for(const invalidate of [x=>{x.h.ctx.accountId='owner-b'},x=>{x.h.ctx.consumeRecipient()},x=>{x.ctx.lifetime.current++}]){
+    const x=directStartHarness(),pending=x.start();invalidate(x);x.resolve();await pending
+    assert.equal(x.events.filter(v=>v==='threads').length,0)
+    assert.equal(x.h.events.filter(v=>v==='direct:thread-one').length,0)
+  }
+})
+test('owner order wrapper retains explicit back navigation and a single keyed guarded inbox',()=>{
+  const hub=read('components/app/messages-hub.jsx')
+  const owner=hub.slice(hub.indexOf('if(ownerAccountId)return'),hub.indexOf('if(ownerBootstrapPending'))
+  assert.equal((owner.match(/<MessagesSimpleInbox\b/g)||[]).length,1)
+  assert.match(owner,/key=\{ownerAccountId\}/)
+  assert.match(owner,/href=\{'\/'\+locale\+'\/app\/messages\?section=clients'\}/)
+  assert.match(owner,/onRecipientConsumed=\{consumeRecipient\}/)
+  assert.match(owner,/recipientIntent=\{recipientIntent\?\.accountId===ownerAccountId\?recipientIntent:null\}/)
+  assert.doesNotMatch(owner,/<DirectMessageInbox|directDestination/)
+})
+function sourceEffect(path,marker,context){
+  const source=read(path),ast=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX),found=[]
+  const visit=node=>{if(ts.isCallExpression(node)&&node.expression.getText(ast)==='useEffect'&&node.arguments[0]?.getText(ast).includes(marker))found.push(node.arguments[0]);ts.forEachChild(node,visit)}
+  visit(ast);assert.equal(found.length,1,marker+' unique effect')
+  return vm.runInNewContext('('+found[0].getText(ast)+')',context)
+}
+test('actual direct lifecycle cleanup invalidates pending start and clears account-scoped drafts',async()=>{
+  const x=directStartHarness(),cleared=[]
+  Object.assign(x.ctx,{readGeneration:{current:0},setDraft:v=>cleared.push(['draft',v]),setFile:v=>cleared.push(['file',v]),
+    setAllowPublicReuse:v=>cleared.push(['reuse',v]),uploadRef:{current:'old-upload'},operationRef:{current:'old-op'}})
+  const cleanup=sourceEffect('components/app/direct-message-inbox.jsx','const life=lifetime',x.ctx)()
+  assert.deepEqual(cleared,[['draft',''],['file',null],['reuse',false]])
+  assert.equal(x.ctx.uploadRef.current,null);assert.equal(x.ctx.operationRef.current,null)
+  const pending=x.start();cleanup();x.resolve();await pending
+  assert.equal(x.ctx.readGeneration.current,1)
+  assert.equal(x.events.filter(v=>v==='threads').length,0)
+  assert.equal(x.h.events.filter(v=>v==='direct:thread-one').length,0)
+})
+test('actual recipient effect cleanup invalidates pending handoff without consuming a newer scope',()=>{
+  const h=scopeHarness(),replaced=[]
+  Object.assign(h.ctx,{recipient:'master-one',setTab:()=>{},URL,
+    window:{location:{href:'https://example.invalid/en/app/messages?to=master-one&tab=requests'},
+    history:{state:null,replaceState:(_s,_t,url)=>replaced.push(url)}}})
+  const effect=sourceEffect('components/app/messages-simple-inbox.jsx','const scope={accountId,slug:recipient}',h.ctx)
+  const cleanup=effect();cleanup()
+  assert.equal(h.scope.current,null)
+  assert.equal(h.started('thread-one','master-one','owner-a'),false)
+  assert.equal(replaced[0],'/en/app/messages?to=master-one')
+  const oldCleanup=effect();const newer={accountId:'owner-a',slug:'master-two'};h.scope.current=newer;oldCleanup()
+  assert.equal(h.scope.current,newer)
+})
+test('actual hub consumption removes recipient from URL, preserving unrelated section and fragment',()=>{
+  let intent='pending',next=''
+  const consume=sourceCallable('components/app/messages-hub.jsx','consumeRecipient',{
+    setRecipientIntent:value=>{intent=value},URL,
+    window:{location:{href:'https://example.invalid/en/app/messages?to=master-one&section=clients#thread'},
+      history:{state:{synthetic:true},replaceState:(_s,_t,url)=>{next=url}}}})
+  consume();assert.equal(intent,null);assert.equal(next,'/en/app/messages?section=clients#thread')
+})
+test('actual audio preview effect uses browser URL even when API URL constant shadows it, and revokes on cleanup',()=>{
+  const events=[],file={type:'audio/webm',name:'synthetic.webm'}
+  const ctx={URL:'/api/app/direct-messages',globalThis:{URL:{createObjectURL:value=>{assert.equal(value,file);events.push('create');return 'blob:synthetic'},revokeObjectURL:value=>events.push(['revoke',value])}},
+    file,AUDIO_MIMES:new Set(['audio/webm']),directMediaMime:value=>value.type,setAudioPreview:value=>events.push(['preview',value])}
+  const effect=sourceEffect('components/app/direct-message-inbox.jsx','createObjectURL(file)',ctx)
+  const cleanup=effect();assert.deepEqual(events,['create',['preview','blob:synthetic']]);cleanup()
+  assert.deepEqual(events.at(-1),['revoke','blob:synthetic'])
+  ctx.file=null;assert.equal(effect(),undefined);assert.deepEqual(events.at(-1),['preview',''])
 })

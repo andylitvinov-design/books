@@ -30,6 +30,8 @@ test("Business video contract rejects wrong source, placement, locale and automa
     [player, 'useEffect(() => { setInteractive(true); }, [])', 'useEffect(() => { setInteractive(true); setPlaying(true); }, [])'],
     [player, 'www.youtube-nocookie.com/embed/', 'www.youtube.com/embed/'],
     [player, 'const externalLink = internalOnly ? null :', 'const externalLink = true ? null :'],
+    [showcase, '<PublicVideoStarRating locale={locale} video={video.video} />', '<PublicVideoStarRating locale={locale} video={{ ...video.video, youtubeId: "s30Y42IwPcg" }} />'],
+    [showcase, '<PublicVideoStarRating locale={locale} video={video.video} />', '<PublicVideoStarRating locale="en" video={video.video} />'],
   ]) {
     const source = read(path);
     assert.equal(source.split(before).length, 2, "Exactly one synthetic mutation: " + before);

@@ -208,6 +208,11 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   const sectors = portrait.locator('[data-portrait-sectors]')
   const defaultSector = sectors.locator('[data-portrait-sector-all]')
   const originals = new Map()
+  const axesTab = portrait.locator('[data-portrait-view="axes"]')
+  const chartTab = portrait.locator('[data-portrait-view="chart"]')
+  // Axis choices are now an explicit tab, not automatically shown by selecting
+  // a life area. Exercise the same user controls and restore Chart afterwards.
+  await expect(chartTab).toHaveAttribute('aria-selected', 'true')
   // Four measured ray sectors remain separate from the non-ray Goal Profile.
   await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(5)
   const goal = sectors.locator('[data-portrait-sector="goal"]')
@@ -218,6 +223,10 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
   await sectors.locator('[data-portrait-sector="body"]').click()
+  await expect(inputs).toHaveCount(0)
+  await axesTab.click()
+  await expect(axesTab).toHaveAttribute('aria-selected', 'true')
+  await expect(portrait.locator('[data-testid="portrait-axes-panel"]')).toBeVisible()
   await expect(inputs).toHaveCount(PORTRAIT_SECTORS[0].axes.length)
   let total = 0
   for (const sector of PORTRAIT_SECTORS) {
@@ -238,6 +247,12 @@ export async function exercisePortraitRays(portrait, expect, locale) {
     await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
     await expect(options.locator('input:disabled')).toHaveCount(0)
     await expect(rays).toHaveCount(sector.axes.length)
+    await chartTab.click()
+    await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+    await expect(portrait.locator('[data-radar-mode="detail"]')).toBeVisible()
+    await expect(rays).toHaveCount(sector.axes.length)
+    await axesTab.click()
+    await expect(axesTab).toHaveAttribute('aria-selected', 'true')
     total += sector.axes.length
   }
   assert.equal(total, 17, 'All 17 fine choices remain selectable across four sectors')
@@ -246,6 +261,18 @@ export async function exercisePortraitRays(portrait, expect, locale) {
     await button.click()
     await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
     await inputs.nth(sector.axes.length - 1).uncheck()
+    if (sector.key === 'body') {
+      // Nondefault choices must survive changing views, not only sectors.
+      const unchecked = await inputs.evaluateAll(nodes => nodes.map(node => node.checked))
+      await chartTab.click()
+      await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+      await expect(portrait.locator('[data-radar-mode="detail"]')).toBeVisible()
+      await expect(rays).toHaveCount(unchecked.filter(Boolean).length)
+      await axesTab.click()
+      await expect(axesTab).toHaveAttribute('aria-selected', 'true')
+      await expect(portrait.locator('[data-testid="portrait-axes-panel"]')).toBeVisible()
+      assert.deepEqual(await inputs.evaluateAll(nodes => nodes.map(node => node.checked)), unchecked, 'Chart and Axes preserve every unchecked Body choice')
+    }
     const other = PORTRAIT_SECTORS.find(item => item.key !== sector.key)
     await sectors.locator(`[data-portrait-sector="${other.key}"]`).click()
     await expect(inputs).toHaveCount(other.axes.length)
@@ -261,6 +288,11 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   await defaultSector.click()
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
+  await expect(inputs).toHaveCount(total)
+  await expect(options.locator('input:checked')).toHaveCount(total)
+  await chartTab.click()
+  await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+  await expect(portrait.locator('[data-radar-mode="summary"]')).toBeVisible()
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
 }

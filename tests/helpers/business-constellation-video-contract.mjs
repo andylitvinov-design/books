@@ -10,6 +10,8 @@ export function assertBusinessConstellationVideo(read) {
   const nodes = tree => !tree || typeof tree !== "object" ? [] : Array.isArray(tree)
     ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)];
   const style = { default: new Proxy({}, { get: (_, key) => String(key) }) };
+  // Inspect rating props only; never load its hook, fetch or voting implementation.
+  const PublicVideoStarRating = Symbol("PublicVideoStarRating boundary");
   let hooks;
   const react = {
     useState(initial) {
@@ -40,6 +42,7 @@ export function assertBusinessConstellationVideo(read) {
     "@/components/contact-channel-chooser": { ContactChannelChooser: "ContactChannelChooser" },
     "@/components/public-site-header": { PublicSiteHeader: "PublicSiteHeader" },
     "@/components/business-website-enquiry": { BusinessWebsiteEnquiry: "BusinessWebsiteEnquiry" },
+    "@/components/public-video-star-rating": { PublicVideoStarRating },
     "@/lib/whatsapp-enquiry": { whatsappEnquiryUrl: () => "https://example.invalid/inert-enquiry" },
     "./business-consulting-landing.module.css": style,
     "./service-video-showcase.module.css": style,
@@ -112,6 +115,10 @@ export function assertBusinessConstellationVideo(read) {
     assert.equal(playerProps.locale, locale);
     assert.equal(playerProps.textLanguage, "en", "Translated UI must not invent translated audio");
     assert.equal(playerProps.fallbackPoster, approved.poster);
+    const ratingNodes = nodes(showcase).filter(node => node.type === PublicVideoStarRating);
+    assert.equal(ratingNodes.length, 1, "One inert rating boundary accompanies the approved recording");
+    assert.equal(ratingNodes[0].props.video, approved.video, "Rating must receive the same approved video object");
+    assert.equal(ratingNodes[0].props.locale, locale, "Rating must retain the current interface locale");
 
     hooks = { index: 0, values: [], effects: [] };
     const playable = SiteVideoPlayer(playerProps);

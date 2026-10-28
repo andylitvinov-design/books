@@ -17,14 +17,14 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /recorder\.start\(500\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
-  assert.match(video, /loadLocalImage\(snapshot\)/);
+  assert.match(video, /loadSceneImage\(snapshot\)/);
   assert.match(video, /sourceRef\.current !== snapshot/);
   assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
 
 test("video recorder has 10/20/30 seconds, 1:1/9:16 and four local effects mirrored across EN/RU/ES", () => {
   const source = read("components/mandala-free-video-studio.tsx");
-  assert.match(source, /const durations = \[10, 20, 30\] as const/);
+  assert.match(source, /const durations = \[10, 20, 30, 60\] as const/);
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
@@ -62,11 +62,11 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
   for (const id of ids) assert.match(effects, new RegExp('id: "' + id + '"'));
   assert.equal((effects.match(/ id: "/g) || []).length, 12, "exactly twelve client-safe concepts");
   for (const locale of ["en", "ru", "es"]) assert.match(effects, new RegExp(locale + ': "'));
-  assert.match(studio, /moneyScenes\.slice\(0, showAllMoney \? moneyScenes\.length : 4\)/);
+  assert.match(studio, /moneyTemplates/);
   assert.match(studio, /data-mandala-money-option/);
   assert.match(studio, /data-mandala-money-preview/);
   assert.match(studio, /setMoneyScene\(null\)/);
-  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, time, aspect, title\)/);
+  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio, /window\.requestAnimationFrame\(draw\)/);
   assert.match(studio, /!document\.hidden/);
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
@@ -91,14 +91,14 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   const css=read("components/mandala-meditation.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(studio, /data-mandala-cinematic-canvas/);
-  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, time, aspect, title\)/);
+  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = moneyScene && photoUrl \? photoUrl : frameUrl/);
+  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
-  assert.match(studio, /videoBitsPerSecond: quality === "fullhd" \? 5_000_000 : 3_000_000/);
+  assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
   assert.match(parent, /photoUrl=\{imageUrl\}/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
@@ -119,4 +119,37 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
     assert.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,file);
   }
   assert.doesNotMatch(studio+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
+});
+
+
+test("existing 12 money scenes retain tap-triggered animated thumbnails", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio,/data-mandala-scene-preview=\{scene\}/);
+  assert.match(studio,/data-scene-playing=\{playing&&visible\?"true":"false"\}/);
+  assert.match(studio,/IntersectionObserver/);
+  assert.match(studio,/window\.requestAnimationFrame\(draw\)/);
+  assert.match(studio,/playing=\{moneyScene===money\.id&&previewPlaying&&!recording\}/);
+  assert.match(studio,/setPreviewPlaying\(true\)/);
+  assert.match(studio,/CinematicSceneThumbnail scene=\{money\.id\}/);
+  assert.match(studio,/data-real-mp4=\{film\.src\}/);
+  assert.match(browser,/actual H\.264 video must advance in time/);
+  assert.match(browser,/actual H\.264 video must advance in time/);
+});
+
+test("background-only reusable clip preserved from live without photo or payment", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
+  assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
+  assert.match(studio,/theme==="money" && backgroundOnly \? BACKGROUND_CLIP/);
+  assert.match(studio,/data-mandala-output-mode/);
+  assert.match(studio,/setBackgroundOnly\(true\)/);
+  assert.match(studio,/backgroundOnly\?"money-background":"personal-mandala"/);
+  assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
+  assert.match(studio,/if \(!art\) return/);
+  assert.match(browser,/holistic-house-money-background/);
+  for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
+    assert.ok(studio.includes(label),label);
 });

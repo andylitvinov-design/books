@@ -124,3 +124,520 @@
   .thumb{flex-basis:118px;min-height:117px}
 }
 @media(prefers-reduced-motion:reduce){.viewer *{scroll-behavior:auto;transition:none}}
+
+
+/* Match the original meditation stage footprint, not the taller legacy catalog. */
+.hero { min-height: 442px; }
+@media (max-width: 640px) {
+  .hero { height: 288px; min-height: 288px; max-height: 288px; padding: 9px 10px 14px; }
+  .photoStage { inset: 47px 1% 55px 37%; }
+  .copy { flex: 1 1 auto; min-height: 0; width: 65%; padding: 61px 0 5px; }
+  .copy h2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; font-size: clamp(23px,6.25vw,31px); line-height: 1.04; margin: 6px 0 4px; }
+  .copy p { -webkit-line-clamp: 2; margin: 0 0 5px; font-size: 11.5px; line-height: 1.2; }
+  .eyebrow { font-size: 10px; padding: 4px 6px; }
+  .actions { flex: none; }
+  .primary { min-height: 52px; font-size: clamp(12px,3.55vw,17px); }
+  .secondary { min-height: 50px; }
+  .arrows { top: 43%; }
+}
+@media (max-width: 350px) {
+  .hero { height: 282px; min-height: 282px; max-height: 282px; }
+  .copy { min-height: 0; padding-top: 59px; }
+  .copy h2 { font-size: 22px; }
+  .copy p { -webkit-line-clamp: 2; font-size: 11px; }
+}
+
+
+/* Four public-intention filters precede the compact Reiki stage. */
+.reikiFocusBar {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px;
+  margin: 0; padding: 10px 11px; background: #f6f7ee;
+}
+.reikiFocusButton {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 0; min-height: 63px; padding: 7px 5px; gap: 4px;
+  border: 1px solid #bfd9c7; border-radius: 14px; background: #fdfcf6;
+  color: #284333; text-align: center; cursor: pointer;
+}
+.reikiFocusButton strong { font-size: 12px; line-height: 1.12; overflow-wrap: anywhere; }
+.reikiFocusButton small { color: #577361; font-size: 10px; line-height: 1.18; overflow-wrap: anywhere; }
+.reikiFocusButton[aria-pressed="true"] {
+  border-color: #15a075; background: linear-gradient(125deg,#0da578,#056e55);
+  color: white; box-shadow: 0 4px 10px #1277592d;
+}
+.reikiFocusButton[aria-pressed="true"] small { color: #e4f8ea; }
+.reikiFocusButton:focus-visible { outline: 3px solid #d39c43; outline-offset: 2px; }
+.unavailableMethod { font-weight: 800; color: #166b4a; }
+@media (max-width: 640px) {
+  .reikiFocusBar { gap: 4px; padding: 8px 8px 7px; }
+  .reikiFocusButton { min-height: 62px; padding: 5px 2px; gap: 3px; border-radius: 10px; }
+  .reikiFocusButton strong { font-size: clamp(9.7px,2.8vw,12px); line-height: 1.12; }
+  .reikiFocusButton small { font-size: clamp(8.3px,2.32vw,10px); line-height: 1.12; }
+}
+@media (max-width: 350px) {
+  .reikiFocusBar { gap: 3px; padding-inline: 5px; }
+  .reikiFocusButton strong { font-size: 9.1px; }
+  .reikiFocusButton small { font-size: 8.2px; }
+}
+
+
+/* Mobile Reiki, design-v2: a single scenic photo stage with four compact in-place views.
+ * Scope selectors above .page button's inherited-font reset; otherwise iOS expands
+ * the filter chips to the entire page's headline font. No fixed viewport-sized sheet. */
+.reikiStage {
+  position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 10px;
+  min-width: 0; min-height: 442px; padding: 13px; overflow: hidden; border-radius: 19px;
+  color: #fff; background: #154138;
+}
+.reikiStageArt {
+  position: absolute; inset: 0; z-index: -3; overflow: hidden; pointer-events: none;
+}
+.reikiStageBackdrop {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 66% 48%; filter: saturate(1.12) brightness(1.11);
+}
+.reikiStage[data-active-tab="filter"] .reikiStageArt {
+  bottom: auto; height: 220px;
+}
+.reikiStageShade {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg,rgba(5,39,33,.92),rgba(8,45,35,.66) 47%,rgba(10,45,33,.11) 97%),
+    linear-gradient(0deg,rgba(5,32,25,.58),transparent 59%);
+}
+.reikiStageTabs {
+  position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
+  align-items: stretch; gap: 6px; width: 100%; min-width: 0;
+}
+.reikiStage .reikiStageTab {
+  display: flex; justify-content: center; align-items: center; gap: 5px;
+  min-width: 0; min-height: 46px; max-height: 48px; padding: 7px 5px;
+  border: 1px solid #eef6e8aa; border-radius: 24px;
+  background: #19483dd4; color: #fff;
+  font: 800 13px/1.15 Arial,Helvetica,sans-serif; text-align: center; white-space: nowrap;
+  letter-spacing: -.018em; cursor: pointer;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.reikiStageTab svg { flex: none; width: 16px; height: 16px; }
+.reikiStage .reikiStageTab[aria-selected="true"] {
+  border-color: #98ead0; background: linear-gradient(135deg,#0ba879,#057d5a);
+  box-shadow: 0 3px 11px #042e2370;
+}
+.reikiStage .reikiStageTab:focus-visible,
+.reikiStage .reikiOptions button:focus-visible,
+.reikiStage .reikiApply:focus-visible,
+.reikiStage .reikiReset:focus-visible,
+.reikiStage .reikiSecondary:focus-visible {
+  outline: 3px solid #f5cc81; outline-offset: 2px;
+}
+.reikiStageContent {
+  display: flex; align-items: flex-end; flex: 1; min-width: 0; min-height: 244px;
+}
+.reikiTabCopy {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  max-width: min(74%,480px); min-width: 0; padding: 7px 0 2px;
+  text-shadow: 0 1px 7px #072c2466;
+}
+.reikiTabCopy h2 {
+  margin: 0; color: #fff; font: 900 clamp(29px,3.85vw,42px)/1.07 Arial,Helvetica,sans-serif;
+  letter-spacing: -.025em; overflow-wrap: anywhere; text-wrap: balance;
+}
+.reikiTabCopy p {
+  margin: 0; color: #fbf8ed; font: 650 clamp(13px,1.75vw,17px)/1.34 Arial,Helvetica,sans-serif;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.reikiPill {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 5px 9px; border: 1px solid #f0f2e5a8; border-radius: 22px;
+  background: #164f40c7; color: #fff; font: 800 11px/1.15 Arial,Helvetica,sans-serif;
+}
+.reikiSelectedPrice { color: #ffecc6; font: 850 14px/1.2 Arial,Helvetica,sans-serif; }
+.reikiMainActions {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  width: 100%; min-width: 0; margin-top: 4px;
+}
+.reikiStage .reikiApply {
+  display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px;
+  flex: 1 1 auto; min-width: 0; min-height: 49px; padding: 9px 13px;
+  border: 1px solid #91e7bb; border-radius: 15px;
+  background: linear-gradient(120deg,#008966,#12b689); color: #fff;
+  font: 850 14px/1.16 Arial,Helvetica,sans-serif; text-align: center;
+  text-shadow: none; text-decoration: none; box-shadow: 0 4px 15px #042e2157; cursor: pointer;
+}
+.reikiStage .reikiApply small {
+  display: block; width: 100%; margin: 0; color: #f2fffa;
+  font: 650 10.5px/1.12 Arial,Helvetica,sans-serif;
+}
+.reikiStage .reikiSecondary {
+  flex: 0 0 auto; min-height: 49px; padding: 9px 12px;
+  border: 1px solid #e9eee1a3; border-radius: 15px;
+  background: #15473aca; color: #fff; font: 800 12px/1.15 Arial,Helvetica,sans-serif;
+  cursor: pointer;
+}
+.reikiCaution {
+  color: #fcf1d9; font: 600 10px/1.26 Arial,Helvetica,sans-serif;
+  text-shadow: 0 1px 5px #08261e;
+}
+.reikiInlineLink {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 8px 11px; border: 1px solid #dbedddc2;
+  border-radius: 12px; background: #126046ce; color: #fff;
+  font: 800 12px/1.2 Arial,Helvetica,sans-serif; text-decoration: none;
+}
+.reikiMediaLinks { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Filter tab deliberately keeps the warm photo visible ABOVE the soft sheet. */
+.reikiStage[data-active-tab="filter"] { min-height: 0; }
+.reikiStage[data-active-tab="filter"] .reikiStageContent {
+  flex: none; min-height: 0; align-items: stretch;
+}
+.reikiPhotoIntro {
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  gap: 5px; min-height: 115px; max-width: 70%; padding: 8px 3px;
+  color: #fff; text-shadow: 0 2px 8px #0e3228;
+}
+.reikiPhotoIntro > strong {
+  font: 900 clamp(22px,3vw,30px)/1.08 Arial,Helvetica,sans-serif; letter-spacing: -.025em;
+}
+.reikiPhotoIntro > small {
+  font: 650 12px/1.25 Arial,Helvetica,sans-serif; color: #f8f3e9;
+}
+.reikiFilterSheet {
+  display: grid; gap: 10px; width: 100%; min-width: 0; padding: 15px;
+  border: 1px solid #f1e6d3; border-radius: 18px; background: #fffdf7f5;
+  color: #223c30; box-shadow: 0 9px 22px #102b2238; text-shadow: none;
+}
+.reikiFilterHeading {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 9px; min-width: 0;
+}
+.reikiFilterHeading h2 {
+  margin: 0 0 3px; color: #243d33;
+  font: 850 clamp(19px,2.5vw,24px)/1.16 Arial,Helvetica,sans-serif;
+}
+.reikiFilterHeading p {
+  margin: 0; color: #5d6f63; font: 500 12px/1.25 Arial,Helvetica,sans-serif;
+}
+.reikiStage .reikiReset {
+  flex: none; min-height: 43px; padding: 7px 3px; border: 0;
+  background: transparent; color: #078364;
+  font: 850 12px/1.18 Arial,Helvetica,sans-serif; cursor: pointer;
+}
+.reikiFieldset { display: block; min-width: 0; margin: 0; padding: 0; border: 0; }
+.reikiFieldset legend {
+  display: block; width: 100%; margin: 0 0 5px; padding: 0;
+  color: #244035; font: 850 13px/1.23 Arial,Helvetica,sans-serif;
+}
+.reikiOptions { display: grid; align-items: stretch; gap: 6px; min-width: 0; }
+.reikiOptions[data-cols="three"] { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.reikiOptions[data-cols="two"] { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.reikiOptions[data-cols="price"] { display: flex; gap: 5px; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x proximity; scrollbar-width: none; padding: 1px 0 3px; }
+.reikiOptions[data-cols="price"]::-webkit-scrollbar { display: none; }
+.reikiStage .reikiOptions button {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  min-width: 0; min-height: 46px; padding: 7px 5px;
+  border: 1px solid #e1d7c7; border-radius: 11px;
+  background: #fdf9f1; color: #233e34;
+  font: 780 12px/1.2 Arial,Helvetica,sans-serif;
+  text-align: center; overflow-wrap: normal; cursor: pointer;
+}
+.reikiOptions button svg { flex: 0 0 auto; width: 16px; height: 16px; color: #2b5750; }
+.reikiOptions button span { min-width: 0; }
+.reikiStage .reikiOptions[data-cols="price"] button {
+  flex: 1 0 65px; min-width: 65px; min-height: 44px; padding: 6px 4px;
+  font: 800 11px/1.15 Arial,Helvetica,sans-serif; white-space: nowrap; scroll-snap-align: start;
+}
+.reikiStage .reikiOptions button[aria-pressed="true"] {
+  border-color: #2ab588; background: linear-gradient(135deg,#00966c,#0eb584);
+  box-shadow: 0 3px 9px #0b72532e; color: #fff;
+}
+.reikiOptions button[aria-pressed="true"] svg { color: #fff; }
+.reikiCertificate {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 49px; cursor: pointer; color: #234539;
+}
+.reikiCertificate strong { display: block; font: 850 12px/1.2 Arial,Helvetica,sans-serif; }
+.reikiCertificate small { display: block; margin-top: 3px; color: #68796d;
+  font: 550 11px/1.3 Arial,Helvetica,sans-serif; }
+.reikiCertificate input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: #068f69; }
+.reikiPreferences {
+  margin: 0; padding-top: 7px; border-top: 1px solid #e6e0d2;
+  color: #657267; font: 550 11px/1.33 Arial,Helvetica,sans-serif;
+}
+.reikiStage .reikiFilterSheet .reikiApply {
+  flex: none; width: 100%; min-height: 50px; margin: 1px 0 0;
+}
+.reikiLearning {
+  display: grid; gap: 8px; padding: 15px; background: #fcf8ed; color: #233d32;
+}
+.reikiLearning h3 { margin: 0; font: 850 18px/1.2 Arial,Helvetica,sans-serif; }
+.reikiLearning p { margin: 0; color: #657267; font: 500 13px/1.35 Arial,Helvetica,sans-serif; }
+.reikiLearning a {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; border: 1px solid #bad8c3; border-radius: 12px;
+  background: #edf7eb; color: #066e50; font: 850 13px/1.2 Arial,Helvetica,sans-serif;
+  text-decoration: none;
+}
+@media(min-width:641px) {
+  .reikiFilterSheet { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .reikiFilterHeading,.reikiPreferences,.reikiFilterSheet > .reikiApply { grid-column: 1/-1; }
+}
+@media(max-width:640px) {
+  .reikiStage { min-height: 288px; padding: 9px; gap: 7px; border-radius: 17px; }
+  .reikiStage:not([data-active-tab="filter"]) { height: 288px; min-height: 288px; max-height: 288px; }
+  .reikiStageBackdrop { object-position: 72% 48%; }
+  .reikiStage[data-active-tab="filter"] .reikiStageArt {
+    height: 190px;
+  }
+  .reikiStageShade {
+    background: linear-gradient(90deg,rgba(4,39,34,.94),rgba(5,45,34,.62) 54%,rgba(7,42,29,.08) 98%),
+      linear-gradient(0deg,rgba(4,33,27,.68),transparent 67%);
+  }
+  .reikiStageTabs { gap: 4px; }
+  .reikiStage .reikiStageTab {
+    flex-direction: row; gap: 0; min-height: 44px; max-height: 44px;
+    padding: 6px 1px; border-radius: 15px;
+    font: 800 clamp(10px,2.78vw,12px)/1.1 Arial,Helvetica,sans-serif;
+    letter-spacing: -.035em;
+  }
+  .reikiStageTab svg { display: none; }
+  .reikiStageContent { min-height: 0; overflow: visible; }
+  .reikiTabCopy { max-width: 75%; padding: 3px 0; gap: 5px; }
+  .reikiTabCopy h2 {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: clamp(21px,5.8vw,29px); line-height: 1.05;
+  }
+  .reikiTabCopy p { -webkit-line-clamp: 2; font-size: clamp(11px,3vw,13px); line-height: 1.22; }
+  .reikiPill { padding: 4px 7px; font-size: 10px; }
+  .reikiSelectedPrice { font-size: 12px; }
+  .reikiMainActions { margin-top: 2px; gap: 5px; }
+  .reikiStage .reikiApply {
+    min-height: 44px; padding: 7px 8px; border-radius: 12px;
+    font: 850 clamp(11px,3.15vw,13px)/1.12 Arial,Helvetica,sans-serif;
+  }
+  .reikiStage .reikiSecondary {
+    min-height: 44px; padding: 7px 10px; border-radius: 12px;
+    font: 800 11px/1.12 Arial,Helvetica,sans-serif;
+  }
+  .reikiCaution { font-size: 9.5px; line-height: 1.2; }
+  .reikiInlineLink { font-size: 11.5px; }
+  .reikiStage[data-active-tab="filter"] { height: auto; max-height: none; }
+  .reikiStage[data-active-tab="filter"] .reikiStageContent { overflow: visible; }
+  .reikiPhotoIntro { min-height: 88px; max-width: 82%; padding: 4px 2px 5px; gap: 4px; }
+  .reikiPhotoIntro > strong { font-size: clamp(21px,5.7vw,25px); line-height: 1.05; }
+  .reikiPhotoIntro > small { font-size: 11px; line-height: 1.15; }
+  .reikiFilterSheet { gap: 6px; padding: 10px 10px 11px; border-radius: 15px; }
+  .reikiFilterHeading h2 { font-size: clamp(16px,4.3vw,18px); }
+  .reikiFilterHeading p { font-size: 10.5px; line-height: 1.2; }
+  .reikiStage .reikiReset {
+    min-height: 40px; font: 850 11.5px/1.14 Arial,Helvetica,sans-serif;
+  }
+  .reikiFieldset legend { font-size: 12px; margin: 0 0 5px; }
+  .reikiOptions { gap: 5px; }
+  .reikiStage .reikiOptions button {
+    gap: 4px; min-height: 43px; padding: 6px 4px;
+    font: 750 clamp(10.2px,2.85vw,12px)/1.15 Arial,Helvetica,sans-serif;
+  }
+  .reikiOptions button svg { width: 15px; height: 15px; }
+  .reikiStage .reikiOptions[data-cols="price"] button {
+    flex-basis: 59px; min-width: 59px; min-height: 43px;
+    font: 800 10.5px/1.1 Arial,Helvetica,sans-serif;
+  }
+  .reikiCertificate strong { font-size: 12px; }
+  .reikiCertificate small { font-size: 10px; }
+  .reikiPreferences { font-size: 10.3px; line-height: 1.24; }
+  .reikiStage .reikiFilterSheet .reikiApply { min-height: 48px; }
+  /* A single published master is one horizontal card, not a tiny photo with a vacant rail. */
+  .viewer[data-support-directory-kind="healing"] .rail[data-single="true"] .thumb {
+    flex: 1 1 100%; min-height: 98px; padding: 12px 10px 12px 116px;
+    border: 1px solid #b9dcc9; border-radius: 14px; background: #f4faf1;
+    color: #294537; align-items: center;
+  }
+  .viewer[data-support-directory-kind="healing"] .rail[data-single="true"] .thumb img {
+    position: absolute; inset: 0 auto 0 0; width: 106px; height: 100%;
+    z-index: 0; object-fit: cover; object-position: center;
+  }
+  .viewer[data-support-directory-kind="healing"] .rail[data-single="true"] .thumb::after {
+    background: none;
+  }
+  .viewer[data-support-directory-kind="healing"] .rail[data-single="true"] .thumbTitle {
+    color: #244a37; text-shadow: none; font-size: 16px; -webkit-line-clamp: 2;
+  }
+  .viewer[data-support-directory-kind="healing"] .more { padding: 13px 11px 16px; }
+}
+@media (max-width:350px) {
+  .reikiStage { min-height: 282px; padding: 7px; }
+  .reikiStage:not([data-active-tab="filter"]) { height: 282px; min-height: 282px; max-height: 282px; }
+  .reikiStage .reikiStageTab { font-size: 9.5px; border-radius: 12px; }
+  .reikiTabCopy { max-width: 78%; }
+  .reikiTabCopy h2 { font-size: 20px; }
+  .reikiTabCopy p { font-size: 10.3px; }
+  .reikiPhotoIntro { min-height: 74px; }
+  .reikiPhotoIntro > strong { font-size: 20px; }
+  .reikiPhotoIntro > small { font-size: 10px; }
+  .reikiFilterSheet { padding: 9px 8px; gap: 5px; }
+  .reikiFilterHeading h2 { font-size: 16px; }
+  .reikiStage .reikiOptions button { font-size: 10px; }
+  .reikiOptions button svg { width: 14px; height: 14px; }
+  .reikiStage .reikiOptions[data-cols="price"] button { flex-basis: 61px; min-width: 61px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .reikiStage *, .reikiStage *::before, .reikiStage *::after { transition: none; scroll-behavior: auto; }
+}
+
+/* Consultation marketplace: reuse the existing scenic stage + rail, with real
+   published offers and compact discoverability comparable to Talismans/Reiki. */
+.consultBrowse { min-width:0; padding:10px 10px 8px; background:#fcfaf4; }
+.consultHeading { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; margin:0 4px 11px; }
+.consultHeading h2 { margin:0; font-size:clamp(20px,3vw,26px); line-height:1.15; color:#244034; font-weight:900; }
+.consultHeading p { margin:0; color:#758175; font-size:12px; flex:1 1 auto; }
+.consultHeading a { display:flex; align-items:center; gap:4px; color:#098463; font-size:12px; font-weight:800; text-decoration:none; white-space:nowrap; }
+.consultCategoryWrap { position:relative; min-width:0; }
+.consultCategoryRail { display:flex; gap:8px; max-width:100%; padding:2px 3px 9px;
+  overflow-x:auto; overscroll-behavior-inline:contain; scroll-snap-type:x mandatory; scrollbar-width:none; }
+.consultCategoryRail::-webkit-scrollbar { display:none; }
+.consultCategory { flex:0 0 clamp(106px,20%,160px); min-height:90px; display:flex;
+  flex-direction:column; align-items:center; justify-content:center; gap:7px; min-width:0;
+  padding:7px 6px; border:1px solid #e6e1d7; border-radius:14px; background:#fefbf6;
+  color:#25392f; font-size:12px; font-weight:750; line-height:1.15; text-align:center;
+  scroll-snap-align:start; cursor:pointer; }
+.consultCategory span { display:block; overflow-wrap:anywhere; max-width:100%; }
+.consultCategory svg { flex:none; color:#07836d; stroke-width:1.9; }
+.consultCategory[data-support-consultation-category="imagery"] svg { color:#1681a1; }
+.consultCategory[data-support-consultation-category="constellations"] svg { color:#b25b57; }
+.consultCategory[data-support-consultation-category="business"] svg { color:#d59a1a; }
+.consultCategory[aria-pressed="true"] { border:2px solid #087f66; padding:6px 5px;
+  background:linear-gradient(145deg,#ddf8ec,#f6fffb); box-shadow:0 2px 5px #006a4a1d; }
+.consultCategoryNext { position:absolute; right:-2px; top:23px; display:grid; place-items:center;
+  width:38px; height:38px; border:1px solid #ecede6; border-radius:50%;
+  background:#fffefa; color:#093b34; box-shadow:0 4px 12px #1d3b302b; cursor:pointer; }
+.consultFilters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 41px;
+  gap:7px; min-width:0; padding:0 2px 4px; }
+.consultField { display:flex; flex-direction:column; gap:2px; min-width:0;
+  padding:5px 8px; min-height:56px; border:1px solid #e6e4dd; border-radius:11px;
+  background:#fbfaf6; color:#30433a; }
+.consultField > span { display:flex; align-items:center; gap:5px; min-width:0;
+  font-size:11px; font-weight:780; white-space:nowrap; }
+.consultField > span svg { flex:none; color:#648043; }
+.consultField select { width:100%; min-width:0; height:23px; border:0; padding:0 4px 0 0;
+  overflow:hidden; background:transparent; color:#57655d; font-size:12px;
+  text-overflow:ellipsis; cursor:pointer; }
+.consultReset { display:grid; place-items:center; min-height:56px; padding:0;
+  border:1px solid #e6e4dd; border-radius:11px; background:#fbfaf6; color:#335449; cursor:pointer; }
+.consultPhoto { position:absolute; z-index:-2; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:center 38%; }
+.hero[data-support-consultation-hero="true"] { height:auto; min-height:430px; max-height:none;
+  padding:18px 16px 16px; background:#113d35; }
+.hero[data-support-consultation-hero="true"] .shade {
+  background:linear-gradient(90deg,#0a2c27f5 1%,#133d33dd 42%,#173f3270 83%),
+    linear-gradient(0deg,#09251ef2,transparent 72%); }
+.hero[data-support-consultation-hero="true"] .copy { width:min(64%,520px);
+  min-height:0; flex:1 1 auto; padding:50px 0 12px; }
+.hero[data-support-consultation-hero="true"] .copy h2 { font-size:clamp(29px,4.3vw,46px);
+  max-width:100%; }
+.hero[data-support-consultation-hero="true"] .copy p { -webkit-line-clamp:3; }
+.hero[data-support-consultation-hero="true"] .price { margin-top:4px; color:#ffcf50; font-size:19px; }
+.consultProvider { display:block; margin-top:7px; color:#e5f3e6; font-size:12px;
+  line-height:1.25; font-weight:700; }
+.consultMedia { position:absolute; z-index:3; right:12px; top:99px; display:grid;
+  place-items:center; width:43px; height:43px; border:1px solid #fff8;
+  border-radius:50%; background:#062c27b8; color:#fff; }
+.consultPreviewGroup { position:relative; z-index:3; max-width:72%; padding:1px 0 3px; }
+.consultPreviewGroup > small { display:block; margin-bottom:5px; font-size:10px;
+  line-height:1.2; color:#ecf5e8; font-weight:750; text-shadow:0 1px 4px #06231d; }
+.consultPreviewGroup .consultPreviews { width:100%; max-width:100%; }
+.consultPreviews { position:relative; z-index:2; display:flex; width:max-content;
+  max-width:66%; gap:5px; padding-bottom:7px; overflow-x:auto; }
+.consultPreviews button { position:relative; width:54px; height:46px; flex:0 0 54px;
+  border:2px solid #eee7be9c; border-radius:9px; overflow:hidden; background:#1e594c;
+  cursor:pointer; }
+.consultPreviews button[aria-pressed="true"] { border-color:#a5fad5; box-shadow:0 0 0 1px #0c9b6b; }
+.consultPreviews img { width:100%; height:100%; object-fit:cover; }
+.hero[data-support-consultation-hero="true"] .arrows { top:45%; }
+.hero[data-support-consultation-hero="true"] .actions { margin-top:5px; }
+.hero[data-support-consultation-hero="true"] .primary { min-height:57px; }
+.consultDetails { margin:8px 10px; padding:13px 15px; border:1px solid #cce7d5;
+  border-radius:12px; background:#f7fbf4; color:#244336; }
+.consultDetails strong { font-size:17px; }
+.consultDetails p { margin:7px 0; color:#385246; font-size:13px; line-height:1.4; }
+.consultDetails small { color:#64766b; font-size:11px; }
+.consultDetailsLink,.consultFallback a { display:inline-flex; gap:5px; align-items:center;
+  justify-content:center; min-height:42px; padding:8px 10px; border:1px solid #9adcb9;
+  border-radius:10px; color:#087354; background:#eaf9ef; font-weight:800;
+  font-size:12px; text-decoration:none; }
+.consultDetailsLink { margin:4px 7px 7px 0; }
+.consultFallback { max-width:460px; line-height:1.45; }
+.consultFallback a { display:flex; margin:8px auto 0; }
+.consultRail { display:flex; gap:10px; min-width:0; max-width:100%;
+  padding:3px 4px 10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
+.consultCard { display:flex; flex:0 0 clamp(156px,23%,215px); flex-direction:column;
+  min-width:0; min-height:236px; padding:0; overflow:hidden; border:2px solid #e7e4dd;
+  border-radius:15px; background:#fffdfa; color:#263d32; cursor:pointer;
+  text-align:left; scroll-snap-align:start; }
+.consultCard[aria-pressed="true"] { border-color:#12b890; box-shadow:0 0 0 2px #b5f2db,0 6px 13px #0b7c5332; }
+.consultCardImage { position:relative; display:block; flex:none; width:100%; aspect-ratio:1.65; background:#b3c9b6; }
+.consultCardImage img { width:100%; height:100%; object-fit:cover; }
+.consultCardCopy { display:flex; flex:1; flex-direction:column; gap:5px; min-width:0; padding:9px; }
+.consultCardCopy strong { display:-webkit-box; -webkit-box-orient:vertical;
+  -webkit-line-clamp:2; overflow:hidden; font-size:13px; line-height:1.16; }
+.consultCardCopy small { display:-webkit-box; -webkit-box-orient:vertical;
+  -webkit-line-clamp:2; overflow:hidden; color:#788179; font-size:11px; line-height:1.2; }
+.consultCardCopy b { margin-top:auto; padding-top:5px; color:#d09213; font-size:14px; }
+.viewer :is(.consultCategory,.consultCategoryNext,.consultReset,.consultField select,.consultCard,.consultMedia,.consultPreviews button):focus-visible {
+  outline:3px solid #eca83f; outline-offset:2px; }
+@media(max-width:640px) {
+  .consultBrowse { padding:8px 7px 7px; }
+  .consultHeading { margin:0 3px 8px; gap:3px 7px; }
+  .consultHeading h2 { font-size:20px; }
+  .consultHeading p { font-size:11px; }
+  .consultHeading a { font-size:11px; }
+  .consultCategoryRail { gap:5px; padding:2px 2px 8px; }
+  .consultCategory { flex-basis:clamp(89px,25%,116px); min-height:78px;
+    padding:5px 3px; border-radius:12px; font-size:10px; gap:5px; }
+  .consultCategory[aria-pressed="true"] { padding:4px 2px; }
+  .consultCategory svg { width:23px; height:23px; }
+  .consultCategoryNext { top:19px; width:34px; height:34px; }
+  .consultFilters { grid-template-columns:repeat(3,minmax(0,1fr)) 36px; gap:4px; }
+  .consultField { padding:5px 4px; min-height:52px; border-radius:9px; }
+  .consultField > span { gap:3px; font-size:10px; }
+  .consultField > span svg { width:13px; height:13px; }
+  .consultField select { font-size:10px; height:22px; }
+  .consultReset { min-height:52px; border-radius:9px; }
+  .consultReset svg { width:20px; height:20px; }
+  .hero[data-support-consultation-hero="true"] { height:auto; min-height:354px; max-height:none;
+    padding:12px 10px 12px; }
+  .hero[data-support-consultation-hero="true"] .copy { flex:1 1 auto; width:69%;
+    padding:28px 0 10px; }
+  .hero[data-support-consultation-hero="true"] .copy h2 { font-size:clamp(23px,6.4vw,31px);
+    line-height:1.05; -webkit-line-clamp:3; }
+  .hero[data-support-consultation-hero="true"] .copy p { -webkit-line-clamp:3;
+    font-size:clamp(11px,3.2vw,13px); line-height:1.26; }
+  .hero[data-support-consultation-hero="true"] .price { font-size:16px; }
+  .consultProvider { font-size:10px; margin-top:4px; }
+  .consultMedia { top:60px; right:9px; width:39px; height:39px; }
+  .consultPreviewGroup { max-width:74%; padding-bottom:2px; }
+  .consultPreviewGroup > small { font-size:9px; margin-bottom:3px; }
+  .consultPreviews { max-width:100%; }
+  .consultPreviews button { width:44px; height:39px; flex-basis:44px; }
+  .hero[data-support-consultation-hero="true"] .arrows { top:43%; right:6px; }
+  .hero[data-support-consultation-hero="true"] .actions { gap:6px; }
+  .hero[data-support-consultation-hero="true"] .primary { min-height:50px; font-size:clamp(13px,3.6vw,17px); }
+  .hero[data-support-consultation-hero="true"] .secondary { min-height:50px; font-size:12px; }
+  .consultRail { gap:7px; }
+  .consultCard { flex-basis:clamp(139px,38%,178px); min-height:203px; border-radius:12px; }
+  .consultCardCopy { padding:7px; gap:3px; }
+  .consultCardCopy strong { font-size:12px; }
+  .consultCardCopy small { font-size:10px; }
+  .consultCardCopy b { font-size:13px; }
+}
+@media(max-width:350px) {
+  .consultHeading p { display:none; }
+  .consultCategory { flex-basis:90px; font-size:9.7px; }
+  .consultField > span { font-size:9px; }
+  .consultField select { font-size:9px; }
+  .hero[data-support-consultation-hero="true"] { min-height:345px; }
+  .hero[data-support-consultation-hero="true"] .copy { width:73%; padding-top:25px; }
+  .hero[data-support-consultation-hero="true"] .copy h2 { font-size:22px; }
+  .consultPreviews { max-width:65%; }
+}

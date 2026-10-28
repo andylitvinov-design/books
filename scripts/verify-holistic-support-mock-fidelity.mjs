@@ -22,12 +22,19 @@ for (const browserType of [chromium, webkit]) {
       for (const width of [320, 390, 430]) {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
-          hasTouch: true, isMobile: true, reducedMotion: "reduce" });
+          hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
         const errors = [];
+        const directoryEvents = [];
+        const watched = url => url.includes("/api/public/remote-energy-support-masters");
         page.on("pageerror", error => errors.push(error.message));
+        page.on("requestfailed", req => { if (watched(req.url()))
+          directoryEvents.push("FAILED " + (req.failure()?.errorText ?? "unknown") + " " + req.url()); });
+        page.on("response", res => { if (watched(res.url()))
+          directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
+          directoryEvents.push("MOCK " + (kind || "masters"));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
@@ -46,8 +53,16 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
-          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1,
-            label + " recommendations below the four self-rating scales");
+          const mandalaAction=root.locator('[data-support-video-mandala]');
+          assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
+          assert.equal(await mandalaAction.getAttribute("href"),
+            "/"+locale+"/holistic-support/mandala",label+" genuine existing video studio route");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
+            label + " goal filter beneath the self-ratings");
+          assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
+            label + " current focus beneath the portrait");
+          assert.equal(await root.locator('[data-support-recommendations]').count(), 1,
+            label + " quick match beneath the portrait");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
@@ -152,6 +167,157 @@ for (const browserType of [chromium, webkit]) {
             label+" theme chosen by minimum, not a Focus selector");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
+          // The scenic workspace itself expands into a five-sector goal editor.
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          const filter=root.locator('[data-support-goal-filter]');
+          await filter.waitFor({state:"visible",timeout:8000});
+          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          await filter.locator('[data-goal-sector="money"]').click();
+          for (const concern of ["income","moneyStress","workStuck","decisions"]) {
+            await filter.locator('[data-goal-concern="'+concern+'"] input').check();
+          }
+          for (const goal of ["stableIncome","moneyConfidence","growth","clearPlan"]) {
+            await filter.locator('[data-goal-task="'+goal+'"] input').check();
+          }
+          assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
+            label+" more than three problems can be selected");
+          assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
+            label+" more than three goals can be selected");
+          assert.equal(await filter.locator('[data-goal-axis]').count(),4,label+" four money indicators");
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),4,
+            label+" two subjective indicators have now and want sliders");
+          assert.equal(await filter.locator('[data-goal-metric]').count(),4,
+            label+" income and reserve have real-unit now and want controls");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" no fabricated default income");
+          await filter.locator('[data-goal-currency]').selectOption("EUR");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').fill("2000");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
+          if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
+          const filterOverflow=await page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          assert.ok(filterOverflow<=3,label+" goal filter must not overflow horizontally: "+filterOverflow);
+          await filter.locator('[data-support-goal-apply]').click();
+          await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
+          const results=root.locator('[data-support-goal-results]');
+          await results.waitFor({state:"visible",timeout:8000});
+          assert.equal(await results.locator('[data-support-goal-action]').count(),5,
+            label+" five real recommendation categories");
+          assert.match(await results.locator('[data-support-goal-action="tests"]').getAttribute("href")??"",/\/tests$/,
+            label+" existing tests route");
+          assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
+            label+" real business learning route");
+          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
+            label+" only source-backed recordings");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-action="talismans"]').click();
+          const talisman=root.locator('[data-support-talisman-viewer]');
+          await talisman.waitFor({state:"visible",timeout:8000});
+          // Owner-approved shopping mock: verify actual category navigation,
+          // three selectors and the existing quote dialog at all iPhone sizes.
+          const categories=talisman.locator("[data-support-talisman-category]");
+          assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const labels=await talisman.evaluate(el=>{
+            const cards=Array.from(el.querySelectorAll('[data-support-talisman-category]')).slice(0,4);
+            const arrow=el.querySelector('[data-support-talisman-categories-next]');
+            const arrowLeft=arrow?.getBoundingClientRect().left ?? 0;
+            return cards.map(card=>{
+              const name=card.querySelector('span');
+              const rect=card.getBoundingClientRect();
+              return {text:name?.textContent,aria:card.getAttribute('aria-label'),
+                whiteSpace:name ? getComputedStyle(name).whiteSpace : '',
+                overflow:(name?.scrollWidth ?? 0)-(name?.clientWidth ?? 0),
+                fitsBeforeArrow:rect.right <= arrowLeft+2,
+                height:rect.height};
+            });
+          });
+          const expectedShortLabels={
+            en:["Strength","Money","Love","Goals"],
+            ru:["Сила","Деньги","Любовь","Цель"],
+            es:["Fuerza","Dinero","Amor","Metas"],
+          }[locale];
+          assert.deepEqual(labels.map(item=>item.text),expectedShortLabels,
+            label+" short words instead of torn-up 3-line talisman titles");
+          assert.ok(labels.every(item=>item.aria && item.aria !== item.text &&
+              item.whiteSpace==="nowrap" && item.overflow<=1 && item.fitsBeforeArrow),
+            label+" four fully readable single-line categories with full accessible names: "+JSON.stringify(labels));
+          const compactSizes=await talisman.evaluate(el=>{
+            const category=el.querySelector('[data-support-talisman-category-switcher]')?.getBoundingClientRect();
+            const first=el.querySelector('[data-support-talisman-category]')?.getBoundingClientRect();
+            const filters=el.querySelector('[data-support-talisman-filters]')?.getBoundingClientRect();
+            const artwork=el.querySelector('[data-support-talisman-artwork]')?.getBoundingClientRect();
+            return {categoryHeight:category?.height,cardWidth:first?.width,cardHeight:first?.height,
+              filtersHeight:filters?.height,artWidth:artwork?.width,artHeight:artwork?.height};
+          });
+          assert.ok(compactSizes.categoryHeight<=158 && compactSizes.cardWidth<=96 &&
+            compactSizes.cardHeight<=90 && compactSizes.filtersHeight<=65,
+            label+" compact 4-up categories and filters: "+JSON.stringify(compactSizes));
+          assert.ok(compactSizes.artWidth>=100 && compactSizes.artHeight>=125,
+            label+" featured source artwork must remain clearly visible");
+          assert.equal(await talisman.locator('[data-support-talisman-artwork] img').count(),1,
+            label+" original Fu image must be framed once, not swapped for fake jewellery");
+          const expand=talisman.locator('[aria-controls="talisman-category-options"]');
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"true",
+            label+" All categories expands six choices without adding a catalogue");
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"false",
+            label+" compact carousel returns after expanding");
+          const catRail=talisman.locator("[data-support-talisman-categories]");
+          assert.ok(await catRail.evaluate(el=>el.scrollWidth>el.clientWidth),
+            label+" more categories must really exist beyond the visible row");
+          await talisman.locator("[data-support-talisman-categories-next]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-support-talisman-categories]")?.scrollLeft>0,
+            null,{timeout:5000});
+          await talisman.locator('[data-support-talisman-category="relationships"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony",label+" love selects the existing harmony artwork");
+          await talisman.locator('[data-support-talisman-category="money"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity",label+" money selects the existing prosperity artwork");
+          if(width===390) await talisman.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-premium-talisman-390.png",
+            animations:"disabled",timeout:12000});
+          await talisman.locator('[data-support-talisman-filter="master"]').click();
+          assert.equal(await talisman.locator("#talisman-master-note").isVisible(),true,
+            label+" maker disclosure does not invent a named master");
+          await talisman.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),1,
+            label+" description filter narrows to one real item");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("all");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
+            label+" clearing description restores all actual Fu art");
+          await talisman.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
+          await talisman.locator("[data-support-talisman-request]").click();
+          const order=page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
+          await order.waitFor({state:"visible",timeout:8000});
+          assert.equal(await order.locator('[data-cart-talisman="fu-prosperity"]').count(),1,
+            label+" Order opens the existing cart for the selected public item");
+          assert.equal(await order.locator("[data-talisman-quote-saved]").count(),0,
+            label+" opening a quote does not fabricate a CRM receipt or payment");
+          await order.locator("button[aria-label]").first().click();
+          await order.waitFor({state:"hidden",timeout:8000});
+          await root.locator('[data-support-tool="meditation"]').click();
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
+            label+" chosen currency preserved when editing");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
+            label+" factual income draft survives editing");
+          await filter.locator('[data-goal-currency]').selectOption("USD");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" changing currency must not silently convert or relabel prior income");
+          assert.equal(await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').inputValue(),"1",
+            label+" reserve months remain unaffected by currency");
+          await filter.locator('[data-support-goal-reset]').click();
+          assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
+            label+" reset restores sector");
+          assert.equal(await root.locator('[data-goal-axis]').count(),4,
+            label+" energy also has four distinct measures");
+          await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
+          assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
+          assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
@@ -168,10 +334,13 @@ for (const browserType of [chromium, webkit]) {
           // Talisman has the same hero-first stage and source images in a
           // three-tile shelf. Navigation and local quote must not submit.
           await root.locator('[data-support-tool="talisman"]').click();
-          const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
             label+" three verified Fu illustrations below their large hero");
+          const talismanHeight = await talisman.locator('[data-support-talisman]').evaluate(
+            element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(talismanHeight - geometry.hero[0].height) <= 10,
+            label+" talisman stage uses the same compact height as meditation");
           const tRects=await talisman.evaluate(el=>{
             const a=el.querySelector('[data-support-talisman]')?.getBoundingClientRect();
             const b=el.querySelector('[data-support-talisman-rail]')?.getBoundingClientRect();
@@ -183,13 +352,210 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="pump"]').click();
           assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
             label+" Academy course routes still work");
+          if (locale === "ru") {
+            const picker = root.locator('[data-support-mystery-courses]');
+            assert.equal(await picker.locator('[data-support-mystery-course]').count(),3,
+              label+" Maya, Egyptian and Greek curricula always visible in Courses mode");
+            const pickerGeometry = await picker.evaluate(node => ({
+              pageWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+              cards:[...node.querySelectorAll('[data-support-mystery-course]')].map(item => {
+                const box=item.getBoundingClientRect();
+                return {left:box.left,right:box.right,width:box.width};
+              }),
+            }));
+            assert.ok(pickerGeometry.scrollWidth <= pickerGeometry.pageWidth + 3,
+              label+" courses picker does not overflow iPhone: "+JSON.stringify(pickerGeometry));
+            assert.ok(pickerGeometry.cards.every(card => card.width >= 78 &&
+              card.left >= -2 && card.right <= pickerGeometry.pageWidth + 2),
+              label+" all three mystery choices visible without horizontal scrolling");
+
+            const dropdown = root.locator('[data-support-filter="program"] select');
+            for (const programme of ["maya","egypt","greek"]) {
+              await dropdown.selectOption(programme);
+              assert.equal(await picker.locator('[data-support-mystery-course="'+programme+'"][aria-pressed="true"]').count(),1,
+                label+" selecting "+programme+" in the native iPhone dropdown matches the course card");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" original course never autoplays");
+              assert.equal(await root.locator('[data-support-video]').count(),4,
+                label+" four original course lesson previews");
+              const lessonId = await root.locator('[data-support-video]').first().getAttribute("data-support-video");
+              assert.match(lessonId ?? "",/^[a-zA-Z0-9_-]{11}$/,label+" original YouTube chapter");
+              const href=await root.locator('[data-support-active-course-link]').getAttribute("href");
+              assert.ok(href?.startsWith("/ru/academy/mysteries/"), label+" course links to existing native Academy source");
+            }
+            const links=await root.locator('[data-support-courses-panel] a').evaluateAll(entries =>
+              entries.map(entry=>entry.getAttribute("href")||""));
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-demeter"),label+" Demeter originals linked");
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-dionysus"),label+" Dionysus originals linked");
+            await picker.locator('[data-support-mystery-course="maya"]').click();
+            assert.equal(await dropdown.inputValue(),"maya",label+" quick card and programme select share state");
+            if (width === 390) await page.screenshot({
+              path:output+"/"+browserType.name()+"-ru-mystery-courses-390.png",fullPage:true,
+            });
+          } else {
+            assert.equal(await root.locator('[data-support-mystery-courses]').count(),0,
+              label+" Russian-only original voice lessons not marketed to EN/ES");
+          }
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
           const healing=root.locator('[data-support-healing-panel] [data-support-master-viewer]');
           await healing.waitFor({state:"visible",timeout:8000});
           const heroMaster=healing.locator('[data-support-master-hero]');
-          await heroMaster.waitFor({state:"visible",timeout:8000});
+          // An isolated WebKit fixture request may fail once after many
+          // browser cases. Verify that the real public-directory Retry works;
+          // never accept the error placeholder as a successful master card.
+          await healing.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const retry = healing.locator('[role="alert"] button');
+          if (await retry.count()) await retry.click();
+          await heroMaster.waitFor({state:"visible",timeout:20000}).catch(async error => {
+            const status = await healing.innerText().catch(() => "(directory unmounted)");
+            throw new Error(label + " master gallery failed after bounded retry: " + status +
+              " | directory=" + JSON.stringify(directoryEvents) + " / " + error.message);
+          });
+          const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
+          assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
+            "true",label+" only published Tantra Reiki selected initially");
+          const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(masterHeight-geometry.hero[0].height)<=10,
+            label+" Reiki hero matches compact meditation hero");
+          // User's filter belongs INSIDE the original large photo, not in a second hero.
+          const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
+          assert.equal(await tab("main").count(),1,label+" central Main tab");
+          assert.equal(await tab("filter").count(),1,label+" central Filter tab");
+          assert.equal(await tab("description").count(),1,label+" central Description tab");
+          assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          // Screenshot regression: shared .page button {font:inherit} used to inflate
+          // every Reiki tab into a huge two-line block on real iPhone Safari.
+          const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
+            elements.map(element => {
+              const rect=element.getBoundingClientRect();
+              const css=getComputedStyle(element);
+              return {height:rect.height,fontsize:parseFloat(css.fontSize),left:rect.left,
+                right:rect.right,top:rect.top,content:element.textContent?.trim()};
+            }));
+          assert.ok(tabSizes.every(item => item.height >= 40 && item.height <= 50 &&
+            item.fontsize <= 13 && item.left >= -1 && item.right <= width+1),
+            label+" Reiki tabs are compact, readable and on-screen: "+JSON.stringify(tabSizes));
+          assert.ok(Math.max(...tabSizes.map(item=>item.top)) -
+            Math.min(...tabSizes.map(item=>item.top)) <= 2,
+            label+" four action tabs occupy a single row");
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-main-390.png", fullPage: true,
+          });
+          await tab("filter").click();
+          const reikiFilter=healing.locator('[data-support-reiki-filter]');
+          await reikiFilter.waitFor({state:"visible"});
+          const navPosition=await root.locator('[data-support-mobile-bottom-nav]')
+            .evaluate(element => getComputedStyle(element).position);
+          assert.equal(navPosition, "static",
+            label+" the bottom nav must not obscure an expanded Reiki filter");
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
+          });
+          const intro=healing.locator('[data-support-reiki-photo-intro]');
+          const introHeight=await intro.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(introHeight >= 68 && introHeight <= 160,
+            label+" scenic photo remains visible ABOVE the filter, "+introHeight);
+          const art=healing.locator('[data-support-reiki-central] img').first();
+          assert.ok((await art.getAttribute('src')).includes("reiki-approved-sunrise-v3.webp"),
+            label+" approved high-resolution Reiki image, not low-quality mock thumbnail");
+          const artHeight=await art.evaluate(element => element.parentElement.getBoundingClientRect().height);
+          assert.ok(artHeight >= 180 && artHeight <= 230,
+            label+" filter photo is framed in a scenic header, not stretched over the whole sheet: "+artHeight);
+          const filterLayout=await reikiFilter.evaluate(element => {
+            const buttons=Array.from(element.querySelectorAll(
+              '[data-support-reiki-format] button,[data-support-reiki-price] button,'+
+              '[data-support-reiki-timing] button,[data-support-reiki-report] button,'+
+              '[data-support-reiki-provider] button'));
+            const rect=element.getBoundingClientRect();
+            return {height:rect.height,buttons:buttons.map(button=>{
+              const box=button.getBoundingClientRect();
+              return {height:box.height,font:parseFloat(getComputedStyle(button).fontSize)};
+            }),scrollWidth:document.documentElement.scrollWidth,
+              viewportWidth:document.documentElement.clientWidth};
+          });
+          assert.ok(filterLayout.height <= 565,
+            label+" Reiki filters should be a compact sheet, not an enormous page: "+
+              JSON.stringify(filterLayout));
+          assert.ok(filterLayout.buttons.every(button =>
+            button.height >= 40 && button.height <= 60 && button.font <= 13),
+            label+" Reiki chips must keep 44px touch targets without inflated typography: "+
+              JSON.stringify(filterLayout.buttons));
+          assert.ok(filterLayout.scrollWidth <= filterLayout.viewportWidth + 2,
+            label+" no page-wide overflow while price choices remain horizontally scrollable");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-format] button').count(),3,
+            label+" session initiation training all available");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),5,
+            label+" five real price bands; Reset is the unfiltered choice");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').count(),3,
+            label+" brief text voice report");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" provider preference only for sessions");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" session has no certificate toggle");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),0,
+            label+" courses never show session practitioner selector");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" courses show certificate preference");
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),4,
+            label+" four real Academy training cards, including free practitioner programme");
+          assert.equal(await healing.locator('[data-reiki-academy-cta="reiki-practitioner-course"]').count(),1,
+            label+" one canonical free programme CTA");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').check();
+          assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
+            label+" no fictional certified training offers");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" initiation may request a certificate");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" three real linked initiation pathways appear on selection");
+          await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" 21–50 EUR selects only published-price Tantra initiation");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="tantra-initiation"]').count(),1,
+            label+" canonical Tantra €50 level-one option");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" return to session resets certificate and restores provider");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" certificate absent in session");
+          await reikiFilter.locator('[data-support-reiki-report] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').nth(2)
+            .getAttribute("aria-pressed"),"true",label+" voice preference selectable");
+          await reikiFilter.locator('[data-support-reiki-timing] button').nth(1).click();
+          await reikiFilter.locator('[data-support-reiki-provider] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider] button').nth(1)
+            .getAttribute("aria-pressed"),"true",label+" Reiki master preference selectable");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          // Apply must remain clickable even with the fixed bottom navigation.
+          await reikiFilter.locator('[data-support-reiki-apply]').click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="main"]').count(),1,
+            label+" apply action returns to the existing large photo");
+          await tab("media").click();
+          assert.equal(await healing.locator('[data-support-reiki-media]').count(),1,
+            label+" media tab does not autoplay or invent a video");
+          await tab("description").click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="description"]').count(),1,
+            label+" original stage shows description");
+          await tab("main").click();
+          assert.equal(await healing.locator('[data-support-reiki-main]').count(),1,
+            label+" original photo returns without a new panel");
+          await healing.locator('[data-support-reiki-focus="strength"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          assert.equal(await healing.locator('[data-support-master-request]').count(),0,
+            label+" no fake Kundalini Reiki offering");
+          await healing.locator('[data-support-reiki-focus="purpose"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="balance"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="love"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
           await healing.locator('[data-support-master-thumb="qa-energy-two"]').click();
@@ -200,11 +566,39 @@ for (const browserType of [chromium, webkit]) {
             label+" Masters shortcut opens same-page hero catalogue");
           await root.locator('[data-support-tool="consultation"]').click();
           const offers=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
-          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:8000});
+          await offers.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const offerRetry = offers.locator('[role="alert"] button');
+          if (await offerRetry.count()) await offerRetry.click();
+          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:20000});
           assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
             label+" secure service request is an explicit navigation, not a silent booking");
+          const accountLocale = locale === "es" ? "en" : locale;
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-intro",
+            label+" the published service ID reaches the existing Google-protected enquiry");
+          assert.equal(await offers.locator('[data-support-consultation-previews] button').count(),2,
+            label+" published photos show a real, selectable strip in the service hero");
+          await offers.locator('[data-support-consultation-photo="1"]').click();
+          assert.equal(await offers.locator('[data-support-consultation-photo="1"]').getAttribute("aria-pressed"),
+            "true",label+" tapping a service photo selects it");
+          await offers.locator('[data-support-master-thumb="qa-session"]').click();
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-session",
+            label+" other service opens its own protected request instead of reusing the first");
+          await offers.locator('button[aria-controls="support-consultation-details"]').click();
+          assert.equal(await offers.locator('#support-consultation-details a[href="/'+locale+'/services"]').count(),
+            1,label+" Details opens the original approved service page");
+          await offers.locator('[data-support-consultation-category="imagery"]').click();
+          assert.equal(await offers.locator('[data-support-master-hero]').count(),0,
+            label+" empty imagery category does not invent a bookable offer");
+          assert.equal(await offers.locator('a[href="/'+locale+'/services/imagery-therapy"]').count(),1,
+            label+" absent published imagery falls back to the real educational service page");
+          await offers.locator('[role="status"] button').first().click();
+          assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
+            label+" reset recovers all published services without losing the catalogue");
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});

@@ -506,47 +506,260 @@
   .progressFocus span,.progressAverage span { font-size: 8px; }
 }
 
-/* The owner-approved mobile flow: lowest-rating picker at left, photo alone in
-   the centre, four original recordings ABOVE the large guided video. */
-.assessment > .recommendButton {
+/* The approved top band: Goal filter below check-ins; focus and quick match
+   below the portrait. The original large video and four-card rail remain intact. */
+.page .assessment > .goalFilterTrigger {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; max-width: none; min-height: 46px; margin: 12px 0 0;
-  border-radius: 13px; padding: 9px 10px;
+  padding: 9px 10px; border: 1px solid #b5d7c1; border-radius: 13px;
+  background: linear-gradient(105deg,#087f60,#12a97d); color: white;
+  font-size: 15px; font-weight: 800; line-height: 1.2;
+  box-shadow: 0 5px 14px #0a80502b;
 }
+.goalFilterTrigger svg { flex: none; }
+.goalFilterTrigger:hover { filter: brightness(.96); }
+.focusValue strong { color: #193b30; font-size: clamp(16px,1.8vw,21px);
+  line-height: 1.15; overflow-wrap: anywhere; }
+.profile > .recommendButton { width: 100%; margin: 0; }
 .gallerySelection {
   margin: 0 0 9px; color: #16543f; font-size: 13px; font-weight: 750;
   line-height: 1.35; overflow-wrap: anywhere;
 }
+.activeGoalStrip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  min-height: 46px; padding: 8px 16px; background: #eaf6ec; color: #19513c;
+  border-bottom: 1px solid #c6e4d0; font-size: 13px; }
+.activeGoalStrip > svg { flex: none; color: #098c68; }
+.activeGoalStrip span { flex: 1; }
+.activeGoalStrip button { min-height: 38px; padding: 5px 9px; border: 1px solid #a4d5b9;
+  border-radius: 9px; background: #fffdf9; color: #0b7351; font-size: 12px; font-weight: 800; }
+.activeGoalStrip button:last-child { display: grid; place-items: center; width: 38px; padding: 0; }
 .videoSection { background: #fffbf3; }
 .videoSourceRow { display: flex; justify-content: flex-end; align-items: center;
   min-height: 39px; padding: 2px 19px 6px; background: #fffaf1; }
 .videoSourceRow .youtubeLink { margin: 0; }
 .heroBody .playButton { position: relative; top: 8px; }
 @media (max-width: 640px) {
-  .page .assessment > .recommendButton {
-    display: flex; align-items: center; justify-content: center; flex-direction: row;
-    width: 100%; min-width: 0; max-width: none; min-height: 41px;
-    margin: 5px 0 0; padding: 6px 3px; gap: 4px;
+  .page .assessment > .goalFilterTrigger {
+    min-height: 41px; margin: 5px 0 0; padding: 6px 3px; gap: 4px;
     font-size: clamp(10px,2.85vw,13px); font-weight: 850;
-    line-height: 1.08; border-radius: 10px; white-space: normal;
-    background: linear-gradient(110deg,#0b9c70,#047557);
-    color: white;
+    line-height: 1.1; border-radius: 10px; white-space: normal;
   }
-  .assessment > .recommendButton svg { flex: none; width: 16px; height: 16px; }
+  .goalFilterTrigger svg { width: 15px; height: 15px; }
   .profile { justify-content: center; }
+  .profile .focusSelector { width: 100%; max-width: none; padding: 5px 2px;
+    gap: 2px; text-align: center; border-radius: 11px; }
+  .focusCaption { font-size: clamp(9px,2.6vw,11px); }
+  .profile .focusValue { justify-content: center; gap: 3px; }
+  .profile .focusValue svg { width: 16px; height: 16px; }
+  .focusValue strong { font-size: clamp(11px,3vw,14px); }
+  .page .profile > .recommendButton { display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px; min-height: 45px;
+    padding: 5px 3px; font-size: clamp(10px,2.9vw,12px); border-radius: 12px; }
+  .profile > .recommendButton svg { width: 17px; height: 17px; }
   .videoSection { padding: 11px 9px 8px; }
   .videoHeading { margin-bottom: 7px; }
   .gallerySelection { font-size: clamp(11px,2.85vw,13px); margin-bottom: 7px; }
   .videoHint { margin-top: 5px; }
   .heroBody .playButton { top: 8px; }
   .videoSourceRow { min-height: 34px; padding: 0 10px 4px; }
+  .activeGoalStrip { gap: 5px; padding: 5px 8px; font-size: 11px; }
+  .activeGoalStrip button { min-height: 36px; padding: 4px 6px; font-size: 11px; }
 }
 @media (max-width: 350px) {
-  .page .assessment > .recommendButton { min-height: 39px; padding: 5px 2px;
-    font-size: 10.5px; gap: 3px; }
-  .assessment > .recommendButton svg { width: 14px; height: 14px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; padding: 5px 2px;
+    font-size: 10px; gap: 3px; }
+  .goalFilterTrigger svg { width: 13px; height: 13px; }
+  .profile .focusSelector { padding: 4px 1px; }
+  .focusValue strong { font-size: 10.8px; }
+  .page .profile > .recommendButton { min-height: 44px; font-size: 10px; }
   .gallerySelection { font-size: 10.5px; }
+}
+
+/* At 391–430px the larger type used to push the main video below the
+   285px first-fold budget. Keep readable text while reclaiming vertical space. */
+@media (min-width: 391px) and (max-width: 640px) {
+  .assessment, .tools { padding-top: 7px; padding-bottom: 5px; }
+  .assessment h1, .tools h2 { min-height: 22px; margin-bottom: 2px; }
+  .scaleList { gap: 1px; }
+  .scaleRow { min-height: 31px; grid-template-rows: 14px 17px; }
+  .scaleRow input { height: 17px; }
+  .scaleIcon { width: 18px; height: 18px; }
+  .toolGrid { grid-template-rows: repeat(2,minmax(0,65px)); gap: 4px; }
+  .toolButton, .toolButton:last-child { min-height: 65px; padding: 4px 2px; gap: 3px; }
+  .toolShortcuts { margin-top: 4px; }
+  .toolShortcuts button { min-height: 24px; }
+  .photo { width: min(100%,94px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
+}
+
+/* Historical PsiMaster courses: always visible in mobile Courses mode.
+   Thumbnails reuse original verified source-video posters. */
+.mysteryPicker { padding: 12px 16px 13px; border-bottom: 1px solid #d7d8c9; background: linear-gradient(125deg,#eef4eb,#fbf5e9); }
+.mysteryPickerHeading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 3px 9px; margin-bottom: 10px; }
+.mysteryPickerHeading strong { color: #254b3c; font-size: 16px; font-weight: 850; }
+.mysteryPickerHeading span { color: #685c4a; font-size: 12px; }
+.mysteryPickerGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mysteryPickerCard { position: relative; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; overflow: hidden; min-width: 0; min-height: 111px; padding: 10px; cursor: pointer; text-align: left; border-radius: 14px; border: 2px solid #e6eadf; color: #fff; background: #183c32; transition: border-color .16s ease, box-shadow .16s ease; }
+.mysteryPickerCard > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.mysteryPickerCard::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,rgba(6,31,29,.94) 0%,rgba(13,45,38,.35) 72%,rgba(13,45,38,.18)); }
+.mysteryPickerCard > span { position: relative; z-index: 1; display: grid; gap: 3px; min-width: 0; }
+.mysteryPickerCard strong { font-size: clamp(15px,2.4vw,21px); font-weight: 850; line-height: 1.15; overflow-wrap: anywhere; }
+.mysteryPickerCard small { color: #e5f4ec; font-size: 11px; font-weight: 700; }
+.mysteryPickerCard[aria-pressed="true"] { border-color: #1fb988; box-shadow: 0 0 0 2px #0b885f; }
+.mysteryPickerCard:focus-visible { outline: 3px solid #d69d3f; outline-offset: 2px; }
+.heroCourseLink { display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 14px; min-height: 43px; padding: 9px 14px; border-radius: 11px; border: 1px solid #dbf3e7; color: #fff; background: #134e3cbb; font-size: 15px; font-weight: 800; text-decoration: none; }
+.heroCourseLink:hover { background: #086f4f; }
+.heroCourseLink:focus-visible { outline: 3px solid #f2c572; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .mysteryPicker { padding: 9px 11px 11px; }
+  .mysteryPickerHeading { margin-bottom: 7px; }
+  .mysteryPickerHeading strong { font-size: 14px; }
+  .mysteryPickerHeading span { font-size: 10px; }
+  .mysteryPickerGrid { gap: 6px; }
+  .mysteryPickerCard { min-height: 88px; padding: 8px 6px; border-radius: 12px; }
+  .mysteryPickerCard strong { font-size: 14px; }
+  .mysteryPickerCard small { font-size: 10px; }
+  .heroCourseLink { font-size: 13px; min-height: 44px; }
+}
+@media (max-width: 350px) {
+  .mysteryPicker { padding: 8px 6px; }
+  .mysteryPickerGrid { gap: 4px; }
+  .mysteryPickerCard { min-height: 82px; padding: 6px 4px; border-radius: 10px; }
+  .mysteryPickerCard strong { font-size: 12px; }
+  .mysteryPickerCard small { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mysteryPickerCard { transition: none; }
+}
+
+/* Central quick action uses the existing private, local Video Mandala studio. */
+.videoMandalaShortcut {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; max-width: 175px; width: 100%; padding: 7px 9px;
+  border: 1px solid #9ed8b9; border-radius: 14px; background: #e5f5e9;
+  color: #086b4d; font-size: 13px; line-height: 1.15; font-weight: 850;
+  text-align: center; text-decoration: none; overflow-wrap: anywhere;
+  box-shadow: 0 4px 11px #1f7a5a19;
+}
+.videoMandalaShortcut svg { flex: none; }
+.videoMandalaShortcut:hover, .videoMandalaShortcut:focus-visible {
+  background: #d3eddf; outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .profile > .videoMandalaShortcut {
+    align-self: center; width: 100%; min-width: 0; min-height: 44px;
+    padding: 5px 2px; gap: 3px; border-radius: 10px;
+    font-size: clamp(9.5px,2.65vw,12px); line-height: 1.12;
+    white-space: normal;
+  }
+  .profile > .videoMandalaShortcut svg { width: 14px; height: 14px; }
+}
+@media (max-width: 350px) {
+  .profile > .videoMandalaShortcut { font-size: 9.5px; padding: 5px 1px; gap: 2px; }
+  .profile > .videoMandalaShortcut svg { width: 12px; height: 12px; }
+}
+
+
+/* Real, source-backed cross-category suggestions after the goal filter. */
+.goalResults { display: grid; gap: 10px; min-width: 0; padding: 13px 16px;
+  border-bottom: 1px solid #cfdfd0; background: linear-gradient(145deg,#f1f9ee,#fffdf5); }
+.goalResultsHeading h2 { display: flex; align-items: center; gap: 8px; margin: 0;
+  color: #174b38; font-size: clamp(17px,2.5vw,23px); line-height: 1.2; }
+.goalResultsHeading h2 svg { flex: none; color: #078d68; }
+.goalResultsHeading p { margin: 5px 0 0; color: #547060; font-size: 12px; line-height: 1.35; }
+.goalResultGrid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; }
+.goalResultGrid > :is(button,a) { display: flex; align-items: center; gap: 7px;
+  min-width: 0; min-height: 61px; padding: 8px; border: 1px solid #cfe3d6;
+  border-radius: 12px; background: #fffef9; color: #155b42; text-decoration: none;
+  text-align: left; cursor: pointer; }
+.goalResultGrid > :is(button,a):hover,
+.goalResultGrid > button[aria-pressed="true"] { border-color: #1b9c70; background: #e5f4e9; }
+.goalResultGrid > :is(button,a) svg { flex: none; }
+.goalResultGrid > :is(button,a) span { display: flex; flex-direction: column;
+  min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.goalResultGrid > :is(button,a) strong { font-size: 13px; line-height: 1.12; }
+.goalResultGrid > :is(button,a) small { color: #627968; font-size: 10px; line-height: 1.22; font-weight: 550; }
+@media (max-width: 640px) {
+  .goalResults { padding: 9px; gap: 7px; }
+  .goalResultsHeading h2 { font-size: clamp(15px,4vw,18px); }
+  .goalResultsHeading p { font-size: 11px; }
+  .goalResultGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+  .goalResultGrid > :is(button,a) { min-height: 48px; padding: 7px 8px; gap: 6px; border-radius: 10px; }
+  .goalResultGrid > :is(button,a) svg { width: 19px; height: 19px; }
+  .goalResultGrid > :is(button,a) strong { font-size: 12px; }
+  .goalResultGrid > :is(button,a) small { font-size: 10px; }
+  .goalResultGrid > :last-child { grid-column: 1 / -1; }
+}
+
+/* Keep the last Reiki filter action accessible above the fixed mobile navigation. */
+@media (max-width: 640px) {
+  .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
+}
+
+/* Focused mobile Reiki filter: do not float global navigation over the report and
+   certificate controls. After closing the filter, normal docked nav resumes. */
+@media (max-width: 640px) {
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
+    padding-bottom: 10px;
+  }
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    border-radius: 18px 18px 0 0;
+    box-shadow: none;
+  }
+}
+
+/* Owner-approved purple Talisman entry, while Courses and Reiki keep green. */
+.page .toolButton[data-support-tool="talisman"][aria-pressed="true"] {
+  border-color: #c6a2fa; background: linear-gradient(145deg,#9551da,#6934b3);
+  box-shadow: 0 7px 18px #7143b35c; color: #fff;
+}
+.page .toolButton[data-support-tool="talisman"][aria-pressed="true"] svg { color: #fff; }
+
+/* The video belongs to a real published master: an accessible, compact
+   profile shortcut on the video backdrop, independent of YouTube playback. */
+.heroMasterLink {
+  position: absolute; z-index: 4; top: 83px; right: 18px;
+  display: inline-flex; align-items: center; gap: 9px;
+  max-width: calc(100% - 36px); min-height: 56px;
+  padding: 5px 12px 5px 5px; border: 1px solid #fff9;
+  border-radius: 999px; background: #fffcf6f2; color: #223a32;
+  text-decoration: none; box-shadow: 0 7px 23px #08251d55;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.heroMasterLink:hover { background: #fffefa; box-shadow: 0 8px 25px #08251d77; }
+.heroMasterLink:focus-visible { outline: 3px solid #f2cc7b; outline-offset: 3px; }
+.heroMasterAvatar {
+  display: block; flex: none; width: 46px; height: 46px;
+  object-fit: cover; border-radius: 50%; background: #e4eee7;
+}
+.heroMasterCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; }
+.heroMasterCopy strong, .heroMasterCopy small {
+  display: block; max-width: 100%; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.heroMasterCopy strong { color: #1c3b31; font-size: 14px; font-weight: 850; line-height: 1.12; }
+.heroMasterCopy small { color: #5b6d64; font-size: 11px; line-height: 1.15; }
+.heroMasterArrow { flex: none; margin-left: auto; color: #436356; }
+@media (max-width: 640px) {
+  .heroMasterLink {
+    top: 64px; right: 9px; max-width: min(63%, 220px); min-height: 50px;
+    gap: 6px; padding: 4px 7px 4px 4px;
+  }
+  .heroMasterAvatar { width: 42px; height: 42px; }
+  .heroMasterCopy strong { font-size: 12px; }
+  .heroMasterCopy small { font-size: 10px; }
+  .heroMasterArrow { width: 15px; height: 15px; }
+}
+@media (max-width: 350px) {
+  .heroMasterLink { top: 55px; right: 7px; max-width: min(61%, 176px); min-height: 44px; gap: 5px; }
+  .heroMasterAvatar { width: 36px; height: 36px; }
+  .heroMasterCopy strong { font-size: 11px; }
+  .heroMasterCopy small { font-size: 9px; }
+  .heroMasterArrow { width: 13px; height: 13px; }
 }

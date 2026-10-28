@@ -92,20 +92,26 @@ test("new TSX and route transpile without TypeScript parser diagnostics", () => 
   }
 });
 
-test("lowest self-ratings—not a separate focus—rank four published meditations in the existing rail", () => {
+test("quick matching uses the lowest ratings while goal filtering expands the same video stage", () => {
   const model = read("lib/holistic-support/recommendation-engine.js");
   const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
   const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
   const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
-  assert.match(assessment, /data-support-recommendations/);
-  assert.match(assessment, /onClick=\{onRecommendations\}/);
+  assert.match(assessment, /data-support-goal-filter-trigger/);
+  assert.match(assessment, /onClick=\{openGoalFilter\}/);
+  assert.doesNotMatch(assessment, /data-support-recommendations/);
   assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
-  assert.doesNotMatch(profile, /focusSelector|data-support-recommendations|<select/);
+  assert.match(profile, /focusSelector|data-support-active-focus/);
+  assert.match(profile, /data-support-recommendations/);
+  assert.match(profile, /onClick=\{onRecommendations\}/);
+  assert.doesNotMatch(profile, /<select/);
   assert.match(profile, /data-support-photo/);
   assert.match(tools, /choices\.filter\(item => item\.id !== "pump"\)/);
   assert.match(tools, /data-support-tool="pump"/);
   assert.match(tools, /className=\{styles\.toolShortcuts\}/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
+  assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
+  assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
   assert.match(client, /setRecommendation\(\{ \.\.\.scores \}\)/);
   assert.match(client, /setRecommendation\(null\)/);
   assert.match(client, /data-support-meditation-basis role="status"/);
@@ -120,9 +126,9 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(client, /<TaoistTalismanCatalog/);
   assert.match(client, /hidden=\{!talismanCatalogOpen\}/);
   assert.match(client, /id: "healing", Icon: HandHeart/);
-  assert.match(client, /pump: "Courses", healing: "Energy Healing"/);
-  assert.match(client, /pump: "Курсы", healing: "Энергетическая поддержка"/);
-  assert.match(client, /pump: "Cursos", healing: "Sanación energética"/);
+  assert.match(client, /pump: "Courses", healing: "Reiki support"/);
+  assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
+  assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
   assert.match(client, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
@@ -135,7 +141,8 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.toolShortcuts \{ display: grid;/);
   assert.match(css, /\.toolMicro \{ display: block;/);
-  assert.match(css, /\.page \.assessment > \.recommendButton/);
+  assert.match(css, /\.page \.assessment > \.goalFilterTrigger/);
+  assert.match(css, /\.page \.profile > \.recommendButton/);
   assert.match(css, /\.gallerySelection/);
   assert.match(css, /\.heroBody \.playButton \{ position: relative; top: 8px;/);
   assert.match(model, /export function recommendSupportByLowestScores/);
@@ -230,4 +237,176 @@ test("all support modes share scenic hero → actual miniature choices without f
   });
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
     .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
+});
+
+test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, not duplicated video manifests", () => {
+  const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
+  const count = new Map([
+    ["videos/maya-archetypes", 6],
+    ["videos/egypt-osiris", 7],
+    ["videos/greek-mysteries-demeter", 5],
+    ["videos/greek-mysteries-dionysus", 7],
+  ]);
+  assert.equal(manifest.length, 45, "source media inventory must remain unchanged");
+  assert.equal(curricula.length, 22, "original course inventory must remain unchanged");
+  for (const id of [
+    "mysteries/maya-aztec/feathered-serpent",
+    "mysteries/egypt/high-wisdom",
+    "mysteries/greece-rome/beauty-and-power",
+  ]) {
+    assert.equal(curricula.filter(entry => entry.logicalId === id && entry.sourceLocale === "ru").length, 1, id);
+    assert.ok(route.includes('programId: "' + id + '"'), id + " in source catalogue lookup");
+  }
+  for (const [id, expected] of count) {
+    const lessons = manifest.filter(entry => entry.logicalId === id);
+    assert.equal(lessons.length, expected, id);
+    assert.equal(new Set(lessons.map(entry => entry.videoId)).size, expected, "unique original lessons");
+    assert.ok(lessons.every(entry => entry.status === "verified_legacy_public_embed"), id);
+    assert.ok(route.includes('"' + id + '"'), id + " links to original manifest");
+  }
+  assert.match(route, /findAcademyRecord\(entry\.programId, "ru"\)/);
+  assert.match(route, /findAcademyRecord\(logicalId, "ru"\)/);
+  assert.match(route, /mediaForRecord\(record\)/);
+  assert.match(route, /youtubeIdFromUrl\(media\.mediaUrl\)/);
+  assert.match(route, /if \(locale === "ru"\)/);
+  assert.match(route, /videos=\{videos\} courses=\{originalMysteryCourses\}/);
+  assert.match(route, /poster: "https:\/\/i\.ytimg\.com\/vi\/"/);
+  assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
+});
+
+test("original Russian mysteries are visible in Courses mode as 3 iPhone cards and selectable native program dropdown entries", () => {
+  for (const word of ["Мистерии Майя", "Мистерии Египта", "Мистерии Греции"]) {
+    assert.ok(client.includes(word), word);
+  }
+  assert.match(client, /data-support-mystery-courses/);
+  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
+  assert.match(client, /aria-pressed=\{activeMystery\?\.id === course\.id\}/);
+  assert.match(client, /setProgram\(course\.id\)/);
+  assert.match(client, /setMaster\("all"\); setTheme\("all"\); setPlaying\(false\)/);
+  assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
+  assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
+  assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
+  assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
+  assert.match(client, /data-support-active-course-link/);
+  assert.match(client, /activeMystery\?\.videoGroups\.map\(group =>/);
+  assert.match(client, /data-support-filter="program"/);
+  assert.match(client, /\{activeProgramValues\.map\(key =>/);
+  assert.match(client, /choice === "pump" \? t\.watchLesson : t\.play/);
+  assert.match(css, /\.mysteryPickerGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.mysteryPickerCard\[aria-pressed="true"\]/);
+  assert.match(css, /\.mysteryPickerCard:focus-visible/);
+  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
+  assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
+});
+
+test("central photo links to existing private Video Mandala studio in EN/RU/ES", () => {
+  const mandalaPage = read("app/[locale]/holistic-support/mandala/page.tsx");
+  const mandalaClient = read("components/mandala-meditation-client.tsx");
+  const profile = client.split('<section className={styles.profile}')[1].split('</section>')[0];
+  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-video-mandala'),
+    "mandala button follows the photo");
+  assert.match(profile, /data-support-video-mandala/);
+  assert.match(profile, /"\/holistic-support\/mandala"/);
+  for (const label of ["Video mandala", "Видео-мандала", "Vídeo mandala"]) {
+    assert.ok(client.includes(label), "localized action: " + label);
+  }
+  assert.match(mandalaPage, /MandalaMeditationClient/);
+  assert.match(mandalaClient, /MandalaFreeVideoStudio|data-mandala/);
+  assert.match(css, /\.videoMandalaShortcut/);
+  assert.match(css, /\.profile > \.videoMandalaShortcut/);
+  assert.doesNotMatch(profile, /fetch\(|sessionStorage|localStorage/);
+});
+
+test("4 Reiki intention filters show ONLY published Reiki methods and never invent a booking", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const galleryCss = read("components/holistic-support-master-gallery.module.css");
+  const talismanCss = read("components/holistic-support-talisman-viewer.module.css");
+  assert.match(gallery, /data-support-reiki-filters/);
+  for (const [key,method] of [["strength","Kundalini Reiki"],["love","Tantra Reiki"],
+    ["purpose","Runic Reiki"],["balance","Reiki Yggdrasil"]]) {
+    assert.ok(gallery.includes(key + ":"), "real intent " + key);
+    assert.ok(gallery.includes(method), "practice label " + method);
+  }
+  for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
+    assert.ok(gallery.includes(title), title);
+  }
+  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
+  assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
+  assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
+  assert.match(gallery, /setReikiFocus\("love"\)/);
+  assert.match(gallery, /onClick=\{\(\) => \{ setReikiFocus\(value\); setMethod\(""\);/);
+  assert.match(gallery, /<RemoteEnergySupportBooking/);
+  assert.match(gallery, /mode="inline" selectedKind="energy"/);
+  assert.doesNotMatch(gallery, /handlePayment|createPaymentIntent|new ServiceOffering|autoSubmit/);
+  assert.match(galleryCss, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(galleryCss, /\.reikiFocusButton\[aria-pressed="true"\]/);
+  assert.match(galleryCss, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(talismanCss, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(galleryCss, /height: 282px; min-height: 282px; max-height: 282px/);
+  assert.match(talismanCss, /height: 282px; min-height: 282px; max-height: 282px/);
+  assert.match(css, /\.hero \{ min-height: 288px;/);
+});
+
+
+test("mobile Reiki center retains the photo with Main/Filter/Description/Video-audio tabs and verified public media", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const css = read("components/holistic-support-master-gallery.module.css");
+  const directory = read("lib/practitioners/public-remote-support-masters.ts");
+  const booking = read("components/remote-energy-support-booking.tsx");
+  for (const attr of ["data-support-reiki-central","data-support-reiki-tab",
+    "data-support-reiki-panel","data-support-reiki-filter","data-support-reiki-media",
+    "data-support-reiki-main","data-support-reiki-apply"]) assert.ok(gallery.includes(attr),attr);
+  for (const label of ["Главное","Фильтр","Описание","Видео / аудио",
+    "Main","Description","Video / audio","Inicio","Descripción","Vídeo / audio"]) {
+    assert.ok(gallery.includes(label),label);
+  }
+  assert.match(gallery, /data-support-master-hero=\{selected \? id\(selected\)/);
+  assert.match(css, /\.reikiStage:not\(\[data-active-tab="filter"\]\)/);
+  // A shared mobile-page rule sets font:inherit on all buttons. Reiki selectors
+  // must win that cascade or the real iPhone UI inflates into 100px tall tiles.
+  assert.match(css, /\.reikiStage \.reikiStageTab \{/);
+  assert.match(css, /\.reikiStage \.reikiOptions button \{/);
+  assert.match(gallery, /data-support-reiki-photo-intro/);
+  assert.match(gallery, /reikiStageBackdrop\} src="\/images\/holistic-house\/reiki-approved-sunrise-v3\.webp"/);
+  const sunrise = readFileSync(new URL("../public/images/holistic-house/reiki-approved-sunrise-v3.webp", import.meta.url));
+  assert.ok(sunrise.byteLength > 20_000, "hero must use the approved full-quality image, not 3 KB thumbnail");
+  assert.match(gallery, /const PRICE_BANDS: Exclude<ReikiPrice, "all">\[\]/);
+  assert.match(css, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(css, /@media \(max-width:350px\)/);
+  assert.match(directory, /isPublicPresentationUrl/);
+  assert.match(directory, /intro\.media\.kind === "external"/);
+  assert.doesNotMatch(directory, /presentations:\s*service\.serviceIntroductions/);
+  assert.match(booking, /initialIntention\?: string/);
+  assert.match(booking, /const \[intention, setIntention\] = useState\(initialIntention\)/);
+  assert.match(gallery, /initialIntention=\{kind === "healing" \? filteredRequest : ""\}/);
+});
+
+test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const css = read("components/holistic-support-master-gallery.module.css");
+  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+    "Личный разбор текстом","Личный разбор голосом",
+    "В течение суток","В течение 3 дней","В выбранный час",
+    "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
+  for (const section of ["data-support-reiki-format","data-support-reiki-price",
+    "data-support-reiki-timing","data-support-reiki-report",
+    "data-support-reiki-provider","data-support-reiki-certificate"]) assert.ok(gallery.includes(section),section);
+  assert.match(gallery, /reikiFormat === "session" \? <fieldset[\s\S]*?data-support-reiki-provider/);
+  assert.match(gallery, /: <label className=\{styles\.reikiCertificate\} data-support-reiki-certificate>/);
+  assert.match(gallery, /setReikiRole\("any"\); setReikiCertificate\(false\)/);
+  assert.match(gallery, /reikiPrice === "all" \|\| reikiPrice === "free"/);
+  assert.match(gallery, /!reikiCertificate/);
+  assert.match(gallery, /matchesReikiEuroPrice\(master, reikiPrice, option\.price\)/);
+  assert.match(gallery, /master\.currency !== "EUR"/);
+  assert.match(gallery, /price > 20 && price <= 50/);
+  assert.match(gallery, /price > 50 && price <= 100/);
+  assert.match(gallery, /price > 100/);
+  assert.match(gallery, /priceOptions: matchingPriceOptions/);
+  assert.match(gallery, /REIKI_FREE_COURSE_PATH/);
+  assert.match(gallery, /free-initiation#initiation-choices/);
+  assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
+  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
 });

@@ -136,6 +136,19 @@ test('owner iPhone sideload candidate is a real unsigned arm64 iphoneos IPA, not
   assert.match(guide, /not yet passed/i)
   assert.match(guide, /AltStore Classic/)
 })
+test('personal iPhone Lite is derived from exact hardware build and drops only the optional widget',()=>{
+  const flow=source('.github/workflows/holistic-house-native.yml')
+  assert.match(flow,/Pack extension-free unsigned iPhone IPA/)
+  assert.match(flow,/ditto "\$source_app" ios-hh-personal-lite\/Payload\/App\.app/)
+  assert.match(flow,/test -d "\$lite\/PlugIns\/HHCourseWidget\.appex"/)
+  assert.match(flow,/rm -rf "\$lite\/PlugIns\/HHCourseWidget\.appex"/)
+  assert.match(flow,/rmdir "\$lite\/PlugIns"/)
+  assert.match(flow,/test ! -e "\$lite\/_CodeSignature"/)
+  assert.match(flow,/Holistic-House-iPhone-Personal-Lite-Unsigned\.ipa/)
+  assert.match(flow,/Holistic-House-iPhone-Personal-Lite-Unsigned\.sha256/)
+  assert.match(flow,/grep -Eq/)
+  assert.doesNotMatch(flow,/ios-hh-personal-lite[\s\S]{0,1800}(?:upload-to-testflight|apple-id-password|NEXT_PUBLIC_)/)
+})
 test('private deep links are always validated and filtered before native routing',async()=>{
   const {classifyNativeLink,classifyHolisticHouseNativeLink}=await import('../lib/native/deep-link-policy.js')
   const id='12345678-1234-4234-8234-123456789abc'

@@ -88,6 +88,7 @@ const BusinessCoaching = dynamic(() => import('@/components/app/business-coachin
 const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
 const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
+const MyPersonalVideos = dynamic(() => import('@/components/app/my-personal-videos'), {ssr:false})
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
 
@@ -563,6 +564,14 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
+  // Five prominent mobile destinations mirror the Orders / Clients design.
+  // The complete six-section Cabinet remains available in its account menu.
+  const mobileNav = [
+    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: root + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
+    { id: 'portfolio', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+  ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && ['labs', 'portfolio', 'reports', 'history', 'monitoring', 'results'].includes(page)) ||
     (id === 'course' && ['business','coaching'].includes(page))
@@ -594,6 +603,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
                 <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
                 <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
+                <Link href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</Link>
                 <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
                 <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
               </details>
@@ -651,6 +661,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                  template={recordId==='egyptian'?'hh-egyptian-goal-planning-v1':'hh-greek-goal-planning-v1'} />
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} accountId={data.account.id} key={data.account.id} />}
+          {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
@@ -776,15 +787,15 @@ export default function AppWorkspace({ locale, path = [] }) {
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
       {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
-        {nav.map(({ id, label, href, icon: Icon }) => (
+        <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
+          className="hh-mobile-app-nav-home"
+          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
+        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
+        {mobileNav.map(({ id, label, href, icon: Icon }) => (
           <Link key={id} href={href} prefetch={false}
             aria-current={navIsActive(id) ? 'page' : undefined}
           ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
         ))}
-        <Link href={locale === 'ru' ? '/ru' : '/'} prefetch={false}
-          className="hh-mobile-app-nav-home"
-          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
-        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
       </nav>}
     </main>
     </SubscriptionProvider>

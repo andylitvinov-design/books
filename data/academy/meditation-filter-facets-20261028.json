@@ -1,0 +1,501 @@
+{
+  "version": 1,
+  "facets": [
+    {
+      "facet_type": "goal",
+      "facet_key": "money",
+      "label_en": "Money / income",
+      "label_ru": "Деньги и доход",
+      "label_es": "Dinero e ingresos",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "goal",
+      "facet_key": "energy",
+      "label_en": "Energy / balance",
+      "label_ru": "Энергия и баланс",
+      "label_es": "Energía y equilibrio",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "goal",
+      "facet_key": "relationships",
+      "label_en": "Love / relationships",
+      "label_ru": "Любовь и отношения",
+      "label_es": "Amor y relaciones",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "goal",
+      "facet_key": "goals",
+      "label_en": "Goals / action",
+      "label_ru": "Цели и действия",
+      "label_es": "Metas y acción",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "goal",
+      "facet_key": "meaning",
+      "label_en": "Meaning / purpose",
+      "label_ru": "Смыслы и предназначение",
+      "label_es": "Sentido y propósito",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "money_worries",
+      "label_en": "Financial worry",
+      "label_ru": "Тревога о деньгах",
+      "label_es": "Preocupación financiera",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "income_uncertainty",
+      "label_en": "Uncertain income",
+      "label_ru": "Неуверенность в доходе",
+      "label_es": "Incertidumbre de ingresos",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "stress",
+      "label_en": "Stress",
+      "label_ru": "Стресс",
+      "label_es": "Estrés",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "overthinking",
+      "label_en": "Racing thoughts",
+      "label_ru": "Много мыслей",
+      "label_es": "Pensamientos recurrentes",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "low_energy",
+      "label_en": "Low energy",
+      "label_ru": "Мало энергии",
+      "label_es": "Poca energía",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "sleep_difficulty",
+      "label_en": "Trouble sleeping",
+      "label_ru": "Трудно уснуть",
+      "label_es": "Dificultad para dormir",
+      "sort_order": 6
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "low_focus",
+      "label_en": "Distractibility",
+      "label_ru": "Трудно сосредоточиться",
+      "label_es": "Dificultad para concentrarse",
+      "sort_order": 7
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "hard_decision",
+      "label_en": "A difficult decision",
+      "label_ru": "Сложное решение",
+      "label_es": "Una decisión difícil",
+      "sort_order": 8
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "need_motivation",
+      "label_en": "Low motivation",
+      "label_ru": "Не хватает мотивации",
+      "label_es": "Falta de motivación",
+      "sort_order": 9
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "relationships_tension",
+      "label_en": "Relationship tension",
+      "label_ru": "Напряжение в отношениях",
+      "label_es": "Tensión en las relaciones",
+      "sort_order": 10
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "self_criticism",
+      "label_en": "Self-criticism",
+      "label_ru": "Самокритика",
+      "label_es": "Autocrítica",
+      "sort_order": 11
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "loss_of_meaning",
+      "label_en": "Lack of direction",
+      "label_ru": "Потеря ориентиров",
+      "label_es": "Falta de sentido",
+      "sort_order": 12
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "emotional_overload",
+      "label_en": "Emotional overload",
+      "label_ru": "Эмоциональная перегрузка",
+      "label_es": "Sobrecarga emocional",
+      "sort_order": 13
+    },
+    {
+      "facet_type": "situation",
+      "facet_key": "spiritual_exploration",
+      "label_en": "Spiritual exploration",
+      "label_ru": "Духовный поиск",
+      "label_es": "Exploración espiritual",
+      "sort_order": 14
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "calm",
+      "label_en": "Calm",
+      "label_ru": "Спокойствие",
+      "label_es": "Calma",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "rest",
+      "label_en": "Rest",
+      "label_ru": "Отдых",
+      "label_es": "Descanso",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "grounding",
+      "label_en": "Grounding",
+      "label_ru": "Заземление",
+      "label_es": "Conexión a tierra",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "focus",
+      "label_en": "Focus",
+      "label_ru": "Концентрация",
+      "label_es": "Concentración",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "clarity",
+      "label_en": "Clarity",
+      "label_ru": "Ясность",
+      "label_es": "Claridad",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "self_compassion",
+      "label_en": "Self-compassion",
+      "label_ru": "Самосострадание",
+      "label_es": "Autocompasión",
+      "sort_order": 6
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "acceptance",
+      "label_en": "Acceptance",
+      "label_ru": "Принятие",
+      "label_es": "Aceptación",
+      "sort_order": 7
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "confidence",
+      "label_en": "Confidence",
+      "label_ru": "Уверенность",
+      "label_es": "Confianza",
+      "sort_order": 8
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "gratitude",
+      "label_en": "Gratitude",
+      "label_ru": "Благодарность",
+      "label_es": "Gratitud",
+      "sort_order": 9
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "energy",
+      "label_en": "Vitality",
+      "label_ru": "Бодрость",
+      "label_es": "Vitalidad",
+      "sort_order": 10
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "hope",
+      "label_en": "Hope",
+      "label_ru": "Надежда",
+      "label_es": "Esperanza",
+      "sort_order": 11
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "connection",
+      "label_en": "Connection",
+      "label_ru": "Связь",
+      "label_es": "Conexión",
+      "sort_order": 12
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "motivation",
+      "label_en": "Motivation",
+      "label_ru": "Мотивация",
+      "label_es": "Motivación",
+      "sort_order": 13
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "reflection",
+      "label_en": "Self-reflection",
+      "label_ru": "Самоисследование",
+      "label_es": "Reflexión",
+      "sort_order": 14
+    },
+    {
+      "facet_type": "outcome",
+      "facet_key": "relaxation",
+      "label_en": "Relaxation",
+      "label_ru": "Расслабление",
+      "label_es": "Relajación",
+      "sort_order": 15
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "breath",
+      "label_en": "Breath awareness",
+      "label_ru": "Наблюдение за дыханием",
+      "label_es": "Atención a la respiración",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "body_scan",
+      "label_en": "Body scan",
+      "label_ru": "Сканирование тела",
+      "label_es": "Escaneo corporal",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "yoga_nidra",
+      "label_en": "Yoga Nidra",
+      "label_ru": "Йога-нидра",
+      "label_es": "Yoga nidra",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "visualization",
+      "label_en": "Guided imagery",
+      "label_ru": "Образная медитация",
+      "label_es": "Visualización guiada",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "loving_kindness",
+      "label_en": "Loving-kindness",
+      "label_ru": "Любящая доброта",
+      "label_es": "Bondad amorosa",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "affirmation",
+      "label_en": "Affirmations",
+      "label_ru": "Аффирмации",
+      "label_es": "Afirmaciones",
+      "sort_order": 6
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "gratitude",
+      "label_en": "Gratitude practice",
+      "label_ru": "Практика благодарности",
+      "label_es": "Práctica de gratitud",
+      "sort_order": 7
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "energy_symbolic",
+      "label_en": "Symbolic energywork",
+      "label_ru": "Символическая энергопрактика",
+      "label_es": "Práctica energética simbólica",
+      "sort_order": 8
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "focus",
+      "label_en": "Attention training",
+      "label_ru": "Тренировка внимания",
+      "label_es": "Entrenamiento de atención",
+      "sort_order": 9
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "reflection",
+      "label_en": "Reflective observation",
+      "label_ru": "Рефлексия",
+      "label_es": "Reflexión contemplativa",
+      "sort_order": 10
+    },
+    {
+      "facet_type": "technique",
+      "facet_key": "relaxation",
+      "label_en": "Gentle relaxation",
+      "label_ru": "Мягкое расслабление",
+      "label_es": "Relajación suave",
+      "sort_order": 11
+    },
+    {
+      "facet_type": "time",
+      "facet_key": "any",
+      "label_en": "Anytime",
+      "label_ru": "В любое время",
+      "label_es": "Cualquier momento",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "time",
+      "facet_key": "morning",
+      "label_en": "Morning",
+      "label_ru": "Утро",
+      "label_es": "Mañana",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "time",
+      "facet_key": "day",
+      "label_en": "Daytime",
+      "label_ru": "Днём",
+      "label_es": "Durante el día",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "time",
+      "facet_key": "evening",
+      "label_en": "Evening",
+      "label_ru": "Вечер",
+      "label_es": "Tarde",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "time",
+      "facet_key": "bedtime",
+      "label_en": "Before sleep",
+      "label_ru": "Перед сном",
+      "label_es": "Antes de dormir",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "level",
+      "facet_key": "beginner",
+      "label_en": "Beginner",
+      "label_ru": "Новичок",
+      "label_es": "Principiante",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "level",
+      "facet_key": "intermediate",
+      "label_en": "Intermediate",
+      "label_ru": "Продвинутый",
+      "label_es": "Intermedio",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "level",
+      "facet_key": "advanced",
+      "label_en": "Advanced",
+      "label_ru": "Опытный",
+      "label_es": "Avanzado",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "spirituality",
+      "facet_key": "unspecified",
+      "label_en": "Not specified",
+      "label_ru": "Не указано",
+      "label_es": "No especificado",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "spirituality",
+      "facet_key": "secular",
+      "label_en": "Secular",
+      "label_ru": "Без эзотерики",
+      "label_es": "Laica",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "spirituality",
+      "facet_key": "open",
+      "label_en": "Open / gentle",
+      "label_ru": "Нейтрально-духовный",
+      "label_es": "Abierto / suave",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "spirituality",
+      "facet_key": "spiritual",
+      "label_en": "Spiritual",
+      "label_ru": "Духовный",
+      "label_es": "Espiritual",
+      "sort_order": 4
+    },
+    {
+      "facet_type": "spirituality",
+      "facet_key": "esoteric",
+      "label_en": "Esoteric / Reiki",
+      "label_ru": "Эзотерический / Рейки",
+      "label_es": "Esotérico / Reiki",
+      "sort_order": 5
+    },
+    {
+      "facet_type": "posture",
+      "facet_key": "sitting",
+      "label_en": "Seated",
+      "label_ru": "Сидя",
+      "label_es": "Sentado",
+      "sort_order": 1
+    },
+    {
+      "facet_type": "posture",
+      "facet_key": "lying",
+      "label_en": "Lying down",
+      "label_ru": "Лёжа",
+      "label_es": "Acostado",
+      "sort_order": 2
+    },
+    {
+      "facet_type": "posture",
+      "facet_key": "either",
+      "label_en": "Either",
+      "label_ru": "Сидя или лёжа",
+      "label_es": "Sentado o acostado",
+      "sort_order": 3
+    },
+    {
+      "facet_type": "posture",
+      "facet_key": "unknown",
+      "label_en": "Unspecified",
+      "label_ru": "Не указано",
+      "label_es": "No especificado",
+      "sort_order": 4
+    }
+  ]
+}
