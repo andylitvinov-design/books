@@ -60,7 +60,8 @@ export default async function PersonalityProfilesPage({ params }: Props) {
   // Only public catalogue metadata crosses the server/client boundary.
   // No participant responses, profiles, account IDs, or health records.
   // Spanish discovery labels are translated; questionnaires remain in English
-  // until their Spanish item sets are individually licensed and verifi  const tests = buildGuestProfileTests(locale);}));
+  // until their Spanish item sets are individually licensed and verified.
+  const tests = buildGuestProfileTests(locale);
 
   return (
     <main lang={locale} style={{ maxWidth: "100%", minWidth: 0, overflowX: "clip" }}>
