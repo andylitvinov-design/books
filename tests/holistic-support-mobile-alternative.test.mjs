@@ -35,7 +35,7 @@ test("personal scores and photos are local-only and accessible; no fake completi
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
-  assert.match(client, /<HolisticInlineSupportOrder/);
+  assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
 
@@ -114,8 +114,8 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(client, /data-support-video=\{video\.id\}/);
   assert.doesNotMatch(client, /data-support-personal-recommendations|data-support-recommended-video|data-support-recommended-talisman/);
   assert.match(client, /id="support-meditation-gallery"/);
-  assert.ok(client.indexOf('id="support-meditation-gallery"') <
-    client.indexOf('data-support-player data-playing='), "gallery must render above the main player");
+  assert.ok(client.indexOf('data-support-player data-playing=') <
+    client.indexOf('id="support-meditation-gallery"'), "large scenic video must precede four miniatures");
   assert.match(client, /<HolisticSupportTalismanViewer key=\{focus\}/);
   assert.match(client, /<TaoistTalismanCatalog/);
   assert.match(client, /hidden=\{!talismanCatalogOpen\}/);
@@ -127,9 +127,10 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(client, /data-support-healing-panel/);
   assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(client, /\/services\/remote-energy-support/);
-  assert.match(client, /\/masters/);
-  assert.match(client, /\/personality-profiles/);
-  assert.match(client, /<HolisticInlineSupportOrder/);
+  assert.match(client, /data-support-tool="masters"/);
+  assert.match(read("components/holistic-support-master-gallery.tsx"), /"\/masters"/);
+  assert.match(read("components/holistic-support-master-gallery.tsx"), /\/personality-profiles/);
+  assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(css, /grid-template-areas: "assessment profile tools"/);
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.toolShortcuts \{ display: grid;/);
@@ -181,6 +182,50 @@ test("same-window talisman viewer reuses real images, local basket, and protecte
   assert.doesNotMatch(viewer, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|autoplay=1/);
   const parsed = ts.transpileModule(viewer, {
     fileName: "holistic-support-talisman-viewer.tsx", reportDiagnostics: true,
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  });
+  assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
+    .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
+});
+
+
+test("all support modes share scenic hero → actual miniature choices without fake masters", () => {
+  const galleries = read("components/holistic-support-master-gallery.tsx");
+  const masterCss = read("components/holistic-support-master-gallery.module.css");
+  const talismanCss = read("components/holistic-support-talisman-viewer.module.css");
+  const talisman = read("components/holistic-support-talisman-viewer.tsx");
+  assert.match(client, /<HolisticSupportMasterGallery locale=\{locale\} kind=\{choice\}/);
+  assert.match(client, /<HolisticSupportMasterGallery locale=\{locale\} kind="consultation"/);
+  assert.match(client, /data-support-tool="masters"/);
+  assert.match(client, /data-support-healing-panel/);
+  assert.match(client, /data-support-consultation-panel/);
+  assert.match(galleries, /data-support-master-hero=\{id\(selected\)\}/);
+  assert.match(galleries, /data-support-master-rail/);
+  assert.match(galleries, /data-support-master-thumb=\{id\(entry\)\}/);
+  assert.match(galleries, /RemoteEnergySupportBooking key=\{selectedMaster.serviceId\}/);
+  assert.match(galleries, /preferredPractitioner=\{selectedMaster.slug\}/);
+  assert.match(galleries, /mode="inline" selectedKind="energy"/);
+  assert.match(galleries, /credentials: "omit"/);
+  assert.match(galleries, /\/api\/public\/remote-energy-support-masters\?locale=/);
+  assert.match(galleries, /&kind=consultation/);
+  assert.match(galleries, /setOrderOpen\(true\)/);
+  assert.match(galleries, /validOffer\(offer, locale\)/);
+  assert.match(galleries, /data-support-master-request/);
+  assert.match(galleries, /data-support-offer-request/);
+  assert.match(galleries, /\/personality-profiles/);
+  assert.doesNotMatch(galleries, /saveBrowserTalismanCart|hardcodedMaster/);
+  assert.match(masterCss, /\.hero\{/);
+  assert.match(masterCss, /\.rail\{/);
+  assert.match(masterCss, /\.thumb\[aria-pressed="true"\]/);
+  assert.match(talismanCss, /\.rail\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(talismanCss, /\.heroCopy h2\{font-family:Arial/);
+  assert.match(talisman, /data-support-talisman-request/);
+  assert.ok(galleries.indexOf('className={styles.hero}') < galleries.indexOf('className={styles.more}'),
+    "master/consultation hero must precede gallery");
+  assert.ok(talisman.indexOf('className={styles.hero}') < talisman.indexOf('className={styles.more}'),
+    "talisman hero must precede gallery");
+  const parsed = ts.transpileModule(galleries, {
+    fileName: "holistic-support-master-gallery.tsx", reportDiagnostics: true,
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   });
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
