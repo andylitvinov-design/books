@@ -126,6 +126,23 @@ test("all former Goals questions, tasks and metrics live inside the single Meani
   assert.ok(!client.includes('energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5'));
 });
 
+test("mobile readability: narrower categories and larger legible controls", () => {
+  // Explicitly prioritize content space without hiding the four life areas.
+  assert.match(css, /\.columns \{ grid-template-columns: minmax\(88px,28%\) minmax\(0,1fr\)/);
+  assert.match(css, /@media \(max-width: 360px\) \{[\s\S]*?\.columns \{ grid-template-columns: minmax\(82px,27%\)/);
+  assert.match(css, /font-size: clamp\(11\.5px,3\.1vw,14px\)/);
+  assert.match(css, /font-size: clamp\(14\.5px,3\.9vw,17px\)/);
+  assert.match(css, /font-size: clamp\(12px,3\.25vw,14px\)/);
+  assert.match(css, /\.check \{ min-height: 47px;/);
+  assert.match(css, /\.check input \{ width: 18px; height: 18px;/);
+  assert.match(css, /\.formatChoice \{ min-height: 47px;/);
+  assert.match(css, /\.sharedCheckinTop strong \{ font-size: clamp\(13px,3\.55vw,15px\)/);
+  // The assessment still shares one state with the goal editor.
+  assert.match(editor, /data-support-goal-checkin-input value=\{currentCheckin\}/);
+  assert.match(editor, /data-goal-accepted=\{id\}/);
+  assert.match(css, /\.actions \{ position: static;/);
+});
+
 test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
   for (const kind of ["meditation","consultation","tests","courses","talismans",
     "healing","masters","initiations","mandala"]) {
