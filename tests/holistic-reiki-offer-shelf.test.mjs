@@ -79,7 +79,7 @@ test("quick three-way Reiki type switch shares the real session/initiations/prog
   assert.match(parent,/chooseReikiFormat\(value, true\)/);
   assert.match(parent,/onClick=\{\(\) => chooseReikiFormat\(value\)\}/);
   assert.match(parent,/format=\{reikiFormat\} price=\{reikiPrice\}/);
-  for (const word of ["Programme", "Программа", "Programa"]) assert.ok(parent.includes(word));
+  for (const word of ["Course", "Курс", "Curso"]) assert.ok(parent.includes(word));
   assert.match(css,/\.viewer \.reikiQuickFormat button\[aria-pressed="true"\]/);
   assert.match(css,/min-height:44px/);
 });
@@ -110,6 +110,11 @@ test("Reiki support is a service marketplace with one concise picker and genuine
   assert.match(parent,/setOrderOpen\(true\)/);
   assert.match(parent,/<RemoteEnergySupportBooking/);
   assert.match(galleryCss,/\.reikiBrowseHeading/);
+  assert.match(parent,/className=\{styles\.reikiBrowseIntro\}/);
+  assert.match(galleryCss,/width: calc\(100% - 12px\)/);
+  assert.match(galleryCss,/min-height: 305px; height: auto; max-height: none/);
+  assert.match(galleryCss,/min-height: 64px/);
+  assert.match(galleryCss,/scroll-snap-type: x proximity/);
   assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 2/);
   assert.match(galleryCss,/@media\(max-width:640px\)/);
   assert.match(galleryCss,/@media\(max-width:350px\)/);
