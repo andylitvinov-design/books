@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   GUEST_VIDEO_LIMIT, QUEST_STEPS, QUEST_STORAGE_KEY, emptyQuest,
-  markQuestStep, nextQuestLaunch, normalizeQuest, questCompletedCount,
+  answerQuestVideoQuestion, markQuestStep, nextQuestLaunch, normalizeQuest, questCompletedCount,
   remainingGuestLaunches,
   type QuestState, type QuestStepId,
 } from "@/lib/holistic-support/guest-quest.mjs";
@@ -82,8 +82,41 @@ export function useSupportGuestQuest() {
     return true;
   }, [access, persist, ready]);
 
+  const answerVideoQuestion = useCallback(() => {
+    if (ready) persist(answerQuestVideoQuestion(stateRef.current));
+  }, [persist, ready]);
+
+  // A server-owned completed result is the only source of truth for this badge.
+  // Neither opening Test Explorer nor pressing the test shortcut can award it.
+  useEffect(() => {
+    if (!ready) return;
+    const controller = new AbortController();
+    const check = async () => {
+      try {
+        const response = await fetch("/api/app/support-journey/test-status", {
+          credentials: "same-origin", cache: "no-store", signal: controller.signal,
+        });
+        if (!response.ok || controller.signal.aborted) return;
+        const status: unknown = await response.json();
+        if (status && typeof status === "object" && "completed" in status &&
+            (status as { completed?: unknown }).completed === true) {
+          persist(markQuestStep(stateRef.current, "test"));
+        }
+      } catch { /* A failed status check never invents a completion. */ }
+    };
+    const whenVisible = () => { if (document.visibilityState === "visible") void check(); };
+    void check();
+    document.addEventListener("visibilitychange", whenVisible);
+    window.addEventListener("pageshow", whenVisible);
+    return () => {
+      controller.abort();
+      document.removeEventListener("visibilitychange", whenVisible);
+      window.removeEventListener("pageshow", whenVisible);
+    };
+  }, [ready, persist]);
+
   return {
-    record, ready, access, mark, launch, refreshAccess,
+    record, ready, access, mark, launch, answerVideoQuestion, refreshAccess,
     canPlay: ready && (access === "member" || remainingGuestLaunches(record) > 0),
   };
 }
@@ -95,7 +128,7 @@ const copy = {
     title: "Your progress", subtitle: "7 free steps to explore Holistic House",
     completed: "Completed", todo: "Try it", next: "Your next step", allDone: "You've explored all 7 steps",
     detail: "Show a hint", stepButton: "Open this step", confirmTest: "I completed a test",
-    manualTest: "Manual confirmation only — no questionnaire result is checked or stored here.",
+    manualTest: "A checkmark appears after a completed test is confirmed by your private session. Results are never stored in this bar.",
     battery: "Your video energy", remaining: "starts left", unlimited: "Free account · unlimited starts here",
     preview: "Guests can start 10 videos in this player on this device. Public YouTube links still work.",
     out: "Your guest preview is used up", signIn: "Sign in free with Google",
@@ -110,7 +143,7 @@ const copy = {
       recommendation: { name: "See your recommendations", hint: "Use the recommendation button to explore what matches your chosen ratings or goals.", action: "Show recommendations" },
       firstVideo: { name: "Start a meditation", hint: "Press Play on an original recording. This marks a start, not proof that the full video was watched.", action: "Choose a meditation" },
       secondVideo: { name: "Try a second video start", hint: "Try another recording or return to a practice. Two player starts earn this activity badge.", action: "Explore recordings" },
-      test: { name: "Complete a free test", hint: "Visit the free Test Explorer. After actually finishing a questionnaire, you may mark this step yourself.", action: "Explore free tests" },
+      test: { name: "Complete a free test", hint: "Visit the free Test Explorer. The checkmark appears automatically after the test is submitted successfully.", action: "Explore free tests" },
       course: { name: "Explore a free course", hint: "Browse the existing courses and choose a learning path. Viewing the catalogue does not enroll or charge you.", action: "View courses" },
     },
   },
@@ -118,7 +151,7 @@ const copy = {
     title: "Твой прогресс", subtitle: "7 бесплатных шагов знакомства с Holistic House",
     completed: "Выполнено", todo: "Попробовать", next: "Следующий шаг", allDone: "Ты изучил все 7 шагов",
     detail: "Подсказка", stepButton: "Перейти к шагу", confirmTest: "Я прошёл тест",
-    manualTest: "Отметка вручную: результат теста здесь не проверяется и не сохраняется.",
+    manualTest: "Галочка появится после подтверждённого результата теста. Ответы и баллы в этой плашке не хранятся.",
     battery: "Твой заряд видео", remaining: "запусков осталось", unlimited: "Бесплатный кабинет · без лимита запусков здесь",
     preview: "Без входа доступно 10 запусков в этом плеере на устройстве. Публичные ссылки YouTube остаются доступны.",
     out: "Пробный заряд закончился", signIn: "Войти бесплатно через Google",
@@ -133,7 +166,7 @@ const copy = {
       recommendation: { name: "Получи рекомендации", hint: "Нажми «Подобрать рекомендации», чтобы увидеть материалы на основе выбранных тобой целей.", action: "Мои рекомендации" },
       firstVideo: { name: "Начни медитацию", hint: "Нажми Play на оригинальной записи. Засчитывается запуск, а не подтверждённый полный просмотр.", action: "Выбрать медитацию" },
       secondVideo: { name: "Запусти второе видео", hint: "Попробуй другую запись или повтори практику. Два запуска дают отметку активности.", action: "Смотреть записи" },
-      test: { name: "Пройди бесплатный тест", hint: "Открой каталог бесплатных тестов. После реального прохождения можешь сам отметить этот шаг.", action: "Открыть тесты" },
+      test: { name: "Пройди бесплатный тест", hint: "Открой каталог. Галочка появится автоматически после успешной отправки завершённого теста.", action: "Открыть тесты" },
       course: { name: "Познакомься с курсами", hint: "Посмотри уже существующие бесплатные программы. Просмотр каталога не означает запись или оплату.", action: "Посмотреть курсы" },
     },
   },
@@ -141,7 +174,7 @@ const copy = {
     title: "Tu progreso", subtitle: "7 pasos gratuitos para explorar Holistic House",
     completed: "Completado", todo: "Probar", next: "Siguiente paso", allDone: "Has explorado los 7 pasos",
     detail: "Ver consejo", stepButton: "Abrir este paso", confirmTest: "He completado un test",
-    manualTest: "Confirmación manual: aquí no se verifica ni guarda el resultado de la prueba.",
+    manualTest: "La marca aparece tras confirmar un resultado. No se guardan respuestas ni puntuaciones en la barra.",
     battery: "Tu energía para vídeos", remaining: "inicios restantes", unlimited: "Cuenta gratuita · sin límite de inicios aquí",
     preview: "Como invitado puedes iniciar 10 vídeos en este reproductor. Los enlaces públicos de YouTube siguen disponibles.",
     out: "Has usado tus inicios de prueba", signIn: "Entrar gratis con Google",
@@ -156,7 +189,7 @@ const copy = {
       recommendation: { name: "Mira tus recomendaciones", hint: "Pulsa el botón de recomendaciones para explorar contenidos relacionados con tus preferencias.", action: "Ver recomendaciones" },
       firstVideo: { name: "Inicia una meditación", hint: "Pulsa Play en una grabación original. Se registra el inicio, no la visualización completa.", action: "Elegir meditación" },
       secondVideo: { name: "Inicia un segundo vídeo", hint: "Prueba otra grabación o repite una práctica. Dos inicios completan este paso.", action: "Explorar vídeos" },
-      test: { name: "Completa un test gratuito", hint: "Visita el catálogo de tests y, después de completarlo, marca este paso manualmente.", action: "Explorar tests" },
+      test: { name: "Completa un test gratuito", hint: "Visita el catálogo. La marca aparece automáticamente después de enviar una prueba completa.", action: "Explorar tests" },
       course: { name: "Explora un curso gratuito", hint: "Descubre los cursos existentes. Verlos no supone inscripción ni pago.", action: "Ver cursos" },
     },
   },
@@ -168,13 +201,14 @@ const stepIcons = {
 } as const;
 
 export function SupportGuestQuestPanel({
-  locale, quest, averageScore, focusLabel, onStep,
+  locale, quest, averageScore, focusLabel, onStep, testHref,
 }: {
   locale: PublicLocale;
   quest: SupportGuestQuestController;
   averageScore: string;
   focusLabel: string;
   onStep: (id: QuestStepId) => void;
+  testHref: string;
 }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<QuestStepId | null>(null);
@@ -225,7 +259,7 @@ export function SupportGuestQuestPanel({
         <p>{activeInfo.hint}</p>
         <div className={styles.actions}>
           {active === "test" ? (
-            <Link className={styles.action} href={"/" + locale + "/client/tests"} prefetch={false}>
+            <Link className={styles.action} href={testHref} prefetch={false}>
               {activeInfo.action}<ArrowRight size={18} aria-hidden="true" />
             </Link>
           ) : (
@@ -233,12 +267,6 @@ export function SupportGuestQuestPanel({
               {activeInfo.action}<ArrowRight size={18} aria-hidden="true" />
             </button>
           )}
-          {active === "test" && !quest.record.completed.test ? (
-            <button type="button" className={styles.confirmTest} data-support-test-self-report
-              onClick={() => quest.mark("test")}>
-              <Check size={16} aria-hidden="true" />{t.confirmTest}
-            </button>
-          ) : null}
         </div>
         {active === "test" ? <p className={styles.manualNote}>{t.manualTest}</p> : null}
       </div>
