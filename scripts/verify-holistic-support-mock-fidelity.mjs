@@ -171,15 +171,15 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
           if(width===320) {
-            const headHeight=Math.round(geometry.guide[0].y-geometry.a[0].y);
+            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
             console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes recommendations under header");
-          assert.ok(geometry.guide[0].bottom<=geometry.hero[0].y+2,
-            label+" recommendation card precedes original scenic player");
+          assert.equal(geometry.guide.length,0,
+            label+" personalized dialogue must not appear before the visitor starts it");
+          assert.ok(geometry.hero[0].y>=geometry.a[0].bottom-2,
+            label+" unchanged four-score dashboard precedes the scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
@@ -230,12 +230,12 @@ for (const browserType of [chromium, webkit]) {
             null,{timeout:8000});
 
           await root.locator('[data-support-recommendations]').click();
-          const basis=root.locator('[data-support-meditation-gallery] [data-support-meditation-basis]');
-          await basis.waitFor({state:"visible",timeout:8000});
-          const statusText=await basis.innerText();
-          assert.ok(statusText.includes("2/10"),label+" minimum score reflected in meditation rail");
+          const initialGuide=root.locator('[data-support-inline-guide]');
+          await initialGuide.waitFor({state:"visible",timeout:8000});
+          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').first().innerText();
+          assert.ok(statusText.includes("2/10"),label+" only changed check-in reflected in first reply");
           assert.ok(statusText.includes(locale==="ru"?"Отношения":locale==="es"?"Relaciones":"Relationships"),
-            label+" theme chosen by minimum, not a Focus selector");
+            label+" focus comes from the user's edited rating");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
           // The workspace expands into four sectors, including merged Meaning and Goals.
@@ -450,41 +450,51 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(filterOverflow<=3,label+" goal filter must not overflow horizontally: "+filterOverflow);
           await filter.locator('[data-support-goal-apply]').click();
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
-          const results=root.locator('[data-support-goal-results]');
+          const results=root.locator('[data-support-inline-guide]');
           await results.waitFor({state:"visible",timeout:8000});
-          assert.equal(await results.locator('[data-support-journey-step]').count(),5,
-            label+" five real recommendation cards");
-          await results.locator('[data-support-journey-other] summary').click();
-          assert.equal(await results.locator('[data-support-goal-action]').count(),7,
-            label+" only seven opted-in recommendation categories remain");
-          assert.equal(await results.locator('[data-support-goal-action="consultation"]').count(),0,
-            label+" opt-out suppresses consultation results");
-          assert.equal(await results.locator('[data-support-goal-action="initiations"]').count(),0,
-            label+" opt-out suppresses initiation results");
-          assert.equal(await results.locator('[data-support-goal-action="healing"]').count(),1,
-            label+" energy support remains selectable");
-          assert.match(await results.locator('[data-support-goal-action="mandala"]').getAttribute("href")??"",
-            /\/holistic-support\/mandala$/,label+" existing mandala route");
-          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"false",
-            label+" the Tests recommendation switches the same-page Tests tab");
-          assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
-            label+" real business learning route");
+          const filterSummary=await results.locator('[data-support-guide-message="guide"]').first().innerText();
+          assert.ok(filterSummary.includes(locale==="ru"?"Деньги":locale==="es"?"Dinero":"Money"),
+            label+" accepted goal filter takes priority over prior relationship check-in");
+          assert.equal(await results.locator('[data-support-guide-phase="review"]').count(),1,
+            label+" first ask visitor to confirm the personal summary");
+          await results.locator('[data-support-guide-phase="review"] button').first().click();
+          await results.locator('[data-support-guide-phase="need"] button').first().click();
+          await results.locator('[data-support-guide-phase="detail"] button').first().click();
+          await results.locator('[data-support-guide-minutes="10"]').click();
+          assert.equal(await results.locator('[data-support-guide-format="consultation"]').count(),0,
+            label+" filtered-out consultations not recommended");
+          assert.equal(await results.locator('[data-support-guide-format="healing"]').count(),1,
+            label+" opt-in Reiki support remains available");
+          assert.equal(await results.locator('[data-support-guide-format="mandala"]').count(),1,
+            label+" existing video studio is accessible");
+          assert.equal(await results.locator('[data-support-guide-format="courses"]').count(),1,
+            label+" Academy stays accessible");
+          await results.locator('[data-support-guide-format="tests"]').click();
+          assert.equal(await results.locator('[data-support-guide-phase="confirm"]').count(),1,
+            label+" explicit review before any recommendations");
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
+            label+" no early recommendation");
+          await results.locator('[data-support-guide-show-recommendations]').click();
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),1,
+            label+" real recommendation after conversation and confirmation");
+          assert.equal(await results.locator('[data-support-guide-program]').count(),1,
+            label+" personal next steps only after confirmation");
+          assert.match(await results.locator('a[href*="/client/tests?journey="]').getAttribute("href")??"",
+            /\/client\/tests\?journey=business$/,label+" real public test explorer route");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
-            label+" only source-backed recordings");
-          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
-          await root.locator('[data-support-goal-action="tests"]').click();
+            label+" only published video catalogue");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
+          await root.locator('[data-support-tool="tests"]').click();
           const testsFromGoals=root.locator('[data-support-tests-panel]');
           await testsFromGoals.waitFor({state:"visible",timeout:8000});
-          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"true",
-            label+" Goals→Tests stays on this page");
           assert.equal(await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href'),
-            '/'+locale+'/client/tests',label+" existing free Test Explorer");
+            '/'+locale+'/client/tests',label+" free Test Explorer");
           assert.equal(await testsFromGoals.locator('[data-support-tests-personality]').getAttribute('href'),
-            '/'+locale+'/personality-profiles',label+" existing Profile Builder");
+            '/'+locale+'/personality-profiles',label+" existing profile builder");
           assert.equal(await testsFromGoals.locator('[data-support-tests-guide]').getAttribute('href'),
-            '/'+locale+'/tests',label+" real free-tests explanation");
+            '/'+locale+'/tests',label+" test privacy explanation");
           await root.locator('[data-support-tool="meditation"]').click();
-          await root.locator('[data-support-goal-action="talismans"]').click();
+          await root.locator('[data-support-tool="talisman"]').click();
           const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           // Owner-approved shopping mock: verify actual category navigation,
@@ -610,8 +620,8 @@ for (const browserType of [chromium, webkit]) {
             label+" Reset clears all previously accepted sector badges");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
-          assert.equal(await root.locator('[data-support-goal-results]').count(),1,
-            label+" reset preserves the general five-step guide without a selected goal");
+          assert.equal(await root.locator('[data-support-inline-guide]').count(),0,
+            label+" after resetting the filter the default dashboard remains without invented advice");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
