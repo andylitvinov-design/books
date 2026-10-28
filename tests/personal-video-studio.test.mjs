@@ -23,6 +23,9 @@ test("one reusable renderer: 4 original topics and 12 cinematic money scenes, no
   assert.match(renderer,/const themeChoices: VideoTheme\[\] = \["money","relationships","energy","goals"\]/);
   assert.match(renderer,/CinematicSceneThumbnail/);
   assert.match(renderer,/ThemedSceneThumbnail/);
+  assert.match(renderer,/IntersectionObserver/);
+  assert.match(renderer,/data-video-template-playing/);
+  assert.match(renderer,/window\.requestAnimationFrame\(draw\)/);
   assert.match(renderer,/moneyTemplates/);
   assert.match(renderer,/voiceControls/);
   assert.doesNotMatch(wrapper,/\bfetch\s*\(|XMLHttpRequest|\/api\/|supabase|kling\.ai|heygen/i);
