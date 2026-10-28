@@ -159,7 +159,7 @@ function mountain(ctx: Ctx, w:number,h:number, level:number, color:string, phase
 }
 
 function backdrop(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number){
-  const [deep,mid,gold]=LOOK[scene];
+  const [deep,mid]=LOOK[scene];
   const sky=ctx.createLinearGradient(0,0,w,h);
   sky.addColorStop(0,deep);sky.addColorStop(.55,mid);sky.addColorStop(1,deep);
   ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
