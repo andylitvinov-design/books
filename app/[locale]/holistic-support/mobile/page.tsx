@@ -82,7 +82,6 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
   if (!isPublicLocale(locale)) notFound();
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
-  const originalMysteryVideos: SupportMobileVideo[] = [];
 
   // Russian original audio is discoverable only in RU. Each course and lesson
   // resolves from the already-preserved source manifests, not a second catalogue.
@@ -125,21 +124,18 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
         href: "/ru/academy/" + curriculum.routeKey,
         videoCount: courseVideos.length,
         videoGroups,
+        videos: courseVideos,
       });
-      originalMysteryVideos.push(...courseVideos);
     }
   }
 
   const videos: SupportMobileVideo[] = locale === "ru"
-    ? [
-      ...freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
+    ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
         ...video,
         program: index < 3 ? "sun" : "energy",
         author: "psimaster",
         sourceLanguage: "ru",
-      })),
-      ...originalMysteryVideos,
-    ]
+      }))
     : englishGuidedMeditations
       .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
       .map((video): SupportMobileVideo => ({
