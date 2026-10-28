@@ -63,12 +63,59 @@ test('bilingual account PDF journeys retain portrait entry, visible My Tests nav
   }
 })
 
-test('Spanish cabinet keeps its public root link and verifies the canonical portrait after click and reload', () => {
+test('Spanish cabinet uses the explicit Profile menu gesture and checks portrait after click and reload', () => {
+  assertSpanishProfileContract(read('scripts/verify-es-public-site.mjs'))
+})
+
+function assertSpanishProfileContract(source) {
+  const start = source.indexOf("stage=`${engine} ${width} Spanish account navigation`;")
+  const end = source.indexOf("stage=`${engine} ${width} search`;", start)
+  assert.ok(start >= 0 && end > start)
+  const block = source.slice(start, end)
+  const steps = [
+    "const accountMenu = page.locator('.site-navigation details.site-main-menu')",
+    "await expect(accountMenu).toHaveCount(1)",
+    "await expect(accountMenu).toHaveJSProperty('open', false)",
+    "await click(page.locator('.site-main-menu-trigger'))",
+    "await expect(accountMenu).toHaveJSProperty('open', true)",
+    "const accountLink = accountMenu.locator('.site-main-menu-grid > a[data-nav-item=\"profile\"]')",
+    "await expect(accountLink).toHaveCount(1)",
+    "await expect(accountLink).toHaveAccessibleName('Mi perfil')",
+    "await expect(accountLink).toBeVisible()",
+    "await expect(accountLink).toHaveAttribute('href','/en/app/portrait')",
+    "await click(accountLink)",
+    "await expect(page).toHaveURL(origin+'/en/app/portrait')",
+    "await expect(page.locator('.hh-app .hh-entry')).toBeVisible()",
+    "await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0)",
+    "await page.reload(); await settle()",
+    "await expect(page).toHaveURL(origin+'/en/app/portrait')",
+    "await expect(page.locator('html')).toHaveAttribute('lang','en')",
+    "await expect(page.locator('.hh-app .hh-entry')).toBeVisible()",
+  ]
+  let cursor = 0
+  for (const step of steps) {
+    const found = block.indexOf(step, cursor)
+    assert.ok(found >= cursor, 'Missing or reordered explicit account gesture: ' + step)
+    cursor = found + step.length
+  }
+  assert.equal(block.split("toHaveURL(origin+'/en/app/portrait')").length - 1, 2)
+}
+
+test('Spanish profile contract rejects missing gesture, wrong route, absent reload and language proof', () => {
   const source = read('scripts/verify-es-public-site.mjs')
-  assert.ok(source.includes("toHaveAttribute('href','/en/app')"))
-  assert.equal(source.split("toHaveURL(origin+'/en/app/portrait')").length - 1, 2)
-  assert.ok(source.includes("toHaveAttribute('lang','en')"))
-  assert.ok(source.includes(".hh-app .hh-entry"))
+  for (const before of [
+    "await click(page.locator('.site-main-menu-trigger'))",
+    "await expect(accountLink).toBeVisible()",
+    "await expect(accountLink).toHaveAttribute('href','/en/app/portrait')",
+    "await click(accountLink)",
+    "await page.reload(); await settle()",
+    "await expect(page.locator('html')).toHaveAttribute('lang','en')",
+  ]) {
+    assert.ok(source.includes(before))
+    assert.throws(() => assertSpanishProfileContract(source.replace(before, '')), {code: 'ERR_ASSERTION'})
+  }
+  assert.throws(() => assertSpanishProfileContract(source.replace("toHaveAttribute('href','/en/app/portrait')", "toHaveAttribute('href','/en/app')")), {code: 'ERR_ASSERTION'})
+  assert.throws(() => assertSpanishProfileContract(source.replace("await expect(page).toHaveURL(origin+'/en/app/portrait')", '')), {code: 'ERR_ASSERTION'})
 })
 
 // Execute only the actual bilingual PDF block. Browser, helper and download

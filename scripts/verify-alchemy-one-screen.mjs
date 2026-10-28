@@ -128,7 +128,7 @@ try {
         settleDisclosure = await installAlchemyDisclosureGuard(context, page, origin, disclosureViolations, {
           phase: () => disclosurePhase,
           emit: record => caseDiagnostics.push(record),
-        });
+        }, true); // Isolated synthetic legacy poster; not actual-image acceptance.
         disclosurePhase = "opening-contact";
           await trigger.click();
           assert.equal(await trigger.getAttribute("aria-expanded"), "true", "Book opens contact");
@@ -177,8 +177,8 @@ try {
     } finally {
       disclosurePhase = "context-disposal";
       try { await context.close(); } finally { await settleDisclosure(); }
+      if (caseDiagnostics.length || disclosureViolations.length) disclosureDiagnostics.push({locale,width,height,observations:caseDiagnostics});
       if (disclosureViolations.length) {
-        disclosureDiagnostics.push({locale,width,height,observations:caseDiagnostics});
         failures.push(key + ": " + disclosureViolations.join("; "));
         console.error("ALCHEMY_DISCLOSURE_FAIL " + key + " " + disclosureViolations.join("; "));
       }
