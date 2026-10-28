@@ -14,9 +14,9 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   for (const locale of ["en", "ru", "es"]) {
     const links = getCompactNavigation(locale);
     assert.equal(links.length, 7);
-    assert.deepEqual(links.map(item => item.id), ["home", "analysis", "courses", "profile", "alchemy", "pro", "temple"]);
-    assert.equal(links[1].href, "/" + locale + "/services/free-situation-review");
-    assert.equal(links[2].href, "/" + locale + "/academy");
+    assert.deepEqual(links.map(item => item.id), ["profile", "courses", "home", "analysis", "alchemy", "pro", "temple"]);
+    assert.equal(links[1].href, "/" + locale + "/academy");
+    assert.equal(links[2].href, locale === 'en' ? '/' : '/' + locale);
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
     assert.equal(links[6].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
     assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");

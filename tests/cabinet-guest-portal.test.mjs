@@ -8,9 +8,10 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('My Space replaces Cabinet across the public header, without changing six bottom-bar routes', () => {
   const labels = { en: 'My Space', ru: 'Моё пространство', es: 'Mi espacio' }
   for (const locale of ['en', 'ru', 'es']) {
-    const last = getCompactNavigation(locale).at(-1)
-    assert.equal(last.id, 'books')
-    assert.equal(last.href, '/' + locale + '/books')
+    const first = getCompactNavigation(locale)[0]
+    assert.equal(first.id, 'profile')
+    assert.equal(first.href, '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
+    assert.equal(getCompactNavigation(locale)[1].id, 'courses')
     assert.equal(navigationCopy[locale].house, labels[locale])
     assert.equal(navigationCopy[locale].cabinet, labels[locale])
   }

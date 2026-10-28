@@ -76,17 +76,17 @@ for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplic
 const workspace = read('components/app/app-workspace.jsx')
 const model = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const documentReader', workspace.indexOf('const nav = [')))
 const start = workspace.indexOf('<nav className="hh-mobile-app-nav"'), end = workspace.indexOf('</nav>', start) + '</nav>'.length
-const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users, House } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
+const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users, House, MessageCircle } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
 const { PrivateNav } = compile(privateSource, { './copy': { COPY } })
 const desktopStart = workspace.indexOf('<nav className="hh-nav"')
 const desktopEnd = workspace.indexOf('</nav>', desktopStart) + '</nav>'.length
 assert.ok(desktopStart >= 0, 'actual desktop navigation exists')
 const { PrivateNav: DesktopNav } = compile(privateSource.slice(0, privateSource.indexOf('return (')) + 'return (' + workspace.slice(desktopStart, desktopEnd) + '); }', { './copy': { COPY } })
 for (const locale of ['en', 'ru']) test(locale + ' actual shared private model preserves five exact destinations and current-page aliases', async () => {
-  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results']) {
+  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'messages', 'history', 'reports', 'monitoring', 'results']) {
     const tree = Renderer({ locale, page })
     const target = { locator(selector) { assert.equal(selector, 'nav.hh-nav:visible, nav.hh-mobile-app-nav:visible'); return locator([tree]) } }
-    await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page })
+    await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['portfolio', 'history', 'reports', 'monitoring', 'results'].includes(page) ? 'portrait' : page })
   }
 })
 for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
@@ -105,7 +105,7 @@ for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'tw
 
 test('core exercises accepted private labels, five private destinations and mobile Home navigation and compact account picker', () => {
   const core = read('scripts/verify-app-r1.mjs')
-  assert.ok(core.includes("toHaveText(locale==='ru'?'Отчёты':'Reports')"))
+  assert.ok(core.includes("toHaveText(locale==='ru'?'Мой профиль':'My Profile')"))
   assert.ok(core.includes("const practice=page.locator('.hh-master-header-link')"))
   assert.ok(core.includes("expect(practice).toHaveCount(1)"))
   assert.ok(core.includes("expect(practice).toHaveText('Practice')"))

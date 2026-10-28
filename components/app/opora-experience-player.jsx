@@ -458,7 +458,7 @@ function EmotionVocabulary({locale,day,choice,textValue,onChoice,onText,disabled
   </div>
 }
 
-export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
+export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onBackToMap=onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
@@ -1163,7 +1163,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             :inPreview?backFromPreview:()=>setStep(flowScenes.length-1)}>
           <ArrowLeft size={17}/>{t.back}
         </button>:<button type="button" className={styles.back}
-          onClick={step===0?onClose:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
+          onClick={step===0?onBackToMap:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         {firstExerciseInvite?<button type="button" className={styles.primary} disabled={locked}
           data-opora-practice-consent-choice="yes" onClick={acceptFirstExercise}>
           {t.firstExerciseYes}<ArrowRight size={18}/>
