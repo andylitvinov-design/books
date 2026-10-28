@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, SlidersHorizontal } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import facetsData from "@/data/academy/meditation-filter-facets-20261028.json";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { rankClientServices } from "@/lib/holistic-support/client-intent-model.mjs";
@@ -169,6 +170,9 @@ const titleOf = (item: { label_en: string; label_ru: string; label_es: string },
 
 export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, onBack }: Props) {
   const t = copy[locale];
+  const stars = useCatalogRatings("video",videos.map(video=>video.youtube_id));
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
   const [goal, setGoal] = useState<Goal>("energy");
   const [language, setLanguage] = useState<VideoLanguage>(locale);
   const [situations, setSituations] = useState<string[]>([]);
@@ -211,9 +215,14 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     });
     setSelectedId(null);
   }
-  const found: MeditationMatch[] = useMemo(() =>
-    applied ? rankMeditationCatalog({ videos, publishedSourceIds, request: applied }) : [],
-    [applied, videos, publishedSourceIds]);
+  const eligibleVideos=useMemo(() => minimumStars && !stars.loading && !stars.unavailable
+    ? videos.filter(video => matchesStarFilter(stars.ratings[video.youtube_id],minimumStars))
+    : videos,[videos,minimumStars,stars.ratings,stars.loading,stars.unavailable]);
+  const matched: MeditationMatch[] = useMemo(() =>
+    applied ? rankMeditationCatalog({ videos:eligibleVideos, publishedSourceIds, request: applied }) : [],
+    [applied, eligibleVideos, publishedSourceIds]);
+  const found = (sortRated ? sortByStars(matched,match=>match.video.youtube_id,stars.ratings) : matched)
+    .filter(match=>stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[match.video.youtube_id],minimumStars));
   const active = found.find(match => match.video.youtube_id === selectedId) ?? found[0];
   const services = useMemo(() => applied ? rankClientServices({
     offers:coreServiceOffers(locale),
@@ -343,6 +352,13 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
         </div>
       </form>
 
+      {applied && <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,margin:"12px 0"}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={value=>{setMinimumStars(value);setSelectedId(null);}}/>
+        <label style={{fontSize:13,display:"inline-flex",alignItems:"center",gap:6}}>
+          <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>
+          {locale==="ru"?"Сначала лучшие оценки":locale==="es"?"Mejor valorados primero":"Highest rated first"}
+        </label>
+      </div>}
       {applied ? (
         <section aria-label={t.matches} className={styles.results} data-meditation-results>
           <h4>{t.matches} · {found.length}</h4>
@@ -369,6 +385,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
                 )}
                 <div className={styles.caption}>
                   <h5>{active.video.title}</h5>
+                  <CatalogStarRating locale={locale} summary={stars.ratings[active.video.youtube_id]} onRate={value=>stars.rate(active.video.youtube_id,value)} unavailable={stars.unavailable} compact/>
                   <p>{active.video.creator} · {t.langDisclosure}: {t.audioOptions[active.video.audio_language]}</p>
                   {active.video.duration_hint_minutes && !active.durationVerified ? (
                     <p className={styles.subtle}>≈ {active.video.duration_hint_minutes} min · {t.approx}</p>) : null}
@@ -395,7 +412,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
                     <span className={styles.itemNumber}>{String(index+1).padStart(2,"0")}</span>
                     <span className={styles.itemCopy}>
                       <strong>{match.video.title}</strong>
-                      <small>{match.video.creator} · {t.matchLabels[match.matchType]} · {match.playback === "youtube_only" ? "YouTube" : "Holistic House"}</small>
+<small>{match.video.creator} · {t.matchLabels[match.matchType]} · {match.playback === "youtube_only" ? "YouTube" : "Holistic House"} · {stars.ratings[match.video.youtube_id]?.count ? stars.ratings[match.video.youtube_id].average.toFixed(1)+" ★ ("+stars.ratings[match.video.youtube_id].count+")" : "— ★"}</small>
                     </span>
                     <span className={styles.playArrow} aria-hidden="true">›</span>
                   </button>

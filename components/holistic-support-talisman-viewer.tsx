@@ -7,6 +7,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { readBrowserTalismanCart, saveBrowserTalismanCart, consumeBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import styles from "./holistic-support-talisman-viewer.module.css";
 
 type Focus = "energy" | "money" | "relationships" | "goals";
@@ -50,7 +51,7 @@ const translations = {
     allTraditions: "All traditions", descriptionFilter: "Description", allProperties: "All themes",
     properties: { "fu-prosperity": "Prosperity", "fu-harmony": "Harmony", "fu-balance": "Balance" },
     masterNote: "No verified maker is assigned to these illustrative designs yet. The master and final details are confirmed when replying to your request.",
-    illustration: "Illustrative Fu artwork", intention: "Personal intention",
+    illustration: "Illustrative Fu artwork", intention: "Personal intention", best: "Highest rated first", noMatches: "No talismans match this star rating yet.",
   },
   ru: {
     mode: "Талисман", tradition: "Традиция", daoist: "Даосские Фу",
@@ -73,7 +74,7 @@ const translations = {
     allTraditions: "Все традиции", descriptionFilter: "Описание", allProperties: "Все свойства",
     properties: { "fu-prosperity": "Достаток", "fu-harmony": "Гармония", "fu-balance": "Равновесие" },
     masterNote: "Автор конкретного эскиза пока не подтверждён. Мастер и условия изготовления уточняются в ответе на заявку.",
-    illustration: "Эскиз символа Фу", intention: "Личное намерение",
+    illustration: "Эскиз символа Фу", intention: "Личное намерение", best: "Сначала лучшие оценки", noMatches: "Талисманов с таким рейтингом пока нет.",
   },
   es: {
     mode: "Talismán", tradition: "Tradición", daoist: "Fu taoísta",
@@ -96,7 +97,7 @@ const translations = {
     allTraditions: "Todas las tradiciones", descriptionFilter: "Descripción", allProperties: "Todas las cualidades",
     properties: { "fu-prosperity": "Prosperidad", "fu-harmony": "Armonía", "fu-balance": "Equilibrio" },
     masterNote: "Todavía no se ha verificado un creador para estos diseños ilustrativos. El maestro y los detalles se confirman al responder a la solicitud.",
-    illustration: "Arte Fu ilustrativo", intention: "Intención personal",
+    illustration: "Arte Fu ilustrativo", intention: "Intención personal", best: "Mejor valorados primero", noMatches: "Todavía no hay talismanes con esta valoración.",
   },
 } as const;
 
@@ -110,6 +111,9 @@ export function HolisticSupportTalismanViewer({
   onToggleCatalog: () => void;
 }) {
   const t = translations[locale];
+  const stars = useCatalogRatings("talisman",TAOIST_TALISMANS.map(item=>item.id));
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
   const [goal, setGoal] = useState<Category>(focus);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -140,12 +144,14 @@ export function HolisticSupportTalismanViewer({
   // reuse source data; changing a filter never silently invents inventory or a price.
   const preferredId = byGoal[goal];
   const ranked = new Map((rankedIds || []).map((id, index) => [id, index]));
-  const items = [...TAOIST_TALISMANS]
+  const unfilteredItems = [...TAOIST_TALISMANS]
     .filter(item => property === "all" || item.id === property)
     .sort((a, b) => {
       const rank = (id: string) => (id === preferredId ? -1 : ranked.get(id) ?? 100);
       return rank(a.id) - rank(b.id);
     });
+  const items = (sortRated ? sortByStars(unfilteredItems,item=>item.id,stars.ratings) : unfilteredItems)
+    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[item.id],minimumStars));
   const chooseCategory = (category: Category) => {
     setGoal(category); setProperty("all"); setSelectedId(null); setDetailsOpen(false);
   };
@@ -158,7 +164,7 @@ export function HolisticSupportTalismanViewer({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
   };
-  const selected = items.find(item => item.id === selectedId) || items[0];
+  const selected = items.find(item => item.id === selectedId) || items[0] || unfilteredItems[0];
   const heroTitle = selected[locale].title.replace(/^(Fu|Фу)\s*[·•]\s*/i, "");
   const current = items.findIndex(item => item.id === selected.id);
   const step = (delta: number) => {
@@ -243,8 +249,15 @@ export function HolisticSupportTalismanViewer({
           </select><ChevronDown size={17} aria-hidden="true" />
         </label>
       </div>
+      <div className={styles.starFilters} data-support-talisman-star-filters>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={value=>{setMinimumStars(value);setSelectedId(null);}}/>
+        <label className={styles.starSort}>
+          <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>{t.best}
+        </label>
+      </div>
+      {!items.length && <p role="status" className={styles.filterExplainer}>{t.noMatches}</p>}
       {masterOpen && <p className={styles.filterExplainer} id="talisman-master-note" role="status">{t.masterNote}</p>}
-      <section className={styles.hero} data-support-talisman={selected.id}
+      {items.length>0&&<section className={styles.hero} data-support-talisman={selected.id}
         aria-label={selected[locale].title} onTouchStart={touchStart} onTouchEnd={touchEnd}>
         <div className={styles.photoStage} data-support-talisman-artwork aria-hidden="true">
           <div className={styles.artworkRing}>
@@ -290,12 +303,16 @@ export function HolisticSupportTalismanViewer({
             aria-label={item[locale].title} aria-pressed={item.id === selected.id}
             onClick={() => { setSelectedId(item.id); setDetailsOpen(false); }} />)}
         </div>
-      </section>
+      </section>}
+      {items.length>0 && <div className={styles.starReview} data-support-talisman-rating={selected.id}>
+        <CatalogStarRating locale={locale} summary={stars.ratings[selected.id]}
+          onRate={value=>stars.rate(selected.id,value)} unavailable={stars.unavailable} compact/>
+      </div>}
       {basketError && <p className={styles.error} role="alert">{t.basketError}</p>}
       {detailsOpen && <p id="talisman-design-details" className={styles.expandedDetails}>
         {selected[locale].description} {t.note}
       </p>}
-      <section className={styles.more} aria-label={t.gallery}>
+      {items.length>0&&<section className={styles.more} aria-label={t.gallery}>
         <div className={styles.heading}>
           <h3>{t.gallery}</h3>
           <button type="button" onClick={onToggleCatalog} aria-expanded={catalogOpen}
@@ -317,7 +334,7 @@ export function HolisticSupportTalismanViewer({
           </button>)}
         </div>
         <p className={styles.note}>{t.instructions} {t.note}</p>
-      </section>
+      </section>}
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="support-talisman-order-title"
         onClose={() => setOrderOpen(false)}>
         <div className={styles.dialogTop}>

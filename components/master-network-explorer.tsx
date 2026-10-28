@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings, type StarSummary } from "@/components/catalog-star-rating";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
@@ -540,10 +541,14 @@ function ServiceCard({
   service,
   locale,
   profileView = false,
+  rating, onRate, ratingUnavailable = false,
 }: {
   service: PublicService;
   locale: Locale;
   profileView?: boolean;
+  rating?: StarSummary;
+  onRate?: (stars:number)=>Promise<unknown>;
+  ratingUnavailable?: boolean;
 }) {
   const t = COPY[locale];
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
@@ -595,6 +600,7 @@ function ServiceCard({
       </Link>}
       <p className={styles.area}>{areaName(service.areaKey, locale)}</p>
       <h3>{service.copy.title}</h3>
+      <CatalogStarRating locale={locale} summary={rating} onRate={onRate} unavailable={ratingUnavailable} compact/>
       <p className={styles.description}>{service.copy.shortDescription}</p>
       <div className={styles.meta}>
         <span>{format}</span>
@@ -625,10 +631,11 @@ export function PractitionerServicesGrid({ services, locale: pageLocale }: {
   locale: string;
 }) {
   const locale = localized(pageLocale);
+  const stars = useCatalogRatings("service", services.map(service=>service.id));
   return (
     <div className={styles.cardGrid + " " + styles.practitionerServicesGrid}>
       {services.map(service => (
-        <ServiceCard key={service.id} service={service} locale={locale} profileView />
+        <ServiceCard key={service.id} service={service} locale={locale} profileView rating={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} ratingUnavailable={stars.unavailable}/>
       ))}
     </div>
   );
@@ -637,19 +644,31 @@ export function PractitionerServicesGrid({ services, locale: pageLocale }: {
 export function MarketplaceServiceFinder({ services, locale: pageLocale }: { services: PublicService[]; locale: string }) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const stars = useCatalogRatings("service", services.map(service=>service.id));
   const languages = useMemo(() => [...new Set(services.flatMap((service) => service.languages || []).map(clean).filter(Boolean))].sort(), [services]);
   const methods = useMemo(()=>[...new Set(services.flatMap(s=>s.methods||[]).map(clean).filter(Boolean))].sort(),[services]);
   const visible = useMemo(() => {
-    const list = services.filter((service) => serviceMatches(service, state));
+    const list = services.filter((service) => serviceMatches(service, state) && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[service.id], minimumStars)));
+    if (state.sort === "rating") return sortByStars(list, item=>item.id, stars.ratings);
     if (state.sort === "az") return list.sort((a, b) => a.copy.title.localeCompare(b.copy.title, pageLocale));
     if (state.sort === "shorter") return list.sort((a, b) => (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity));
     const areas = AREAS.map(([id])=>id);
     return list.sort((a,b)=>areas.indexOf(a.areaKey as typeof areas[number])-areas.indexOf(b.areaKey as typeof areas[number]));
-  }, [services, state, pageLocale]);
+  }, [services, state, pageLocale, stars.ratings, stars.loading, stars.unavailable, minimumStars]);
   return (
     <div className={styles.explorer}>
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",margin:"10px 0"}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars}/>
+        <label style={{fontSize:13}}>{locale==="ru"?"Сортировка":locale==="es"?"Ordenar":"Sort"}{" "}
+          <select value={state.sort} onChange={event=>setState(current=>({...current,sort:event.target.value}))}>
+            <option value="default">{COPY[locale].defaultSort}</option>
+            <option value="rating">{locale==="ru"?"Высокий рейтинг":locale==="es"?"Mayor valoración":"Highest rated"}</option>
+          </select>
+        </label>
+      </div>
       <Filters locale={locale} mode="services" state={state} setState={setState} count={visible.length} languages={languages} methods={methods} />
-      {visible.length ? <div className={styles.cardGrid}>{visible.map((service) => <ServiceCard key={service.id} service={service} locale={locale} />)}</div>
+      {visible.length ? <div className={styles.cardGrid}>{visible.map((service) => <ServiceCard key={service.id} service={service} locale={locale} rating={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} ratingUnavailable={stars.unavailable}/>)}</div>
         : <p className={styles.empty} role="status">{COPY[locale].noResults}</p>}
     </div>
   );
