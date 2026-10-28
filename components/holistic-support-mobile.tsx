@@ -12,6 +12,7 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
+import type { PublicTest } from "@/components/personality-profiles-builder";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
@@ -391,10 +392,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation" }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], profileTests, initialChoice = "meditation" }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
+  profileTests: PublicTest[];
   initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
@@ -409,6 +411,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
   const [profileSector, setProfileSector] = useState<GoalSector>("energy");
   const [activeCourseProfile, setActiveCourseProfile] = useState<CourseProfileSector>("energy");
+  const [inlineTestSector, setInlineTestSector] = useState<CourseProfileSector | null>(null);
   const [goalSelection, setGoalSelection] = useState<GoalSelection | null>(null);
   // Local-only accepted diagnostic sectors, maintained when the filter closes.
   const [goalSavedSectors, setGoalSavedSectors] =
@@ -588,6 +591,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       }));
     return () => window.cancelAnimationFrame(frame);
   }, [choice, goalFilterOpen]);
+  useEffect(() => {
+    if (!inlineTestSector || choice !== "pump" || goalFilterOpen) return;
+    const frame = window.requestAnimationFrame(() =>
+      document.getElementById("support-profile-inline-tests")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [inlineTestSector, choice, goalFilterOpen]);
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
@@ -908,8 +920,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </div>
           ) : choice === "pump" ? (
             <HolisticSupportCourseProfiles locale={locale} courses={courses}
+              profileTests={profileTests} testSector={inlineTestSector}
               savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
-              onTests={() => changeChoice("tests")}
+              onTests={() => setInlineTestSector(activeCourseProfile)}
               onFillProfile={openCourseProfileFilter}
               onRecommendations={showCourseProfileRecommendations} />
           ) : scene ? (

@@ -7,6 +7,7 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { buildGuestProfileTests } from "@/lib/profile/guest-profile-tests";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
 
@@ -165,6 +166,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
       }));
 
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
+      profileTests={buildGuestProfileTests(locale)} initialChoice={initialChoice} />
   );
 }

@@ -15,9 +15,9 @@ type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning" | "goal";
 type TestMode = "questionnaires" | "pro";
 type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
-type PublicTest = { key: string; version: string; title: string; axes: string[]; minutes: number | null;
+export type PublicTest = { key: string; version: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
-type Props = { locale: Locale; tests: PublicTest[] };
+type Props = { locale: Locale; tests: PublicTest[]; inline?: boolean; initialFocus?: Focus };
 type ProfileScaleGroup = {
   area: Area;
   scales: Array<{
@@ -407,19 +407,23 @@ const additionalCopy = {
   },
 } as const;
 
-export function PersonalityProfilesBuilder({ locale, tests }: Props) {
+export function PersonalityProfilesBuilder({ locale, tests, inline = false, initialFocus }: Props) {
   const t = copy[locale];
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const wizardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (started) wizardRef.current?.scrollIntoView({
+    if (!inline && !started) return;
+    // In the embedded flow, advance down to the new card; keep earlier steps visible.
+    if (inline && step === 0) return;
+    const target = inline ? document.getElementById("profile-inline-stage-" + step) : wizardRef.current;
+    target?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
     });
-  }, [started, step]);
-  const [focuses, setFocuses] = useState<Focus[]>([]);
+  }, [inline, started, step]);
+  const [focuses, setFocuses] = useState<Focus[]>(inline && initialFocus ? [initialFocus] : []);
   const [selectedResearchIds, setSelectedResearchIds] = useState<string[]>([]);
   const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
   const [batteryMode, setBatteryMode] = useState<TestMode>("questionnaires");
@@ -502,6 +506,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const displayTests = showMore ? extraMatches : [];
 
   function toggleFocus(focus: Focus) {
+    if (inline && step > 0) setStep(0);
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
     // Other directions must not contribute stale topics, scales or plans.
@@ -515,6 +520,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   // Main scale groups are broad areas. Goal clarity, motivation and
   // confidence remain three independent controls.
   function toggleMainScale(area: Area) {
+    if (inline && step > 1) setStep(1);
     const group = visibleScaleGroups.find(item => item.area === area);
     if (!group || area === "goal") return;
     const ids = group.researchAxes.map(axis => axis.id);
@@ -532,6 +538,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   // Topic selection maps to the EXISTING versioned source scales. There
   // is no independent score, instrument, or invented comparison here.
   function toggleTopicAxis(axisId: string) {
+    if (inline && step > 2) setStep(2);
     const ids = scaleGroups.flatMap(group => group.scales
       .filter(scale => scale.researchAxisId === axisId).map(scale => scale.id));
     if (!ids.length) return;
@@ -545,6 +552,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   function toggleResearchAxis(id: string) {
+    if (inline && step > 1) setStep(1);
     if (!visibleScaleGroups.some(group => group.researchAxes.some(axis => axis.id === id))) return;
     setSelectedResearchIds(previous => previous.includes(id)
       ? previous.filter(item => item !== id) : [...previous, id]);
@@ -556,6 +564,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   function toggleScale(id: string) {
+    if (inline && step > 2) setStep(2);
     if (!scaleGroups.some(group => group.scales.some(scale => scale.id === id))) return;
     setSelectedScaleIds(previous => previous.includes(id)
       ? previous.filter(item => item !== id) : [...previous, id]);
@@ -565,6 +574,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   function toggleTest(key: string) {
+    if (inline && step > 3) setStep(3);
     // Eligibility includes the current mode, cleared guest rights and chosen source facets.
     if (!eligibleTestKeys.has(key)) return;
     setSelectedByMode(previous => {
@@ -657,8 +667,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     }
   }
 
-  return <div className={styles.shell} data-personality-profile-builder>
-    {!started ? <>
+  return <div className={styles.shell} data-personality-profile-builder data-profile-inline={inline ? "true" : undefined}>
+    {!inline && !started ? <>
       <header className={styles.hero}>
         <div className={styles.heroPhoto} aria-hidden="true" />
         <div className={styles.heroCopy}>
@@ -687,9 +697,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </section>
     </> : <>
     <div className={styles.wizardTop} ref={wizardRef}>
-      <button type="button" className={styles.returnIntro} onClick={() => { setStarted(false); setStep(0); }}>
+      {!inline && <button type="button" className={styles.returnIntro} onClick={() => { setStarted(false); setStep(0); }}>
         <ArrowLeft size={16} aria-hidden="true" />{t.returnIntro}
-      </button>
+      </button>}
       <span className={styles.wizardKicker}><Sparkles size={15} aria-hidden="true" />{t.wizardKicker}</span>
     </div>
     <nav className={styles.progress} aria-label={locale === "ru" ? "Шаги конструктора" : locale === "es" ? "Pasos" : "Builder steps"}>
@@ -701,8 +711,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     </nav>
 
     <div className={styles.panel}>
-      {step === 0 && <section aria-labelledby="profile-builder-step-title">
-        <h2 id="profile-builder-step-title">{t.profileTitle}</h2>
+      {(inline ? step >= 0 : step === 0) && <section id={"profile-inline-stage-0"} className={inline ? styles.inlineStep : undefined} aria-labelledby="profile-builder-step-title-0">
+        <h2 id="profile-builder-step-title-0">{t.profileTitle}</h2>
         <p className={styles.help}>{t.profileHelp}</p>
         <div className={styles.templateGrid} data-profile-focus-selection>
           {(Object.keys(t.focuses) as Focus[]).map(key =>
@@ -727,8 +737,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
-      {step === 1 && <section aria-labelledby="profile-builder-step-title" data-profile-scale-selection-step>
-        <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
+      {(inline ? step >= 1 : step === 1) && <section id={"profile-inline-stage-1"} className={inline ? styles.inlineStep : undefined} aria-labelledby="profile-builder-step-title-1" data-profile-scale-selection-step>
+        <h2 id="profile-builder-step-title-1">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
         <p className={styles.focusContext} data-profile-selected-focus>
           <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
@@ -765,8 +775,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         {focuses.includes("goal") && <p className={styles.scaleSourceNote}>{t.goalScaleNote}</p>}
       </section>}
 
-      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-scales-step data-profile-topics-step>
-        <h2 id="profile-builder-step-title">{t.scaleTitle}</h2>
+      {(inline ? step >= 2 : step === 2) && <section id={"profile-inline-stage-2"} className={inline ? styles.inlineStep : undefined} aria-labelledby="profile-builder-step-title-2" data-profile-scales-step data-profile-topics-step>
+        <h2 id="profile-builder-step-title-2">{t.scaleTitle}</h2>
         <p className={styles.help}>{t.scaleHelp}</p>
         <div className={styles.scaleOverview} role="status">
           <strong>{selectedAxisRefs.length} {t.scaleSelected}</strong>
@@ -802,8 +812,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         {selectedScaleIds.length === 0 && <p className={styles.caution} role="status">{t.scaleRequired}</p>}
       </section>}
 
-      {step === 3 && <section aria-labelledby="profile-builder-step-title" data-profile-tests-step>
-        <h2 id="profile-builder-step-title">{t.testTitle}</h2>
+      {(inline ? step >= 3 : step === 3) && <section id={"profile-inline-stage-3"} className={inline ? styles.inlineStep : undefined} aria-labelledby="profile-builder-step-title-3" data-profile-tests-step>
+        <h2 id="profile-builder-step-title-3">{t.testTitle}</h2>
         <p className={styles.help}>{t.testHelp}</p>
         <fieldset className={styles.batteryModes} data-profile-test-mode>
           <legend>{t.modeOverview}</legend>
@@ -947,11 +957,11 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </section>}
       </section>}
 
-      {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
+      {(inline ? step >= 4 : step === 4) && <section id={"profile-inline-stage-4"} className={inline ? styles.inlineStep : undefined} aria-labelledby="profile-builder-step-title-4" data-profile-test-review-slide>
         <div className={styles.reviewIntro}>
           <div className={styles.reviewIcon} aria-hidden="true"><ClipboardList size={24} /></div>
           <p className={styles.templateLabel}>{t.readyKicker}</p>
-          <h2 id="profile-builder-step-title">{t.readyTitle}</h2>
+          <h2 id="profile-builder-step-title-4">{t.readyTitle}</h2>
           <p className={styles.help}>{t.readyHelp}</p>
           <p className={styles.reviewTotal}>
             <ClipboardList size={17} aria-hidden="true" />
