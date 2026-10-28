@@ -1,6 +1,7 @@
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
+import { assertAlchemyPanelGeometry, collectAlchemyReviewGeometry, assertAlchemyReviewFeed } from './helpers/alchemy-panel-contract.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
@@ -457,9 +458,9 @@ async function verifyPublicServiceConversionJourneys(){
       'Payment methods are absent until the practitioner confirms the session')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assertAlchemyPanelGeometry(measurements)
+     const reviewMeasurements=await servicePage.locator('[data-alchemy-panel="reviews"]').evaluate(collectAlchemyReviewGeometry)
+     assertAlchemyReviewFeed(reviewMeasurements,{locale,width})
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
