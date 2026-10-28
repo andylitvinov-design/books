@@ -242,3 +242,18 @@
  .compactResults .empty{padding:12px}
  .compactResults .results{margin:0}
 }
+
+
+/* The public master modal now completes its first-party CRM contact step here,
+ * without navigating an unauthenticated iPhone into the private Cabinet. */
+.publicContact{display:grid;gap:12px;padding:18px 16px 24px;border:1px solid #c8dcd4;border-top:0;border-radius:0 0 17px 17px;background:#fff;scroll-margin-top:32px;min-width:0}
+.publicContact h4{margin:0;color:#18555c;font:600 23px/1.2 Georgia,"Times New Roman",serif}
+.publicContact>p{margin:0;color:#5d7772;font:13px/1.55 system-ui,sans-serif}
+.publicContact [data-contact-channel-chooser]{min-width:0}
+.publicContact :is(input,select,button){max-width:100%}
+@media(max-width:650px){
+  .publicContact{gap:10px;padding:14px 11px 26px}
+  .publicContact h4{font-size:20px}
+  .publicContact>p{font-size:12px}
+  .publicContact input{font-size:16px}
+}
