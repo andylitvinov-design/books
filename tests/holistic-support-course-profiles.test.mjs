@@ -42,7 +42,10 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
     "Hacer un test", "Completar perfil", "Ver recomendaciones"]) {
     assert.ok(profiles.includes(label), label);
   }
-  assert.match(home, /onTests=\{\(\) => changeChoice\("tests"\)\}/);
+  assert.match(home, /onTests=\{\(\) => setInlineTestSector\(activeCourseProfile\)\}/);
+  assert.match(home, /profileTests=\{profileTests\} testSector=\{inlineTestSector\}/);
+  assert.match(profiles, /data-support-profile-inline-tests/);
+  assert.match(profiles, /<PersonalityProfilesBuilder key=\{testSector\}/);
   assert.match(home, /onFillProfile=\{openCourseProfileFilter\}/);
   assert.match(home, /onRecommendations=\{showCourseProfileRecommendations\}/);
   assert.match(home, /if \(!saved \|\| saved\.checkin !== scores\[goalSectorCheckinKey\[sector\]\]\) \{/);
@@ -69,4 +72,28 @@ test("profile TSX and diagnostic selection parse as TSX", () => {
     const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
     assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")), [], name);
   }
+});
+
+
+test("mobile profile opens source-backed tests below the card and keeps previous steps visible", () => {
+  const builder = read("components/personality-profiles-builder.tsx");
+  const css = read("components/personality-profiles-builder.module.css");
+  const route = read("app/[locale]/holistic-support/mobile/page.tsx");
+  const catalogue = read("lib/profile/guest-profile-tests.ts");
+  assert.match(home, /setInlineTestSector\(activeCourseProfile\)/);
+  assert.doesNotMatch(home, /onTests=\{\(\) => changeChoice\("tests"\)\}/);
+  assert.match(route, /profileTests=\{buildGuestProfileTests\(locale\)\}/);
+  assert.match(profiles, /inline initialFocus=\{profileFocusMap\[testSector\]\}/);
+  assert.match(home, /document.getElementById\("support-profile-inline-tests"\)/);
+  for (let step = 0; step < 5; step++) {
+    assert.ok(builder.includes("inline ? step >= " + step + " : step === " + step));
+    assert.ok(builder.includes("profile-inline-stage-" + step));
+    assert.ok(builder.includes("profile-builder-step-title-" + step));
+  }
+  for (const policy of ['entry.guestEligible === true', 'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true'])
+    assert.ok(catalogue.includes(policy));
+  assert.match(css, /data-profile-inline="true"/);
+  assert.match(style, /\.inlineTests/);
+  assert.match(builder, /data-profile-start-tests/);
+  assert.match(builder, /data-profile-google-signin/);
 });
