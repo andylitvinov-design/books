@@ -205,7 +205,7 @@ function backdrop(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number){
     ctx.save();ctx.strokeStyle="#6a3f18";ctx.lineCap="round";
     ctx.lineWidth=w*.074;
     ctx.beginPath();ctx.moveTo(w*.50,h*.99);ctx.bezierCurveTo(w*.44,h*.72,w*.51,h*.54,w*.5,h*.30);ctx.stroke();
-    for(let side of [-1,1])for(let i=0;i<8;i++){
+    for(const side of [-1,1])for(let i=0;i<8;i++){
       const x=w*.5,y=h*(.36+i*.055);
       ctx.lineWidth=Math.max(2,w*(.026-i*.0014));
       ctx.beginPath();ctx.moveTo(x,y+.08*h);ctx.quadraticCurveTo(x+side*w*.27,y-h*.09,x+side*w*(.25+rnd(i)*.19),y-h*.2);ctx.stroke();
@@ -225,7 +225,7 @@ function backdrop(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number){
     }
   }
   if(scene==="opportunity-falls"){
-    for(let side of [-1,1]){
+    for(const side of [-1,1]){
       const x=w*(side<0?.15:.84);
       mountain(ctx,w,h,h*.61,side<0?"rgba(17,41,43,.65)":"rgba(20,55,47,.67)",side);
       for(let i=0;i<8;i++){
