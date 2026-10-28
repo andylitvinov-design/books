@@ -698,3 +698,19 @@
 @media (max-width: 640px) {
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
 }
+
+/* The full-length Reiki finder is a focused form: move mobile navigation
+   into document flow while it is open, instead of obscuring report choices.
+   Main/Description/Video retain the normal bottom-docked navigation. */
+@media (max-width: 640px) {
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
+    padding-bottom: 10px;
+  }
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    border-radius: 18px 18px 0 0;
+    box-shadow: none;
+  }
+}
