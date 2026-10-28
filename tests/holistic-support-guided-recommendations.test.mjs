@@ -80,3 +80,19 @@ test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")), []);
 });
+
+test("five-domain iPhone header returns to the original wide, compact proportions", () => {
+  assert.ok(client.includes('const checkinOrder: CheckinArea[] = [...focusOrder, "meaning"]'),
+    "keep all five independent check-ins and their goal-filter synchronization");
+  assert.ok(client.includes('checkinOrder.map(id =>'), "all five sliders remain in the left card");
+  for (const rule of [
+    "minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr)",
+    "minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr)",
+    "grid-template-rows: 12px 15px; min-height: 28px",
+    "grid-template-rows: 12px 15px; min-height: 27px",
+    ".page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }",
+  ]) assert.ok(css.includes(rule), "mobile header contract: " + rule);
+  assert.ok(css.indexOf("Restore the original broad, short iPhone dashboard proportions") >
+    css.indexOf("The fifth assessment is the real Meaning score"),
+    "compact geometry must override the initial five-row styling");
+});
