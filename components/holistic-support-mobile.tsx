@@ -551,7 +551,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const saved = goalSavedSectors[sector];
     // Do not claim a tailored report before the visitor accepts the
     // relevant self-rating. Reuse the existing consent-free local editor.
-    if (!saved) { openCourseProfileFilter(sector); return; }
+    if (!saved || saved.checkin !== scores[goalSectorCheckinKey[sector]]) {
+      openCourseProfileFilter(sector); return;
+    }
     if (sector !== "goals") setActiveCourseProfile(sector);
     setProfileSector(sector);
     applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
