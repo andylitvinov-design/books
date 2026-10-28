@@ -90,13 +90,14 @@ async function main(){
    await sharp(Buffer.from(svg(scene,false))).png().toFile(art);
    const out=join(OUTPUT,scene[0]+".mp4");
    const graph=[
-    "[0:v]fps=20,format=yuv420p[bg]",
-    "[1:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=yuv420p[main]",
+    "[0:v]fps=20,format=gbrp[bg]",
+    "[1:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=gbrp[main]",
     "[bg][main]blend=all_mode=screen:all_opacity=0.93[lit]",
-    "[2:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=yuv420p[fx]",
+    "[2:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=gbrp[fx]",
     "[lit][fx]blend=all_mode=screen:all_opacity=0.57[mix]",
+    "[mix]format=yuv420p[film]",
     "[3:v]format=rgba[brand]",
-    "[mix][brand]overlay=0:0:format=auto,format=yuv420p[v]"
+    "[film][brand]overlay=0:0:format=auto,format=yuv420p[v]"
    ].join(";");
    run([
     "-loop","1","-framerate","20","-i",base,
