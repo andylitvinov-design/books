@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("constellation case remains canonical and also appears after the free review hero, without replacing the general intro", () => {
+test("constellation video stays on its related paid service landings, not the free express-review hero", () => {
   const library = read("data/service-video-library.ts");
   const showcase = read("components/service-video-showcase.tsx");
   const personal = read("components/personal-service-landing.tsx");
@@ -22,9 +22,7 @@ test("constellation case remains canonical and also appears after the free revie
 
   assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
   assert.match(business, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\} id="business-constellation-video" \/>/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
-  assert.match(free, /youtubeId: "IF0HAhSDwks"/);
-  assert.match(free, /constellationVideo = kind !== "situation" \? null : locale === "ru"/);
+  assert.doesNotMatch(free, /getServiceVideoMedia\("constellation-case", locale\)/);
   assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
   assert.match(free, /data-free-review-intro-video/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
@@ -70,10 +68,7 @@ test("personal free review has portrait-led hero, a separate locale-matched expl
   assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
   assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.match(free, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
-  assert.match(free, /data-free-review-constellation-video/);
   assert.doesNotMatch(free, /data-featured-constellations-video|siteVideoWatchUrl/);
-  assert.ok(free.indexOf('data-free-review-intro-video') < free.indexOf('data-free-review-constellation-video'),
-    "Constellation footage follows, rather than replaces, the existing introduction");
   assert.match(css, /\.situationHero \.heroVisual/);
   assert.match(css, /\.reviewIntro/);
   assert.match(css, /\.reviewPreviewGrid/);
