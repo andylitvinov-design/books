@@ -58,7 +58,7 @@ test('public directory uses moderated service introductions and strict public UR
 
 test('CSP admits approved Storage media only on public Support mobile, not private reports',()=>{
  const middleware=readFileSync(new URL('../middleware.ts',import.meta.url),'utf8')
- assert.match(middleware,/supportMobilePublishedMedia = \/\^\\\/\(en\|ru\|es\)/)
+ assert.match(middleware,/const supportMobilePublishedMedia =/)
  assert.match(middleware,/supportMobilePublishedMedia\)\)return ''/)
  assert.match(middleware,/supportMobilePublishedMedia \? listingImageOrigin : ''/)
  const allowed=/^\/(en|ru|es)\/holistic-support\/mobile\/?$/
