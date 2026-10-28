@@ -87,7 +87,7 @@ test('recording/preview routes enforce verified practitioner and admin permissio
   assert.match(service,/sniffPrivateMedia/)
   assert.match(service,/source_ready/)
   assert.match(service,/video_ready/)
-  assert.match(service,/videoMime/)
+  assert.match(service,/video_mime/)
   assert.doesNotMatch(service,/privacyStatus:\s*'public'/)
 })
 
