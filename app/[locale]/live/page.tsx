@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {PublicSiteHeader} from '@/components/public-site-header'
 import {LiveAudioRoom} from '@/components/live-audio-room'
