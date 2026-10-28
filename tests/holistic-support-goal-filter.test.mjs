@@ -40,14 +40,49 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   }
   assert.match(editor, /data-goal-concern=\{option\.id\}/);
   assert.match(editor, /data-goal-task=\{option\.id\}/);
-  assert.match(editor, /values\.length < 3/);
+  assert.doesNotMatch(editor, /values\.length < 3|Select up to 3|до 3 пунктов|hasta 3/);
+  assert.match(editor, /\[\.\.\.values, id\]/);
   assert.match(editor, /type="range" min="1" max="10" step="1"/);
-  assert.match(editor, /aria-valuetext=\{value\[field\]/);
-  assert.match(css, /grid-template-columns: minmax\(160px,\.37fr\)/);
+  assert.match(editor, /aria-valuetext=\{getRating\(item\.id, index\)\[field\]/);
+  assert.match(css, /grid-template-columns: minmax\(155px,\.35fr\)/);
+  assert.match(css, /\.axis \{ display: grid;/);
+  assert.match(css, /\.metricsGroup \{/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(css, /position: sticky/);
   assert.match(css, /prefers-reduced-motion/);
+  for (const sector of ["energy","money","love","goals","meaning"]) {
+    const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
+    assert.equal((section?.match(/\baxis\("/g) || []).length,4,sector+" has four tailored measures");
+  }
+  for (const name of ["vitality","sleepQuality","bodyComfort","calm",
+    "monthlyIncome","incomeStability","reserveMonths","moneyConfidence",
+    "connection","trust","communication","support",
+    "goalClarity","motivation","actions","progress",
+    "meaningAxis","selfContact","values","inspirationAxis"]) {
+    assert.ok(editor.includes('axis("'+name+'"'), name);
+  }
+  assert.match(editor, /data-goal-metric=\{item\.id\}/);
+  assert.match(editor, /data-goal-currency/);
+  assert.match(editor, /value=\{amounts\[item\.id\]\?\.\[field\] \?\? ""\}/);
+  assert.match(editor, /updateAmount\(item\.id, field/);
+  assert.match(editor, /currency: "CAD"/);
+  assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
+test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
+  for (const kind of ["meditation","tests","courses","talismans","masters"]) {
+    assert.match(client, new RegExp('data-support-goal-action="' + kind + '"'));
+  }
+  assert.match(client, /\/tests"/);
+  assert.match(client, /\/explore\/business"/);
+  assert.match(client, /changeChoice\("talisman"\)/);
+  assert.match(client, /changeChoice\("masters"\)/);
+  assert.match(client, /money: "incomeStability"/);
+  for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones"]) {
+    assert.ok(editor.includes(text), text);
+  }
+  assert.doesNotMatch(client, /92% match|Найдено 32|Found 32/);
+});
+
 test("specific concerns/intentions change matching topic and only sort verified sources", () => {
   assert.equal(goalTopicForSelection({ sector: "energy", concerns: ["fatigue"] }), "energy");
   assert.equal(goalTopicForSelection({ sector: "energy", concerns: ["symptoms"] }), "health");
