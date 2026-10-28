@@ -29,6 +29,11 @@ export type PublicEvent = {
   organizerName?: string;
   organizerHref?: string;
   priceLabel?: string;
+  // Optional moderator/organizer-approved checkout for this exact event, not a
+  // generic Square session link or an automatic registration/receipt.
+  ticketPaymentHref?: string;
+  ticketAmountMinor?: number;
+  ticketCurrency?: "CAD" | "EUR";
   status: "published";
 };
 

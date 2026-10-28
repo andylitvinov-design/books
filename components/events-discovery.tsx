@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronDown, MapPin, Search, Sparkles } from "lucide-react";
 import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 import type { PublicEvent, PublicEventFormat } from "@/data/public-events";
+import { publicEventTicketCheckout } from "@/lib/practitioners/event-contracts";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./events-discovery.module.css";
 
@@ -33,6 +34,7 @@ const copy = {
     noDates: "No confirmed upcoming dates are published yet.", noDatesHelp: "New dates and registration links appear here as soon as the organizer confirms them.",
     noMatches: "No events match these filters.", noMatchesHelp: "Try another topic or show the full calendar.",
     reset: "Clear filters", view: "Register", details: "Details", eventPage: "Full event page", program: "Workshop program", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
+    payTicket: "Pay ticket", ticketNote: "Register separately. Payment is checked by the organizer; a click does not reserve a seat.",
   },
   ru: {
     kicker: "HOLISTIC HOUSE · СОБЫТИЯ",
@@ -48,6 +50,7 @@ const copy = {
     noDates: "Пока нет опубликованных подтверждённых дат.", noDatesHelp: "Новые даты и ссылки на регистрацию появятся здесь после подтверждения организатором.",
     noMatches: "По этим фильтрам событий нет.", noMatchesHelp: "Попробуйте другую тему или очистите фильтры.",
     reset: "Сбросить фильтры", view: "Записаться", details: "Подробнее", eventPage: "Страница мероприятия", program: "Программа семинара", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
+    payTicket: "Оплатить билет", ticketNote: "Запись отдельная. Организатор проверит оплату; нажатие не бронирует место.",
   },
   es: {
     kicker: "HOLISTIC HOUSE · EVENTOS",
@@ -63,6 +66,7 @@ const copy = {
     noDates: "Todavía no hay fechas próximas confirmadas.", noDatesHelp: "Publicaremos las fechas y los enlaces de inscripción cuando el organizador los confirme.",
     noMatches: "No hay eventos con estos filtros.", noMatchesHelp: "Prueba otro tema o restablece los filtros.",
     reset: "Borrar filtros", view: "Inscribirse", details: "Detalles", eventPage: "Página del evento", program: "Programa del taller", onlineLocation: "En línea", pastNote: "Los eventos anteriores son informativos; no están disponibles para reservar.",
+    payTicket: "Pagar entrada", ticketNote: "Inscríbete aparte. El organizador verificará el pago; pulsar no reserva plaza.",
   },
 } as const;
 
@@ -175,6 +179,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
           <div className={styles.eventGrid}>
             {filtered.map(event => {
               const expanded = openEventId === event.id;
+              const ticket = !past ? publicEventTicketCheckout(event) : null;
               const where = event.format === "online" ? t.onlineLocation
                 : event.location?.split(",").slice(0, 2).join(",") || event.city || "";
               const detailsId = "hh-event-details-" + event.id;
@@ -220,7 +225,11 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                           {t.view}<ArrowRight size={16} aria-hidden="true" />
                         </a>
                       ))}
+                      {ticket && <a className={styles.ticketButton} href={ticket.url} target="_blank"
+                        rel="noopener noreferrer" referrerPolicy="no-referrer"
+                        data-event-ticket-checkout={event.id}>{t.payTicket} · {new Intl.NumberFormat(locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA", {style:"currency",currency:ticket.currency}).format(ticket.amountMinor/100)} <ArrowRight size={15} aria-hidden="true" /></a>}
                     </div>
+                    {ticket && <small className={styles.ticketNote}>{t.ticketNote}</small>}
                     <div id={detailsId} className={styles.eventExpanded} hidden={!expanded}>
                       <p>{event.description[locale]}</p>
                       {event.format === "in_person" && event.location && <p className={styles.venue}><MapPin size={14} aria-hidden="true" />{event.location}</p>}

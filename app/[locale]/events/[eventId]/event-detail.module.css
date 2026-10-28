@@ -27,3 +27,9 @@
 .wrap :is(a,button):focus-visible{outline:3px solid #08879d;outline-offset:3px}
 @media(max-width:760px){.wrap{padding:9px 0 40px}.paper{grid-template-columns:1fr;border-radius:17px}.poster{min-height:220px;aspect-ratio:16/9}.content{padding:19px}.content h1{font-size:31px}.summary{font-size:14px}}
 @media(max-width:380px){.poster{min-height:190px}.content{padding:16px}.content h1{font-size:28px}.primary,.secondary{width:100%}.utilityActions{display:grid;grid-template-columns:1fr}}
+
+.ticketPayment{display:grid;gap:8px;margin:12px 0;padding:13px 15px;border:1px solid #d9c7af;border-radius:13px;background:#fbf5ec}
+.ticketLink{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:11px 14px;border-radius:10px;background:#815a37;color:#fff;text-decoration:none;font:750 13px/1.35 system-ui,sans-serif;text-align:center}
+.ticketLink:hover{background:#6d492d}
+.ticketPayment p{margin:0;color:#6a5849;font:500 12px/1.5 system-ui,sans-serif}
+@media(max-width:380px){.ticketLink{width:100%}}

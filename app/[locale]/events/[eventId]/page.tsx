@@ -5,14 +5,17 @@ import { ArrowLeft, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { EventDetailActions } from "@/components/public-event-actions";
 import { PUBLIC_EVENTS, type PublicEvent } from "@/data/public-events";
+import { publicEventTicketCheckout } from "@/lib/practitioners/event-contracts";
+import { findPublishedPractitionerEvent } from "@/lib/practitioners/public-event-resolver";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./event-detail.module.css";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
 
-// The upcoming/past CTA and indexability must change after the real start time.
-export const revalidate = 300;
+// Published tickets may be paused by moderators; do not cache a stale checkout CTA.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const locales: readonly PublicLocale[] = ["en", "ru", "es"];
 const isLocale = (value: string): value is PublicLocale => locales.includes(value as PublicLocale);
@@ -23,18 +26,21 @@ const copy = {
     inPerson: "In person", online: "Online", program: "What we'll explore",
     registration: "View registration", pastNotice: "This event has finished. Browse upcoming gatherings instead.",
     other: "Explore personal services", note: "Tickets and availability are confirmed by the registration provider.",
+    payTicket: "Pay for this event", paymentNote: "Register separately. A Square/PayPal checkout is not an issued ticket or confirmed seat. The organizer must verify your payment and attendance.",
   },
   ru: {
     back: "Все мероприятия", upcoming: "Ближайшая встреча", past: "Прошедшая встреча",
     inPerson: "Очно", online: "Онлайн", program: "Что будем изучать",
     registration: "Открыть регистрацию", pastNotice: "Мероприятие завершилось. Посмотрите будущие встречи.",
     other: "Личные услуги", note: "Наличие мест и условия билетов уточняйте на площадке регистрации.",
+    payTicket: "Оплатить участие", paymentNote: "Запись выполняется отдельно. Переход в Square/PayPal не подтверждает билет или место. Организатор должен проверить оплату и регистрацию.",
   },
   es: {
     back: "Todos los eventos", upcoming: "Próximo encuentro", past: "Encuentro anterior",
     inPerson: "Presencial", online: "En línea", program: "Qué exploraremos",
     registration: "Ver inscripción", pastNotice: "Este evento ya terminó. Descubre los próximos encuentros.",
     other: "Servicios personales", note: "Confirma las entradas y disponibilidad en la plataforma de inscripción.",
+    payTicket: "Pagar el evento", paymentNote: "Inscríbete aparte. Abrir Square/PayPal no emite una entrada ni confirma plaza. El organizador debe verificar el pago y la inscripción.",
   },
 } as const;
 
@@ -109,7 +115,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, eventId } = await params;
   if (!isLocale(locale)) return { title: "Not found" };
-  const event = publishedEvent(eventId);
+  const event = publishedEvent(eventId) ?? await findPublishedPractitionerEvent(eventId);
   if (!event) return { title: "Not found", robots: { index: false } };
   const languages = Object.fromEntries(locales.map(l => [l, eventPath(l, event)]));
   return {
@@ -135,10 +141,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EventDetailPage({ params }: Props) {
   const { locale, eventId } = await params;
   if (!isLocale(locale)) notFound();
-  const event = publishedEvent(eventId);
+  const event = publishedEvent(eventId) ?? await findPublishedPractitionerEvent(eventId);
   if (!event) notFound();
   const t = copy[locale];
   const ended = Date.parse(event.startsAt) < Date.now();
+  const ticket = !ended ? publicEventTicketCheckout(event) : null;
   const jsonLd = eventJsonLd(event, locale);
   return (
     <main className="library-shell academy-shell" lang={locale}>
@@ -179,6 +186,15 @@ export default async function EventDetailPage({ params }: Props) {
                 <a href={event.registrationHref} target="_blank" rel="noopener noreferrer" className={styles.primary}>
                   {t.registration} <ArrowUpRight size={18} aria-hidden="true" />
                 </a>
+                {ticket ? <div className={styles.ticketPayment} data-event-ticket-payment={event.id}>
+                  <a href={ticket.url} target="_blank" rel="noopener noreferrer"
+                    referrerPolicy="no-referrer" className={styles.ticketLink}
+                    data-event-ticket-checkout>
+                    {t.payTicket} · {new Intl.NumberFormat(locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA", {style:"currency", currency:ticket.currency}).format(ticket.amountMinor/100)}
+                    <ArrowUpRight size={17} aria-hidden="true" />
+                  </a>
+                  <p>{t.paymentNote}</p>
+                </div> : null}
                 <EventDetailActions
                   calendarHref={eventPath(locale, event) + "/calendar"}
                   className={styles.utilityActions}
