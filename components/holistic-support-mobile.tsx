@@ -64,6 +64,9 @@ const copy = {
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
+    goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
+    goalResultLabels: { meditation: "Meditations", tests: "Tests", courses: "Courses", talismans: "Talismans", masters: "Masters" },
+    goalResultHints: { meditation: "Original recordings", tests: "Free self-exploration", courses: "Existing learning paths", talismans: "Symbolic options", masters: "Published profiles" },
     goalSector: { energy: "Energy", money: "Money", love: "Love", goals: "Goals", meaning: "Meaning" },
     goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", goals: "Take the next step", meaning: "Find your inner direction" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
@@ -109,6 +112,9 @@ const copy = {
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
+    goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
+    goalResultLabels: { meditation: "Медитации", tests: "Тесты", courses: "Курсы", talismans: "Талисманы", masters: "Мастера" },
+    goalResultHints: { meditation: "Авторские записи", tests: "Самоисследование", courses: "Программы обучения", talismans: "Символические практики", masters: "Каталог специалистов" },
     goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", goals: "Цели", meaning: "Смыслы" },
     goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", goals: "Двигайся к своей цели", meaning: "Найди внутренний смысл" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
@@ -154,6 +160,9 @@ const copy = {
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
+    goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
+    goalResultLabels: { meditation: "Meditaciones", tests: "Pruebas", courses: "Cursos", talismans: "Talismanes", masters: "Guías" },
+    goalResultHints: { meditation: "Grabaciones originales", tests: "Exploración personal", courses: "Aprendizaje disponible", talismans: "Opciones simbólicas", masters: "Perfiles publicados" },
     goalSector: { energy: "Energía", money: "Dinero", love: "Amor", goals: "Metas", meaning: "Sentido" },
     goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", goals: "Da el siguiente paso", meaning: "Encuentra tu dirección interior" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
@@ -306,13 +315,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const applyGoalFilter = (value: GoalSelection) => {
-    // The top four gauges reflect the first "Now" axis only for their matching
-    // domain. Meaning is distinct and never conflated with the Goals gauge.
+    // Never infer a 1–10 self-rating from income or reserve amounts. Meaning
+    // remains separate from Goals; Money uses its own stability rating.
     const nextScores = { ...scores };
+    const primary = { energy: "vitality", money: "incomeStability",
+      love: "connection", goals: "goalClarity" } as const;
     if (value.sector !== "meaning") {
-      const first = Object.values(value.ratings)[0]?.current;
-      if (Number.isInteger(first) && first >= 1 && first <= 10) {
-        nextScores[goalSectorFocus[value.sector]] = first;
+      const now = value.ratings[primary[value.sector]]?.current;
+      if (Number.isInteger(now) && now >= 1 && now <= 10) {
+        nextScores[goalSectorFocus[value.sector]] = now;
       }
     }
     setScores(nextScores); setRecommendation(nextScores); setGoalSelection(value);
@@ -441,6 +452,44 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
         </div>
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
+          {goalSelection && !goalFilterOpen ? <section className={styles.goalResults}
+            id="support-goal-results" data-support-goal-results aria-labelledby="support-goal-results-title">
+            <div className={styles.goalResultsHeading}>
+              <h2 id="support-goal-results-title"><Sparkles size={21} aria-hidden="true" />{t.goalResultsTitle}</h2>
+              <p>{t.goalResultsNote}</p>
+            </div>
+            <div className={styles.goalResultGrid}>
+              <button type="button" data-support-goal-action="meditation"
+                aria-pressed={choice === "meditation"}
+                onClick={() => { changeChoice("meditation"); window.requestAnimationFrame(() =>
+                  document.getElementById("support-meditation-gallery")?.scrollIntoView({
+                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                    block: "start",
+                  })); }}>
+                <Play size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
+              </button>
+              <Link href={"/" + locale + "/tests"} prefetch={false} data-support-goal-action="tests">
+                <TestTubeDiagonal size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
+              </Link>
+              <Link href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
+                : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
+                <BookOpen size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.courses}</strong><small>{t.goalResultHints.courses}</small></span>
+              </Link>
+              <button type="button" data-support-goal-action="talismans"
+                aria-pressed={choice === "talisman"} onClick={() => changeChoice("talisman")}>
+                <Sparkles size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.talismans}</strong><small>{t.goalResultHints.talismans}</small></span>
+              </button>
+              <button type="button" data-support-goal-action="masters"
+                aria-pressed={choice === "masters"} onClick={() => changeChoice("masters")}>
+                <UserRound size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.masters}</strong><small>{t.goalResultHints.masters}</small></span>
+              </button>
+            </div>
+          </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             onClose={() => setGoalFilterOpen(false)} /> : scene ? (
