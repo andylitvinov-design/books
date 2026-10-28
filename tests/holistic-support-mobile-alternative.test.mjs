@@ -126,7 +126,7 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(client, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
-  assert.match(client, /\/services\/remote-energy-support/);
+  assert.match(read("app/[locale]/services/remote-energy-support/page.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /data-support-tool="masters"/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /"\/masters"/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /\/personality-profiles/);
