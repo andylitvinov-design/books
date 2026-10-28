@@ -238,3 +238,64 @@ test("all support modes share scenic hero → actual miniature choices without f
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
     .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
 });
+
+test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, not duplicated video manifests", () => {
+  const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
+  const count = new Map([
+    ["videos/maya-archetypes", 6],
+    ["videos/egypt-osiris", 7],
+    ["videos/greek-mysteries-demeter", 5],
+    ["videos/greek-mysteries-dionysus", 7],
+  ]);
+  assert.equal(manifest.length, 45, "source media inventory must remain unchanged");
+  assert.equal(curricula.length, 22, "original course inventory must remain unchanged");
+  for (const id of [
+    "mysteries/maya-aztec/feathered-serpent",
+    "mysteries/egypt/high-wisdom",
+    "mysteries/greece-rome/beauty-and-power",
+  ]) {
+    assert.equal(curricula.filter(entry => entry.logicalId === id && entry.sourceLocale === "ru").length, 1, id);
+    assert.ok(route.includes('programId: "' + id + '"'), id + " in source catalogue lookup");
+  }
+  for (const [id, expected] of count) {
+    const lessons = manifest.filter(entry => entry.logicalId === id);
+    assert.equal(lessons.length, expected, id);
+    assert.equal(new Set(lessons.map(entry => entry.videoId)).size, expected, "unique original lessons");
+    assert.ok(lessons.every(entry => entry.status === "verified_legacy_public_embed"), id);
+    assert.ok(route.includes('"' + id + '"'), id + " links to original manifest");
+  }
+  assert.match(route, /findAcademyRecord\(entry\.programId, "ru"\)/);
+  assert.match(route, /findAcademyRecord\(logicalId, "ru"\)/);
+  assert.match(route, /mediaForRecord\(record\)/);
+  assert.match(route, /youtubeIdFromUrl\(media\.mediaUrl\)/);
+  assert.match(route, /if \(locale === "ru"\)/);
+  assert.match(route, /videos=\{videos\} courses=\{originalMysteryCourses\}/);
+  assert.match(route, /poster: "https:\/\/i\.ytimg\.com\/vi\/"/);
+  assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
+});
+
+test("original Russian mysteries are visible in Courses mode as 3 iPhone cards and selectable native program dropdown entries", () => {
+  for (const word of ["Мистерии Майя", "Мистерии Египта", "Мистерии Греции"]) {
+    assert.ok(client.includes(word), word);
+  }
+  assert.match(client, /data-support-mystery-courses/);
+  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
+  assert.match(client, /aria-pressed=\{activeMystery\?\.id === course\.id\}/);
+  assert.match(client, /setProgram\(course\.id\)/);
+  assert.match(client, /setMaster\("all"\); setTheme\("all"\); setPlaying\(false\)/);
+  assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
+  assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
+  assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
+  assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
+  assert.match(client, /data-support-active-course-link/);
+  assert.match(client, /activeMystery\?\.videoGroups\.map\(group =>/);
+  assert.match(client, /data-support-filter="program"/);
+  assert.match(client, /\{activeProgramValues\.map\(key =>/);
+  assert.match(client, /choice === "pump" \? t\.watchLesson : t\.play/);
+  assert.match(css, /\.mysteryPickerGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.mysteryPickerCard\[aria-pressed="true"\]/);
+  assert.match(css, /\.mysteryPickerCard:focus-visible/);
+  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
+  assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
+});
