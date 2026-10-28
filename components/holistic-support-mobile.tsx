@@ -15,6 +15,7 @@ import { HolisticSupportMasterGallery } from "@/components/holistic-support-mast
 import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection, type GoalSelection } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
+import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -245,7 +246,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   // touches browser storage, CRM, private notes or account identity.
   useEffect(() => {
     if (window.location.search.includes("hh_enquiry=google"))
-      setChoice("healing");
+      setChoice(pendingBrowserTalismanGoogleReturn() ? "talisman" : "healing");
   }, []);
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
