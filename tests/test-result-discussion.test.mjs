@@ -51,6 +51,7 @@ test('account history + result page both expose discussion; no additional data t
   const battery=readFileSync(new URL('../components/app/account-test-battery.jsx',import.meta.url),'utf8')
   const ui=readFileSync(new URL('../components/app/test-result-discussion.jsx',import.meta.url),'utf8')
   assert.match(workspace,/<TestResultDiscussion /)
+  assert.ok(workspace.indexOf('<TestResultDiscussion key={result.id}') < workspace.indexOf('<PersonalResultReport result={result}'), 'Discussion action must appear before the long report')
   assert.match(battery,/discuss=1#hh-test-result-discussion/)
   assert.match(ui,/data-test-result-offers/)
   assert.doesNotMatch(ui,/fetch\(|appFetch\(|localStorage|sessionStorage/)
