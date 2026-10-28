@@ -9,7 +9,7 @@ const api=read('app/api/app/practitioner-client-messages/media/route.js')
 const playback=read('app/api/app/practitioner-client-messages/media/[assetId]/route.js')
 const conversation=read('components/app/practice-request-conversation.jsx')
 const page=read('components/app/messages-orders-clients.jsx')
-const sql=read('supabase/migrations/20261028162000_hh_request_bound_voice_media.sql')
+const sql=read('supabase/migrations/20261028162155_hh_request_bound_voice_media_20261028.sql')
 
 test('additive order media has FORCE RLS and browser roles have no table grants',()=>{
   assert.match(sql,/create table if not exists app\.practitioner_request_media/i)
