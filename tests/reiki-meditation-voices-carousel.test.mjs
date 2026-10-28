@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { energyworkSequence } from "../data/academy/energywork-ai-schema.js";
 import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -9,9 +10,13 @@ const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 const browser = read("scripts/verify-reiki-all-slides-browser.mjs");
 
-test("Four meditation review screens remain in the correct slots among 63 active screens", () => {
+test("Four meditation review screens remain ordered in the current unified curriculum", () => {
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)];
-  assert.equal(ids.length, 63);
+  const curriculumIds = ids.map(match => match[0].slice(5, -1));
+  const sequence = energyworkSequence();
+  assert.equal(sequence.length, 64);
+  assert.equal(new Set(curriculumIds).size, sequence.length);
+  assert.deepEqual([...curriculumIds].sort(), [...sequence].sort());
   for (const sequence of [["flight-03","flight-voices","flight-04"],
     ["tan-03","tan-voices","tan-04"],["kun-03","kun-voices","kun-04"],
     ["ygg-03","ygg-voices","ygg-04"]]) {
@@ -47,7 +52,22 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /aria-live="polite" aria-atomic="true"/);
   assert.match(learner, /t\.voicesSource/);
   assert.doesNotMatch(learner, /showVideoComments|voicesComments/, "No review screen should expose a Video comments CTA");
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/);
+  // Evaluate the actual Next-button expression, not a parallel reconstruction.
+  const next = learner.match(/<button type="button" onClick=\{next\}\s+disabled=\{([\s\S]*?)\}\s+className=\{styles\.next\}/);
+  assert.ok(next, "The course Next button must retain a disabled gate");
+  const disabled = new Function("state", "with (state) { return (" + next[1] + "); }");
+  const ready = { busy: false, sync: "ready", slide: { id: "tan-04" }, firstLessonConsent: false,
+    experienceMissing: false, feedbackMissing: false, tantraStudyMissing: false, otherStudyMissing: false };
+  assert.equal(disabled(ready), false);
+  for (const gate of ["busy", "experienceMissing", "feedbackMissing", "tantraStudyMissing", "otherStudyMissing"])
+    assert.equal(disabled({ ...ready, [gate]: true }), true, gate + " blocks Next");
+  for (const sync of ["checking", "unavailable"])
+    assert.equal(disabled({ ...ready, sync }), true, sync + " blocks Next");
+  for (const sync of ["guest", "consent"]) {
+    assert.equal(disabled({ ...ready, sync, slide: { id: "flight-done" } }), true);
+    assert.equal(disabled({ ...ready, sync, slide: { id: "flight-done" }, firstLessonConsent: true }), false);
+  }
+  assert.match(learner, /async function next\(\) \{\s*if \(busy \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\) return;/);
   assert.match(browser, /Next switches quote in place/);
   assert.match(browser, /Previous restores quote/);
   assert.match(css, /\.voicesControls button:focus-visible/);

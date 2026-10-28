@@ -1,3 +1,16 @@
+// Exact source-declared legacy poster URLs only. This classifies an observation,
+// never grants network permission or establishes the request initiator.
+function declaredImageAlias(url, method, resource, origin) {
+  if (method !== "GET" || resource !== "image" || origin !== "external") return "unknown"
+  switch (url) {
+    case "https://i.ytimg.com/vi/m9RfDgK76PU/hqdefault.jpg": return "legacy-ru-1-hq"
+    case "https://i.ytimg.com/vi/m9RfDgK76PU/maxresdefault.jpg": return "legacy-ru-1-maxres"
+    case "https://i.ytimg.com/vi/5oj0BIbLT4w/hqdefault.jpg": return "legacy-ru-2-hq"
+    case "https://i.ytimg.com/vi/5oj0BIbLT4w/maxresdefault.jpg": return "legacy-ru-2-maxres"
+    default: return "unknown"
+  }
+}
+
 // Install before the first Book click; retain until the owned context is closed.
 export async function installAlchemyDisclosureGuard(context, page, origin, violations, diagnostic = {}) {
   let emitted = 0
@@ -8,14 +21,16 @@ export async function installAlchemyDisclosureGuard(context, page, origin, viola
     // URLs, paths, queries, payloads, headers, exception text or arbitrary enums.
     if (emitted >= 8) return
     emitted++
+    const observedUrl = safe(() => request.url())
     const record = {
       event,
       phase: enumValue(safe(() => diagnostic.phase()), ["opening-contact", "contact-open", "closing-contact", "contact-closed", "sample-navigation", "sample-ready", "context-disposal"]),
       method: enumValue(safe(() => request.method()), ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], "OTHER"),
-      origin: safe(() => new URL(request.url()).origin === origin ? "same" : "external") ?? "invalid",
+      origin: safe(() => new URL(observedUrl).origin === origin ? "same" : "external") ?? "invalid",
       resource: enumValue(safe(() => request.resourceType()), ["document", "stylesheet", "image", "media", "font", "script", "texttrack", "xhr", "fetch", "eventsource", "websocket", "manifest", "other"]),
       ownership: safe(() => request.frame().page() === page ? "primary" : "other") ?? "unavailable",
     }
+    record.imageAlias = declaredImageAlias(observedUrl, record.method, record.resource, record.origin)
     // Diagnostics cannot replace a primary failure or interrupt abort/disposal.
     try { Promise.resolve(diagnostic.emit?.(record)).catch(() => {}) } catch {}
   }
