@@ -3,7 +3,7 @@ import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises'
 import {spawnSync} from 'node:child_process'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {renderOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {renderOwnerTelegramVideo,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 const binary=process.env.HH_TEST_FFMPEG_PATH||(await import('ffmpeg-static')).default
 if(!binary)throw Error('FFMPEG_STATIC_BINARY_NOT_INSTALLED')
 const executable=await resolveOwnerVideoFfmpegPath('/vercel/bundled/chunks/ffmpeg')
@@ -57,6 +57,33 @@ try{
       red[0]>red[1]+60&&red[0]>red[2]+60))
    throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED')
 
+ // Owner-approved cut: re-encode from second 2, preserve the original,
+ // retain H.264/AAC, and verify the new beginning is not the original intro.
+ const cutBytes=await trimOwnerTelegramVideo(mp4,{startSeconds:2,executable})
+ const cutFile=join(dir,'cut-from-2s.mp4')
+ await writeFile(cutFile,cutBytes)
+ const cutInfo=spawnSync(binary,['-hide_banner','-i',cutFile,'-f','null','-'],{
+   timeout:30000,encoding:'utf8',maxBuffer:128000})
+ const cutDuration=cutInfo.stderr.match(/Duration:\\s*(\\d+):(\\d+):(\\d+(?:\\.\\d+)?)/)
+ const seconds=cutDuration?
+   Number(cutDuration[1])*3600+Number(cutDuration[2])*60+Number(cutDuration[3]):0
+ if(cutInfo.status!==0||!/Video: h264/.test(cutInfo.stderr)||
+   !/Audio: aac/.test(cutInfo.stderr)||seconds<1.5||seconds>3.5)
+   throw Error('VIDEO_CUT_CODEC_OR_DURATION_FAILED')
+ const firstCut=spawnSync(binary,['-hide_banner','-loglevel','error',
+   '-ss','0.5','-i',cutFile,'-frames:v','1',
+   '-vf','scale=1:1:flags=neighbor,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:4096})
+ const firstColor=[...firstCut.stdout||[]]
+ if(firstCut.status!==0||firstColor.length!==3||
+   firstColor[0]<=firstColor[2]+60||firstColor[1]<=firstColor[2]+60)
+   throw Error('VIDEO_CUT_STILL_SHOWS_REMOVED_INTRO')
+ if(!mp4.equals(await readFile(target)))throw Error('VIDEO_CUT_MUTATED_ORIGINAL')
+ let rejects=false
+ try{await trimOwnerTelegramVideo(mp4,{startSeconds:0,executable})}
+ catch(error){rejects=error.message==='VIDEO_TRIM_INVALID_SECONDS'}
+ if(!rejects)throw Error('VIDEO_CUT_ZERO_WAS_NOT_REJECTED')
+ console.log('MEDIA_CUT_SMOKE_PASSED start_second=2 cut_duration='+seconds)
  // Full-capacity integration: interleave 15 photos and 15 audio pieces using
  // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
  const imageBytes=await Promise.all(photos.map(file=>readFile(file)))
