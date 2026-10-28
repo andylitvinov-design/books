@@ -16,9 +16,9 @@ const answersFor = (definition, profile) => Object.fromEntries(definition.questi
 const score = (definition, profile = 'min') => scoreAssessment(definition, answersFor(definition, profile), syntheticTraumaContext(definition))
 const numericOnly = value => /^.*: [\d.]+ \([\d.]+–[\d.]+\)\.$/.test(value)
 
-test('all runnable compact reports provide semantic summaries rather than numeric-only introductions', () => {
+function verifySemanticSummaries(definitions) {
   let checked = 0
-  for (const definition of runnable) for (const profile of ['min', 'max', 'mixed']) {
+  for (const definition of definitions) for (const profile of ['min', 'max', 'mixed']) {
     const result = score(definition, profile)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(result, locale)
@@ -36,9 +36,20 @@ test('all runnable compact reports provide semantic summaries rather than numeri
       }
     }
   }
-  // Four new one-scale IPIP forms and a four-scale ONS form extend the old
-  // 2574 source/language/response-case checks by 8×2×3 without changing them.
-  assert.equal(checked, 2574 + (4 + 4) * 2 * 3)
+  return checked
+}
+
+test('all runnable compact reports provide semantic summaries rather than numeric-only introductions', () => {
+  assert.ok(!runnable.some(definition => definition.key === 'ons-personal-wellbeing-4'))
+  // Four runnable one-scale IPIP forms extend the unchanged 2574 checks.
+  assert.equal(verifySemanticSummaries(runnable), 2574 + 4 * 2 * 3)
+})
+
+test('held ONS reference retains all 24 semantic checks without claiming launch availability', () => {
+  const ons = getAssessmentDefinition('ons-personal-wellbeing-4', 'v1', 'en')
+  assert.equal(ons.scoring.dimensions.length, 4)
+  assert.equal(MONITORING_CATALOG.find(item => item.key === ons.key).startable, false)
+  assert.equal(verifySemanticSummaries([ons]), 4 * 2 * 3)
 })
 
 test('semantic descriptions preserve independent construct detail for decimal means', () => {
