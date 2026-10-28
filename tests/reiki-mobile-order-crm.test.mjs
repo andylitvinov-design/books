@@ -93,6 +93,7 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   assert.match(jsx, /readRemoteSupportPublicDraft\(window\.sessionStorage, selected\.serviceId\)/);
   assert.match(jsx, /required=\{mode !== "inline"\}/);
   assert.match(jsx, /"Заказать"/);
+  assert.match(jsx, /const topic = goal \|\| \(mode === "inline" && requestKind === "energy" \? "Personal intention" : ""\)/);
   assert.match(jsx, /try \{ window\.sessionStorage\.setItem\(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY/);
   assert.match(jsx, /catch \{ \/\* Keep the consented phone form usable without storage\. \*\/ \}/);
   assert.match(jsx, /"Выберите и дату, и время или оставьте оба поля пустыми."/);
