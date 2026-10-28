@@ -36,3 +36,16 @@
 .privacy{font-size:11px;color:#847465;margin:10px 0 0;line-height:1.5}
 @media(max-width:480px){.root{padding:12px;border-radius:12px}.groupGrid{grid-template-columns:minmax(0,1fr)}.group{padding:10px}.focusLine{padding:10px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important;transition:none!important}}
+
+
+.extraControls{margin-top:9px;padding:9px 10px;border:1px solid #e8dfd2;border-radius:10px;background:#fffcf7}
+.extraControls summary{cursor:pointer;font-size:12px;font-weight:650;color:#66513d}
+.extraGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.extraGrid label,.goalGap label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:650;color:#624c3a;min-width:0}
+.extraGrid select,.goalGap input{width:100%;min-height:44px;border-radius:9px;border:1px solid #cdbba8;background:white;color:#3b332d;padding:8px;font:500 15px/1.2 system-ui}
+.extraGrid select:focus-visible,.goalGap input:focus-visible{outline:3px solid #9b744e;outline-offset:2px}
+.goalGap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 14px}
+.goalGap div{min-width:0}
+.goalGap small{grid-column:1/-1;color:#75695d;font-size:11px}
+.matchedAxes{color:#745b3e!important}
+@media(max-width:360px){.extraGrid{grid-template-columns:minmax(0,1fr)}}
