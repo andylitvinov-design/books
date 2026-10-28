@@ -90,6 +90,15 @@
 .navItem { border: 0; border-radius: 15px; color: #6f756f; background: transparent; min-height: 50px; padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 10px !important; font-weight: 640 !important; }
 .navActive { background: #e4f6ed; color: #04775e; font-weight: 850 !important; }
 .navItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.modalBackdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 14px; background: #11271e91; backdrop-filter: blur(5px); }
+.signInModal { width: min(100%, 390px); border: 1px solid #f0eadd; border-radius: 24px; padding: 26px 21px 22px; background: #fffdf5; box-shadow: 0 22px 65px #091d1680; color: #24443a; display: grid; justify-items: center; text-align: center; }
+.modalIcon { width: 55px; height: 55px; border-radius: 19px; background: #e1f3e7; display: grid; place-items: center; color: #00866c; margin-bottom: 12px; }
+.signInModal h2 { font-size: 23px; line-height: 1.16; letter-spacing: -.035em; font-weight: 830; margin: 0 0 9px; }
+.signInModal p { color: #6d776e; line-height: 1.55; font-size: 13px; margin: 0 0 21px; }
+.signInModal .modalError { color: #a4363d; margin: -4px 0 12px; font-weight: 710; }
+.modalPrimary { display: flex; justify-content: center; align-items: center; gap: 11px; width: 100%; border: 1px solid #70caa9; border-radius: 16px; padding: 13px 16px; color: white; background: linear-gradient(120deg,#008c72,#02b392); font-size: 15px !important; font-weight: 800 !important; }
+.modalPrimary svg { margin-left: auto; }
+.modalSecondary { margin-top: 10px; border: 0; border-radius: 10px; padding: 10px; color: #4e7062; background: transparent; font-size: 13px !important; font-weight: 700 !important; }
 @media (max-width: 590px) {
   .shell { padding-top: 18px; }
   .identity { grid-template-columns: 63px minmax(0,1fr); gap: 11px; }
