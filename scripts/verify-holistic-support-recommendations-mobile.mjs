@@ -29,10 +29,25 @@ for (const engine of [chromium, webkit]) {
         const errors = [];
         const interceptedDirectories = [];
         const directoryHttpStatuses = [];
+        const blockedApiWrites = [];
         page.on("pageerror", err => errors.push(err.message));
         page.on("response", response => {
           if (new URL(response.url()).pathname === "/api/public/remote-energy-support-masters")
             directoryHttpStatuses.push(response.status());
+        });
+        // Never let synthetic gallery or unopened order dialogs send CRM/payment
+        // mutations. Record only method/path (no bodies or personal data).
+        // The narrower public-directory fixture below is registered last, so
+        // it retains priority over this fail-closed guard for GET requests.
+        await page.route("**/api/**", async route => {
+          const request = route.request();
+          const url = new URL(request.url());
+          if (url.origin === origin && !["GET", "HEAD"].includes(request.method())) {
+            blockedApiWrites.push({ method: request.method(), path: url.pathname });
+            await route.abort("blockedbyclient");
+            return;
+          }
+          await route.fallback();
         });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
         await page.route("**/api/public/remote-energy-support-masters?**", async route => {
@@ -204,6 +219,9 @@ for (const engine of [chromium, webkit]) {
           }
           assert.ok(directoryHttpStatuses.length >= 2 && directoryHttpStatuses.every(status => status === 200),
             label + " all public directory responses are synthetic HTTP 200: " + JSON.stringify(directoryHttpStatuses));
+          assert.deepEqual(blockedApiWrites, [],
+            label + " no CRM/payment/API writes before a consented enquiry: " +
+              JSON.stringify(blockedApiWrites));
           assert.deepEqual(errors, [], label + " no JS exceptions");
           evidence.push({ locale, width, engine:engine.name(), firstId, fourVideos:true,
             highestNeed:"money=1", railAboveHero:true, noAutoplay:true, quoteNotSubmitted:true });
