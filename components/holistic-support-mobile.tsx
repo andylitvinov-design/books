@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
-  CircleUserRound, Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
+  Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
 } from "lucide-react";
 
@@ -65,7 +65,7 @@ const focusRequest: Record<Focus, string> = {
 const copy = {
   en: {
     assessment: "1. Check in with yourself", scoreGuide: "Rate from 1 to 10",
-    focusLabel: "Your focus", upload: "Add your photo", replace: "Change your photo",
+    focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", toolsTitle: "2. Choose what helps",
@@ -86,7 +86,7 @@ const copy = {
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Four verified recordings, where available. Themes are browsing hints, not treatment claims.",
+    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers. Only original verified recordings are played.",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
     tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
@@ -101,7 +101,7 @@ const copy = {
   },
   ru: {
     assessment: "1. Оцени себя сейчас", scoreGuide: "Поставь баллы от 1 до 10",
-    focusLabel: "Выбранный фокус", upload: "Добавить фото", replace: "Изменить фото",
+    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", toolsTitle: "2. Выбери, что поможет",
@@ -111,7 +111,7 @@ const copy = {
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Энергоподкачка" },
-    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Энерго-подкачка" },
+    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Подкачка" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", egypt: "Египет · Осирис (7)", "greek-demeter": "Греция · Деметра (5)", "greek-dionysus": "Греция · Дионис (7)", maya: "Майя и ацтеки (6)" },
@@ -122,7 +122,7 @@ const copy = {
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "До четырёх проверенных записей. Темы помогают искать практики, но не означают лечение.",
+    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Воспроизводятся оригинальные авторские записи.",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
     tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
@@ -137,7 +137,7 @@ const copy = {
   },
   es: {
     assessment: "1. Evalúa cómo estás", scoreGuide: "Puntúa del 1 al 10",
-    focusLabel: "Tu enfoque", upload: "Añadir foto", replace: "Cambiar foto",
+    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", toolsTitle: "2. Elige lo que te ayuda",
@@ -158,7 +158,7 @@ const copy = {
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Hasta cuatro grabaciones verificadas. Los temas son ayudas para explorar, no tratamientos.",
+    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas. Solo se reproducen grabaciones originales verificadas.",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
     tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
@@ -335,14 +335,18 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           <section className={styles.profile} aria-label={t.focusLabel}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
-                <span className={styles.photoPlaceholder}><CircleUserRound size={63} strokeWidth={1.15} aria-hidden="true" /><strong>{t.upload}</strong></span>}
+                <span className={styles.photoPlaceholder}>
+                  <Image alt="" src="/images/holistic-house/support-mock-portrait.webp"
+                    width={176} height={176} unoptimized className={styles.photoReference} />
+                  <strong>{t.upload}</strong>
+                </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <label className={styles.focusSelector}>
-              <span className={styles.focusCaption}>{t.focusLabel}</span>
+              <span className={styles.focusCaption}><span className={styles.focusCaptionLong}>{t.focusLabel}</span><span className={styles.focusCaptionShort}>{t.focusLabelShort}</span></span>
               <span className={styles.focusValue}><FocusIcon size={22} aria-hidden="true" />
                 <select value={focus} onChange={event => chooseFocus(event.target.value as Focus)}
                   aria-label={t.focusLabel}>
@@ -425,7 +429,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           {scene ? (
             <>
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
-                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
                 <div className={styles.heroFilters} role="group" aria-label={t.gallery}>

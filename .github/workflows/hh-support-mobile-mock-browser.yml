@@ -19,7 +19,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  # Keep different PR runs independent; cancel only superseded commits on one ref.
+  # Keep push and each PR independent: an unrelated PR must not cancel
+  # production visual verification for this exact published commit.
   group: hh-support-mobile-mock-${{ github.ref }}
   cancel-in-progress: true
 jobs:
