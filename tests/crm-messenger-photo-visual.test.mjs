@@ -19,7 +19,10 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
     '/en/app/messages/someone-else','/admin']){
     assert.equal(guardedPaths.test(path),false,path)
   }
-  assert.match(middleware,/\(ownerMessengerImages \? ' blob:' : ''\)/)
+  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''\)/)
+  assert.match(middleware,/directMessageStorageOrigin/)
+  assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
+  assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
   assert.match(middleware,/"frame-src 'none'"/)
   assert.match(middleware,/"object-src 'none'"/)
 })
