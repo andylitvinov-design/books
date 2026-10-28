@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Leaf, ShoppingBag, Sparkles, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Leaf, ShoppingBag, Sparkles, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { readBrowserTalismanCart, saveBrowserTalismanCart } from "@/lib/practitioners/taoist-talisman-cart";
@@ -76,7 +76,6 @@ export function HolisticSupportTalismanViewer({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => { setGoal(focus); setSelectedId(null); }, [focus]);
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
