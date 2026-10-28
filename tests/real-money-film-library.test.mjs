@@ -44,7 +44,11 @@ test("public money gallery uses first-party MP4 decoder for selected personal vi
  const comp=read("components/mandala-free-video-studio.tsx").toString();
  const cinematic=read("lib/mandala/cinematic-money-video.ts").toString();
  const browser=read("scripts/verify-holistic-mandala-browser.mjs").toString();
- for(const id of ids)assert.ok(library.includes(id+ ".mp4") || library.includes('"'+id+'"') || id==="partners" && library.includes("partners:")),"Missing "+id+" link");
+  for(const id of ids) {
+    const found = library.includes(id + ".mp4") || library.includes('"'+id+'"') ||
+      (id==="partners" && library.includes("partners:"));
+    assert.ok(found,"Missing "+id+" link");
+  }
  assert.match(comp,/data-real-mp4=\{film\.src\}/);
  assert.match(comp,/data-mandala-master-mp4=\{activeMoneyFilm\.src\}/);
  assert.match(comp,/paintRealMoneyVideoFrame/);
