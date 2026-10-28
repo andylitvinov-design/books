@@ -217,7 +217,7 @@
 /* Reference-faithful mobile interface: one 3-zone band above the large player.
    Previous experimental phone breakpoints were removed to avoid CSS conflicts. */
 .toolMicro { display: none; }
-.toolShortcuts { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 8px; min-width: 0; }
+.toolShortcuts { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; margin-top: 8px; min-width: 0; }
 .toolShortcuts a,.toolShortcuts button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   min-height: 36px; padding: 6px 9px; border: 1px solid #d6e6d9; border-radius: 10px;
   background: #f3faf1; color: #147357; font-size: 13px; font-weight: 800; text-decoration: none; }
@@ -762,4 +762,61 @@
   .heroMasterCopy strong { font-size: 11px; }
   .heroMasterCopy small { font-size: 9px; }
   .heroMasterArrow { width: 13px; height: 13px; }
+}
+
+
+/* Dedicated green Tests tab and a compact, native-style in-page explorer. */
+.toolShortcuts .testsShortcut { flex-basis:100%; width:100%; min-height:38px;
+  border-color:#087d5e; background:linear-gradient(120deg,#0ca478,#087556); color:#fff;
+  box-shadow:0 3px 8px #0d775829; }
+.toolShortcuts .testsShortcut[aria-pressed="true"] { background:#075b46; border-color:#04503b; color:#fff; }
+.testsPanel { display:grid; gap:10px; min-width:0; padding:12px;
+  border:1px solid #e1e3d6; border-radius:18px; background:#fffaf2; }
+.testsHero { display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+  min-height:220px; padding:24px; border-radius:16px; overflow:hidden; color:#fff;
+  background:linear-gradient(95deg,#0c302ae8 0%,#123f35df 57%,#143f3288 100%),
+    url("/images/holistic-house/hero-olive-incense.webp") center / cover; }
+.testsEyebrow { display:inline-flex; align-items:center; gap:7px; font-size:12px;
+  font-weight:850; color:#b5f9d6; }
+.testsHero h2 { margin:0; font-size:clamp(23px,4vw,36px); line-height:1.12; letter-spacing:-.025em; }
+.testsHero p { max-width:510px; margin:0; color:#edf8ed; font-size:14px; line-height:1.45; }
+.testsPrimary { display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  min-height:46px; padding:10px 16px; margin-top:auto; border:1px solid #8adabc;
+  border-radius:12px; text-decoration:none; background:#06926c; color:#fff;
+  font-size:14px; font-weight:850; }
+.testsLinks { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.testsLinks a { display:flex; align-items:center; gap:9px; min-width:0; min-height:84px;
+  padding:12px; border:1px solid #d8e8d9; border-radius:13px; background:#f4faf1;
+  color:#204338; text-decoration:none; }
+.testsLinks a > svg { flex:none; color:#088965; }
+.testsLinks a > svg:last-child { margin-left:auto; }
+.testsLinks span { display:flex; flex-direction:column; min-width:0; gap:4px; }
+.testsLinks strong { font-size:14px; line-height:1.15; }
+.testsLinks small { color:#577568; font-size:11px; line-height:1.25; }
+.testsNotice { display:flex; align-items:flex-start; gap:7px; margin:0 2px; color:#61786b;
+  font-size:11px; line-height:1.35; }
+.testsNotice svg { flex:none; color:#43836b; }
+.testsPrimary:focus-visible,.testsLinks a:focus-visible,.toolShortcuts .testsShortcut:focus-visible {
+  outline:3px solid #e6b460; outline-offset:2px; }
+@media (max-width:640px) {
+  .toolShortcuts .testsShortcut { grid-column:1/-1; min-height:29px; padding:3px 4px;
+    border-radius:8px; font-size:clamp(10px,2.8vw,12px); }
+  .testsPanel { padding:8px; gap:8px; border-radius:14px; }
+  .testsHero { min-height:184px; padding:15px; gap:8px; border-radius:12px; }
+  .testsHero h2 { font-size:clamp(21px,6vw,27px); }
+  .testsHero p { font-size:12px; }
+  .testsPrimary { min-height:44px; padding:8px 12px; font-size:13px; }
+  .testsLinks { gap:6px; }
+  .testsLinks a { min-height:87px; padding:9px 7px; gap:5px; }
+  .testsLinks a > svg { width:19px; height:19px; }
+  .testsLinks a > svg:last-child { display:none; }
+  .testsLinks strong { font-size:12px; }
+  .testsLinks small { font-size:10px; }
+}
+@media (max-width:350px) {
+  .toolShortcuts .testsShortcut { min-height:27px; font-size:10px; }
+  .testsHero { min-height:174px; padding:12px; }
+  .testsHero h2 { font-size:21px; }
+  .testsLinks { grid-template-columns:1fr; }
+  .testsLinks a { min-height:56px; }
 }
