@@ -58,6 +58,11 @@ jobs:
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Install ffmpeg and ffprobe for actual encoded-audio QA
+        run: |
+          sudo apt-get install -y ffmpeg
+          command -v ffprobe
+          command -v ffmpeg
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
