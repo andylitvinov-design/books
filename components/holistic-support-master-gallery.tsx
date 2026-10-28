@@ -222,6 +222,9 @@ const consultationUi = {
     order: "Request service", details: "Details", published: "Published service",
     media: "View approved introduction", photos: "Service photos",
     notice: "A request is not a confirmed booking or payment.",
+    priceOnRequest: "Price on request", editorialPhotos: "Related Holistic House illustrations",
+    servicePage: "Full service details", imageryFallback: "No separately published guided imagery offer matches these filters. Explore the existing guided imagery service page.",
+    imageryExplore: "Explore guided imagery",
   },
   ru: {
     heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
@@ -233,6 +236,9 @@ const consultationUi = {
     order: "Заказать", details: "Подробнее", published: "Опубликованная услуга",
     media: "Открыть опубликованную презентацию", photos: "Фото услуги",
     notice: "Заявка не означает подтверждённую запись или оплату.",
+    priceOnRequest: "Цена по запросу", editorialPhotos: "Иллюстрации Holistic House",
+    servicePage: "Открыть страницу услуги", imageryFallback: "Отдельная опубликованная услуга образной работы по этим фильтрам не найдена. Можно посмотреть существующую страницу метода.",
+    imageryExplore: "Подробнее об образной работе",
   },
   es: {
     heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
@@ -244,6 +250,9 @@ const consultationUi = {
     order: "Solicitar", details: "Detalles", published: "Servicio publicado",
     media: "Ver presentación publicada", photos: "Fotos del servicio",
     notice: "Solicitar no confirma una reserva ni realiza un pago.",
+    priceOnRequest: "Precio a consultar", editorialPhotos: "Ilustraciones de Holistic House",
+    servicePage: "Página del servicio", imageryFallback: "No hay una oferta independiente publicada de imágenes guiadas para estos filtros. Consulta la página existente.",
+    imageryExplore: "Explorar imágenes guiadas",
   },
 } as const;
 
@@ -258,16 +267,58 @@ function matchesConsultationCategory(offer: PublishedConsultation, category: Con
     case "business": return /business|бизнес|empresa|negocio|consulting|консалтинг|consultor/.test(source);
   }
 }
-function consultationCover(offer: PublishedConsultation) {
-  if (offer.photos?.[0]) return offer.photos[0];
-  if (matchesConsultationCategory(offer, "imagery")) return "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp";
-  if (matchesConsultationCategory(offer, "constellations")) return "/images/holistic-house/video-posters/constellations-en-v1.webp";
-  if (matchesConsultationCategory(offer, "business")) return "/images/holistic-house/hero-olive-incense.webp";
-  if (/andrey|andy|андре/i.test(offer.practitionerName)) {
-    return "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp";
-  }
-  return "/images/holistic-house/hero-olive-incense.webp";
+// Editorial images are already published in our own public site. They are NOT
+// practitioner-uploaded photos and must never be presented as service evidence.
+const APPROVED_EDITORIAL_GALLERIES = {
+  "alchemy-of-soul": [
+    "/images/holistic-house/distance-homeopathy.webp",
+    "/images/holistic-house/homeopathy-still-life.svg",
+    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+  ],
+  "business-situation-constellation": [
+    "/images/holistic-house/books-library.webp",
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/homepage-constellations.svg",
+  ],
+  "personal-constellation-session": [
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    "/images/holistic-house/homepage-constellations.svg",
+    "/images/holistic-house/hero-olive-incense.webp",
+  ],
+  "free-wu-xing-diagnostic": [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/homepage-botanical.svg",
+    "/images/holistic-house/course-start-heron.webp",
+  ],
+  "free-intro-availability-request": [
+    "/images/holistic-house/andy-about.png",
+    "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+    "/images/holistic-house/hero-olive-incense.webp",
+  ],
+} as const;
+
+function consultationDisplayImages(offer: PublishedConsultation): string[] {
+  if (offer.photos?.length) return offer.photos;
+  // Key by the canonical published service URL, never by names / guesses about a
+  // provider. Do not show Andrey's portrait for another practitioner's offer.
+  const suffix = offer.href.split("/").pop() || "";
+  const isApprovedOwner = offer.href.includes("/services/andy-litvinov/") ||
+    offer.href.endsWith("/services/alchemy-of-soul");
+  const gallery = isApprovedOwner && Object.prototype.hasOwnProperty.call(APPROVED_EDITORIAL_GALLERIES, suffix)
+    ? APPROVED_EDITORIAL_GALLERIES[suffix as keyof typeof APPROVED_EDITORIAL_GALLERIES]
+    : null;
+  return gallery ? [...gallery] : ["/images/holistic-house/hero-olive-incense.webp"];
 }
+function consultationCover(offer: PublishedConsultation) {
+  return consultationDisplayImages(offer)[0];
+}
+// The existing authenticated request form accepts this published service ID
+// and retains it through Google OAuth. A link does not create a lead/payment.
+function consultationRequestHref(offer: PublishedConsultation, locale: PublicLocale) {
+  const accountLocale = locale === "es" ? "en" : locale;
+  return "/" + accountLocale + "/app/consultations?service=" + encodeURIComponent(offer.serviceId);
+}
+
 function consultationFormatName(format: string, locale: PublicLocale) {
   if (format === "online") return consultationUi[locale].online;
   if (format === "in_person" || format === "offline") return consultationUi[locale].inPerson;
@@ -445,14 +496,15 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     : cheapestStructured && selectedMaster?.reikiOffer
       ? publishedPrice(cheapestStructured.price, selectedMaster.reikiOffer.currency, locale)
       : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
-  const displayPrice = currentPrice || t.quote;
+  const displayPrice = currentPrice || (consultations ? consultationUi[locale].priceOnRequest : t.quote);
   const c = consultationUi[locale];
-  const currentConsultPhoto = selectedOffer?.photos?.[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
+  const consultPhotoSet = selectedOffer ? consultationDisplayImages(selectedOffer) : [];
+  const currentConsultPhoto = consultPhotoSet[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
   const consultationPrice = (offer: PublishedConsultation) =>
     offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact")
       ? t.freeOnly
       : offer.pricingMode !== "contact" && offer.price !== null
-        ? publishedPrice(offer.price, offer.currency, locale) || t.quote : t.quote;
+        ? publishedPrice(offer.price, offer.currency, locale) || c.priceOnRequest : c.priceOnRequest;
 
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
@@ -718,8 +770,16 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         {kind === "healing" && <p className={styles.unavailableMethod} data-support-reiki-unavailable>
           {t.reikiOptions[reikiFocus].label} · {t.reikiOptions[reikiFocus].method}
         </p>}
+        {consultations && consultCategory === "imagery" && <p className={styles.consultFallback}>
+          {c.imageryFallback}{" "}
+          <Link href={"/" + locale + "/services/imagery-therapy"} prefetch={false}>
+            {c.imageryExplore}<ArrowRight size={16} aria-hidden="true"/>
+          </Link>
+        </p>}
         <button type="button" onClick={() => {
           setMethod(""); setPriceFilter("all"); setSelectedId(null);
+          if (consultations) { setConsultCategory("all"); setConsultMaster("");
+            setConsultFormat(""); setConsultPhotoIndex(0); setConsultDetailsOpen(false); }
           if (kind === "healing") { setReikiFocus("love"); resetReikiFilters(); }
         }}>{kind === "healing" ? t.reikiSeeAvailable : t.reset}</button>
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
@@ -769,21 +829,24 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               target="_blank" rel="noopener noreferrer" aria-label={c.media}>
               <PlayCircle size={25} aria-hidden="true"/>
             </a>}
-          {selectedOffer && selectedOffer.photos?.length > 1 && <div className={styles.consultPreviews}
-            role="group" aria-label={c.photos}>
-            {selectedOffer.photos.slice(0,4).map((photo, photoIndex) =>
+          {selectedOffer && consultPhotoSet.length > 1 && <div className={styles.consultPreviewGroup}>
+            <small>{selectedOffer.photos?.length ? c.photos : c.editorialPhotos}</small>
+            <div className={styles.consultPreviews}
+              role="group" aria-label={selectedOffer.photos?.length ? c.photos : c.editorialPhotos}>
+            {consultPhotoSet.slice(0,4).map((photo, photoIndex) =>
               <button key={photo} type="button" aria-pressed={photoIndex === consultPhotoIndex}
                 onClick={() => setConsultPhotoIndex(photoIndex)}>
                 <Image src={photo} alt="" fill unoptimized sizes="70px"/>
                 <span className="sr-only">{photoIndex+1}</span>
               </button>)}
+            </div>
           </div>}
           {entries.length > 1 && <div className={styles.arrows} role="group" aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
             <button type="button" onClick={() => step(-1)} aria-label={t.prev} data-support-master-prev><ChevronLeft size={22}/></button>
             <button type="button" onClick={() => step(1)} aria-label={t.next} data-support-master-next><ChevronRight size={22}/></button>
           </div>}
           <div className={styles.actions}>
-            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} prefetch={false}
+            {selectedOffer ? <Link className={styles.primary} href={consultationRequestHref(selectedOffer, locale)} prefetch={false}
               data-support-offer-request>
               <ShoppingCart size={21} aria-hidden="true"/>{c.order}<ArrowRight size={21} aria-hidden="true"/>
             </Link> : selectedMaster && cheapest ? <button type="button" className={styles.primary}
@@ -801,6 +864,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           <strong>{selectedOffer.title}</strong>
           <p>{selectedOffer.description || t.consultNote}</p>
           <p>{selectedOffer.practitionerName} · {consultationFormatName(selectedOffer.deliveryFormat, locale)}</p>
+          <Link className={styles.consultDetailsLink} href={selectedOffer.href} prefetch={false}>
+            {c.servicePage}<ArrowRight size={16} aria-hidden="true"/>
+          </Link>
           <small>{c.notice}</small>
         </div>}
         <section className={styles.more} aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
