@@ -745,6 +745,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                       </button>
                       {row.result && <Link href={root + '/results/' + encodeURIComponent(row.result.id)}
                         prefetch={false}>{c.see}</Link>}
+                      {row.result && <Link data-discuss-saved-test={row.result.id}
+                        href={root + '/results/' + encodeURIComponent(row.result.id) + '?discuss=1#test-result-discussion'}
+                        prefetch={false}>{locale === 'ru' ? 'Обсудить этот тест' : locale === 'es' ? 'Comentar esta prueba' : 'Discuss this test'}</Link>}
                     </div>
                     {group.id !== 'course' && currentPlan?.status === 'active' &&
                       currentPlan.definitionIds.includes(row.definition.id) && statusFilter !== 'completed' &&
