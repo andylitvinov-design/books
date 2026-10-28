@@ -19,16 +19,18 @@ const chooseMime=()=>{
   return ''
 }
 function stopTracks(stream){for(const track of stream?.getTracks?.()||[])track.stop()}
-export default function DirectVoiceRecorder({locale='en',disabled=false,onRecorded}){
+export default function DirectVoiceRecorder({locale='en',disabled=false,onRecorded,onRecordingChange}){
   const t=STRINGS[locale]||STRINGS.en
   const current=useRef(null)
   const mounted=useRef(true)
+  const reportRecording=useRef(onRecordingChange)
+  reportRecording.current=onRecordingChange
   const [phase,setPhase]=useState('idle')
   const [error,setError]=useState('')
   const [seconds,setSeconds]=useState(0)
   useEffect(()=>{
     mounted.current=true
-    return ()=>{mounted.current=false;dispose(true)}
+    return ()=>{mounted.current=false;dispose(true);reportRecording.current?.(false)}
   },[])
   useEffect(()=>{
     if(phase!=='recording')return
@@ -39,6 +41,7 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
     const session=current.current
     if(!session)return
     session.discard=Boolean(discard)
+    if(discard)reportRecording.current?.(false)
     if(session.timer)clearTimeout(session.timer)
     try{if(session.recorder.state!=='inactive')session.recorder.stop()}catch{}
     stopTracks(session.stream)
@@ -56,7 +59,7 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
   }
   async function begin(){
     if(disabled||phase!=='idle')return
-    setError('');setSeconds(0);setPhase('pending')
+    setError('');setSeconds(0);setPhase('pending');reportRecording.current?.(true)
     let stream
     try{
       if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined')throw new Error('UNSUPPORTED')
@@ -80,13 +83,14 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
         try{directMediaSpec(kind,audio.size);onRecorded?.(audio);setError('')}
         catch{setError(t.invalid)}
         setPhase('idle')
+        reportRecording.current?.(false)
       }
       recorder.start(1000)
       setPhase('recording')
       session.timer=setTimeout(()=>finish(false),120000)
     }catch{
       stopTracks(stream)
-      if(mounted.current){setError(t.error);setPhase('idle')}
+      if(mounted.current){setError(t.error);setPhase('idle');reportRecording.current?.(false)}
     }
   }
   return <div className={styles.root} data-voice-recorder>
@@ -96,7 +100,7 @@ export default function DirectVoiceRecorder({locale='en',disabled=false,onRecord
       </button>
       <button type="button" onClick={()=>finish(true)} className={styles.discard} aria-label={t.cancel}><Trash2 size={18}/></button>
     </div>:<button type="button" className={styles.start}
-      disabled={disabled||phase==='pending'} onClick={begin} aria-label={t.start}>
+      disabled={disabled||phase!=='idle'} onClick={begin} aria-label={t.start}>
       <Mic size={17} aria-hidden="true"/>{phase==='pending'?t.pending:phase==='finalizing'?t.stop:t.start}
     </button>}
     {phase==='recording'&&<span className={styles.hint} role="status">{t.recording} {t.limit}</span>}

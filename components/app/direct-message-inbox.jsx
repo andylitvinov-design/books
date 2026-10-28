@@ -3,7 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Paperclip,Bell} from 'lucide-react'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
+import {directMediaSpec,directMediaMime,DIRECT_MEDIA_PROXY_MAX_BYTES} from '@/lib/practitioners/direct-message-policy.mjs'
 import styles from './direct-message-inbox.module.css'
 import PrivateChatPhoto from './private-chat-photo'
 import DirectVoiceRecorder from './direct-voice-recorder'
@@ -68,16 +68,6 @@ const COPY={
 const URL='/api/app/direct-messages'
 const AUDIO_MIMES=new Set(['audio/mpeg','audio/mp4','audio/webm','audio/ogg','audio/wav'])
 const labels={en:'English',ru:'Русский',es:'Español'}
-function mediaMime(file){
-  const type=(file.type||'').split(';')[0].toLowerCase()
-  const extension=/\.([a-z0-9]+)$/i.exec(file.name||'')?.[1]?.toLowerCase()
-  if(type==='audio/x-m4a'||type==='audio/m4a'||(type==='application/octet-stream'&&extension==='m4a'))
-    return 'audio/mp4'
-  if(type==='audio/x-wav')return 'audio/wav'
-  if(type==='audio/x-ogg')return 'audio/ogg'
-  if(type==='audio/mp3')return 'audio/mpeg'
-  return type
-}
 async function jsonGet(path=URL){
   const response=await fetch(path,{cache:'no-store',credentials:'same-origin'})
   const value=await response.json().catch(()=>({}))
@@ -114,17 +104,17 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
-    [busy,setBusy]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
+    [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
   const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
   const [audioPreview,setAudioPreview]=useState('')
   useEffect(()=>{
-    if(!file||!AUDIO_MIMES.has(mediaMime(file))){setAudioPreview('');return}
-    const url=URL.createObjectURL(file)
+    if(!file||!AUDIO_MIMES.has(directMediaMime(file))){setAudioPreview('');return}
+    const url=globalThis.URL.createObjectURL(file)
     setAudioPreview(url)
-    return()=>URL.revokeObjectURL(url)
+    return()=>globalThis.URL.revokeObjectURL(url)
   },[file])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
@@ -215,7 +205,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   async function send(event){
     event.preventDefault()
-    if(busy||!activeId||(!draft.trim()&&!file))return
+    if(busy||recording||!activeId||(!draft.trim()&&!file))return
     setBusy(true);setError('')
     const key={threadId:activeId,text:draft.trim(),file,allowPublicReuse}
     try {
@@ -226,20 +216,55 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
         if(!uploadRef.current||uploadRef.current.file!==file||uploadRef.current.threadId!==activeId){
           const prepared=file.type.startsWith('image/')||/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)
             ?await preparePhoto(file):file
-          const mime=mediaMime(prepared)
+          const mime=directMediaMime(prepared)
           directMediaSpec(mime,prepared.size)
           setStatus(t.upload)
           const intent=await post({action:'intent',threadId:activeId,
             mime,bytes:prepared.size,allowPublicReuse:allowPublicReuse&&AUDIO_MIMES.has(mime)})
-          const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
-            auth:{persistSession:false,autoRefreshToken:false}})
-          const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
-            intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
-          if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
-          await post({action:'complete',assetId:intent.assetId})
-          uploadRef.current={file,threadId:activeId,assetId:intent.assetId}
+          // Retain the original bytes and the immutable intent across failed
+          // network responses and retries; never mint duplicate pending assets.
+          uploadRef.current={file,threadId:activeId,prepared,mime,intent,assetId:intent.assetId,
+            attempted:false,uploaded:false,completed:false}
         }
-        assetId=uploadRef.current.assetId
+        const staged=uploadRef.current
+        setStatus(t.upload)
+        if(staged.attempted&&!staged.uploaded){
+          // A response may have been lost after Supabase stored the bytes.
+          try{
+            await post({action:'complete',assetId:staged.assetId})
+            staged.uploaded=true;staged.completed=true
+          }catch(e){
+            if(!['MEDIA_UPLOAD_NOT_FOUND','MEDIA_STORAGE_UNAVAILABLE'].includes(e.message))throw e
+          }
+        }
+        if(!staged.uploaded){
+          staged.attempted=true
+          if(staged.prepared.size<=DIRECT_MEDIA_PROXY_MAX_BYTES){
+            let response
+            try{
+              response=await fetch(URL+'/media/'+encodeURIComponent(staged.assetId)+'/upload',{
+                method:'POST',cache:'no-store',credentials:'same-origin',
+                headers:{'Content-Type':staged.mime,'x-hh-account-id':accountId},
+                body:staged.prepared})
+            }catch{throw new Error('MEDIA_UPLOAD_FAILED')}
+            const result=await response.json().catch(()=>({}))
+            if(!response.ok||result.uploaded!==true)throw new Error(result.error||'MEDIA_UPLOAD_FAILED')
+          }else{
+            // Larger pre-existing audio files retain the signed Storage route.
+            const intent=staged.intent
+            const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
+              auth:{persistSession:false,autoRefreshToken:false}})
+            const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
+              intent.objectKey,intent.token,staged.prepared,{contentType:staged.mime,upsert:false})
+            if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
+          }
+          staged.uploaded=true
+        }
+        if(!staged.completed){
+          await post({action:'complete',assetId:staged.assetId})
+          staged.completed=true
+        }
+        assetId=staged.assetId
       }
       setStatus(t.sendBusy)
       await post({action:'send',threadId:activeId,operationId:operationRef.current.id,
@@ -251,7 +276,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     finally{setBusy(false)}
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
-  const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
+  const audioSelected=file&&AUDIO_MIMES.has(directMediaMime(file))
   return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
     data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
     {!simpleDetail&&<header className={styles.head}>
@@ -331,9 +356,11 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             <div className={styles.actions}>
               <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
-                  disabled={busy} onChange={e=>changeFile(e.target.files?.[0]||null)}/></label>
-              <DirectVoiceRecorder locale={locale} disabled={busy} onRecorded={changeFile}/>
-              <button className={styles.send} type="submit" disabled={busy||(!draft.trim()&&!file)}>
+                  disabled={busy} onChange={e=>{changeFile(e.target.files?.[0]||null);e.target.value=''}}/></label>
+              <DirectVoiceRecorder key={current.threadId} locale={locale} disabled={busy}
+                onRecordingChange={setRecording}
+                onRecorded={recorded=>{changeFile(recorded);setError('')}}/>
+              <button className={styles.send} type="submit" disabled={busy||recording||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>
             </div>
             {audioPreview&&<audio controls preload="metadata" src={audioPreview} aria-label={t.audio} className={styles.voicePreview}/>}

@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
@@ -202,6 +202,46 @@ const studioCopy = {
     advanced:"Mandala y meditaciones originales",photoError:"Usa JPG, PNG o WebP de hasta 10 MB.",
   }
 } as const;
+const supportDesignCopy = {
+  en: {
+    check:"1. Check in with yourself", scoreGuide:"Rate each area from 1 to 10",
+    help:"2. Choose what helps", test:"Tests", focus:"Focus",
+    mandala:"Video mandala",recommend:"Find my focus",
+    meditation:"Meditation", testSession:"Test / session", talisman:"Talisman",
+    reiki:"Reiki support", courses:"Courses", masters:"Masters",
+    heroTabs:["Video mandala","Templates","Masters","Theme"],
+    heroBadge:"Original audio is optional",heroTitle:"Create your personal video",
+    heroIntro:"Add a photo, choose a theme and make your own moving video for free.",
+    topThemes:"Video theme",popular:"Popular templates",reset:"Reset settings",
+    quickPreview:"Watch animation", pausePreview:"Pause animation",heroConsent:"Confirm photo permission below to create the video.",
+  },
+  ru: {
+    check:"1. Оцени себя сейчас", scoreGuide:"Поставь баллы от 1 до 10",
+    help:"2. Выбери, что поможет",test:"Тесты",focus:"Фокус",
+    mandala:"Видео-мандала",recommend:"Подобрать",
+    meditation:"Медитация", testSession:"Тест / сессия",talisman:"Талисман",
+    reiki:"Рейки поддержка",courses:"Курсы",masters:"Мастера",
+    heroTabs:["Видео-мандала","Шаблоны","Мастера","Тема"],
+    heroBadge:"Оригинальный звуковой фон",heroTitle:"Создай своё личное видео",
+    heroIntro:"Загрузи фото, выбери тему и создай красивое видео бесплатно.",
+    topThemes:"Тема видео",popular:"Популярные шаблоны",reset:"Сбросить настройки",
+    quickPreview:"Смотреть анимацию", pausePreview:"Пауза",heroConsent:"Подтверди разрешение на фото ниже, чтобы создать видео.",
+  },
+  es: {
+    check:"1. Evalúa cómo estás",scoreGuide:"Valora del 1 al 10",
+    help:"2. Elige lo que te ayuda",test:"Pruebas",focus:"Enfoque",
+    mandala:"Vídeo mandala",recommend:"Elegir tema",
+    meditation:"Meditación",testSession:"Test / sesión",talisman:"Talismán",
+    reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",
+    heroTabs:["Vídeo mandala","Plantillas","Guías","Tema"],
+    heroBadge:"Sonido original opcional",heroTitle:"Crea tu vídeo personal",
+    heroIntro:"Sube tu foto, elige un tema y crea un vídeo animado gratis.",
+    topThemes:"Tema del vídeo",popular:"Plantillas populares",reset:"Restablecer ajustes",
+    quickPreview:"Ver animación",pausePreview:"Pausar animación",heroConsent:"Confirma el permiso para usar la foto antes de crear.",
+  }
+} as const;
+const checkOrder: VideoTheme[] = ["energy","money","relationships","goals"];
+
 const musicChoices: AmbientMusic[] = ["none","harmony","prosperity","energy","love","meditation"];
 const preferredMoney = ["golden-rain","abundance-tree","cosmic-flow","path-to-goals"] as const;
 const moneyTemplateLabels: Partial<Record<MoneySceneId,Record<VideoLocale,string>>> = {
@@ -431,6 +471,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 }) {
   const t = translations[locale];
   const ui = studioCopy[locale];
+  const supportUi = supportDesignCopy[locale];
+  const [scores,setScores] = useState<Record<VideoTheme,number>>({energy:5,money:5,relationships:5,goals:5});
   const [theme, setTheme] = useState<VideoTheme>("money");
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
@@ -477,6 +519,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (theme!=="money" || premiumReady) && (backgroundOnly || !photoUrl || photoConsent) && !preparing && !recording;
+  const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
@@ -768,6 +811,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
   };
 
+  const resetVideoSettings=()=>{
+    if(recording||preparing)return;
+    setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
+    setMusic("none");setCaptionMode("theme");setCustomCaption("");setQuality("hd");
+    setPreviewPlaying(false);
+  };
+  const startFromHero=()=>{
+    if(recording||preparing)return;
+    if(photoUrl&&!backgroundOnly&&!photoConsent){
+      setNotice(supportUi.heroConsent);
+      document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
+    if(!source){onPickPhoto();return;}
+    void createVideo();
+  };
+
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
@@ -781,73 +841,120 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         aria-hidden="true"
         style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
       /> : null}
-      <div className={videoStyles.studioTop}>
-        <Link className={videoStyles.back} href={"/"+locale+"/holistic-support/mobile"}
-          aria-label={ui.back} prefetch={false}><ArrowLeft aria-hidden="true" size={24}/></Link>
-        <div className={videoStyles.brandTitle}>
-          <h2>{ui.title}</h2><p>{ui.sub}</p>
-        </div>
-        <a className={videoStyles.myVideos} href="#personal-video-result">
-          <BookOpen aria-hidden="true" size={18}/><span>{ui.myVideos}</span>
-        </a>
-      </div>
+      <div className={videoStyles.supportTop} data-video-support-layout>
+        <section className={videoStyles.assessmentCard} aria-labelledby="video-assessment-heading">
+          <h2 id="video-assessment-heading">{supportUi.check}</h2>
+          <p>{supportUi.scoreGuide}</p>
+          <div className={videoStyles.assessmentScales}>
+            {checkOrder.map(key=>{
+              const Icon=key==="energy"?Zap:key==="money"?Coins:key==="relationships"?Heart:Target;
+              return <label className={videoStyles.assessmentScale} key={key} data-tone={key}>
+                <span>{ui.themes[key]}</span>
+                <span className={videoStyles.scaleControls}>
+                  <Icon size={16} aria-hidden="true"/>
+                  <input type="range" min={1} max={10} step={1} value={scores[key]}
+                    aria-label={ui.themes[key]}
+                    onChange={event=>setScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}))}/>
+                  <output>{scores[key]}</output>
+                </span>
+              </label>;
+            })}
+          </div>
+          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/tests"} prefetch={false}>
+            <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
+          </Link>
+        </section>
 
-      <div className={videoStyles.firstSteps}>
-        <section className={videoStyles.photoCard} aria-labelledby="video-photo-heading">
-          <h3 id="video-photo-heading">{ui.stepPhoto}</h3>
-          <button type="button" className={videoStyles.photoPortrait}
-            data-video-photo-picker disabled={recording || preparing}
-            onClick={onPickPhoto} aria-label={photoUrl?ui.replace:ui.addPhoto}>
+        <section className={videoStyles.centerProfile} aria-label={ui.stepPhoto}>
+          <button type="button" className={videoStyles.photoPortrait} data-video-photo-picker
+            disabled={recording||preparing} aria-label={photoUrl?ui.replace:ui.addPhoto}
+            onClick={onPickPhoto}>
             {photoUrl ? (
-              // Private local blob, not a Next.js optimized or remote image.
+              // This is a private local blob, never optimized or uploaded.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl} alt="" draggable={false}/>
-            ) : <span className={videoStyles.photoEmpty}><Camera aria-hidden="true" size={36}/><small>{ui.noPhoto}</small></span>}
-            <span className={videoStyles.cameraCircle}><Camera size={17} aria-hidden="true"/></span>
+            ) : <span className={videoStyles.photoEmpty}><Camera size={31} aria-hidden="true"/><small>{ui.addPhoto}</small></span>}
+            <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
           </button>
-          <button type="button" className={videoStyles.replacePhoto}
-            disabled={recording||preparing} onClick={onPickPhoto}>
-            <Camera size={17} aria-hidden="true"/>{photoUrl?ui.replace:ui.addPhoto}
+          <button type="button" className={videoStyles.videoMandalaChoice}
+            onClick={()=>document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"})}>
+            <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
           </button>
-          {photoError ? <p className={videoStyles.warning} role="alert">{ui.photoError}</p> : null}
-          <small className={videoStyles.photoPrivacy}>{ui.photoPrivate}</small>
+          <div className={videoStyles.profileFocus}><small>{supportUi.focus}</small><strong>{ui.themes[lowestTheme]}</strong></div>
+          <button type="button" className={videoStyles.recommendButton}
+            disabled={recording||preparing} data-video-recommend-focus
+            onClick={()=>selectCategory(lowestTheme)}>
+            <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
+          </button>
+          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>
-        <section className={videoStyles.themeCard} aria-labelledby="video-theme-heading">
-          <h3 id="video-theme-heading">{ui.stepTheme}</h3>
-          <div className={videoStyles.themeGrid} role="group" aria-label={ui.stepTheme}>
-            {themeChoices.map(item=>{
-              const Icon=item==="money"?Coins:item==="relationships"?Heart:item==="energy"?Leaf:Target;
-              return <button type="button" key={item} data-video-theme={item}
-                className={videoStyles.themeButton} data-theme={item}
-                disabled={recording||preparing} aria-pressed={theme===item}
-                onClick={()=>selectCategory(item)}>
-                <Icon size={28} aria-hidden="true"/>
-                <span>{ui.themes[item]}</span>
-                {theme===item ? <Check size={17} className={videoStyles.checked} aria-hidden="true"/> : null}
-              </button>;
-            })}
+
+        <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
+          <h2 id="video-tools-heading">{supportUi.help}</h2>
+          <div className={videoStyles.supportToolGrid}>
+            <Link href={"/"+locale+"/holistic-support/mobile#support-mobile-experience"} prefetch={false}
+              className={videoStyles.toolPrimary}><Play size={23} aria-hidden="true"/><span>{supportUi.meditation}</span></Link>
+            <Link href={"/"+locale+"/tests"} prefetch={false}>
+              <TestTubeDiagonal size={23} aria-hidden="true"/><span>{supportUi.testSession}</span></Link>
+            <Link href={"/"+locale+"/talismans"} prefetch={false}>
+              <Sparkles size={24} aria-hidden="true"/><span>{supportUi.talisman}</span></Link>
+            <Link href={"/"+locale+"/holistic-support/mobile#support-tools"} prefetch={false}>
+              <HandHeart size={24} aria-hidden="true"/><span>{supportUi.reiki}</span></Link>
+          </div>
+          <div className={videoStyles.supportShortcuts}>
+            <Link href={"/"+locale+"/academy"} prefetch={false}>{supportUi.courses}</Link>
+            <Link href={"/"+locale+"/masters"} prefetch={false}>{supportUi.masters}</Link>
           </div>
         </section>
       </div>
 
-      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
-        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
-        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
-          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}} />
-        <p>{ui.wishHelp}</p>
-        <div className={videoStyles.wishActions}>
-          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
-            <Target size={17} aria-hidden="true"/>{ui.wishAction}
-          </button>
-          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
-            {ui.wishCaption}
-          </button>
+      <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero aria-labelledby="video-hero-heading">
+        <div className={videoStyles.heroCanvas} data-video-preview-frame>
+          <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
+            height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
+            aria-label={supportUi.quickPreview}/>
         </div>
-        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
+        <div className={videoStyles.heroShade} aria-hidden="true"/>
+        <div className={videoStyles.heroOverlay}>
+          <nav className={videoStyles.heroTabs} aria-label={supportUi.mandala}>
+            <a href="#video-hero" className={videoStyles.heroMode} aria-current="page">
+              <Play size={16} aria-hidden="true"/>{supportUi.heroTabs[0]}</a>
+            <a href="#video-templates">{supportUi.heroTabs[1]}</a>
+            <Link href={"/"+locale+"/masters"} prefetch={false}>{supportUi.heroTabs[2]}</Link>
+            <a href="#video-hero-themes">{supportUi.heroTabs[3]}</a>
+          </nav>
+          <div className={videoStyles.heroThemes} id="video-hero-themes"
+            role="group" aria-label={supportUi.topThemes}>
+            {themeChoices.map(item=>{
+              const Icon=item==="money"?Coins:item==="relationships"?Heart:item==="energy"?Leaf:Target;
+              return <button type="button" key={item} data-video-theme={item}
+                aria-pressed={theme===item} disabled={recording||preparing}
+                onClick={()=>selectCategory(item)}>
+                <Icon size={13} aria-hidden="true"/>{ui.themes[item]}
+              </button>;
+            })}
+          </div>
+          <div className={videoStyles.heroBody}>
+            <button className={videoStyles.heroAudio} type="button" data-mandala-money-preview
+              data-video-preview-toggle aria-pressed={previewPlaying}
+              disabled={!source||recording||preparing}
+              onClick={()=>setPreviewPlaying(value=>!value)}>
+              {previewPlaying?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}
+              {previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+            </button>
+            <span className={videoStyles.heroSound}><Music2 size={14} aria-hidden="true"/>
+              {music==="none"?ui.noMusic:supportUi.heroBadge}</span>
+            <h2 id="video-hero-heading">{supportUi.heroTitle}</h2>
+            <p>{supportUi.heroIntro}</p>
+            <button type="button" className={videoStyles.heroCreate}
+              data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
+              <Play size={21} fill="currentColor" aria-hidden="true"/>{ui.create}
+            </button>
+          </div>
+        </div>
       </section>
-
-      {theme==="money" && <fieldset className={videoStyles.backgroundMode} data-mandala-output-mode disabled={recording||preparing}>
+      {theme==="money" && <fieldset className={videoStyles.backgroundMode} data-mandala-output-mode
+        disabled={recording||preparing}>
         <legend>{ui.renderMode}</legend>
         <div className={videoStyles.backgroundChoices}>
           <button type="button" aria-pressed={!backgroundOnly} onClick={()=>setBackgroundOnly(false)}>
@@ -857,10 +964,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {backgroundOnly?<small>{ui.backgroundHint}</small>:null}
       </fieldset>}
-      <section className={videoStyles.templates} data-mandala-money-effects
+      <section className={videoStyles.templates} id="video-templates" data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
-          <h3 id="video-templates-heading">{ui.stepTemplate}</h3>
+          <h3 id="video-templates-heading">{supportUi.popular}</h3>
           {activeTemplates.length>4 &&
             <button type="button" data-video-all-templates disabled={recording||preparing}
               aria-expanded={showAllMoney} onClick={()=>setShowAllMoney(value=>!value)}>
@@ -903,24 +1010,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.templateFooter}>
           <small>{ui.templateHint}</small>
         </div>
-        <div className={videoStyles.previewRow}>
-          <button type="button" className={videoStyles.previewButton}
-            data-mandala-money-preview data-video-preview-toggle
-            disabled={!source || recording || preparing} aria-pressed={previewPlaying}
-            onClick={()=>setPreviewPlaying(open=>!open)}>
-            {previewPlaying?<Pause size={17} aria-hidden="true"/>:<CirclePlay size={17} aria-hidden="true"/>}
-            {previewPlaying?ui.stopPreview:ui.preview}
+      </section>
+
+      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
+        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
+        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
+          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
+          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}} />
+        <p>{ui.wishHelp}</p>
+        <div className={videoStyles.wishActions}>
+          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
+            <Target size={17} aria-hidden="true"/>{ui.wishAction}
           </button>
-          <div className={videoStyles.canvasWindow} data-video-preview-frame>
-            <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
-              height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
-              aria-label={ui.preview}/>
-          </div>
+          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
+            {ui.wishCaption}
+          </button>
         </div>
+        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
 
       <section id="video-settings" className={videoStyles.settings} aria-labelledby="video-settings-heading">
-        <h3 id="video-settings-heading">{ui.stepSettings}</h3>
+        <div className={videoStyles.sectionHeading}>
+          <h3 id="video-settings-heading">{ui.stepSettings}</h3>
+          <button type="button" data-video-reset-settings disabled={recording||preparing}
+            onClick={resetVideoSettings}>{supportUi.reset} ↻</button>
+        </div>
         <div className={videoStyles.settingsGrid}>
           <fieldset className={videoStyles.settingCard} disabled={recording||preparing}>
             <legend>{ui.duration}</legend>
@@ -1064,13 +1178,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ):<p>{ui.myVideosInfo}</p>}
       </section>
 
-      <nav className={videoStyles.bottomNav} aria-label={ui.title}>
-        <Link href={"/"+locale+"/"} prefetch={false}><BookOpen size={21} aria-hidden="true"/>{ui.home}</Link>
-        <Link href={"/"+locale+"/holistic-support/mobile"} prefetch={false}><Leaf size={21} aria-hidden="true"/>{ui.meditations}</Link>
-        <a href="#free-personal-video" aria-current="page"><Film size={22} aria-hidden="true"/>{ui.createTab}</a>
-        <a href="#personal-video-result"><CirclePlay size={21} aria-hidden="true"/>{ui.myVideos}</a>
-        <a href="#video-settings"><SlidersHorizontal size={21} aria-hidden="true"/>{ui.settings}</a>
-      </nav>
+
     </section>
   );
 }

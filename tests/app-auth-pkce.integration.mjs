@@ -180,7 +180,7 @@ test('explicit missing or malformed flow never falls back to another tab verifie
 
 test('session cabinet one-tap OAuth accepts only allowlisted app destinations, never guest secrets', async t => {
  const cases = [
-  ['cabinet','/en/app/portrait'],['my-practice','/en/app/practice'],['my-tests','/en/app/tests'],
+  ['cabinet','/en/app/portrait'],['my-practice','/en/practice'],['practice-preview','/en/practice'],['my-tests','/en/app/tests'],
   ['my-courses','/en/app/course'],['reports','/en/app/portrait#personal-reports']
  ]
  for (const [continuation,path] of cases) {

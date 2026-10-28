@@ -6,7 +6,7 @@ import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/li
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings, type StarSummary } from "@/components/catalog-star-rating";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
-import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { getPublicServiceDetailHref, getPublicServiceReviewHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -554,6 +554,7 @@ function ServiceCard({
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
+  const reviewHref = getPublicServiceReviewHref(locale, service.practitionerSlug, service.slug);
   const requestHref = service.slug === "remote-energy-support"
     ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
     : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
@@ -623,8 +624,8 @@ function ServiceCard({
       <div className={styles.actions}>
         <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
         {!profileView && (
-          <Link className={styles.secondary} href={detailsHref + "#reviews"}>
-            {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+          <Link className={styles.secondary} href={reviewHref}>
+            {locale === "ru" ? "Оставить отзыв" : locale === "es" ? "Dejar opinión" : "Leave a review"} ★
           </Link>
         )}
         <TrackedServiceLink serviceId={service.id} event="order"
@@ -632,6 +633,12 @@ function ServiceCard({
           aria-label={requestText + ": " + service.copy.title}>
           {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
+        {profileView && (
+          <Link className={styles.profileReviewLink} href={reviewHref}>
+            ★ {locale === "ru" ? "Оставить отзыв мастеру" : locale === "es" ?
+              "Dejar una opinión al profesional" : "Leave a review for this practitioner"} →
+          </Link>
+        )}
       </div>
     </article>
   );
@@ -780,6 +787,14 @@ export function MarketplaceMasterFinder({
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
               </div>
               <p className={styles.description}>{profile.shortBio || ""}</p>
+              <Link className={styles.masterRating} href={"/" + locale + "/masters/" + master.slug + "#practitioner-reviews"}>
+                {master.reviewSummary?.count
+                  ? <><strong>★ {master.reviewSummary.average.toFixed(1)} / 5</strong>
+                      <span>· {master.reviewSummary.count} {locale === "ru" ? "отзывов" : locale === "es" ? "opiniones" : "reviews"}</span></>
+                  : <span>☆ {master.reviewSummary
+                    ? locale === "ru" ? "Пока без отзывов" : locale === "es" ? "Sin opiniones todavía" : "No reviews yet"
+                    : locale === "ru" ? "Отзывы мастера" : locale === "es" ? "Opiniones del profesional" : "Practitioner reviews"}</span>}
+              </Link>
               <div className={styles.meta}>
                 {(profile.languages || []).length ? <span>{profile.languages?.map((lang) => lang.toUpperCase()).join(" · ")}</span> : null}
                 {certified ? <span>{t.credentials}</span> : null}

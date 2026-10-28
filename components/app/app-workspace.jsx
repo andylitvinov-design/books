@@ -88,6 +88,7 @@ const BusinessCoaching = dynamic(() => import('@/components/app/business-coachin
 const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
 const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
+const MyPersonalVideos = dynamic(() => import('@/components/app/my-personal-videos'), {ssr:false})
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
 
@@ -561,13 +562,13 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
-    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
+    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.
   const mobileNav = [
-    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: root + '/practice', icon: Users },
+    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
     { id: 'portfolio', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/portfolio', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
@@ -589,7 +590,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
-        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={root + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={'/' + locale + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
@@ -604,6 +605,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
                 <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
                 <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
+                <Link href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</Link>
                 <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
                 <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
               </details>
@@ -659,6 +661,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                  template={recordId==='egyptian'?'hh-egyptian-goal-planning-v1':'hh-greek-goal-planning-v1'} />
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} accountId={data.account.id} key={data.account.id} />}
+          {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}

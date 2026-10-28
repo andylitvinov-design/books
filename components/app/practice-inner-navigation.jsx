@@ -1,0 +1,77 @@
+'use client'
+import Link from 'next/link'
+import {Bell,BookOpen,ChevronLeft,ClipboardList,Home,Leaf,UserRound} from 'lucide-react'
+
+// One visual navigation shared by the EXISTING protected practice panels.
+// All actions reuse the current handlers; this creates no separate client/CRM store.
+const WORDS={
+ en:{
+  home:'Home',practice:'Practice',requests:'Requests',materials:'Materials',profile:'Profile',
+  clientsTitle:'Client records',clientsIntro:'Private requests, history and next actions',
+  requestsTitle:'Requests',requestsIntro:'Enquiries and follow-ups in one place',
+  materialsTitle:'My materials',materialsIntro:'Lessons, recordings and files for your clients',
+  profileTitle:'Practitioner profile',profileIntro:'Manage the details your clients can see',
+  analyticsTitle:'Practice insights',analyticsIntro:'Your real activity and service statistics',
+  back:'Back to practice',alerts:'Open requests',
+ },
+ ru:{
+  home:'Главная',practice:'Практика',requests:'Заявки',materials:'Материалы',profile:'Профиль',
+  clientsTitle:'Карточки клиентов',clientsIntro:'История, обращения и следующие шаги',
+  requestsTitle:'Заявки',requestsIntro:'Обращения, заказы и ответы в одном месте',
+  materialsTitle:'Мои материалы',materialsIntro:'Уроки, записи и файлы для ваших клиентов',
+  profileTitle:'Профиль мастера',profileIntro:'Информация о вашей практике и услугах',
+  analyticsTitle:'Аналитика практики',analyticsIntro:'Настоящие показатели работы и услуг',
+  back:'К практике',alerts:'Открыть заявки',
+ },
+ es:{
+  home:'Inicio',practice:'Práctica',requests:'Solicitudes',materials:'Materiales',profile:'Perfil',
+  clientsTitle:'Fichas de clientes',clientsIntro:'Solicitudes privadas, historial y siguientes pasos',
+  requestsTitle:'Solicitudes',requestsIntro:'Solicitudes, pedidos y respuestas en un solo lugar',
+  materialsTitle:'Mis materiales',materialsIntro:'Lecciones, grabaciones y archivos para tus clientes',
+  profileTitle:'Perfil profesional',profileIntro:'La información visible de tu práctica',
+  analyticsTitle:'Análisis de práctica',analyticsIntro:'Actividad y estadísticas reales de los servicios',
+  back:'Volver a la práctica',alerts:'Ver solicitudes',
+ },
+}
+const PANELS=new Set(['requests','clients','materials','profile','analytics'])
+const TAB_ITEMS=[
+ {key:'home',Icon:Home},{key:'practice',Icon:Leaf},{key:'requests',Icon:ClipboardList},
+ {key:'materials',Icon:BookOpen},{key:'profile',Icon:UserRound},
+]
+export function PracticeInnerHeader({locale='en',panel,requests=[],onBack,onNavigate}){
+ if(!PANELS.has(panel))return null
+ const t=WORDS[locale]||WORDS.en
+ const titles={requests:t.requestsTitle,clients:t.clientsTitle,materials:t.materialsTitle,
+  profile:t.profileTitle,analytics:t.analyticsTitle}
+ const intros={requests:t.requestsIntro,clients:t.clientsIntro,materials:t.materialsIntro,
+  profile:t.profileIntro,analytics:t.analyticsIntro}
+ const count=requests.filter(item=>item?.status==='requested').length
+ return <header className="hh-practice-inner-header" data-practice-inner-header data-panel={panel}>
+  <button type="button" className="hh-practice-inner-back" onClick={onBack} aria-label={t.back}>
+   <ChevronLeft size={22} aria-hidden="true"/>
+  </button>
+  <div className="hh-practice-inner-heading"><h2>{titles[panel]}</h2><p>{intros[panel]}</p></div>
+  <button type="button" className="hh-practice-inner-alert" onClick={()=>onNavigate('requests')} aria-label={t.alerts}>
+   <Bell size={20} aria-hidden="true"/>
+   {count>0&&<span className="hh-practice-inner-unread" aria-hidden="true"/>}
+  </button>
+ </header>
+}
+export function PracticeInnerBottomNavigation({locale='en',panel,onBack,onNavigate,onOpenMaterials}){
+ if(!PANELS.has(panel))return null
+ const t=WORDS[locale]||WORDS.en
+ return <nav className="hh-practice-inner-dock" data-practice-inner-dock
+  aria-label={locale==='ru'?'Навигация кабинета':locale==='es'?'Navegación de práctica':'Practice navigation'}>
+  {TAB_ITEMS.map(({key,Icon})=>{
+   const selected=key==='practice'?(panel==='clients'||panel==='analytics'):
+     key==='requests'?panel==='requests':key==='materials'?panel==='materials':key==='profile'?panel==='profile':false
+   const child=<><Icon aria-hidden="true" size={22}/><span>{t[key]}</span></>
+   return key==='home'
+     ? <Link key={key} href={locale==='en'?'/':'/'+locale} prefetch={false}>{child}</Link>
+     : <button key={key} type="button" aria-current={selected?'page':undefined}
+         onClick={key==='practice'?onBack:key==='materials'?()=>onOpenMaterials('courses'):()=>onNavigate(key)}>
+         {child}
+       </button>
+  })}
+ </nav>
+}
