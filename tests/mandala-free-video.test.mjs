@@ -8,11 +8,11 @@ test("free video lives inside original mandala editor and reuses its private loc
   const parent = read("components/mandala-meditation-client.tsx");
   const video = read("components/mandala-free-video-studio.tsx");
   const png = read("lib/mandala/export-png.ts");
-  assert.match(parent, /<MandalaFreeVideoStudio locale=\{locale\} frameUrl=\{pngHref\}/);
+  assert.match(parent, /<MandalaFreeVideoStudio locale=\{locale\} frameUrl=\{pngHref\} photoUrl=\{imageUrl\}/);
   assert.match(parent, /renderMandalaPng/);
   assert.match(png, /options\.photoUrl \? await decode\(options\.photoUrl\)/);
   assert.match(video, /data-mandala-free-video/);
-  assert.match(video, /canvas\.captureStream\(15\)/);
+  assert.match(video, /canvas\.captureStream\(framesPerSecond\)/);
   assert.match(video, /new MediaRecorder\(stream/);
   assert.match(video, /recorder\.start\(500\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
@@ -25,7 +25,7 @@ test("free video lives inside original mandala editor and reuses its private loc
 test("video recorder has 10/20/30 seconds, 1:1/9:16 and four local effects mirrored across EN/RU/ES", () => {
   const source = read("components/mandala-free-video-studio.tsx");
   assert.match(source, /const durations = \[10, 20, 30\] as const/);
-  assert.match(source, /type Aspect = "square" \| "portrait"/);
+  assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
   assert.match(source, /onClick=\{createVideo\}/);
@@ -66,7 +66,7 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
   assert.match(studio, /data-mandala-money-option/);
   assert.match(studio, /data-mandala-money-preview/);
   assert.match(studio, /setMoneyScene\(null\)/);
-  assert.match(studio, /if \(moneyScene\) paintMoneyScene\(ctx, moneyScene, time\)/);
+  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, time, aspect, title\)/);
   assert.match(studio, /window\.requestAnimationFrame\(draw\)/);
   assert.match(studio, /!document\.hidden/);
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
@@ -80,4 +80,43 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   }).diagnostics || [];
   assert.equal(diagnostic.filter(error => error.category === ts.DiagnosticCategory.Error).length, 0);
+});
+
+
+test("cinematic customer video renders real layered motion, portrait and 720/1080 plus 16:9", async () => {
+  const ts = await import("typescript");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const renderer=read("lib/mandala/cinematic-money-video.ts");
+  const parent=read("components/mandala-meditation-client.tsx");
+  const css=read("components/mandala-meditation.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio, /data-mandala-cinematic-canvas/);
+  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, time, aspect, title\)/);
+  assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
+  assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
+  assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
+  assert.match(studio, /source = moneyScene && photoUrl \? photoUrl : frameUrl/);
+  assert.match(studio, /CinematicSceneThumbnail/);
+  assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
+  assert.match(studio, /videoBitsPerSecond: quality === "fullhd" \? 5_000_000 : 3_000_000/);
+  assert.match(parent, /photoUrl=\{imageUrl\}/);
+  assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
+  assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
+  assert.match(renderer, /getPortraitLayer\(image\)/);
+  assert.match(renderer, /coinTexture\(\)/);
+  assert.match(renderer, /ctx\.drawImage\(src,-pw\/2,-ph\*\.55,pw,ph\)/);
+  assert.match(renderer, /ctx\.fillText\("\$", 70\.5, 72\)/);
+  assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
+  assert.match(css, /\.moneyFlowThumb/);
+  assert.match(css, /\.freeVideoPreview\{max-height:500px/);
+  assert.match(browser, /data-mandala-cinematic-canvas/);
+  assert.match(browser, /money-frame-motion/);
+  for (const file of ["components/mandala-free-video-studio.tsx","lib/mandala/cinematic-money-video.ts"]) {
+    const diagnostics=ts.transpileModule(read(file),{
+      fileName:file,reportDiagnostics:true,
+      compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX},
+    }).diagnostics||[];
+    assert.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,file);
+  }
+  assert.doesNotMatch(studio+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
 });
