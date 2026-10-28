@@ -24,6 +24,7 @@ for (const engine of [chromium, webkit]) {
         });
         const errors = [];
         const unexpectedWrites = [];
+        const fixtureCalls = [];
         page.on("pageerror", error => errors.push(error.message));
         page.on("request", request => {
           if (request.method() !== "GET" && request.method() !== "HEAD" &&
@@ -35,6 +36,8 @@ for (const engine of [chromium, webkit]) {
         await page.route("**/api/public/remote-energy-support-masters?**", async route => {
           const requestUrl = new URL(route.request().url());
           const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
+          fixtureCalls.push({ kind: isConsultation ? "consultation" : "masters",
+            locale: requestUrl.searchParams.get("locale") });
           const consultations = [
             { serviceId: "test-eur20", title: "Synthetic €20 consultation", practitionerName: "Fixture",
               description: "Published session test record", areaKey: "business_money",
@@ -138,13 +141,30 @@ for (const engine of [chromium, webkit]) {
           // Require the exact synthetic offers before asserting; never mask a missing offer.
           const verifyConsultations = async (expected, scenario) => {
             const sorted = [...expected].sort();
-            await page.waitForFunction(titles => {
-              const results = document.querySelector("#holistic-inline-order #holistic-inline-results");
-              if (!results || results.hidden) return false;
-              const actual = [...results.querySelectorAll("article h5")]
-                .map(node => (node.textContent || "").trim()).sort();
-              return actual.length === titles.length && actual.every((title, index) => title === titles[index]);
-            }, sorted, { timeout: 20000 });
+            try {
+              // WebKit can throttle requestAnimationFrame polling for an offscreen
+              // disclosure; timed polling still requires the exact result set.
+              await page.waitForFunction(titles => {
+                const results = document.querySelector("#holistic-inline-order #holistic-inline-results");
+                if (!results || results.hidden) return false;
+                const actual = [...results.querySelectorAll("article h5")]
+                  .map(node => (node.textContent || "").trim()).sort();
+                return actual.length === titles.length &&
+                  actual.every((title, index) => title === titles[index]);
+              }, sorted, { polling: 250, timeout: 20000 });
+            } catch (error) {
+              // Fixture-only diagnostics; never log actual practitioner/client data.
+              const state = await finder.locator("#holistic-inline-results").evaluate(node => ({
+                hidden: node.hidden,
+                titles: [...node.querySelectorAll("article h5")].map(el => (el.textContent || "").trim()),
+                status: (node.querySelector('[role="status"],[role="alert"]')?.textContent || "").slice(0, 180),
+                kind: document.querySelector("#holistic-inline-order")?.getAttribute("data-holistic-inline-order"),
+                selectedTopic: document.querySelector("#holistic-inline-order [data-support-theme][aria-pressed=true]")?.getAttribute("data-support-theme"),
+                selectedBudget: document.querySelector("#holistic-inline-order [data-support-budget][aria-pressed=true]")?.getAttribute("data-support-budget"),
+              })).catch(() => ({ unavailable: true }));
+              throw new Error(label + " " + scenario + " fixture mismatch: " +
+                JSON.stringify({ expected: sorted, state, routedFixtures: fixtureCalls, pageErrors: errors }), { cause: error });
+            }
             const actual = (await finder.locator("#holistic-inline-results article h5").allInnerTexts())
               .map(title => title.trim()).sort();
             assert.deepEqual(actual, sorted, label + " " + scenario);
