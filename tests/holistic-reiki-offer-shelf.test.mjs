@@ -115,7 +115,7 @@ test("Reiki support is a service marketplace with one concise picker and genuine
   assert.match(galleryCss,/min-height: 305px; height: auto; max-height: none/);
   assert.match(galleryCss,/min-height: 64px/);
   assert.match(galleryCss,/scroll-snap-type: x proximity/);
-  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 2/);
+  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{\s*order: 2/);
   assert.match(galleryCss,/@media\(max-width:640px\)/);
   assert.match(galleryCss,/@media\(max-width:350px\)/);
   assert.match(shelfCss,/grid-template-columns:116px minmax\(0,1fr\)/);
