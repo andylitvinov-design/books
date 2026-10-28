@@ -37,7 +37,6 @@ const copy = {
 export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   // Private My Practice supports EN/RU. Spanish marketing stays in Spanish.
-  const accountLocale = locale === "es" ? "en" : locale;
 
   return (
     <section className={styles.section} aria-labelledby="hh-home-master-invitation-title" data-home-master-invitation>
@@ -59,7 +58,7 @@ export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
         <Link className={styles.primary} href={"/" + locale + "/pro"} prefetch={false} data-home-master-action="explore-pro">
           {t.explore}<ArrowRight size={17} aria-hidden="true" />
         </Link>
-        <Link className={styles.secondary} href={"/" + accountLocale + "/app/practice?panel=services"} prefetch={false}
+        <Link className={styles.secondary} href={"/" + locale + "/practice"} prefetch={false}
           data-home-master-action="publish-service">
           {t.publish}<ArrowRight size={17} aria-hidden="true" />
         </Link>
