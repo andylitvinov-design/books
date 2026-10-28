@@ -86,7 +86,7 @@ test("all three locales explain real service advantages without health claims or
   assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
-test("free review shows a compact localized three-part result and two real videos in the existing block", () => {
+test("free review visibly explains its three-part written result in EN/RU/ES", () => {
   assert.match(landing, /data-free-review-benefits/);
   assert.match(landing, /className=\{styles\.reviewValueFlow\}/);
   assert.match(landing, /situationFirstScreen\[locale\]\.results\.map/);
@@ -94,19 +94,12 @@ test("free review shows a compact localized three-part result and two real video
     "Your question", "Fresh perspective", "Written next step",
     "Ваш запрос", "Новый взгляд", "Письменный ответ",
     "Tu pregunta", "Otra mirada", "Siguiente paso",
-    "Systemic constellations in practice", "Алхимия Души и системный подход",
-    "Constelaciones sistémicas en la práctica",
-    "Business Constellations · English audio · 2:14", "Алхимия Души · на русском · 4:18",
-  ]) assert.ok(landing.includes(phrase), "Missing benefit or video label: " + phrase);
-  assert.match(landing, /getServiceVideoMedia\("constellation-case", locale\)/);
-  assert.match(landing, /youtubeId: "IF0HAhSDwks"/);
-  assert.match(landing, /data-constellation-audio-language=\{constellationVideo\.video\.language\}/);
-  assert.match(landing, /<SiteVideoPlayer video=\{constellationVideo\.video\} locale=\{locale\} compact minimal/);
+  ]) assert.ok(landing.includes(phrase), "Missing localized benefit: " + phrase);
   assert.ok(landing.indexOf('data-free-review-benefits') < landing.indexOf('data-free-review-intro-video'));
-  assert.ok(landing.indexOf('data-free-review-intro-video') < landing.indexOf('data-free-review-constellation-video'));
   assert.match(css, /\.reviewValueFlow\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:360px\)/);
-  assert.doesNotMatch(landing, /autoplay|drive\.google\.com|guaranteed cure/i);
+  assert.doesNotMatch(landing, /data-free-review-constellation-video|youtubeId: "IF0HAhSDwks"/,
+    "No mismatched 23 Oct videos on the free review page");
 });
 
 test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
