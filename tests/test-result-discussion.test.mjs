@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import {
   TEST_DISCUSSION_INTENT_KEY,
   buildTestResultDiscussion, discussionOffers, discussionTopic,
@@ -61,6 +65,22 @@ test('published professional review goes first, and commercial routing is suppre
   assert.match(model.care, /медицинскому специалисту/)
 })
 
+test('real source-matched ASRS report with no top-level verified field is discussable without diagnostic claims', () => {
+  const def = getAssessmentDefinition('asrs-6', 'v1', 'en')
+  const answers = Object.fromEntries([0, 0, 0, 0, 0, 0].map((value, index) => [
+    'asrs6.' + String(index + 1).padStart(2, '0'), value,
+  ]))
+  const result = { ...scoreAssessment(def, answers, syntheticTraumaContext(def)), id: verifiedResult.id }
+  const source = buildAssessmentResultReport(result, 'en')
+  assert.equal(source.verified, undefined)
+  assert.equal(source.sections[0].bandBasis, 'screening')
+  const model = buildTestResultDiscussion(result, source, 'en')
+  assert.equal(model.verified, true)
+  assert.equal(model.scales.length, 1)
+  assert.match(model.scales[0].summary, /screen|count|attention/i)
+  assert.doesNotMatch(JSON.stringify(model), /probability of ADHD|a diagnosis of ADHD/i)
+})
+
 test('neutral personality traits are not assigned an arbitrary high/low health norm', () => {
   const model = buildTestResultDiscussion(verifiedResult, report([
     section('traits.openness', { domain: 'personality', construct: 'Openness', value: 8, presentationDirection: 'neutral' }),
@@ -110,6 +130,8 @@ test('the same saved result opens from completion, My Tests and guest consent; n
   const ui = readFileSync(new URL('../components/app/test-result-discussion.jsx', import.meta.url), 'utf8')
   assert.match(workspace, /onDiscuss=\{!courseMode \? \(\) => finish\('discuss'\)/)
   assert.match(workspace, /<TestResultDiscussion key=\{result.id\}/)
+  assert.match(workspace, /discussionLoadedId === result.id/)
+  assert.match(workspace, /setDiscussionLoadedId\(r\?\.id === id \? id : null\)/)
   assert.match(workspace, /savedGuestDiscussionTarget/)
   assert.match(workspace, /sessionStorage\.getItem\(TEST_DISCUSSION_INTENT_KEY\)/)
   assert.match(battery, /data-discuss-saved-test=\{row.result.id\}/)
