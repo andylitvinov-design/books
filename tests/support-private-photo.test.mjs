@@ -1,0 +1,66 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+const api=read('app/api/app/support-photo/route.js')
+const helper=read('lib/mandala/prepare-browser-photo.ts')
+const support=read('components/holistic-support-mobile.tsx')
+const styles=read('components/holistic-support-mobile.module.css')
+const cabinet=read('components/app/support-photo-cabinet.jsx')
+const videos=read('components/app/my-personal-videos.jsx')
+const mandala=read('components/mandala-meditation-client.tsx')
+
+test('support photo is never uploaded without an explicit Save click',()=>{
+  assert.match(support,/prepareBrowserPhoto\(file\)/)
+  assert.match(support,/const savePhoto = async \(\) =>/)
+  assert.match(support,/onClick=\{\(\) => \{ void savePhoto\(\); \}\}/)
+  assert.match(support,/method:"POST", credentials:"same-origin"/)
+  assert.match(support,/photoBlob && <button/)
+  assert.match(support,/data-support-photo-saved/)
+  assert.match(support,/photoSignIn/)
+  assert.match(support,/\/app\/videos/)
+  assert.match(support,/privateInfo: "Шкалы и история/)
+})
+
+test('private photo API is session-bound and does not expose public media URLs',()=>{
+  assert.match(api,/requireSameOrigin/)
+  assert.match(api,/requestOrigin/)
+  assert.match(api,/auth\.verified\(\)/)
+  assert.match(api,/transaction\(config,actor/)
+  assert.match(api,/support-photo\/.*actor\.id/)
+  assert.match(api,/const BUCKET='hh-client-private-media'/)
+  assert.match(api,/checkPrivateMediaStorage/)
+  assert.match(api,/createSignedUrl\(key,120\)/)
+  assert.match(api,/PRIVATE_HEADERS/)
+  assert.match(api,/sharp\(Buffer\.from/)
+  assert.match(api,/upsert:true/)
+  assert.match(api,/export async function GET/)
+  assert.match(api,/export async function POST/)
+  assert.match(api,/export async function DELETE/)
+  assert.doesNotMatch(api,/\/storage\/v1\/object\/public\//)
+})
+
+test('iPhone Photos and Files use full tap-target and decoded metadata-stripped JPEG',()=>{
+  assert.match(helper,/image\/heic/)
+  assert.match(helper,/image\/heif/)
+  assert.match(helper,/image\/\*/)
+  assert.match(helper,/image\.decode\(\)/)
+  assert.match(helper,/canvas\.toBlob\(resolve, "image\/jpeg"/)
+  assert.match(helper,/URL\.revokeObjectURL/)
+  assert.match(support,/accept=\{SUPPORT_PHOTO_ACCEPT\}/)
+  assert.match(styles,/\.fileInput \{ position: absolute; inset: 0; width: 100%; height: 100%/)
+  assert.match(styles,/\.photo:has\(\.photoReference\) \.camera \{ display: grid; \}/)
+  assert.match(mandala,/await prepareBrowserPhoto\(image\)/)
+  assert.match(mandala,/type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/)
+})
+
+test('cabinet lists, replaces, and deletes only voluntarily saved private photo',()=>{
+  assert.match(videos,/SupportPhotoCabinet locale=\{locale\}/)
+  assert.match(cabinet,/\/api\/app\/support-photo/)
+  assert.match(cabinet,/prepareBrowserPhoto/)
+  assert.match(cabinet,/method:'POST'/)
+  assert.match(cabinet,/method:'DELETE'/)
+  assert.match(cabinet,/result\.removed!==true/)
+  assert.match(cabinet,/photo.*never shared/)
+})
