@@ -77,6 +77,12 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
+          if(width===320) {
+            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
+            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
+              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
+            await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
+          }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<295,
             label+" top dashboard must be compact enough to expose practice early");
           assert.ok(geometry.readableTools.every(t =>
