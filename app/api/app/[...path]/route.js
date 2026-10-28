@@ -364,7 +364,9 @@ async function handle(request, { params }) {
           return result.rows[0]?.completed === true
         })
       }
-      if (!completed && config.guestEnabled) {
+      // Never inherit a different browser guest's result after account switch.
+      // A verified account only receives its OWN server-scoped completion.
+      if (!actor && config.guestEnabled) {
         const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
         if (credential) {
           try {
