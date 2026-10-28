@@ -78,7 +78,7 @@ if(!process.execArgv.includes('--conditions=react-server')) {
     for(const stars of [0,6,2.5,'5',null,undefined])assert.throws(()=>validateStarRequest({...base,stars}),/INVALID_RATING/)
     for(const kind of ['private','health','client','unknown',''])assert.throws(()=>validateStarRequest({...base,kind}),/INVALID_RATING_TARGET/)
     for(const key of ['https://youtube.com/watch?v=Y4K4piEwwA8','../private','a'.repeat(121),''])assert.throws(()=>validateStarRequest({...base,key}),/INVALID_RATING_TARGET/)
-    assert.throws(()=>validateStarRequest({...base,accountId:'forged'}),/INVALID_KEYS|UNKNOWN_FIELDS|INVALID_REVIEW|INVALID_RATING/i)
+    assert.throws(()=>validateStarRequest({...base,accountId:'forged'}),/UNKNOWN_FIELD/i)
     assert.throws(()=>validateRatingList('video',Array(41).fill('12345678901')),/INVALID_RATING_TARGET/)
   })
 }
