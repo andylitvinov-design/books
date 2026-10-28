@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   QUEST_STEPS, GUEST_VIDEO_LIMIT, emptyQuest, normalizeQuest,
-  nextQuestLaunch, markQuestStep, questCompletedCount, remainingGuestLaunches,
+  nextQuestLaunch, markQuestStep, answerQuestVideoQuestion, questCompletedCount, remainingGuestLaunches,
 } from "../lib/holistic-support/guest-quest.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -45,7 +45,7 @@ test("Persisted payload is allowlisted; corrupt or injected private data cannot 
     name: "secret", note: "private", scores: { money: 2 }, videoIds: ["secret-video"],
   };
   const value = normalizeQuest(source);
-  assert.deepEqual(Object.keys(value), ["starts", "completed"]);
+  assert.deepEqual(Object.keys(value), ["starts", "videoQuestionAnswered", "completed"]);
   assert.deepEqual(Object.keys(value.completed), QUEST_STEPS);
   assert.equal(JSON.stringify(value).includes("secret"), false);
   assert.equal(value.completed.firstVideo, true);
@@ -54,6 +54,13 @@ test("Persisted payload is allowlisted; corrupt or injected private data cannot 
   assert.equal(normalizeQuest({ starts: -1 }).starts, 0);
   assert.equal(normalizeQuest(null).starts, 0);
   assert.equal(markQuestStep(value, "firstVideo").starts, 3);
+  assert.equal(answerQuestVideoQuestion(emptyQuest()).videoQuestionAnswered, false);
+  const afterStart = nextQuestLaunch(emptyQuest());
+  const afterReflection = answerQuestVideoQuestion(afterStart);
+  assert.equal(afterReflection.videoQuestionAnswered, true);
+  assert.equal(afterReflection.completed.firstVideo, true);
+  assert.equal(afterReflection.completed.test, false);
+  assert.equal(JSON.stringify(afterReflection).includes("yes"), false);
 });
 
 test("The existing original player, free tests and user-selected courses are reused", () => {
@@ -72,7 +79,8 @@ test("The existing original player, free tests and user-selected courses are reu
   assert.match(panel, /api\/app\/auth\/status/);
   assert.match(panel, /data-support-quest-step=/);
   assert.match(panel, /data-support-quest-budget/);
-  assert.match(panel, /data-support-test-self-report/);
+  assert.match(panel, /support-journey\/test-status/);
+  assert.doesNotMatch(panel, /data-support-test-self-report/);
   assert.match(panel, /data-support-quest-premium/);
   assert.match(css, /@media \(max-width: 430px\)/);
   assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon|fetch\(/);
