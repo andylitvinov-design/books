@@ -40,7 +40,7 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
   const middleware = read("middleware.ts");
   const css = read("components/mandala-meditation.module.css");
   assert.match(middleware, /const publicMandalaLocalImages = \/\^\\\/\(en\|ru\|es\)\\\/holistic-support\\\/mandala/);
-  assert.match(middleware, /practitionerCourseEditor\|\|publicMandalaLocalImages\) \? ' blob:'/);
+  assert.match(middleware, /publicMandalaLocalImages\|\|ownerMessengerImages\|\|liveAudioPage\) \? ' blob:'/);
   assert.match(css, /\.focus \.freeVideoPanel\{display:none\}/);
   assert.match(css, /@media\(max-width:350px\)\{\.freeVideoSettings\{grid-template-columns:1fr\}/);
   assert.match(css, /\.freeVideoDownload/);
@@ -95,7 +95,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl/);
+  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
   assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);

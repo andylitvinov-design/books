@@ -1,9 +1,10 @@
 /**
  * Public/guest mandala E2E: real Chromium and WebKit at iPhone widths.
  * No login, account writes, provider render, billing or uploaded personal data.
- * Uses a synthetic 1px file and only tests YouTube iframe mounting, not sound.
+ * Uses a synthetic 1px photo and verifies the encoded locally generated sound.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
@@ -62,7 +63,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await supportTop.locator('input[type="range"]').count(),4);
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
-        assert.equal(await hero.locator('nav a').count(),4);
+        assert.equal(await hero.locator('nav a, nav button').count(),4);
+        assert.equal(await hero.getAttribute("data-hero-promo"),"true",
+          "golden illustrative hero is visible until actual preview starts");
+        assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
+        assert.equal(await page.locator("#video-hero-themes").isVisible(),false);
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         await page.locator("[data-video-recommend-focus]").click();
@@ -73,13 +78,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const categoryControls=page.locator("[data-video-theme]");
         assert.equal(await categoryControls.count(),4,"exactly four actual themes");
         for(const id of ["money","energy","relationships","goals"]){
+          await page.locator("[data-video-theme-toggle]").click();
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"true");
           const select=page.locator('[data-video-theme="'+id+'"]');
           await select.click();
           await page.waitForFunction(key=>
             document.querySelector('[data-video-theme="'+key+'"]')?.getAttribute("aria-pressed")==="true",
             id,{timeout:10000});
           assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
         }
+        await page.locator("[data-video-theme-toggle]").click();
         await page.locator('[data-video-theme="money"]').click();
         await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');
@@ -205,9 +214,32 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           assert.equal(videoDownload.suggestedFilename(), filename);
           const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
-          assert.ok(videoBytes.length > 10000, "generated silent video has a real encoded payload");
+          assert.ok(videoBytes.length > 10000, "generated video has a real encoded payload");
           if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
           else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
+          // A selected ambient track must survive the actual MediaRecorder
+          // and contain audible PCM energy, not just a silent MP4/WebM header.
+          const info = spawnSync("ffprobe", [
+            "-v", "error", "-show_entries", "stream=codec_type,codec_name", "-of", "json", "-",
+          ], { input: videoBytes, encoding: "utf8" });
+          assert.equal(info.status, 0, "ffprobe reads the real downloadable video: "+info.stderr);
+          const streams = JSON.parse(info.stdout).streams || [];
+          assert.ok(streams.some(stream => stream.codec_type === "video"), "recording has a video track");
+          assert.ok(streams.some(stream => stream.codec_type === "audio"), "recording has a real audio track");
+
+          const decoded = spawnSync("ffmpeg", [
+            "-hide_banner", "-loglevel", "error", "-i", "pipe:0", "-map", "0:a:0",
+            "-t", "2", "-ar", "8000", "-ac", "1", "-f", "s16le", "pipe:1",
+          ], { input: videoBytes, maxBuffer: 1024 * 1024 });
+          assert.equal(decoded.status, 0, "recorded audio decodes to PCM: "+decoded.stderr);
+          const samples = Math.floor(decoded.stdout.length / 2);
+          assert.ok(samples > 4000, "at least half a second of encoded audio");
+          let energy = 0;
+          for (let sample = 0; sample < samples; sample++) {
+            const value = decoded.stdout.readInt16LE(sample * 2) / 32768;
+            energy += value * value;
+          }
+          assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
         }
 

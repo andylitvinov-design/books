@@ -32,6 +32,81 @@ async function assertSupportTestsLinks(root, locale, label) {
   }
   assert.equal(await root.locator('iframe').count(), 0, label + " Tests selection does not start media");
 }
+async function assertSupportCourseProfiles(root, locale, label) {
+  const panel = root.locator('[data-support-course-profiles]');
+  await panel.waitFor({ state: "visible" });
+  const sectors = ["energy", "money", "love", "meaning"];
+  const profiles = panel.locator('[data-support-profile]');
+  assert.deepEqual(await profiles.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-support-profile"))),
+    sectors, label + " four distinct health, money, relationships and meaning profiles");
+  for (const sector of sectors) {
+    const button = panel.locator('[data-support-profile="' + sector + '"]');
+    assert.equal(await button.getAttribute("type"), "button", label + " profile selection is not a submission");
+    await button.click();
+    assert.equal(await button.getAttribute("aria-pressed"), "true", label + " selected " + sector);
+    assert.equal(await panel.locator('[data-support-profile][aria-pressed="true"]').count(), 1,
+      label + " exactly one selected profile");
+    assert.equal(await panel.locator('[data-support-profile-hero]').getAttribute("data-sector"), sector,
+      label + " profile selection changes the actual hero");
+    const box = await button.boundingBox();
+    const viewport = await root.evaluate(() => document.documentElement.clientWidth);
+    assert.ok(box && box.width >= 44 && box.height >= 44 && box.x >= -2 && box.x + box.width <= viewport + 2,
+      label + " all four profile controls visible without horizontal scrolling");
+  }
+  for (const action of ["test", "fill", "recommend"]) {
+    const button = panel.locator('[data-support-profile-' + action + ']');
+    assert.equal(await button.count(), 1, label + " unique real profile " + action + " action");
+    assert.equal(await button.getAttribute("type"), "button", label + " profile action never submits an enrolment");
+  }
+  // Energy is deliberately unsaved in this journey (only Money and Love were
+  // accepted above). Opening or cancelling its editor must not fabricate a report.
+  await panel.locator('[data-support-profile="energy"]').click();
+  for (const action of ["fill", "recommend"]) {
+    await panel.locator('[data-support-profile-' + action + ']').click();
+    const filter = root.locator('[data-support-goal-filter]');
+    await filter.waitFor({ state: "visible" });
+    assert.equal(await filter.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(), 1,
+      label + " " + action + " opens the selected profile editor");
+    assert.equal(await filter.locator('[data-goal-accepted="energy"]').count(), 0,
+      label + " opening a profile does not accept or save answers");
+    assert.equal(await root.locator('iframe').count(), 0, label + " profile editing does not autoplay");
+    await filter.locator('header button').click();
+    await panel.waitFor({ state: "visible" });
+  }
+  await panel.locator('[data-support-profile-test]').click();
+  await root.locator('[data-support-tests-panel]').waitFor({ state: "visible" });
+  assert.deepEqual(await root.locator('[data-support-tests-panel] a').evaluateAll(nodes => nodes.map(node => node.getAttribute("href"))),
+    ["/" + locale + "/client/tests", "/" + locale + "/personality-profiles", "/" + locale + "/tests"],
+    label + " profile Test action retains the same three locale-only handoffs");
+  await root.locator('[data-support-tool="pump"]').click();
+  await panel.waitFor({ state: "visible" });
+  assert.deepEqual(await panel.locator('[data-support-courses-panel] nav a').evaluateAll(nodes => nodes.map(node => node.getAttribute("href"))),
+    ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover"],
+    label + " original Academy destinations without profile data or query transfer");
+  const originals = panel.locator('[data-support-mystery-courses]');
+  if (locale === "ru") {
+    assert.equal(await originals.count(), 1, label + " original Russian curricula remain expandable");
+    assert.equal(await originals.getAttribute("open"), null, label + " originals initially collapsed");
+    await originals.locator('summary').click();
+    assert.equal(await originals.getAttribute("open"), "", label + " originals expand on explicit click");
+    const links = originals.locator('a');
+    assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => node.getAttribute("href"))), [
+      "/ru/academy/mysteries/maya-aztec/feathered-serpent",
+      "/ru/academy/mysteries/egypt/high-wisdom",
+      "/ru/academy/mysteries/greece-rome/beauty-and-power",
+    ], label + " exact existing Maya, Egyptian and Greek curricula, not duplicate players");
+    assert.deepEqual(await originals.locator('a strong').allTextContents(), ["Майя", "Египет", "Греция"],
+      label + " original course identities");
+    assert.deepEqual(await originals.locator('a small').allTextContents(), ["6 видео", "7 видео", "12 видео"],
+      label + " original source-backed media counts");
+    for (const link of await links.all()) await link.waitFor({ state: "visible" });
+  } else {
+    assert.equal(await originals.count(), 0, label + " Russian-only originals not marketed to EN/ES");
+  }
+  assert.equal(await root.locator('iframe').count(), 0, label + " profile and course links never autoplay");
+  assert.ok(await root.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 3,
+    label + " profile screen and expanded original links do not overflow horizontally");
+}
 const recordSupportDashboardFailure = createSupportDashboardRecorder();
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -512,52 +587,10 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
-            label+" Academy course routes still work");
-          if (locale === "ru") {
-            const picker = root.locator('[data-support-mystery-courses]');
-            assert.equal(await picker.locator('[data-support-mystery-course]').count(),3,
-              label+" Maya, Egyptian and Greek curricula always visible in Courses mode");
-            const pickerGeometry = await picker.evaluate(node => ({
-              pageWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
-              cards:[...node.querySelectorAll('[data-support-mystery-course]')].map(item => {
-                const box=item.getBoundingClientRect();
-                return {left:box.left,right:box.right,width:box.width};
-              }),
-            }));
-            assert.ok(pickerGeometry.scrollWidth <= pickerGeometry.pageWidth + 3,
-              label+" courses picker does not overflow iPhone: "+JSON.stringify(pickerGeometry));
-            assert.ok(pickerGeometry.cards.every(card => card.width >= 78 &&
-              card.left >= -2 && card.right <= pickerGeometry.pageWidth + 2),
-              label+" all three mystery choices visible without horizontal scrolling");
-
-            const dropdown = root.locator('[data-support-filter="program"] select');
-            for (const programme of ["maya","egypt","greek"]) {
-              await dropdown.selectOption(programme);
-              assert.equal(await picker.locator('[data-support-mystery-course="'+programme+'"][aria-pressed="true"]').count(),1,
-                label+" selecting "+programme+" in the native iPhone dropdown matches the course card");
-              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
-                label+" original course never autoplays");
-              assert.equal(await root.locator('[data-support-video]').count(),4,
-                label+" four original course lesson previews");
-              const lessonId = await root.locator('[data-support-video]').first().getAttribute("data-support-video");
-              assert.match(lessonId ?? "",/^[a-zA-Z0-9_-]{11}$/,label+" original YouTube chapter");
-              const href=await root.locator('[data-support-active-course-link]').getAttribute("href");
-              assert.ok(href?.startsWith("/ru/academy/mysteries/"), label+" course links to existing native Academy source");
-            }
-            const links=await root.locator('[data-support-courses-panel] a').evaluateAll(entries =>
-              entries.map(entry=>entry.getAttribute("href")||""));
-            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-demeter"),label+" Demeter originals linked");
-            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-dionysus"),label+" Dionysus originals linked");
-            await picker.locator('[data-support-mystery-course="maya"]').click();
-            assert.equal(await dropdown.inputValue(),"maya",label+" quick card and programme select share state");
-            if (width === 390) await page.screenshot({
-              path:output+"/"+browserType.name()+"-ru-mystery-courses-390.png",fullPage:true,
-            });
-          } else {
-            assert.equal(await root.locator('[data-support-mystery-courses]').count(),0,
-              label+" Russian-only original voice lessons not marketed to EN/ES");
-          }
+          await assertSupportCourseProfiles(root, locale, label);
+          if (width === 390) await page.screenshot({
+            path:output+"/"+browserType.name()+"-"+locale+"-course-profiles-390.png",fullPage:true,
+          });
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
@@ -580,10 +613,16 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
           assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
             "true",label+" only published Tantra Reiki selected initially");
+          const marketplace=healing.locator('[data-support-reiki-marketplace]');
+          assert.equal(await marketplace.count(),1,label+" one Reiki sales marketplace in the new mobile shell");
+          assert.equal(await marketplace.locator('[data-support-reiki-quick-kind]').count(),3,
+            label+" session, initiation and course share one visible format switch");
+          const findButton=marketplace.locator('[data-support-reiki-find]');
+          assert.equal(await findButton.count(),1,label+" original detailed service picker stays discoverable");
           const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
-          assert.ok(Math.abs(masterHeight-geometry.hero[0].height)<=10,
-            label+" Reiki hero matches compact meditation hero");
-          // User's filter belongs INSIDE the original large photo, not in a second hero.
+          assert.ok(masterHeight>=330 && masterHeight<=460,
+            label+" Reiki uses a readable scenic sales card, not a clipped 288px filter card: "+masterHeight);
+          // Advanced options remain available with the original published-offer filters.
           const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
           assert.equal(await tab("main").count(),1,label+" central Main tab");
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");

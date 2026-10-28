@@ -13,7 +13,7 @@ import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclos
 import { assertAlchemyPanelGeometry, collectAlchemyReviewGeometry, assertAlchemyReviewFeed } from './helpers/alchemy-panel-contract.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
-import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
+import { assertCabinetPortrait, openCabinetMyTests, openCabinetProfile, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { verifyHypnotherapyRequest } from './helpers/hypnotherapy-request-verifier.mjs'
 import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
@@ -292,16 +292,11 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
 // PR784 moved measured scales and profile tools into Insights, not out of the journey.
 async function openInsightsProfileTools(target=page,locale='en'){
  const path='/'+locale+'/app/portfolio'
- const profilePath='/'+locale+'/app/portrait'
  // The removed Reports bottom tab is now the four-area My Profile.
  // Navigate via the existing private profile's measured-results link,
  // preserving the old /portfolio route without reviving a duplicate nav item.
  if(!target.url().startsWith(origin+path)){
-  const profile=target.locator('nav a[href="'+profilePath+'"]:visible').first()
-  await expect(profile).toHaveText(locale==='ru'?'Мой профиль':'My Profile')
-  await expect(profile).toHaveAttribute('href',profilePath)
-  await profile.click()
-  await expect(target).toHaveURL(origin+profilePath)
+  await openCabinetProfile(target,expect,{origin,locale})
   const area=target.locator('.hh-profile-domains[data-profile-mode="account"] details.hh-domain-more')
   await expect(area).toHaveAttribute('open','')
   const history=target.locator('.hh-profile-domains[data-profile-mode="account"] a[href="'+path+'?tab=dynamics"]')

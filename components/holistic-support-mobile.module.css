@@ -854,3 +854,5 @@
   .bottomNav > :is(a,button) { font-size: 10px; line-height: 1.12; min-height: 50px; padding-inline: 1px; }
   .bottomNav > :is(a,button) svg { width: 21px; height: 21px; }
 }
+
+.mandalaAppHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:53px;padding:6px 13px;background:#fffdf8;border-bottom:1px solid #e5e6db;color:#184739;font:800 17px/1.2 Arial,Helvetica,sans-serif}.mandalaAppHeader a,.mandalaAppHeader button{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #d9e6db;border-radius:50%;background:#f6faf3;color:#175d48;text-decoration:none}

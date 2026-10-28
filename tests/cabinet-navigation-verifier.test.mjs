@@ -18,17 +18,23 @@ for (const locale of ['en', 'ru']) {
       assert.equal(selector, 'details.hh-domain-more')
       return area
     } }
-    const link = { name: 'link', first() { return this }, async click() {
+    let menuOpen = false
+    const summary = { name: 'account-summary', async click() { menuOpen = true; events.push('open-account') } }
+    const menu = { name: 'account-menu', async getAttribute(name) { assert.equal(name, 'open'); return menuOpen ? '' : null }, locator(selector) {
+      if (selector === ':scope > summary') return summary
+      assert.equal(selector, ':scope > div > a[href="' + path + '"]'); return link
+    } }
+    const link = { name: 'link', async click() {
       events.push('click'); page.url = origin + path
     } }
     const page = { name: 'page', url: origin + '/' + locale + '/app/portrait', locator(selector) {
       if (selector === '[data-profile-domains][data-profile-interactive="true"]') return profile
-      if (selector === 'nav a[href="' + path + '"]:visible') return link
+      if (selector === 'details.hh-account-menu:visible') return menu
       assert.equal(selector, '[data-my-tests-dashboard]')
       return { name: 'dashboard' }
     } }
     const expect = value => ({
-      async toHaveCount(n) { assert.equal(value, tabs); assert.equal(n, 4); events.push('four-tabs') },
+      async toHaveCount(n) { if (value === tabs) { assert.equal(n, 4); events.push('four-tabs') } else { assert.ok([menu, summary, link].includes(value)); assert.equal(n, 1); events.push('one:' + value.name) } },
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
       async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
@@ -39,7 +45,8 @@ for (const locale of ['en', 'ru']) {
     await openCabinetMyTests(page, expect, { origin, locale })
     assert.deepEqual(events, [
       'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:profile-areas', 'open', 'four-tabs',
-      'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
+      'one:account-menu', 'visible:account-menu', 'one:account-summary', 'visible:account-summary', 'open-account', 'open',
+      'one:link', 'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
     ])
   })
 }

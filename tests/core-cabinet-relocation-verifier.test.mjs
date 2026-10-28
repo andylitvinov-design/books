@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {readFileSync} from 'node:fs'
 import {COPY} from '../components/app/copy.js'
+import {openCabinetProfile} from '../scripts/helpers/cabinet-navigation-verifier.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const source=read('scripts/verify-app-r1.mjs')
 test('core follows My Profile measured-history navigation and opens both real scale disclosures in EN/RU',async()=>{
@@ -14,14 +15,18 @@ test('core follows My Profile measured-history navigation and opens both real sc
   const events=[]
   const origin='http://127.0.0.1:3100'
   let currentUrl=origin+'/'+locale+'/app/'+(alreadyInPortfolio?'portfolio?tab=dynamics':'tests')
-  const locator=path=>({path,first(){return this},locator:s=>locator(path+'/'+s),getByRole:(role,options)=>locator(path+'/'+role+':'+options.name),url:()=>currentUrl,click:async()=>{events.push(['click',path]);if(path.includes('nav a['))currentUrl=origin+'/'+locale+'/app/portrait';else if(path.includes('?tab=dynamics'))currentUrl=origin+'/'+locale+'/app/portfolio?tab=dynamics';else if(path.endsWith('#hh-results-tab-values'))currentUrl=origin+'/'+locale+'/app/portfolio'}})
-  const expect=target=>({toHaveText:async text=>events.push(['text',target.path,text]),toHaveAttribute:async(key,value)=>events.push(['attribute',target.path,key,value]),toHaveURL:async url=>{assert.equal(currentUrl,url);events.push(['url',url])},toBeVisible:async()=>events.push(['visible',target.path]),not:{toHaveAttribute:async(key,value)=>events.push(['notattribute',target.path,key,value])}})
-  const helper=new Function('expect','origin','exercisePortraitRays',fragment+';return openInsightsProfileTools')(expect,origin,async(target,receivedExpect,receivedLocale)=>{assert.equal(receivedExpect,expect);assert.equal(receivedLocale,locale);events.push(['rays',target.path,receivedLocale])})
+  let menuOpen=false
+  const locator=path=>({path,getAttribute:async name=>{assert.equal(name,'open');return menuOpen?'':null},first(){return this},locator:s=>locator(path+'/'+s),getByRole:(role,options)=>locator(path+'/'+role+':'+options.name),url:()=>currentUrl,click:async()=>{events.push(['click',path]);if(path.includes('hh-account-menu:visible')&&path.endsWith(':scope > summary'))menuOpen=true;else if(path.includes('hh-account-menu:visible')&&path.includes('/app/portrait')){menuOpen=false;currentUrl=origin+'/'+locale+'/app/portrait'}else if(path.includes('?tab=dynamics'))currentUrl=origin+'/'+locale+'/app/portfolio?tab=dynamics';else if(path.endsWith('#hh-results-tab-values'))currentUrl=origin+'/'+locale+'/app/portfolio'}})
+  const expect=target=>({toHaveCount:async n=>{assert.equal(n,1);events.push(['count',target.path,n])},toHaveText:async text=>events.push(['text',target.path,text]),toHaveAttribute:async(key,value)=>events.push(['attribute',target.path,key,value]),toHaveURL:async url=>{assert.equal(currentUrl,url);events.push(['url',url])},toBeVisible:async()=>events.push(['visible',target.path]),not:{toHaveAttribute:async(key,value)=>events.push(['notattribute',target.path,key,value])}})
+  const helper=new Function('expect','origin','exercisePortraitRays','openCabinetProfile',fragment+';return openInsightsProfileTools')(expect,origin,async(target,receivedExpect,receivedLocale)=>{assert.equal(receivedExpect,expect);assert.equal(receivedLocale,locale);events.push(['rays',target.path,receivedLocale])},openCabinetProfile)
   await helper(locator('page'),locale)
-  const profileLink='page/nav a[href="/'+locale+'/app/portrait"]:visible'
+  const menu='page/details.hh-account-menu:visible'
+  const summary=menu+'/:scope > summary'
+  const profileLink=menu+'/:scope > div > a[href="/'+locale+'/app/portrait"]'
   const history='page/.hh-profile-domains[data-profile-mode="account"] a[href="/'+locale+'/app/portfolio?tab=dynamics"]'
   const values='page/#hh-results-tab-values'
   const expectedNavigation=alreadyInPortfolio?[]:[
+   ['count',menu,1],['visible',menu],['count',summary,1],['visible',summary],['click',summary],['attribute',menu,'open',''],['count',profileLink,1],['visible',profileLink],
    ['text',profileLink,locale==='ru'?'Мой профиль':'My Profile'],
    ['attribute',profileLink,'href','/'+locale+'/app/portrait'],
    ['click',profileLink],['url',origin+'/'+locale+'/app/portrait'],

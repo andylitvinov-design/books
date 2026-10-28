@@ -240,9 +240,11 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Courses", healing: "Reiki support"/);
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
-  assert.match(client, /data-support-courses-panel/);
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
-  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(read("app/[locale]/services/remote-energy-support/page.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /data-support-tool="masters"/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /"\/masters"/);
@@ -386,28 +388,31 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries are visible in Courses mode as 3 iPhone cards and selectable native program dropdown entries", () => {
-  for (const word of ["Мистерии Майя", "Мистерии Египта", "Мистерии Греции"]) {
-    assert.ok(client.includes(word), word);
-  }
-  assert.match(client, /data-support-mystery-courses/);
-  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
-  assert.match(client, /aria-pressed=\{activeMystery\?\.id === course\.id\}/);
-  assert.match(client, /setProgram\(course\.id\)/);
-  assert.match(client, /setMaster\("all"\); setTheme\("all"\); setPlaying\(false\)/);
+test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  const courseCss = read("components/holistic-support-course-profiles.module.css");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
+  assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
+  assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
+  assert.match(courseProfiles, /src=\{course\.poster\}/);
+  assert.match(courseProfiles, /\/academy\`/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
+  // The original route/manifests remain covered separately above. The new
+  // profile screen links to those originals rather than pretending its old,
+  // now-unreachable inline course picker is still a visible UI.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
-  assert.match(client, /data-support-active-course-link/);
-  assert.match(client, /activeMystery\?\.videoGroups\.map\(group =>/);
   assert.match(client, /data-support-filter="program"/);
   assert.match(client, /\{activeProgramValues\.map\(key =>/);
-  assert.match(client, /choice === "pump" \? t\.watchLesson : t\.play/);
-  assert.match(css, /\.mysteryPickerGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.mysteryPickerCard\[aria-pressed="true"\]/);
-  assert.match(css, /\.mysteryPickerCard:focus-visible/);
-  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
+  assert.match(courseCss, /\.originals \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(courseCss, /\.originals a:focus-visible/);
+  assert.match(courseCss, /@media \(max-width:640px\)[\s\S]*?\.originals \{ grid-template-columns:1fr/);
+  assert.match(courseCss, /@media \(max-width:350px\)/);
   assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
 });
 
@@ -436,6 +441,53 @@ test("central Tests and right-hand Video Mandala are swapped without returning t
   assert.doesNotMatch(profile, /fetch\(|sessionStorage|localStorage/);
 });
 
+function assertLiveReikiSessionFocus(source) {
+  const file = ts.createSourceFile("gallery.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(file.parseDiagnostics.length, 0);
+  const one = values => { assert.equal(values.length, 1); return values[0]; };
+  const all = (node, predicate) => {
+    const found = []; const visit = child => { if (predicate(child)) found.push(child); ts.forEachChild(child, visit); };
+    visit(node); return found;
+  };
+  const attr = (node, name) => node.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(file) === name);
+  const component = one(file.statements.filter(node => ts.isFunctionDeclaration(node)
+    && node.name?.text === "HolisticSupportMasterGallery"
+    && node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)));
+  const returned = one(component.body.statements.filter(ts.isReturnStatement));
+  assert.equal(component.body.statements.at(-1), returned, "actual final gallery return");
+  for (const statement of component.body.statements) {
+    if (statement === returned) continue;
+    assert.ok(ts.isVariableStatement(statement) || (ts.isExpressionStatement(statement)
+      && ts.isCallExpression(statement.expression) && statement.expression.expression.getText(file) === "useEffect"),
+    "no earlier return/control flow can hide the returned gallery");
+  }
+  let root = returned.expression;
+  while (ts.isParenthesizedExpression(root)) root = root.expression;
+  assert.ok(ts.isJsxElement(root) && attr(root.openingElement, "data-support-master-viewer"));
+  const focus = one(all(root, node => ts.isJsxElement(node) && attr(node.openingElement, "data-support-reiki-filters")));
+  assert.equal(focus.openingElement.tagName.getText(file), "div");
+  assert.equal(attr(focus.openingElement, "className").initializer.expression.getText(file), "styles.reikiFocusBar");
+  const guards = []; let node = focus;
+  while (node !== root) {
+    const parent = node.parent;
+    if (ts.isBinaryExpression(parent)) {
+      assert.equal(parent.operatorToken.kind, ts.SyntaxKind.AmpersandAmpersandToken);
+      assert.equal(parent.right, node, "focus bar is the rendered right-hand branch");
+      guards.push(parent.left.getText(file));
+    } else assert.ok(ts.isJsxExpression(parent) || ts.isJsxElement(parent) || ts.isParenthesizedExpression(parent),
+      "no dead/suppressed JSX wrapper can be projected away");
+    node = parent;
+  }
+  assert.equal(guards.length, 2, "session guard inside the actual healing marketplace");
+  for (const kind of ["healing", "masters", "consultation"]) {
+    for (const reikiFormat of ["session", "initiation", "course"]) {
+      const actual = guards.every(expression => new vm.Script("(" + expression + ")")
+        .runInNewContext({ kind, reikiFormat }, { timeout: 500 }) === true);
+      assert.equal(actual, kind === "healing" && reikiFormat === "session", kind + "/" + reikiFormat);
+    }
+  }
+}
+
 test("4 Reiki intention filters show ONLY published Reiki methods and never invent a booking", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const galleryCss = read("components/holistic-support-master-gallery.module.css");
@@ -449,7 +501,7 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assertLiveReikiSessionFocus(gallery);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
@@ -527,4 +579,24 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
+});
+
+// Only the two ancestor predicates are evaluated, never the gallery or its effects.
+test("Reiki focus guard binds the live returned marketplace and rejects broadened or hidden controls", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  assertLiveReikiSessionFocus(gallery);
+  assertLiveReikiSessionFocus(gallery.replace('reikiFormat === "session" && <div', '(reikiFormat === "session") \n        && <div'));
+  for (const [before, after] of [
+    ['{kind === "healing" && <section className={styles.reikiBrowse}', '{true && <section className={styles.reikiBrowse}'],
+    ['{kind === "healing" && <section className={styles.reikiBrowse}', '{kind === "masters" && <section className={styles.reikiBrowse}'],
+    ['{reikiFormat === "session" && <div className={styles.reikiFocusBar}', '{true && <div className={styles.reikiFocusBar}'],
+    ['{reikiFormat === "session" && <div className={styles.reikiFocusBar}', '{reikiFormat === "course" && <div className={styles.reikiFocusBar}'],
+    ['{kind === "healing" && <section className={styles.reikiBrowse}', '{false && kind === "healing" && <section className={styles.reikiBrowse}'],
+    ['  return (\n    <div className={styles.viewer}', '  return null;\n  return (\n    <div className={styles.viewer}'],
+    ['  return (\n    <div className={styles.viewer}', '  if (true) return null;\n  return (\n    <div className={styles.viewer}'],
+    ['data-support-reiki-filters>', 'data-removed-reiki-filters>'],
+  ]) {
+    assert.equal(gallery.split(before).length, 2, before);
+    assert.throws(() => assertLiveReikiSessionFocus(gallery.replace(before, after)), { code: "ERR_ASSERTION" });
+  }
 });

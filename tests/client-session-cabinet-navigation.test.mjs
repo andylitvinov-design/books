@@ -47,7 +47,13 @@ test('OAuth server continues only to fixed first-party screens and preserves exi
  assert.match(route,/INVALID_CONTINUATION/)
  assert.match(route,/if \(program !== null/)
  assert.match(route,/continueTo === 'reports'/)
- assert.match(route,/new URL\(destination\)/)
+ // Failed practice-preview sign-in stays on the approved public dashboard;
+ // other fixed continuations retain their destination, while success still
+ // verifies identity and ensures the account before entering the destination.
+ assert.match(route,/const failedPracticeDestination = continueTo === 'practice-preview'\s*\? `\$\{origin\}\/\$\{locale\}\/practice` : destination/)
+ for(const outcome of ['cancelled','failed'])
+   assert.ok(route.includes(`const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('${outcome}')`),outcome)
+ assert.match(route,/const actor = await auth\.verified\(\)\s+await createAppRepository\(config\)\.ensureAccount\(actor\)\s+return auth\.apply\(\s*NextResponse\.redirect\(destination, \{ status: 303, headers: PRIVATE_HEADERS \}\)/)
  assert.match(route,/scopes: 'openid email profile'/)
  assert.doesNotMatch(route,/continueTo.*client\/session/)
 })
