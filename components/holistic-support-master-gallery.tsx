@@ -220,7 +220,7 @@ const consultationUi = {
     price: "Price", reset: "Reset", showNext: "More service categories",
     online: "Online", inPerson: "In person", hybrid: "Online / in person",
     order: "Request service", details: "Details", published: "Published service",
-    media: "View approved introduction", photos: "Service photos",
+    media: "View approved video introduction", mediaAudio: "Listen to approved audio introduction", photos: "Service photos",
     notice: "A request is not a confirmed booking or payment.",
     priceOnRequest: "Price on request", editorialPhotos: "Related Holistic House illustrations",
     servicePage: "Full service details", imageryFallback: "No separately published guided imagery offer matches these filters. Explore the existing guided imagery service page.",
@@ -234,7 +234,7 @@ const consultationUi = {
     price: "Цена", reset: "Сбросить", showNext: "Следующие категории услуг",
     online: "Онлайн", inPerson: "Очно", hybrid: "Онлайн / очно",
     order: "Заказать", details: "Подробнее", published: "Опубликованная услуга",
-    media: "Открыть опубликованную презентацию", photos: "Фото услуги",
+    media: "Открыть опубликованную видеопрезентацию", mediaAudio: "Прослушать аудиообращение мастера", photos: "Фото услуги",
     notice: "Заявка не означает подтверждённую запись или оплату.",
     priceOnRequest: "Цена по запросу", editorialPhotos: "Иллюстрации Holistic House",
     servicePage: "Открыть страницу услуги", imageryFallback: "Отдельная опубликованная услуга образной работы по этим фильтрам не найдена. Можно посмотреть существующую страницу метода.",
@@ -248,7 +248,7 @@ const consultationUi = {
     price: "Precio", reset: "Restablecer", showNext: "Más categorías",
     online: "En línea", inPerson: "Presencial", hybrid: "En línea / presencial",
     order: "Solicitar", details: "Detalles", published: "Servicio publicado",
-    media: "Ver presentación publicada", photos: "Fotos del servicio",
+    media: "Ver presentación de vídeo publicada", mediaAudio: "Escuchar presentación de audio publicada", photos: "Fotos del servicio",
     notice: "Solicitar no confirma una reserva ni realiza un pago.",
     priceOnRequest: "Precio a consultar", editorialPhotos: "Ilustraciones de Holistic House",
     servicePage: "Página del servicio", imageryFallback: "No hay una oferta independiente publicada de imágenes guiadas para estos filtros. Consulta la página existente.",
@@ -826,8 +826,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </div>
           {selectedOffer && !!selectedOffer.presentations?.length &&
             <a className={styles.consultMedia} href={selectedOffer.presentations[0].url}
-              target="_blank" rel="noopener noreferrer" aria-label={c.media}>
-              <PlayCircle size={25} aria-hidden="true"/>
+              target="_blank" rel="noopener noreferrer"
+              aria-label={selectedOffer.presentations[0].type === "audio" ? c.mediaAudio : c.media}>
+              {selectedOffer.presentations[0].type === "audio"
+                ? <Headphones size={25} aria-hidden="true"/>
+                : <PlayCircle size={25} aria-hidden="true"/>}
             </a>}
           {selectedOffer && consultPhotoSet.length > 1 && <div className={styles.consultPreviewGroup}>
             <small>{selectedOffer.photos?.length ? c.photos : c.editorialPhotos}</small>
