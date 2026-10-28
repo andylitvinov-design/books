@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -29,6 +29,8 @@ type Job = {
   timeout: number;
   cancelled: boolean;
   musicSession: AmbientSession | null;
+  voiceSource?: AudioBufferSourceNode;
+  voiceContext?: AudioContext;
 };
 
 const translations = {
@@ -52,6 +54,9 @@ const translations = {
     failed: "Video creation failed or there was not enough memory. Try 10 seconds or a different browser.",
     privacy: "Free · processed only in your browser · no upload or account storage. Silent video; original guided recordings remain separate. Only use client photos with their permission.",
     formatHint: "MP4 or WebM depending on browser. On iPhone you can open the result and use Share → Save to Files.",
+    voiceRequired: "Add your own voice to create this video with sound.",
+    voiceInvalid: "Could not decode your recording or it exceeds 60 seconds. Telegram OGG/Opus may be unsupported by Safari. Record here or use MP3/M4A.",
+    voicePrivacy: "Your original voice is in the exported file. Photo and audio stay in this browser; sending to Telegram is your choice.",
     preparingResult: "Recording…",
   },
   ru: {
@@ -74,6 +79,9 @@ const translations = {
     failed: "Не удалось создать видео или не хватило памяти. Попробуйте 10 секунд или другой браузер.",
     privacy: "Бесплатно · только в вашем браузере · без загрузки и сохранения в аккаунт. Видео без звука; авторские медитации отдельно. Используйте фото клиента только с его разрешения.",
     formatHint: "MP4 или WebM в зависимости от браузера. На iPhone откройте результат и выберите «Поделиться» → «Сохранить в Файлы».",
+    voiceRequired: "Добавьте голосовую запись, чтобы создать видео со звуком.",
+    voiceInvalid: "Не удаётся прочитать аудио или запись длиннее 60 секунд. OGG/Opus из Telegram может не поддерживаться Safari. Запишите голос здесь или используйте MP3/M4A.",
+    voicePrivacy: "В ролик войдёт ваш оригинальный голос. Фото и аудио остаются в браузере; отправка в Telegram только по вашему выбору.",
     preparingResult: "Запись…",
   },
   es: {
@@ -96,6 +104,9 @@ const translations = {
     failed: "No se pudo crear el vídeo o falta memoria. Prueba 10 segundos u otro navegador.",
     privacy: "Gratis · procesado solo en tu navegador · sin subir ni guardar en tu cuenta. Vídeo sin sonido; las meditaciones están aparte. Usa fotos de clientes solo con su permiso.",
     formatHint: "MP4 o WebM según tu navegador. En iPhone abre el resultado y usa Compartir → Guardar en Archivos.",
+    voiceRequired: "Añade tu grabación de voz para crear un vídeo con sonido.",
+    voiceInvalid: "No se pudo decodificar el audio o dura más de 60 segundos. OGG/Opus puede fallar en Safari. Graba aquí o usa MP3/M4A.",
+    voicePrivacy: "Tu voz original estará en el vídeo. La foto y el audio permanecen en este navegador; tú eliges cuándo compartirlos.",
     preparingResult: "Grabando…",
   },
 } as const;
@@ -236,12 +247,11 @@ function ThemedSceneThumbnail({ theme, scene, photo, title }: {
   return <canvas ref={ref} width={176} height={228} className={videoStyles.templateArt} aria-hidden="true"/>;
 }
 
-function chooseMime(): string {
+function chooseMime(hasAudio = false): string {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
-  const supported = [
-    "video/mp4;codecs=avc1.42E01E", "video/mp4",
-    "video/webm;codecs=vp8", "video/webm",
-  ];
+  const supported = hasAudio
+    ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp8,opus", "video/webm"]
+    : ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp8", "video/webm"];
   return supported.find(mime => MediaRecorder.isTypeSupported(mime)) || "";
 }
 
@@ -361,18 +371,29 @@ function paint(
   }
 }
 
+function closeVoice(job: Job) {
+  try { job.voiceSource?.stop(); } catch { /* Already ended. */ }
+  if (job.voiceContext && job.voiceContext.state !== "closed")
+    void job.voiceContext.close().catch(() => { /* Interrupted by browser. */ });
+}
 function stopJob(job: Job, cancelled: boolean) {
   job.cancelled = cancelled;
   window.cancelAnimationFrame(job.animation);
   window.clearTimeout(job.timeout);
   if (job.recorder.state !== "inactive") job.recorder.stop();
-  else job.stream.getTracks().forEach(track => track.stop());
+  else {
+    job.stream.getTracks().forEach(track => track.stop());
+    closeVoice(job);
+  }
   job.musicSession?.close();
 }
 
-export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
+export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError,
+  audioFile = null, standalone = false, voiceControls,
+}: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
   onPickPhoto: () => void; photoError?: string;
+  audioFile?: File | null; standalone?: boolean; voiceControls?: ReactNode;
 }) {
   const t = translations[locale];
   const ui = studioCopy[locale];
@@ -409,10 +430,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,
-    effect,aspect,duration,quality,speed,brightness,music,caption]);
+    effect,aspect,duration,quality,speed,brightness,music,caption,standalone,
+    audioFile?.name,audioFile?.size,audioFile?.lastModified]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
-  const canGenerate = Boolean(source) && (!photoUrl || photoConsent) && !preparing && !recording;
+  const audioRef = useRef(audioFile);
+  audioRef.current = audioFile;
+  const canGenerate = Boolean(source) && (!photoUrl || photoConsent) && !preparing && !recording
+    && (!standalone || Boolean(audioFile));
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
@@ -436,6 +461,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (job) {
         stopJob(job, true);
         job.stream.getTracks().forEach(track => track.stop());
+        closeVoice(job);
         jobRef.current = null;
       }
     };
@@ -473,7 +499,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setResult(null);
     setNotice("");
     setPreviewPlaying(false);
-  }, [signature]);
+  }, [signature, audioFile]);
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
@@ -516,9 +542,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setResult(null);setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
+    let voiceContext:AudioContext|null=null;
+    let voiceSource:AudioBufferSourceNode|null=null;
+    let renderDuration = duration;
     try {
-      musicSession = await startAmbientMusic(music);
-      if(music !== "none" && !musicSession) setMusicWarning(ui.musicFallback);
+      // Start AudioContext within this explicit click: iPhone Safari suspends
+      // contexts constructed after an asynchronous user-gesture boundary.
+      if (audioFile) {
+        if (!audioFile.size || audioFile.size > 15_000_000) throw new Error("voice_invalid");
+        voiceContext = new AudioContext();
+        await voiceContext.resume();
+      } else {
+        musicSession = await startAmbientMusic(music);
+        if(music !== "none" && !musicSession) setMusicWarning(ui.musicFallback);
+      }
       const image=await loadLocalImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       setPreviewPlaying(false);
@@ -537,22 +574,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
+      if (voiceContext && audioFile) {
+        let decoded: AudioBuffer;
+        try { decoded=await voiceContext.decodeAudioData(await audioFile.arrayBuffer()); }
+        catch { throw new Error("voice_invalid"); }
+        if (!Number.isFinite(decoded.duration) || decoded.duration < 1 || decoded.duration > 60)
+          throw new Error("voice_invalid");
+        if (standalone) renderDuration = Math.min(60, Math.ceil(decoded.duration));
+        const destination=voiceContext.createMediaStreamDestination();
+        voiceSource=voiceContext.createBufferSource();
+        voiceSource.buffer=decoded;
+        voiceSource.connect(destination);
+        const track=destination.stream.getAudioTracks()[0];
+        if (!track) throw new Error("voice_invalid");
+        stream.addTrack(track);
+        if (audioRef.current !== audioFile || sourceRef.current !== snapshotKey || !aliveRef.current)
+          throw new Error("voice_stale");
+      }
 
-      const mimeType = chooseMime();
+      const mimeType = chooseMime(Boolean(audioFile || musicSession));
       if (!mimeType) throw new Error("Recording format unsupported");
       let recorder: MediaRecorder;
       const recorderOptions={mimeType,videoBitsPerSecond:quality==="fullhd"?5_000_000:3_000_000};
       try { recorder=new MediaRecorder(stream,recorderOptions); }
       catch {
         // Some mobile browsers support silent video but not combined audio.
-        if (!musicSession) throw new Error("Unsupported browser codec");
+        if (!musicSession || audioFile) throw new Error("Unsupported browser codec");
         musicSession.close();musicSession=null;
         stream.getAudioTracks().forEach(track=>{stream?.removeTrack(track);track.stop();});
         setMusicWarning(ui.musicFallback);
         recorder=new MediaRecorder(stream,recorderOptions);
       }
       const chunks: Blob[] = [];
-      const job: Job = { recorder, stream, animation: 0, timeout: 0, cancelled: false, musicSession };
+      const job: Job = { recorder, stream, animation: 0, timeout: 0, cancelled: false, musicSession,
+        ...(voiceContext ? { voiceContext } : {}), ...(voiceSource ? { voiceSource } : {}) };
       musicSession=null;
       jobRef.current = job;
 
@@ -566,6 +621,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       recorder.onstop = () => {
         job.stream.getTracks().forEach(track => track.stop());
         job.musicSession?.close();
+        closeVoice(job);
         if (jobRef.current !== job || !aliveRef.current) return;
         jobRef.current=null;
         setRecording(false);
@@ -587,35 +643,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       // This user-triggered browser recorder never contacts a backend.
       recorder.start(500);
+      if (voiceSource) voiceSource.start(0);
       const start = performance.now();
       let lastFrame = -1000;
       let lastProgress = 0;
       const animate = (now: number) => {
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / framesPerSecond) {
-          paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness);
+          paint(ctx,image,effect,Math.min(renderDuration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness);
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
-            setProgress(Math.min(99,Math.floor((now-start)*100/(duration*1000))));
+            setProgress(Math.min(99,Math.floor((now-start)*100/(renderDuration*1000))));
           }
         }
         job.animation = requestAnimationFrame(animate);
       };
       job.animation = requestAnimationFrame(animate);
-      job.timeout = window.setTimeout(() => stopJob(job, false), duration * 1000);
+      job.timeout = window.setTimeout(() => stopJob(job, false), renderDuration * 1000);
       setRecording(true);
       setNotice(t.creating);
-    } catch {
+    } catch (error) {
       musicSession?.close();
-      if(stream) stream.getTracks().forEach(track=>track.stop());
+      if (stream) stream.getTracks().forEach(track=>track.stop());
+      if (voiceSource) { try { voiceSource.stop(); } catch { /* Not started. */ } }
       jobRef.current=null;
       setRecording(false);
-      setNotice(t.failed);
+      if (error instanceof Error && error.message === "voice_stale") return;
+      setNotice(error instanceof Error && error.message === "voice_invalid" ? t.voiceInvalid : t.failed);
     } finally {
       preparingRef.current=false;
       if(aliveRef.current)setPreparing(false);
       musicSession?.close();
+      if (voiceContext && jobRef.current?.voiceContext !== voiceContext && voiceContext.state !== "closed")
+        void voiceContext.close().catch(() => { /* Interrupted. */ });
     }
   }
 
@@ -689,6 +750,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
       </div>
 
+      {voiceControls}
+      {standalone && !audioFile && <p role="status" className={videoStyles.warning}>{t.voiceRequired}</p>}
       <section className={videoStyles.templates} data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
@@ -787,7 +850,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </fieldset>
         </div>
 
-        <fieldset className={videoStyles.musicCard} disabled={recording||preparing}>
+        <fieldset className={videoStyles.musicCard} disabled={recording||preparing||Boolean(audioFile)}>
           <legend><Music2 size={18} aria-hidden="true"/>{ui.music}</legend>
           <div className={videoStyles.musicRail}>
             {themeMusic.map((choice,i)=>
@@ -861,7 +924,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
       {notice?<p role="status" className={videoStyles.notice} aria-live="polite">{notice}</p>:null}
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
-      <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
+      <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{standalone ? t.voicePrivacy : ui.noStorage}</p>
 
       <section className={videoStyles.result} id="personal-video-result" data-video-result>
         <h3>{ui.videoPreview}</h3>
