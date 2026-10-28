@@ -57,7 +57,9 @@ try {
       const dialog = page.locator('dialog[open][aria-labelledby="support-master-order-title"]');
       await dialog.waitFor();
       const focus = dialog.locator("[data-remote-focus-chip]").first();
-      await focus.click();
+      // The iPhone screenshot starts at "Available masters": its optional
+      // first-screen focus can be entirely offscreen. RU must order without it.
+      if (locale !== "ru") await focus.click();
       await dialog.locator("#remote-method").selectOption({label:"Tantra Reiki"});
       // A contact enquiry is valid even without date or time. For a chosen
       // time, both fields must be present and the preference must be future.
@@ -103,6 +105,8 @@ try {
       assert.equal(requests[0].contact.phone,"+14165551234");
       assert.match(requests[0].serviceTitle,/Reiki support · Andy · 30 min/);
       assert.match(requests[0].description,/Tantra Reiki/);
+      if (locale === "ru") assert.match(requests[0].description,/Personal intention/,
+        "No offscreen focus choice is required to request a Reiki session");
       if (locale !== "en") assert.match(requests[0].description,/По согласованию|Por acordar/,
         locale+": no fabricated date/time for an unscheduled enquiry");
       assert.equal(await page.locator("[data-cart-verified-paypal-checkout]").count(),0);
