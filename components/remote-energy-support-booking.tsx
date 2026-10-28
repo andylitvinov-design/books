@@ -468,7 +468,11 @@ export function RemoteEnergySupportBooking({
           expectedPrice: currentPrice!.price, expectedCurrency: selected.currency,
           savedAt: Date.now(),
         };
-        window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON.stringify(publicDraft));
+        // Private Safari and in-app browsers may disable sessionStorage.
+        // Phone registration must still work in this same modal; only
+        // restoring the public preferences after OAuth needs storage.
+        try { window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON.stringify(publicDraft)); }
+        catch { /* Keep the consented phone form usable without storage. */ }
         setContactDraft(publicDraft);
         return;
       }
