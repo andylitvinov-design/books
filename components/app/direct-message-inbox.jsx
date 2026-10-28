@@ -3,7 +3,8 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Paperclip,Bell} from 'lucide-react'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
+import {directMediaSpec,DIRECT_MEDIA_PROXY_MAX_BYTES} from '@/lib/practitioners/direct-message-policy.mjs'
+import DirectAudioRecorder from './direct-audio-recorder'
 import styles from './direct-message-inbox.module.css'
 import PrivateChatPhoto from './private-chat-photo'
 import {ClientExpressReportNotices} from './practice-express-reports'
@@ -26,6 +27,7 @@ const COPY={
     apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',error:'Could not complete the action.',
     noPublish:'Audio is private unless its sender explicitly authorizes publication.',
     older:'Load earlier messages',olderBusy:'Loading earlier messages…',retry:'Try again',
+    preview:'Listen before sending',
   },
   ru:{
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
@@ -44,6 +46,7 @@ const COPY={
     apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',error:'Не удалось выполнить действие.',
     noPublish:'Аудио остаётся приватным без отдельного разрешения отправителя.',
     older:'Показать более ранние сообщения',olderBusy:'Загружаем историю…',retry:'Повторить',
+    preview:'Прослушать перед отправкой',
   },
   es:{
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
@@ -62,6 +65,7 @@ const COPY={
     apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',error:'No se pudo completar la acción.',
     noPublish:'El audio es privado sin autorización expresa del remitente.',
     older:'Cargar mensajes anteriores',olderBusy:'Cargando mensajes…',retry:'Reintentar',
+    preview:'Escuchar antes de enviar',
   }
 }
 const URL='/api/app/direct-messages'
@@ -113,8 +117,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
-    [busy,setBusy]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
-    [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
+    [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
+    [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState(''),
+    [audioPreview,setAudioPreview]=useState('')
   const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
@@ -207,7 +212,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   async function send(event){
     event.preventDefault()
-    if(busy||!activeId||(!draft.trim()&&!file))return
+    if(busy||recording||!activeId||(!draft.trim()&&!file))return
     setBusy(true);setError('')
     const key={threadId:activeId,text:draft.trim(),file,allowPublicReuse}
     try {
@@ -223,15 +228,50 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
           setStatus(t.upload)
           const intent=await post({action:'intent',threadId:activeId,
             mime,bytes:prepared.size,allowPublicReuse:allowPublicReuse&&AUDIO_MIMES.has(mime)})
-          const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
-            auth:{persistSession:false,autoRefreshToken:false}})
-          const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
-            intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
-          if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
-          await post({action:'complete',assetId:intent.assetId})
-          uploadRef.current={file,threadId:activeId,assetId:intent.assetId}
+          // Retain the original bytes and the immutable intent across failed
+          // network responses and retries; never mint duplicate pending assets.
+          uploadRef.current={file,threadId:activeId,prepared,mime,intent,assetId:intent.assetId,
+            attempted:false,uploaded:false,completed:false}
         }
-        assetId=uploadRef.current.assetId
+        const staged=uploadRef.current
+        setStatus(t.upload)
+        if(staged.attempted&&!staged.uploaded){
+          // A response may have been lost after Supabase stored the bytes.
+          try{
+            await post({action:'complete',assetId:staged.assetId})
+            staged.uploaded=true;staged.completed=true
+          }catch(e){
+            if(!['MEDIA_UPLOAD_NOT_FOUND','MEDIA_STORAGE_UNAVAILABLE'].includes(e.message))throw e
+          }
+        }
+        if(!staged.uploaded){
+          staged.attempted=true
+          if(staged.prepared.size<=DIRECT_MEDIA_PROXY_MAX_BYTES){
+            let response
+            try{
+              response=await fetch(URL+'/media/'+encodeURIComponent(staged.assetId)+'/upload',{
+                method:'POST',cache:'no-store',credentials:'same-origin',
+                headers:{'Content-Type':staged.mime,'x-hh-account-id':accountId},
+                body:staged.prepared})
+            }catch{throw new Error('MEDIA_UPLOAD_FAILED')}
+            const result=await response.json().catch(()=>({}))
+            if(!response.ok||result.uploaded!==true)throw new Error(result.error||'MEDIA_UPLOAD_FAILED')
+          }else{
+            // Larger pre-existing audio files retain the signed Storage route.
+            const intent=staged.intent
+            const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
+              auth:{persistSession:false,autoRefreshToken:false}})
+            const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
+              intent.objectKey,intent.token,staged.prepared,{contentType:staged.mime,upsert:false})
+            if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
+          }
+          staged.uploaded=true
+        }
+        if(!staged.completed){
+          await post({action:'complete',assetId:staged.assetId})
+          staged.completed=true
+        }
+        assetId=staged.assetId
       }
       setStatus(t.sendBusy)
       await post({action:'send',threadId:activeId,operationId:operationRef.current.id,
@@ -244,6 +284,12 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
+  useEffect(()=>{
+    if(!audioSelected){setAudioPreview('');return}
+    const url=URL.createObjectURL(file)
+    setAudioPreview(url)
+    return ()=>URL.revokeObjectURL(url)
+  },[file,audioSelected])
   return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
     data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
     {!simpleDetail&&<header className={styles.head}>
@@ -323,12 +369,18 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             <div className={styles.actions}>
               <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
-                  disabled={busy} onChange={e=>changeFile(e.target.files?.[0]||null)}/></label>
-              <button className={styles.send} type="submit" disabled={busy||(!draft.trim()&&!file)}>
+                  disabled={busy} onChange={e=>{changeFile(e.target.files?.[0]||null);e.target.value=''}}/></label>
+              <DirectAudioRecorder key={current.threadId} locale={locale} disabled={busy}
+                onRecordingChange={setRecording}
+                onRecorded={recorded=>{changeFile(recorded);setError('')}}
+                onError={message=>setError(message)}/>
+              <button className={styles.send} type="submit" disabled={busy||recording||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>
             </div>
             {file&&<p className={styles.fileName}>{file.name} ({Math.ceil(file.size/1024)} KB)
               <button type="button" disabled={busy} onClick={()=>changeFile(null)}>×</button></p>}
+            {audioSelected&&audioPreview&&<audio className={styles.voicePreview} controls
+              preload="metadata" src={audioPreview} aria-label={t.preview}/>}
             {audioSelected&&<label className={styles.permission}>
               <input type="checkbox" checked={allowPublicReuse} disabled={busy}
                 onChange={e=>{setAllowPublicReuse(e.target.checked);uploadRef.current=null;operationRef.current=null}}/>

@@ -173,9 +173,9 @@ jobs:
       - name: Verify UTF-8 envelopes and concurrent in-app message sends
         run: node --conditions=react-server --test tests/practitioner-message-send.integration.mjs tests/practitioner-message-chain.test.mjs
       - name: Native member-to-practitioner media inbox, encryption and outsider-denial
-        run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs
+        run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs
       - name: Lint member inbox backend, privacy route and EN/RU/ES UI
-        run: npx eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx app/api/app/direct-messages/route.js 'app/api/app/direct-messages/media/[assetId]/route.js' 'app/api/masters/[slug]/shared-audio/[assetId]/route.js' 'app/[locale]/app/messages/page.tsx'
+        run: npx eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-audio-recorder.jsx app/api/app/direct-messages/route.js 'app/api/app/direct-messages/media/[assetId]/route.js' 'app/api/app/direct-messages/media/[assetId]/upload/route.js' 'app/api/masters/[slug]/shared-audio/[assetId]/route.js' 'app/[locale]/app/messages/page.tsx' middleware.ts tests/direct-message-media-transport.test.mjs
       - name: Validate practitioner CRM JSX explicitly
         run: npx eslint lib/business-consulting/reply-handoffs.js components/app/business-enquiry-other-reply.jsx components/app/business-enquiry-sms-reply.jsx lib/business-consulting/reply-policy.js 'app/[locale]/contact/page.tsx' lib/app/client-phone-policy.js lib/app/client-phone-repository.js app/api/app/contact-phone/route.js components/app/client-contact-phone.jsx lib/business-consulting/contact-import.js --ext .js,.jsx components/app/practitioner-client-profiles.jsx components/app/practitioner-request-tasks.jsx components/app/practice-request-conversation.jsx lib/practitioners/client-work-queue.js lib/practitioners/conversation-state.js
       - name: Lint changed CRM runtime and UI

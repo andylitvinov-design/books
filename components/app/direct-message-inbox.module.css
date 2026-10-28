@@ -138,3 +138,14 @@
   .shell[data-simple-detail="true"] .actions{align-items:center}
   .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
 }
+
+/* Private voice notes share the native file composer, never an external channel. */
+.voiceRecorder{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.recordButton,.recordDiscard{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:1px solid #cfad9d;border-radius:10px;padding:8px 10px;background:#fff9f3;color:#743f4d;font:700 12px/1.25 system-ui,sans-serif;cursor:pointer}
+.recordButton:disabled{opacity:.55;cursor:not-allowed}
+.recordDiscard{min-width:44px;padding:8px}
+.recordingState{font:700 11px/1.35 system-ui,sans-serif;color:#913c53}
+.recordingState::before{content:'●';margin-right:5px}
+.voicePreview{width:100%;max-width:360px;height:42px}
+.shell .recordButton:focus-visible,.shell .recordDiscard:focus-visible{outline:3px solid #8b5274;outline-offset:2px}
+@media(max-width:375px){.voiceRecorder{flex:1 1 100%}.actions{flex-wrap:wrap}.filePick{min-height:44px}}
