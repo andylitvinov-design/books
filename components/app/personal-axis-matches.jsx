@@ -13,6 +13,7 @@ import styles from "./personal-axis-matches.module.css";
 const TEXT = {
   en: {
     title: "Find your next step by profile axis", intro: "Choose an axis you want to explore. Your verified test results add context; they never decide what is wrong with you.",
+    moreAxes:"Compare up to three axes (optional)", axisTwo:"Second axis",axisThree:"Third axis",now:"Now (my own rating 0–10)",want:"Want (my own rating 0–10)",gapNote:"These are optional personal ratings, separate from test scores.",
     choose: "Choose a topic and axis", placeholder: "Select a focus", noFocus: "Choose one axis to see matched published videos, tests, courses and services.",
     measured: "Scored axes in your private tests", none: "No current source-verified measurement for this axis. You can still explore it by choice.",
     current: "Your source score", method: "Test and date", facet: "Axis", result: "Open test result",
@@ -27,6 +28,7 @@ const TEXT = {
   },
   ru: {
     title: "Персональный подбор по осям профиля", intro: "Выберите ось, с которой хотите поработать. Результаты проверенных тестов дают контекст, но не определяют ваши недостатки.",
+    moreAxes:"Сопоставить до трёх осей (необязательно)",axisTwo:"Вторая ось",axisThree:"Третья ось",now:"Сейчас (моя оценка 0–10)",want:"Хочу (моя оценка 0–10)",gapNote:"Это необязательные самооценки, отдельно от баллов теста.",
     choose: "Выберите тему и ось", placeholder: "Выберите приоритет", noFocus: "Выберите ось, чтобы увидеть соответствующие опубликованные видео, тесты, курсы и услуги.",
     measured: "Измеренные оси ваших тестов", none: "По этой оси пока нет актуального проверенного результата. Вы всё равно можете выбрать её как цель.",
     current: "Ваш балл по методике", method: "Тест и дата", facet: "Ось", result: "Открыть результат",
@@ -41,6 +43,7 @@ const TEXT = {
   },
   es: {
     title:"Recomendaciones según los ejes del perfil", intro:"Elige qué eje te interesa explorar. Los resultados verificados dan contexto, no señalan deficiencias personales.",
+    moreAxes:"Comparar hasta tres ejes (opcional)",axisTwo:"Segundo eje",axisThree:"Tercer eje",now:"Ahora (valoración propia 0–10)",want:"Objetivo (valoración propia 0–10)",gapNote:"Valoraciones opcionales, independientes de las pruebas.",
     choose:"Elige un tema y un eje",placeholder:"Selecciona tu prioridad",noFocus:"Selecciona un eje para ver vídeos, pruebas, cursos y servicios disponibles.",
     measured:"Ejes medidos en tus pruebas",none:"No existe una medición verificada actual para este eje. Aun así, puedes elegirlo como objetivo.",
     current:"Tu puntuación original",method:"Prueba y fecha",facet:"Eje",result:"Abrir resultado",
@@ -63,6 +66,10 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
   const lang = ["en","ru","es"].includes(locale) ? locale : "en";
   const t = TEXT[lang];
   const [focus, setFocus] = useState("");
+  const [second, setSecond] = useState("");
+  const [third, setThird] = useState("");
+  const [now, setNow] = useState("");
+  const [want, setWant] = useState("");
   const media = useMemo(() => lang === "ru"
     ? freeMeditationVideos("ru").map(video => ({...video,sourceLanguage:"ru"}))
     : englishGuidedMeditations.filter(video => video.youtubeId)
@@ -72,9 +79,11 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
   }), [lang, media]);
   const evidence = useMemo(() => verifiedAxisEvidence(measurements), [measurements]);
   const selectedEvidence = evidence.filter(row => row.axisRef === focus);
+  const selectedAxes = [focus, second, third].filter(Boolean);
+  const goalRatings = now !== "" && want !== "" ? {[focus]:{current:Number(now),desired:Number(want)}} : {};
   const matches = useMemo(() => focus ? rankAxisOffers({
-    chosenAxis:focus,offers,measurements,limit:30,
-  }) : [], [focus,offers,measurements]);
+    chosenAxis:focus,chosenAxes:selectedAxes,goalRatings,offers,measurements,limit:30,
+  }) : [], [focus,second,third,now,want,offers,measurements]);
 
   const selectedLabel = focus && AXIS_REFS[focus]
     ? AXIS_REFS[focus].label[lang] || AXIS_REFS[focus].label.en : "";
@@ -85,7 +94,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
     </div>
     <label className={styles.selectLabel} htmlFor="hh-axis-match-focus">{t.choose}</label>
     <div className={styles.selectWrap}>
-      <select id="hh-axis-match-focus" value={focus} onChange={event=>setFocus(event.target.value)} data-axis-focus>
+      <select id="hh-axis-match-focus" value={focus} onChange={event=>{setFocus(event.target.value);setNow("");setWant("");}} data-axis-focus>
         <option value="">{t.placeholder}</option>
         {Object.entries(PROFILE_RESEARCH_AXES).map(([topic, axes]) =>
           <optgroup key={topic} label={t.topics[topic] || topic}>
@@ -96,6 +105,22 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
       </select>
       <ChevronDown size={17} aria-hidden="true"/>
     </div>
+    <details className={styles.extraControls} data-axis-secondary-controls>
+      <summary>{t.moreAxes}</summary>
+      <div className={styles.extraGrid}>
+        {[{id:"hh-axis-match-second",label:t.axisTwo,value:second,setter:setSecond},
+          {id:"hh-axis-match-third",label:t.axisThree,value:third,setter:setThird}].map(field=><label key={field.id} htmlFor={field.id}>
+          {field.label}<select id={field.id} value={field.value} onChange={event=>field.setter(event.target.value)}>
+            <option value="">—</option>
+            {Object.entries(PROFILE_RESEARCH_AXES).map(([topic, axes]) =>
+              <optgroup key={topic} label={t.topics[topic] || topic}>
+                {axes.map(axis=><option value={topic+"::"+axis.id} key={topic+"::"+axis.id}>
+                  {axis.label[lang] || axis.label.en}</option>)}
+              </optgroup>)}
+          </select>
+        </label>)}
+      </div>
+    </details>
     {showMeasurements && <details className={styles.measureDetails}>
       <summary>{t.measured} · {evidence.length}</summary>
       {evidence.length ? <div className={styles.scrollTable}>
@@ -120,6 +145,15 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
           <small>{t.noAverage}</small>
         </div> : <small>{t.none}</small>}
       </div>
+      <div className={styles.goalGap} data-axis-personal-gap>
+        <div><label htmlFor="hh-axis-self-now">{t.now}</label>
+          <input id="hh-axis-self-now" type="number" min="0" max="10" step="1" inputMode="numeric"
+            value={now} onChange={event=>setNow(event.target.value)} placeholder="—"/></div>
+        <div><label htmlFor="hh-axis-self-want">{t.want}</label>
+          <input id="hh-axis-self-want" type="number" min="0" max="10" step="1" inputMode="numeric"
+            value={want} onChange={event=>setWant(event.target.value)} placeholder="—"/></div>
+        <small>{t.gapNote}</small>
+      </div>
       <h4 className={styles.suggestionTitle}>{t.suggestions}</h4>
       {matches.length ? <div className={styles.groupGrid}>
         {TYPES.map(({id,Icon}) => {
@@ -130,6 +164,9 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
               data-axis-offer={item.id} data-match-level={item.matchLevel}>
               <span className={styles.rank}>{t.levels[item.matchLevel]} · {t.relevance} {item.score}/100</span>
               <strong>{item.title}</strong>
+              {item.matchedAxes?.length ? <small className={styles.matchedAxes}>
+                {item.matchedAxes.map(axis=>AXIS_REFS[axis.ref]?.label[lang] || axis.ref).join(" · ")}
+              </small> : null}
               {item.kind==="video" && <small>{t.audio}: {item.originalLanguage?.toUpperCase()}</small>}
               {item.href.startsWith("https://") ?
                 <a href={item.href} target="_blank" rel="noopener noreferrer">{t.group[id]}<ArrowRight size={14} aria-hidden="true"/></a> :
