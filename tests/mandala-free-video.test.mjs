@@ -40,7 +40,7 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
   const middleware = read("middleware.ts");
   const css = read("components/mandala-meditation.module.css");
   assert.match(middleware, /const publicMandalaLocalImages = \/\^\\\/\(en\|ru\|es\)\\\/holistic-support\\\/mandala/);
-  assert.match(middleware, /practitionerCourseEditor\|\|publicMandalaLocalImages\) \? ' blob:'/);
+  assert.match(middleware, /practitionerCourseEditor\|\|publicMandalaLocalImages\|\|ownerMessengerImages\) \? ' blob:'/);
   assert.match(css, /\.focus \.freeVideoPanel\{display:none\}/);
   assert.match(css, /@media\(max-width:350px\)\{\.freeVideoSettings\{grid-template-columns:1fr\}/);
   assert.match(css, /\.freeVideoDownload/);
