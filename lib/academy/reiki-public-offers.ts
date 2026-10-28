@@ -145,7 +145,7 @@ export function matchReikiPublicOffers(
   return offers.filter(offer => {
     if (offer.format !== filters.format || !offer.focus.includes(filters.focus)) return false;
     // Unknown is not 'yes'. Do not invent certificates just because the user requests one.
-    if (filters.certificateRequested && offer.certificateAvailable !== true) return false;
+    if (filters.certificateRequested && !offer.certificateAvailable) return false;
     if (filters.price === "all") return true;
     if (offer.priceEur === null) return false;
     switch (filters.price) {
