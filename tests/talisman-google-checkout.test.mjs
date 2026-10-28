@@ -101,6 +101,14 @@ test("one-use public OAuth marker survives Google but never carries personal dat
   ]) assert.equal(isTalismanGoogleReturn(store,p,q,when),false);
   assert.equal(safeEnquiryReturnPath("/ru/holistic-support/mobile","ru"),
     "/ru/holistic-support/mobile");
+  assert.equal(safeEnquiryReturnPath("/ru/talismans/cart","ru"),
+    "/ru/talismans/cart");
+  const standalone = new Map([
+    [TALISMAN_GOOGLE_RETURN_KEY,JSON.stringify({path:"/ru/talismans/cart",createdAt:now})],
+    [TALISMAN_CART_STORAGE_KEY,JSON.stringify(["fu-prosperity"])],
+  ]);
+  assert.equal(isTalismanGoogleReturn({getItem:key=>standalone.get(key)},
+    "/ru/talismans/cart","?hh_enquiry=google",now),true);
   assert.equal(safeEnquiryReturnPath("/ru/app/portrait","ru"),"");
 });
 
