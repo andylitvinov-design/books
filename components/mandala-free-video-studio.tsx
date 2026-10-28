@@ -213,6 +213,17 @@ const supportDesignCopy = {
     mandala:"Video mandala",recommend:"Find my focus",
     meditation:"Meditation", testSession:"Session", talisman:"Talisman",
     reiki:"Reiki support", courses:"Courses", masters:"Masters",
+    catalogTitle:"Video mandala",catalogIntro:"Choose a theme and create your own video",allScenes:"All scenes",health:"Wellbeing",
+    filterStyle:"Visual style",filterMotion:"Movement",filterDuration:"Length",forGoal:"For your chosen theme",
+    featureAnimation:"Moving scenery",more:"Details",categoryTitles:{
+      energy:"Energy and harmony",money:"A flow of inspiration",relationships:"Warmth and connection",goals:"A path to your goals",health:"A gentle mindful pause"
+    },categoryDescriptions:{
+      energy:"A luminous visual scene for slowing down and finding your focus.",
+      money:"Golden imagery for reflection on your intentions and plans.",
+      relationships:"Warm light and gentle motion for a moment of reflection.",
+      goals:"A moving landscape to help keep your intention in view.",
+      health:"A calm symbolic scene for rest and mindful attention."
+    },
     heroTabs:["Video mandala","Templates","Masters","Theme"],
     heroBadge:"Original ambient music · optional",heroTitle:"Create your personal video",
     heroIntro:"Add a photo, choose a theme and make your own moving video for free.",
@@ -226,6 +237,17 @@ const supportDesignCopy = {
     mandala:"Видео-мандала",recommend:"Подобрать",
     meditation:"Медитация", testSession:"Сессия",talisman:"Талисман",
     reiki:"Рейки поддержка",courses:"Курсы",masters:"Мастера",
+    catalogTitle:"Видео-мандала",catalogIntro:"Выбери тему и создай своё видео",allScenes:"Все сюжеты",health:"Здоровье",
+    filterStyle:"Стиль",filterMotion:"Анимация",filterDuration:"Длительность",forGoal:"По выбранной цели",
+    featureAnimation:"Живой видеофон",more:"Подробнее",categoryTitles:{
+      energy:"Источник энергии и гармонии",money:"Золотой поток вдохновения",relationships:"Тепло и близость",goals:"Путь к своим целям",health:"Бережная пауза"
+    },categoryDescriptions:{
+      energy:"Светлая видео-мандала для спокойной паузы, внимания и внутреннего равновесия.",
+      money:"Образы золотого света для размышления о желаниях и планах.",
+      relationships:"Мягкое движение и тёплые образы для личной практики внимания.",
+      goals:"Движущийся пейзаж как напоминание о выбранном намерении.",
+      health:"Спокойный символический видеосюжет для отдыха и внимания к себе."
+    },
     heroTabs:["Видео-мандала","Шаблоны","Мастера","Тема"],
     heroBadge:"Авторская музыка · по выбору",heroTitle:"Создай своё личное видео",
     heroIntro:"Загрузи фото, выбери тему и создай красивое видео бесплатно.",
@@ -239,6 +261,17 @@ const supportDesignCopy = {
     mandala:"Vídeo mandala",recommend:"Elegir tema",
     meditation:"Meditación",testSession:"Sesión",talisman:"Talismán",
     reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",
+    catalogTitle:"Vídeo mandala",catalogIntro:"Elige un tema y crea tu vídeo",allScenes:"Todas las escenas",health:"Bienestar",
+    filterStyle:"Estilo",filterMotion:"Animación",filterDuration:"Duración",forGoal:"Según tu tema",
+    featureAnimation:"Escena animada",more:"Detalles",categoryTitles:{
+      energy:"Energía y armonía",money:"Flujo de inspiración",relationships:"Calidez y conexión",goals:"Camino hacia tus metas",health:"Una pausa amable"
+    },categoryDescriptions:{
+      energy:"Una escena luminosa para hacer una pausa y concentrar la atención.",
+      money:"Imágenes doradas para reflexionar sobre tus intenciones y planes.",
+      relationships:"Luz cálida y movimiento suave para reflexionar.",
+      goals:"Un paisaje animado que acompaña tu intención personal.",
+      health:"Una escena simbólica tranquila para descansar y prestar atención."
+    },
     heroTabs:["Vídeo mandala","Plantillas","Guías","Tema"],
     heroBadge:"Música original · opcional",heroTitle:"Crea tu vídeo personal",
     heroIntro:"Sube tu foto, elige un tema y crea un vídeo animado gratis.",
@@ -265,6 +298,9 @@ const moneyTemplates = [
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
 const durations = [10, 20, 30, 60] as const;
 const themeChoices: VideoTheme[] = ["money","relationships","energy","goals"];
+// Health reuses the real, locally rendered gentle-shield Energy scene.
+const videoCategories = ["energy","money","relationships","goals","health"] as const;
+type VideoCategory = (typeof videoCategories)[number];
 const themeMusic: Exclude<AmbientMusic,"none">[] = ["harmony","prosperity","energy","love","meditation"];
 const musicBackgrounds = [
   "linear-gradient(145deg,#f7cf9a,#688b89)",
@@ -487,7 +523,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const ui = studioCopy[locale];
   const supportUi = supportDesignCopy[locale];
   const [scores,setScores] = useState<Record<VideoTheme,number>>({energy:5,money:5,relationships:5,goals:5});
-  const [theme, setTheme] = useState<VideoTheme>("money");
+  const [theme, setTheme] = useState<VideoTheme>("energy");
+  const [videoCategory, setVideoCategory] = useState<VideoCategory>("energy");
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(false);
@@ -522,7 +559,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
-  const source = theme==="money" && backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl || BACKGROUND_CLIP;
+  const source = backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl || BACKGROUND_CLIP;
   const sceneName = theme === "money"
     ? moneyTemplateLabels[moneyScene || "golden-rain"]?.[locale] ||
       moneyScenes.find(item => item.id === moneyScene)?.label[locale] || ""
@@ -847,10 +884,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
-  const selectCategory=(next:VideoTheme)=>{
-    setTheme(next);setSuggestion("");setShowAllMoney(false);setPreviewPlaying(false);setBackgroundOnly(false);setThemeMenuOpen(false);
-    if(next==="money")setMoneyScene("golden-rain");
-    else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
+  const selectCategory=(next:VideoCategory)=>{
+    const actual: VideoTheme = next==="health" ? "energy" : next;
+    setTheme(actual);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
+    setPreviewPlaying(false);setBackgroundOnly(false);setThemeMenuOpen(false);
+    if(actual==="money")setMoneyScene("golden-rain");
+    else {setMoneyScene(null);setOtherScene(next==="health" ? "gentle-shield" : otherVideoScenes[actual][0].id);}
   };
 
   const resetVideoSettings=()=>{
@@ -862,6 +901,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const startFromHero=()=>{
     if(recording||preparing)return;
+    if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
       document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
@@ -957,8 +997,64 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
       </div>
 
+      <section className={videoStyles.catalogShell} data-video-catalog aria-labelledby="video-catalog-heading">
+        <header className={videoStyles.catalogHeading}>
+          <div>
+            <h2 id="video-catalog-heading">{supportUi.catalogTitle}</h2>
+            <p>{supportUi.catalogIntro}</p>
+          </div>
+          <button type="button" onClick={()=>{
+            setShowAllMoney(true);
+            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
+          }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button>
+        </header>
+        <div className={videoStyles.categoryRail} data-video-category-rail role="group" aria-label={supportUi.topThemes}>
+          {videoCategories.map(item=>{
+            const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:Leaf;
+            return <button type="button" key={item} data-video-category={item} data-tone={item}
+              aria-pressed={videoCategory===item} disabled={recording||preparing}
+              onClick={()=>selectCategory(item)}>
+              <Icon size={23} aria-hidden="true"/>
+              <span>{item==="health"?supportUi.health:ui.themes[item]}</span>
+            </button>;
+          })}
+        </div>
+        <div className={videoStyles.catalogFilters} data-video-catalog-filters>
+          <label><span>{supportUi.filterStyle}</span>
+            <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
+              disabled={recording||preparing}
+              onChange={event=>{
+                setSuggestion("");setPreviewPlaying(false);
+                if(theme==="money")setMoneyScene(event.currentTarget.value as MoneySceneId);
+                else {
+                  const scene=event.currentTarget.value as LocalSceneId;
+                  setOtherScene(scene);
+                  if(videoCategory==="health"&&scene!=="gentle-shield")setVideoCategory("energy");
+                }
+              }}>
+              {theme==="money"
+                ? moneyTemplates.map(item=><option key={item.id} value={item.id}>
+                    {moneyTemplateLabels[item.id]?.[locale]||item.label[locale]}</option>)
+                : otherVideoScenes[theme].map(item=><option key={item.id} value={item.id}>{item.label[locale]}</option>)}
+            </select>
+          </label>
+          <label><span>{supportUi.filterMotion}</span>
+            <select data-video-motion value={speed} disabled={recording||preparing}
+              onChange={event=>setSpeed(event.currentTarget.value as Speed)}>
+              <option value="slow">{ui.slow}</option>
+              <option value="dynamic">{ui.dynamic}</option>
+            </select>
+          </label>
+          <label><span>{supportUi.filterDuration}</span>
+            <select data-video-length value={duration} disabled={recording||preparing}
+              onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
+              {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
+            </select>
+          </label>
+        </div>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
-        data-hero-promo={theme==="money"&&!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording?"true":"false"}
+        data-hero-promo={!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording?"true":"false"}
+        data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
         <div className={videoStyles.heroPromo} aria-hidden="true" />
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
@@ -988,26 +1084,37 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>;
             })}
           </div>
-          <div className={videoStyles.heroBody}>
-            <button className={videoStyles.heroAudio} type="button" data-mandala-money-preview
-              data-video-preview-toggle aria-pressed={previewPlaying}
-              disabled={!source||recording||preparing}
-              onClick={()=>setPreviewPlaying(value=>!value)}>
-              {previewPlaying?<Pause size={15} aria-hidden="true"/>:<Play size={15} aria-hidden="true"/>}
-              {previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
-            </button>
-            <span className={videoStyles.heroSound}><Music2 size={14} aria-hidden="true"/>
-              {music==="none"?supportUi.heroBadge:ui.musicNames[music]}</span>
-            <h2 id="video-hero-heading">{supportUi.heroTitle}</h2>
-            <p>{supportUi.heroIntro}</p>
+          <div className={videoStyles.heroMain}>
+            <div className={videoStyles.heroVisual}>
+              <div className={videoStyles.videoOrb} aria-hidden="true"/>
+              <button className={videoStyles.heroAudio} type="button" data-mandala-money-preview
+                data-video-preview-toggle aria-pressed={previewPlaying}
+                disabled={!source||recording||preparing}
+                onClick={()=>setPreviewPlaying(value=>!value)}>
+                {previewPlaying?<Pause size={14} aria-hidden="true"/>:<Play size={14} aria-hidden="true"/>}
+                {previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+              </button>
+            </div>
+            <div className={videoStyles.heroDetails}>
+              <span className={videoStyles.heroGoal}><Leaf size={12} aria-hidden="true"/>{supportUi.forGoal}</span>
+              <h2 id="video-hero-heading">{supportUi.categoryTitles[videoCategory]}</h2>
+              <p>{supportUi.categoryDescriptions[videoCategory]}</p>
+              <span className={videoStyles.heroFeature}><Sparkles size={12} aria-hidden="true"/>{supportUi.featureAnimation}</span>
+              <span className={videoStyles.heroSound}><Music2 size={12} aria-hidden="true"/>
+                {music==="none"?supportUi.heroBadge:ui.musicNames[music]}</span>
+              <span className={videoStyles.heroFeature}>{duration} {ui.seconds}</span>
+            </div>
+          </div>
+          <div className={videoStyles.heroActions}>
             <button type="button" className={videoStyles.heroCreate}
               data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
-              <Play size={21} fill="currentColor" aria-hidden="true"/>{ui.create}
+              <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
             </button>
+            <a className={videoStyles.heroMore} href="#video-settings">{supportUi.more}</a>
           </div>
         </div>
       </section>
-      {theme==="money" && <fieldset className={videoStyles.backgroundMode} data-mandala-output-mode
+      {<fieldset className={videoStyles.backgroundMode} data-mandala-output-mode
         disabled={recording||preparing}>
         <legend>{ui.renderMode}</legend>
         <div className={videoStyles.backgroundChoices}>
@@ -1052,7 +1159,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(false);}}>
+              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+                if(videoCategory==="health"&&other.id!=="gentle-shield")setVideoCategory("energy");}}>
               <ThemedSceneThumbnail theme={theme} scene={other.id}
                 title={other.label[locale]} photo={sharedThumbnailPhoto}/>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
@@ -1064,6 +1172,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.templateFooter}>
           <small>{ui.templateHint}</small>
         </div>
+      </section>
+
       </section>
 
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
