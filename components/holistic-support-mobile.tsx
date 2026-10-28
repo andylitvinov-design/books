@@ -375,22 +375,22 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
                 <div className={styles.heroFilters} role="group" aria-label={t.gallery}>
-                  <span className={styles.heroMode}><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
-                  <label className={styles.heroFilter}><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
+                  <span className={styles.heroMode} data-support-mode><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
+                  <label className={styles.heroFilter} data-support-filter="master"><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
                     <strong className={styles.filterValue}>{master === "all" ? t.all : master === "andrey" ? t.authorAndrey : t.authorPs}</strong>
                     <select value={master} aria-label={t.master} onChange={event => { setMaster(event.target.value as Author); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeAuthorValues.map(author => <option key={author} value={author}>{author === "andrey" ? t.authorAndrey : t.authorPs}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
-                  <label className={styles.heroFilter}><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
+                  <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
                     <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
-                  <label className={styles.heroFilter}><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
+                  <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
                     <strong className={styles.filterValue}>{t.themes[theme]}</strong>
                     <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
                       {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
