@@ -74,6 +74,37 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
+          // Same six colorful categories as Talismans, positioned above the
+          // original video, with actual client-side filtering (no page change).
+          const categories = root.locator('[data-support-meditation-categories]');
+          assert.equal(await categories.count(), 1, label + " category switcher");
+          assert.equal(await categories.locator('[data-support-meditation-category]').count(), 6,
+            label + " six original-video categories");
+          const categoryGeometry = await page.evaluate(() => {
+            const row = document.querySelector('[data-support-meditation-category-switcher]');
+            const hero = document.querySelector('[data-support-player]');
+            return {rowBottom: row?.getBoundingClientRect().bottom,
+              heroTop: hero?.getBoundingClientRect().top,
+              pageWidth: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth};
+          });
+          assert.ok(categoryGeometry.rowBottom <= categoryGeometry.heroTop + 2,
+            label + " category menu must be ABOVE the hero " + JSON.stringify(categoryGeometry));
+          assert.ok(categoryGeometry.scrollWidth <= categoryGeometry.pageWidth + 3,
+            label + " category menu does not add page overflow");
+          for (const category of ["money", "meaning", "energy"]) {
+            const button = categories.locator('[data-support-meditation-category="' + category + '"]');
+            await button.click();
+            assert.equal(await button.getAttribute("aria-pressed"), "true",
+              label + " category selection " + category);
+            const shown = await root.locator('[data-support-video]').count();
+            assert.ok(shown >= 1 && shown <= 4, label + " filtered real recordings " + category + " = " + shown);
+            assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+              label + " selecting category must not auto-play");
+          }
+          assert.equal(await root.locator('[data-support-video]').count(), 4,
+            label + " back to Energy restores four original recordings");
+
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
           // These two locally bundled original-mock visuals must actually load.
           await page.waitForFunction(() => {
