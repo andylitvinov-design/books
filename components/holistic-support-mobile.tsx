@@ -56,10 +56,27 @@ const copy = {
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", toolsTitle: "2. Choose what helps",
-    recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
+    recommendationTitle: "Your next step", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
+    recEyebrow: "PERSONAL SUPPORT", recUserChoice: "Your chosen focus", recVideoStep: "START HERE · ORIGINAL VIDEO",
+    recSymbolStep: "OPTIONAL · SYMBOLIC SUPPORT", recWhyLabel: "Why this recording:",
+    recWhyText: "It belongs to the topic you chose. The match is thematic, not a prediction of how you will feel.",
+    recVideoLanguage: "Original audio", recOther: "Try another recording",
+    recSymbolIntro: "This symbol relates to your chosen intention; it is not a remedy or a promised result.",
+    recDeeper: "Want to understand your situation more deeply? Your existing Profile offers tests and explanations.",
+    recLevels: {
+      low: "You rated this area relatively low today. Start with a small, voluntary step and notice what suits you.",
+      mid: "Your rating is in the middle of the scale. We can't infer the cause, but can offer a practice on the topic you selected.",
+      high: "You rated this area highly. You can explore this topic without needing to fix anything.",
+    },
+    recThemes: {
+      energy: "Give yourself a moment of attention",
+      money: "Make room to reflect on work and money",
+      relationships: "Take a moment for your connections",
+      goals: "Reconnect with your own direction",
+    },
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Energy practice" },
     optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Energy" },
@@ -89,10 +106,27 @@ const copy = {
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", toolsTitle: "2. Выбери, что поможет",
-    recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
+    recommendationTitle: "Ваш следующий шаг", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
+    recEyebrow: "ПОДДЕРЖКА ДЛЯ ВАС", recUserChoice: "Вы выбрали", recVideoStep: "НАЧНИТЕ ЗДЕСЬ · АВТОРСКОЕ ВИДЕО",
+    recSymbolStep: "ПО ЖЕЛАНИЮ · СИМВОЛИЧЕСКАЯ ПОДДЕРЖКА", recWhyLabel: "Почему эта запись:",
+    recWhyText: "Она относится к выбранной вами теме. Это тематический подбор, а не прогноз результата.",
+    recVideoLanguage: "Оригинальный язык", recOther: "Другое видео",
+    recSymbolIntro: "Символ соответствует выбранному намерению, но не является средством лечения или гарантией результата.",
+    recDeeper: "Хотите понять ситуацию глубже? В вашем существующем Профиле есть тесты и пояснения.",
+    recLevels: {
+      low: "Сегодня вы оценили эту область относительно невысоко. Начните с небольшого действия и посмотрите, подходит ли оно вам.",
+      mid: "Ваша оценка находится посередине шкалы. Мы не знаем причин, но можем предложить запись по выбранной теме.",
+      high: "Вы высоко оценили эту область. Практика может быть интересна и без необходимости что-либо «исправлять».",
+    },
+    recThemes: {
+      energy: "Уделите немного внимания себе",
+      money: "Создайте пространство для ясности в делах",
+      relationships: "Посмотрите на отношения с новой стороны",
+      goals: "Вернитесь к выбранному направлению",
+    },
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Энергоподкачка" },
     optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Энерго-подкачка" },
@@ -122,10 +156,27 @@ const copy = {
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", toolsTitle: "2. Elige lo que te ayuda",
-    recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
+    recommendationTitle: "Tu siguiente paso", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
+    recEyebrow: "APOYO PERSONAL", recUserChoice: "Tu prioridad", recVideoStep: "EMPIEZA AQUÍ · VÍDEO ORIGINAL",
+    recSymbolStep: "OPCIONAL · SÍMBOLO PERSONAL", recWhyLabel: "Por qué esta grabación:",
+    recWhyText: "Está relacionada con el tema que elegiste. Es una coincidencia temática, no una predicción del resultado.",
+    recVideoLanguage: "Audio original", recOther: "Otro vídeo",
+    recSymbolIntro: "El símbolo se relaciona con tu intención; no es un tratamiento ni promete resultados.",
+    recDeeper: "¿Quieres explorar tu situación con más detalle? Tu Perfil existente incluye pruebas y explicaciones.",
+    recLevels: {
+      low: "Hoy has valorado esta área relativamente bajo. Empieza con un pequeño paso voluntario y observa si te sirve.",
+      mid: "Tu valoración está en el centro de la escala. No sabemos la causa, pero podemos ofrecer un vídeo sobre el tema elegido.",
+      high: "Has valorado esta área de forma positiva. Puedes explorarla sin necesidad de cambiar nada.",
+    },
+    recThemes: {
+      energy: "Dedica un momento de atención a ti",
+      money: "Encuentra un espacio para reflexionar sobre trabajo y dinero",
+      relationships: "Regálate una pausa para pensar en tus relaciones",
+      goals: "Vuelve a conectar con tu dirección",
+    },
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Práctica energética" },
     optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Energía" },
@@ -171,6 +222,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const [choice, setChoice] = useState<Choice>("meditation");
   // Explicit button click freezes a private, local-only recommendation snapshot.
   const [recommendation, setRecommendation] = useState<{ focus: Focus; scores: Record<Focus, number> } | null>(null);
+  const [recommendationIndex, setRecommendationIndex] = useState(0);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -201,6 +253,9 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     ? recommendSupportContent({ focus: recommendation.focus, scores: recommendation.scores,
       videos, talismans: TAOIST_TALISMANS, locale }) : null, [recommendation, videos, locale]);
   const recommendedTalisman = TAOIST_TALISMANS.find(item => item.id === recommended?.talismans[0]?.id) ?? null;
+  const recommendationVideo = recommended && recommended.videos.length
+    ? recommended.videos[recommendationIndex % recommended.videos.length] : null;
+  const recommendationMatched = Boolean(recommendationVideo && recommendation && recommendationVideo.topics.includes(focusTopics[recommendation.focus]));
 
   const relevantVideos = useMemo(() => {
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
@@ -224,7 +279,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
   const chooseFocus = (value: Focus) => { setFocus(value); setRecommendation(null); setSelectedId(null); setPlaying(false); };
   const onRecommendations = () => {
-    setRecommendation({ focus, scores: { ...scores } });
+    setRecommendation({ focus, scores: { ...scores } }); setRecommendationIndex(0);
     setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
     // Scroll to the newly rendered choices, not past them to the video player.
@@ -324,47 +379,64 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           </section>
         </div>
 
-        {recommendation ? <section id="support-personal-recommendations" className={styles.recommendationPanel} data-support-personal-recommendations
-          aria-label={t.recommendationTitle} aria-live="polite">
-          <div className={styles.recommendationLead}>
-            <h2><Sparkles size={21} aria-hidden="true" />{t.recommendationTitle}</h2>
-            <p>{t.foci[recommendation.focus]}: {recommendation.scores[recommendation.focus]}/10. {t.recommendationWhy}</p>
-          </div>
-          <div className={styles.recommendationGrid}>
-            {recommended?.videos[0] ? <article className={styles.recommendationCard} data-support-recommended-video={recommended.videos[0].id}>
-              <div className={styles.recommendationVideoPreview}>
-                <Image alt="" src={"https://i.ytimg.com/vi/" + encodeURIComponent(recommended.videos[0].id) + "/mqdefault.jpg"}
-                  width={144} height={81} loading="lazy" unoptimized />
-              </div>
-              <div className={styles.recommendationCopy}>
-                <strong>{t.recommendationVideo}</strong>
-                <span>{recommended.videos[0].title}</span>
-                {!recommended.matchedVideo ? <small>{t.recommendationFallback}</small> : null}
-                <button type="button" onClick={() => {
+        {recommendation ? <section id="support-personal-recommendations" className={styles.recommendationPanel}
+          data-support-personal-recommendations aria-label={t.recommendationTitle} aria-live="polite">
+          <header className={styles.recOverview}>
+            <span className={styles.recEyebrow}><Sparkles size={17} aria-hidden="true" />{t.recEyebrow}</span>
+            <h2>{t.recThemes[recommendation.focus]}</h2>
+            <p>{t.recLevels[recommendation.scores[recommendation.focus] <= 3 ? "low" :
+              recommendation.scores[recommendation.focus] <= 6 ? "mid" : "high"]}</p>
+            <div className={styles.recEvidence}>
+              <span><strong>{t.foci[recommendation.focus]}</strong> {recommendation.scores[recommendation.focus]}/10</span>
+              <span>{t.recUserChoice}</span>
+            </div>
+          </header>
+          {recommendationVideo ? <article className={styles.recPrimary} data-support-recommended-video={recommendationVideo.id}>
+            <div className={styles.recPoster}>
+              <Image alt="" src={"https://i.ytimg.com/vi/" + encodeURIComponent(recommendationVideo.id) + "/hqdefault.jpg"}
+                width={480} height={360} loading="lazy" unoptimized />
+              <span className={styles.recPosterLabel}><Play size={17} fill="currentColor" aria-hidden="true" />{t.recVideoStep}</span>
+            </div>
+            <div className={styles.recPrimaryBody}>
+              <strong className={styles.recAuthor}>{recommendationVideo.author === "psimaster" ? t.authorPs : t.authorAndrey}
+                <span aria-hidden="true"> · </span>{recommendationVideo.sourceLanguage === "ru" ? t.originalRu : t.originalEn}</strong>
+              <h3>{recommendationVideo.title}</h3>
+              <p className={styles.recReason}><strong>{t.recWhyLabel}</strong> {t.recWhyText}</p>
+              {!recommendationMatched ? <p className={styles.recFallback}>{t.recommendationFallback}</p> : null}
+              <div className={styles.recPrimaryActions}>
+                <button type="button" className={styles.recPlay} onClick={() => {
                   setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
-                  pickVideo(recommended.videos[0].id);
+                  pickVideo(recommendationVideo.id);
                   document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
-                }}>{t.seeVideo}<ArrowRight size={16} aria-hidden="true" /></button>
+                }}>{t.seeVideo}<ArrowRight size={18} aria-hidden="true" /></button>
+                {recommended && recommended.videos.length > 1 ? <button type="button"
+                  className={styles.recOther} data-support-other-video
+                  onClick={() => setRecommendationIndex(index => (index + 1) % recommended.videos.length)}>
+                  <RotateCcw size={17} aria-hidden="true" />{t.recOther}
+                </button> : null}
               </div>
-            </article> : null}
-            {recommendedTalisman ? <article className={styles.recommendationCard} data-support-recommended-talisman={recommendedTalisman.id}>
-              <Image className={styles.recommendationTalismanImage} src={recommendedTalisman.image}
-                alt={recommendedTalisman[locale].title} width={92} height={112} />
-              <div className={styles.recommendationCopy}>
-                <strong>{t.recommendationTalisman}</strong>
-                <span>{recommendedTalisman[locale].title}</span>
-                <small>{t.symbolicNote}</small>
-                <button type="button" onClick={() => {
-                  changeChoice("talisman");
-                  document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
-                }}>{t.seeTalisman}<ArrowRight size={16} aria-hidden="true" /></button>
-              </div>
-            </article> : null}
+            </div>
+          </article> : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+          {recommendedTalisman ? <article className={styles.recSymbol} data-support-recommended-talisman={recommendedTalisman.id}>
+            <Image className={styles.recSymbolImage} src={recommendedTalisman.image}
+              alt={recommendedTalisman[locale].title} width={92} height={112} />
+            <div className={styles.recSymbolBody}>
+              <span className={styles.recSymbolLabel}>{t.recSymbolStep}</span>
+              <h3>{recommendedTalisman[locale].title}</h3>
+              <p>{t.recSymbolIntro}</p>
+              <button type="button" className={styles.recCatalogLink} onClick={() => {
+                changeChoice("talisman");
+                document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
+              }}>{t.seeTalisman}<ArrowRight size={16} aria-hidden="true" /></button>
+            </div>
+          </article> : null}
+          <div className={styles.recDeeper}>
+            <p>{t.recDeeper}</p>
+            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-recommended-detailed-analysis>
+              <BarChart3 size={18} aria-hidden="true" />{t.detailed}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
-          <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-            className={styles.detailedAnalysisLink} data-support-recommended-detailed-analysis>
-            <BarChart3 size={18} aria-hidden="true" />{t.detailed}<ArrowRight size={17} aria-hidden="true" />
-          </Link>
         </section> : null}
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
