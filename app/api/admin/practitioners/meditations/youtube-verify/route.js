@@ -42,9 +42,7 @@ export async function POST(request){
       throw new AppError('YOUTUBE_WRONG_OWNER_CHANNEL',409)
     if(video.status?.privacyStatus!=='unlisted')throw new AppError('YOUTUBE_NOT_UNLISTED',409)
     const processed=video.status?.uploadStatus==='processed'
-    const record=await meditationRecordYoutubeReceipt(config,input.id,{videoId:input.videoId,channelId,processed})
-    if(channelMap[record.item.language]!==channelId)
-      throw new AppError('YOUTUBE_WRONG_LANGUAGE_CHANNEL',409)
+    const record=await meditationRecordYoutubeReceipt(config,input.id,{videoId:input.videoId,channelId,processed,channelMap})
     return NextResponse.json({item:record.item,processed},{headers:PRIVATE_HEADERS})
   }catch(error){
     const {status,code}=safeError(error)
