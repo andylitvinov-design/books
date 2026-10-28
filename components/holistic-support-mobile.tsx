@@ -11,10 +11,9 @@ import {
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
+import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
-import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
-import type { SupportRequestKind } from "@/components/remote-energy-support-booking";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
@@ -29,7 +28,7 @@ export type SupportMobileVideo = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing";
+type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters";
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
@@ -43,10 +42,6 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "pump", Icon: RotateCcw },
   { id: "healing", Icon: HandHeart },
 ];
-const focusRequest: Record<Focus, string> = {
-  energy: "Inner balance and calm", money: "Work and money",
-  relationships: "Connection and relationships", goals: "Work and money",
-};
 
 const copy = {
   en: {
@@ -190,9 +185,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
-  const [requestOpen, setRequestOpen] = useState(false);
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
-  const [orderKind, setOrderKind] = useState<SupportRequestKind>("energy");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
@@ -341,9 +334,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 onClick={() => changeChoice("pump")}>
                 <BookOpen size={15} aria-hidden="true" />{t.optionsCompact.pump}
               </button>
-              <Link href={"/" + locale + "/masters"} prefetch={false} aria-label={t.healingMasters}>
+              <button type="button" data-support-tool="masters" aria-pressed={choice === "masters"}
+                onClick={() => changeChoice("masters")} aria-label={t.healingMasters}>
                 <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
-              </Link>
+              </button>
             </div>
           </section>
         </div>
@@ -351,31 +345,6 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {scene ? (
             <>
-              <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
-                <div className={styles.videoHeading}>
-                  <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>
-                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
-                </div>
-                {suggested && choice === "meditation" ? <p className={styles.gallerySelection}
-                  data-support-meditation-basis role="status">
-                  {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}
-                </p> : null}
-                {relevantVideos.length > 0 ? (
-                  <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
-                    {relevantVideos.map(video => <button type="button" key={video.id}
-                      className={styles.videoCard} aria-pressed={selected?.id === video.id}
-                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
-                      <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
-                        alt="" width={320} height={180} unoptimized loading="lazy" />
-                      <span className={styles.videoDark} aria-hidden="true" />
-                      <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
-                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
-                    </button>)}
-                  </div>
-                ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
-                <p className={styles.videoHint}>{t.galleryHint}</p>
-
-              </div>
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -420,6 +389,31 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </div>
                 )}
               </div>
+              <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
+                <div className={styles.videoHeading}>
+                  <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>
+                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
+                </div>
+                {suggested && choice === "meditation" ? <p className={styles.gallerySelection}
+                  data-support-meditation-basis role="status">
+                  {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}
+                </p> : null}
+                {relevantVideos.length > 0 ? (
+                  <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
+                    {relevantVideos.map(video => <button type="button" key={video.id}
+                      className={styles.videoCard} aria-pressed={selected?.id === video.id}
+                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
+                      <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
+                        alt="" width={320} height={180} unoptimized loading="lazy" />
+                      <span className={styles.videoDark} aria-hidden="true" />
+                      <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
+                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
+                    </button>)}
+                  </div>
+                ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+                <p className={styles.videoHint}>{t.galleryHint}</p>
+
+              </div>
               <div className={styles.videoSourceRow} data-support-video-source>
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
@@ -443,34 +437,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               </div>
             </div>
 
-          ) : choice === "healing" ? (
-            <div className={styles.insetPanel} data-support-healing-panel>
-              <div className={styles.insetIntro}><HandHeart size={33} aria-hidden="true" />
-                <div><h2>{t.healingTitle}</h2><p>{t.healingIntro}</p></div></div>
-              <div className={styles.consultOptions}>
-                <Link href={"/" + locale + "/masters"} prefetch={false}><UserRound size={27} aria-hidden="true" /><span>{t.healingMasters}</span><ArrowRight size={22} aria-hidden="true" /></Link>
-                <Link href={"/" + locale + "/services/remote-energy-support"} prefetch={false}><HandHeart size={27} aria-hidden="true" /><span>{t.healingServices}</span><ArrowRight size={22} aria-hidden="true" /></Link>
-              </div>
-              <div className={styles.healingRequest}>
-                <button type="button" className={styles.secondaryButton}
-                  aria-expanded={requestOpen} aria-controls="support-mobile-master-request"
-                  onClick={() => setRequestOpen(open => !open)}>{requestOpen ? t.energyHide : t.energyAction}</button>
-                {requestOpen ? <div id="support-mobile-master-request">
-                  <HolisticInlineSupportOrder locale={locale} kind={orderKind} initialGoal={focusRequest[focus]}
-                    onKindChange={setOrderKind} onClose={() => setRequestOpen(false)} />
-                </div> : null}
-                <small>{t.energyNote}</small>
-              </div>
+          ) : choice === "healing" || choice === "masters" ? (
+            <div data-support-healing-panel>
+              <HolisticSupportMasterGallery locale={locale} kind={choice} />
             </div>
           ) : (
-            <div className={styles.insetPanel}>
-              <div className={styles.insetIntro}><TestTubeDiagonal size={33} aria-hidden="true" />
-                <div><h2>{t.testsTitle}</h2><p>{t.testsIntro}</p></div></div>
-              <div className={styles.consultOptions}>
-                <Link href={"/" + locale + "/personality-profiles"} prefetch={false}><BarChart3 size={27} aria-hidden="true" /><span>{t.detailed}</span><ArrowRight size={22} aria-hidden="true" /></Link>
-                <Link href={"/" + locale + "/coaching"} prefetch={false}><UserRound size={27} aria-hidden="true" /><span>{t.consult}</span><ArrowRight size={22} aria-hidden="true" /></Link>
-              </div>
-              <p className={styles.consultNote}>{t.consultNote}</p>
+            <div data-support-consultation-panel>
+              <HolisticSupportMasterGallery locale={locale} kind="consultation" />
             </div>
           )}
         </section>
