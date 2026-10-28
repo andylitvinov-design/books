@@ -14,6 +14,7 @@ on:
       - "components/app/practice-video-field.jsx"
       - "components/app/service-introduction-editor.jsx"
       - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
       - "app/api/admin/youtube-publications/**"
       - "app/api/app/practice/youtube/share/**"
       - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
@@ -52,6 +53,7 @@ on:
       - "app/api/admin/telegram-video/**"
       - "app/api/internal/housekeeping/route.js"
       - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
       - "app/api/admin/youtube-publications/**"
       - "app/api/app/practice/youtube/share/**"
       - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
@@ -79,7 +81,7 @@ jobs:
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
-        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js app/api/admin/youtube-publications/route.js "app/api/admin/youtube-publications/[id]/preview/route.js" app/api/app/practice/youtube/share/route.js lib/youtube/owner-publication-service.js components/admin-youtube-publications.jsx components/app/practice-youtube-share.jsx components/app/practice-video-field.jsx components/app/service-introduction-editor.jsx components/admin-telegram-videos.jsx tests/youtube-owner-publications.test.mjs tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
+        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js app/api/admin/youtube-publications/route.js "app/api/admin/youtube-publications/[id]/preview/route.js" app/api/app/practice/youtube/share/route.js lib/youtube/owner-publication-service.js lib/youtube/upload-history-store.js components/admin-youtube-publications.jsx components/app/practice-youtube-share.jsx components/app/practice-video-field.jsx components/app/service-introduction-editor.jsx components/admin-telegram-videos.jsx tests/youtube-owner-publications.test.mjs tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit --incremental false
       - name: Next production build
