@@ -8,6 +8,8 @@ on:
       - 'app/api/app/\[...path\]/route.js'
       - 'lib/practitioners/booking-master-email.js'
       - 'tests/booking-*.test.mjs'
+      - 'tests/booking-arrival-transaction.integration.mjs'
+      - 'tests/booking-master-email-behavior.integration.mjs'
       - 'tests/remote-booking-master-alerts.test.mjs'
       - 'app/api/app/notification-channels/**'
       - 'components/app/messenger-notification-settings.*'
@@ -45,10 +47,10 @@ jobs:
       - name: Messenger policy, privacy and Settings smoke tests
         run: node --test tests/messenger-notification-subscriptions.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/notification-stack-integration.test.mjs tests/holistic-house-post-signup-install.test.mjs
       - name: Atomic booking arrival, replay, ownership and neutral email adapter
-        run: node --conditions=react-server --test tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs
+        run: node --conditions=react-server --test tests/booking-arrival-transaction.integration.mjs tests/booking-master-email-behavior.integration.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs
       - name: Booking lint and TypeScript
         run: |
-          npx --no-install eslint lib/app/repository.js lib/practitioners/booking-master-email.js app/api/app/'[...path]'/route.js tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs
+          npx --no-install eslint lib/app/repository.js lib/practitioners/booking-master-email.js app/api/app/'[...path]'/route.js tests/booking-arrival-transaction.integration.mjs tests/booking-master-email-behavior.integration.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs
           npx --no-install tsc --noEmit
       - name: Lint new notification service and Settings integration
         run: npx eslint lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx lib/app/client-telegram-policy.js lib/app/client-telegram-transport.js lib/app/client-telegram-webhook.js lib/app/client-telegram-dispatch.js app/api/app/notification-channels/telegram/webhook/route.js app/api/app/notification-channels/telegram/setup/route.js app/api/app/practitioner-client-messages/route.js components/app/customer-telegram-bot-setup.jsx components/app/crm-manager.jsx components/pwa-registration.tsx components/app/post-signup-install-offer.jsx lib/pwa/install-prompt.js lib/app/client-telegram-owner-pilot.js app/api/app/notification-channels/telegram/test/route.js

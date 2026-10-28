@@ -58,25 +58,27 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  // portrait redirects and the new exact canonical-course catalog assertion.
  const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
  assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
- // The approved Library header moved account access into the exact My House
- // menu item. Freeze that complete handoff, then preserve the old rest-of-flow hash.
- const accountEntry=`        const accountMenu = page.locator('.site-navigation details.site-main-menu');
+ // The global My Space trigger is a dialog button, not an account link.
+ // Freeze the explicit menu Profile gesture without opening that provider-backed
+ // dialog, then preserve the original rest-of-flow hash unchanged.
+ const accountEntry=`        // My Space is a global dialog trigger. Use the separate menu Profile
+        // link without opening that provider-backed dialog or Google sign-in.
+        const accountMenu = page.locator('.site-navigation details.site-main-menu');
         await expect(accountMenu).toHaveCount(1);
         await expect(accountMenu).toHaveJSProperty('open', false);
         await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
+        const accountLink = accountMenu.locator('.site-main-menu-grid > a[data-nav-item="profile"]');
         await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Mi Casa');
+        await expect(accountLink).toHaveAccessibleName('Mi perfil');
         await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
+        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
         await click(accountLink);`;
- assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu-to-account handoff');
+ assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu Profile handoff');
  const priorAccountEntry=`        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
         await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));`;
  const normalized=block.replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
- assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and account menu handoff');
+ assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and menu Profile handoff');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{
