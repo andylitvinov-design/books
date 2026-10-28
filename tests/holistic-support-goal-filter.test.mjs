@@ -7,6 +7,7 @@ import { goalTopicForSelection, rankSupportGoalVideos } from "../lib/holistic-su
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const editor = read("components/holistic-support-goal-filter.tsx");
 const client = read("components/holistic-support-mobile.tsx");
+const guide = read("components/holistic-support-inline-guide.tsx");
 const css = read("components/holistic-support-goal-filter.module.css");
 const mainCss = read("components/holistic-support-mobile.module.css");
 const sample = [
@@ -143,22 +144,23 @@ test("mobile readability: narrower categories and larger legible controls", () =
   assert.match(css, /\.actions \{ position: static;/);
 });
 
-test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
+test("all published goal formats stay available, with recommendations gated behind an explicit conversation", () => {
   for (const kind of ["meditation","consultation","tests","courses","talismans",
     "healing","masters","initiations","mandala"]) {
-    assert.match(client, new RegExp('data-support-goal-action="' + kind + '"'));
+    assert.ok(editor.includes('"'+kind+'"'),"goal filter retains category "+kind);
   }
-  assert.match(client, /\/tests"/);
-  assert.match(client, /\/explore\/business"/);
-  assert.match(client, /changeChoice\("talisman"\)/);
-  assert.match(client, /changeChoice\("masters"\)/);
-  assert.match(client, /changeChoice\("consultation"\)/);
-  assert.match(client, /changeChoice\("healing"\)/);
-  assert.match(client, /academy\/reiki\/tantra-reiki\/discover/);
-  assert.match(client, /holistic-support\/mandala/);
-  assert.match(client, /activeGoalFormats\.includes\("meditation"\)/);
-  assert.match(client, /activeGoalFormats\.includes\("consultation"\)/);
-  assert.match(client, /activeGoalFormats\.length === 0/);
+  for (const kind of ["meditation","consultation","tests","courses","healing","mandala"]) {
+    assert.ok(guide.includes('"'+kind+'"'),"guide supports "+kind);
+  }
+  assert.match(client, /guideOpen && !goalFilterOpen \? <HolisticSupportInlineGuide/);
+  assert.match(guide, /goalSelection\.recommendationFormats/);
+  assert.match(guide, /data-support-guide-show-recommendations/);
+  assert.match(guide, /data-support-guide-format=\{item\.id\}/);
+  assert.match(guide, /data-support-guide-recommendations ref=\{resultsRef\}/);
+  assert.match(guide, /client\/tests\?journey=/);
+  assert.match(guide, /\/explore\/business/);
+  assert.match(guide, /holistic-support\/mandala/);
+  assert.match(guide, /onChoice\(kind === "healing" \? "healing" : "consultation"\)/);
   assert.match(client, /goalHasInlineFormat/);
   assert.match(client, /setGoalRecommendationFormats\(formats\)/);
   assert.match(client, /goalSectorCheckinKey\[sector\]/);
@@ -167,7 +169,7 @@ test("recommendations lead to existing resources without pretending a booking or
   for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones",
     "Консультации и сессии", "Видео и медитации", "Видеомандалы",
     "Consultations & sessions", "Consultas y sesiones"]) {
-    assert.ok(editor.includes(text), text);
+    assert.ok(editor.includes(text),text);
   }
   assert.doesNotMatch(client, /92% match|Найдено 32|Found 32/);
 });
