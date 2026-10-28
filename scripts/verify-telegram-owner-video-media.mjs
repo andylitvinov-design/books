@@ -21,7 +21,7 @@ try{
  const photos=[join(dir,'blue.jpg'),join(dir,'yellow.jpg'),join(dir,'red.jpg')]
  const sounds=[join(dir,'one.mp3'),join(dir,'two.mp3')]
  for(const [i,color] of ['blue','yellow','red'].entries())
-   run(['-f','lavfi','-i','color=c='+color+':s=640x360:d=1',
+   run(['-f','lavfi','-i','color=c='+color+':s='+(i===0?'640x800':'640x360')+':d=1',
      '-frames:v','1','-update','1',photos[i]])
  for(const [i,frequency] of [550,770].entries())
    run(['-f','lavfi','-i','sine=frequency='+frequency+':duration=2',
@@ -61,6 +61,21 @@ try{
  }
  if(seen.join(',')!=='blue,yellow,red')
    throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED colors='+seen.join(','))
+ // A portrait original must keep its geometry inside the 16:9 canvas:
+ // 640/800 input at 1080px tall yields exactly 864px of blue content.
+ // Cropping/stretching the artwork or producing a portrait MP4 fails this.
+ const strip=spawnSync(binary,['-hide_banner','-loglevel','error','-i',target,
+   '-frames:v','1','-vf','crop=1920:2:0:540,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:16384})
+ if(strip.status!==0||strip.stdout?.length!==1920*2*3)
+   throw Error('VIDEO_ASPECT_FRAME_READ_FAILED')
+ let blueWidth=0
+ for(let i=0;i<1920*3;i+=3){
+   const [r,g,b]=strip.stdout.subarray(i,i+3)
+   if(b>r+60&&b>g+60)blueWidth++
+ }
+ if(Math.abs(blueWidth-864)>8)
+   throw Error('VIDEO_ASPECT_RATIO_SQUEEZED width='+blueWidth)
 
  // Full-capacity integration: interleave 15 photos and 15 audio pieces using
  // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
