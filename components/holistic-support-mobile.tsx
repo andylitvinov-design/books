@@ -738,7 +738,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
             onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat && choice !== "pump" && choice !== "tests" ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
-              <p>{activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}</p>
+              <p data-support-goal-empty={activeGoalFormats.length === 0 ? "true" : undefined}>
+                {activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}
+              </p>
               <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
             </div>
           ) : scene ? (
