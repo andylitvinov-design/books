@@ -10,6 +10,7 @@ const COPY={
     upload:'Save in My House',busy:'Uploading securely…',download:'Get private download',play:'Play',delete:'Delete video',confirm:'Delete this saved video from your private account?',
     refresh:'Refresh',error:'Video action was not completed. Please try again.',completed:'Video confirmed in your private cabinet.',
     size:'Each file ≤12 MB · Up to 3 videos · Finished MP4 only.',music:'This page stores finished videos, not your original photos.',
+    states:{ready:'Ready',pending:'Upload pending',failed:'Upload failed',deleting:'Delete pending'},
     themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals'}},
   ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',
     empty:'Пока нет сохранённых видео.',disabled:'Облачное сохранение пока выключено. Бесплатное скачивание на устройство работает.',
@@ -17,6 +18,7 @@ const COPY={
     upload:'Сохранить в My House',busy:'Безопасная загрузка…',download:'Приватное скачивание',play:'Смотреть',delete:'Удалить видео',confirm:'Удалить это видео из личного кабинета?',
     refresh:'Обновить',error:'Действие не завершено. Попробуйте снова.',completed:'Видео подтверждено в личном кабинете.',
     size:'Каждый файл ≤12 МБ · Не более 3 видео · Только готовый MP4.',music:'Исходные фотографии и пожелания здесь не хранятся.',
+    states:{ready:'Готово',pending:'Загрузка не завершена',failed:'Ошибка загрузки',deleting:'Удаление не завершено'},
     themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели'}}
 }
 const formats={portrait:'9:16',square:'1:1',landscape:'16:9'}
@@ -91,6 +93,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       await reload()
     }catch{
       setNotice(t.error)
+      await reload()
     }finally{setBusy(false)}
   }
   async function view(id){
@@ -143,10 +146,10 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:14}}>
         {list.map(video=><article key={video.id} style={{padding:12,border:'1px solid #d1dfd6',borderRadius:14,background:'#faf8f2'}}>
           <strong>{t.themes[video.theme]}</strong>
-          <p>{formats[video.aspect]} · {video.duration} s · {Math.round(video.bytes/1024)} KB</p>
+          <p>{formats[video.aspect]} · {video.duration} s · {Math.round(video.bytes/1024)} KB · {t.states[video.status]||video.status}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-            <button type="button" disabled={busy} onClick={()=>void view(video.id)}>{t.play}</button>
-            <button type="button" disabled={busy} onClick={()=>void prepareDownload(video.id)}>{t.download}</button>
+            <button type="button" disabled={busy||video.status!=='ready'} onClick={()=>void view(video.id)}>{t.play}</button>
+            <button type="button" disabled={busy||video.status!=='ready'} onClick={()=>void prepareDownload(video.id)}>{t.download}</button>
             <button type="button" disabled={busy} onClick={()=>void remove(video.id)}>{t.delete}</button>
           </div>
           {play?.id===video.id&&<video src={play.url} controls playsInline preload="metadata" style={{width:'100%',marginTop:10}}/>}
