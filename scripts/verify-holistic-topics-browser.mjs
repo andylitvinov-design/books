@@ -53,13 +53,16 @@ for (const engine of [chromium, webkit]) {
         page.on("pageerror", error => errors.push(error.message));
         page.on("request", request => {
           const url = new URL(request.url());
-          if (url.origin === origin && !["GET", "HEAD"].includes(request.method()))
-            unexpectedWrites.push(request.method() + " " + url.pathname);
+          // Do not store external hostnames, paths, query strings or request
+          // bodies: only whether an attempted write crossed the local origin.
+          if (!["GET", "HEAD"].includes(request.method()))
+            unexpectedWrites.push(request.method() + " " +
+              (url.origin === origin ? url.pathname : "[external-origin]"));
         });
-        // Fail closed *before transport*, including Next.js server actions and
-        // CRM/payment paths outside /api/. An after-the-fact request listener
-        // cannot prevent a mutation. All browser acceptance is read-only.
-        await page.route(url => url.origin === origin, async route => {
+        // Fail closed *before transport* for both first-party and third-party
+        // writes. The older same-origin-only guard could not prevent a direct
+        // POST to an external collection endpoint before consent.
+        await page.route(url => ["http:", "https:"].includes(url.protocol), async route => {
           if (!["GET", "HEAD"].includes(route.request().method())) {
             await route.abort("blockedbyclient");
             return;
@@ -69,7 +72,7 @@ for (const engine of [chromium, webkit]) {
         // Synthetic public catalog only: proves UI without using personal accounts,
         // posting enquiries, charging, or assuming real provider availability.
         // This narrower route takes priority; it must never fulfill a write.
-        await page.route(url => url.pathname === directoryPath, async route => {
+        await page.route(url => url.origin === origin && url.pathname === directoryPath, async route => {
           if (route.request().method() !== "GET") {
             await route.abort("blockedbyclient");
             return;
@@ -106,27 +109,31 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
-          // Negative control: prove the read-only Playwright guard actually
-          // blocks a browser POST before network transport. This nonexistent
-          // route has no mutation handler and contains no user information.
-          // Exercise once per engine; the remaining 16 cases stay read-only.
+          // Negative controls for both first-party and cross-origin writes.
+          // The .invalid hostname is reserved and must never be contacted:
+          // the Playwright route aborts the POST before any network transport.
+          // Exercise once per engine, without user data or production tokens.
           if (locale === "en" && width === 320) {
-            const probePath = "/__hh-read-only-qa-probe";
-            const outcome = await page.evaluate(async path => {
-              try {
-                const result = await fetch(path, { method: "POST", body: "synthetic-only" });
-                return "HTTP " + result.status;
-              } catch {
-                return "blocked";
-              }
-            }, probePath);
-            assert.equal(outcome, "blocked", label + " blocks synthetic POST before transport");
-            const probe = "POST " + probePath;
-            assert.equal(unexpectedWrites.filter(value => value === probe).length, 1,
-              label + " observes exactly one intentional blocked-write probe");
-            // Do not clear any other unexpected writes: the final assertion
-            // must still reject unsolicited enquiry, booking and payment calls.
-            unexpectedWrites.splice(unexpectedWrites.indexOf(probe), 1);
+            for (const probe of [
+              { url: "/__hh-read-only-qa-probe", record: "POST /__hh-read-only-qa-probe" },
+              { url: "https://hh-read-only-probe.invalid/__hh-read-only-qa-probe",
+                record: "POST [external-origin]" },
+            ]) {
+              const outcome = await page.evaluate(async url => {
+                try {
+                  const result = await fetch(url, { method: "POST", body: "synthetic-only" });
+                  return "HTTP " + result.status;
+                } catch {
+                  return "blocked";
+                }
+              }, probe.url);
+              assert.equal(outcome, "blocked", label + " blocks synthetic POST before transport");
+              assert.equal(unexpectedWrites.filter(value => value === probe.record).length, 1,
+                label + " observes exactly one intentionally blocked POST");
+              // Remove only this known synthetic probe. Any unsolicited write
+              // (including an off-origin one) remains a fatal final assertion.
+              unexpectedWrites.splice(unexpectedWrites.indexOf(probe.record), 1);
+            }
           }
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
