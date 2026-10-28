@@ -79,6 +79,16 @@ test("right action tiles no longer stretch four-score left card to 291px", () =>
   assert.match(css, /\.page \.tools \.toolButton:last-child \{[\s\S]*?min-height: 68px;/);
 });
 
+test("empty goal format selection shows notice outside collapsed other-options list", () => {
+  const notice = client.indexOf("data-support-goal-empty");
+  const more = client.indexOf('<details className={styles.journeyMore}');
+  assert.ok(notice >= 0 && more > notice, "visible notice precedes closed details");
+  assert.equal((client.match(/data-support-goal-empty/g) ?? []).length, 1,
+    "no hidden duplicate notice");
+  assert.match(client, /goalSelection && activeGoalFormats\.length === 0 \? <p/);
+  assert.match(client, /role="status" data-support-goal-empty/);
+});
+
 test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   const result = ts.transpileModule(client, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
