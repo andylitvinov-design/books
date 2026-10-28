@@ -6,6 +6,13 @@ on:
     paths:
       - "components/academy-course-capture.tsx"
       - "components/contact-channel-chooser.tsx"
+      - "components/remote-energy-support-booking.tsx"
+      - "components/holistic-support-master-gallery.tsx"
+      - "components/holistic-support-mobile.tsx"
+      - "lib/practitioners/remote-energy-support.js"
+      - "lib/whatsapp-enquiry.js"
+      - "tests/reiki-mobile-order-crm.test.mjs"
+      - "scripts/verify-reiki-mobile-order-browser.mjs"
       - "components/energywork-reiki-capture.tsx"
       - "components/kundalini-reiki-course.tsx"
       - "components/kundalini-reiki-order-capture.tsx"
@@ -49,6 +56,8 @@ jobs:
           tests/academy-course-capture.test.mjs
           tests/reiki-landing-conversion.test.mjs
           tests/contact-channel-chooser.test.mjs
+          tests/reiki-mobile-order-crm.test.mjs
+          tests/remote-energy-support-booking.test.mjs
           tests/energywork-kundalini-ygg-study.test.mjs
       - name: Type-check Next app
         run: npx --no-install tsc --noEmit
@@ -57,6 +66,9 @@ jobs:
           npx --no-install eslint
           components/academy-course-capture.tsx
           components/contact-channel-chooser.tsx
+          components/remote-energy-support-booking.tsx
+          components/holistic-support-master-gallery.tsx
+          components/holistic-support-mobile.tsx
           components/energywork-reiki-capture.tsx
           components/kundalini-reiki-course.tsx
           components/kundalini-reiki-order-capture.tsx
