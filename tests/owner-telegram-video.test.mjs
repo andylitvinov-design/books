@@ -11,7 +11,7 @@ import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVi
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
-import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
+import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
 import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
 import {OWNER_AI_COMMANDS,ownerScopedTelegramCommands} from '../lib/practitioners/owner-ai-telegram.mjs'
@@ -666,4 +666,35 @@ test('YouTube owner auth recovery uses fixed destinations across admin, practiti
   assert.match(auth,/continueTo === 'practitioner-youtubeConnect'\s*\? \`\$\{origin\}\/admin\/login\?destination=youtubeConnect`/)
   assert.match(auth,/!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(auth,/issueTrustedAdminSession\(response/)
+})
+
+test('private MP4 cut selector binds both owner UUIDs and rejects path traversal',()=>{
+ const job='b6e8526e-c251-4dd5-a9ca-2886c430f912'
+ const cut='7798ea59-ef42-4dd4-a236-41ba9d697894'
+ const path='telegram-slides/'+job+'-cut-'+cut+'.mp4'
+ assert.equal(ownerVideoCutPath(job,cut),path)
+ assert.equal(ownerVideoCutId(job,path),cut)
+ assert.equal(ownerVideoCutPath(job,'../../path'),null)
+ assert.equal(ownerVideoCutId(job,path+'.bak'),null)
+ assert.equal(ownerVideoCutId('wrong',path),null)
+ assert.equal(ownerVideoCutId(job,'https://example.com/video.mp4'),null)
+ assert.deepEqual(ownerVideoByteRange('bytes=0-1',12617528),{status:206,start:0,end:1})
+ assert.equal(ownerVideoByteRange('bytes=99999999-',12617528),null)
+})
+test('manual YouTube handoff reads current exact private cut, not an unsigned public URL',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const service=read('lib/practitioners/owner-telegram-video-service.js')
+ const playback=read('app/api/admin/telegram-video/drafts/[id]/file/route.js')
+ const listing=read('app/api/admin/telegram-video/drafts/route.js')
+ const ui=read('components/admin-telegram-videos.jsx')
+ assert.match(playback,/ownerMaterialRequest\(request/)
+ assert.match(listing,/ownerMaterialRequest\(request/)
+ assert.match(service,/ownerVideoCutId\(job\.job_id,job\.storage_path\)/)
+ assert.match(service,/row\?\.state!=='preview'\|\|row\.storage_path!==expected/)
+ assert.match(service,/ownerVideoCutPath\(id,cutId\)/)
+ assert.match(service,/download'\)==='1'/)
+ assert.match(service,/Cache-Control':'private, no-store/)
+ assert.match(ui,/data-owner-selected-cut/)
+ assert.match(ui,/studio\.youtube\.com/)
+ assert.doesNotMatch(ui,/metricool\.com\/api/)
 })
