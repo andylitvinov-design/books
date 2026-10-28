@@ -171,7 +171,7 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false}) {
           </div>
         </form>
       </>}
-      {model.verified&&phase==='offers'&&<div className={styles.recommendations}
+      {model.verified&&!model.needsProfessional&&phase==='offers'&&<div className={styles.recommendations}
         data-test-result-offers aria-label={t.next}>
         <div className={styles.offerGrid}>{offers.filter(offer=>offer.id!=='test').slice(0,3).map(offer=>
           <Link key={offer.id} href={offer.href} prefetch={false}
@@ -183,7 +183,7 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false}) {
           href={offers.find(offer=>offer.id==='test')?.href||'/'+lang+'/client/tests'}>
           {t.more}<ArrowRight size={15} aria-hidden="true"/></Link>
       </div>}
-      {turns.length>0&&<button type="button" className={styles.restart} onClick={reset}>
+      {turns.length>0&&phase!=='safety'&&<button type="button" className={styles.restart} onClick={reset}>
         <RotateCcw size={15} aria-hidden="true"/>{t.reset}</button>}
       <p className={styles.privacy}><ShieldCheck size={14} aria-hidden="true"/>{t.privacy}</p>
       <small className={styles.disclaimer}>{t.disclaimer}</small>
