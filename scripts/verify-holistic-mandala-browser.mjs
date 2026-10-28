@@ -157,6 +157,27 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
         }
 
+        // A second real browser recording tests the reusable atmospheric
+        // clip that users can place underneath another video. No client
+        // photo is submitted to a provider or required by this render mode.
+        if (engine === "chromium" && locale === "en" && width === 390) {
+          const backgroundMode = page.locator("[data-mandala-output-mode] button").nth(1);
+          await backgroundMode.click();
+          assert.equal(await backgroundMode.getAttribute("aria-pressed"), "true");
+          await page.locator("[data-mandala-video-generate]").click();
+          const backgroundLink = page.locator("[data-mandala-video-download]");
+          await backgroundLink.waitFor({ state: "visible", timeout: 45000 });
+          const filename = await backgroundLink.getAttribute("download");
+          assert.match(filename || "", /^holistic-house-money-background\\.(webm|mp4)$/);
+          const [backgroundDownload] = await Promise.all([
+            page.waitForEvent("download", { timeout: 20000 }),
+            backgroundLink.click(),
+          ]);
+          const backgroundBytes = await bufferFromStream(await backgroundDownload.createReadStream());
+          assert.ok(backgroundBytes.length > 10000, "moving background is real video bytes");
+          assert.deepEqual(uploaded, [], "background video must not upload any client content");
+        }
+
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
         await focus.click();
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "true");
