@@ -474,8 +474,8 @@
     display: grid;
     grid-template-areas: "assessment profile" "tools tools";
     grid-template-columns: minmax(0,1.17fr) minmax(0,.83fr);
-    align-items: stretch; gap: 6px 9px;
-    margin: 0 0 8px; padding: 8px 10px 7px; min-width: 0;
+    align-items: stretch; gap: 5px 9px;
+    margin: 0 0 8px; padding: 7px 10px 3px; min-width: 0;
     border: 1px solid #cddccf; border-radius: 21px;
     background: linear-gradient(135deg,#fffdf8f7,#eaf2eaf4);
     box-shadow: 0 8px 22px #1b54481c;
@@ -554,7 +554,7 @@
   .profile > .recommendButton svg { width: 19px; height: 19px; flex: none; }
   .profile > .recommendButton .recommendLong { display: inline; overflow-wrap: normal; }
   .profile > .recommendButton .recommendShort { display: none; }
-  .tools { grid-area: tools; padding-top: 7px;
+  .tools { grid-area: tools; padding-top: 5px;
     border-top: 1px solid #cee0d1; }
   .tools h2 { margin: 0 0 4px; min-height: 19px; }
   .toolGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
