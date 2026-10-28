@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useMemo,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,Inbox,MessageCircle,Mic,PackageCheck,RefreshCw,ShoppingBag} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,Inbox,MessageCircle,PackageCheck,RefreshCw,ShoppingBag} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-orders-clients.module.css'
 
@@ -14,7 +14,7 @@ const TEXT={
   open:'Open order',back:'My orders',number:'Request',practitioner:'Practitioner',details:'Order details',
   conditions:'Selected terms',status:'Request status',noPrice:'Price to be agreed',minutes:'min',
   initial:'Original request',chat:'Conversation about this order',voice:'Record an audio message',
-  voiceInfo:'Audio messages open in a separate private conversation with this practitioner. Order comments remain here.',
+  voiceInfo:'Record or attach audio directly above. The file belongs only to this order and is played inside its private conversation.',
   noVoice:'Audio chat is available when the practitioner has a verified profile.',
   materials:'Materials and progress',materialsInfo:'Delivered materials appear in your private Cabinet after confirmation.',
   myPractice:'My practices',payment:'Payment',paymentInfo:'A request is not a confirmed booking or payment.',
@@ -27,7 +27,7 @@ const TEXT={
   open:'Открыть заказ',back:'Мои заказы',number:'Заявка',practitioner:'Мастер',details:'Детали заказа',
   conditions:'Выбранные условия',status:'Статус заявки',noPrice:'Стоимость уточняется',minutes:'мин',
   initial:'Исходное обращение',chat:'Переписка по заказу',voice:'Записать аудиосообщение',
-  voiceInfo:'Аудиосообщения пока открываются в отдельной защищённой переписке с мастером. Комментарии по заявке остаются здесь.',
+  voiceInfo:'Записывайте и отправляйте аудио прямо в переписке выше. Запись привязана к этому заказу и видна только его участникам.',
   noVoice:'Аудиочат доступен после подтверждения профиля мастера.',
   materials:'Материалы и результат',materialsInfo:'Выданные материалы откроются в защищённом кабинете после подтверждения.',
   myPractice:'Мои практики',payment:'Оплата',paymentInfo:'Заявка ещё не означает запись или подтверждённую оплату.',
@@ -40,7 +40,7 @@ const TEXT={
   open:'Abrir pedido',back:'Mis pedidos',number:'Solicitud',practitioner:'Profesional',details:'Detalles del pedido',
   conditions:'Opciones elegidas',status:'Estado de la solicitud',noPrice:'Precio por confirmar',minutes:'min',
   initial:'Solicitud original',chat:'Conversación sobre el pedido',voice:'Grabar mensaje de voz',
-  voiceInfo:'Los mensajes de voz se abren en un chat privado separado con este profesional. Los comentarios del pedido quedan aquí.',
+  voiceInfo:'Graba y envía audios arriba. La grabación pertenece a este pedido y solo es accesible para sus participantes.',
   noVoice:'El chat de audio requiere un perfil profesional verificado.',
   materials:'Materiales y resultado',materialsInfo:'Los materiales entregados aparecen en tu cuenta privada después de la confirmación.',
   myPractice:'Mis prácticas',payment:'Pago',paymentInfo:'Una solicitud no confirma una reserva ni un pago.',
@@ -203,11 +203,7 @@ export default function MessagesOrdersClients({locale='en',children}){
             locale={locale} inline autoOpen initialMessage={selected.message||''}
             createdAt={selected.createdAt} onSaved={reload} onViewed={reload}/>
         </div>
-        {selected.voiceAvailable&&selected.practitionerSlug?<div className={styles.voice}>
-          <Link href={'/'+locale+'/app/messages?section=clients&to='+encodeURIComponent(selected.practitionerSlug)}
-            className={styles.voiceButton}><Mic size={19} aria-hidden="true"/>{t.voice}<ArrowRight size={18}/></Link>
-          <p>{t.voiceInfo}</p>
-        </div>:<p className={styles.note}>{t.noVoice}</p>}
+        <p className={styles.note}>{t.voiceInfo}</p>
         <div className={styles.materials}><h3><Headphones size={19}/>{t.materials}</h3>
           <p>{t.materialsInfo}</p>
           <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.myPractice}<ArrowRight size={18}/></Link>
