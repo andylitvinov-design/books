@@ -98,9 +98,18 @@ export function useSupportGuestQuest() {
         });
         if (!response.ok || controller.signal.aborted) return;
         const status: unknown = await response.json();
-        if (status && typeof status === "object" && "completed" in status &&
-            (status as { completed?: unknown }).completed === true) {
-          persist(markQuestStep(stateRef.current, "test"));
+        // Device storage belongs to a browser, not an authenticated identity.
+        // A confirmed "false" must also clear an earlier user's test checkmark.
+        // Network failures never alter the last verified state.
+        const verifiedCompletion = status && typeof status === "object" && "completed" in status
+          ? (status as { completed?: unknown }).completed : null;
+        if (typeof verifiedCompletion === "boolean" && !controller.signal.aborted) {
+          const previous = stateRef.current;
+          if (previous.completed.test !== verifiedCompletion) {
+            persist(normalizeQuest({
+              ...previous, completed: { ...previous.completed, test: verifiedCompletion },
+            }));
+          }
         }
       } catch { /* A failed status check never invents a completion. */ }
     };
