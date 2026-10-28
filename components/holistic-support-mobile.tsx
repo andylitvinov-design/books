@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
   Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
@@ -10,6 +11,11 @@ import {
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+// Only download the mandala/editor module after a deliberate user click.
+const SupportMandalaComparison = dynamic(
+  () => import("@/components/support-mandala-comparison").then(module => module.SupportMandalaComparison),
+  { ssr: false },
+);
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
@@ -56,6 +62,7 @@ const copy = {
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
+    mandalaCta: "Generate my personal mandala", mandalaHint: "Record your before and after ratings, add a private photo and choose a visual effect.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
@@ -89,6 +96,7 @@ const copy = {
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
+    mandalaCta: "Сгенерировать личную мандалу", mandalaHint: "Исходная и повторная оценка четырёх сфер, ваше фото и анимированный фон.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
@@ -122,6 +130,7 @@ const copy = {
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
+    mandalaCta: "Generar mi mandala personal", mandalaHint: "Valora las cuatro áreas antes y después, añade tu foto privada y un fondo animado.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
@@ -172,6 +181,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   // Explicit button click freezes a private, local-only recommendation snapshot.
   const [recommendation, setRecommendation] = useState<{ focus: Focus; scores: Record<Focus, number> } | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  // The first opening snapshots the current quick check-in; closing/reopening
+  // preserves it in memory without sending anything to a server.
+  const [mandalaInitialized, setMandalaInitialized] = useState(false);
+  const [mandalaExpanded, setMandalaExpanded] = useState(false);
+  const [mandalaInitialScores, setMandalaInitialScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
@@ -230,6 +245,18 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     // Scroll to the newly rendered choices, not past them to the video player.
     window.requestAnimationFrame(() => document.getElementById("support-personal-recommendations")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+  };
+  const toggleMandala = () => {
+    const opening = !mandalaExpanded;
+    if (opening && !mandalaInitialized) {
+      setMandalaInitialScores({ ...scores });
+      setMandalaInitialized(true);
+    }
+    setMandalaExpanded(opening);
+    if (opening) {
+      window.requestAnimationFrame(() => document.getElementById("support-inline-mandala")
+        ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }));
+    }
   };
   const startVideo = () => {
     if (!selected) return;
@@ -298,7 +325,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
+              <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
@@ -421,6 +448,21 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </div>
                 )}
               </div>
+              <div className={styles.mandalaEntry}>
+                <button type="button" className={styles.mandalaToggle} data-support-generate-mandala
+                  aria-controls="support-inline-mandala" aria-expanded={mandalaExpanded}
+                  onClick={toggleMandala}>
+                  <Sparkles size={22} aria-hidden="true" />
+                  <span>{t.mandalaCta}</span>
+                  <ChevronDown size={19} aria-hidden="true" />
+                </button>
+                <p>{t.mandalaHint}</p>
+              </div>
+              {mandalaInitialized ? <div id="support-inline-mandala"
+                className={styles.mandalaReveal} hidden={!mandalaExpanded}>
+                <SupportMandalaComparison locale={locale} initialScores={mandalaInitialScores}
+                  photoUrl={photoUrl} onRequestPhoto={() => photoInputRef.current?.click()} />
+              </div> : null}
               <div className={styles.videoSection}>
                 <div className={styles.videoHeading}>
                   <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {t.foci[focus]}</span></h3>
