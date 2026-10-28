@@ -286,15 +286,17 @@ export const ADDITIONAL_PROFESSIONAL_CATALOG = deepFreeze([
     moodAffinities: ['neutral','sad','happy'], categoryAffinities: ['emotions','other'],
     questionCount: 4, durationMinutes: 2, testStyle: 'professional',
     testLength: 'short', suggestedRepeatDays: 30, cooldownDays: 14,
-    startable: true, access: 'account', rightsStatus: 'cleared',
-    guestEligible: true, starterEligible: true, free: true,
+    // Owner-approved temporary reference only; registration and launch remain separate.
+    startable: false, registrationRequired: true, access: 'account', rightsStatus: 'cleared',
+    guestEligible: false, starterEligible: false, free: true,
+    sourceUrl: ONS_DEFINITION.source.url,
     analysisAxes: [{key:'mood',weight:0.9},{key:'anxiety',weight:0.8},
       {key:'meaning',weight:0.85},{key:'resource',weight:0.8}],
     title: {en:'ONS4 — Personal Well-being',ru:'ONS4 — личное благополучие · EN',es:'ONS4 — bienestar personal · EN'},
     description: {
-      en:'Four standard ONS questions on life satisfaction, purpose, happiness and anxiety. Four separate 0–10 answers, never one invented total.',
-      ru:'4 стандартизированных вопроса ONS об удовлетворённости жизнью, смысле, радости и тревоге. Четыре отдельных балла, без общего индекса; вопросы EN.',
-      es:'Cuatro preguntas originales de la ONS sobre satisfacción, propósito, felicidad y ansiedad. Cuatro respuestas separadas de 0 a 10; preguntas EN.',
+      en:'Reference only; online completion is temporarily unavailable. Four standard ONS questions on life satisfaction, purpose, happiness and anxiety. Four separate 0–10 answers, never one invented total.',
+      ru:'Справочная карточка; прохождение временно недоступно. 4 стандартизированных вопроса ONS об удовлетворённости жизнью, смысле, радости и тревоге. Четыре отдельных балла, без общего индекса; вопросы EN.',
+      es:'Solo referencia; la realización en línea no está disponible temporalmente. Cuatro preguntas originales de la ONS sobre satisfacción, propósito, felicidad y ansiedad. Cuatro respuestas separadas de 0 a 10; preguntas EN.',
     },
   },
 ])
