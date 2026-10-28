@@ -5,12 +5,14 @@ on:
     paths:
       - 'app/[locale]/holistic-support/**'
       - 'components/mandala-meditation*'
+      - 'components/mandala-free-video-studio.tsx'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
       - 'tests/holistic-mandala-meditation.test.mjs'
       - 'tests/mandala-export.test.mjs'
+      - 'tests/mandala-free-video.test.mjs'
       - '.github/workflows/holistic-support-mandala.yml'
 permissions:
   contents: read
@@ -33,9 +35,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Mandala and mobile support contracts
-        run: node --test tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
+        run: node --test tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
       - name: Targeted lint
-        run: npx --no-install eslint components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint components/mandala-free-video-studio.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
       - name: Typecheck
         run: npx --no-install tsc --noEmit
       - name: Build

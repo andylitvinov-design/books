@@ -123,3 +123,30 @@
 .exportButton:focus-visible{outline:3px solid #ab7b36;outline-offset:3px}
 .focus .exportButton{display:none}
 @media(max-width:430px){.exportButton{min-width:0;width:min(100%,320px);min-height:43px;font-size:12px}}
+
+
+/* Free, device-only video creator; compact mobile editor, no remote assets. */
+.freeVideoPanel{min-width:0;padding:16px 17px;background:linear-gradient(150deg,#fcf7eb,#fffdf8);border:1px solid #d9c5ab;border-radius:19px;box-shadow:0 7px 24px rgba(78,58,35,.065)}
+.freeVideoPanel h2{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0;color:#4b4836;font:400 23px/1.22 Georgia,serif}
+.freeVideoBadge{margin-left:auto;padding:5px 9px;border-radius:999px;background:#d8ead7;color:#275942;font:800 13px/1 Arial,Helvetica,sans-serif}
+.freeVideoIntro{margin:7px 0 12px;color:#635c4e;font:13px/1.45 Arial,Helvetica,sans-serif}
+.freeVideoPreview{display:flex;justify-content:center;align-items:center;overflow:hidden;min-height:100px;max-height:260px;padding:7px;border-radius:14px;background:#21352e}
+.freeVideoPreview canvas,.freeVideoPreview video{display:block;width:auto;max-width:100%;height:auto;max-height:246px;margin:auto;border-radius:8px;object-fit:contain}
+.freeVideoFieldset{min-width:0;margin:12px 0 0;padding:0;border:0}
+.freeVideoFieldset legend{font:800 12px/1.4 Arial,Helvetica,sans-serif;color:#5f513f;padding:0 0 7px}
+.freeVideoOptions{display:flex;flex-wrap:wrap;gap:7px;min-width:0}
+.freeVideoOptions button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 10px;border:1px solid #d4c6ae;border-radius:10px;background:#fff;color:#534636;font:700 12px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
+.freeVideoOptions button[aria-pressed="true"]{background:#355d49;border-color:#355d49;color:#fff}
+.freeVideoOptions button:disabled,.freeVideoFieldset:disabled button{opacity:.65;cursor:not-allowed}
+.freeVideoSettings{display:grid;grid-template-columns:1fr 1fr;gap:9px;min-width:0}
+.freeVideoSettings .freeVideoOptions button{flex:1;min-width:0}
+.freeVideoAction,.freeVideoDownload{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:15px;padding:10px;border-radius:12px;border:0;text-align:center;background:#68462d;color:#fffaf0;font:800 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer;text-decoration:none}
+.freeVideoAction:hover,.freeVideoDownload:hover{background:#4c3220}
+.freeVideoAction:disabled{background:#aaa399;cursor:not-allowed}
+.freeVideoDownload{background:#356647;margin-top:9px}
+.freeVideoNotice{margin:9px 0 0;color:#675139;font:700 12px/1.45 Arial,Helvetica,sans-serif}
+.freeVideoPrivacy{margin:10px 0 0;color:#766958;font:11px/1.48 Arial,Helvetica,sans-serif}
+.freeVideoPanel button:focus-visible,.freeVideoDownload:focus-visible{outline:3px solid #aa7637;outline-offset:3px}
+.focus .freeVideoPanel{display:none}
+@media(max-width:720px){.freeVideoPanel{padding:13px;border-radius:15px}.freeVideoPanel h2{font-size:21px}}
+@media(max-width:350px){.freeVideoSettings{grid-template-columns:1fr}.freeVideoOptions button{font-size:11px;padding:8px 7px}}
