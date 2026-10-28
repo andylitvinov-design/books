@@ -65,6 +65,15 @@ test('14:00 Toronto cron accepts only DST-correct UTC hours',()=>{
   assert.equal(torontoReportDue('market',new Date('2026-11-02T18:00:00Z')),false)
 })
 
+test('market report daily idempotency never auto-resends after a lost Telegram receipt',()=>{
+  const sender=readFileSync(new URL('../lib/practitioners/market-intelligence-telegram-delivery.js',import.meta.url),'utf8')
+  assert.match(sender,/on conflict\(report_day\) do nothing/)
+  assert.doesNotMatch(sender,/on conflict\(report_day\) do update/)
+  assert.doesNotMatch(sender,/claimed_at<now\(\)-interval '15 minutes'/)
+  assert.match(sender,/if\(!token\)return \{status:'already_claimed'/)
+  assert.match(sender,/await finish\(config,today,token,false\)/)
+})
+
 test('14:00 sender has private separate FORCE RLS and existing verified owner transport',()=>{
   const migration=readFileSync(new URL('../supabase/migrations/20261028165619_hh_owner_market_intel_telegram_receipt_20261028.sql',import.meta.url),'utf8')
   assert.match(migration,/owner_daily_market_intelligence_sends/)
