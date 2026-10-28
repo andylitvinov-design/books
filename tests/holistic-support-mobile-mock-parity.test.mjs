@@ -71,10 +71,10 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\\.sendBeacon/);
-  const endpoints = [...client.matchAll(/fetch\\(\\s*["']([^"']+)["']/g)].map(match=>match[1]);
-  assert.ok(endpoints.length >= 2, "private image read and explicit photo Save");
-  assert.ok(endpoints.every(value=>value==="/api/app/support-photo"),
-    "image persistence must not ship self-ratings or viewing history to any other API");
+  const photoCalls = client.split('fetch("/api/app/support-photo"').length - 1;
+  assert.ok(photoCalls >= 2, "private image read and explicit photo Save");
+  assert.equal(client.split("fetch(").length - 1, photoCalls,
+    "image persistence must not send self-ratings or viewing history to another API");
 });
 
 test("progress is derived from local opens and four self-ratings, never fake streaks", () => {
