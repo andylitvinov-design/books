@@ -32,7 +32,7 @@ test("personal scores and photos are local-only and accessible; no fake completi
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
   assert.match(client, /8 \* 1024 \* 1024/);
   assert.match(client, /data-support-recommendations/);
-  assert.match(client, /focusTopics\[focus\]/);
+  assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
   assert.match(client, /<HolisticInlineSupportOrder/);
@@ -57,7 +57,7 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return themed.slice(0, 4)'));
+  assert.ok(client.includes('return eligible.slice(0, 4)'));
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
@@ -92,56 +92,57 @@ test("new TSX and route transpile without TypeScript parser diagnostics", () => 
   }
 });
 
-test("personal recommendations rank verified recordings and existing talismans, with direct detailed-profile entry", () => {
+test("lowest self-ratings—not a separate focus—rank four published meditations in the existing rail", () => {
   const model = read("lib/holistic-support/recommendation-engine.js");
-  const talismans = read("components/taoist-talisman-catalog.tsx");
-  assert.match(client, /recommendSupportContent\(/);
-  assert.match(client, /scores: \{ \.\.\.scores \}/);
-  assert.match(client, /recommended\.videos\.map\(/);
-  assert.match(client, /data-support-personal-recommendations/);
-  assert.match(client, /data-support-recommended-video/);
-  assert.match(client, /data-support-recommended-talisman/);
-  assert.match(client, /data-support-detailed-analysis/);
-  assert.match(client, /data-support-recommended-detailed-analysis/);
-  assert.match(client, /\/personality-profiles/);
-  assert.match(talismans, /featuredId/);
-  assert.match(talismans, /data-recommended=/);
-  assert.match(model, /TALISMAN_BY_FOCUS/);
-  assert.match(model, /YOUTUBE_ID/);
-  assert.match(model, /matchingPrimary \? 100 : 0/);
-  assert.doesNotMatch(model, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|\bdiagnose\(/);
-  assert.match(css, /\.recommendationPanel/);
-  assert.match(css, /\.detailedAnalysisLink/);
-});
-
-
-test("personal recommendation under focus, four main options, Courses/Masters shortcuts and detailed test links", () => {
   const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
   const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
   const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
-  assert.match(assessment, /data-support-detailed-analysis/);
-  assert.doesNotMatch(assessment, /data-support-recommendations/);
-  assert.match(profile, /data-support-recommendations/);
-  assert.doesNotMatch(profile, /data-support-detailed-analysis/);
-  assert.doesNotMatch(tools, /data-support-detailed-analysis/);
+  assert.match(assessment, /data-support-recommendations/);
+  assert.match(assessment, /onClick=\{onRecommendations\}/);
+  assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
+  assert.doesNotMatch(profile, /focusSelector|data-support-recommendations|<select/);
+  assert.match(profile, /data-support-photo/);
   assert.match(tools, /choices\.filter\(item => item\.id !== "pump"\)/);
   assert.match(tools, /data-support-tool="pump"/);
   assert.match(tools, /className=\{styles\.toolShortcuts\}/);
+  assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
+  assert.match(client, /setRecommendation\(\{ \.\.\.scores \}\)/);
+  assert.match(client, /setRecommendation\(null\)/);
+  assert.match(client, /data-support-meditation-basis role="status"/);
+  assert.match(client, /suggested\.priorities\.map\(/);
+  assert.match(client, /data-support-meditation-gallery/);
+  assert.match(client, /data-support-video=\{video\.id\}/);
+  assert.doesNotMatch(client, /data-support-personal-recommendations|data-support-recommended-video|data-support-recommended-talisman/);
+  assert.match(client, /id="support-meditation-gallery"/);
+  assert.ok(client.indexOf('id="support-meditation-gallery"') <
+    client.indexOf('data-support-player data-playing='), "gallery must render above the main player");
+  assert.match(client, /<HolisticSupportTalismanViewer key=\{focus\}/);
+  assert.match(client, /<TaoistTalismanCatalog/);
+  assert.match(client, /hidden=\{!talismanCatalogOpen\}/);
   assert.match(client, /id: "healing", Icon: HandHeart/);
   assert.match(client, /pump: "Courses", healing: "Energy Healing"/);
   assert.match(client, /pump: "Курсы", healing: "Энергетическая поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Sanación energética"/);
   assert.match(client, /data-support-courses-panel/);
-  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(client, /data-support-healing-panel/);
+  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(client, /\/services\/remote-energy-support/);
   assert.match(client, /\/masters/);
+  assert.match(client, /\/personality-profiles/);
   assert.match(client, /<HolisticInlineSupportOrder/);
   assert.match(css, /grid-template-areas: "assessment profile tools"/);
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.toolShortcuts \{ display: grid;/);
   assert.match(css, /\.toolMicro \{ display: block;/);
+  assert.match(css, /\.page \.assessment > \.recommendButton/);
+  assert.match(css, /\.gallerySelection/);
+  assert.match(css, /\.heroBody \.playButton \{ position: relative; top: 8px;/);
+  assert.match(model, /export function recommendSupportByLowestScores/);
+  assert.match(model, /TALISMAN_BY_FOCUS/);
+  assert.match(model, /YOUTUBE_ID/);
+  assert.doesNotMatch(model, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|\bdiagnose\(/);
 });
+
 
 test("same-window talisman viewer reuses real images, local basket, and protected quote form in all locales", () => {
   const viewer = read("components/holistic-support-talisman-viewer.tsx");

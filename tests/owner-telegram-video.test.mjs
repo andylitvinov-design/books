@@ -700,6 +700,28 @@ test('manual YouTube handoff reads current exact private cut, not an unsigned pu
 })
 
 
+test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite target key',()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const start=service.indexOf('export async function saveOwnerVideoYoutubeConsent(')
+ const end=service.indexOf('export async function ownerVideoYoutubeConnected(',start)
+ assert.ok(start>=0&&end>start)
+ const oauth=service.slice(start,end)
+ // Production has PRIMARY KEY (practitioner_id,target). An old single-column
+ // ON CONFLICT silently makes owner-approved Google callback return failed.
+ assert.ok(oauth.includes('(practitioner_id,target,channel_id,token_ciphertext)'))
+ assert.ok(oauth.includes("values($1,'ru',$2,$3)"))
+ assert.ok(oauth.includes('on conflict(practitioner_id,target) do update set'))
+ assert.ok(oauth.includes("where practitioner_id=$1 and target='ru'"))
+ assert.ok(oauth.includes('[PRACTITIONER_ID,channelId,encrypted]'))
+ assert.ok(oauth.includes('channelId!==VIDEO_RU_CHANNEL_ID'))
+ assert.ok(oauth.includes('seal({refreshToken},ENCRYPTION_CONTEXT,config)'))
+ assert.ok(oauth.includes('openSealed(row.token_ciphertext,ENCRYPTION_CONTEXT,config)'))
+ assert.ok(!oauth.includes('on conflict(practitioner_id) do update set'))
+ // Never delete/re-pair the unrelated English consent when reconnecting RU.
+ assert.ok(!oauth.includes('delete from app_private.telegram_owner_video_oauth'))
+})
+
+
 test('private MP4 playback streams byte slices without 4.5MB buffered response', async()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
  const start=service.indexOf('export async function getOwnerTelegramVideoDraftFile')
