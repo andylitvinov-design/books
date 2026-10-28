@@ -725,10 +725,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoIdentity }: {
           <legend>{t.aspect}</legend>
           <div className={styles.freeVideoOptions}>
             <button type="button" data-mandala-video-aspect="square" aria-pressed={aspect === "square"}
+              onPointerUp={() => setAspect("square")}
               onClick={() => setAspect("square")}><Square size={14} aria-hidden="true" />{t.square}</button>
             <button type="button" data-mandala-video-aspect="portrait" aria-pressed={aspect === "portrait"}
+              onPointerUp={() => setAspect("portrait")}
               onClick={() => setAspect("portrait")}>{t.portrait}</button>
             <button type="button" data-mandala-video-aspect="landscape" aria-pressed={aspect === "landscape"}
+              onPointerUp={() => setAspect("landscape")}
               onClick={() => setAspect("landscape")}>{t.landscape}</button>
           </div>
         </fieldset>
