@@ -41,7 +41,6 @@ test('metadata is valid, bound to 56-bit nonce and two separate callback taps',(
  assert.equal(ownerVideoMetadataValue('title','  До встречи  '),'До встречи')
  assert.equal(ownerVideoMetadataValue('description','строка\r\nдва'),'строка\nдва')
  assert.equal(ownerVideoMetadataValue('description','-'),'')
- assert.equal(ownerVideoMetadataValue('title',''),'')
  // Invalid title is explicitly rejected.
  assert.equal(ownerVideoMetadataValue('title',''),null)
  assert.equal(ownerVideoMetadataValue('title','a'.repeat(101)),null)
