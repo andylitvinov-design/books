@@ -103,9 +103,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const firstMoney = moneySelector.locator('[data-mandala-money-option="golden-rain"]');
         await firstMoney.click();
         assert.equal(await firstMoney.getAttribute("aria-pressed"), "true");
+        // Clicking a cinematic template is the explicit Play gesture.
         const moneyPreview = page.locator("[data-mandala-money-preview]");
-        await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true");
+        assert.equal(await firstMoney.getAttribute("data-video-template-playing"), "true");
         const cinema = page.locator("[data-mandala-cinematic-canvas]");
         await cinema.waitFor({ state: "attached" });
         const frameHash = () => cinema.evaluate(canvas => {
