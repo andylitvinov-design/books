@@ -57,7 +57,9 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return themed.slice(0, 4)'));
+  assert.ok(client.includes('return themed;'));
+  assert.match(client, /matchingVideos\.slice\(safePage \* 4, safePage \* 4 \+ 4\)/);
+  assert.match(client, /data-support-video-pager/);
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
@@ -112,4 +114,32 @@ test("personal recommendations rank verified recordings and existing talismans, 
   assert.doesNotMatch(model, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|\bdiagnose\(/);
   assert.match(css, /\.recommendationPanel/);
   assert.match(css, /\.detailedAnalysisLink/);
+});
+
+test("wellbeing is replaced by Goals / Meaning in all three languages and ancient video programmes are source-backed", () => {
+  for (const label of ["Goals / Meaning", "Цели / Смысл", "Metas / Sentido"]) {
+    assert.ok(client.includes(label), "topic label: " + label);
+  }
+  for (const retired of ['health: "Wellbeing"', 'health: "Самочувствие"', 'health: "Bienestar"']) {
+    assert.ok(!client.includes(retired), "retired mobile theme: " + retired);
+  }
+  assert.match(client, /goals: "goals"/);
+  assert.match(client, /courseByProgram/);
+  assert.match(client, /academy\/mysteries/);
+  assert.match(route, /psimaster-media\.generated\.json/);
+  assert.match(route, /verified_legacy_public_embed/);
+  assert.match(route, /magicCourseVideos\(locale\)/);
+  const published = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const required = [
+    ["videos/egypt-osiris", 7],
+    ["videos/greek-mysteries-demeter", 5],
+    ["videos/greek-mysteries-dionysus", 7],
+    ["videos/maya-archetypes", 6],
+  ];
+  for (const [logicalId, count] of required) {
+    const matches = published.filter(item => item.logicalId === logicalId
+      && item.status === "verified_legacy_public_embed" && /^[A-Za-z0-9_-]{11}$/.test(item.videoId));
+    assert.equal(matches.length, count, "expected verified original video collection: " + logicalId);
+    assert.equal(new Set(matches.map(item => item.videoId)).size, count);
+  }
 });
