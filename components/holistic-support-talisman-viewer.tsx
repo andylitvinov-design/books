@@ -139,7 +139,7 @@ export function HolisticSupportTalismanViewer({
     const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8;
     rail.scrollTo({
       left: atEnd ? 0 : Math.min(rail.scrollWidth, rail.scrollLeft + rail.clientWidth * 0.8),
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
   };
   const selected = items.find(item => item.id === selectedId) || items[0];
