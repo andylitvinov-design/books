@@ -31,7 +31,7 @@ import { TestRatingCard } from '@/components/app/test-rating-card'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
-import { PortraitTestQuickActions } from '@/components/app/portrait-test-quick-actions'
+import { PortraitTestQuickActions, PortraitTestList } from '@/components/app/portrait-test-quick-actions'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
@@ -2236,7 +2236,7 @@ function PortfolioPage({ data, locale }) {
   }, [])
   useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
-  const [portraitTab, setPortraitTab] = useState('tests')
+  const [portraitTab, setPortraitTab] = useState('goals')
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2320,7 +2320,7 @@ function PortfolioPage({ data, locale }) {
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
           <Brain size={20} aria-hidden="true" />
-          <strong>{ru ? 'Мой психологический портрет' : 'My psychological portrait'}</strong>
+          <strong>{ru ? 'Мои психологические профили' : locale === 'es' ? 'Mis perfiles psicológicos' : 'My psychological profiles'}</strong>
           <span className="hh-insights-portrait-collapse">{ru ? 'Свернуть' : 'Collapse'}</span>
           <span className="hh-insights-portrait-expand">{ru ? 'Раскрыть' : 'Expand'}</span>
           <ChevronDown size={18} aria-hidden="true" />
@@ -2328,12 +2328,13 @@ function PortfolioPage({ data, locale }) {
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
           goalProfileProps={{ accountId, entriesByKey, results: data.results || [] }}
-          portraitTab={portraitTab}
-          portraitActions={({ selectedSector, portrait }) => <>
-            <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
-              entriesByKey={entriesByKey} results={data.results || []}
-              runs={data.runs || []} accountId={accountId}
-              activeTestPlan={data.activeTestPlan}
+          portraitTests={({ selectedSector, selectedAxes }) =>
+            <PortraitTestList locale={locale} sector={selectedSector}
+              selectedAxes={selectedAxes} entriesByKey={entriesByKey}
+              results={data.results || []} runs={data.runs || []}
+              accountId={accountId} activeTestPlan={data.activeTestPlan} />}
+          portraitActions={() => <>
+            <PortraitTestQuickActions locale={locale}
               activeTab={portraitTab} onTabChange={setPortraitTab} />
             <div id="hh-portrait-panel-analyses" role="tabpanel" className="hh-portrait-inline-panel"
               aria-labelledby="hh-portrait-tab-analyses" hidden={portraitTab !== 'analyses'}>

@@ -9,6 +9,20 @@ const output = "artifacts/free-review-live-mobile";
 mkdirSync(output, { recursive: true });
 const results = [];
 const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
+
+// Safari can dispatch a label's forwarded radio change one frame after
+// Playwright's label click completes. Verify the actual native radio AND its
+// React-selected card after ONE tap, rather than retrying a missed click.
+async function tapFocusAndVerify(page, enquiry, focus) {
+  await enquiry.locator('[data-express-focus="' + focus + '"]').click();
+  await page.waitForFunction((target) => {
+    const root = document.querySelector('[data-personal-express-enquiry]');
+    const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
+    const card = root?.querySelector('[data-express-focus="' + target + '"]');
+    return radio instanceof HTMLInputElement && radio.checked
+      && card?.getAttribute("data-selected") === "true";
+  }, focus, { timeout: 3000 });
+}
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
   const browser = await driver.launch({ headless: true });
@@ -244,7 +258,9 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           } else {
             assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
             assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-            assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+            // Telegram's readiness fallback is also role="status" and is NOT a lead.
+            // Inspect only this consented capture's receipt/confirmation statuses.
+            assert.equal(await enquiry.locator('[data-reiki-phone-enquiry] [role="status"]').count(), 0,
               "no actual lead saved by navigating");
           }
           // Touch users select the full 94px+ labelled card, not the tiny native
@@ -252,17 +268,20 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           // anchor and a direct input.check() can hit a moving 19px target.
           // Verify the REAL large-card interaction, including native checked
           // state, selected styling and unchanged one-off contact consent.
-          await enquiry.locator('[data-express-focus="energy"]').click();
-          assert.equal(await enquiry.locator('input[value="energy"]').isChecked(), true,
-            "tapping the whole energy card checks the native radio");
-          assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
-            "changing the focus cannot silently opt the user in");
-          await enquiry.locator('[data-express-focus="situation"]').click();
-          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true,
-            "tapping the whole situation card checks the native radio");
-          assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
-          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+          // Exercise the two formerly intermittent Spanish WebKit widths
+          // three times. No click retries: each real tap must change the radio.
+          const cycles = engine === "webkit" && locale === "es"
+            && (width === 320 || width === 430) ? 3 : 1;
+          for (let cycle = 0; cycle < cycles; cycle++) {
+            await tapFocusAndVerify(page, enquiry, "energy");
+            assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+              "changing the focus cannot silently opt the user in");
+            await tapFocusAndVerify(page, enquiry, "situation");
+          }
+          const receiptStatus = wizardV2
+            ? '[data-free-express-receipt]'
+            : '[data-reiki-phone-enquiry] [role="status"]';
+          assert.equal(await enquiry.locator(receiptStatus).count(), 0,
             "changing focus is not a lead or booking");
           await enquiry.locator('input[type="tel"]').focus();
           await page.keyboard.press("Escape");

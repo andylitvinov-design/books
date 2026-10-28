@@ -17,6 +17,7 @@
 .pageEyebrow { margin: 4px 3px 10px; color: #38715c; font-size: 12px; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
 .topGrid { display: grid; grid-template-columns: 1.09fr .76fr 1.11fr; align-items: stretch; gap: 12px; margin-bottom: 13px; }
 .assessment, .tools { min-width: 0; padding: 20px 19px; border: 1px solid #e4dfd5; border-radius: 24px; background: rgb(255 253 249 / 90%); box-shadow: 0 8px 20px rgb(54 63 51 / 6%); }
+.assessment, .tools { display: flex; flex-direction: column; }
 .assessment h1, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
 .subText { margin: 0 0 12px; color: #5e645a; font-size: 16px; line-height: 1.4; }
 .scaleList { display: grid; gap: 11px; margin-top: 10px; }
@@ -52,6 +53,10 @@
 .focusValue > svg:last-child { color: #263b34; pointer-events: none; }
 .recommendButton { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; max-width: 252px; min-height: 55px; padding: 10px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #007c5b, #1eaa78); color: white; font-size: 16px; font-weight: 800; line-height: 1.18; box-shadow: 0 7px 17px #0a85542a; }
 .recommendButton:hover { background: #006d52; }
+.assessment > .recommendButton { max-width: none; margin-top: auto; }
+.tools > .detailedAnalysisLink { margin-top: 12px; }
+.detailedFull { display: inline; }
+.detailedCompact { display: none; }
 /* The personal recommendation stays compact: one real recording + one optional symbol. */
 .detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
 .detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
@@ -71,24 +76,12 @@
 .recommendationCopy button { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; margin-top: 3px; padding: 7px 11px; border: 1px solid #a6d5ba; border-radius: 11px; background: #e4f3e8; color: #0a684b; font-size: 14px; font-weight: 800; text-align: left; }
 .recommendationCopy button:hover { background: #d0ead8; }
 .recommendationPanel > .detailedAnalysisLink { width: fit-content; max-width: 100%; margin-top: 0; }
-@media (max-width: 800px) { .recommendationGrid { grid-template-columns: minmax(0,1fr); } }
-@media (max-width: 640px) {
-  .detailedAnalysisLink { margin-top: 6px; min-height: 42px; padding: 7px 8px; font-size: 13px; }
-  .recommendationPanel { padding: 11px; margin-bottom: 9px; gap: 8px; border-radius: 16px; }
-  .recommendationLead p { font-size: 14px; }
-  .recommendationCard { gap: 9px; padding: 9px; }
-  .recommendationVideoPreview { width: 91px; flex-basis: 91px; }
-  .recommendationTalismanImage { width: 58px; height: 76px; flex-basis: 58px; }
-  .recommendationCopy span { font-size: 15px; }
-  .recommendationCopy button { font-size: 14px; }
-}
-@media (max-width: 375px) {
-  .detailedAnalysisLink { font-size: 12px; gap: 4px; }
-  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
-  .recommendationCopy span { font-size: 14px; }
-}
+
+
+
 .tools h2 { margin-bottom: 17px; }
-.toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; min-height: 260px; }
+.toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)) minmax(70px, .6fr); gap: 12px; min-height: 300px; }
+.toolButton:last-child { grid-column: 1 / -1; flex-direction: row; min-height: 70px; }
 .toolButton { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; min-width: 0; min-height: 117px; padding: 12px 7px; border: 1px solid #f0e9dc; border-radius: 19px; background: #f7f1e6; color: #24322b; font-size: 18px; font-weight: 800; line-height: 1.22; text-align: center; box-shadow: 0 4px 14px #2f33200c; overflow-wrap: anywhere; }
 .toolButton:nth-child(3) svg { color: #8554bb; }
 .toolButton:nth-child(4) svg { color: #59626b; }
@@ -136,6 +129,11 @@
 .supportEnquiry { display: grid; gap: 9px; padding: 13px 22px 22px; border-top: 1px solid #ebdfcf; }
 .supportEnquiry p { margin: 0; font-size: 16px; line-height: 1.5; }
 .supportEnquiry small { color: #625b52; font-size: 13px; }
+.courseLinks { display: flex; flex-wrap: wrap; gap: 10px; }
+.courseLinks a { display: inline-flex; align-items: center; gap: 8px; min-height: 45px; padding: 10px 14px; border-radius: 12px; background: #e3f1e8; color: #0b654c; font-weight: 800; text-decoration: none; }
+.courseLinks a:hover { background: #cce6d6; }
+.healingRequest { display: grid; gap: 12px; margin-top: 16px; }
+.healingRequest small { color: #625b52; font-size: 13px; }
 .secondaryButton { justify-self: start; min-height: 49px; padding: 12px 18px; border: 0; border-radius: 13px; background: #0b7859; color: white; font-size: 16px; font-weight: 800; }
 .insetPanel { padding: clamp(18px, 3vw, 34px); }
 .insetIntro { display: flex; gap: 14px; align-items: center; margin-bottom: 22px; color: #7751a5; }
@@ -171,14 +169,7 @@
 .localeLinks a { display: grid; place-items: center; min-height: 45px; border: 1px solid #bfcbbe; border-radius: 11px; color: #146b52; font-weight: 800; text-decoration: none; }
 .localeLinks a[aria-current="page"] { border-color: #13785c; background: #d9ebdf; }
 .settingsPanel button { min-height: 44px; padding: 9px 14px; border: 0; border-radius: 11px; background: #096b52; color: white; font-weight: 800; }
-@media (max-width: 900px) {
-  .topGrid { grid-template-columns: minmax(0,1fr) minmax(0,.78fr); }
-  .assessment { grid-column: 1; }
-  .profile { grid-column: 2; }
-  .tools { grid-column: 1 / -1; }
-  .toolGrid { grid-template-rows: auto; min-height: auto; }
-  .toolButton { min-height: 96px; }
-}
+
 
 /* The alternative screen is a single app workspace, not a long marketing page. */
 .compactAppHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 53px; padding: 5px 4px 10px; }
@@ -187,147 +178,333 @@
 .compactBrand span { font-size: 13px; font-weight: 750; color: #30755c; }
 .compactLocale { display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex: none; min-width: 57px; min-height: 44px; padding: 7px 10px; border: 1px solid #d8d6c8; border-radius: 14px; background: #fffdfa; color: #395c4e; font-size: 14px; font-weight: 800; }
 .filterValue { display: none; }
+
+/* Original approved mock: three compact zones, scenic dominant player,
+   exactly four visible source-backed video tiles, and a quiet progress strip.
+   Keep the desktop system above; these are the only small-screen overrides. */
+.recommendLong,.toolLong { display: inline; }
+.recommendShort,.toolCompact { display: none; }
+.seeAll { display: inline-flex; align-items: center; gap: 5px; min-height: 40px;
+  text-decoration: none; color: #177259; font-size: 14px; font-weight: 800; white-space: nowrap; }
+.seeAll:hover { text-decoration: underline; }
+
+
+/* The portrait shown before upload is illustrative, not a saved client photo. */
+.photoReference { position: absolute; inset: 0; width: 100%; height: 100%;
+  border-radius: inherit; object-fit: cover; object-position: 50% 42%; }
+.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; }
+.photoPlaceholder strong { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1;
+  padding: 8px 18px 7px 6px; max-width: none; background: linear-gradient(0deg,#112f2ccf,#112f2c00);
+  color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
+.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
+.camera { z-index: 2; }
+.focusCaptionLong { display: inline; }
+.focusCaptionShort { display: none; }
+
+
+
+
+/* Mobile redesign: one hierarchy, readable text at 320–430px.
+   Four scales and portrait share the first row; six useful actions are
+   on the next row, immediately before the scenic working area. */
+.headingLong { display: inline; }
+.headingCompact { display: none; }
+
+
+
+
+
+/* Reference-faithful mobile interface: one 3-zone band above the large player.
+   Previous experimental phone breakpoints were removed to avoid CSS conflicts. */
+.toolMicro { display: none; }
+.toolShortcuts { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 8px; min-width: 0; }
+.toolShortcuts a,.toolShortcuts button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 36px; padding: 6px 9px; border: 1px solid #d6e6d9; border-radius: 10px;
+  background: #f3faf1; color: #147357; font-size: 13px; font-weight: 800; text-decoration: none; }
+.toolShortcuts button[aria-pressed="true"] { border-color: #16a276; background: #dcefe6; }
+.progressStarted { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.progressOpened { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.progressAverage { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0;
+  border-left: 1px solid #ddd5c8; padding-left: 10px; color: #187b5e; }
+.progressAverage strong { color: #213e32; }
+.progressAverage span { color: #5d6a60; }
+.progressGrid { grid-template-columns: minmax(0,1.32fr) minmax(0,.85fr) minmax(0,.85fr); }
+.photoReference { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photo:has(.photoReference) .camera { display: none; }
+@media (min-width: 641px) and (max-width: 900px) {
+  .topGrid { grid-template-columns: minmax(0,1.05fr) minmax(0,.77fr) minmax(0,1.05fr); gap: 10px; }
+  .assessment,.tools { padding: 15px 12px; }
+  .assessment h1,.tools h2 { font-size: 20px; }
+  .toolGrid { gap: 8px; min-height: 260px; }
+  .toolButton { min-height: 96px; font-size: 16px; }
+  .photo { width: min(100%,150px); height: auto; aspect-ratio: 1; }
+  .recommendButton { font-size: 14px; }
+}
 @media (max-width: 640px) {
-  /* Two compact columns bring the activity into the first iPhone viewport.
-     A three-column literal reduction of the mock makes the text unreadable at 320px. */
-  .container { width: calc(100% - 14px); padding: 0 0 calc(91px + env(safe-area-inset-bottom)); }
-  .compactAppHeader { min-height: 44px; padding: 1px 4px 7px; }
-  .compactBrand { gap: 5px; flex-direction: column; }
-  .compactBrand strong { font-size: 23px; line-height: 1.02; }
-  .compactBrand span { font-size: 11px; line-height: 1.1; }
-  .compactLocale { min-height: 41px; font-size: 13px; }
-  .pageEyebrow { display: none; }
-  .topGrid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
-    grid-template-areas: "assessment tools" "profile profile";
-    align-items: stretch;
-    gap: 7px;
-    margin-bottom: 8px;
-  }
-  .assessment, .tools { min-width: 0; border-radius: 17px; padding: 10px 8px; }
+  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .container { width: calc(100% - 12px); padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
+  .compactAppHeader { display: none; }
+  .topGrid { display: grid; grid-template-areas: "assessment profile tools";
+    grid-template-columns: minmax(0,1.14fr) minmax(0,.85fr) minmax(0,1.13fr);
+    align-items: stretch; gap: 5px; min-width: 0; margin: 0 0 9px; }
+  .assessment,.tools { min-width: 0; padding: 9px 6px 7px; border: 1px solid #e5e4d8;
+    border-radius: 16px; background: #fffcf6ed; box-shadow: 0 5px 15px #29493613; }
   .assessment { grid-area: assessment; }
   .tools { grid-area: tools; }
-  .assessment h1, .tools h2 { font-size: clamp(15px, 4.05vw, 18px); min-height: 39px; line-height: 1.1; letter-spacing: -.025em; margin: 0 0 4px; }
-  .subText { margin: 0 0 5px; font-size: 12px; line-height: 1.2; }
-  .scaleList { grid-template-columns: 1fr; gap: 4px; margin-top: 0; }
-  .scaleRow { display: grid; grid-template-columns: 25px minmax(0, 1fr) 28px; gap: 4px; min-height: 43px; }
-  .scaleIcon { flex: none; width: 25px; height: 25px; }
-  .scaleIcon svg { width: 17px; height: 17px; }
-  .scaleDetail { gap: 0; }
-  .scaleLabel { font-size: clamp(12px, 3.45vw, 14px); line-height: 1.16; font-weight: 800; }
-  .scaleRow input { height: 24px; min-width: 0; }
-  .scaleValue { flex: none; height: 30px; min-width: 0; font-size: 15px; border-radius: 9px; }
-  .toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); min-height: 0; gap: 6px; }
-  .tools h2 { margin-bottom: 6px; }
-  .toolButton { min-width: 0; min-height: 91px; padding: 7px 3px; gap: 5px; border-radius: 13px; font-size: clamp(12px, 3.45vw, 15px); line-height: 1.15; font-weight: 800; }
-  .toolButton svg { width: 25px; height: 25px; }
-  .profile {
-    grid-area: profile;
-    display: grid; grid-template-columns: 78px minmax(0, 1fr);
-    grid-template-rows: auto auto; gap: 5px 9px;
-    justify-content: stretch; align-content: center; align-items: center;
-    min-width: 0; padding: 5px 8px; border: 1px solid #e7e6da;
-    border-radius: 17px; background: #fffcf5d9;
-  }
-  .photo { grid-row: 1 / 3; grid-column: 1; width: 75px; height: 75px; padding: 2px; border-width: 3px; box-shadow: 0 0 0 2px #8bbec8, 0 5px 16px #19554523; }
-  .photoPlaceholder { gap: 1px; padding: 5px; }
-  .photoPlaceholder svg { width: 36px; height: 36px; }
-  .photoPlaceholder strong { font-size: 10px; line-height: 1.08; }
-  .camera { right: 0; bottom: 0; width: 28px; height: 28px; border-width: 1px; }
+  .assessment h1,.tools h2 { min-height: 25px; margin: 0 0 3px; color: #243b30;
+    font-size: clamp(12px,3.5vw,15px); line-height: 1.1; font-weight: 850;
+    letter-spacing: -.03em; text-wrap: balance; }
+  .subText { display: block; margin: 0 0 3px; color: #607467; font-size: clamp(9.5px,2.7vw,11px); line-height: 1.13; }
+  /* Put the full domain word above its slider: neither "Отношения" nor
+     "Relationships" may be truncated by the icon and number. */
+  .scaleList { display: grid; gap: 3px; margin: 1px 0 0; }
+  .scaleRow { display: grid; grid-template-columns: 21px minmax(0,1fr) 23px;
+    grid-template-rows: 15px 19px; align-items: center; gap: 0 2px;
+    min-height: 35px; min-width: 0; }
+  .scaleDetail { display: contents; }
+  .scaleLabel { grid-column: 1 / 3; grid-row: 1; min-width: 0;
+    font-size: clamp(10.4px,3.08vw,13px); line-height: 1.05;
+    white-space: nowrap; font-weight: 800; letter-spacing: -.025em; }
+  .scaleIcon { grid-column: 1; grid-row: 2; width: 20px; height: 20px;
+    flex: none; border-radius: 9px; padding: 0; }
+  .scaleIcon svg { width: 15px; height: 15px; }
+  .scaleRow input { display: block; grid-column: 2 / 4; grid-row: 2;
+    width: 100%; min-width: 0; height: 19px; margin: 0; }
+  .scaleValue { grid-column: 3; grid-row: 1; width: 23px; height: 21px;
+    min-width: 0; flex: none; border-radius: 7px; font-size: 13px; }
+  .detailedAnalysisLink { display: flex; min-width: 0; min-height: 29px; width: 100%;
+    align-items: center; justify-content: center; gap: 3px; padding: 4px 3px;
+    margin: 4px 0 0; border-radius: 9px; background: #f2f9ee;
+    border: 1px solid #badcc7; color: #12694e; text-align: center;
+    font-size: clamp(10px,2.6vw,12px); line-height: 1.1; font-weight: 800; }
+  .detailedAnalysisLink svg { width: 13px; height: 13px; flex: none; }
+  .detailedAnalysisLink svg:last-child { display: none; }
+  .detailedFull { display: none; }
+  .detailedCompact { display: inline; }
+  /* The central portrait is a single photo click target with no extra upload button. */
+  .profile { grid-area: profile; display: flex; flex-direction: column; align-items: stretch;
+    justify-content: center; gap: 6px; padding: 0; min-width: 0; text-align: center; }
+  .photo { align-self: center; width: min(100%,100px); height: auto; aspect-ratio: 1;
+    padding: 1px; border: 3px solid #fff; background: #e2f3e9;
+    box-shadow: 0 0 0 2px #91cbd2,0 0 0 5px #fffcf9,0 7px 22px #206b5b29; }
+  .photoReference { inset: 0; border-radius: 50%; width: 100%; height: 100%; object-fit: cover; }
+  .photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; gap: 0; padding: 0; }
+  .photoPlaceholder strong { display: none; }
+  .photo:has(.photoReference) .camera { display: none; }
+  .photo:has(.photoPreview) .camera { display: grid; }
+  .camera { width: 29px; height: 29px; right: 0; bottom: 0; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
-  .focusSelector, .recommendButton { width: 100%; max-width: none; min-width: 0; }
-  .focusSelector { grid-row: 1; grid-column: 2; padding: 5px 9px; border-radius: 12px; }
-  .focusCaption { font-size: 11px; line-height: 1; }
-  .focusValue { gap: 4px; }
-  .focusValue select { font-size: 16px; line-height: 1.15; }
-  .focusValue svg { width: 19px; height: 19px; flex: none; }
-  .recommendButton { grid-row: 2; grid-column: 2; min-height: 43px; border-radius: 12px; font-size: clamp(13px, 3.7vw, 16px); padding: 7px 8px; gap: 5px; }
-  .recommendButton svg { width: 19px; height: 19px; flex: none; }
-  .photoError { grid-column: 1 / -1; grid-row: 3; font-size: 12px; }
-  .experience { border-radius: 18px; }
-  .hero { min-height: 397px; padding: 10px 9px 15px; border-radius: 17px; }
-  .heroBackdrop { object-position: 61% center; filter: saturate(1.16) sepia(.09); }
-  .heroShade { background: linear-gradient(90deg, rgb(9 35 32 / 91%), rgb(17 48 39 / 69%) 59%, rgb(23 41 29 / 20%)), linear-gradient(0deg, rgb(8 25 23 / 54%), transparent 68%); }
-  .heroFilters { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); width: 100%; gap: 6px; flex-wrap: nowrap; overflow: visible; }
-  .heroMode { display: none; }
-  .heroFilter {
-    display: flex; position: relative; flex-direction: column; justify-content: center; align-items: center;
-    gap: 3px; min-width: 0; min-height: 57px; padding: 6px 4px;
-    border: 1px solid #f8fff274; border-radius: 13px; background: #203f389e; text-align: center;
-    cursor: pointer; overflow: hidden;
-  }
-  .heroFilter span { display: block; min-width: 0; max-width: 100%; color: #fff; font-size: clamp(13px, 3.5vw, 15px); line-height: 1.13; font-weight: 800; white-space: nowrap; }
-  .filterValue { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; line-height: 1.12; color: #dcefe1; font-weight: 650; }
-  .heroFilter svg { display: none; }
-  .heroFilter select {
-    position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%;
-    max-width: none; min-width: 0; padding: 0; margin: 0; opacity: 0; cursor: pointer;
-  }
-  .heroFilter:focus-within { outline: 3px solid #ffe6a5; outline-offset: 2px; }
-  .hero[data-playing="true"] .heroFilters { padding: 8px 9px; background: #143d35; }
-  .heroBody { padding: 28px 9px 2px; }
-  .videoOriginal { padding: 7px 9px; font-size: 12px; }
-  .heroBody h2 { margin: 12px 0 8px; font-size: clamp(30px, 8.3vw, 40px); line-height: 1.06; }
-  .heroDescription { max-width: 330px; margin: 0 0 17px; font-size: 17px; line-height: 1.33; }
-  .playButton { min-height: 57px; width: min(100%, 375px); padding: 10px; border-radius: 14px; font-size: clamp(18px, 5vw, 21px); gap: 9px; }
-  .playButton svg { width: 23px; height: 23px; flex: none; }
-  .videoSection { padding: 14px 11px 12px; }
-  .videoHeading { display: flex; gap: 6px; align-items: baseline; margin-bottom: 11px; }
-  .videoHeading h3 { font-size: 19px; line-height: 1.16; }
-  .videoHeading .videoLanguage { display: none; }
-  .videoGrid {
-    display: grid; grid-template-columns: none; grid-template-rows: 1fr;
-    grid-auto-flow: column; grid-auto-columns: minmax(156px, 45%);
-    gap: 9px; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-    padding: 3px 3px 10px; scrollbar-width: thin;
-  }
-  .videoCard { scroll-snap-align: start; min-width: 0; min-height: 155px; border-width: 2px; border-radius: 14px; padding: 9px; }
-  .thumbnailPlay { top: 8px; left: 8px; width: 35px; height: 35px; }
-  .videoTitle { font-size: 16px; line-height: 1.2; }
-  .videoHint { font-size: 12px; margin: 8px 0 1px; }
-  .youtubeLink { min-height: 43px; font-size: 14px; }
-  .progressPanel { margin-top: 10px; padding: 13px 12px 10px; border-radius: 17px; }
-  .progressPanel h2 { margin-bottom: 9px; font-size: 20px; }
-  .progressGrid { grid-template-columns: 58px minmax(0,1fr) minmax(0,1fr); gap: 7px; padding: 10px; border-radius: 15px; }
-  .progressRing { width: 57px; height: 57px; }
-  .progressRing::before { width: 44px; height: 44px; }
-  .progressRing strong { font-size: 15px; }
-  .progressGrid > div:not(:first-child) { gap: 3px; font-size: 13px; }
-  .progressGrid > div:not(:first-child) span { font-size: 11px; }
-  .progressFocus { padding-left: 6px; }
-  .progressFocus svg { width: 20px; height: 20px; }
-  .privacyNote { font-size: 12px; }
-  .disclaimer { display: block; margin: 13px 5px; }
-  .disclaimer a { margin-top: 6px; }
-  .bottomNav > :is(a,button) { min-height: 52px; font-size: 12px; }
-  .insetPanel { padding: 15px 11px; }
-  .insetIntro h2 { font-size: 24px; }
-  .insetIntro p { font-size: 15px; }
-  .consultOptions { grid-template-columns: 1fr; }
-  .consultOptions a { min-height: 76px; font-size: 17px; }
+  .photoError { margin: 0; font-size: 10px; line-height: 1.14; overflow-wrap: anywhere; }
+  .focusSelector { width: 100%; max-width: none; min-width: 0; padding: 6px 2px;
+    border-radius: 13px; gap: 2px; text-align: center; background: #fffdfa; }
+  .focusCaption { font-size: clamp(9.5px,2.65vw,11px); line-height: 1.08; }
+  .focusCaptionLong { display: none; }
+  .focusCaptionShort { display: inline; }
+  .focusValue { display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .focusValue svg { width: 15px; height: 15px; flex: none; }
+  .focusValue select { flex: 1; min-width: 0; font-size: clamp(12px,3.25vw,15px);
+    font-weight: 850; line-height: 1.15; text-align: center; }
+  .profile > .recommendButton { display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; width: 100%; max-width: none; min-height: 47px;
+    padding: 5px 3px; border-radius: 13px; color: white; text-align: center;
+    background: linear-gradient(130deg,#0baa79,#057353);
+    box-shadow: 0 6px 14px #087c5836; font-size: clamp(10.4px,2.9vw,12.5px); line-height: 1.14; }
+  .profile > .recommendButton svg { flex: none; width: 18px; height: 18px; }
+  .recommendLong { display: none; }
+  .recommendShort { display: block; white-space: normal; }
+  /* Four main cards exactly as in the mock, plus two small shortcuts so
+     Academy and Masters remain reachable without crowding the hero. */
+  .tools h2 { margin: 0 0 6px; }
+  .toolGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-template-rows: repeat(2,minmax(0,77px)); min-height: 0; gap: 5px; }
+  .toolButton,.toolButton:last-child { grid-column: auto; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; min-width: 0; min-height: 77px; padding: 5px 2px;
+    border: 1px solid #e9e1d4; border-radius: 12px;
+    background: #fbf6ec; color: #263b2e; font-size: clamp(9.4px,2.67vw,11.6px);
+    line-height: 1.12; text-align: center; font-weight: 780;
+    word-break: normal; overflow-wrap: normal; hyphens: none; }
+  /* .page button {font:inherit} is more specific than .toolButton;
+     explicitly keep the intended compact screenshot typography. */
+  .page .toolButton { font-size: clamp(9.4px,2.67vw,11.6px); line-height: 1.12; font-weight: 800; }
+  .page .recommendButton { font-size: clamp(10.4px,2.9vw,12.5px); line-height: 1.14; font-weight: 800; }
+  .toolButton svg { width: 25px; height: 25px; flex: none; }
+  .toolButton[aria-pressed="true"] { background: linear-gradient(130deg,#0aab79,#047353);
+    color: white; border-color: #40be9a; box-shadow: 0 5px 15px #138a6738; }
+  .toolLong { display: none; }
+  .toolCompact { display: block; min-width: 0; max-width: 100%; white-space: normal; }
+  .toolMicro { display: none; }
+  .toolShortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 4px; min-width: 0; margin: 5px 0 0; }
+  .toolShortcuts a,.toolShortcuts button { min-width: 0; min-height: 25px; padding: 2px 0;
+    gap: 3px; border-radius: 8px; font-size: clamp(9.4px,2.66vw,11px);
+    white-space: nowrap; background: #eef7ee; }
+  .toolShortcuts svg { display: none; }
+  .toolShortcuts a,.toolShortcuts button { overflow: hidden; text-overflow: clip;
+    white-space: nowrap; letter-spacing: -.02em; }
+  .experience { border-radius: 18px; margin-top: 0; }
+  .hero { min-height: 288px; border-radius: 17px; padding: 10px 10px 15px;
+    background: #16382f; }
+  .heroBackdrop { object-fit: cover; object-position: 72% 51%; filter: saturate(1.05) contrast(1.05); }
+  .heroShade { background: linear-gradient(95deg,rgba(5,33,31,.96),rgba(6,37,33,.70) 51%,rgba(5,36,28,.08) 90%),
+    linear-gradient(0deg,rgba(8,36,32,.45),transparent 65%); }
+  .heroFilters { display: grid; grid-template-columns: minmax(0,1.19fr) repeat(3,minmax(0,1fr));
+    align-items: stretch; gap: 5px; flex-wrap: nowrap; overflow: visible; width: 100%; }
+  .heroMode,.heroFilter { min-width: 0; min-height: 43px; padding: 5px 2px; gap: 2px;
+    border-radius: 22px; font-size: clamp(9.5px,2.77vw,12px);
+    line-height: 1.12; font-weight: 800; text-align: center; white-space: normal; }
+  .heroMode { display: flex; justify-content: center; align-items: center; flex-direction: row;
+    background: linear-gradient(125deg,#10b17e,#067c5a); border-color: #3bdba1; }
+  .heroMode svg { flex: none; width: 16px; height: 16px; }
+  .heroFilter { display: flex; position: relative; flex-direction: column;
+    justify-content: center; align-items: center; background: #1c40398f;
+    border-color: #fff7; overflow: hidden; }
+  .heroFilter > svg { display: none; }
+  .heroFilter span { font-size: clamp(10px,2.83vw,12px); white-space: nowrap; line-height: 1.1; }
+  .filterValue { display: block; max-width: 100%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis; color: #e8efe8;
+    font-size: clamp(9px,2.53vw,10.8px); }
+  .heroFilter select { position: absolute; z-index: 2; inset: 0; width: 100%;
+    height: 100%; min-width: 0; max-width: none; padding: 0; margin: 0;
+    opacity: 0; appearance: none; cursor: pointer; }
+  .heroFilter:focus-within { outline: 3px solid #f8d89c; outline-offset: 2px; }
+  .hero[data-playing="true"] .heroFilters { padding: 7px; background: #193c33; }
+  .heroBody { flex: 1; max-width: min(68%,265px); padding: 13px 1px 0; }
+  .videoOriginal { padding: 5px 8px; border-radius: 16px; font-size: 10px; line-height: 1.1; }
+  .videoOriginal svg { width: 13px; height: 13px; }
+  .heroBody h2 { max-width: 245px; margin: 9px 0 6px;
+    font-size: clamp(27px,7.75vw,36px); line-height: 1.05;
+    font-weight: 900; letter-spacing: -.038em; text-wrap: balance; }
+  .heroDescription { max-width: 250px; margin: 1px 0 13px; color: #f8fcf4;
+    font-size: clamp(12px,3.45vw,16px); line-height: 1.24; font-weight: 650; }
+  .playButton { width: min(270px,100%); min-height: 51px; padding: 8px 8px;
+    border-width: 1px; border-radius: 14px; font-size: clamp(15px,4.25vw,19px);
+    gap: 7px; box-shadow: 0 0 0 2px #c8e8b655,0 5px 15px #062f284a; }
+  .playButton svg { flex: none; width: 20px; height: 20px; }
+  .videoSection { padding: 13px 9px 10px; }
+  .videoHeading { gap: 7px; margin: 0 0 9px; align-items: center; }
+  .videoHeading h3 { min-width: 0; font-size: clamp(14px,3.75vw,19px); line-height: 1.17; }
+  .videoHeading h3 span,.videoLanguage { display: none; }
+  .seeAll { min-height: 30px; flex: none; font-size: clamp(10px,2.72vw,12.5px); }
+  .videoGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
+    grid-template-rows: minmax(0,1fr); grid-auto-flow: row; grid-auto-columns: auto;
+    width: 100%; min-width: 0; gap: 6px; overflow: visible; padding: 0; scroll-snap-type: none; }
+  .videoCard { min-width: 0; aspect-ratio: .94; min-height: 82px; padding: 5px;
+    border-radius: 11px; border-width: 2px; scroll-snap-align: none; isolation: isolate; }
+  .videoCard img { z-index: -2; object-position: center; }
+  .videoCard::after { content: ""; position: absolute; inset: 0; z-index: -1;
+    background-image: url("/images/holistic-house/support-mock-video-posters.webp");
+    background-size: 400% 100%; background-repeat: no-repeat; background-position: 0 0; pointer-events: none; }
+  .videoCard:nth-child(2)::after { background-position: 33.3333% 0; }
+  .videoCard:nth-child(3)::after { background-position: 66.6667% 0; }
+  .videoCard:nth-child(4)::after { background-position: 100% 0; }
+  .videoDark { z-index: 0; }
+  .thumbnailPlay { z-index: 1; width: 26px; height: 26px; top: 5px; left: 5px; border-width: 1px; }
+  .thumbnailPlay svg { width: 12px; height: 12px; }
+  .videoTitle { z-index: 2; font-size: clamp(10px,2.83vw,13px); line-height: 1.15; font-weight: 850; }
+  .videoHint { margin: 7px 0 0; font-size: 10.5px; line-height: 1.3; }
+  .youtubeLink { margin: 0; min-height: 30px; font-size: 12px; }
+  .progressPanel { margin-top: 8px; padding: 11px 9px 8px; border-radius: 17px; }
+  .progressPanel h2 { margin: 0 0 8px; font-size: 18px; }
+  .progressGrid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);
+    gap: 7px; padding: 9px 8px; border-radius: 12px; align-items: center; }
+  .progressStarted { gap: 7px; }
+  .progressRing { flex: none; width: 47px; height: 47px; }
+  .progressRing::before { width: 35px; height: 35px; }
+  .progressRing strong { font-size: 13px; }
+  .progressGrid > div:not(:first-child) { gap: 3px; font-size: 11px; line-height: 1.12; }
+  .progressOpened { font-size: 11px; gap: 3px; line-height: 1.12; }
+  .progressOpened strong { font-size: 10.5px; }
+  .progressOpened span { font-size: 9px; color: #657069; }
+  .progressFocus,.progressAverage { padding-left: 6px; }
+  .progressFocus svg,.progressAverage svg { width: 19px; height: 19px; }
+  .progressFocus strong,.progressAverage strong { font-size: 11.5px; }
+  .progressFocus span,.progressAverage span { font-size: 9px; }
+  .privacyNote { margin: 8px 0 0; font-size: 10px; line-height: 1.23; }
+  .privacyNote svg { width: 15px; height: 15px; }
+  .disclaimer { display: flex; gap: 4px; margin: 9px 3px; font-size: 11px; }
+  .disclaimer a { font-size: 11px; margin: 0; }
+  .bottomNav { min-height: 63px; padding: 5px 7px calc(4px + env(safe-area-inset-bottom)); }
+  .bottomNav > :is(a,button) { min-height: 50px; font-size: 11px; gap: 3px; }
+  .bottomNav > :is(a,button) svg { width: 23px; height: 23px; }
+  .settingsPanel { bottom: calc(77px + env(safe-area-inset-bottom)); }
+  .recommendationPanel { padding: 11px; margin-bottom: 7px; gap: 7px; }
+  .recommendationGrid { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .recommendationCard { padding: 8px; gap: 8px; }
+  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
+  .recommendationTalismanImage { width: 55px; height: 72px; flex-basis: 55px; }
+  .recommendationCopy span { font-size: 13px; }
+  .recommendationCopy button { min-height: 42px; font-size: 13px; }
+  .insetPanel { padding: 14px 10px; }
+  .insetIntro h2 { font-size: 22px; }
+  .consultOptions { grid-template-columns: minmax(0,1fr); }
+  .consultOptions a { min-height: 73px; font-size: 17px; }
 }
-@media (max-width: 375px) {
-  .assessment,.tools { padding: 9px 6px; }
-  .topGrid { grid-template-columns: minmax(0, 1.09fr) minmax(0, .91fr); }
-  .scaleRow { grid-template-columns: 23px minmax(0,1fr) 26px; gap: 3px; }
-  .scaleIcon { width: 23px; height: 23px; }
-  .scaleLabel { font-size: 12px; }
-  .scaleValue { height: 28px; font-size: 14px; }
-  .toolGrid { gap: 4px; }
-  .toolButton { min-height: 99px; font-size: 12px; padding: 5px 1px; }
-  .toolButton svg { width: 23px; height: 23px; }
+
+@media (min-width: 351px) and (max-width: 640px) {
+  /* Equal-looking reference cards need a few extra pixels for full Russian
+     words: do not let "Медитация"/"Талисман" overflow or split. */
+  .topGrid { grid-template-columns: minmax(0,1.12fr) minmax(0,.83fr) minmax(0,1.27fr); }
+  .toolButton,.toolButton:last-child { font-size: clamp(9.2px,2.49vw,10.9px); padding: 4px 1px; }
+  .toolCompact { letter-spacing: -.02em; }
+  .page .toolButton { font-size: clamp(9.2px,2.49vw,10.9px); }
+}
+
+@media (max-width: 350px) {
+  .topGrid { grid-template-columns: minmax(0,1.16fr) minmax(0,.83fr) minmax(0,1.15fr); gap: 4px; }
+  .assessment,.tools { padding: 7px 4px 6px; border-radius: 13px; }
+  .assessment h1,.tools h2 { font-size: 11.5px; min-height: 24px; margin-bottom: 2px; }
+  .subText { font-size: 9px; margin-bottom: 2px; }
+  .scaleList { gap: 2px; }
+  .scaleRow { grid-template-columns: 18px minmax(0,1fr) 20px; grid-template-rows: 15px 18px;
+    min-height: 34px; gap: 0 2px; }
+  .scaleLabel { font-size: 10.7px; letter-spacing: -.04em; }
+  .scaleIcon { width: 17px; height: 18px; }
+  .scaleIcon svg { width: 13px; height: 13px; }
+  .scaleValue { width: 20px; height: 19px; font-size: 11px; }
+  .scaleRow input { height: 18px; }
+  .detailedAnalysisLink { min-height: 27px; margin-top: 3px; font-size: 10px; }
+  .photo { width: min(100%,82px); }
+  .profile { gap: 4px; }
+  .focusSelector { padding: 5px 1px; }
+  .focusCaption { font-size: 9px; }
+  .focusValue select { font-size: 11.5px; }
+  .focusValue svg { width: 13px; height: 13px; }
+  .profile > .recommendButton { min-height: 44px; font-size: 10.5px; }
+  .profile > .recommendButton svg { width: 16px; height: 16px; }
+  .toolGrid { grid-template-rows: repeat(2,minmax(0,68px)); gap: 4px; }
+  .toolButton,.toolButton:last-child { min-height: 68px; padding: 3px 0; gap: 3px; font-size: 10px; }
+  .toolButton svg { width: 21px; height: 21px; }
+  .toolCompact { display: none; }
+  .toolMicro { display: block; min-width: 0; font-size: 10px; white-space: nowrap; }
+  .page .toolButton { font-size: 10px; }
+  .page .recommendButton { font-size: 10.5px; }
+  .toolShortcuts { margin-top: 4px; gap: 3px; }
+  .toolShortcuts a,.toolShortcuts button { font-size: 9px; padding: 1px 0; min-height: 24px; }
+  .toolShortcuts svg { display: none; }
+  .hero { min-height: 282px; padding: 9px 8px 13px; }
   .heroFilters { gap: 4px; }
-  .heroFilter { min-height: 56px; padding: 6px 2px; }
-  .heroFilter span { font-size: 13px; }
-  .filterValue { font-size: 11px; }
-  .heroBody h2 { font-size: 31px; }
-  .videoGrid { grid-auto-columns: minmax(145px, 48%); }
-  .progressGrid { grid-template-columns: 52px minmax(0,1fr) minmax(0,1fr); gap: 6px; padding: 9px 7px; }
-  .progressRing { width: 52px; height: 52px; }
-  .progressRing::before { width: 40px; height: 40px; }
+  .heroMode,.heroFilter { min-height: 40px; border-radius: 13px; font-size: 9.5px; padding: 4px 1px; }
+  .heroMode svg { width: 13px; height: 13px; }
+  .heroFilter span { font-size: 9.5px; }
+  .filterValue { font-size: 9px; }
+  .heroBody { max-width: 70%; padding-top: 10px; }
+  .heroBody h2 { font-size: 27px; }
+  .heroDescription { font-size: 12px; }
+  .playButton { min-height: 47px; font-size: 15px; }
+  .videoGrid { gap: 4px; }
+  .videoCard { min-height: 75px; padding: 3px; }
+  .videoTitle { font-size: 10px; }
+  .progressGrid { gap: 4px; padding: 7px 5px; }
+  .progressRing { width: 39px; height: 39px; }
+  .progressRing::before { width: 30px; height: 30px; }
+  .progressRing strong { font-size: 11px; }
+  .progressOpened strong { font-size: 9px; }
+  .progressOpened span { font-size: 8px; }
+  .progressFocus,.progressAverage { padding-left: 3px; }
+  .progressFocus strong,.progressAverage strong { font-size: 10px; }
+  .progressFocus span,.progressAverage span { font-size: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }
+  .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }

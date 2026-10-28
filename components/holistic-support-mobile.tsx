@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
-  CircleUserRound, Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
+  Coins, Compass, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
@@ -28,7 +29,7 @@ export type SupportMobileVideo = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-type Choice = "meditation" | "consultation" | "talisman" | "pump";
+type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing";
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
@@ -40,6 +41,7 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "consultation", Icon: TestTubeDiagonal },
   { id: "talisman", Icon: Sparkles },
   { id: "pump", Icon: RotateCcw },
+  { id: "healing", Icon: HandHeart },
 ];
 const focusTopics: Record<Focus, MeditationTopic> = {
   energy: "energy", money: "business", relationships: "love", goals: "business",
@@ -51,17 +53,19 @@ const focusRequest: Record<Focus, string> = {
 
 const copy = {
   en: {
-    assessment: "1. Check in with yourself", scoreGuide: "Rate from 1 to 10",
-    focusLabel: "Your focus", upload: "Add your photo", replace: "Change your photo",
+    assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
+    focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
-    recommend: "Find recommendations", detailed: "Detailed analysis (tests)", toolsTitle: "2. Choose what helps",
+    recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
-    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Energy practice" },
+    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Energy Healing" },
+    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Energy" },
+    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
@@ -69,12 +73,15 @@ const copy = {
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", gallery: "More original meditations", galleryHint: "Four verified recordings, where available. Themes are browsing hints, not treatment claims.",
+    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
     tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
     talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
-    energyTitle: "Energy practices", energyIntro: "Watch a verified recording or ask a practitioner about optional complementary support.",
+    energyTitle: "Courses & programmes", energyIntro: "Explore original lessons here or continue to the Academy catalogue.",
+    coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
+    healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
+    healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Selected focus",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
@@ -83,17 +90,19 @@ const copy = {
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
-    assessment: "1. Оцени себя сейчас", scoreGuide: "Поставь баллы от 1 до 10",
-    focusLabel: "Выбранный фокус", upload: "Добавить фото", replace: "Изменить фото",
+    assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
+    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
-    recommend: "Подобрать рекомендации", detailed: "Детальный анализ (тесты)", toolsTitle: "2. Выбери, что поможет",
+    recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
-    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Энергоподкачка" },
+    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Энергетическая поддержка" },
+    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Энергия" },
+    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
@@ -101,12 +110,15 @@ const copy = {
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", gallery: "Другие медитации", galleryHint: "До четырёх проверенных записей. Темы помогают искать практики, но не означают лечение.",
+    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
     tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
     talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
-    energyTitle: "Практики для энергии", energyIntro: "Посмотри авторские видеозаписи или запроси дополнительную поддержку мастера.",
+    energyTitle: "Курсы и программы", energyIntro: "Авторские уроки и действующий каталог Академии.",
+    coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
+    healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
+    healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Текущий фокус",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
@@ -115,17 +127,19 @@ const copy = {
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
-    assessment: "1. Evalúa cómo estás", scoreGuide: "Puntúa del 1 al 10",
-    focusLabel: "Tu enfoque", upload: "Añadir foto", replace: "Cambiar foto",
+    assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
+    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
-    recommend: "Buscar recomendaciones", detailed: "Análisis detallado (tests)", toolsTitle: "2. Elige lo que te ayuda",
+    recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
-    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Práctica energética" },
+    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Sanación energética" },
+    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Energía" },
+    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
@@ -133,12 +147,15 @@ const copy = {
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", gallery: "Otras meditaciones", galleryHint: "Hasta cuatro grabaciones verificadas. Los temas son ayudas para explorar, no tratamientos.",
+    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
     tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
     talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
-    energyTitle: "Prácticas energéticas", energyIntro: "Mira una grabación verificada o pregunta por apoyo complementario.",
+    energyTitle: "Cursos y programas", energyIntro: "Clases originales y catálogo completo de la Academia.",
+    coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
+    healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
+    healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Enfoque actual",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
@@ -147,6 +164,19 @@ const copy = {
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
 } as const;
+
+
+/** Display-only compact labels: full verified recording names remain accessible. */
+function shortVideoTitle(title: string, locale: PublicLocale): string {
+  if (locale === "ru") {
+    const sun = title.match(/Солнц[а-я]*\s*(\d)/i);
+    if (sun) return "Солнце " + sun[1];
+    if (/Жизненн.*[Сс]ил/i.test(title)) return "Жизненная сила";
+    if (/Круг Огня/i.test(title)) return "Круг огня";
+    return title.replace(/бесплатная медитация/gi, "").trim();
+  }
+  return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
+}
 
 export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale; videos: SupportMobileVideo[] }) {
   const t = copy[locale];
@@ -164,6 +194,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [orderKind, setOrderKind] = useState<SupportRequestKind>("energy");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -228,6 +259,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
+  const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
@@ -247,7 +279,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         </header>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
-            <h1 id="mobile-assessment-title">{t.assessment}</h1>
+            <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
             <p className={styles.subText}>{t.scoreGuide}</p>
             <div className={styles.scaleList}>
               {focusOrder.map(id => {
@@ -264,23 +296,30 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </label>;
               })}
             </div>
-            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis>
-              <BarChart3 size={18} aria-hidden="true" />{t.detailed}<ArrowRight size={17} aria-hidden="true" />
+
+
+                      <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
             </Link>
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
-                <span className={styles.photoPlaceholder}><CircleUserRound size={63} strokeWidth={1.15} aria-hidden="true" /><strong>{t.upload}</strong></span>}
+                <span className={styles.photoPlaceholder}>
+                  <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={176} height={176} unoptimized className={styles.photoReference} />
+                  <strong>{t.upload}</strong>
+                </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <label className={styles.focusSelector}>
-              <span className={styles.focusCaption}>{t.focusLabel}</span>
+              <span className={styles.focusCaption}><span className={styles.focusCaptionLong}>{t.focusLabel}</span><span className={styles.focusCaptionShort}>{t.focusLabelShort}</span></span>
               <span className={styles.focusValue}><FocusIcon size={22} aria-hidden="true" />
                 <select value={focus} onChange={event => chooseFocus(event.target.value as Focus)}
                   aria-label={t.focusLabel}>
@@ -288,22 +327,32 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </select><ChevronDown size={18} aria-hidden="true" />
               </span>
             </label>
-            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations>
-              <Sparkles size={21} aria-hidden="true" />{t.recommend}
+            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
+              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
             </button>
           </section>
 
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
-            <h2 id="mobile-tools-title">{t.toolsTitle}</h2>
+            <h2 id="mobile-tools-title" aria-label={t.toolsTitle}><span className={styles.headingLong}>{t.toolsTitle}</span><span className={styles.headingCompact}>{t.toolsShort}</span></h2>
             <div className={styles.toolGrid}>
-              {choices.map(({ id, Icon }) => (
+              {choices.filter(item => item.id !== "pump").map(({ id, Icon }) => (
                 <button key={id} type="button" data-support-tool={id}
                   className={styles.toolButton} aria-pressed={choice === id}
-                  onClick={() => changeChoice(id)}>
+                  onClick={() => changeChoice(id)} aria-label={t.options[id]}>
                   <Icon size={30} strokeWidth={1.65} aria-hidden="true" />
-                  <span>{t.options[id]}</span>
+                  <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span><span className={styles.toolMicro}>{t.optionsMicro[id as keyof typeof t.optionsMicro]}</span>
                 </button>
               ))}
+
+            </div>
+            <div className={styles.toolShortcuts} aria-label={t.coursesAll}>
+              <button type="button" data-support-tool="pump" aria-pressed={choice === "pump"}
+                onClick={() => changeChoice("pump")}>
+                <BookOpen size={15} aria-hidden="true" />{t.optionsCompact.pump}
+              </button>
+              <Link href={"/" + locale + "/masters"} prefetch={false} aria-label={t.healingMasters}>
+                <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
+              </Link>
             </div>
           </section>
         </div>
@@ -355,26 +404,26 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           {scene ? (
             <>
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
-                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+                {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
                 <div className={styles.heroFilters} role="group" aria-label={t.gallery}>
-                  <span className={styles.heroMode}><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
-                  <label className={styles.heroFilter}><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
+                  <span className={styles.heroMode} data-support-mode><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
+                  <label className={styles.heroFilter} data-support-filter="master"><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
                     <strong className={styles.filterValue}>{master === "all" ? t.all : master === "andrey" ? t.authorAndrey : t.authorPs}</strong>
                     <select value={master} aria-label={t.master} onChange={event => { setMaster(event.target.value as Author); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeAuthorValues.map(author => <option key={author} value={author}>{author === "andrey" ? t.authorAndrey : t.authorPs}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
-                  <label className={styles.heroFilter}><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
+                  <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
                     <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
-                  <label className={styles.heroFilter}><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
+                  <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
                     <strong className={styles.filterValue}>{t.themes[theme]}</strong>
                     <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
                       {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
@@ -401,18 +450,18 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               <div className={styles.videoSection}>
                 <div className={styles.videoHeading}>
                   <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {t.foci[focus]}</span></h3>
-                  <span className={styles.videoLanguage}>{locale === "ru" ? t.originalRu : t.originalEn}</span>
+                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
                 {relevantVideos.length > 0 ? (
                   <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
                     {relevantVideos.map(video => <button type="button" key={video.id}
                       className={styles.videoCard} aria-pressed={selected?.id === video.id}
-                      data-support-video={video.id} onClick={() => pickVideo(video.id)}>
+                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
                       <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
                         alt="" width={320} height={180} unoptimized loading="lazy" />
                       <span className={styles.videoDark} aria-hidden="true" />
                       <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
-                      <span className={styles.videoTitle}>{video.title}</span>
+                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
                     </button>)}
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
@@ -420,8 +469,34 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
               </div>
-              {choice === "pump" ? <div className={styles.supportEnquiry}>
+              {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
                 <p>{t.energyIntro}</p>
+                <div className={styles.courseLinks}>
+                  <Link href={"/" + locale + "/academy"} prefetch={false}>{t.coursesAll}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  <Link href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}>{t.coursesReiki}<ArrowRight size={18} aria-hidden="true" /></Link>
+                </div>
+              </div> : null}
+            </>
+          ) : choice === "talisman" ? (
+            <div data-support-talisman-experience>
+              <HolisticSupportTalismanViewer key={focus} locale={locale} focus={focus}
+                rankedIds={recommended?.talismans.map(item => item.id)}
+                catalogOpen={talismanCatalogOpen} onToggleCatalog={() => setTalismanCatalogOpen(open => !open)} />
+              <div id="support-talisman-full-catalog" className={styles.insetPanel} hidden={!talismanCatalogOpen}>
+                {talismanCatalogOpen ? <TaoistTalismanCatalog locale={locale}
+                  featuredId={recommendedTalisman?.id} rankedIds={recommended?.talismans.map(item => item.id)} /> : null}
+              </div>
+            </div>
+
+          ) : choice === "healing" ? (
+            <div className={styles.insetPanel} data-support-healing-panel>
+              <div className={styles.insetIntro}><HandHeart size={33} aria-hidden="true" />
+                <div><h2>{t.healingTitle}</h2><p>{t.healingIntro}</p></div></div>
+              <div className={styles.consultOptions}>
+                <Link href={"/" + locale + "/masters"} prefetch={false}><UserRound size={27} aria-hidden="true" /><span>{t.healingMasters}</span><ArrowRight size={22} aria-hidden="true" /></Link>
+                <Link href={"/" + locale + "/services/remote-energy-support"} prefetch={false}><HandHeart size={27} aria-hidden="true" /><span>{t.healingServices}</span><ArrowRight size={22} aria-hidden="true" /></Link>
+              </div>
+              <div className={styles.healingRequest}>
                 <button type="button" className={styles.secondaryButton}
                   aria-expanded={requestOpen} aria-controls="support-mobile-master-request"
                   onClick={() => setRequestOpen(open => !open)}>{requestOpen ? t.energyHide : t.energyAction}</button>
@@ -430,13 +505,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                     onKindChange={setOrderKind} onClose={() => setRequestOpen(false)} />
                 </div> : null}
                 <small>{t.energyNote}</small>
-              </div> : null}
-            </>
-          ) : choice === "talisman" ? (
-            <div className={styles.insetPanel}>
-              <div className={styles.insetIntro}><Sparkles size={33} aria-hidden="true" />
-                <div><h2>{t.talismansTitle}</h2><p>{t.talismansIntro}</p></div></div>
-              <TaoistTalismanCatalog locale={locale} featuredId={recommendedTalisman?.id} rankedIds={recommended?.talismans.map(item => item.id)} />
+              </div>
             </div>
           ) : (
             <div className={styles.insetPanel}>
@@ -454,11 +523,14 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <h2 id="support-mobile-progress-heading">{t.progress}</h2>
           <div className={styles.progressGrid}>
-            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
-              <strong>{progressCount}/{progressTotal}</strong>
+            <div className={styles.progressStarted}>
+              <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
+                <strong>{progressCount}/{progressTotal}</strong>
+              </div>
+              <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div><strong>{t.started}</strong><span>{t.private}</span></div>
-            <div className={styles.progressFocus}><FocusIcon size={27} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressFocus}><FocusIcon size={25} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>

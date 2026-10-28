@@ -151,3 +151,43 @@ jobs:
             ios-hh-build/Build/Products/Debug-iphonesimulator/*.app
             hh-cap-sync-ios.log
             hh-xcodebuild-ios.log
+
+      # Physical iPhone builds use the *iphoneos* SDK. This IPA is deliberately
+      # unsigned: it cannot install directly from Safari, TestFlight, or the App Store.
+      # Only the owner's own Apple-ID-based signer (e.g. AltStore) may sign it.
+      - name: Build unsigned iPhone arm64 bundle for owner personal signing
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App \
+            -configuration Debug -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ios-hh-device-build \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee hh-xcodebuild-device.log
+      - name: Validate iPhone hardware architecture and pack unsigned IPA
+        run: |
+          app="$(find ios-hh-device-build/Build/Products/Debug-iphoneos -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$app"
+          plist="$app/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$plist")" = "com.holistichouse.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$plist")" = "Holistic House"
+          executable="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$plist")"
+          /usr/bin/lipo -archs "$app/$executable" | tr ' ' '\n' | grep -qx arm64
+          test -f "$app/capacitor.config.json"
+          node -e "const c=require('./ios-hh-device-build/Build/Products/Debug-iphoneos/App.app/capacitor.config.json'); if(c.appId!=='com.holistichouse.app'||c.server?.url!=='https://holistichouse.vercel.app/en/app/messages'||c.server?.cleartext!==false) process.exit(1)"
+          test ! -d "$app/_CodeSignature"
+          mkdir -p ios-hh-sideload/Payload
+          ditto "$app" ios-hh-sideload/Payload/App.app
+          (cd ios-hh-sideload && zip -qry ../Holistic-House-Unsigned-iPhone.ipa Payload)
+          unzip -t Holistic-House-Unsigned-iPhone.ipa >/dev/null
+          shasum -a 256 Holistic-House-Unsigned-iPhone.ipa > Holistic-House-Unsigned-iPhone.sha256
+          echo "OWNER ONLY: this is UNSIGNED and requires personal Apple-ID signing through a trusted sideload installer"
+      - name: Upload iPhone unsigned IPA for private owner test (NOT direct website installer)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Holistic-House-iPhone-Unsigned-IPA-Personal-Only
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            Holistic-House-Unsigned-iPhone.ipa
+            Holistic-House-Unsigned-iPhone.sha256
+            hh-xcodebuild-device.log
