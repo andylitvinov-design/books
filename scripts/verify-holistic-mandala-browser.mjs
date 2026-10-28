@@ -21,6 +21,19 @@ const viewports = [
   { locale: "es", width: 390 },
 ];
 
+// A real, local PCM recording for native audio player + MediaRecorder E2E.
+function syntheticAudioWav(seconds=3) {
+  const rate=16000, samples=rate*seconds;
+  const bytes=Buffer.alloc(44+samples*2);
+  bytes.write("RIFF",0);bytes.writeUInt32LE(bytes.length-8,4);bytes.write("WAVE",8);
+  bytes.write("fmt ",12);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);
+  bytes.writeUInt16LE(1,22);bytes.writeUInt32LE(rate,24);
+  bytes.writeUInt32LE(rate*2,28);bytes.writeUInt16LE(2,32);bytes.writeUInt16LE(16,34);
+  bytes.write("data",36);bytes.writeUInt32LE(samples*2,40);
+  for(let i=0;i<samples;i++)bytes.writeInt16LE(
+    Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
+  return bytes;
+}
 const bufferFromStream = async stream => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
@@ -195,6 +208,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator('[data-video-duration="10"]').click();
           await page.locator('[data-video-music="harmony"]').click();
+          const nativePlayer=page.locator("[data-video-audio-player]");
+          await nativePlayer.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
           await create.click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
@@ -250,6 +271,22 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const backgroundMode = page.locator("[data-mandala-output-mode] button").nth(1);
           await backgroundMode.click();
           assert.equal(await backgroundMode.getAttribute("aria-pressed"), "true");
+          await page.locator("[data-video-audio-upload]").setInputFiles({
+            name:"my-local-sound.wav",mimeType:"audio/wav",buffer:syntheticAudioWav(),
+          });
+          await page.locator("[data-video-audio-selected]").waitFor({state:"visible",timeout:10000});
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),false,
+            "user-supplied audio needs explicit permission for export");
+          const player=page.locator("[data-video-audio-player]");
+          await player.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.locator("[data-video-audio-rights]").check();
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),true);
           await page.locator("[data-mandala-video-generate]").click();
           const backgroundLink = page.locator("[data-mandala-video-download]");
           await backgroundLink.waitFor({ state: "visible", timeout: 45000 });
@@ -261,6 +298,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           const backgroundBytes = await bufferFromStream(await backgroundDownload.createReadStream());
           assert.ok(backgroundBytes.length > 10000, "moving background is real video bytes");
+          const fileProbe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+            "-of","json","-"],{input:backgroundBytes,encoding:"utf8"});
+          assert.equal(fileProbe.status,0,"user audio export is a decodable media container: "+fileProbe.stderr);
+          assert.ok(JSON.parse(fileProbe.stdout).streams.some(x=>x.codec_type==="audio"),
+            "uploaded WAV must survive as real recorded audio track");
+          const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
+            "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
+            {input:backgroundBytes,maxBuffer:1024*1024});
+          assert.equal(pcm.status,0,"uploaded audio export decodes: "+pcm.stderr);
+          let sum=0;
+          for(let i=0;i+1<pcm.stdout.length;i+=2){const sample=pcm.stdout.readInt16LE(i)/32768;sum+=sample*sample;}
+          assert.ok(pcm.stdout.length>4000 && Math.sqrt(sum/(pcm.stdout.length/2))>.02,
+            "real uploaded audio is audible in finished video");
           assert.deepEqual(uploaded, [], "background video must not upload any client content");
         }
 
