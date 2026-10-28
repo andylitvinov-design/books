@@ -580,6 +580,21 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
+          await root.locator('[data-support-player]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-profile-hero]').count(),0,
+            label+" Courses must not open four assessment profiles");
+          assert.ok(await root.locator('[data-support-video]').count()>0,
+            label+" original course video thumbnails are reachable");
+          if(locale==="ru") {
+            const mysteryPicker=root.locator('[data-support-mystery-courses]');
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),3,
+              label+" Russian original Maya, Egyptian and Greek courses restored");
+            await mysteryPicker.locator('[data-support-mystery-course="egypt"]').click();
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course="egypt"]').getAttribute('aria-pressed'),"true",
+              label+" Egyptian course selector is functional");
+            assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
+              /^\/ru\/academy\//,label+" selected programme links to preserved Academy");
+          }
           const academyHrefs=await root.locator('[data-support-courses-panel] a')
             .evaluateAll(links => links.map(a => a.getAttribute("href")));
           // Academy's two canonical links remain, while optional published
@@ -787,6 +802,18 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="tests"]').click();
           const testsPanel=root.locator('[data-support-tests-panel]');
           await testsPanel.waitFor({state:"visible",timeout:8000});
+          assert.equal(await testsPanel.locator('[data-support-profile]').count(),4,
+            label+" Tests must display health/money/relationships/meaning profiles");
+          assert.equal(await root.locator('[data-support-player]').count(),0,
+            label+" Tests must not show course video player");
+          const moneyProfile=testsPanel.locator('[data-support-profile="money"]');
+          await moneyProfile.click();
+          assert.equal(await moneyProfile.getAttribute('aria-pressed'),"true",
+            label+" the Tests profile selector changes active state");
+          assert.equal(await testsPanel.locator('[data-support-profile-hero]').getAttribute('data-sector'),"money",
+            label+" the Tests hero reacts to the selected profile");
+          assert.equal(await testsPanel.locator('[data-support-profile-test]').count(),1,
+            label+" Test action remains accessible");
           assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
             label+" Tests do not mix with a consultation/CRM booking");
           assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
