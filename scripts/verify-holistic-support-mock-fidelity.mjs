@@ -455,9 +455,26 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-goal-results]').count(),1,
             label+" reset preserves the general five-step guide without a selected goal");
           if(width===390) {
-            await root.locator('[data-support-photo] input[type="file"]')
-              .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
+            // The real iOS-style Files picker must not upload anything before
+            // explicit consent, and a guest cannot write to private Cabinet.
+            let photoPosts=0;
+            await page.route("**/api/app/support-photo",async route=>{
+              if(route.request().method()==="POST")photoPosts++;
+              await route.fulfill({status:401,contentType:"application/json",
+                body:'{"error":"SIGN_IN_REQUIRED"}'});
+            });
+            const photoInput=root.locator('[data-support-photo] input[type="file"]');
+            const photoTarget=await photoInput.boundingBox();
+            const circle=await root.locator('[data-support-photo]').boundingBox();
+            assert.ok(photoTarget&&circle&&photoTarget.width>=circle.width-3&&
+              photoTarget.height>=circle.height-3,label+" native iOS picker uses full circle");
+            await photoInput.setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
             await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
+            await root.locator('[data-support-photo-save]').waitFor({state:"visible",timeout:5000});
+            assert.equal(photoPosts,0,label+" photo selection remains local before Save");
+            await root.locator('[data-support-photo-save]').click();
+            await root.locator('[data-support-photo-signin]').waitFor({state:"visible",timeout:5000});
+            assert.equal(photoPosts,1,label+" guest Save attempted one authenticated write, not repeated");
             // Selecting a thumb changes the player, but only explicit Play opens YouTube.
             const target=root.locator('[data-support-video]').last();
             await target.click();
