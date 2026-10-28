@@ -25,6 +25,28 @@ for (const engine of [chromium, webkit]) {
         const errors = [];
         const unexpectedWrites = [];
         const fixtureCalls = [];
+        // Record only synthetic directory transport metadata for failure diagnosis.
+        // No client data, query text, credentials, or response bodies are logged.
+        const directoryPath = "/api/public/remote-energy-support-masters";
+        const directoryNetwork = [];
+        page.on("requestfailed", request => {
+          const requestUrl = new URL(request.url());
+          if (requestUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "failed", kind: requestUrl.searchParams.get("kind"),
+              reason: request.failure()?.errorText || "unknown" });
+        });
+        page.on("response", response => {
+          const responseUrl = new URL(response.url());
+          if (responseUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "response", kind: responseUrl.searchParams.get("kind"),
+              status: response.status() });
+        });
+        page.on("request", request => {
+          const requestUrl = new URL(request.url());
+          if (requestUrl.pathname === directoryPath)
+            directoryNetwork.push({ event: "request", kind: requestUrl.searchParams.get("kind"),
+              method: request.method() });
+        });
         page.on("pageerror", error => errors.push(error.message));
         page.on("request", request => {
           if (request.method() !== "GET" && request.method() !== "HEAD" &&
@@ -33,7 +55,7 @@ for (const engine of [chromium, webkit]) {
         });
         // Synthetic public catalog only: proves UI without using personal accounts,
         // posting enquiries, charging, or assuming real provider availability.
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        await page.route(url => url.pathname === directoryPath, async route => {
           const requestUrl = new URL(route.request().url());
           const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
           fixtureCalls.push({ kind: isConsultation ? "consultation" : "masters",
@@ -163,7 +185,7 @@ for (const engine of [chromium, webkit]) {
                 selectedBudget: document.querySelector("#holistic-inline-order [data-support-budget][aria-pressed=true]")?.getAttribute("data-support-budget"),
               })).catch(() => ({ unavailable: true }));
               throw new Error(label + " " + scenario + " fixture mismatch: " +
-                JSON.stringify({ expected: sorted, state, routedFixtures: fixtureCalls, pageErrors: errors }), { cause: error });
+                JSON.stringify({ expected: sorted, state, routedFixtures: fixtureCalls, directoryNetwork, pageErrors: errors }), { cause: error });
             }
             const actual = (await finder.locator("#holistic-inline-results article h5").allInnerTexts())
               .map(title => title.trim()).sort();
