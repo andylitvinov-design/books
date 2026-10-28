@@ -86,6 +86,7 @@ export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promi
         photo: record.profile.photoPath || "",
         serviceId: service.id,
         serviceHref: getPublicServiceDetailHref(locale, record.slug, service.slug),
+        serviceTitle: service.copy?.title || "",
         methods: service.methods || [],
         bio: record.profile.shortBio || "",
         description: service.copy?.shortDescription || "",
