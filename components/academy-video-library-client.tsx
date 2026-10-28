@@ -238,7 +238,7 @@ export function AcademyVideoLibraryClient({
                                   {course.chapters.map((chapter) => (
                                     <section className={styles.chapter} key={chapter.id}>
                                       {chapter.title ? <h4>{chapter.title}</h4> : null}
-                                      {(sortRated ? sortByStars(chapter.videos,lesson=>lesson.id,stars.ratings) : chapter.videos).map((lesson, index) => {
+                                      {(sortRated ? sortByStars(chapter.videos,lesson=>lesson.id,stars.ratings) : chapter.videos).map((lesson) => {
                                         if(minimumStars && !stars.loading && !stars.unavailable &&
                                           (lesson.unavailable || !matchesStarFilter(stars.ratings[lesson.id],minimumStars)))return null;
                                         const key = course.id + "/" + chapter.id + "/" + lesson.id;
