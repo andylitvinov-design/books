@@ -221,3 +221,15 @@ test("new TSX parses with no diagnostics", () => {
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")),[]);
 });
+
+test("Safari narrow-screen Next activates once on a completed primary touch, without consuming keyboard or mouse", () => {
+  const editor = read("components/holistic-support-goal-filter.tsx");
+  assert.match(editor, /onPointerDown=\{event => \{/);
+  assert.match(editor, /onPointerUp=\{event => \{/);
+  assert.match(editor, /event\.pointerType !== "touch" \|\| !event\.isPrimary/);
+  assert.match(editor, /Math\.abs\(event\.clientX - start\.x\) > 16/);
+  assert.match(editor, /Math\.abs\(event\.clientY - start\.y\) > 16/);
+  assert.match(editor, /nextTouchReleaseAt\.current = Date\.now\(\);\s*nextSector\(\);/);
+  assert.match(editor, /event\.detail === 0 \|\| Date\.now\(\) - nextTouchReleaseAt\.current > 500/);
+  assert.match(editor, /onPointerCancel=\{\(\) => \{ nextTouchStart\.current = null; \}\}/);
+});
