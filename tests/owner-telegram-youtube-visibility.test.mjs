@@ -8,6 +8,8 @@ import {ownerRuYoutubeVisibility,ownerRuStatusUpdateBody,
  changeOwnerRuYoutubeVisibility}
  from '../lib/practitioners/owner-telegram-video-visibility.mjs'
 
+import {createMemoryYoutubeHistoryStore} from '../lib/youtube/upload-history-store.js'
+
 const UUID='b6e8526e-c251-4dd5-a9ca-2886c430f912'
 const ID='Yt123456abc'
 const TOKEN='visibility-test-access-token-do-not-log'
@@ -168,4 +170,25 @@ test('YouTube privacy policy hold is distinct from a missing OAuth scope',async(
  await assert.rejects(
    ()=>changeOwnerRuYoutubeVisibility(ID,TOKEN,'public',scope),
    /VIDEO_YOUTUBE_VISIBILITY_CONSENT_REQUIRED/)
+})
+
+test('phone YouTube history follows only confirmed privacy and preserves upload facts',async()=>{
+ const store=createMemoryYoutubeHistoryStore()
+ const record=await store.save({
+   target:'ru',channelId:VIDEO_RU_CHANNEL_ID,videoId:ID,
+   title:'Existing owner video',requestedVisibility:'unlisted',
+   privacyStatus:'unlisted'
+ })
+ const updated=await store.updateVerifiedPrivacy(ID,'public')
+ assert.equal(updated.privacyStatus,'public')
+ assert.equal(updated.uploadedAt,record.uploadedAt)
+ assert.equal(updated.title,record.title)
+ assert.equal(updated.channelId,record.channelId)
+ assert.equal(updated.requestedVisibility,'unlisted')
+ assert.equal((await store.list())[0].privacyStatus,'public')
+ await store.updateVerifiedPrivacy(ID,'unlisted')
+ assert.equal((await store.list())[0].privacyStatus,'unlisted')
+ assert.equal(await store.updateVerifiedPrivacy('AbcDef12345','public'),null)
+ await assert.rejects(()=>store.updateVerifiedPrivacy('not-an-id','public'),/invalid_visibility/)
+ await assert.rejects(()=>store.updateVerifiedPrivacy(ID,'private'),/invalid_visibility/)
 })
