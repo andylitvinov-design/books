@@ -144,3 +144,23 @@ test("money-flow template gallery is real user-triggered moving video, not symbo
   // The user starts a scene, and the same engine records the final video.
   assert.doesNotMatch(studio, /\bfetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage/);
 });
+
+
+test("selected scenes can also export reusable video backgrounds without a client photo", () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  const browser = read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio, /const BACKGROUND_CLIP = "local-money-background-only"/);
+  assert.match(studio, /url === BACKGROUND_CLIP \? Promise\.resolve\(null\) : loadLocalImage\(url\)/);
+  assert.match(studio, /const \[backgroundOnly, setBackgroundOnly\] = useState\(false\)/);
+  assert.match(studio, /moneyScene && backgroundOnly \? BACKGROUND_CLIP/);
+  assert.match(studio, /data-mandala-output-mode/);
+  assert.match(studio, /setBackgroundOnly\(true\)/);
+  assert.match(studio, /backgroundOnly \? "money-background" : "personal-mandala"/);
+  assert.match(studio, /paintCinematicMoneyFrame\(ctx, art, moneyScene, time, aspect, title\)/);
+  assert.match(studio, /if \(!art\) return/);
+  assert.match(browser, /holistic-house-money-background/);
+  for (const label of ['"Background video only"', '"Только видеофон"', '"Solo fondo de vídeo"']) {
+    assert.ok(studio.includes(label), "Missing language for background clip: " + label);
+  }
+  assert.doesNotMatch(studio, /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage/);
+});
