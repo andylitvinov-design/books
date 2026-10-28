@@ -1,7 +1,7 @@
 name: One-time HH cinematic money MP4 masters
 on:
-  push:
-    branches: ['feat/real-money-mp4-library-20261028']
+  pull_request:
+    branches: ['codex/public-book-library']
     paths:
       - scripts/render-real-money-mp4-library.mjs
       - .github/workflows/hh-render-real-money-masters-once.yml
@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   render-and-commit:
-    if: github.repository == 'andylitvinov-design/books'
+    if: github.repository == 'andylitvinov-design/books' && github.event.pull_request.head.ref == 'feat/real-money-mp4-library-20261028' && github.event.pull_request.head.repo.full_name == 'andylitvinov-design/books'
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:
