@@ -94,8 +94,21 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const moneyPreview = page.locator("[data-mandala-money-preview]");
         await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true");
+        const cinema = page.locator("[data-mandala-cinematic-canvas]");
+        await cinema.waitFor({ state: "attached" });
+        const frameHash = () => cinema.evaluate(canvas => {
+          const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+          let hash = 7;
+          for (let i=0;i<data.length;i+=199) hash = (hash * 31 + data[i]) >>> 0;
+          return hash;
+        });
+        const frameBefore = await frameHash();
+        await page.waitForTimeout(650);
+        const frameAfter = await frameHash();
+        assert.notEqual(frameBefore, frameAfter, "money-frame-motion: must be animated footage, not a static poster");
         await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "false");
+        assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
           assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
