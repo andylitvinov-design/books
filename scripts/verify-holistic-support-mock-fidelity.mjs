@@ -107,6 +107,7 @@ for (const browserType of [chromium, webkit]) {
                 return { name: txt?.textContent, fits: Boolean(txt && tr &&
                   txt.scrollWidth <= txt.clientWidth+2 && tr.left>=lr.left-2 && tr.right<=lr.right+2) };
               }),
+              guide:measure('[data-support-goal-results]'),
               gallery:measure('[data-support-meditation-gallery]'),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
@@ -118,13 +119,15 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
           if(width===320) {
-            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
+            const headHeight=Math.round(geometry.guide[0].y-geometry.a[0].y);
             console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
+          assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285,
+            label+" screenshot-like three-zone dashboard exposes recommendations under header");
+          assert.ok(geometry.guide[0].bottom<=geometry.hero[0].y+2,
+            label+" recommendation card precedes original scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
@@ -291,6 +294,9 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
           const results=root.locator('[data-support-goal-results]');
           await results.waitFor({state:"visible",timeout:8000});
+          assert.equal(await results.locator('[data-support-journey-step]').count(),5,
+            label+" five real recommendation cards");
+          await results.locator('[data-support-journey-other] summary').click();
           assert.equal(await results.locator('[data-support-goal-action]').count(),7,
             label+" only seven opted-in recommendation categories remain");
           assert.equal(await results.locator('[data-support-goal-action="consultation"]').count(),0,
@@ -446,7 +452,8 @@ for (const browserType of [chromium, webkit]) {
             label+" Reset clears all previously accepted sector badges");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
-          assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
+          assert.equal(await root.locator('[data-support-goal-results]').count(),1,
+            label+" reset preserves the general five-step guide without a selected goal");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
