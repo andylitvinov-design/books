@@ -11,7 +11,7 @@ const COOKIE='hh_tgvideo_oauth_state'
 const CALLBACK='https://holistichouse.vercel.app/api/admin/telegram-video/youtube/callback'
 const CONTEXT={accountId:PRACTITIONER_ID,recordId:PRACTITIONER_ID,field:'telegram_video_oauth_state'}
 const HEADERS={'cache-control':'no-store','referrer-policy':'no-referrer'}
-export async function GET(){
+export async function GET(request){
  // When a fresh iPhone/Telegram browser lacks the private admin cookie, enter the
  // existing verified-owner bridge and return to this exact OAuth start route.
  // A login redirect never grants YouTube access or creates a video.
@@ -24,10 +24,15 @@ export async function GET(){
    const config=getAppConfig()
    const verifier=randomBytes(32).toString('base64url')
    const state=randomBytes(32).toString('base64url')
-   const encrypted=seal({verifier,state,time:Date.now()},CONTEXT,config)
+   // Only an explicit owner click requests stronger metadata-edit rights.
+   const visibility=request?.url?
+     new URL(request.url).searchParams.get('visibility')==='1':false
+   const encrypted=seal({verifier,state,time:Date.now(),visibility},CONTEXT,config)
    const query=new URLSearchParams({
      client_id:process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID,redirect_uri:CALLBACK,
-     response_type:'code',scope:'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+     response_type:'code',
+     scope:'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'+
+       (visibility?' https://www.googleapis.com/auth/youtube.force-ssl':''),
      access_type:'offline',prompt:'consent',include_granted_scopes:'false',
      code_challenge:createHash('sha256').update(verifier).digest('base64url'),
      code_challenge_method:'S256',state
