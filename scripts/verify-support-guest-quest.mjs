@@ -3,10 +3,11 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const browserName = ["chromium", "webkit"].includes(process.env.HH_QUEST_BROWSER) ? process.env.HH_QUEST_BROWSER : "chromium";
+const browserType = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright")[browserName];
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3117";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Loopback only");
-const browser = await chromium.launch({ headless: true });
+const browser = await browserType.launch({ headless: true });
 const output = "artifacts/holistic-support-quest";
 await mkdir(output, { recursive: true });
 let checked = 0;
@@ -162,4 +163,4 @@ try {
 } finally {
   await browser.close();
 }
-console.log("Support quest mobile synthetic QA: " + checked + " locales/widths passed");
+console.log("Support quest " + browserName + " synthetic QA: " + checked + " locales/widths passed");
