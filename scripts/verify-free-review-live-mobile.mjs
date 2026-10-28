@@ -244,7 +244,9 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           } else {
             assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
             assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-            assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+            // Telegram's readiness fallback is also role="status" and is NOT a lead.
+            // Inspect only this consented capture's receipt/confirmation statuses.
+            assert.equal(await enquiry.locator('[data-reiki-phone-enquiry] [role="status"]').count(), 0,
               "no actual lead saved by navigating");
           }
           // Touch users select the full 94px+ labelled card, not the tiny native
@@ -262,7 +264,10 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true,
             "tapping the whole situation card checks the native radio");
           assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
-          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+          const receiptStatus = wizardV2
+            ? '[data-free-express-receipt]'
+            : '[data-reiki-phone-enquiry] [role="status"]';
+          assert.equal(await enquiry.locator(receiptStatus).count(), 0,
             "changing focus is not a lead or booking");
           await enquiry.locator('input[type="tel"]').focus();
           await page.keyboard.press("Escape");
