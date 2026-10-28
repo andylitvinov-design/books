@@ -42,6 +42,7 @@
 .quickTile { position: relative; display: grid; align-content: start; justify-items: start; gap: 6px; padding: 12px 8px; min-height: 106px; border-radius: 17px; border: 1px solid #e6e5dd; color: #25433b; background: #fffdf8de; text-align: left; box-shadow: 0 4px 15px #243a2011; transition: transform .15s, box-shadow .15s; }
 .quickTile:active, .tool:active, .offerCard:active { transform: scale(.985); }
 .quickTile.green { background: linear-gradient(145deg,#00b895,#00795f); border-color: #38b99b; color: white; }
+.quickTile.mint { background: linear-gradient(155deg,#ffffff,#eff8f2); }
 .tileIcon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; color: #087d69; background: #dff3eb; }
 .green .tileIcon { background: #ffffff25; color: white; }
 .violet .tileIcon { background: #f2eafa; color: #8a56ca; }
