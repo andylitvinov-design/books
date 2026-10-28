@@ -61,6 +61,7 @@ const sectors: Record<GoalSector, Items> = {
     axes: [
       axis("vitality", "Energy", "Энергия", "Energía"),
       axis("sleepQuality", "Sleep quality", "Качество сна", "Calidad del sueño"),
+      axis("bodyComfort", "Body comfort", "Комфорт в теле", "Bienestar corporal"),
       axis("calm", "Inner calm", "Спокойствие", "Calma interior"),
     ],
   },
@@ -85,6 +86,7 @@ const sectors: Record<GoalSector, Items> = {
       axis("monthlyIncome", "Monthly income", "Доход в месяц", "Ingreso mensual", "currency"),
       axis("incomeStability", "Income stability", "Стабильность дохода", "Estabilidad de ingresos"),
       axis("reserveMonths", "Reserve in months", "Финансовый резерв", "Meses de reserva", "months"),
+      axis("moneyConfidence", "Financial confidence", "Финансовая уверенность", "Confianza financiera"),
     ],
   },
   love: {
@@ -108,6 +110,7 @@ const sectors: Record<GoalSector, Items> = {
       axis("connection", "Closeness", "Близость", "Cercanía"),
       axis("trust", "Trust", "Доверие", "Confianza"),
       axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
+      axis("support", "Emotional support", "Поддержка", "Apoyo emocional"),
     ],
   },
   goals: {
@@ -129,6 +132,7 @@ const sectors: Record<GoalSector, Items> = {
     ],
     axes: [
       axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
+      axis("motivation", "Motivation", "Мотивация", "Motivación"),
       axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
       axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
     ],
@@ -153,6 +157,7 @@ const sectors: Record<GoalSector, Items> = {
     axes: [
       axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
       axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
+      axis("values", "Living my values", "Соответствие ценностям", "Vivir mis valores"),
       axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
     ],
   },
@@ -161,7 +166,7 @@ const ui = {
   en: {
     title: "Goal & task filter", sector: "Life area", current: "1. What matters right now?",
     desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
-    ratingHelp: "Three indicators. Self-ratings 1–10; financial amounts have their own units."
+    ratingHelp: "Four indicators for this area. Self-ratings 1–10; money fields use actual amounts.",
     now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
     currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown. Changing currency clears income values.",
     clear: "Reset filter", close: "Close filter",
@@ -172,7 +177,7 @@ const ui = {
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
     desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
-    ratingHelp: "Три показателя. Оценки 1–10; доход и резерв — в реальных единицах."
+    ratingHelp: "Четыре показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
     now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
     currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно. Смена валюты очищает суммы дохода без конвертации.",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
@@ -183,7 +188,7 @@ const ui = {
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
     desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
-    ratingHelp: "Tres indicadores. Escalas 1–10; ingresos y reserva con unidades reales."
+    ratingHelp: "Cuatro indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
     now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
     currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional. Cambiar moneda borra los ingresos sin convertirlos.",
     clear: "Restablecer filtro", close: "Cerrar filtro",
