@@ -419,7 +419,7 @@
   .reikiPhotoIntro { min-height: 88px; max-width: 82%; padding: 4px 2px 5px; gap: 4px; }
   .reikiPhotoIntro > strong { font-size: clamp(21px,5.7vw,25px); line-height: 1.05; }
   .reikiPhotoIntro > small { font-size: 11px; line-height: 1.15; }
-  .reikiFilterSheet { gap: 8px; padding: 11px 10px 12px; border-radius: 15px; }
+  .reikiFilterSheet { gap: 6px; padding: 10px 10px 11px; border-radius: 15px; }
   .reikiFilterHeading h2 { font-size: clamp(16px,4.3vw,18px); }
   .reikiFilterHeading p { font-size: 10.5px; line-height: 1.2; }
   .reikiStage .reikiReset {
@@ -468,7 +468,7 @@
   .reikiPhotoIntro { min-height: 74px; }
   .reikiPhotoIntro > strong { font-size: 20px; }
   .reikiPhotoIntro > small { font-size: 10px; }
-  .reikiFilterSheet { padding: 10px 8px; gap: 7px; }
+  .reikiFilterSheet { padding: 9px 8px; gap: 5px; }
   .reikiFilterHeading h2 { font-size: 16px; }
   .reikiStage .reikiOptions button { font-size: 10px; }
   .reikiOptions button svg { width: 14px; height: 14px; }
