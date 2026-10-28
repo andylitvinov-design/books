@@ -213,6 +213,30 @@ for (const browserType of [chromium, webkit]) {
           // three selectors and the existing quote dialog at all iPhone sizes.
           const categories=talisman.locator("[data-support-talisman-category]");
           assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const labels=await talisman.evaluate(el=>{
+            const cards=Array.from(el.querySelectorAll('[data-support-talisman-category]')).slice(0,4);
+            const arrow=el.querySelector('[data-support-talisman-categories-next]');
+            const arrowLeft=arrow?.getBoundingClientRect().left ?? 0;
+            return cards.map(card=>{
+              const name=card.querySelector('span');
+              const rect=card.getBoundingClientRect();
+              return {text:name?.textContent,aria:card.getAttribute('aria-label'),
+                whiteSpace:name ? getComputedStyle(name).whiteSpace : '',
+                overflow:(name?.scrollWidth ?? 0)-(name?.clientWidth ?? 0),
+                fitsBeforeArrow:rect.right <= arrowLeft+2,
+                height:rect.height};
+            });
+          });
+          const expectedShortLabels={
+            en:["Strength","Money","Love","Goals"],
+            ru:["Сила","Деньги","Любовь","Цель"],
+            es:["Fuerza","Dinero","Amor","Metas"],
+          }[locale];
+          assert.deepEqual(labels.map(item=>item.text),expectedShortLabels,
+            label+" short words instead of torn-up 3-line talisman titles");
+          assert.ok(labels.every(item=>item.aria && item.aria !== item.text &&
+              item.whiteSpace==="nowrap" && item.overflow<=1 && item.fitsBeforeArrow),
+            label+" four fully readable single-line categories with full accessible names: "+JSON.stringify(labels));
           const compactSizes=await talisman.evaluate(el=>{
             const category=el.querySelector('[data-support-talisman-category-switcher]')?.getBoundingClientRect();
             const first=el.querySelector('[data-support-talisman-category]')?.getBoundingClientRect();
