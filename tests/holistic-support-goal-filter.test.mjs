@@ -117,6 +117,8 @@ test("all former Goals questions, tasks and metrics live inside the single Meani
     "goalClarity","actions","progress","meaningAxis","selfContact","inspirationAxis"]) {
     assert.ok(meaning.includes('"' + id + '"'), "Meaning preserves " + id);
   }
+  assert.ok(meaning.indexOf('axis("meaningAxis"') < meaning.indexOf('axis("goalClarity"'),
+    "overall Meaning rating must not be silently equated with only goal clarity");
   assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
   assert.match(editor, /meaning: "meaning"/);
   assert.doesNotMatch(editor, /goals: "goals", meaning: "meaning"/);
