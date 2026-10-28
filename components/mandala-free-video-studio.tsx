@@ -524,14 +524,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
   },[activeMoneyFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
-  // Never leave a previous client's exported video visible after replacement.
+  // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
+  // tapped: selection itself is the explicit playback gesture.
   useEffect(() => {
     const job=jobRef.current;
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
-    setPreviewPlaying(false);
   }, [signature]);
+  useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
