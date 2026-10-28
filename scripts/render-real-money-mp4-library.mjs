@@ -111,6 +111,18 @@ async function main(){
    ],scene[0]);
    const poster=join(OUTPUT,scene[0]+".jpg");
    run(["-ss","1.3","-i",out,"-frames:v","1","-vf","scale=360:640","-q:v","5",poster],scene[0]+" poster",45000);
+   // Prevent a repeat of the magenta/YUV-blend regression: inspect the
+   // *actual encoded MP4 poster*, not the source palette or CSS preview.
+   const {data:pixels,info:img}=await sharp(poster).raw().toBuffer({resolveWithObject:true});
+   let goldPixels=0,magentaPixels=0;
+   for(let px=0;px<img.width*img.height;px++){
+    const k=px*img.channels,r=pixels[k],g=pixels[k+1],bl=pixels[k+2];
+    if(r>85&&g>55&&r>g*1.08&&g>bl*1.27)goldPixels++;
+    if(r>105&&bl>95&&r>g*1.35&&bl>g*1.28)magentaPixels++;
+   }
+   process.stdout.write("COLOR "+scene[0]+" gold "+goldPixels+" magenta "+magentaPixels+"\n");
+   if(scene[0]==="golden-rain"&&(goldPixels<img.width*img.height*.035||magentaPixels>goldPixels))
+    throw Error("GOLD_MASTER_COLOR_QA_FAILED: first cinematic clip is pink/flat, never publish it");
    const bytes=(await stat(out)).size;
    if(bytes<18000||bytes>6000000)throw Error(scene[0]+" suspicious video size "+bytes);
    run(["-i",out,"-frames:v","2","-f","null","-"],scene[0]+" decode",40000);
