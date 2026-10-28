@@ -95,11 +95,23 @@ try {
         await page.locator("[data-support-play]:not([disabled])").waitFor({ timeout: 35000 });
         assert.equal(await page.locator('[data-support-quest-budget][data-empty="true"]').count(),
           0, label + " signed-in unlocked");
+        // Reset only the synthetic activity marker to prove that Play, not tile
+        // selection, creates the two meditation badges for a signed-in viewer.
+        await page.evaluate(() => localStorage.setItem("hh-support-free-journey-v1",
+          JSON.stringify({ starts: 0, completed: {} })));
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
+        await page.locator("[data-support-play]:not([disabled])").waitFor({ timeout: 35000 });
+        assert.notEqual(await page.locator('[data-support-quest-step="firstVideo"]').getAttribute("data-status"),
+          "done", label + " no fake video completion");
         await page.locator("[data-support-play]").click();
         assert.equal(await page.locator('[data-support-quest-step="firstVideo"]').getAttribute("data-status"),
-          "done", label + " starts only on Play");
+          "done", label + " first actual Play click");
+        assert.notEqual(await page.locator('[data-support-quest-step="secondVideo"]').getAttribute("data-status"),
+          "done", label + " one launch is not two");
+        await page.locator('[data-support-video]').nth(1).click();
+        await page.locator("[data-support-play]").click();
         assert.equal(await page.locator('[data-support-quest-step="secondVideo"]').getAttribute("data-status"),
-          "done", label + " prior aggregate starts count");
+          "done", label + " second actual Play click");
         assert.equal(errors.length, 0, label + " page errors: " + errors.join("; "));
         if (locale === "ru" && width === 390) {
           await page.locator("#support-progress").screenshot({
