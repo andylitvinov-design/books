@@ -27,6 +27,9 @@ for (const engine of [chromium, webkit]) {
         });
         const errors = [];
         const unexpectedWrites = [];
+        // The route handler, not a passive request event, proves a write was
+        // intercepted before transport. Keep only synthetic method/path metadata.
+        const blockedWrites = [];
         const fixtureCalls = [];
         // Record only synthetic directory transport metadata for failure diagnosis.
         // No client data, query text, credentials, or response bodies are logged.
@@ -64,6 +67,9 @@ for (const engine of [chromium, webkit]) {
         // POST to an external collection endpoint before consent.
         await page.route(url => ["http:", "https:"].includes(url.protocol), async route => {
           if (!["GET", "HEAD"].includes(route.request().method())) {
+            const url = new URL(route.request().url());
+            blockedWrites.push(route.request().method() + " " +
+              (url.origin === origin ? url.pathname : "[external-origin]"));
             await route.abort("blockedbyclient");
             return;
           }
@@ -106,9 +112,19 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
         try {
-          const response = await page.goto(origin + "/" + locale + "/holistic-support",
-            { waitUntil: "domcontentloaded", timeout: 60000 });
-          assert.equal(response?.status(), 200, label + " HTTP status");
+          // Verify interception in a synthetic same-origin HTML document before
+          // loading the application. The application's CSP may reject a fetch
+          // without issuing a request, which cannot prove Playwright route safety.
+          if (locale === "en" && width === 320) {
+            const probeDocumentPath = "/__hh-read-only-qa-document";
+            await page.route(origin + probeDocumentPath, route => route.fulfill({
+              status: 200, contentType: "text/html",
+              body: "<!doctype html><html><body>Read-only QA network guard</body></html>",
+            }));
+            const documentResponse = await page.goto(origin + probeDocumentPath,
+              { waitUntil: "domcontentloaded", timeout: 15000 });
+            assert.equal(documentResponse?.status(), 200, label + " synthetic probe document");
+          }
           // Negative controls for both first-party and cross-origin writes.
           // The .invalid hostname is reserved and must never be contacted:
           // the Playwright route aborts the POST before any network transport.
@@ -128,13 +144,18 @@ for (const engine of [chromium, webkit]) {
                 }
               }, probe.url);
               assert.equal(outcome, "blocked", label + " blocks synthetic POST before transport");
-              assert.equal(unexpectedWrites.filter(value => value === probe.record).length, 1,
-                label + " observes exactly one intentionally blocked POST");
-              // Remove only this known synthetic probe. Any unsolicited write
-              // (including an off-origin one) remains a fatal final assertion.
-              unexpectedWrites.splice(unexpectedWrites.indexOf(probe.record), 1);
+              assert.equal(blockedWrites.filter(value => value === probe.record).length, 1,
+                label + " intercepts exactly one intentional POST before transport");
+              // Remove only this known synthetic probe from both ledgers;
+              // any unsolicited write still fails the final assertion.
+              blockedWrites.splice(blockedWrites.indexOf(probe.record), 1);
+              const observedIndex = unexpectedWrites.indexOf(probe.record);
+              if (observedIndex !== -1) unexpectedWrites.splice(observedIndex, 1);
             }
           }
+          const response = await page.goto(origin + "/" + locale + "/holistic-support",
+            { waitUntil: "domcontentloaded", timeout: 60000 });
+          assert.equal(response?.status(), 200, label + " HTTP status");
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
@@ -269,6 +290,7 @@ for (const engine of [chromium, webkit]) {
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
           assert.deepEqual(unexpectedWrites, [], label + " no unsolicited CRM, booking or payment writes");
+          assert.deepEqual(blockedWrites, [], label + " no unsolicited write intercepted before transport");
           // CI #40620636035 proved all 18 UI flows after blocking service workers.
           // Guard against a future silent fall-through to the real (unconfigured)
           // directory endpoint: synthetic browser QA must only see fixture HTTP 200.
