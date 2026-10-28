@@ -167,9 +167,12 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     });
     setSelectedId(null);
   }
+  const eligibleVideos=useMemo(() => minimumStars && !stars.loading && !stars.unavailable
+    ? videos.filter(video => matchesStarFilter(stars.ratings[video.youtube_id],minimumStars))
+    : videos,[videos,minimumStars,stars.ratings,stars.loading,stars.unavailable]);
   const matched: MeditationMatch[] = useMemo(() =>
-    applied ? rankMeditationCatalog({ videos, publishedSourceIds, request: applied }) : [],
-    [applied, videos, publishedSourceIds]);
+    applied ? rankMeditationCatalog({ videos:eligibleVideos, publishedSourceIds, request: applied }) : [],
+    [applied, eligibleVideos, publishedSourceIds]);
   const found = (sortRated ? sortByStars(matched,match=>match.video.youtube_id,stars.ratings) : matched)
     .filter(match=>stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[match.video.youtube_id],minimumStars));
   const active = found.find(match => match.video.youtube_id === selectedId) ?? found[0];

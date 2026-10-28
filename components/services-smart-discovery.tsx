@@ -279,7 +279,8 @@ export function ServicesSmartDiscovery({
   // These constraints apply to both locally-ranked and AI-ranked published services.
   const eligible=useCallback((service:PublicService)=>serviceMatchesDiscoveryFacets(service,{
     format,city,language,price:budget,
-  }),[format,city,language,budget]);
+  }) && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[service.id],minimumStars)),
+    [format,city,language,budget,stars.loading,stars.unavailable,stars.ratings,minimumStars]);
   const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:budget==="free"?10:4,includeAllAreas:budget==="free"}),[submitted,services,activeCategory,eligible,budget]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
@@ -297,9 +298,12 @@ export function ServicesSmartDiscovery({
     // Editorial cards have no validated physical city or numeric price data.
     // Preserve the default online suggestions, and only narrow to known free offers.
     if (format==="in_person" || (language && language!==locale) || (budget && budget!=="free")) return [];
-    const offers=budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers;
+    const offers=(budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers)
+      .filter(item=>stars.loading || stars.unavailable || matchesStarFilter(
+        stars.ratings[editorialRatingKey(item.id) ?? ""],minimumStars));
     return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:budget==="free"?10:suggestions.length?2:4});
-  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget]);
+  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget,
+    stars.loading,stars.unavailable,stars.ratings,minimumStars,remoteOfferingId]);
 
   const suggestedByStars = (sortRated
     ? sortByStars(suggestions, entry => entry.service.id, stars.ratings) : suggestions)

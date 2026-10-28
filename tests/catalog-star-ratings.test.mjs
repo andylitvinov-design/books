@@ -37,6 +37,7 @@ test('rating route requires real account and same-origin, no public mutation or 
   assert.match(store,/app\.accounts where id=\$1 and status='active'/)
   assert.match(store,/SELF_REVIEW_NOT_ALLOWED/)
   assert.match(store,/COMPLETED_SESSION_REQUIRED/)
+  assert.match(store,/YOUTUBE_ID\.test\(key\) && !HEYGEN_ID\.test\(key\)/)
   assert.match(store,/on conflict\(kind,item_key,account_id\)/)
   assert.match(component,/value\.count > 0 \? value\.average\.toFixed\(1\) : "—"/)
   assert.match(component,/No ratings yet/)
@@ -62,6 +63,8 @@ test('real star filters are connected to public video, talisman and service cata
     assert.match(source,/CatalogStarRating/,path)
   }
   assert.match(await read('components/service-video-showcase.tsx'),/PublicVideoStarRating/)
+  assert.match(await read('components/holistic-meditation-finder.tsx'),/videos:eligibleVideos/)
+  assert.match(await read('components/services-smart-discovery.tsx'),/services\.filter\(eligible\)/)
 })
 
 if(!process.execArgv.includes('--conditions=react-server')) {
