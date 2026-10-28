@@ -129,15 +129,41 @@ export default function PractitionerMeditationStudio({locale='en',initialKind='a
   const [mode,setMode]=useState('free'),[rights,setRights]=useState(false)
   const [draftId,setDraftId]=useState(null),[items,setItems]=useState([])
   const [busy,setBusy]=useState(''),[error,setError]=useState(''),[note,setNote]=useState('')
-  const [percent,setPercent]=useState(0)
-  const microphone=useRef(null),job=useRef(null),sourceUrl=useRef(''),finalUrl=useRef('')
+  const [percent,setPercent]=useState(0),[playingMusic,setPlayingMusic]=useState(false)
+  const microphone=useRef(null),job=useRef(null),sourceUrl=useRef(''),finalUrl=useRef(''),musicPreview=useRef(null)
   useEffect(()=>{return()=>{
     microphone.current?.recorder?.state==='recording'&&microphone.current.recorder.stop()
     microphone.current?.stream?.getTracks().forEach(track=>track.stop())
     if(job.current)job.current.cancel()
+    if(musicPreview.current){const p=musicPreview.current;clearTimeout(p.timeout);p.session.close();void p.context.close().catch(()=>{})}
     if(sourceUrl.current)URL.revokeObjectURL(sourceUrl.current)
     if(finalUrl.current)URL.revokeObjectURL(finalUrl.current)
   }},[])
+  function stopMusicPreview(){
+    const previous=musicPreview.current
+    if(previous){clearTimeout(previous.timeout);previous.session.close();void previous.context.close().catch(()=>{});musicPreview.current=null}
+    setPlayingMusic(false)
+  }
+  async function auditionMusic(){
+    if(musicPreview.current){stopMusicPreview();return}
+    if(music==='none')return
+    setError('')
+    let session,context
+    try{
+      const ambient=await import('@/lib/mandala/local-video-music')
+      session=await ambient.startAmbientMusic(music)
+      if(!session)throw Error('MUSIC_UNAVAILABLE')
+      context=new (window.AudioContext||window.webkitAudioContext)()
+      const track=new MediaStream([session.track])
+      const source=context.createMediaStreamSource(track)
+      const gain=context.createGain();gain.gain.value=4
+      source.connect(gain).connect(context.destination)
+      await context.resume()
+      const timeout=setTimeout(()=>stopMusicPreview(),8000)
+      musicPreview.current={session,context,timeout}
+      setPlayingMusic(true)
+    }catch(e){session?.close();try{await context?.close()}catch{}setError(e.message||'MUSIC_UNAVAILABLE')}
+  }
   async function refresh(){try{setItems((await api()).items||[])}catch(e){setError(e.message)}}
   useEffect(()=>{void refresh()},[])
   function chooseMedia(file){
@@ -323,8 +349,12 @@ export default function PractitionerMeditationStudio({locale='en',initialKind='a
       <div className={styles.step}><h3><Music2 size={18}/>{t.music}</h3><p className={styles.hint}>{t.musicHint}</p>
         <div className={styles.chips} role="group" aria-label={t.music}>
           {MEDITATION_MUSIC.map(key=><button type="button" key={key} aria-pressed={music===key}
-            onClick={()=>setMusic(key)}>{MUSIC_NAMES[key][index]}</button>)}
+            onClick={()=>{stopMusicPreview();setMusic(key)}}>{MUSIC_NAMES[key][index]}</button>)}
         </div>
+        {music!=='none'&&<button type="button" onClick={()=>void auditionMusic()} className={styles.listenMusic}>
+          <PlayCircle size={16}/>{playingMusic?(locale==='ru'?'Остановить пример':'Stop music preview'):
+            (locale==='ru'?'Прослушать музыку (8 сек)':'Preview music (8 sec)')}
+        </button>}
       </div>
       <div className={styles.step}><h3><Film size={18}/>{t.visual}</h3><p className={styles.hint}>{t.visualHint}</p>
         <label>{t.mode}<select value={mode} onChange={e=>setMode(e.target.value)}>
