@@ -72,6 +72,18 @@ test("all five built-in tones create playable PCM WAV files with actual nonzero 
   }
 });
 
+test("selected preset exports the identical PCM wave heard in the native player",async()=>{
+  const h=loadAudio();
+  const preset=await h.api.startPresetAudio("prosperity",75);
+  assert.ok(preset, "one exactly matching native-PCM audio source is recorded");
+  assert.ok(h.contexts[0].source.started && h.contexts[0].source.loop);
+  assert.equal(h.contexts[0].gain.gain.value,.75);
+  assert.ok(!h.contexts[0].gain.connections.includes(h.contexts[0].destination));
+  preset.close();
+  assert.equal(h.contexts[0].track.readyState,"ended");
+  assert.equal(h.audioSession.type,"ambient");
+});
+
 test("file picker accepts local iOS audio types with strict memory/format limits",()=>{
   const {api}=loadAudio();
   for(const name of ["voice.m4a","song.mp3","ambient.wav","take.aac","clip.mp4"]){
