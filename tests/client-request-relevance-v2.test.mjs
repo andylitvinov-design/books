@@ -118,6 +118,11 @@ test("service discovery rejects negations, stray word fragments, and nonpublishe
  assert.ok(neg.some(x=>x.key==="business_money"));
  const obvious=classifyDiscoveryIntent("not reiki, need business strategy");
  assert.ok(!obvious.some(x=>x.key==="energy_spiritual"));
+ assert.ok(!neg.some(x=>x.key==="energy_spiritual"),"apostrophe negation is not a Reiki preference");
+ assert.deepEqual(rankDiscoveryServices("not reiki",[
+   {id:"r",slug:"reiki",practitionerSlug:"owner",areaKey:"energy_spiritual",
+     active:true,status:"published",copy:{title:"Reiki",description:"Reiki"}},
+ ]),[],"negative-only request must not return the explicitly rejected service");
  assert.ok(!classifyDiscoveryIntent("не хочу рейки, нужен бизнес").some(x=>x.key==="energy_spiritual"));
  assert.ok(!classifyDiscoveryIntent("sin reiki, busco negocio").some(x=>x.key==="energy_spiritual"));
  assert.ok(!classifyDiscoveryIntent("accountability").some(x=>x.key==="body_somatic"));
