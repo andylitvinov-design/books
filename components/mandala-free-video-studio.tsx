@@ -9,7 +9,7 @@ import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandal
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { otherVideoScenes, paintThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
-import { acquirePlaybackSession, createAmbientPreviewWav, isSupportedLocalAudio, startAmbientMusic, startUploadedAudio } from "@/lib/mandala/local-video-music";
+import { acquirePlaybackSession, createAmbientPreviewWav, isSupportedLocalAudio, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
@@ -717,7 +717,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try {
       musicSession = uploadedAudio
         ? await startUploadedAudio(uploadedAudio.file,soundVolume)
-        : await startAmbientMusic(music,soundVolume);
+        : music === "none" ? null : await startPresetAudio(music,soundVolume);
       if((music !== "none" || uploadedAudio) && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
         setNotice(ui.soundUnavailable);
