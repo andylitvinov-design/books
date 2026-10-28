@@ -41,12 +41,13 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(mainCss, /\.page \.assessment > \.goalFilterTrigger/);
   assert.match(mainCss, /\.page \.profile > \.recommendButton/);
 });
-test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", () => {
-  for (const sector of ["energy", "money", "love", "goals", "meaning"]) {
+test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
+  for (const sector of ["energy", "money", "love", "meaning"]) {
     assert.match(editor, new RegExp('id: "' + sector + '"'));
     assert.match(editor, new RegExp('' + sector + ': \{'));
   }
-  for (const label of ["Фильтр целей и задач", "Сейчас", "Хочу", "Смыслы", "Love & connection", "Sentido y valores"]) {
+  assert.doesNotMatch(editor, /\{ id: "goals", Icon:|^  goals: \{/m);
+  for (const label of ["Фильтр целей и задач", "Сейчас", "Хочу", "Смыслы", "Love & connection", "Sentido"]) {
     assert.ok(editor.includes(label), label);
   }
   assert.match(editor, /data-goal-concern=\{option\.id\}/);
@@ -73,9 +74,10 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
   assert.match(editor, /data-support-goal-actions/);
   assert.match(css, /prefers-reduced-motion/);
-  for (const sector of ["energy","money","love","goals","meaning"]) {
+  for (const sector of ["energy","money","love","meaning"]) {
     const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
-    assert.equal((section?.match(/\baxis\("/g) || []).length,3,sector+" has three tailored measures");
+    assert.equal((section?.match(/\baxis\("/g) || []).length,sector === "meaning" ? 6 : 3,
+      sector+" preserves all independent measures");
   }
   for (const name of ["vitality","sleepQuality","calm",
     "monthlyIncome","incomeStability","reserveMonths",
@@ -106,6 +108,22 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); gap: 5px/);
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
+test("all former Goals questions, tasks and metrics live inside the single Meaning sector", () => {
+  const meaning = editor.split("  meaning: {\n    concerns: [")[1]?.split("  },")[0] ?? "";
+  for (const id of ["stuck","distraction","procrastination","fear","tooMany","unclearGoals",
+    "emptiness","lostPurpose","valueConflict","noInspiration","uncertainty","littleSpace",
+    "direction","nextStep","habits","courage","priorities","motivation",
+    "purpose","innerContact","creativity","quiet","values","inspiration",
+    "goalClarity","actions","progress","meaningAxis","selfContact","inspirationAxis"]) {
+    assert.ok(meaning.includes('"' + id + '"'), "Meaning preserves " + id);
+  }
+  assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
+  assert.match(editor, /meaning: "meaning"/);
+  assert.doesNotMatch(editor, /goals: "goals", meaning: "meaning"/);
+  assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'));
+  assert.ok(!client.includes('energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5'));
+});
+
 test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
   for (const kind of ["meditation","consultation","tests","courses","talismans",
     "healing","masters","initiations","mandala"]) {
@@ -141,7 +159,9 @@ test("specific concerns/intentions change matching topic and only sort verified 
   assert.equal(goalTopicForSelection({ sector: "energy", tasks: ["sleepWell"] }), "health");
   assert.equal(goalTopicForSelection({ sector: "money" }), "business");
   assert.equal(goalTopicForSelection({ sector: "love" }), "love");
-  assert.equal(goalTopicForSelection({ sector: "goals" }), "business");
+  assert.equal(goalTopicForSelection({ sector: "meaning", tasks: ["direction"] }), "business");
+  assert.equal(goalTopicForSelection({ sector: "meaning", concerns: ["unclearGoals"] }), "business");
+  assert.equal(goalTopicForSelection({ sector: "meaning", tasks: ["purpose"] }), "energy");
   const money = rankSupportGoalVideos({ selection: { sector: "money" }, videos: sample, locale: "ru" });
   assert.equal(money.videos[0].id, "bbbbbbbbbbb");
   assert.equal(money.matchedVideo, true);
@@ -160,7 +180,7 @@ test("no medical inference, URL health params, storage, hidden CRM send or fabri
   for (const source of [editor, read("lib/holistic-support/goal-filter.js")]) {
     assert.doesNotMatch(source, /fetch\(|localStorage|sessionStorage|sendBeacon|URLSearchParams|\/api\/|diagnos\w*\(|Found 24|Найдено 24/);
   }
-  assert.match(client, /setRecommendation\(\{ energy: scores\.energy, money: scores\.money,/);
+  assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
   assert.doesNotMatch(client, /nextScores\[goalSectorFocus|value\.ratings\[primary/);
   assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
   assert.match(editor, /meaning: "meaning"/);
