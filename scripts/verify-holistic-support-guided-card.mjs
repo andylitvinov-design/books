@@ -91,6 +91,10 @@ for (const engine of [chromium, webkit]) {
 
         await guide.locator('[data-support-journey-action="support"]').click();
         await root.locator("[data-support-healing-panel]").waitFor({state:"visible",timeout:15000});
+        await page.waitForFunction(() => {
+          const rect = document.getElementById("support-healing-panel")?.getBoundingClientRect();
+          return !!rect && rect.top >= -30 && rect.top < window.innerHeight - 45;
+        }, null, {timeout:10000});
         await guide.locator('[data-support-journey-action="progress"]').click();
         assert.equal(new URL(page.url()).hash, "#support-progress", name + " progress anchor");
         await guide.locator('[data-support-journey-action="question"]').click();
