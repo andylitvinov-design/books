@@ -40,6 +40,13 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-tool]').count(), 4, label + " tools");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
+          // These two locally bundled original-mock visuals must actually load.
+          await page.waitForFunction(() => {
+            const images = [...document.querySelectorAll(
+              '[data-support-photo] img, [data-support-player] > img'
+            )];
+            return images.length >= 2 && images.every(img => img.complete && img.naturalWidth > 0);
+          }, null, { timeout: 20000 });
 
           const geometry = await page.evaluate(() => {
             const root = document.querySelector("[data-holistic-mobile-alternative]");
@@ -53,6 +60,14 @@ for (const browserType of [chromium, webkit]) {
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
+              readableTools: [...root.querySelectorAll('[data-support-tool]')].map(btn => {
+                const caption = [...btn.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none');
+                const b = btn.getBoundingClientRect(), t = caption?.getBoundingClientRect();
+                return { left: t?.left ?? -1, right: t?.right ?? Infinity,
+                  top: t?.top ?? -1, bottom: t?.bottom ?? Infinity,
+                  buttonLeft: b.left, buttonRight: b.right,
+                  buttonTop: b.top, buttonBottom: b.bottom };
+              }),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
               videos:measure('[data-support-video]'),
@@ -62,6 +77,12 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<295,
+            label+" top dashboard must be compact enough to expose practice early");
+          assert.ok(geometry.readableTools.every(t =>
+            t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
+            t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
+            label+" all action captions contained by their buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.hero[0].height>=300, label+" hero remains dominant");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
@@ -72,7 +93,7 @@ for (const browserType of [chromium, webkit]) {
             const box=await tab.boundingBox();
             assert.ok(box && box.x>=0 && box.x+box.width<=width+2,label+" all filter pills visible");
           }
-          if(width>350) {
+          {
             const assessment=geometry.a[0], tools=geometry.toolsSection[0], photo=geometry.photo[0];
             assert.ok(Math.abs(assessment.y-tools.y)<4,label+" ratings and tools same row");
             assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
