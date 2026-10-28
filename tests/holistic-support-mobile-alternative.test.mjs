@@ -20,7 +20,8 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support\\\/mobile/);
+  assert.match(nav, /holistic-support/);
+  assert.match(nav, /\(\?:mobile\|mandala\)/);
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
