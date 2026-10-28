@@ -20,7 +20,10 @@ test("focus-first: compact choice and optional preferences before published spec
   assert.match(jsx, /className=\{styles\.requestButton\}/);
   assert.match(jsx, /\{isOpen && \(requestKind === "talisman" \? \(/);
   assert.match(jsx, /<form id=\{"remote-request-" \+ master\.serviceId\} className=\{styles\.bookingForm\} onSubmit=\{submit\}>/);
-  assert.match(jsx, /\) : \(\s*<form id=/);
+  // Inline flow now groups the existing booking form and a separate opt-in contact step.
+  assert.match(jsx, /\) : \(\s*<>\s*<form id=/);
+  assert.match(jsx, /data-remote-public-order-contact/);
+  assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
   assert.match(jsx, /disabled=\{requestKind === "energy" && !offers\.length\}/);
   const sharedOffers = read("lib/practitioners/public-remote-support-masters.ts");
   assert.match(route, /listRemoteEnergySupportMasters\(locale\)/);
