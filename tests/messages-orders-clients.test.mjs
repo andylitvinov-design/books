@@ -67,7 +67,7 @@ test('five wide-enough mobile destinations are consistent in client and master r
   const workspace=read('components/app/app-workspace.jsx')
   const css=read('app/[locale]/app/[[...path]]/workspace.css')
   const orderCss=read('components/app/messages-orders-clients.module.css')
-  assert.deepEqual([...nav.matchAll(/\{path:'([^']*)'/g)].map(m=>m[1]),['','practice','messages','portfolio','settings'])
+  assert.deepEqual([...nav.matchAll(/\{path:'([^']*)'/g)].map(m=>m[1]),['','practice','messages','materials','profile'])
   assert.match(nav,/ru:'Заявки'/)
   assert.match(nav,/es:'Solicitudes'/)
   assert.match(workspace,/const mobileNav = \[/)

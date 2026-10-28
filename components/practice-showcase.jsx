@@ -147,7 +147,7 @@ function destination(locale, key) {
     service:root + '?panel=services&create=1&starter=session',
     meditation:root + '?panel=materials&materialTab=courses&create=1&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
-    reiki:root + '?panel=services&create=1&starter=energy',
+    reiki:root + '?panel=services&create=1&starter=reiki',
     course:root + '?panel=materials&materialTab=courses&create=1',
     material:root + '?panel=materials&materialTab=articles',
     session:root + '?panel=services',
