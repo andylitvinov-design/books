@@ -86,3 +86,21 @@ test("The existing original player, free tests and user-selected courses are reu
   assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon|fetch\(/);
   assert.doesNotMatch(panel, /analytics|gtag|sendBeacon|stripe\/checkout|Math\.random/);
 });
+
+test("test completion checkmark belongs to the current verified guest/member, not an earlier browser user", () => {
+  const panel = read("components/holistic-support-guest-quest.tsx");
+  const route = read("app/api/app/[...path]/route.js");
+  assert.match(panel, /typeof verifiedCompletion === "boolean"/);
+  assert.match(panel, /test: verifiedCompletion/);
+  assert.doesNotMatch(panel, /persist\(markQuestStep\(stateRef\.current, "test"\)\)/);
+  assert.match(route, /joined === 'support-journey\/test-status' && method === 'GET'/);
+  assert.match(route, /return json\(\{ completed \}\)/);
+  const fromEarlierUser = normalizeQuest({ starts: 2, completed: { test: true, course: true } });
+  const currentAccountHasNoTest = normalizeQuest({ ...fromEarlierUser,
+    completed: { ...fromEarlierUser.completed, test: false } });
+  assert.equal(currentAccountHasNoTest.completed.test, false);
+  assert.equal(currentAccountHasNoTest.completed.course, true);
+  assert.equal(currentAccountHasNoTest.starts, 2);
+  assert.equal(normalizeQuest({ ...currentAccountHasNoTest,
+    completed: { ...currentAccountHasNoTest.completed, test: true } }).completed.test, true);
+});
