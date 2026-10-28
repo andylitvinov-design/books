@@ -55,6 +55,10 @@ type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
+// Existing public Test Explorer recognizes these non-sensitive editorial journey IDs.
+const journeyCategory: Record<Focus, string> = {
+  energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
+};
 const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
@@ -73,6 +77,43 @@ const copy = {
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
     goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
+    journey: {
+      "intro": "Five clickable steps. Pick any step; no test, booking or purchase starts automatically.",
+      "stepLabels": [
+        "Clarify",
+        "Explore tests",
+        "Try a practice",
+        "Find support",
+        "Review"
+      ],
+      "questionTitle": "Choose your priority",
+      "questionHint": "A short private goal check-in",
+      "testTitles": {
+        "energy": "Energy & wellbeing tests",
+        "money": "Work & money reflection tests",
+        "relationships": "Relationship tests",
+        "goals": "Focus & motivation tests"
+      },
+      "testHint": "Browse actual free questionnaires",
+      "videoHint": "Published original recording",
+      "videoMissing": "Browse available meditations",
+      "videoExcluded": "Video is off in your goal filter",
+      "supportMissing": "Choose a support format",
+      "supportHint": "Explore, with no booking or payment",
+      "progressTitle": "My check-in and opened videos",
+      "progressHint": "Local on this page; not saved",
+      "actions": [
+        "Answer",
+        "Explore tests",
+        "Open video",
+        "Explore",
+        "View"
+      ],
+      "other": "Other selected formats",
+      "start": "Start with step 1",
+      "focus": "Focus",
+      "related": "Related recording; no exact topic match"
+    },
     goalResultLabels: {
       meditation: "Videos & meditations", consultation: "Consultations",
       tests: "Tests", courses: "Courses", talismans: "Talismans",
@@ -135,6 +176,43 @@ const copy = {
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
     goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
+    journey: {
+      "intro": "Пять рекомендаций с прямыми переходами. Можно начать с любого шага.",
+      "stepLabels": [
+        "Уточнить запрос",
+        "Пройти тест",
+        "Начать практику",
+        "Выбрать поддержку",
+        "Оценить изменения"
+      ],
+      "questionTitle": "Короткий опрос о вашей цели",
+      "questionHint": "Уточните, что сейчас важнее всего",
+      "testTitles": {
+        "energy": "Тесты: энергия и самочувствие",
+        "money": "Тесты: работа и деньги",
+        "relationships": "Тесты: отношения",
+        "goals": "Тесты: фокус и мотивация"
+      },
+      "testHint": "Реальные бесплатные опросники",
+      "videoHint": "Опубликованная авторская запись",
+      "videoMissing": "Посмотреть доступные медитации",
+      "videoExcluded": "Видео отключено в фильтре",
+      "supportMissing": "Выберите формат поддержки",
+      "supportHint": "Без автоматической записи и оплаты",
+      "progressTitle": "Мои оценки и открытые видео",
+      "progressHint": "Только на этой странице, без сохранения",
+      "actions": [
+        "Ответить",
+        "Подобрать тест",
+        "Открыть видео",
+        "Выбрать",
+        "Посмотреть"
+      ],
+      "other": "Другие выбранные форматы",
+      "start": "Начать с шага 1",
+      "focus": "Фокус",
+      "related": "Близкая запись, не точное совпадение"
+    },
     goalResultLabels: {
       meditation: "Видео и медитации", consultation: "Консультации",
       tests: "Тесты", courses: "Курсы", talismans: "Талисманы",
@@ -197,6 +275,43 @@ const copy = {
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
     goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
+    journey: {
+      "intro": "Cinco recomendaciones con acceso directo. Puedes empezar por cualquier paso.",
+      "stepLabels": [
+        "Definir el objetivo",
+        "Explorar pruebas",
+        "Iniciar práctica",
+        "Elegir apoyo",
+        "Revisar cambios"
+      ],
+      "questionTitle": "Una breve pregunta sobre tu meta",
+      "questionHint": "Elige qué es importante hoy",
+      "testTitles": {
+        "energy": "Pruebas de energía y bienestar",
+        "money": "Pruebas de trabajo y dinero",
+        "relationships": "Pruebas de relaciones",
+        "goals": "Pruebas de atención y motivación"
+      },
+      "testHint": "Cuestionarios gratuitos disponibles",
+      "videoHint": "Grabación original publicada",
+      "videoMissing": "Explorar meditaciones disponibles",
+      "videoExcluded": "Vídeos desactivados en el filtro",
+      "supportMissing": "Elige un tipo de apoyo",
+      "supportHint": "Sin reserva ni pago automático",
+      "progressTitle": "Mis valoraciones y vídeos abiertos",
+      "progressHint": "Solo en esta página; sin guardar",
+      "actions": [
+        "Responder",
+        "Elegir pruebas",
+        "Abrir vídeo",
+        "Explorar",
+        "Ver"
+      ],
+      "other": "Otros formatos elegidos",
+      "start": "Comenzar con el paso 1",
+      "focus": "Enfoque",
+      "related": "Grabación relacionada, no exacta"
+    },
     goalResultLabels: {
       meditation: "Vídeos y meditaciones", consultation: "Consultas",
       tests: "Pruebas", courses: "Cursos", talismans: "Talismanes",
@@ -366,17 +481,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
+  const scrollToSupport = (id: string) => window.requestAnimationFrame(() =>
+    document.getElementById(id)?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    }));
   const onRecommendations = () => {
-    // Show the matches ONLY in the existing original-meditations gallery.
+    // Keep the user's chosen focus and formats; recommend only verified content.
     setRecommendation({ ...scores });
-    setGoalSelection(null); setGoalFilterOpen(false);
-    setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
-    setSelectedId(null); setPlaying(false);
-    window.requestAnimationFrame(() => document.getElementById("support-meditation-gallery")
-      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+    setGoalFilterOpen(false);
+    scrollToSupport("support-goal-results");
   };
   const openGoalFilter = () => {
-    setProfileSector(goalSelection?.sector ?? "energy");
+    setProfileSector(goalSelection?.sector ?? ({ energy: "energy", money: "money",
+      relationships: "love", goals: "goals" } as Record<Focus, GoalSector>)[focus]);
     setPlaying(false); setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
@@ -466,6 +584,48 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
   const goalHasInlineFormat = activeGoalFormats.some(id =>
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
+  // Single recommendation guide: only already published videos and existing routes.
+  // Scores/photo never leave this page; no automatic enrollments or bookings.
+  const quickRanked = useMemo(() => recommendSupportByLowestScores({ scores, videos, locale }),
+    [scores, videos, locale]);
+  const journeyVideo = goalMatch?.videos[0] ?? quickRanked.videos[0] ?? null;
+  const journeyVideoAllowed = !goalSelection || activeGoalFormats.includes("meditation");
+  const journeySupportFormat = (["healing", "consultation", "courses", "masters",
+    "talismans", "initiations", "mandala"] as GoalRecommendationFormat[])
+    .find(id => activeGoalFormats.includes(id));
+  const journeySupportHref = journeySupportFormat === "courses"
+    ? "/" + locale + (focus === "money" ? "/explore/business" : "/academy")
+    : journeySupportFormat === "initiations"
+      ? "/" + locale + "/academy/reiki/tantra-reiki/discover"
+      : journeySupportFormat === "mandala"
+        ? "/" + locale + "/holistic-support/mandala" : null;
+  const JourneySupportIcon = journeySupportFormat === "courses" ? BookOpen
+    : journeySupportFormat === "consultation" ? MessageCircle : HandHeart;
+  const showJourneyVideo = () => {
+    if (!journeyVideoAllowed) { openGoalFilter(); return; }
+    setRecommendation({ ...scores }); setChoice("meditation"); setGoalFilterOpen(false);
+    setTheme("all"); setProgram("all"); setMaster("all");
+    setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
+    scrollToSupport("support-meditation-gallery");
+  };
+  const openJourneySupport = () => {
+    const inline: Partial<Record<GoalRecommendationFormat, Choice>> = {
+      healing: "healing", consultation: "consultation", masters: "masters", talismans: "talisman",
+    };
+    const selectedChoice = journeySupportFormat && inline[journeySupportFormat];
+    if (!selectedChoice) { openGoalFilter(); return; }
+    changeChoice(selectedChoice);
+    scrollToSupport("support-mobile-experience");
+  };
+  const supportCardBody = <>
+    <span className={styles.journeyThumb}><JourneySupportIcon size={23} aria-hidden="true" /></span>
+    <span className={styles.journeyContent}>
+      <strong>{journeySupportFormat ? t.goalResultLabels[journeySupportFormat] : t.journey.supportMissing}</strong>
+      <small>{journeySupportFormat ? t.goalResultHints[journeySupportFormat] : t.goalNoFormats}</small>
+      <em>{t.journey.actions[3]} <ArrowRight size={13} aria-hidden="true" /></em>
+    </span>
+    <ChevronRight size={17} aria-hidden="true" />
+  </>;
   const scene = choice === "meditation";
 
   return (
@@ -532,7 +692,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               <span className={styles.focusValue}><ActiveFocusIcon size={19} aria-hidden="true" /><strong>{activeFocusLabel}</strong></span>
             </div>
             <button type="button" className={styles.recommendButton}
-              data-support-recommendations aria-label={t.recommend} aria-controls="support-meditation-gallery"
+              data-support-recommendations aria-label={t.recommend} aria-controls="support-goal-results"
               onClick={onRecommendations}>
               <Sparkles size={19} aria-hidden="true" />
               <span className={styles.recommendLong}>{t.recommend}</span>
@@ -572,12 +732,87 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </div>
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
-          {goalSelection && !goalFilterOpen ? <section className={styles.goalResults}
+          {!goalFilterOpen ? <section className={styles.goalResults}
             id="support-goal-results" data-support-goal-results aria-labelledby="support-goal-results-title">
-            <div className={styles.goalResultsHeading}>
-              <h2 id="support-goal-results-title"><Sparkles size={21} aria-hidden="true" />{t.goalResultsTitle}</h2>
-              <p>{t.goalResultsNote}</p>
+            <div className={styles.journeyHeading}>
+              <div className={styles.goalResultsHeading}>
+                <h2 id="support-goal-results-title"><Sparkles size={21} aria-hidden="true" />{t.goalResultsTitle}</h2>
+                <p>{t.journey.intro} {t.goalResultsNote}</p>
+              </div>
+              <button type="button" className={styles.journeyAdjust} onClick={openGoalFilter}>
+                <Settings2 size={16} aria-hidden="true" />{t.goalAdjust}
+              </button>
             </div>
+            <div className={styles.journeyFocus} data-support-journey-focus>
+              <ActiveFocusIcon size={16} aria-hidden="true" />{t.journey.focus}: <strong>{activeFocusLabel}</strong>
+              {!goalSelection || goalSelection.sector !== "meaning" ? <span>{scores[focus]}/10</span> : null}
+            </div>
+            <div className={styles.journeyRows} aria-label={t.goalResultsTitle}>
+              <div className={styles.journeyRow} data-support-journey-step="1">
+                <div className={styles.journeyStep}><span className={styles.journeyNumber}>1</span>
+                  <MessageCircle size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[0]}</strong></div>
+                <button type="button" className={styles.journeyTarget} onClick={openGoalFilter}
+                  data-support-journey-action="question">
+                  <span className={styles.journeyThumb}><MessageCircle size={23} aria-hidden="true" /></span>
+                  <span className={styles.journeyContent}><strong>{t.journey.questionTitle}</strong>
+                    <small>{t.journey.questionHint}</small><em>{t.journey.actions[0]} <ArrowRight size={13} aria-hidden="true" /></em></span>
+                  <ChevronRight size={17} aria-hidden="true" />
+                </button>
+              </div>
+              <div className={styles.journeyRow} data-support-journey-step="2">
+                <div className={styles.journeyStep}><span className={styles.journeyNumber}>2</span>
+                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[1]}</strong></div>
+                <Link className={styles.journeyTarget} prefetch={false}
+                  href={"/" + locale + "/client/tests?journey=" + journeyCategory[focus]}
+                  data-support-journey-action="tests">
+                  <span className={styles.journeyThumb}><TestTubeDiagonal size={23} aria-hidden="true" /></span>
+                  <span className={styles.journeyContent}><strong>{t.journey.testTitles[focus]}</strong>
+                    <small>{t.journey.testHint}</small><em>{t.journey.actions[1]} <ArrowRight size={13} aria-hidden="true" /></em></span>
+                  <ChevronRight size={17} aria-hidden="true" />
+                </Link>
+              </div>
+              <div className={styles.journeyRow} data-support-journey-step="3">
+                <div className={styles.journeyStep}><span className={styles.journeyNumber}>3</span>
+                  <Play size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[2]}</strong></div>
+                <button type="button" className={styles.journeyTarget} onClick={showJourneyVideo}
+                  data-support-journey-action="video" data-support-journey-video={journeyVideoAllowed && journeyVideo ? journeyVideo.id : "none"}>
+                  <span className={styles.journeyThumb}>
+                    {journeyVideo && journeyVideoAllowed ? <Image alt="" loading="lazy" unoptimized
+                      src={"https://i.ytimg.com/vi/" + encodeURIComponent(journeyVideo.id) + "/mqdefault.jpg"}
+                      width={112} height={74} /> : <Play size={23} aria-hidden="true" />}
+                  </span>
+                  <span className={styles.journeyContent}>
+                    <strong>{!journeyVideoAllowed ? t.journey.videoExcluded :
+                      journeyVideo ? shortVideoTitle(journeyVideo.title, locale) : t.journey.videoMissing}</strong>
+                    <small>{goalSelection && goalMatch && !goalMatch.matchedVideo ? t.journey.related : t.journey.videoHint}</small>
+                    <em>{t.journey.actions[2]} <ArrowRight size={13} aria-hidden="true" /></em>
+                  </span><ChevronRight size={17} aria-hidden="true" />
+                </button>
+              </div>
+              <div className={styles.journeyRow} data-support-journey-step="4">
+                <div className={styles.journeyStep}><span className={styles.journeyNumber}>4</span>
+                  <HandHeart size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[3]}</strong></div>
+                {journeySupportHref ? <Link href={journeySupportHref} prefetch={false}
+                  data-support-journey-action="support" className={styles.journeyTarget}>{supportCardBody}</Link> :
+                  <button type="button" className={styles.journeyTarget}
+                    data-support-journey-action="support" onClick={openJourneySupport}>{supportCardBody}</button>}
+              </div>
+              <div className={styles.journeyRow} data-support-journey-step="5">
+                <div className={styles.journeyStep}><span className={styles.journeyNumber}>5</span>
+                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[4]}</strong></div>
+                <a className={styles.journeyTarget} href="#support-progress" data-support-journey-action="progress">
+                  <span className={styles.journeyThumb}><BarChart3 size={23} aria-hidden="true" /></span>
+                  <span className={styles.journeyContent}><strong>{t.journey.progressTitle}</strong>
+                    <small>{t.journey.progressHint}</small><em>{t.journey.actions[4]} <ArrowRight size={13} aria-hidden="true" /></em></span>
+                  <ChevronRight size={17} aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+            <button type="button" className={styles.journeyStart} onClick={openGoalFilter}>
+              <Sparkles size={17} aria-hidden="true" />{t.journey.start}<ArrowRight size={17} aria-hidden="true" />
+            </button>
+            {goalSelection ? <details className={styles.journeyMore} data-support-journey-other>
+              <summary>{t.journey.other} <ChevronDown size={16} aria-hidden="true" /></summary>
             <div className={styles.goalResultGrid}>
               {activeGoalFormats.includes("meditation") ? <button type="button"
                 data-support-goal-action="meditation" aria-pressed={choice === "meditation"}
@@ -640,6 +875,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </div>
             {activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
               role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
+            </details> : null}
           </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
