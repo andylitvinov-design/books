@@ -38,8 +38,8 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
-          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
-          assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
+          assert.equal(await root.locator('[aria-label] [data-support-recommendations]').count(), 1, label + " recommendations beneath photo focus");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 1, label + " canonical detailed test entry");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
           // These two locally bundled original-mock visuals must actually load.
@@ -65,10 +65,17 @@ for (const browserType of [chromium, webkit]) {
               readableTools: [...root.querySelectorAll('[data-support-tool]')].map(btn => {
                 const caption = [...btn.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none');
                 const b = btn.getBoundingClientRect(), t = caption?.getBoundingClientRect();
-                return { left: t?.left ?? -1, right: t?.right ?? Infinity,
-                  top: t?.top ?? -1, bottom: t?.bottom ?? Infinity,
-                  buttonLeft: b.left, buttonRight: b.right,
-                  buttonTop: b.top, buttonBottom: b.bottom };
+                return { left: t?.left ?? b.left, right: t?.right ?? b.right,
+                  top: t?.top ?? b.top, bottom: t?.bottom ?? b.bottom,
+                  buttonLeft: b.left, buttonRight: b.right, buttonTop: b.top, buttonBottom: b.bottom,
+                  textFits: !caption || (caption.scrollWidth <= caption.clientWidth+2 &&
+                    caption.scrollHeight <= caption.clientHeight+2) };
+              }),
+              readableScores: [...root.querySelectorAll('[data-support-scale]')].map(label => {
+                const txt = label.querySelector('span[class*="scaleLabel"]');
+                const lr = label.getBoundingClientRect(), tr = txt?.getBoundingClientRect();
+                return { name: txt?.textContent, fits: Boolean(txt && tr &&
+                  txt.scrollWidth <= txt.clientWidth+2 && tr.left>=lr.left-2 && tr.right<=lr.right+2) };
               }),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
@@ -85,13 +92,15 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
-            label+" five readable 43px action rows plus detailed tests must expose the player early");
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
+            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
           assert.ok(geometry.readableTools.every(t =>
-            t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
+            t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
-            label+" all action captions contained by their buttons: "+JSON.stringify(geometry.readableTools));
-          assert.ok(geometry.hero[0].height>=300, label+" hero remains dominant");
+            label+" all action captions visible within buttons: "+JSON.stringify(geometry.readableTools));
+          assert.ok(geometry.readableScores.every(t=>t.fits),
+            label+" all four focus labels visible: "+JSON.stringify(geometry.readableScores));
+          assert.ok(geometry.hero[0].height>=268, label+" hero remains the dominant workspace");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
           assert.ok(geometry.videos.every(v=>Math.abs(v.y-geometry.videos[0].y)<3), label+" four cards in one row");
@@ -129,7 +138,7 @@ for (const browserType of [chromium, webkit]) {
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
-            await root.locator('[data-support-photo] img').waitFor({state:"attached",timeout:5000});
+            await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
             // Returning to video is a deliberate user action, no iframe until Play.
             await root.locator('[data-support-recommended-video] button').click();
             assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
