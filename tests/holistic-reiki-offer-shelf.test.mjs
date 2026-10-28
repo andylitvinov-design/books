@@ -69,3 +69,17 @@ test("one filtered offers shelf replaces legacy master-only thumbnail for Reiki,
   assert.match(css,/\.shelf \.action/);
   assert.doesNotMatch(shelf,/createPayment|insert into|serviceRoleKey|autoSubmit|window\.localStorage/);
 });
+
+test("quick three-way Reiki type switch shares the real session/initiations/programmes engine", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  assert.match(parent,/data-support-reiki-quick-format/);
+  assert.match(parent,/data-support-reiki-quick-kind=\{value\}/);
+  assert.match(parent,/aria-pressed=\{reikiFormat === value\}/);
+  assert.match(parent,/chooseReikiFormat\(value, true\)/);
+  assert.match(parent,/onClick=\{\(\) => chooseReikiFormat\(value\)\}/);
+  assert.match(parent,/format=\{reikiFormat\} price=\{reikiPrice\}/);
+  for (const word of ["Programme", "Программа", "Programa"]) assert.ok(parent.includes(word));
+  assert.match(css,/\.viewer \.reikiQuickFormat button\[aria-pressed="true"\]/);
+  assert.match(css,/min-height:44px/);
+});

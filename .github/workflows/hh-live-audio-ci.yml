@@ -1,0 +1,88 @@
+name: HH Live Audio — safe pilot
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'docs/live-audio/**'
+      - 'lib/live-audio/**'
+      - 'app/api/live-audio/**'
+      - 'app/[locale]/live/**'
+      - 'app/[locale]/holistic-support/page.tsx'
+      - 'components/live-audio-room.jsx'
+      - 'components/practitioner-cabinet.jsx'
+      - 'middleware.ts'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/live-audio-pilot.test.mjs'
+      - '.github/workflows/hh-live-audio-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: hh-live-audio-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-live-audio:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_LIVE_AUDIO_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Exact lockfile install (no paid provider)
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Live Audio contracts and security guards
+        run: |
+          set -euo pipefail
+          node --test tests/live-audio-pilot.test.mjs
+          node --check lib/live-audio/policy.mjs
+          node --check lib/live-audio/server.js
+      - name: Targeted lint and full typecheck
+        run: |
+          set -euo pipefail
+          npx eslint \
+            components/live-audio-room.jsx \
+            lib/live-audio/server.js \
+            lib/live-audio/policy.mjs \
+            app/api/live-audio/status/route.js \
+            app/api/live-audio/token/route.js \
+            app/api/live-audio/end/route.js \
+            'app/[locale]/live/page.tsx' \
+            'app/[locale]/live/host/page.tsx' \
+            middleware.ts next.config.ts
+          npx tsc --noEmit
+      - name: Next production build — provider and recording disabled
+        run: npm run build
+      - name: Smoke 3 locale HTML and safe disabled status
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-live-audio-next.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 75); do
+            if curl -fsS http://127.0.0.1:3100/api/live-audio/status > /tmp/hh-live-audio-status.json; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then tail -n 70 /tmp/hh-live-audio-next.log; exit 1; fi
+          node -e "const s=require('/tmp/hh-live-audio-status.json');if(s.enabled!==false||s.live!==false)process.exit(1)"
+          for locale in en ru es; do
+            curl -fsS "http://127.0.0.1:3100/$locale/live" > "/tmp/hh-live-audio-$locale.html"
+            test -s "/tmp/hh-live-audio-$locale.html"
+            curl -fsS "http://127.0.0.1:3100/$locale/live/host" >/dev/null
+          done
+          curl -fsSI http://127.0.0.1:3100/en/live/host | grep -i 'permissions-policy:' | grep -F 'microphone=(self)'
+          curl -fsSI http://127.0.0.1:3100/en/live | grep -i 'permissions-policy:' | grep -F 'microphone=()'

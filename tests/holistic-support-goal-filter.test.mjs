@@ -27,6 +27,14 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(client, /data-support-applied-goal/);
   assert.match(editor, /data-support-goal-reset/);
   assert.match(editor, /data-support-goal-apply/);
+  assert.match(editor, /data-support-goal-save/);
+  assert.match(editor, /data-support-goal-next/);
+  assert.match(editor, /data-goal-accepted=\{id\}/);
+  assert.match(editor, /saveCurrent\(\)/);
+  assert.match(editor, /nextSector\(\)/);
+  assert.match(editor, /savedSectors: all/);
+  assert.match(client, /goalSavedSectors/);
+  assert.match(client, /onSave=\{saveGoalSector\}/);
   assert.match(mainCss, /\.page \.assessment > \.goalFilterTrigger/);
   assert.match(mainCss, /\.page \.profile > \.recommendButton/);
 });
@@ -47,26 +55,44 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(css, /grid-template-columns: minmax\(155px,\.35fr\)/);
   assert.match(css, /\.axis \{ display: grid;/);
   assert.match(css, /\.metricsGroup \{/);
+  assert.match(css, /\.metricsGroup \{ min-width: 0; margin-top:/);
+  assert.match(css, /\.categoryActions \{ display: grid; grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.panel \.save,.panel \.next/);
+  assert.match(css, /\.panel \.accepted/);
   assert.match(css, /@media \(max-width: 360px\)/);
-  assert.match(css, /position: sticky/);
+  assert.match(css, /\.actions \{ position: static;/);
+  assert.doesNotMatch(css, /\.actions \{ position: sticky|\.actions \{ bottom: calc/);
+  assert.match(css, /\.panel \.apply \{/);
+  assert.match(css, /\.panel \.reset \{/);
+  assert.match(css, /\.panel \.sector \{/);
+  assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
+  assert.match(editor, /data-support-goal-actions/);
   assert.match(css, /prefers-reduced-motion/);
   for (const sector of ["energy","money","love","goals","meaning"]) {
     const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
-    assert.equal((section?.match(/\baxis\("/g) || []).length,4,sector+" has four tailored measures");
+    assert.equal((section?.match(/\baxis\("/g) || []).length,3,sector+" has three tailored measures");
   }
-  for (const name of ["vitality","sleepQuality","bodyComfort","calm",
-    "monthlyIncome","incomeStability","reserveMonths","moneyConfidence",
-    "connection","trust","communication","support",
-    "goalClarity","motivation","actions","progress",
-    "meaningAxis","selfContact","values","inspirationAxis"]) {
+  for (const name of ["vitality","sleepQuality","calm",
+    "monthlyIncome","incomeStability","reserveMonths",
+    "connection","trust","communication",
+    "goalClarity","actions","progress",
+    "meaningAxis","selfContact","inspirationAxis"]) {
     assert.ok(editor.includes('axis("'+name+'"'), name);
   }
   assert.match(editor, /data-goal-metric=\{item\.id\}/);
   assert.match(editor, /data-goal-currency/);
   assert.match(editor, /value=\{amounts\[item\.id\]\?\.\[field\] \?\? ""\}/);
   assert.match(editor, /updateAmount\(item\.id, field/);
-  assert.match(editor, /initial\?\.currency \?\? "CAD"/);
+  assert.match(editor, /initialDraft\?\.currency \?\? "CAD"/);
   assert.match(editor, /monthlyIncome: \{ current: null, desired: null \}/);
+  assert.match(editor, /"Сохранить"/);
+  assert.match(editor, /"Следующая категория"/);
+  assert.match(editor, /"Принято"/);
+  assert.match(editor, /setDrafts\(previous/);
+  assert.match(editor, /setAccepted\(previous/);
+  assert.match(editor, /onSave\(sector, snapshot\)/);
+  assert.match(editor, /setDirty\(previous/);
+  assert.match(editor, /setDrafts\(\{\}\); setAccepted\(\{\}\); setDirty\(\{\}\)/);
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
 test("recommendations lead to existing resources without pretending a booking or an exact match", () => {

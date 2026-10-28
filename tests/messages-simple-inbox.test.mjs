@@ -67,6 +67,62 @@ function assertImagePreviewScope(source){
     '/prefix/en/app/messages','/prefix/en/holistic-support/mandala','//en/app/messages'])check(path)
 }
 
+// Read-only execution of the actual media CSP expression. Existing independent
+// media capabilities are false/empty here so owner and live routes are isolated.
+function assertMediaPreviewScope(source){
+  const ast=ts.createSourceFile('middleware.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS)
+  assert.equal(ast.parseDiagnostics.length,0)
+  const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='middleware')
+  assert.equal(functions.length,1)
+  const declarations=functions[0].body.statements.filter(ts.isVariableStatement).flatMap(node=>[...node.declarationList.declarations])
+  function initializer(name){
+    const matches=declarations.filter(node=>ts.isIdentifier(node.name)&&node.name.text===name)
+    assert.equal(matches.length,1,'one actual '+name)
+    assert.ok(matches[0].initializer)
+    return matches[0].initializer
+  }
+  function predicate(name){
+    const node=initializer(name)
+    assert.ok(ts.isCallExpression(node)&&ts.isPropertyAccessExpression(node.expression)&&
+      node.expression.name.text==='test'&&node.expression.expression.kind===ts.SyntaxKind.RegularExpressionLiteral&&
+      node.arguments.length===1&&ts.isIdentifier(node.arguments[0])&&node.arguments[0].text==='pathname',
+      name+' remains a pure pathname regex')
+    return node.getText(ast)
+  }
+  const owner=predicate('ownerMessengerImages'),live=predicate('liveAudioPage'),csp=initializer('csp')
+  assert.ok(ts.isCallExpression(csp)&&ts.isPropertyAccessExpression(csp.expression)&&
+    csp.expression.name.text==='join'&&ts.isArrayLiteralExpression(csp.expression.expression))
+  function hasMediaDirective(node){
+    if(ts.isStringLiteral(node)&&node.text.startsWith('media-src '))return true
+    return ts.forEachChild(node,hasMediaDirective)||false
+  }
+  const media=csp.expression.expression.elements.filter(hasMediaDirective)
+  assert.equal(media.length,1,'one actual media-src directive')
+  const script=new vm.Script(`const ownerMessengerImages=${owner}; const liveAudioPage=${live};
+    ({owner:ownerMessengerImages,live:liveAudioPage,media:${media[0].getText(ast)}})`)
+  function check(pathname,expectedOwner=false,expectedLive=false){
+    const result=script.runInNewContext({pathname,tantraReikiPage:false,ownerRecorderPage:false,
+      reportNarrationReader:false,reikiIntroAudioManager:false,coachingOwnerAudioManager:false,
+      practitionerCourseEditor:false,publicMandalaLocalImages:false,supportMobilePublishedMedia:false,
+      deliveryOrigin:'',reikiIntroAudioOrigin:'',practitionerCourseMediaOrigin:'',listingImageOrigin:'',directMessageStorageOrigin:''},{timeout:100})
+    assert.equal(result.owner,expectedOwner,'owner media scope: '+pathname)
+    assert.equal(result.live,expectedLive,'live media scope: '+pathname)
+    assert.equal(result.media,"media-src 'self'"+(expectedOwner||expectedLive?' blob:':''),'actual media directive: '+pathname)
+  }
+  for(const locale of ['en','ru','es']){
+    for(const suffix of ['','/']){
+      check('/'+locale+'/app/messages'+suffix,true)
+      check('/'+locale+'/app/practice'+suffix,true)
+      check('/'+locale+'/live'+suffix,false,true)
+      check('/'+locale+'/live/host'+suffix,false,true)
+    }
+    for(const path of ['app','app/profile','app/messages/child','app/practice/child','client/tests',
+      'live-old','live/child','live/host/child','live//','live/host//','live%2Fhost','live?host=true'])check('/'+locale+'/'+path)
+  }
+  for(const path of ['/','/live','/live/host','/fr/live','/fr/live/host','/EN/live','/en/LIVE',
+    '/prefix/en/live','//en/live','/api/live-audio/token','/admin/live','/en/client/live'])check(path)
+}
+
 test('owner sees one compact messenger rather than nested Requests + CRM + automation panels',()=>{
   const hub=read('components/app/messages-hub.jsx')
   const simple=read('components/app/messages-simple-inbox.jsx')
@@ -197,7 +253,7 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(middleware,/const ownerMessengerImages =/)
   assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''/)
   assert.match(middleware,/directMessageStorageOrigin/)
-  assert.match(middleware,/ownerMessengerImages\) \? ' blob:' : ''/)
+  assertMediaPreviewScope(middleware)
   assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
 })
@@ -325,4 +381,18 @@ test('actual audio preview effect uses browser URL even when API URL constant sh
   const cleanup=effect();assert.deepEqual(events,['create',['preview','blob:synthetic']]);cleanup()
   assert.deepEqual(events.at(-1),['revoke','blob:synthetic'])
   ctx.file=null;assert.equal(effect(),undefined);assert.deepEqual(events.at(-1),['preview',''])
+})
+
+test('actual media preview CSP preserves owners and limits live blob permission to anchored locale routes',()=>{
+  const source=read('middleware.ts')
+  assertMediaPreviewScope(source)
+  for(const [name,from,to] of [
+    ['global media permission','||ownerMessengerImages||liveAudioPage)','||ownerMessengerImages||true)'],
+    ['removed owner media permission','||ownerMessengerImages||liveAudioPage)','||liveAudioPage)'],
+    ['global live predicate',"const liveAudioPage = /^\\/(en|ru|es)\\/live(?:\\/host)?\\/?$/.test(pathname)",'const liveAudioPage = true'],
+    ['unanchored live route',"/^\\/(en|ru|es)\\/live(?:\\/host)?\\/?$/","/\\/(en|ru|es)\\/live/"],
+  ]){
+    assert.equal(source.split(from).length,2,'unique '+name+' mutation target')
+    assert.throws(()=>assertMediaPreviewScope(source.replace(from,to)),name)
+  }
 })
