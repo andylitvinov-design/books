@@ -45,6 +45,8 @@ const translations = {
     nextCategory: "More categories", filtersLabel: "Talisman filters",
     categoryNames: { energy: "Strength talismans", money: "Money talismans", relationships: "Love talismans",
       goals: "Goal talismans", balance: "Balance talismans", calm: "Calm talismans" },
+    categoryShortNames: { energy: "Strength", money: "Money", relationships: "Love",
+      goals: "Goals", balance: "Balance", calm: "Calm" },
     allTraditions: "All traditions", descriptionFilter: "Description", allProperties: "All themes",
     properties: { "fu-prosperity": "Prosperity", "fu-harmony": "Harmony", "fu-balance": "Balance" },
     masterNote: "No verified maker is assigned to these illustrative designs yet. The master and final details are confirmed when replying to your request.",
@@ -66,6 +68,8 @@ const translations = {
     nextCategory: "Другие категории", filtersLabel: "Фильтры талисманов",
     categoryNames: { energy: "Талисманы силы", money: "Талисманы денег", relationships: "Талисманы любви",
       goals: "Талисманы цели", balance: "Талисманы баланса", calm: "Талисманы спокойствия" },
+    categoryShortNames: { energy: "Сила", money: "Деньги", relationships: "Любовь",
+      goals: "Цель", balance: "Баланс", calm: "Покой" },
     allTraditions: "Все традиции", descriptionFilter: "Описание", allProperties: "Все свойства",
     properties: { "fu-prosperity": "Достаток", "fu-harmony": "Гармония", "fu-balance": "Равновесие" },
     masterNote: "Автор конкретного эскиза пока не подтверждён. Мастер и условия изготовления уточняются в ответе на заявку.",
@@ -87,6 +91,8 @@ const translations = {
     nextCategory: "Más categorías", filtersLabel: "Filtros de talismanes",
     categoryNames: { energy: "Talismanes de fuerza", money: "Talismanes de dinero", relationships: "Talismanes de amor",
       goals: "Talismanes de metas", balance: "Talismanes de equilibrio", calm: "Talismanes de calma" },
+    categoryShortNames: { energy: "Fuerza", money: "Dinero", relationships: "Amor",
+      goals: "Metas", balance: "Balance", calm: "Calma" },
     allTraditions: "Todas las tradiciones", descriptionFilter: "Descripción", allProperties: "Todas las cualidades",
     properties: { "fu-prosperity": "Prosperidad", "fu-harmony": "Armonía", "fu-balance": "Equilibrio" },
     masterNote: "Todavía no se ha verificado un creador para estos diseños ilustrativos. El maestro y los detalles se confirman al responder a la solicitud.",
@@ -193,8 +199,9 @@ export function HolisticSupportTalismanViewer({
             {categoryOptions.map(({ id, Icon }) => (
               <button key={id} type="button" className={styles.categoryCard}
                 data-support-talisman-category={id} data-category={id}
-                aria-pressed={goal === id} onClick={() => chooseCategory(id)}>
-                <Icon size={27} aria-hidden="true" /><span>{t.categoryNames[id]}</span>
+                aria-pressed={goal === id} aria-label={t.categoryNames[id]}
+                title={t.categoryNames[id]} onClick={() => chooseCategory(id)}>
+                <Icon size={27} aria-hidden="true" /><span aria-hidden="true">{t.categoryShortNames[id]}</span>
               </button>
             ))}
           </div>

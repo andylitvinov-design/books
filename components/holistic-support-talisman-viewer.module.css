@@ -240,7 +240,8 @@
   font-size: clamp(11px,1.4vw,13px); font-weight: 750; scroll-snap-align: start;
   transition: background .16s ease,border-color .16s ease,box-shadow .16s ease; }
 .categoryCard svg { flex: none; }
-.categoryCard > span { max-width: 100%; overflow-wrap: anywhere; text-wrap: balance; }
+.categoryCard > span { display: block; width: 100%; min-width: 0; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; font-weight: 800; }
 .categoryCard:hover { background: #edf8ef; }
 .categoryCard[data-category="energy"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
 .categoryCard[data-category="money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
@@ -350,9 +351,10 @@
   .categoryHeader h2 { font-size: clamp(19px,5.35vw,23px); }
   .categoryHeader p { font-size: clamp(9px,2.5vw,11px); }
   .categoryHeader > button { min-height: 44px; font-size: clamp(10px,2.7vw,12px); gap: 3px; }
-  .categoryRail { gap: 6px; padding: 1px 30px 5px 1px; }
-  .categoryCard { flex-basis: clamp(68px,21.5%,88px); min-height: 77px; padding: 5px 3px;
-    gap: 4px; border-radius: 13px; font-size: clamp(10px,2.65vw,12px); }
+  /* Four readable, single-line intention labels before the carousel arrow, even at 320px. */
+  .categoryRail { gap: 6px; padding: 1px 48px 5px 1px; }
+  .categoryCard { flex-basis: calc((100% - 18px) / 4); min-height: 77px; padding: 6px 2px;
+    gap: 5px; border-radius: 13px; font-size: clamp(11px,2.85vw,13px); }
   .categoryCard svg { width: 22px; height: 22px; }
   .categoryNext { width: 44px; height: 44px; }
   .categoryFrame[data-expanded="true"] .categoryCard { min-height: 72px; }
@@ -399,7 +401,7 @@
   .thumbMarker { font-size: 10px; }
 }
 @media (max-width:350px) {
-  .categoryCard { flex-basis: 68px; min-height: 75px; }
+  .categoryCard { min-height: 75px; }
   .categoryHeader p { font-size: 9px; }
   .filterChip > svg:first-child { display: none; }
   .filterChip { padding: 5px 5px; }
