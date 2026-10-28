@@ -820,3 +820,12 @@
   .testsLinks { grid-template-columns:1fr; }
   .testsLinks a { min-height:56px; }
 }
+
+/* iPhone in standalone/viewport-fit mode: the goal editor is scrolled into
+   view programmatically. Leave space for the iOS status bar instead of
+   positioning its heading underneath the clock / Dynamic Island. */
+@media (max-width: 640px) {
+  .page:has([data-support-goal-filter]) .experience {
+    scroll-margin-top: max(72px, calc(env(safe-area-inset-top) + 14px));
+  }
+}
