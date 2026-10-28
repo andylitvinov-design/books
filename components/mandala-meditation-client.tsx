@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ArrowLeft, Download, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Expand, Film, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
@@ -39,7 +39,8 @@ const copy = {
   en: {
     back: "All meditations", label: "PERSONAL MANDALA · FREE PRACTICE",
     title: "Look at yourself. Return to your intention.",
-    intro: "Choose an existing mandala, place your own photo or a picture of your goal in the centre, then listen to an original video meditation.",
+    videoAction: "Create my free personal video",
+    intro: "Choose a mandala and your own photo or goal. Create an animated personal video for free, or listen to an original video meditation.",
     upload: "Add your photo or goal", change: "Replace image", remove: "Remove",
     privacy: "Your picture stays on this device while this page is open. No upload, account or CRM entry.",
     invalid: "Please choose a JPG, PNG or WebP image up to 10 MB.",
@@ -59,7 +60,8 @@ const copy = {
   ru: {
     back: "Все медитации", label: "ЛИЧНАЯ МАНДАЛА · БЕСПЛАТНАЯ ПРАКТИКА",
     title: "Смотрите на себя. Возвращайтесь к своей цели.",
-    intro: "Выберите готовую мандалу, поместите внутрь своё фото или образ цели и слушайте оригинальную авторскую видеомедитацию.",
+    videoAction: "Создать бесплатное видео с моим фото",
+    intro: "Выберите мандалу и своё фото или образ цели. Создайте бесплатное анимированное видео либо слушайте авторскую видеомедитацию.",
     upload: "Загрузить фото или цель", change: "Заменить изображение", remove: "Удалить",
     privacy: "Фото остаётся на этом устройстве, пока открыта страница. Нет загрузки на сервер, регистрации или записи в CRM.",
     invalid: "Выберите JPG, PNG или WebP размером до 10 МБ.",
@@ -79,7 +81,8 @@ const copy = {
   es: {
     back: "Todas las meditaciones", label: "MANDALA PERSONAL · PRÁCTICA GRATUITA",
     title: "Mírate a ti. Vuelve a tu intención.",
-    intro: "Elige un mandala, coloca una foto tuya o de tu meta en el centro y escucha una videomeditación original.",
+    videoAction: "Crear mi vídeo personal gratis",
+    intro: "Elige un mandala y una foto tuya o de tu meta. Crea gratis un vídeo animado o disfruta de una videomeditación original.",
     upload: "Añadir foto u objetivo", change: "Cambiar imagen", remove: "Quitar",
     privacy: "Tu foto permanece en este dispositivo mientras la página esté abierta. Sin subirla al servidor ni guardarla en el CRM.",
     invalid: "Elige una imagen JPG, PNG o WebP de hasta 10 MB.",
@@ -306,6 +309,9 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
         <p className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" /> {t.label}</p>
         <h1>{t.title}</h1>
         <p>{t.intro}</p>
+        <a className={styles.headerVideoCta} href="#free-personal-video" data-mandala-video-jump>
+          <Film size={19} aria-hidden="true" />{t.videoAction}<span aria-hidden="true">↓</span>
+        </a>
       </header>
       <div className={styles.workspace}>
         <div className={styles.stageColumn}>
@@ -346,7 +352,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
 
         <div className={styles.sidePanel}>
           <div className={styles.editor}>
-            <div className={styles.editorCard}>
+            <div className={styles.editorCard} id="mandala-photo-section">
               <label className={styles.fieldLabel} htmlFor="mandala-photo">{t.upload}</label>
               <div className={styles.photoActions}>
                 <label className={styles.uploadButton}>
@@ -396,7 +402,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
               </details>
             </div>
           </div>
-          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} />
+          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoIdentity={imageUrl} />
           <div className={styles.videoPane}>
             <h2><Play size={17} aria-hidden="true" />{t.music}</h2>
             <div className={styles.topicFilters} role="group" aria-label={t.filter}>

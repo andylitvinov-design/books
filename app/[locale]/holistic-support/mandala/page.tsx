@@ -12,16 +12,16 @@ type Props = { params: Promise<{ locale: string }> };
 
 const meta = {
   en: {
-    title: "Personal Mandala Meditation",
-    description: "Place a photo of yourself or your goal inside an original mandala and meditate with existing guided videos. Your photo stays in your browser.",
+    title: "Free Personal Video & Mandala",
+    description: "Create a real free animated video from your own photo, choose intention, mandala, 8 visual effects, 1:1/9:16/16:9, duration and download privately.",
   },
   ru: {
-    title: "Медитация с личной мандалой",
-    description: "Поместите своё фото или образ цели в мандалу и слушайте авторскую видеомедитацию. Фотография остаётся в вашем браузере.",
+    title: "Бесплатное личное видео и мандала",
+    description: "Создайте бесплатно видео из фото: выберите цель, мандалу, 8 эффектов, формат, длительность и сохраните готовый MP4/WebM. Фото остаётся в браузере.",
   },
   es: {
-    title: "Meditación con mandala personal",
-    description: "Coloca tu foto o una imagen de tu objetivo en un mandala y acompáñala con una videomeditación original. La foto permanece en tu navegador.",
+    title: "Vídeo personal gratis y mandala",
+    description: "Crea gratis un vídeo animado con tu foto y mandala: elige intención, 8 efectos, formato, duración y guarda MP4/WebM en tu dispositivo.",
   },
 } as const;
 
