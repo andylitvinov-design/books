@@ -217,7 +217,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
       return filtered.slice().sort((a, b) =>
         (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
-    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4);
+    return wanted ? [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4) : filtered.slice(0, 4);
   }, [videos, master, program, theme, focus, choice, recommended]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
