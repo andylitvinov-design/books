@@ -40,6 +40,8 @@ test("local photo and audio 10/15MB, 60s mic, rights gate and cleanup",()=>{
   assert.match(wrapper,/data-personal-video-mic/);
   assert.match(wrapper,/URL\.revokeObjectURL/);
   assert.match(renderer,/data-video-photo-consent/);
+  assert.match(renderer,/BACKGROUND_CLIP/);
+  assert.match(renderer,/backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(renderer,/\(!standalone \|\| Boolean\(audioFile\)\)/);
 });
 test("visitor's own voice is mixed into actual MediaRecorder stream, no silent downgrade",()=>{
