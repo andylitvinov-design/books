@@ -5,6 +5,7 @@ import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPi
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -424,6 +425,7 @@ async function assertPublicViewportFits(target,label){
 }
 async function verifyPublicServiceConversionJourneys(){
  const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const daoContext=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  const publicErrors=[]
  const services=[
   ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
@@ -432,7 +434,7 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind,names] of services){
-   const servicePage=await publicContext.newPage()
+   const servicePage=await (kind==='dao'?daoContext:publicContext).newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    try {
    for(const width of [320,360,390,1280]){
@@ -471,7 +473,11 @@ async function verifyPublicServiceConversionJourneys(){
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    if(kind==='alchemy'){
+    if(kind==='dao'){
+     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale,
+      failureScreenshotPath:output+'/dao-consent-'+locale+'-form.png'})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+    }else if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
      await expect(form.locator('select')).toHaveCount(2)
@@ -602,6 +608,7 @@ async function verifyPublicServiceConversionJourneys(){
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
+ await daoContext.close()
  await publicContext.close()
  passed('public EN/RU service conversion journeys: mobile/desktop layout, hydrated same-service footer, disclosure, private free-review handoff and screenshots')
 }
