@@ -635,7 +635,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     // never overwrite the dedicated check-in, which syncs on every drag.
     setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
-    setGuideVersion(previous => previous + 1); setGuideOpen(true);
+    setGuideVersion(previous => previous + 1);
+    // No unsolicited recommendations when all formats are disabled.
+    setGuideOpen(formats.length > 0);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all"); setMeditationCategoryOverride("all");
     setSelectedId(null); setPlaying(false);
@@ -721,7 +723,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     scrollToSupport(selectedChoice === "consultation" ? "support-consultation-panel"
       : selectedChoice === "healing" ? "support-healing-panel" : "support-mobile-experience");
   };
-  const scene = choice === "meditation";
+  // Courses retain the original video browser; diagnostic profiles belong to Tests.
+  const scene = choice === "meditation" || choice === "pump";
   const openTodayVideo = () => {
     changeChoice("meditation");
     setMeditationCategoryOverride("all");
@@ -863,18 +866,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
             onCheckinChange={(sector, value) => onCheckinChange(goalSectorCheckinKey[sector], value)}
             selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
-            onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat ? (
+            onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat && choice !== "pump" && choice !== "tests" ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
-              <p>{activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}</p>
+              <p data-support-goal-empty={activeGoalFormats.length === 0 ? "true" : undefined}>
+                {activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}
+              </p>
               <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
             </div>
-          ) : choice === "pump" ? (
-            <HolisticSupportCourseProfiles locale={locale} courses={courses}
-              savedSectors={goalSavedSectors} active={activeCourseProfile}
-              onSelect={sector => { setActiveCourseProfile(sector); quest.mark("course"); }}
-              onTests={() => changeChoice("tests")}
-              onFillProfile={openCourseProfileFilter}
-              onRecommendations={showCourseProfileRecommendations} />
           ) : scene ? (
             <>
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
@@ -884,7 +882,24 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
-              <section className={styles.meditationCategorySection} data-support-meditation-category-switcher aria-label={t.meditationCategoriesTitle}>
+              {choice === "pump" && courses.length > 0 ? (
+                <div className={styles.mysteryPicker} data-support-mystery-courses>
+                  <div className={styles.mysteryPickerHeading}>
+                    <strong>{t.mysteryCourses}</strong><span>{t.mysterySource}</span>
+                  </div>
+                  <div className={styles.mysteryPickerGrid} role="group" aria-label={t.mysteryCourses}>
+                    {courses.map(course => (
+                      <button key={course.id} type="button" className={styles.mysteryPickerCard}
+                        data-support-mystery-course={course.id} aria-pressed={activeMystery?.id === course.id}
+                        onClick={() => { quest.mark("course"); setProgram(course.id); setMaster("all"); setTheme("all"); setPlaying(false); setSelectedId(null); }}>
+                        <Image src={course.poster} alt="" width={300} height={180} unoptimized loading="lazy" />
+                        <span><strong>{course.shortTitle}</strong><small>{course.videoCount} {t.lessonCount}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {choice === "meditation" ? <section className={styles.meditationCategorySection} data-support-meditation-category-switcher aria-label={t.meditationCategoriesTitle}>
                 <div className={styles.meditationCategoryHeader}>
                   <div><h2>{t.meditationCategoriesTitle}</h2><p>{t.meditationCategoryLead}</p></div>
                   <button type="button" onClick={() => setAllMeditationCategoriesOpen(open => !open)}
@@ -911,7 +926,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                     <ChevronRight size={22} aria-hidden="true" />
                   </button>
                 </div>
-              </section>
+              </section> : null}
               <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"} data-selected-video={selected?.id ?? ""}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -927,7 +942,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </label>
                   <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
-                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
+                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); if (choice === "pump") { quest.mark("course"); setMaster("all"); setTheme("all"); } }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
@@ -961,10 +976,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{goalSelection ? t.goalHero[goalSelection.sector] : meditationCategory === "all" ? t.heroTitle[focus] : t.meditationCategoryHero[meditationCategory]}</h2>
+                    <h2>{choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : meditationCategory === "all" ? t.heroTitle[focus] : t.meditationCategoryHero[meditationCategory]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play disabled={!quest.canPlay}><Play size={28} fill="currentColor" aria-hidden="true" />{quest.ready && !quest.canPlay ? t.playLimitReached : t.play}</button> :
+                      data-support-play disabled={!quest.canPlay}><Play size={28} fill="currentColor" aria-hidden="true" />{quest.ready && !quest.canPlay ? t.playLimitReached : choice === "pump" ? t.watchLesson : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
                     {quest.ready && !quest.canPlay ? <Link href="#support-progress" className={styles.heroCourseLink} data-support-guest-limit-cta>
                       {t.playToContinue}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
@@ -992,15 +1007,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               ) : null}
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
-                  <h3>{activeMystery ? t.originalCourseVideos : t.gallery}</h3>
-                  <Link href={activeMystery?.videoGroups[0]?.href ?? ("/" + locale + "/holistic-support#meditation-practices")}
+                  <h3>{activeMystery ? t.originalCourseVideos : choice === "pump" ? t.energyTitle : t.gallery}</h3>
+                  <Link href={activeMystery?.videoGroups[0]?.href ?? (choice === "pump" ? "/" + locale + "/academy?view=videos" : "/" + locale + "/holistic-support#meditation-practices")}
                     prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
                 {goalSelection && goalMatch && choice === "meditation" ?
                   <p className={styles.gallerySelection} data-support-goal-basis role="status">
                     {t.goalSector[goalSelection.sector]}. {goalMatch.matchedVideo ? t.goalMatch : t.goalRelated}
                   </p> : null}
-                {meditationCategory === "meaning" && !goalSelection ? <p className={styles.gallerySelection}
+                {choice === "meditation" && meditationCategory === "meaning" && !goalSelection ? <p className={styles.gallerySelection}
                   data-support-meditation-category-related role="status">{t.meditationCategoryRelated}</p> : null}
                 {!goalSelection && suggested && choice === "meditation" ? <p className={styles.gallerySelection}
                   data-support-meditation-basis role="status">
@@ -1020,7 +1035,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
                 <p className={styles.videoHint}>{t.galleryHint}</p>
-                {catalogVideos.length > 0 ? <section className={styles.videoFeed}
+                {choice === "meditation" && catalogVideos.length > 0 ? <section className={styles.videoFeed}
                   data-support-meditation-feed aria-labelledby="support-meditation-feed-title">
                   <div className={styles.videoFeedHeading}>
                     <h3 id="support-meditation-feed-title">{t.feedTitle}</h3>
@@ -1058,10 +1073,27 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
               </div>
+              {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
+                <p>{t.energyIntro}</p>
+                <div className={styles.courseLinks}>
+                  <Link href={"/" + locale + "/academy"} prefetch={false} onClick={() => quest.mark("course")}>{t.coursesAll}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  <Link href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false} onClick={() => quest.mark("course")}>{t.coursesReiki}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  {activeMystery ? <Link href={activeMystery.href} prefetch={false} onClick={() => quest.mark("course")}>{t.openCourse}: {activeMystery.title}<ArrowRight size={18} aria-hidden="true" /></Link> : null}
+                  {activeMystery?.videoGroups.map(group => (
+                    <Link href={group.href} key={group.href} prefetch={false} onClick={() => quest.mark("course")}>{group.title} · {group.count} {t.lessonCount}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  ))}
+                </div>
+              </div> : null}
             </>
           ) : choice === "tests" ? (
             <section className={styles.testsPanel} id="support-tests-panel"
               data-support-tests-panel aria-labelledby="support-tests-title">
+              <HolisticSupportCourseProfiles locale={locale} courses={courses}
+                savedSectors={goalSavedSectors} active={activeCourseProfile}
+                onSelect={setActiveCourseProfile}
+                onTests={() => window.location.assign("/" + locale + "/client/tests")}
+                onFillProfile={openCourseProfileFilter}
+                onRecommendations={showCourseProfileRecommendations} />
               <div className={styles.testsHero}>
                 <span className={styles.testsEyebrow}><TestTubeDiagonal size={18} aria-hidden="true" />{t.testsShort}</span>
                 <h2 id="support-tests-title">{t.testsTitle}</h2>
