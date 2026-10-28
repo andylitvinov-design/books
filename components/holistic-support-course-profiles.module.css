@@ -78,3 +78,9 @@
   .actions { max-width:258px; }
 }
 @media (prefers-reduced-motion:reduce) { .profile,.actions button { transition:none; } }
+
+/* Keep previous four-domain self-assessment available without hiding the course finder. */
+.profileDisclosure{min-width:0;border:1px solid #d7e4d7;border-radius:15px;background:#fbf7ee;padding:0 12px 12px}
+.profileDisclosure>summary{min-height:45px;display:flex;align-items:center;color:#176d53;font-size:13px;font-weight:800;cursor:pointer;list-style:revert}
+.profileDisclosure[open]{display:grid;gap:10px}
+.profileDisclosure>summary:focus-visible{outline:3px solid #edbc58;outline-offset:2px}
