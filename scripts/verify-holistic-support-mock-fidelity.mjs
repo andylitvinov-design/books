@@ -20,12 +20,19 @@ for (const browserType of [chromium, webkit]) {
       for (const width of [320, 390, 430]) {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
-          hasTouch: true, isMobile: true, reducedMotion: "reduce" });
+          hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
         const errors = [];
+        const directoryEvents = [];
+        const watched = url => url.includes("/api/public/remote-energy-support-masters");
         page.on("pageerror", error => errors.push(error.message));
+        page.on("requestfailed", req => { if (watched(req.url()))
+          directoryEvents.push("FAILED " + (req.failure()?.errorText ?? "unknown") + " " + req.url()); });
+        page.on("response", res => { if (watched(res.url()))
+          directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
+          directoryEvents.push("MOCK " + (kind || "masters"));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
@@ -44,8 +51,16 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
-          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1,
-            label + " recommendations below the four self-rating scales");
+          const mandalaAction=root.locator('[data-support-video-mandala]');
+          assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
+          assert.equal(await mandalaAction.getAttribute("href"),
+            "/"+locale+"/holistic-support/mandala",label+" genuine existing video studio route");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
+            label + " goal filter beneath the self-ratings");
+          assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
+            label + " current focus beneath the portrait");
+          assert.equal(await root.locator('[data-support-recommendations]').count(), 1,
+            label + " quick match beneath the portrait");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
@@ -146,6 +161,26 @@ for (const browserType of [chromium, webkit]) {
             label+" theme chosen by minimum, not a Focus selector");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
+          // The scenic workspace itself expands into a five-sector goal editor.
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          const filter=root.locator('[data-support-goal-filter]');
+          await filter.waitFor({state:"visible",timeout:8000});
+          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          await filter.locator('[data-goal-sector="money"]').click();
+          await filter.locator('[data-goal-concern="income"] input').check();
+          await filter.locator('[data-goal-task="stableIncome"] input').check();
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),6,label+" now/want sliders");
+          await filter.locator('[data-support-goal-apply]').click();
+          await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
+            label+" real published recordings preserved");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-filter-trigger]').click();
+          await root.locator('[data-support-goal-reset]').click();
+          assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
+            label+" reset restores sector");
+          await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
+          assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
@@ -166,6 +201,10 @@ for (const browserType of [chromium, webkit]) {
           await talisman.waitFor({state:"visible",timeout:8000});
           assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
             label+" three verified Fu illustrations below their large hero");
+          const talismanHeight = await talisman.locator('[data-support-talisman]').evaluate(
+            element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(talismanHeight - geometry.hero[0].height) <= 10,
+            label+" talisman stage uses the same compact height as meditation");
           const tRects=await talisman.evaluate(el=>{
             const a=el.querySelector('[data-support-talisman]')?.getBoundingClientRect();
             const b=el.querySelector('[data-support-talisman-rail]')?.getBoundingClientRect();
@@ -183,7 +222,87 @@ for (const browserType of [chromium, webkit]) {
           const healing=root.locator('[data-support-healing-panel] [data-support-master-viewer]');
           await healing.waitFor({state:"visible",timeout:8000});
           const heroMaster=healing.locator('[data-support-master-hero]');
-          await heroMaster.waitFor({state:"visible",timeout:8000});
+          // An isolated WebKit fixture request may fail once after many
+          // browser cases. Verify that the real public-directory Retry works;
+          // never accept the error placeholder as a successful master card.
+          await healing.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const retry = healing.locator('[role="alert"] button');
+          if (await retry.count()) await retry.click();
+          await heroMaster.waitFor({state:"visible",timeout:20000}).catch(async error => {
+            const status = await healing.innerText().catch(() => "(directory unmounted)");
+            throw new Error(label + " master gallery failed after bounded retry: " + status +
+              " | directory=" + JSON.stringify(directoryEvents) + " / " + error.message);
+          });
+          const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
+          assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
+            "true",label+" only published Tantra Reiki selected initially");
+          const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(masterHeight-geometry.hero[0].height)<=10,
+            label+" Reiki hero matches compact meditation hero");
+          // User's filter belongs INSIDE the original large photo, not in a second hero.
+          const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
+          assert.equal(await tab("main").count(),1,label+" central Main tab");
+          assert.equal(await tab("filter").count(),1,label+" central Filter tab");
+          assert.equal(await tab("description").count(),1,label+" central Description tab");
+          assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          await tab("filter").click();
+          const reikiFilter=healing.locator('[data-support-reiki-filter]');
+          await reikiFilter.waitFor({state:"visible"});
+          assert.equal(await reikiFilter.locator('[data-support-reiki-format] button').count(),3,
+            label+" session initiation training all available");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),6,
+            label+" five price ranges plus All");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').count(),3,
+            label+" brief text voice report");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" provider preference only for sessions");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" session has no certificate toggle");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),0,
+            label+" courses never show session practitioner selector");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" courses show certificate preference");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').check();
+          assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
+            label+" no fictional certified training offers");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
+            label+" initiation may request a certificate");
+          await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
+            label+" return to session resets certificate and restores provider");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
+            label+" certificate absent in session");
+          await reikiFilter.locator('[data-support-reiki-report] button').nth(2).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').nth(2)
+            .getAttribute("aria-pressed"),"true",label+" voice preference selectable");
+          await reikiFilter.locator('[data-support-reiki-timing] button').nth(1).click();
+          await reikiFilter.locator('[data-support-reiki-provider] button').nth(1).click();
+          assert.equal(await reikiFilter.locator('[data-support-reiki-provider] button').nth(1)
+            .getAttribute("aria-pressed"),"true",label+" Reiki master preference selectable");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          await tab("media").click();
+          assert.equal(await healing.locator('[data-support-reiki-media]').count(),1,
+            label+" media tab does not autoplay or invent a video");
+          await tab("description").click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="description"]').count(),1,
+            label+" original stage shows description");
+          await tab("main").click();
+          assert.equal(await healing.locator('[data-support-reiki-main]').count(),1,
+            label+" original photo returns without a new panel");
+          await healing.locator('[data-support-reiki-focus="strength"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          assert.equal(await healing.locator('[data-support-master-request]').count(),0,
+            label+" no fake Kundalini Reiki offering");
+          await healing.locator('[data-support-reiki-focus="purpose"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="balance"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="love"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
           await healing.locator('[data-support-master-thumb="qa-energy-two"]').click();
@@ -194,7 +313,11 @@ for (const browserType of [chromium, webkit]) {
             label+" Masters shortcut opens same-page hero catalogue");
           await root.locator('[data-support-tool="consultation"]').click();
           const offers=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
-          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:8000});
+          await offers.locator('[data-support-master-hero], [role="alert"]')
+            .first().waitFor({state:"visible",timeout:15000});
+          const offerRetry = offers.locator('[role="alert"] button');
+          if (await offerRetry.count()) await offerRetry.click();
+          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:20000});
           assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
