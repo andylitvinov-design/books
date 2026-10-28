@@ -508,7 +508,7 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(learningOverflow<=3,label+" learning filters fit the mobile viewport");
           if(width===390) await learning.screenshot({
             path:output+"/"+browserType.name()+"-"+locale+"-learning-390.png"});
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
+          assert.equal(await root.locator('[data-support-courses-panel] nav a').count(),2,
             label+" Academy course routes still work");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
