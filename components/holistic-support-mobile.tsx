@@ -303,7 +303,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
-                  <UserRound size={43} strokeWidth={1.45} aria-hidden="true" />
+                  <UserRound size={43} strokeWidth={1.45} aria-hidden="true" data-support-photo-placeholder />
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
