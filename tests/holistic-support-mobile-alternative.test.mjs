@@ -75,7 +75,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   assert.match(css, /@media \(max-width: 350px\)/);
   assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /font-size: 17px/);
-  assert.match(css, /min-height: 104px/);
+  assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
 });
@@ -112,4 +112,29 @@ test("personal recommendations rank verified recordings and existing talismans, 
   assert.doesNotMatch(model, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|\bdiagnose\(/);
   assert.match(css, /\.recommendationPanel/);
   assert.match(css, /\.detailedAnalysisLink/);
+});
+
+
+test("recommendations move under the check-in; tests move under five support actions", () => {
+  const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
+  const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
+  const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
+  assert.match(assessment, /data-support-recommendations/);
+  assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
+  assert.doesNotMatch(profile, /data-support-recommendations/);
+  assert.match(tools, /data-support-detailed-analysis/);
+  assert.match(tools, /choices\.map/);
+  assert.match(client, /id: "healing", Icon: HandHeart/);
+  assert.match(client, /pump: "Courses", healing: "Energy Healing"/);
+  assert.match(client, /pump: "Курсы", healing: "Энергетическая поддержка"/);
+  assert.match(client, /pump: "Cursos", healing: "Sanación energética"/);
+  assert.match(client, /data-support-courses-panel/);
+  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(client, /data-support-healing-panel/);
+  assert.match(client, /\/services\/remote-energy-support/);
+  assert.match(client, /\/masters/);
+  assert.match(client, /<HolisticInlineSupportOrder/);
+  assert.match(css, /\.toolButton:last-child \{ grid-column: 1 \/ -1/);
+  assert.match(css, /grid-template-rows: repeat\(5, 44px\); align-content: start/);
+  assert.match(css, /\.detailedCompact \{ display: inline; \}/);
 });

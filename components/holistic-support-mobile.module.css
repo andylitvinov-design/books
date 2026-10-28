@@ -17,6 +17,7 @@
 .pageEyebrow { margin: 4px 3px 10px; color: #38715c; font-size: 12px; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
 .topGrid { display: grid; grid-template-columns: 1.09fr .76fr 1.11fr; align-items: stretch; gap: 12px; margin-bottom: 13px; }
 .assessment, .tools { min-width: 0; padding: 20px 19px; border: 1px solid #e4dfd5; border-radius: 24px; background: rgb(255 253 249 / 90%); box-shadow: 0 8px 20px rgb(54 63 51 / 6%); }
+.assessment, .tools { display: flex; flex-direction: column; }
 .assessment h1, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
 .subText { margin: 0 0 12px; color: #5e645a; font-size: 16px; line-height: 1.4; }
 .scaleList { display: grid; gap: 11px; margin-top: 10px; }
@@ -52,6 +53,10 @@
 .focusValue > svg:last-child { color: #263b34; pointer-events: none; }
 .recommendButton { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; max-width: 252px; min-height: 55px; padding: 10px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #007c5b, #1eaa78); color: white; font-size: 16px; font-weight: 800; line-height: 1.18; box-shadow: 0 7px 17px #0a85542a; }
 .recommendButton:hover { background: #006d52; }
+.assessment > .recommendButton { max-width: none; margin-top: auto; }
+.tools > .detailedAnalysisLink { margin-top: 12px; }
+.detailedFull { display: inline; }
+.detailedCompact { display: none; }
 /* The personal recommendation stays compact: one real recording + one optional symbol. */
 .detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
 .detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
@@ -88,7 +93,8 @@
   .recommendationCopy span { font-size: 14px; }
 }
 .tools h2 { margin-bottom: 17px; }
-.toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; min-height: 260px; }
+.toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)) minmax(70px, .6fr); gap: 12px; min-height: 300px; }
+.toolButton:last-child { grid-column: 1 / -1; flex-direction: row; min-height: 70px; }
 .toolButton { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; min-width: 0; min-height: 117px; padding: 12px 7px; border: 1px solid #f0e9dc; border-radius: 19px; background: #f7f1e6; color: #24322b; font-size: 18px; font-weight: 800; line-height: 1.22; text-align: center; box-shadow: 0 4px 14px #2f33200c; overflow-wrap: anywhere; }
 .toolButton:nth-child(3) svg { color: #8554bb; }
 .toolButton:nth-child(4) svg { color: #59626b; }
@@ -136,6 +142,11 @@
 .supportEnquiry { display: grid; gap: 9px; padding: 13px 22px 22px; border-top: 1px solid #ebdfcf; }
 .supportEnquiry p { margin: 0; font-size: 16px; line-height: 1.5; }
 .supportEnquiry small { color: #625b52; font-size: 13px; }
+.courseLinks { display: flex; flex-wrap: wrap; gap: 10px; }
+.courseLinks a { display: inline-flex; align-items: center; gap: 8px; min-height: 45px; padding: 10px 14px; border-radius: 12px; background: #e3f1e8; color: #0b654c; font-weight: 800; text-decoration: none; }
+.courseLinks a:hover { background: #cce6d6; }
+.healingRequest { display: grid; gap: 12px; margin-top: 16px; }
+.healingRequest small { color: #625b52; font-size: 13px; }
 .secondaryButton { justify-self: start; min-height: 49px; padding: 12px 18px; border: 0; border-radius: 13px; background: #0b7859; color: white; font-size: 16px; font-weight: 800; }
 .insetPanel { padding: clamp(18px, 3vw, 34px); }
 .insetIntro { display: flex; gap: 14px; align-items: center; margin-bottom: 22px; color: #7751a5; }
@@ -197,197 +208,259 @@
   text-decoration: none; color: #177259; font-size: 14px; font-weight: 800; white-space: nowrap; }
 .seeAll:hover { text-decoration: underline; }
 
+
+/* The portrait shown before upload is illustrative, not a saved client photo. */
+.photoReference { position: absolute; inset: 0; width: 100%; height: 100%;
+  border-radius: inherit; object-fit: cover; object-position: 50% 42%; }
+.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; }
+.photoPlaceholder strong { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1;
+  padding: 8px 18px 7px 6px; max-width: none; background: linear-gradient(0deg,#112f2ccf,#112f2c00);
+  color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
+.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
+.camera { z-index: 2; }
+.focusCaptionLong { display: inline; }
+.focusCaptionShort { display: none; }
+
 @media (max-width: 640px) {
-  .page { background: linear-gradient(155deg, #deebe2 0%, #f5f2e8 40%, #fff9ee 100%); }
-  .container { width: calc(100% - 12px); min-width: 0;
-    padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
-  /* No additional branded marketing header: this is an immersive experience. */
+  .page { background: linear-gradient(150deg,#dce9e2 0%,#f5f1e7 52%,#fcf7ed 100%); }
+  .container { width: calc(100% - 14px); padding: 0 0 calc(75px + env(safe-area-inset-bottom)); }
   .compactAppHeader { display: none; }
-  .topGrid { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,.74fr) minmax(0,1.2fr);
-    grid-template-areas: "assessment profile tools"; gap: 5px; align-items: stretch;
-    margin-bottom: 7px; min-width: 0; }
-  .assessment,.tools { min-width: 0; padding: 9px 6px 8px; border-radius: 16px;
-    border-color: #e5e1d7; background: #fffcf6ed; box-shadow: 0 5px 16px #38514312; }
+  .topGrid {
+    display: grid; grid-template-columns: minmax(0,1.08fr) minmax(0,.88fr) minmax(0,1.26fr);
+    grid-template-areas: "assessment profile tools"; align-items: stretch; gap: 5px;
+    min-width: 0; margin: 0 0 9px;
+  }
+  .assessment,.tools { min-width: 0; border-radius: 17px;
+    padding: 10px 7px 9px; background: #fffcf6f5;
+    box-shadow: 0 7px 20px #51664d16; border: 1px solid #e5e1d8; }
   .assessment { grid-area: assessment; }
   .tools { grid-area: tools; }
-  .assessment h1,.tools h2 { min-height: 31px; margin: 0 0 5px;
-    font-size: clamp(13px,3.66vw,17px); line-height: 1.08;
-    font-weight: 850; letter-spacing: -.035em; text-wrap: balance; }
+  .assessment h1,.tools h2 {
+    margin: 0 0 6px; min-height: 33px;
+    font-size: clamp(13px,3.7vw,16px); line-height: 1.08;
+    font-weight: 850; letter-spacing: -.03em; text-wrap: balance;
+  }
   .subText { display: none; }
   .scaleList { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
-  .scaleRow { display: grid; grid-template-columns: 22px minmax(0,1fr) 24px;
-    min-height: 43px; gap: 3px; align-items: center; }
-  .scaleIcon { width: 22px; height: 26px; flex: none; border-radius: 9px; }
+  .scaleRow { display: grid; grid-template-columns: 23px minmax(0,1fr) 25px;
+    align-items: center; gap: 3px; min-height: 42px; }
+  .scaleIcon { width: 23px; height: 28px; flex: none; border-radius: 10px; }
   .scaleIcon svg { width: 17px; height: 17px; }
-  .scaleDetail { min-width: 0; gap: 0; }
-  .scaleLabel { font-size: clamp(11px,3.1vw,14px); line-height: 1.15;
-    letter-spacing: -.025em; font-weight: 800; overflow-wrap: normal; }
-  .scaleRow input { width: 100%; height: 21px; min-width: 0; }
-  .scaleValue { width: 24px; height: 28px; flex: none; min-width: 0;
-    font-size: 14px; font-weight: 850; border-radius: 8px; }
-  .detailedAnalysisLink { display: flex; justify-content: center; min-height: 30px;
-    margin: 5px 0 0; padding: 4px 2px; gap: 4px; border: 1px solid #badaca;
-    border-radius: 9px; color: #087251; text-decoration: none;
-    font-size: clamp(9px,2.75vw,12px); font-weight: 800; line-height: 1.14; text-align: center; }
-  .detailedAnalysisLink svg { flex: none; width: 13px; height: 13px; }
+  .scaleDetail { display: grid; gap: 0; min-width: 0; }
+  .scaleLabel { font-size: clamp(11px,3vw,13px); font-weight: 800;
+    letter-spacing: -.02em; line-height: 1.15; white-space: normal; overflow-wrap: break-word; }
+  .scaleRow input { display: block; width: 100%; min-width: 0; height: 22px; margin: 0; }
+  .scaleValue { width: 25px; height: 30px; flex: none; min-width: 0;
+    font-size: 14px; border-radius: 9px; }
+  .detailedAnalysisLink { display: flex; min-height: 32px; margin: 5px 0 0;
+    justify-content: center; gap: 3px; padding: 4px 2px; border-radius: 10px;
+    font-size: 10px; line-height: 1.15; text-align: center; }
+  .detailedAnalysisLink svg { width: 13px; height: 13px; flex: none; }
   .detailedAnalysisLink svg:last-child { display: none; }
-  .tools h2 { margin-bottom: 5px; }
-  .toolGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
-    grid-template-rows: repeat(2,minmax(0,1fr)); min-height: 0; gap: 5px; }
-  .toolButton { min-width: 0; min-height: 104px; padding: 7px 2px 6px;
-    border-radius: 12px; gap: 5px; font-size: clamp(10px,2.8vw,13px);
-    line-height: 1.14; font-weight: 800; letter-spacing: -.025em;
-    overflow-wrap: normal; word-break: normal; hyphens: none; }
-  .toolButton svg { width: 27px; height: 27px; flex: none; }
+  .detailedFull { display: none; }
+  .detailedCompact { display: inline; }
+  .assessment > .recommendButton { margin-top: 8px; }
+  .tools > .detailedAnalysisLink { margin-top: 8px; min-height: 43px; font-size: 12px; }
+
+  /* Five readable actions down the right, instead of 2x2 tiles with broken
+     words at iPhone widths; the full options remain accessible via aria-label. */
+  .tools h2 { margin-bottom: 6px; }
+  .toolGrid { display: grid; grid-template-columns: minmax(0,1fr);
+    grid-template-rows: repeat(5, 44px); align-content: start; min-height: 0; gap: 6px; }
+  .toolButton { display: flex; flex-direction: row; justify-content: flex-start;
+    align-items: center; gap: 8px; min-width: 0; min-height: 43px; padding: 5px 7px;
+    text-align: left; border-radius: 12px;
+    font-size: clamp(11px,3.2vw,14px); line-height: 1.12; font-weight: 800;
+    overflow-wrap: normal; word-break: normal; hyphens: auto; }
+  .toolButton svg { width: 23px; height: 23px; flex: 0 0 23px; }
+  .toolButton:last-child { grid-column: auto; min-height: 43px; }
   .toolLong { display: none; }
-  .toolCompact { display: block; white-space: normal; min-width: 0; overflow-wrap: normal; }
-  /* The portrait and focus belong BETWEEN the two panels, not in a third row. */
+  .toolCompact { display: block; min-width: 0; white-space: normal; overflow-wrap: break-word; }
+  .toolButton[aria-pressed="true"] { box-shadow: 0 5px 12px #0879572a; }
+
+  /* Photo, choice of focus and primary action are a single central tower. */
   .profile { grid-area: profile; display: flex; flex-direction: column;
-    align-items: stretch; justify-content: center; gap: 7px; min-width: 0;
-    padding: 2px 0; text-align: center; }
-  .photo { flex: none; align-self: center; width: clamp(60px,20vw,91px);
-    height: clamp(60px,20vw,91px); padding: 2px; border: 3px solid #fff;
-    border-radius: 50%; background: linear-gradient(140deg,#d9f2e7,#faf4e5);
-    box-shadow: 0 0 0 2px #a7dfe5,0 0 0 5px #fff7,0 7px 18px #20574629; }
-  .photoPlaceholder { gap: 2px; padding: 4px; }
-  .photoPlaceholder svg { width: 35px; height: 35px; }
-  .photoPlaceholder strong { max-width: 72px; font-size: clamp(9px,2.3vw,11px); line-height: 1.1; }
-  .camera { width: 26px; height: 26px; right: -1px; bottom: 0; border-width: 1px; }
+    justify-content: center; align-items: center; gap: 8px; min-width: 0;
+    padding: 4px 0 2px; text-align: center; }
+  .photo { width: min(100%,100px); height: auto; aspect-ratio: 1;
+    padding: 2px; border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #98d7dd,0 0 0 5px #ffffffe8,0 8px 24px #1c565542; }
+  .photoPlaceholder strong { font-size: clamp(9px,2.7vw,11px);
+    line-height: 1.03; padding: 10px 18px 5px 4px; }
+  .camera { width: 28px; height: 28px; right: 0; bottom: 1px; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
-  .photoError { font-size: 10px; overflow-wrap: anywhere; }
+  .photoError { font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; }
   .focusSelector { width: 100%; max-width: none; min-width: 0;
-    padding: 6px 4px; gap: 3px; border-radius: 12px;
-    background: #fffdfa; text-align: center; }
-  .focusCaption { font-size: clamp(9px,2.45vw,11px); line-height: 1.12; }
-  .focusValue { gap: 1px; justify-content: center; }
-  .focusValue svg { width: 13px; height: 13px; flex: none; }
-  .focusValue select { flex: 1; min-width: 0; text-align: center; font-size: clamp(11px,2.9vw,14px);
-    font-weight: 850; }
-  .recommendButton { display: flex; flex-direction: column; align-items: center;
-    gap: 3px; width: 100%; max-width: none; min-height: 65px; padding: 7px 2px;
-    border-radius: 12px; font-size: clamp(11px,2.8vw,13px); line-height: 1.16;
-    background: linear-gradient(155deg,#03a878,#006c54); }
-  .recommendButton svg { width: 21px; height: 21px; }
+    padding: 7px 3px; gap: 4px; text-align: center;
+    border-radius: 13px; background: #fffdf7; }
+  .focusCaption { font-size: 12px; line-height: 1.15; }
+  .focusCaptionLong { display: none; }
+  .focusCaptionShort { display: inline; }
+  .focusValue { gap: 3px; justify-content: center; }
+  .focusValue svg { width: 16px; height: 16px; flex: none; }
+  .focusValue select { font-size: clamp(13px,3.5vw,16px);
+    text-align: center; flex: 1; min-width: 0; }
+  .recommendButton { display: flex; flex-direction: column; gap: 3px;
+    justify-content: center; align-items: center; width: 100%; max-width: none;
+    min-height: 59px; border-radius: 13px; padding: 7px 3px;
+    background: linear-gradient(145deg,#03ac7b,#006e54);
+    font-size: clamp(11px,3.2vw,14px); line-height: 1.15;
+    font-weight: 850; text-align: center; }
+  .recommendButton svg { width: 21px; height: 21px; flex: none; }
   .recommendLong { display: none; }
-  .recommendShort { display: block; overflow-wrap: normal; word-break: normal; }
-  .experience { border-radius: 20px; border-color: #ded8cb; overflow: hidden; }
-  /* Dominant scenic practice surface, as in the original approved design. */
-  .hero { min-height: 364px; padding: 12px 12px 16px; border-radius: 19px;
-    background: linear-gradient(110deg,#122f2d,#a16e52 86%); }
-  .heroBackdrop { object-position: 69% center; filter: saturate(1.12) contrast(1.04); }
-  .heroShade { background:
-    linear-gradient(95deg,rgba(8,31,31,.95) 0%,rgba(15,37,34,.84) 35%,rgba(24,42,38,.23) 80%,rgba(20,29,25,.16) 100%),
-    linear-gradient(0deg,rgba(6,26,25,.57),transparent 68%); }
-  /* All four controls have equal visual status and MUST fit the phone width. */
-  .heroFilters { display: grid; grid-template-columns: minmax(0,1.19fr) repeat(3,minmax(0,1fr));
-    align-items: stretch; gap: 5px; flex-wrap: nowrap; overflow: visible; }
-  .heroMode,.heroFilter { min-width: 0; min-height: 48px; padding: 6px 3px;
-    border-radius: 17px; gap: 3px; font-size: clamp(10px,2.9vw,13px);
-    font-weight: 850; line-height: 1.1; white-space: normal; text-align: center; }
-  .heroMode { display: flex; flex-direction: row; align-items: center; justify-content: center;
-    background: linear-gradient(120deg,#0ab07b,#007658); color: #fff; border-color: #42c69d; }
-  .heroMode svg { flex: none; width: 15px; height: 15px; }
-  .heroFilter { position: relative; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    border-color: #ffffff70; background: #26443da6; overflow: hidden; }
+  .recommendShort { display: block; min-width: 0; overflow-wrap: break-word; }
+
+  /* Hero now uses the owner's approved sample: full seated pose and sunset,
+     not the previous zoomed face from the unrelated Reiki page. */
+  .experience { border-radius: 20px; border: 1px solid #e3dcd0; }
+  .hero { min-height: 382px; padding: 12px 12px 15px; border-radius: 19px;
+    background: #132f2e; }
+  .heroBackdrop { object-fit: cover; object-position: 75% center;
+    filter: saturate(1.15) contrast(1.02); }
+  .heroShade { background: linear-gradient(90deg,
+      rgba(6,33,33,.97) 0%,rgba(9,38,35,.9) 27%,rgba(10,39,37,.58) 58%,rgba(14,40,34,.12) 100%),
+      linear-gradient(0deg,rgba(9,31,29,.52),transparent 57%); }
+  .heroFilters { display: grid;
+    grid-template-columns: minmax(0,1.18fr) repeat(3,minmax(0,1fr));
+    gap: 5px; width: 100%; align-items: stretch;
+    flex-wrap: nowrap; overflow: visible; }
+  .heroMode,.heroFilter { min-width: 0; min-height: 48px; padding: 5px 2px;
+    border-radius: 15px; line-height: 1.11; font-size: clamp(10px,2.8vw,12px);
+    text-align: center; font-weight: 850; gap: 3px; white-space: normal; }
+  .heroMode { display: flex; flex-direction: row; align-items: center;
+    justify-content: center; padding: 5px 3px;
+    border-color: #70d9af; color: #fff; background: linear-gradient(125deg,#0aae7a,#007656); }
+  .heroMode svg { width: 14px; height: 14px; flex: none; }
+  .heroFilter { display: flex; flex-direction: column; align-items: center;
+    justify-content: center; position: relative; overflow: hidden;
+    background: rgba(32,65,59,.82); border-color: #ffffff64; }
   .heroFilter > svg { display: none; }
-  .heroFilter span { display: block; font-size: clamp(10px,2.9vw,13px); font-weight: 850;
-    color: #fff; white-space: nowrap; }
-  .filterValue { display: block; max-width: 100%; overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap; color: #dbece5;
-    font-size: clamp(9px,2.5vw,11px); font-weight: 600; }
-  .heroFilter select { position: absolute; z-index: 2; inset: 0; opacity: 0;
-    width: 100%; height: 100%; min-width: 0; max-width: none; margin: 0; padding: 0;
-    appearance: none; cursor: pointer; }
-  .heroFilter:focus-within { outline: 3px solid #fbe8af; outline-offset: 2px; }
-  .hero[data-playing="true"] .heroFilters { padding: 8px 8px; background: #173d35; }
-  .heroBody { max-width: 290px; padding: 28px 3px 4px; }
-  .videoOriginal { padding: 6px 9px; border-radius: 16px; font-size: 11px; }
+  .heroFilter span { font-size: clamp(10px,2.8vw,12px); font-weight: 850;
+    white-space: nowrap; line-height: 1.1; }
+  .filterValue { display: block; min-width: 0; max-width: 100%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; color: #e0f0e6;
+    font-size: clamp(9px,2.6vw,11px); font-weight: 650; }
+  .heroFilter select { position: absolute; inset: 0; z-index: 2; width: 100%;
+    min-width: 0; max-width: none; height: 100%; margin: 0; padding: 0;
+    appearance: none; opacity: 0; cursor: pointer; }
+  .heroFilter:focus-within { outline: 3px solid #ffdd95; outline-offset: 2px; }
+  .hero[data-playing="true"] .heroFilters { padding: 8px; background: #153d34; }
+  .heroBody { max-width: 290px; padding: 24px 3px 4px; }
+  .videoOriginal { padding: 6px 10px; font-size: 11px; border-radius: 17px; }
   .videoOriginal svg { width: 15px; height: 15px; }
-  .heroBody h2 { max-width: 284px; margin: 10px 0 9px; font-size: clamp(30px,8.5vw,43px);
-    line-height: 1.04; font-weight: 900; letter-spacing: -.04em;
-    text-shadow: 0 2px 5px #1029218c; }
-  .heroDescription { max-width: 257px; margin: 0 0 17px;
-    font-size: clamp(14px,3.9vw,18px); line-height: 1.27; }
-  .playButton { width: min(280px,100%); min-height: 55px; padding: 10px 12px;
-    border-radius: 15px; font-size: clamp(17px,4.6vw,22px); gap: 8px; }
-  .playButton svg { width: 22px; height: 22px; }
-  .videoSection { padding: 13px 10px 9px; }
+  .heroBody h2 { max-width: 285px; margin: 11px 0 9px;
+    font-size: clamp(33px,8.7vw,43px); font-weight: 900; line-height: 1.05;
+    letter-spacing: -.035em; text-shadow: 0 2px 6px #0c2828cc; }
+  .heroDescription { max-width: 263px; margin: 0 0 16px;
+    font-size: clamp(14px,4vw,18px); line-height: 1.29; }
+  .playButton { width: min(288px,100%); min-height: 58px;
+    font-size: clamp(17px,4.5vw,21px);
+    padding: 9px 13px; gap: 9px; border-radius: 16px; }
+  .playButton svg { width: 23px; height: 23px; }
+
+  .videoSection { padding: 13px 10px 10px; }
   .videoHeading { display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: nowrap; gap: 5px; margin-bottom: 10px; }
-  .videoHeading h3 { font-size: clamp(15px,4.1vw,21px); font-weight: 900;
-    line-height: 1.13; min-width: 0; letter-spacing: -.025em; }
-  .videoHeading h3 span { display: none; }
-  .videoLanguage { display: none; }
-  .seeAll { flex: none; min-height: 32px; font-size: clamp(10px,2.85vw,13px); }
-  /* The four real source thumbnails are visible SIMULTANEOUSLY (no swipe rail). */
+    flex-wrap: nowrap; gap: 7px; margin-bottom: 10px; }
+  .videoHeading h3 { min-width: 0; font-size: clamp(16px,4.35vw,21px);
+    line-height: 1.16; letter-spacing: -.02em; }
+  .videoHeading h3 span,.videoLanguage { display: none; }
+  .seeAll { flex: none; font-size: clamp(11px,2.9vw,13px); min-height: 36px; }
   .videoGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
-    grid-auto-flow: row; grid-auto-columns: auto; grid-template-rows: minmax(0,1fr);
-    gap: 6px; width: 100%; overflow: visible; padding: 0; scroll-snap-type: none; }
-  .videoCard { scroll-snap-align: none; min-width: 0; min-height: 113px;
-    aspect-ratio: .79; padding: 5px; border-radius: 11px; border-width: 2px; }
-  .videoCard img { object-fit: cover; object-position: center; }
-  .thumbnailPlay { top: 6px; left: 6px; width: 25px; height: 25px; border-width: 1px; }
-  .thumbnailPlay svg { width: 12px; height: 12px; }
-  .videoTitle { font-size: clamp(10px,2.85vw,13px); font-weight: 850;
-    line-height: 1.14; text-shadow: 0 1px 4px #000b; word-break: normal; }
-  .videoHint { margin: 6px 0 0; font-size: 11px; line-height: 1.28; }
-  .youtubeLink { min-height: 32px; margin-top: 1px; font-size: 12px; }
-  .progressPanel { margin-top: 8px; padding: 11px; border-radius: 17px; }
-  .progressPanel h2 { margin: 0 0 8px; font-size: 18px; font-weight: 850; }
-  .progressGrid { display: grid; grid-template-columns: 51px minmax(0,1fr) minmax(0,1fr);
-    align-items: center; gap: 8px; padding: 8px; border-radius: 13px; }
-  .progressRing { width: 49px; height: 49px; }
-  .progressRing::before { width: 37px; height: 37px; }
+    grid-template-rows: minmax(0,1fr); grid-auto-flow: row; grid-auto-columns: auto;
+    gap: 6px; width: 100%; min-width: 0;
+    overflow: visible; padding: 0; scroll-snap-type: none; }
+  .videoCard { min-width: 0; aspect-ratio: .78; min-height: 112px; padding: 5px;
+    border-width: 2px; border-radius: 11px; scroll-snap-align: none; }
+  /* Source-verified videos retain real titles/URLs. Only their decorative
+     preview art mirrors the approved nature-themed mock, never a fake frame. */
+  .videoCard { isolation: isolate; }
+  .videoCard img { z-index: -2; }
+  .videoCard::after { content: ""; position: absolute; inset: 0; z-index: -1;
+    pointer-events: none; background-image: url("/images/holistic-house/support-mock-video-posters.webp");
+    background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; }
+  .videoCard:nth-child(2)::after { background-position: 33.3333% 0; }
+  .videoCard:nth-child(3)::after { background-position: 66.6667% 0; }
+  .videoCard:nth-child(4)::after { background-position: 100% 0; }
+  .videoDark { z-index: 0; }
+  .thumbnailPlay { z-index: 1; }
+  .videoTitle { position: relative; z-index: 2; font-size: clamp(10px,2.8vw,13px); line-height: 1.12; }
+  .thumbnailPlay { top: 6px; left: 6px; width: 27px; height: 27px; border-width: 1px; }
+  .thumbnailPlay svg { width: 13px; height: 13px; }
+  .videoHint { font-size: 11px; line-height: 1.32; margin: 9px 0 0; }
+  .youtubeLink { font-size: 12px; min-height: 36px; margin: 0; }
+
+  .progressPanel { margin-top: 9px; padding: 12px 11px 9px; border-radius: 17px; }
+  .progressPanel h2 { margin: 0 0 8px; font-size: 19px; }
+  .progressGrid { grid-template-columns: 54px minmax(0,1fr) minmax(0,1fr);
+    gap: 7px; padding: 9px; border-radius: 15px; }
+  .progressRing { width: 53px; height: 53px; }
+  .progressRing::before { width: 40px; height: 40px; }
   .progressRing strong { font-size: 14px; }
-  .progressGrid > div:not(:first-child) { gap: 3px; font-size: 12px; line-height: 1.12; }
-  .progressGrid > div:not(:first-child) span { font-size: 10px; }
-  .progressFocus { padding-left: 7px; }
-  .progressFocus svg { width: 19px; height: 19px; }
-  .privacyNote { margin: 8px 0 0; font-size: 10.5px; line-height: 1.22; }
-  .privacyNote svg { width: 14px; height: 14px; }
-  .disclaimer { margin: 10px 4px; font-size: 11px; line-height: 1.3; display: flex; }
+  .progressGrid > div:not(:first-child) { gap: 2px; font-size: 12px; line-height: 1.14; }
+  .progressGrid > div:not(:first-child) span { font-size: 11px; }
+  .progressFocus { padding-left: 6px; }
+  .progressFocus svg { width: 21px; height: 21px; }
+  .privacyNote { margin: 8px 0 0; font-size: 11px; line-height: 1.23; }
+  .privacyNote svg { width: 16px; height: 16px; }
+  .disclaimer { display: flex; margin: 12px 3px; font-size: 11px; line-height: 1.25; }
   .disclaimer a { margin: 0; font-size: 11px; }
-  .bottomNav { min-height: 63px; padding-top: 4px; padding-bottom: calc(3px + env(safe-area-inset-bottom)); }
-  .bottomNav > :is(a,button) { min-height: 53px; font-size: 11px; gap: 3px; }
-  .bottomNav > :is(a,button) svg { width: 22px; height: 22px; }
-  .settingsPanel { bottom: calc(72px + env(safe-area-inset-bottom)); }
-  .recommendationPanel { padding: 12px 10px; margin-bottom: 8px; gap: 8px; border-radius: 15px; }
-  .recommendationLead p { font-size: 13px; }
+  .bottomNav { min-height: 65px; padding: 5px 8px calc(5px + env(safe-area-inset-bottom)); }
+  .bottomNav > :is(a,button) { font-size: 11px; min-height: 54px; gap: 3px; }
+  .bottomNav > :is(a,button) svg { width: 23px; height: 23px; }
+  .settingsPanel { bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .recommendationPanel { padding: 12px; margin-bottom: 9px; gap: 8px; border-radius: 16px; }
   .recommendationGrid { grid-template-columns: minmax(0,1fr); gap: 8px; }
-  .recommendationCard { padding: 8px; gap: 9px; }
-  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
-  .recommendationTalismanImage { width: 54px; height: 72px; flex-basis: 54px; }
+  .recommendationLead p { font-size: 13px; }
+  .recommendationCard { gap: 8px; padding: 8px; }
+  .recommendationVideoPreview { width: 80px; flex-basis: 80px; }
+  .recommendationTalismanImage { width: 57px; height: 75px; flex-basis: 57px; }
   .recommendationCopy span { font-size: 14px; }
-  .recommendationCopy button { font-size: 13px; min-height: 41px; }
-  .insetPanel { padding: 13px 9px; }
-  .insetIntro h2 { font-size: 23px; }
+  .recommendationCopy button { font-size: 13px; min-height: 43px; }
+  .insetPanel { padding: 14px 10px; }
+  .insetIntro h2 { font-size: 22px; }
   .consultOptions { grid-template-columns: minmax(0,1fr); }
-  .consultOptions a { min-height: 71px; font-size: 16px; }
+  .consultOptions a { min-height: 75px; font-size: 16px; }
 }
 @media (max-width: 350px) {
-  /* At the narrowest iPhone SE width, keep every target readable and avoid
-     clipping rather than forcing three unreadable columns. */
-  .topGrid { grid-template-columns: minmax(0,1fr) minmax(0,1fr);
-    grid-template-areas: "assessment tools" "profile profile"; gap: 5px; }
-  .assessment,.tools { padding: 9px 7px; }
-  .scaleRow { grid-template-columns: 26px minmax(0,1fr) 28px; min-height: 42px; }
-  .scaleLabel { font-size: 12px; }
-  .scaleIcon { width: 26px; height: 26px; }
-  .scaleValue { width: 28px; }
-  .profile { display: grid; grid-template-columns: 72px minmax(0,1fr);
-    grid-template-rows: auto auto; gap: 5px 9px; padding: 4px 8px;
-    border: 1px solid #e4e3d5; border-radius: 14px; background: #fffcf5; }
-  .photo { grid-row: 1 / 3; grid-column: 1; width: 68px; height: 68px; }
-  .focusSelector { grid-column: 2; grid-row: 1; }
-  .recommendButton { grid-column: 2; grid-row: 2; min-height: 38px;
-    flex-direction: row; font-size: 13px; gap: 5px; }
-  .heroMode,.heroFilter { border-radius: 12px; min-height: 48px; }
-  .heroBody h2 { font-size: 30px; }
+  .topGrid { grid-template-columns: minmax(0,1.06fr) minmax(0,.89fr) minmax(0,1.22fr); gap: 4px; }
+  .assessment,.tools { padding: 8px 5px; }
+  .assessment h1,.tools h2 { font-size: 12px; }
+  .scaleRow { grid-template-columns: 21px minmax(0,1fr) 22px; gap: 2px; min-height: 40px; }
+  .scaleIcon { width: 21px; height: 25px; }
+  .scaleIcon svg { width: 16px; height: 16px; }
+  .scaleLabel { font-size: 11px; }
+  .scaleValue { width: 22px; height: 27px; font-size: 13px; }
+  /* Keep five help rows and the right-side Tests action readable at 320px;
+     preserve the prior release's compact scales and heading layout. */
+  .tools > .detailedAnalysisLink { min-height: 43px; max-height: none; margin-top: 4px;
+    padding: 3px 2px; gap: 3px; font-size: 12px; line-height: 1; }
+  .assessment h1,.tools h2 { min-height: 29px; margin-bottom: 3px; }
+  .scaleList { gap: 2px; margin-top: 2px; }
+  .scaleRow { min-height: 35px; }
+  .scaleRow input { height: 17px; }
+  .scaleDetail { gap: 0; }
+  .scaleLabel { line-height: 1.02; font-size: 10.5px; letter-spacing: -.035em; }
+  .toolGrid { gap: 3px; }
+  .toolButton { min-height: 39px; line-height: 1.05; }
+  .topGrid { margin-bottom: 5px; }
+  .toolGrid { gap: 5px; }
+  .toolButton { gap: 4px; padding: 4px; min-height: 43px; font-size: 11px; }
+  .toolButton svg { width: 20px; height: 20px; flex-basis: 20px; }
+  .profile { gap: 7px; }
+  .photo { width: min(100%,82px); }
+  .photoPlaceholder strong { font-size: 9px; }
+  .focusSelector { padding: 6px 2px; }
+  .focusCaption { font-size: 10px; }
+  .focusValue select { font-size: 12px; }
+  .focusValue svg { width: 13px; height: 13px; }
+  .recommendButton { min-height: 55px; font-size: 11px; }
+  .hero { min-height: 366px; padding: 10px; }
+  .heroMode,.heroFilter { min-height: 47px; gap: 2px; padding: 4px 2px; font-size: 10px; }
+  .heroBody h2 { font-size: 31px; }
   .videoGrid { gap: 4px; }
-  .videoCard { min-height: 102px; padding: 3px; }
+  .videoCard { min-height: 103px; padding: 4px; }
   .videoTitle { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
+  .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }
 }

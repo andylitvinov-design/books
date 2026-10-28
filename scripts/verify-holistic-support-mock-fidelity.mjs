@@ -37,9 +37,18 @@ for (const browserType of [chromium, webkit]) {
           }, null, {timeout:30000});
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
-          assert.equal(await root.locator('[data-support-tool]').count(), 4, label + " tools");
+          assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
+          assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
+          // These two locally bundled original-mock visuals must actually load.
+          await page.waitForFunction(() => {
+            const images = [...document.querySelectorAll(
+              '[data-support-photo] img, [data-support-player] > img'
+            )];
+            return images.length >= 2 && images.every(img => img.complete && img.naturalWidth > 0);
+          }, null, { timeout: 20000 });
 
           const geometry = await page.evaluate(() => {
             const root = document.querySelector("[data-holistic-mobile-alternative]");
@@ -53,6 +62,14 @@ for (const browserType of [chromium, webkit]) {
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
+              readableTools: [...root.querySelectorAll('[data-support-tool]')].map(btn => {
+                const caption = [...btn.querySelectorAll('span')].find(x => getComputedStyle(x).display !== 'none');
+                const b = btn.getBoundingClientRect(), t = caption?.getBoundingClientRect();
+                return { left: t?.left ?? -1, right: t?.right ?? Infinity,
+                  top: t?.top ?? -1, bottom: t?.bottom ?? Infinity,
+                  buttonLeft: b.left, buttonRight: b.right,
+                  buttonTop: b.top, buttonBottom: b.bottom };
+              }),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
               videos:measure('[data-support-video]'),
@@ -62,6 +79,18 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
+          if(width===320) {
+            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
+            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
+              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
+            await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
+          }
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
+            label+" five readable 43px action rows plus detailed tests must expose the player early");
+          assert.ok(geometry.readableTools.every(t =>
+            t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
+            t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
+            label+" all action captions contained by their buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.hero[0].height>=300, label+" hero remains dominant");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
@@ -72,7 +101,7 @@ for (const browserType of [chromium, webkit]) {
             const box=await tab.boundingBox();
             assert.ok(box && box.x>=0 && box.x+box.width<=width+2,label+" all filter pills visible");
           }
-          if(width>350) {
+          {
             const assessment=geometry.a[0], tools=geometry.toolsSection[0], photo=geometry.photo[0];
             assert.ok(Math.abs(assessment.y-tools.y)<4,label+" ratings and tools same row");
             assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
@@ -108,6 +137,16 @@ for (const browserType of [chromium, webkit]) {
             const src = await root.locator('[data-support-player] iframe').getAttribute("src");
             assert.match(src??"", /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?autoplay=1/,label+" consent-to-play original");
           }
+          await root.locator('[data-support-tool="pump"]').click();
+          assert.equal(await root.locator('[data-support-courses-panel] a').count(), 2, label+" Academy course links");
+          assert.equal(await root.locator('[data-support-player] iframe').count(), 0, label+" switching courses does not autoplay");
+          await root.locator('[data-support-tool="healing"]').click();
+          const healing = root.locator('[data-support-healing-panel]');
+          await healing.waitFor({state:"visible",timeout:8000});
+          assert.equal(await healing.locator('a[href$="/masters"]').count(), 1, label+" masters entry");
+          assert.equal(await healing.locator('a[href$="/services/remote-energy-support"]').count(), 1, label+" energy service entry");
+          await healing.locator('button[aria-controls="support-mobile-master-request"]').click();
+          assert.equal(await healing.locator('#support-mobile-master-request').count(), 1, label+" existing optional master finder");
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
