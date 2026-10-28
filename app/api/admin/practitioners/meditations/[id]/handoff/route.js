@@ -22,7 +22,7 @@ export async function GET(request,{params}){
     const upstream=await fetch(location,{cache:'no-store',redirect:'error',
       signal:AbortSignal.timeout(90000)})
     if(!upstream.ok||!upstream.body||
-      (upstream.headers.get('content-type')||'').split(';')[0]!=='video/mp4')
+      (upstream.headers.get('content-type')||'').split(';')[0]!==meta.mime)
       return NextResponse.json({error:'MEDITATION_STORAGE_UNAVAILABLE'},{status:503,headers:PRIVATE_HEADERS})
     const length=upstream.headers.get('content-length')
     if(length!==null&&Number(length)!==meta.bytes){
@@ -30,8 +30,8 @@ export async function GET(request,{params}){
       return NextResponse.json({error:'MEDITATION_MEDIA_MISMATCH'},{status:409,headers:PRIVATE_HEADERS})
     }
     return new Response(upstream.body,{status:200,headers:{...PRIVATE_HEADERS,
-      'Content-Type':'video/mp4','Content-Length':String(meta.bytes),
-      'Content-Disposition':'attachment; filename="meditation.mp4"'}})
+      'Content-Type':meta.mime,'Content-Length':String(meta.bytes),
+      'Content-Disposition':'attachment; filename="meditation.'+(meta.mime==='video/webm'?'webm':'mp4')+'"'}})
   }catch(error){
     const {status,code}=safeError(error)
     return NextResponse.json({error:code},{status,headers:PRIVATE_HEADERS})
