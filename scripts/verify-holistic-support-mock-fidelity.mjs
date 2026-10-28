@@ -344,9 +344,15 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(Math.max(...tabSizes.map(item=>item.top)) -
             Math.min(...tabSizes.map(item=>item.top)) <= 2,
             label+" four action tabs occupy a single row");
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-main-390.png", fullPage: true,
+          });
           await tab("filter").click();
           const reikiFilter=healing.locator('[data-support-reiki-filter]');
           await reikiFilter.waitFor({state:"visible"});
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
+          });
           const intro=healing.locator('[data-support-reiki-photo-intro]');
           const introHeight=await intro.evaluate(element => element.getBoundingClientRect().height);
           assert.ok(introHeight >= 68 && introHeight <= 160,
