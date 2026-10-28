@@ -1,0 +1,78 @@
+name: Holistic Support free quest — seven steps and guest battery
+on:
+  pull_request:
+    paths:
+      - 'components/holistic-support-guest-quest.*'
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-mobile.module.css'
+      - 'lib/holistic-support/guest-quest.*'
+      - 'app/api/app/[...path]/route.js'
+      - 'tests/holistic-support-guest-quest.test.mjs'
+      - 'tests/holistic-support-mobile-mock-parity.test.mjs'
+      - 'scripts/verify-support-guest-quest.mjs'
+      - '.github/workflows/hh-support-guest-quest.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-support-guest-quest.*'
+      - 'components/holistic-support-mobile.tsx'
+      - 'lib/holistic-support/guest-quest.*'
+      - 'tests/holistic-support-guest-quest.test.mjs'
+      - '.github/workflows/hh-support-guest-quest.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-support-free-quest-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused-quest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3117
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-quest-browser/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Seven real actions, storage privacy, existing screenshot and catalogue contracts
+        run: |
+          node --test tests/holistic-support-guest-quest.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-meditation-mobile-categories.test.mjs
+      - name: Scoped lint
+        run: |
+          npx --no-install eslint components/holistic-support-guest-quest.tsx components/holistic-support-mobile.tsx lib/holistic-support/guest-quest.mjs tests/holistic-support-guest-quest.test.mjs scripts/verify-support-guest-quest.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Install isolated Chromium
+        run: |
+          npm install --prefix /tmp/hh-quest-browser --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-quest-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Synthetic EN/RU/ES × 320/390/430, guest cap and verified-member mock
+        run: |
+          set -euo pipefail
+          npx next dev --hostname 127.0.0.1 --port 3117 > /tmp/hh-quest-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3117/ru/holistic-support/mobile >/dev/null; then ready=1; break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/hh-quest-next.log; exit 1; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then tail -90 /tmp/hh-quest-next.log; exit 1; fi
+          node scripts/verify-support-guest-quest.mjs
+      - name: Save synthetic mobile screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-support-quest-ru-mobile
+          path: artifacts/holistic-support-quest/
+          retention-days: 3
+          if-no-files-found: warn
