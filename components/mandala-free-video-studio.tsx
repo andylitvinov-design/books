@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -224,7 +224,7 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
 
 // A selected template is a real, moving preview of the same local footage
 // used in the final file. Only one card runs at ~7fps on a mobile viewport.
-function useThumbnailVisible(ref: React.RefObject<HTMLCanvasElement | null>): boolean {
+function useThumbnailVisible(ref: RefObject<HTMLCanvasElement | null>): boolean {
   const [visible,setVisible]=useState(false);
   useEffect(()=>{
     const canvas=ref.current;
