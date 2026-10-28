@@ -67,6 +67,49 @@ test("responsive services preserve horizontal scroll, 320-430 touch layout and a
   assert.match(gallery, /c.notice/);
 });
 
+
+test("genuine service request preserves published service ID through Google sign-in and selected secure form", () => {
+  const workspace = read("components/app/app-workspace.jsx");
+  assert.match(gallery, /function consultationRequestHref\(offer: PublishedConsultation, locale: PublicLocale\)/);
+  assert.match(gallery, /locale === "es" \? "en" : locale/);
+  assert.match(gallery, /encodeURIComponent\(offer.serviceId\)/);
+  assert.match(gallery, /href=\{consultationRequestHref\(selectedOffer, locale\)\}/);
+  assert.match(gallery, /href=\{selectedOffer.href\}/);
+  assert.match(workspace, /serviceId: searchParams.get\('service'\) \|\| null/);
+  assert.match(workspace, /initialServiceId=\{searchParams.get\('service'\) \|\| ''\}/);
+  assert.match(workspace, /setSelected\(service\)/);
+  assert.match(workspace, /<RequestForm/);
+  assert.doesNotMatch(gallery, /appFetch\(|createOrder\(|confirmPayment\(/);
+});
+
+test("editorial images are first-party and explicitly distinguished from practitioner uploads", async () => {
+  assert.match(gallery, /APPROVED_EDITORIAL_GALLERIES/);
+  assert.match(gallery, /consultationDisplayImages\(offer\)/);
+  assert.match(gallery, /if \(offer.photos\?\.length\) return offer.photos/);
+  assert.match(gallery, /isApprovedOwner && Object.prototype.hasOwnProperty.call/);
+  assert.match(gallery, /selectedOffer.photos\?\.length \? c.photos : c.editorialPhotos/);
+  assert.match(gallery, /Иллюстрации Holistic House/);
+  assert.match(gallery, /Related Holistic House illustrations/);
+  assert.match(gallery, /consultPhotoSet\.slice\(0,4\)/);
+  assert.match(gallery, /setConsultPhotoIndex\(photoIndex\)/);
+  const { statSync } = await import("node:fs");
+  for (const match of gallery.matchAll(/"\/(images\/holistic-house\/[^"]+\.(?:webp|png|svg))"/g)) {
+    const file = new URL("../public/" + match[1], import.meta.url);
+    assert.ok(statSync(file).size > 1000, "existing first-party asset: " + match[1]);
+  }
+});
+
+test("empty guided-imagery filter retains a legitimate source page and reset clears every filter", () => {
+  assert.match(gallery, /consultCategory === "imagery"/);
+  assert.match(gallery, /\/" \+ locale \+ "\/services\/imagery-therapy"/);
+  assert.match(gallery, /setConsultCategory\("all"\); setConsultMaster\(""/);
+  assert.match(gallery, /setConsultFormat\(""/);
+  assert.match(gallery, /priceOnRequest: "Цена по запросу"/);
+  assert.match(gallery, /priceOnRequest: "Price on request"/);
+  assert.match(css, /\.consultPreviewGroup/);
+  assert.match(css, /\.consultDetailsLink/);
+  assert.match(css, /\.consultFallback/);
+});
 test("modified TSX and published source transpile without parser errors", () => {
   for (const [name, text] of [
     ["gallery.tsx", gallery], ["public-remote-support-masters.ts", publicOffers],

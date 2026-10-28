@@ -543,6 +543,10 @@
 .consultMedia { position:absolute; z-index:3; right:12px; top:99px; display:grid;
   place-items:center; width:43px; height:43px; border:1px solid #fff8;
   border-radius:50%; background:#062c27b8; color:#fff; }
+.consultPreviewGroup { position:relative; z-index:3; max-width:72%; padding:1px 0 3px; }
+.consultPreviewGroup > small { display:block; margin-bottom:5px; font-size:10px;
+  line-height:1.2; color:#ecf5e8; font-weight:750; text-shadow:0 1px 4px #06231d; }
+.consultPreviewGroup .consultPreviews { width:100%; max-width:100%; }
 .consultPreviews { position:relative; z-index:2; display:flex; width:max-content;
   max-width:66%; gap:5px; padding-bottom:7px; overflow-x:auto; }
 .consultPreviews button { position:relative; width:54px; height:46px; flex:0 0 54px;
@@ -558,6 +562,13 @@
 .consultDetails strong { font-size:17px; }
 .consultDetails p { margin:7px 0; color:#385246; font-size:13px; line-height:1.4; }
 .consultDetails small { color:#64766b; font-size:11px; }
+.consultDetailsLink,.consultFallback a { display:inline-flex; gap:5px; align-items:center;
+  justify-content:center; min-height:42px; padding:8px 10px; border:1px solid #9adcb9;
+  border-radius:10px; color:#087354; background:#eaf9ef; font-weight:800;
+  font-size:12px; text-decoration:none; }
+.consultDetailsLink { margin:4px 7px 7px 0; }
+.consultFallback { max-width:460px; line-height:1.45; }
+.consultFallback a { display:flex; margin:8px auto 0; }
 .consultRail { display:flex; gap:10px; min-width:0; max-width:100%;
   padding:3px 4px 10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
 .consultCard { display:flex; flex:0 0 clamp(156px,23%,215px); flex-direction:column;
@@ -605,7 +616,9 @@
   .hero[data-support-consultation-hero="true"] .price { font-size:16px; }
   .consultProvider { font-size:10px; margin-top:4px; }
   .consultMedia { top:60px; right:9px; width:39px; height:39px; }
-  .consultPreviews { max-width:70%; }
+  .consultPreviewGroup { max-width:74%; padding-bottom:2px; }
+  .consultPreviewGroup > small { font-size:9px; margin-bottom:3px; }
+  .consultPreviews { max-width:100%; }
   .consultPreviews button { width:44px; height:39px; flex-basis:44px; }
   .hero[data-support-consultation-hero="true"] .arrows { top:43%; right:6px; }
   .hero[data-support-consultation-hero="true"] .actions { gap:6px; }
