@@ -364,7 +364,7 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
         </div>
         {sector === "money" ? <p className={styles.amountHint}>{t.optional}</p> : null}
       </section>
-      <footer className={styles.actions}>
+      <footer className={styles.actions} data-support-goal-actions>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
         </button>
