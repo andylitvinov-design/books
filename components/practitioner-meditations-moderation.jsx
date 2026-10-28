@@ -88,12 +88,12 @@ export default function PractitionerMeditationsModeration(){
            <div style={{display:'grid',gap:8}}>
              <strong>Delivery handoff · {item.language.toUpperCase()}</strong>
              {item.canUpload?
-               <><p style={{margin:0}}>Owner-verified OAuth delivery is pending. Download the approved MP4 and use the existing uploader only if you accept a manual handoff; do not re-upload if provider status is uncertain.</p>
+               <><p style={{margin:0}}>Owner-verified OAuth delivery is pending. Import the approved video and use the existing uploader only if you accept a manual handoff; do not re-upload if provider status is uncertain.</p>
                  <div className="practitioner-cabinet-actions">
-                   <a href={videoUrl} target="_blank" rel="noreferrer noopener">Open approved video</a>
+                   <a href={videoUrl} target="_blank" rel="noreferrer noopener">Preview approved video</a>
                    <a href={'/admin/youtube-upload?meditation='+encodeURIComponent(item.id)}>Import into verified {item.language.toUpperCase()} YouTube uploader</a>
                  </div></>:
-               <p style={{margin:0}}>YouTube upload blocked: first produce a final MP4 from the approved voice/video and verify the target channel. No duplicate upload.</p>}
+               <p style={{margin:0}}>YouTube upload blocked: first produce a final MP4 or WebM video from the approved voice/video and verify the target channel. No duplicate upload.</p>}
            </div>}
          {item.status==='uploaded'&&item.youtubeVideoId&&<a target="_blank" rel="noopener noreferrer" href={'https://www.youtube.com/watch?v='+item.youtubeVideoId}>Verified YouTube video</a>}
        </section>
