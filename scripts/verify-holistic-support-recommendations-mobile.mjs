@@ -33,6 +33,12 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ": public route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
+          // The server-rendered native radio exists before React hydration;
+          // wait for handlers to attach before checking exclusive state.
+          await page.waitForFunction(() => {
+            const input = document.querySelector('[data-support-focus="relationships"]');
+            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+          }, null, { timeout: 30000 });
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + ": four accessible self-ratings");
           assert.equal(await root.locator('[data-support-detailed-analysis]').getAttribute("href"),
