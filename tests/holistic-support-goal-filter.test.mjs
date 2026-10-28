@@ -48,7 +48,13 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(css, /\.axis \{ display: grid;/);
   assert.match(css, /\.metricsGroup \{/);
   assert.match(css, /@media \(max-width: 360px\)/);
-  assert.match(css, /position: sticky/);
+  assert.match(css, /\.actions \{ position: static;/);
+  assert.doesNotMatch(css, /\.actions \{ position: sticky|\.actions \{ bottom: calc/);
+  assert.match(css, /\.panel \.apply \{/);
+  assert.match(css, /\.panel \.reset \{/);
+  assert.match(css, /\.panel \.sector \{/);
+  assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
+  assert.match(editor, /data-support-goal-actions/);
   assert.match(css, /prefers-reduced-motion/);
   for (const sector of ["energy","money","love","goals","meaning"]) {
     const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
