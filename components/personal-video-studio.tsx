@@ -193,7 +193,11 @@ export function PersonalVideoStudio({ locale }: { locale: PublicLocale }) {
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       const session: MicSession = { recorder, stream, chunks: [], cancelled: false, timer: 0 };
       micRef.current = session;
-      recorder.ondataavailable = event => { if (event.data.size) session.chunks.push(event.data); };
+      recorder.ondataavailable = event => {
+        if (event.data.size) session.chunks.push(event.data);
+        if (session.chunks.reduce((size, chunk) => size + chunk.size, 0) > 15_000_000)
+          endMic(session, true);
+      };
       recorder.onerror = () => { setVoiceError(t.micError); stopVoice(true); };
       recorder.onstop = () => {
         window.clearTimeout(session.timer);
@@ -212,6 +216,9 @@ export function PersonalVideoStudio({ locale }: { locale: PublicLocale }) {
       session.timer = window.setTimeout(() => endMic(session, false), 60_000);
     } catch {
       stream?.getTracks().forEach(track => track.stop());
+      // A failed start must not leave an inert session blocking the next tap.
+      const active = micRef.current;
+      if (active && active.stream === stream) micRef.current = null;
       setMicRecording(false);
       setVoiceError(t.micError);
     }
