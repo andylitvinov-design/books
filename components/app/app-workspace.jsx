@@ -22,6 +22,7 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { TestResultDiscussion } from '@/components/app/test-result-discussion'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { TestDynamics } from '@/components/app/test-dynamics'
@@ -3073,6 +3074,7 @@ function ResultPage({ id, locale, data }) {
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
       <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
+      <TestResultDiscussion key={result.id} result={result} locale={locale} initiallyOpen={searchParams?.get('discuss') === '1'} />
       <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
         {canRepeat
