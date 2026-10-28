@@ -351,7 +351,7 @@ export function RemoteEnergySupportBooking({
     setMinimumDay(localDateToday());
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Toronto");
     const stagedIntention = takeRemoteSupportLandingIntention();
-    if (stagedIntention) setIntention(previous => previous || stagedIntention);
+    if (stagedIntention) setIntention(stagedIntention);
   }, []);
   useEffect(() => {
     if (budgetOptions.length && !budgetOptions.some((option) => option.duration === duration)) {
