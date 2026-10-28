@@ -86,6 +86,7 @@ const compactLabels = {
     paidOff: "API rendering is OFF to prevent charges. You can prepare the scene free; no video has been generated yet.",
     paidOn: "Paid API mode: check the current Kling price and approve this one job before generating.",
     ownerRights: "I own this public portrait and allow this specific transfer to Kling.",
+    renderFree: "Create free 12s video", renderingFree: "Creating video on this device", downloadFree: "Download video", exportDone: "Local video is ready. No Kling credits were used.", exportUnavailable: "Recording is not supported here. You can still save the photo and prepare the Kling Web draft.",
   },
   ru: {
     help: "Справка и настройки API", selected: "Выбранный сюжет", photo: "Ваша публичная фотография", imageReady: "Фото подставлено. В сценарии лицо должно оставаться узнаваемым.",
@@ -94,6 +95,7 @@ const compactLabels = {
     paidOff: "API-рендер выключен во избежание расходов. Можно бесплатно подготовить сценарий; видео пока не создано.",
     paidOn: "Платный API: проверьте реальную стоимость Kling и подтвердите только один рендер.",
     ownerRights: "Это моя публичная фотография; я разрешаю передать её Kling только для этого ролика.",
+    renderFree: "Создать бесплатное видео · 12 сек", renderingFree: "Создание видео на устройстве", downloadFree: "Скачать видео", exportDone: "Видео создано на устройстве. Кредиты Kling не списаны.", exportUnavailable: "Запись видео не поддерживается в этом браузере. Сохранение фото и создание черновика через Kling Web доступны.",
   },
   es: {
     help: "Ayuda y configuración", selected: "Escena seleccionada", photo: "Tu retrato público", imageReady: "Foto seleccionada. El prompt conserva el rostro reconocible.",
@@ -102,6 +104,7 @@ const compactLabels = {
     paidOff: "La API está desactivada para evitar cargos. Puedes preparar gratis la escena; todavía no se ha creado un vídeo.",
     paidOn: "API de pago: revisa el precio de Kling y aprueba únicamente esta generación.",
     ownerRights: "Soy titular de esta foto pública y autorizo enviarla a Kling solo para este vídeo.",
+    renderFree: "Crear vídeo gratis · 12 s", renderingFree: "Creando vídeo en este dispositivo", downloadFree: "Descargar vídeo", exportDone: "Vídeo listo en este dispositivo, sin créditos Kling.", exportUnavailable: "Este navegador no admite la grabación. Puedes guardar la foto y preparar un borrador en Kling Web.",
   },
 } as const;
 
@@ -121,6 +124,9 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
   const [lookupId, setLookupId] = useState("");
   const [externalLookup, setExternalLookup] = useState(false);
   const [message, setMessage] = useState("");
+  const [renderingFree, setRenderingFree] = useState(false);
+  const [renderPercent, setRenderPercent] = useState(0);
+  const [localVideo, setLocalVideo] = useState<{url:string;extension:"mp4"|"webm"} | null>(null);
   const t = translations[lang];
   const labels = compactLabels[lang];
   const connected = configured && enabled;
@@ -145,6 +151,26 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
       setMessage(t.copied);
     } catch { setMessage(t.copyError); }
   }
+  useEffect(() => {
+    return () => { if (localVideo?.url) URL.revokeObjectURL(localVideo.url); };
+  }, [localVideo?.url]);
+
+  async function renderFreeVideo() {
+    if (renderingFree || pending || mode !== "image" || imageUrl !== OWNER_WEALTH_PHOTO_URL) return;
+    setRenderingFree(true); setRenderPercent(0); setMessage("");
+    try {
+      // Lazy-loaded: zero video encoder or API overhead until the owner presses this button.
+      const { createFreeWealthClip } = await import("@/lib/wealth-video-local");
+      const result = await createFreeWealthClip(lang, value => setRenderPercent(value));
+      setLocalVideo({url:URL.createObjectURL(result.blob),extension:result.extension});
+      setMessage(labels.exportDone);
+    } catch {
+      setMessage(labels.exportUnavailable);
+    } finally {
+      setRenderingFree(false);
+    }
+  }
+
   async function generate() {
     if (pending || !approved || !connected) return;
     setPending(true);
@@ -228,13 +254,24 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
     <div className="kling-studio-free-panel">
       <strong>{labels.freeTitle}</strong>
       <div className="kling-studio-free-actions">
-        <button type="button" className="site-video-admin-button site-video-admin-button--primary" onClick={copyPrompt}>
+        {mode === "image" && imageUrl === OWNER_WEALTH_PHOTO_URL && <button type="button"
+          className="site-video-admin-button site-video-admin-button--primary"
+          disabled={renderingFree || pending} onClick={renderFreeVideo}>
+          <Film size={17} aria-hidden="true"/>
+          {renderingFree ? `${labels.renderingFree} · ${renderPercent}%` : labels.renderFree}
+        </button>}
+        <button type="button" className="site-video-admin-button" onClick={copyPrompt}>
           <Copy size={17} aria-hidden="true"/>{t.draft}
         </button>
         <a href="https://kling.ai/" target="_blank" rel="noopener noreferrer">
           {t.manual}<ExternalLink size={16} aria-hidden="true"/>
         </a>
       </div>
+      {localVideo && mode === "image" && imageUrl === OWNER_WEALTH_PHOTO_URL && <div className="kling-studio-local-result">
+        <video controls playsInline preload="metadata" src={localVideo.url} aria-label={labels.downloadFree}/>
+        <a href={localVideo.url} download={`holistic-house-money-flow-${lang}.${localVideo.extension}`}
+          className="site-video-admin-button site-video-admin-button--primary">{labels.downloadFree} {localVideo.extension.toUpperCase()}</a>
+      </div>}
       <p>{labels.photoStep}</p>
       {message && <p className="kling-studio-inline-message" role="status">{message}</p>}
     </div>
