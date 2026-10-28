@@ -51,6 +51,16 @@ for (const engine of [chromium, webkit]) {
         });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
         await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+          // The last-registered directory fixture has priority over the broad
+          // /api/** guard. Never return a synthetic success for a non-GET write.
+          if (route.request().method() !== "GET") {
+            blockedApiWrites.push({
+              method: route.request().method(),
+              path: new URL(route.request().url()).pathname,
+            });
+            await route.abort("blockedbyclient");
+            return;
+          }
           const kind = new URL(route.request().url()).searchParams.get("kind");
           interceptedDirectories.push(kind === "consultation" ? "consultation" : "masters");
           await route.fulfill({ status: 200, contentType: "application/json",
