@@ -61,6 +61,7 @@ const copy = {
     meditationSectionTitle: "Meditations · Videos",
     meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
     meditationMandalaAction: "Create a free personal video · photo and animated templates",
+    personalVoiceAction: "Create free video with my photo + voice",
     meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
     meditationVideoTitle: "Flight to the Sun · Original English video",
     meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
@@ -232,6 +233,9 @@ export default async function HolisticSupportPage({ params }: Props) {
               <p>{t.meditationSectionLead}</p>
             </div>
           </header>
+          <Link href={"/" + locale + "/video-studio"} className={styles.mandalaAction} prefetch={false} data-holistic-personal-voice-entry>
+            <span aria-hidden="true">▶</span><span>{t.personalVoiceAction}</span><span aria-hidden="true">→</span>
+          </Link>
           <Link href={"/" + locale + "/holistic-support/mandala"} className={styles.mandalaAction} prefetch={false} data-holistic-mandala-entry>
             <span aria-hidden="true">✺</span><span>{t.meditationMandalaAction}</span><span aria-hidden="true">→</span>
           </Link>
