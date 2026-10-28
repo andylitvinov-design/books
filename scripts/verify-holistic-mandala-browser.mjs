@@ -291,6 +291,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
 
+        // Guard against reintroducing the double bottom navigation visible
+        // in the owner's iPhone screenshots. The Support dock is the single
+        // canonical navigation for this video editor, never a nested second.
+        const dock = page.locator("[data-mandala-support-bottom-nav]");
+        await dock.waitFor({ state: "visible", timeout: 10000 });
+        assert.equal(await dock.count(), 1, engine + " exactly one Support dock");
+        assert.equal(await dock.locator("a").count(), 4, engine + " dock keeps four real links");
+        assert.equal(await dock.locator('button[aria-controls="mandala-support-settings"]').count(),
+          1, engine + " single settings action");
+        assert.equal(await page.locator('nav[aria-current="page"]').count(), 0,
+          engine + " no duplicate legacy editor dock");
+
         const overflow = await page.evaluate(() => ({
           view: window.innerWidth,
           page: document.documentElement.scrollWidth,
