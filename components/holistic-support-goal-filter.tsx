@@ -6,6 +6,12 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
 export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
+export type GoalCheckinKey = "energy" | "money" | "relationships" | "goals" | "meaning";
+// Explicit single-source-of-truth mapping. Meaning is NOT the Goals check-in.
+export const goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey> = {
+  energy: "energy", money: "money", love: "relationships",
+  goals: "goals", meaning: "meaning",
+};
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
 export type GoalCurrency = "CAD" | "EUR" | "USD" | "GBP";
@@ -17,6 +23,9 @@ export const GOAL_RECOMMENDATION_FORMATS = [
 ] as const;
 export type GoalRecommendationFormat = typeof GOAL_RECOMMENDATION_FORMATS[number];
 export type GoalSectorSnapshot = {
+  // Captured from the same live slider shown in the top-left self-rating card.
+  // If that shared slider changes, "Accepted" must no longer be shown.
+  checkin?: number;
   concerns: string[];
   tasks: string[];
   ratings: Record<string, GoalRating>;
@@ -175,6 +184,8 @@ const ui = {
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
+    checkinTitle: "Overall now",
+    checkinHint: "Same rating as the top-left check-in",
     formatTitle: "4. What would you like to receive?",
     formatHelp: "All formats are included. Uncheck anything you don't want to see.",
     formatLabels: {
@@ -194,6 +205,8 @@ const ui = {
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
+    checkinTitle: "Общая оценка сейчас",
+    checkinHint: "Связана с оценкой вверху слева",
     formatTitle: "4. Что включить в рекомендации?",
     formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
     formatLabels: {
@@ -213,6 +226,8 @@ const ui = {
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
+    checkinTitle: "Valoración general actual",
+    checkinHint: "La misma puntuación del bloque superior izquierdo",
     formatTitle: "4. ¿Qué quieres en las recomendaciones?",
     formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
     formatLabels: {
@@ -238,7 +253,8 @@ export function summarizeGoalSelection(locale: PublicLocale, selection: GoalSele
 
 type Props = {
   locale: PublicLocale;
-  scores: Record<"energy" | "money" | "relationships" | "goals", number>;
+  scores: Record<GoalCheckinKey, number>;
+  onCheckinChange: (sector: GoalSector, value: number) => void;
   initial: GoalSelection | null;
   preferredSector?: GoalSector;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
@@ -251,8 +267,8 @@ type Props = {
 };
 
 export function HolisticSupportGoalFilter({
-  locale, scores, initial, preferredSector, savedSectors, selectedFormats, onSelectedFormatsChange,
-  onSave, onApply, onReset, onClose,
+  locale, scores, onCheckinChange, initial, preferredSector, savedSectors,
+  selectedFormats, onSelectedFormatsChange, onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
   const initialSector = preferredSector ?? initial?.sector ?? "energy";
@@ -268,8 +284,10 @@ export function HolisticSupportGoalFilter({
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
   const selected = sectors[sector];
+  const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
-  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id]);
+  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id] &&
+    accepted[id]?.checkin === scores[goalSectorCheckinKey[id]]);
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
@@ -317,7 +335,7 @@ export function HolisticSupportGoalFilter({
       if (item.unit === "score") values[item.id] = getRating(item.id, index);
       else if (amounts[item.id]) entered[item.id] = amounts[item.id];
     });
-    return { concerns: [...concerns], tasks: [...tasks], ratings: values,
+    return { checkin: currentCheckin, concerns: [...concerns], tasks: [...tasks], ratings: values,
       ...(sector === "money" ? { amounts: entered, currency } : {}) };
   }
   function saveCurrent() {
@@ -375,6 +393,21 @@ export function HolisticSupportGoalFilter({
           ))}
         </nav>
         <div className={styles.fields} data-support-goal-details>
+          <label className={styles.sharedCheckin} data-support-goal-checkin={sector}>
+            <span className={styles.sharedCheckinTop}>
+              <strong>{t.checkinTitle}</strong>
+              <output data-support-goal-checkin-value>{currentCheckin}/10</output>
+            </span>
+            <input type="range" min="1" max="10" step="1"
+              data-support-goal-checkin-input value={currentCheckin}
+              aria-label={t.labels[sector] + ": " + t.checkinTitle}
+              aria-valuetext={currentCheckin + " / 10"}
+              onChange={event => {
+                onCheckinChange(sector, Number(event.target.value));
+                markDirty();
+              }} />
+            <small>{t.checkinHint}</small>
+          </label>
           <section className={styles.fieldGroup} aria-labelledby="goal-problems">
             <h3 id="goal-problems">{t.current}</h3>
             <p>{t.select}</p>
