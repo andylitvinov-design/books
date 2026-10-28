@@ -575,6 +575,22 @@
   .gallerySelection { font-size: 10.5px; }
 }
 
+/* At 391–430px the larger type used to push the main video below the
+   285px first-fold budget. Keep readable text while reclaiming vertical space. */
+@media (min-width: 391px) and (max-width: 640px) {
+  .assessment, .tools { padding-top: 7px; padding-bottom: 5px; }
+  .assessment h1, .tools h2 { min-height: 22px; margin-bottom: 2px; }
+  .scaleList { gap: 1px; }
+  .scaleRow { min-height: 31px; grid-template-rows: 14px 17px; }
+  .scaleRow input { height: 17px; }
+  .scaleIcon { width: 18px; height: 18px; }
+  .toolGrid { grid-template-rows: repeat(2,minmax(0,65px)); gap: 4px; }
+  .toolButton, .toolButton:last-child { min-height: 65px; padding: 4px 2px; gap: 3px; }
+  .toolShortcuts { margin-top: 4px; }
+  .toolShortcuts button { min-height: 24px; }
+  .photo { width: min(100%,94px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }
