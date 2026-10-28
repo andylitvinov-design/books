@@ -59,7 +59,7 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
 const copy = {
   en: {
     assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
-    focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
+    focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo", videoMandala: "Video mandala",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
@@ -73,9 +73,9 @@ const copy = {
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
-    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Energy Healing", masters: "Masters" },
-    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Energy", masters: "Masters" },
-    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
+    options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters" },
+    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters" },
+    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Reiki" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
@@ -93,8 +93,8 @@ const copy = {
     mysteryCourses: "Original mystery courses", mysterySource: "Russian originals · PsiMaster archive",
     watchLesson: "Watch lesson", openCourse: "Explore course", lessonCount: "videos",
     originalCourseVideos: "Original course recordings",
-    healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
-    healingMasters: "Browse masters", healingServices: "Energy support services",
+    healingTitle: "Reiki support", healingIntro: "Find published practitioners or remote energy support services.",
+    healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
@@ -104,7 +104,7 @@ const copy = {
   },
   ru: {
     assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
-    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
+    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото", videoMandala: "Видео-мандала",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
@@ -118,9 +118,9 @@ const copy = {
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
-    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Энергетическая поддержка", masters: "Мастера" },
-    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Энергия", masters: "Мастера" },
-    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
+    options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера" },
+    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера" },
+    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Рейки" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
@@ -138,8 +138,8 @@ const copy = {
     mysteryCourses: "Курсы мистерий", mysterySource: "Оригинал на русском · архив PsiMaster",
     watchLesson: "Смотреть урок", openCourse: "Открыть программу", lessonCount: "видео",
     originalCourseVideos: "Оригинальные видеоуроки",
-    healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
-    healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
+    healingTitle: "Рейки поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
+    healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
@@ -149,7 +149,7 @@ const copy = {
   },
   es: {
     assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
-    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
+    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto", videoMandala: "Vídeo mandala",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
@@ -163,9 +163,9 @@ const copy = {
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
-    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Sanación energética", masters: "Guías" },
-    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Energía", masters: "Guías" },
-    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
+    options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías" },
+    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías" },
+    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Reiki" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
@@ -183,8 +183,8 @@ const copy = {
     mysteryCourses: "Cursos originales de misterios", mysterySource: "Audio original en ruso · archivo PsiMaster",
     watchLesson: "Ver lección", openCourse: "Ver programa", lessonCount: "vídeos",
     originalCourseVideos: "Lecciones originales en vídeo",
-    healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
-    healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
+    healingTitle: "Apoyo Reiki", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
+    healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
@@ -395,6 +395,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
+            <Link href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
+              className={styles.videoMandalaShortcut} data-support-video-mandala
+              aria-label={t.videoMandala}>
+              <Sparkles size={15} aria-hidden="true" /><span>{t.videoMandala}</span>
+            </Link>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <div className={styles.focusSelector} data-support-active-focus aria-label={t.focusLabel}>
               <span className={styles.focusCaption}>{t.focusLabelShort}</span>

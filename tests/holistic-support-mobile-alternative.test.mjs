@@ -126,9 +126,9 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /<TaoistTalismanCatalog/);
   assert.match(client, /hidden=\{!talismanCatalogOpen\}/);
   assert.match(client, /id: "healing", Icon: HandHeart/);
-  assert.match(client, /pump: "Courses", healing: "Energy Healing"/);
-  assert.match(client, /pump: "Курсы", healing: "Энергетическая поддержка"/);
-  assert.match(client, /pump: "Cursos", healing: "Sanación energética"/);
+  assert.match(client, /pump: "Courses", healing: "Reiki support"/);
+  assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
+  assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
   assert.match(client, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
@@ -298,4 +298,53 @@ test("original Russian mysteries are visible in Courses mode as 3 iPhone cards a
   assert.match(css, /\.mysteryPickerCard:focus-visible/);
   assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
   assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
+});
+
+test("central photo links to existing private Video Mandala studio in EN/RU/ES", () => {
+  const mandalaPage = read("app/[locale]/holistic-support/mandala/page.tsx");
+  const mandalaClient = read("components/mandala-meditation-client.tsx");
+  const profile = client.split('<section className={styles.profile}')[1].split('</section>')[0];
+  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-video-mandala'),
+    "mandala button follows the photo");
+  assert.match(profile, /data-support-video-mandala/);
+  assert.match(profile, /"\/holistic-support\/mandala"/);
+  for (const label of ["Video mandala", "Видео-мандала", "Vídeo mandala"]) {
+    assert.ok(client.includes(label), "localized action: " + label);
+  }
+  assert.match(mandalaPage, /MandalaMeditationClient/);
+  assert.match(mandalaClient, /MandalaFreeVideoStudio|data-mandala/);
+  assert.match(css, /\.videoMandalaShortcut/);
+  assert.match(css, /\.profile > \.videoMandalaShortcut/);
+  assert.doesNotMatch(profile, /fetch\(|sessionStorage|localStorage/);
+});
+
+test("4 Reiki intention filters show ONLY published Reiki methods and never invent a booking", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const galleryCss = read("components/holistic-support-master-gallery.module.css");
+  const talismanCss = read("components/holistic-support-talisman-viewer.module.css");
+  assert.match(gallery, /data-support-reiki-filters/);
+  for (const [key,method] of [["strength","Kundalini Reiki"],["love","Tantra Reiki"],
+    ["purpose","Runic Reiki"],["balance","Reiki Yggdrasil"]]) {
+    assert.ok(gallery.includes(key + ":"), "real intent " + key);
+    assert.ok(gallery.includes(method), "practice label " + method);
+  }
+  for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
+    assert.ok(gallery.includes(title), title);
+  }
+  assert.match(gallery, /kind === "healing" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
+  assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
+  assert.match(gallery, /data-support-reiki-unavailable/);
+  assert.match(gallery, /setReikiFocus\("love"\)/);
+  assert.match(gallery, /onClick=\{\(\) => \{ setReikiFocus\(value\); setMethod\(""\);/);
+  assert.match(gallery, /<RemoteEnergySupportBooking/);
+  assert.match(gallery, /mode="inline" selectedKind="energy"/);
+  assert.doesNotMatch(gallery, /handlePayment|createPaymentIntent|new ServiceOffering|autoSubmit/);
+  assert.match(galleryCss, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(galleryCss, /\.reikiFocusButton\[aria-pressed="true"\]/);
+  assert.match(galleryCss, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(talismanCss, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(galleryCss, /height: 282px; min-height: 282px; max-height: 282px/);
+  assert.match(talismanCss, /height: 282px; min-height: 282px; max-height: 282px/);
+  assert.match(css, /\.hero \{ min-height: 288px;/);
 });
