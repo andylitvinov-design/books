@@ -299,7 +299,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }, [enabled,clientId,locale])
 
   function chooseTarget(next) {
-    if (busy || authPending || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
+    if (busy || authPending || importingTelegramCut || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
       setError(t.more);return
     }
     if (next === target) return
@@ -322,7 +322,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   function connect() {
-    if (!oauthClient.current || busy || authPending) {setError(t.errors.google_unavailable);return}
+    if (!oauthClient.current || busy || authPending || importingTelegramCut) {setError(t.errors.google_unavailable);return}
     setAuthPending(true)
     pendingTarget.current = target
     setError('')
@@ -370,7 +370,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }
   function queueFiles(files) {
     if (files.length === 0) return
-    if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
+    if (importingTelegramCut || entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
     if (unfinished.length + files.length > 10) {setError(t.errors.too_many);return}
     if (files.some(file => !isVideoFile(file))) {setError(t.errors.invalid_file);return}
@@ -416,6 +416,11 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
       const bytes=new Uint8Array(await fileResponse.arrayBuffer())
       if(!isOwnerTelegramMp4(bytes,selected.bytes))
         throw Error('telegram_cut_unavailable')
+      const ruToken=authorizedChannels.current.get('ru')
+      if(targetRef.current!=='ru'||ruToken?.details?.id!==channelsRef.current.ru?.id||
+        ruToken.token.expiresAt<Date.now()+30_000||
+        entriesRef.current.some(item=>item.state!=='done'))
+        throw Error('telegram_cut_state')
       queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})])
       setMessage(t.telegramCutImported)
     }catch(reason){setError(humanError(reason,t))}
@@ -540,7 +545,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const pending = entries.filter(item => item.state !== 'done')
   const unresolvedUpload = entries.some(uploadNeedsRecovery)
   const canUpload = Boolean(enabled && historyStatus && connectedCorrectly && !busy && !authPending && pending.length &&
-    !hasUnarchivedCompletedUpload(entries) &&
+    !hasUnarchivedCompletedUpload(entries) && !importingTelegramCut &&
     pending.every(item => item.target === target))
   const filteredHistory = historyFilter === 'all' ? history : history.filter(item => item.target === historyFilter)
   return (
@@ -577,7 +582,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </button>
       </div>}
       {!historyStatus && <p className={styles.unavailable} role="status">{t.historyUnavailable}</p>}
-      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy}>
+      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy || importingTelegramCut}>
         <legend>{t.target}</legend>
         <div className={styles.targets}>
           {(['ru','en']).map(lang => (
@@ -590,7 +595,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </fieldset>
       {enabled && <div className={styles.connect}>
-        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || !historyStatus} onClick={connect}>
+        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || importingTelegramCut || !historyStatus} onClick={connect}>
           {authPending ? t.signing : connectedCorrectly ? t.reconnect : t.connect}
         </button>
         {connectedCorrectly && <span className={styles.channel}>✓ {t.connected}: <strong>{connected.name}</strong></span>}
@@ -621,7 +626,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         <label className={styles.picker}>
           <span>＋ {t.select}</span>
           <input type="file" accept="video/*,.mp4,.mov,.m4v,.webm" multiple
-            disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly || unresolvedUpload}
+            disabled={!configured || !historyStatus || busy || authPending || pairBusy || importingTelegramCut || !connectedCorrectly || unresolvedUpload}
             onChange={addFiles}/>
         </label>
         {entries.length > 0 && <div className={styles.files}>
