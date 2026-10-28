@@ -808,7 +808,7 @@ test('Dot status and existing cron reconcile only recorded IDs, never re-upload'
  const cron=readFileSync(new URL('../app/api/internal/housekeeping/route.js',import.meta.url),'utf8')
  assert.match(service,/export async function reconcilePendingOwnerYoutubeVideo/)
  assert.match(service,/knownVideoId=videoId/)
- assert.match(service,/knownVideoId\?\s*\?'⏳ YouTube получил видео/)
+ assert.match(service,/knownVideoId\s*\?'⏳ YouTube получил видео/)
  assert.match(service,/row\\?\\.state!=='uncertain'\\|\\|!row\\.youtube_video_id/)
  assert.match(service,/if\\(row\\?\\.state==='uncertain'&&row\\.youtube_video_id\\)/)
  assert.match(service,/background:\\(\\)=>verifyUncertain\\(/)
