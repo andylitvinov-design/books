@@ -244,7 +244,7 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
 // No fake play icons or misleading pictures of actors.
 // Tap to play exactly one visible thumbnail, without autoplay or 12 decoders.
 function NativeFilmThumbnail({ film, id, photo, title, playing }: {
-  film: { src: string; poster: string };
+  film: Pick<FilmSource, "src" | "poster">;
   id: string; photo: HTMLImageElement | null; title: string; playing: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -327,7 +327,12 @@ function paint(
   const height = ctx.canvas.height;
   const adjustedTime = time * (speed === "dynamic" ? 1.45 : .76);
   if (theme !== "money") {
-    paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
+    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 &&
+        getThemedRealFilm(theme, otherScene)) {
+      paintRealThemedVideoFrame(ctx, art, theme, adjustedTime, title, realVideo);
+    } else {
+      paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
+    }
     if(brightness === "bright"){
       ctx.fillStyle="rgba(255,246,197,.075)";ctx.fillRect(0,0,width,height);
     }
@@ -472,10 +477,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
+  const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
+  const activeFilm = activeMoneyFilm || activeThemedFilm;
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
-  const source = theme==="money" && backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl;
+  const source = activeFilm && backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl;
   const sceneName = theme === "money"
     ? moneyTemplateLabels[moneyScene || "golden-rain"]?.[locale] ||
       moneyScenes.find(item => item.id === moneyScene)?.label[locale] || ""
@@ -486,7 +493,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     effect,aspect,duration,quality,speed,brightness,music,caption]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
-  const canGenerate = Boolean(source) && (theme!=="money" || premiumReady) && (backgroundOnly || !photoUrl || photoConsent) && !preparing && !recording;
+  const canGenerate = Boolean(source) && (!activeFilm || premiumReady) && (backgroundOnly || !photoUrl || photoConsent) && !preparing && !recording;
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
@@ -547,18 +554,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
     setPremiumReady(false);
-  },[activeMoneyFilm?.src]);
+  },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
     if(!video)return;
-    if(!activeMoneyFilm || (!previewPlaying && !recording && !preparing)){
+    if(!activeFilm || (!previewPlaying && !recording && !preparing)){
       video.pause();
       return;
     }
     video.muted=true;
     video.loop=true;
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
-  },[activeMoneyFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
+  },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
   // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
   // tapped: selection itself is the explicit playback gesture.
@@ -619,7 +626,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(music !== "none" && !musicSession) setMusicWarning(ui.musicFallback);
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
-      if(theme==="money") {
+      if(activeFilm) {
         const master=premiumVideoRef.current;
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
         await master.play();
@@ -781,11 +788,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
-      {activeMoneyFilm ? <video
-        key={activeMoneyFilm.src} ref={premiumVideoRef}
-        src={activeMoneyFilm.src} poster={activeMoneyFilm.poster}
+      {activeFilm ? <video
+        key={activeFilm.src} ref={premiumVideoRef}
+        src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
-        data-mandala-master-mp4={activeMoneyFilm.src}
+        data-mandala-master-mp4={activeFilm.src}
         onCanPlay={()=>setPremiumReady(true)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
@@ -826,7 +833,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <h3 id="video-theme-heading">{ui.stepTheme}</h3>
           <div className={videoStyles.themeGrid} role="group" aria-label={ui.stepTheme}>
             {themeChoices.map(item=>{
-              const Icon=item==="money"?Coins:item==="relationships"?Heart:item==="energy"?Leaf:Target;
+              const Icon=item==="money"?Coins:item==="relationships"?Heart:item==="energy"?Leaf:item==="life"?Sprout:item==="health"?HeartPulse:Target;
               return <button type="button" key={item} data-video-theme={item}
                 className={videoStyles.themeButton} data-theme={item}
                 disabled={recording||preparing} aria-pressed={theme===item}
@@ -857,7 +864,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
 
-      {theme==="money" && <fieldset className={videoStyles.backgroundMode} data-mandala-output-mode disabled={recording||preparing}>
+      {activeFilm && <fieldset className={videoStyles.backgroundMode} data-mandala-output-mode disabled={recording||preparing}>
         <legend>{ui.renderMode}</legend>
         <div className={videoStyles.backgroundChoices}>
           <button type="button" aria-pressed={!backgroundOnly} onClick={()=>setBackgroundOnly(false)}>
@@ -867,6 +874,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {backgroundOnly?<small>{ui.backgroundHint}</small>:null}
       </fieldset>}
+      {theme==="health" && <p data-video-health-disclaimer role="note"
+        className={videoStyles.healthNote}>{ui.healthNote}</p>}
       <section className={videoStyles.templates} data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
@@ -901,9 +910,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(false);}}>
-              <ThemedSceneThumbnail theme={theme} scene={other.id}
-                title={other.label[locale]} photo={sharedThumbnailPhoto}/>
+              onClick={()=>{
+                setSuggestion("");
+                const film=getThemedRealFilm(theme,other.id);
+                if (film && otherScene===other.id && previewPlaying) setPreviewPlaying(false);
+                else {
+                  setOtherScene(other.id);
+                  setBackgroundOnly(Boolean(film && backgroundOnly));
+                  setPreviewPlaying(Boolean(film));
+                }
+              }}>
+              {getThemedRealFilm(theme, other.id) ? (
+                <NativeFilmThumbnail
+                  film={getThemedRealFilm(theme, other.id)!}
+                  id={other.id} title={other.label[locale]}
+                  photo={backgroundOnly?null:sharedThumbnailPhoto}
+                  playing={otherScene===other.id&&previewPlaying&&!recording}
+                />
+              ) : (
+                <ThemedSceneThumbnail theme={theme} scene={other.id}
+                  title={other.label[locale]} photo={sharedThumbnailPhoto}/>
+              )}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
               {otherScene===other.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
