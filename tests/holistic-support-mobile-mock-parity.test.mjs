@@ -43,6 +43,9 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
   assert.match(css, /\.scaleDetail \{ display: grid; min-width: 0;/);
   assert.match(css, /\.profile > \.recommendButton/);
   assert.match(css, /\.toolGrid > \.detailedAnalysisLink/);
+  // Rule must beat the generic .page button { font: inherit } declaration.
+  assert.match(css, /\.page \.toolButton \{[\s\S]*?font-size: clamp\(12px,3\.23vw,14px\)/);
+  assert.match(css, /\.page \.recommendButton \{[\s\S]*?font-size: clamp\(12px,3\.25vw,14px\)/);
   assert.match(client, /assessmentShort:/);
   assert.match(client, /toolsShort:/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
