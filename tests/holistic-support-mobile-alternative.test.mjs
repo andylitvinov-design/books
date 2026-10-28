@@ -39,6 +39,26 @@ test("personal scores and photos are local-only and accessible; no fake completi
   assert.match(client, /<TaoistTalismanCatalog/);
 });
 
+test("focus belongs to four scale rows or All, with exclusive radios and no second selector", () => {
+  assert.match(client, /useState<Focus>\("all"\)/);
+  assert.match(client, /type="radio" name="support-focus" value="all"/);
+  assert.match(client, /checked=\{focus === "all"\}/);
+  assert.match(client, /onChange=\{\(\) => chooseFocus\("all"\)\}/);
+  assert.match(client, /focusOrder\.map\(id =>/);
+  assert.match(client, /type="radio" name="support-focus" value=\{id\}/);
+  assert.match(client, /checked=\{focus === id\}/);
+  assert.match(client, /onChange=\{\(\) => chooseFocus\(id\)\}/);
+  assert.doesNotMatch(client, /className=\{styles\.focusSelector\}|select value=\{focus\}/);
+  assert.match(client, /recommendSupportContent\(\{ focus: recommendation\.focus/);
+  assert.match(client, /const wanted = choice === "pump".*focus === "all" \? null : focusTopics\[focus\]/);
+  assert.match(client, /setRecommendation\(null\)/);
+  assert.match(css, /\.allFocus/);
+  assert.match(css, /\.focusOption input\[type="radio"\]:checked/);
+  for (const label of ["All areas", "Все сферы", "Todas las áreas"]) {
+    assert.ok(client.includes(label), label);
+  }
+});
+
 test("four real recording cards from published sources, not arbitrary stock samples", () => {
   assert.match(route, /freeMeditationVideos\("ru"\)/);
   assert.match(route, /englishGuidedMeditations/);
