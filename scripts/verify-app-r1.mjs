@@ -437,7 +437,12 @@ async function verifyPublicServiceConversionJourneys(){
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    if(kind==='dao'){
+      const dao=servicePage.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao).toHaveCount(1)
+      await expect(dao).toHaveAttribute('lang',locale)
+      await expect(dao.getByRole('heading',{level:1,name:locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.',exact:true})).toBeVisible({timeout:30000})
+     }else await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')

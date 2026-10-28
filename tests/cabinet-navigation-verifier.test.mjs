@@ -11,14 +11,14 @@ for (const locale of ['en', 'ru']) {
     const events = []
     const profile = { name: 'profile', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
     const link = { name: 'link', first() { return this }, async click() {
       events.push('click'); page.url = origin + path
     } }
     const page = { name: 'page', url: origin + '/' + locale + '/app/portrait', locator(selector) {
-      if (selector === '[data-profile-domains][data-profile-interactive="true"]') return profile
+      if (selector === '[data-profile-domains][data-profile-mode="account"][data-profile-interactive="true"]') return profile
       if (selector === 'nav a[href="' + path + '"]:visible') return link
       assert.equal(selector, '[data-my-tests-dashboard]')
       return { name: 'dashboard' }
