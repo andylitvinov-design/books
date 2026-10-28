@@ -18,7 +18,7 @@ const AREAS = {
 }
 const COPY = {
   en: {
-    choose:'Find matching services',hide:'Hide service search',hint:'Topics, prices & formats',collapse:'Tap to collapse search',
+    choose:'Filter services',hide:'Hide filters',hint:'Topic · format · price',collapse:'Tap to close filters',
     kicker:'MY SERVICES · HOLISTIC HOUSE',title:'My services',intro:'Your offers, publication status and next steps.',
     search:'Search my services',placeholder:'Service name, topic or method…',
     area:'Topic',allAreas:'All topics',format:'Format',anyFormat:'Any format',online:'Online',inPerson:'In person',hybrid:'Online or in person',
@@ -30,7 +30,7 @@ const COPY = {
     allShort:'All',publishedShort:'Active',reviewShort:'In review',draftShort:'Drafts',
   },
   ru: {
-    choose:'Подобрать услуги',hide:'Свернуть поиск услуг',hint:'Темы, цены и форматы',collapse:'Нажмите, чтобы закрыть поиск',
+    choose:'Фильтры услуг',hide:'Скрыть фильтры',hint:'Тема · формат · цена',collapse:'Нажмите, чтобы закрыть фильтры',
     kicker:'МОИ УСЛУГИ · HOLISTIC HOUSE',title:'Мои услуги',intro:'Ваши предложения, публикации и дальнейшие шаги.',
     search:'Поиск по моим услугам',placeholder:'Название, тема или метод…',
     area:'Тема',allAreas:'Все темы',format:'Формат',anyFormat:'Любой формат',online:'Онлайн',inPerson:'Лично',hybrid:'Онлайн или лично',
@@ -42,7 +42,7 @@ const COPY = {
     allShort:'Все',publishedShort:'Активные',reviewShort:'Проверка',draftShort:'Черновики',
   },
   es: {
-    choose:'Buscar servicios',hide:'Ocultar búsqueda',hint:'Temas, precios y formatos',collapse:'Pulsa para cerrar la búsqueda',
+    choose:'Filtrar servicios',hide:'Ocultar filtros',hint:'Tema · formato · precio',collapse:'Cerrar filtros',
     kicker:'MIS SERVICIOS · HOLISTIC HOUSE',title:'Mis servicios',intro:'Tus servicios, publicaciones y próximos pasos.',
     search:'Buscar mis servicios',placeholder:'Nombre, tema o método…',
     area:'Tema',allAreas:'Todos los temas',format:'Formato',anyFormat:'Cualquier formato',online:'En línea',inPerson:'Presencial',hybrid:'En línea o presencial',
