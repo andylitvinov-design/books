@@ -1,5 +1,4 @@
 import {NextResponse} from 'next/server'
-import {randomUUID} from 'node:crypto'
 import sharp from 'sharp'
 import {getAppConfig,requestOrigin,requireSameOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
