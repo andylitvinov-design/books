@@ -35,6 +35,7 @@ const COPY = {
     authError:'Не удалось открыть Google-вход. Попробуйте ещё раз.',
     offline:'Не удалось проверить вход. Попробуйте ещё раз.',
     loginPrompt:'Нажмите на нужное действие — откроется вход через Google.',
+    promptTitle:'Войти в кабинет практика?', promptText:'Для создания услуг и работы с заявками нужна авторизация через Google. После входа вы вернётесь к этому же дизайну.', lookAround:'Продолжить просмотр',
     countUnknown:'—', defaultName:'Ваш профиль', emptyName:'Заполните профиль',
     loading:'Проверяем вход…', moderation:'Новые материалы остаются черновиками до проверки и публикации.',
     example:'Пример оформления', editTitle:'Мой профиль', next:'Открыть',
@@ -62,6 +63,7 @@ const COPY = {
     authError:'Google sign-in is unavailable. Please try again.',
     offline:'Could not check your session. Try again.',
     loginPrompt:'Choose an action to continue with Google.',
+    promptTitle:'Sign in to your workspace?', promptText:'Google sign-in is required to create services and manage requests. Afterwards, you will return to this same screen.', lookAround:'Keep exploring',
     countUnknown:'—', defaultName:'Your profile', emptyName:'Complete your profile',
     loading:'Checking sign-in…', moderation:'New materials remain drafts until approved for publication.',
     example:'Layout preview', editTitle:'My profile', next:'Open',
@@ -89,6 +91,7 @@ const COPY = {
     authError:'No se puede iniciar sesión con Google. Inténtalo de nuevo.',
     offline:'No se ha podido comprobar tu sesión. Inténtalo de nuevo.',
     loginPrompt:'Selecciona una acción para continuar con Google.',
+    promptTitle:'¿Acceder a tu espacio?', promptText:'Inicia sesión con Google para crear servicios y gestionar solicitudes. Después volverás a esta misma pantalla.', lookAround:'Seguir explorando',
     countUnknown:'—', defaultName:'Tu perfil', emptyName:'Completa tu perfil',
     loading:'Comprobando sesión…', moderation:'Los nuevos materiales quedan como borradores hasta su aprobación.',
     example:'Vista de ejemplo', editTitle:'Mi perfil', next:'Abrir',
@@ -176,6 +179,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const [displayName, setDisplayName] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
+  const [pendingAction, setPendingAction] = useState('')
   const signedIn = session === 'signed'
 
   const checkSession = useCallback(async (signal) => {
@@ -208,19 +212,28 @@ export default function PracticeShowcase({ locale = 'en' }) {
     return () => controller.abort()
   }, [checkSession, t.authCancelled])
 
-  async function openAction(key) {
+  function openAction(key) {
     if (busy) return
-    const target = destination(locale, key)
-    setNotice('')
     if (signedIn) {
-      router.push(target)
+      router.push(destination(locale, key))
       return
     }
+    // An action first offers Google sign-in; merely browsing is always free.
+    setNotice('')
+    setPendingAction(key)
+  }
+
+  async function confirmSignIn() {
+    if (busy) return
+    const key = pendingAction || 'practice'
+    const target = destination(locale, key)
     setBusy(key)
+    setNotice('')
     try {
       if (session === 'checking') {
         try {
           await appFetch('bootstrap')
+          setPendingAction('')
           router.push(target)
           return
         } catch (error) {
@@ -234,9 +247,17 @@ export default function PracticeShowcase({ locale = 'en' }) {
       window.location.assign(result.redirectUrl)
     } catch (error) {
       setNotice(error?.status === 503 ? t.offline : t.authError)
+    } finally {
       setBusy('')
     }
   }
+
+  useEffect(() => {
+    if (!pendingAction) return undefined
+    const closeOnEscape = event => { if (event.key === 'Escape' && !busy) setPendingAction('') }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [pendingAction, busy])
 
   const practitioner = practice?.practitioner
   const name = (practitioner?.profile?.displayName || practitioner?.draftProfile?.displayName || displayName || '').trim()
@@ -345,6 +366,19 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </aside>
       <p className={styles.moderation}><CheckCircle2 size={15} aria-hidden="true"/> {t.moderation}</p>
     </div>
+
+    {pendingAction && !signedIn && <div className={styles.modalBackdrop}>
+      <section className={styles.signInModal} role="dialog" aria-modal="true" aria-labelledby="practice-login-title">
+        <span className={styles.modalIcon}><LockKeyhole size={27} aria-hidden="true"/></span>
+        <h2 id="practice-login-title">{t.promptTitle}</h2>
+        <p>{t.promptText}</p>
+        {notice && <p role="alert" className={styles.modalError}>{notice}</p>}
+        <button type="button" autoFocus className={styles.modalPrimary} disabled={Boolean(busy)}
+          onClick={() => void confirmSignIn()}>{t.signIn} <ArrowRight size={19} aria-hidden="true"/></button>
+        <button type="button" className={styles.modalSecondary} disabled={Boolean(busy)}
+          onClick={() => setPendingAction('')}>{t.lookAround}</button>
+      </section>
+    </div>}
 
     <nav className={styles.bottomNav} aria-label={t.practice}>
       {TABS.map(({key, label, Icon}) =>
