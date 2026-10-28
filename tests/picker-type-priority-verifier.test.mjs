@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { createCoreStageEvidence } from '../scripts/helpers/core-stage-evidence.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {testKindCardLabel,testKindShortLabel} from '../lib/assessments/test-kinds.js'
@@ -15,7 +16,7 @@ const compilePriority=script=>{
  const start=script.indexOf(' const recommendationPriority=')
  const end=script.indexOf(" await optional.locator('summary').click()",start)
  assert.ok(start>0&&end>start)
- return new AsyncFunction('picker','expect','guestPickerPage','withPublicPickerActionDiagnostics',script.slice(start,end))
+ return new AsyncFunction('picker','expect','guestPickerPage','withPublicPickerActionDiagnostics','coreStageEvidence',script.slice(start,end))
 }
 const checkPriority=compilePriority(source)
 const expect=node=>({
@@ -42,6 +43,8 @@ async function badgeCase(change={}){
  await checkBadges({async all(){return [card]}},options=>{assert.deepEqual(options,{locale:'en',audience:'public'});return [entry]},testKindShortLabel,testKindCardLabel,expect,assert)
 }
 async function priorityCase(change={},check=checkPriority){
+ const coreStageEvidence=createCoreStageEvidence({now:()=>0}),stages=[],mark=coreStageEvidence.mark
+ coreStageEvidence.mark=stage=>{stages.push(stage);mark(stage)}
  const actions=[]
  const button={count:change.buttons??1,attrs:{'aria-pressed':'false'},async click(...args){
   assert.deepEqual(args,[],'The extracted action must remain a normal native click')
@@ -58,16 +61,19 @@ async function priorityCase(change={},check=checkPriority){
  const guestPickerPage={}
  // The observer has its own lifecycle/privacy tests. Substitute only that
  // boundary here; execute the actual scoped native action/assertions verbatim.
- const withDiagnostics=async(page,target,options,operation)=>{
+ const withDiagnostics=async(page,target,options,operation,diagnostics)=>{
   assert.equal(page,guestPickerPage);assert.equal(target,button)
   assert.deepEqual(options,{action:'depth-shorter',locale:'en'})
   assert.equal(typeof operation,'function')
+  assert.deepEqual(diagnostics,{diagnosticSink:coreStageEvidence.picker})
   actions.push('diagnostic:start')
   const value=await operation()
   actions.push('diagnostic:end')
   return value
  }
- await check(picker,priorityExpect,guestPickerPage,withDiagnostics)
+ await check(picker,priorityExpect,guestPickerPage,withDiagnostics,coreStageEvidence)
+ assert.deepEqual(stages,['picker-depth'])
+ assert.equal(coreStageEvidence.snapshot().stage,'picker-depth')
  assert.deepEqual(actions,['diagnostic:start','click','pressed','diagnostic:end'],
   'Exactly one normal native click and exact pressed assertion remain inside the passive boundary')
 }
@@ -87,8 +93,12 @@ test('no-op priority fails its actual pressed assertion, while native click erro
 test('extracted priority rejects deleted, duplicated, forced, reordered or weakened native checks and disconnected diagnostics',async()=>{
  const click='  await shorterPriority.click()'
  const pressed="  await expect(shorterPriority).toHaveAttribute('aria-pressed','true')"
- const wrapped=" await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{\n"+click+'\n'+pressed+'\n })'
+ const wrapped=" await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{\n"+click+'\n'+pressed+'\n },{diagnosticSink:coreStageEvidence.picker})'
  const mutations=[
+  [" coreStageEvidence.mark('picker-depth')",''],
+  [" coreStageEvidence.mark('picker-depth')"," coreStageEvidence.mark('picker-en')"],
+  ['{diagnosticSink:coreStageEvidence.picker}','{}'],
+  ['{diagnosticSink:coreStageEvidence.picker}','{diagnosticSink:coreStageEvidence.opora}'],
   [click,''],
   [click,click+'\n'+click],
   [click,'  await shorterPriority.click({force:true})'],

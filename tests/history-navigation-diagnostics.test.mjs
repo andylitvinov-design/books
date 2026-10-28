@@ -44,7 +44,7 @@ test('verifier attaches before recovery teardown, keeps exact goto and stores fa
  assert.ok(s.indexOf('historyNavigationDiagnostics=observeHistoryNavigation')<s.indexOf('const recoveryContext='))
  assert.match(s,/mark\('recovery-teardown-start'\)\s+await recoveryContext.close\(\)\s+historyNavigationDiagnostics.mark\('recovery-teardown-complete'\)/)
  assert.match(s,/historyDiagnostic\('goto-start'\)\s+await page.goto\(origin\+'\/en\/app\/history'\)\s+historyDiagnostic\('goto-complete'\)/)
- assert.match(s,/checks,failure,historyNavigationEvidence,auth:/)
+ assert.match(s,/checks,failure,coreStageEvidence:coreStageEvidence\.snapshot\(\),historyNavigationEvidence,auth:/)
  assert.ok(s.indexOf('const historyNavigationEvidence=')<s.indexOf('write:failure=>'))
 })
 

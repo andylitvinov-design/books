@@ -48,7 +48,7 @@ test('all four portrait callers retain their own route, clicks and subsequent gu
  const call = 'assertCabinetGuestSignin(page,expect,{origin})'
  assert.equal(verifier.split(call).length - 1, 3)
  assert.equal(verifier.split('assertCabinetGuestSignin(otherPage,expect,{origin})').length - 1, 1)
- assert.match(verifier, /const response=await page.goto\(origin\+'\/en\/app'\)[^\n]+\n await \(await assertCabinetGuestSignin\(page,expect,\{origin\}\)\)\.click\(\);await expect\(page.getByRole\('heading',\{name:'Create my private space'\}/)
+ assert.match(verifier, /const response=await page.goto\(origin\+'\/en\/app'\)[^\n]+\n coreStageEvidence\.mark\('cabinet-signin'\)\n await \(await assertCabinetGuestSignin\(page,expect,\{origin\}\)\)\.click\(\);await expect\(page.getByRole\('heading',\{name:'Create my private space'\}/)
  assert.match(verifier, /const other=await browser.newContext\(\)[\s\S]*?const otherPage=await other.newPage\(\)\s+await otherPage.goto\(origin\+'\/en\/app'\)\s+await \(await assertCabinetGuestSignin\(otherPage,expect,\{origin\}\)\)\.click\(\)/)
  const logout = verifier.split('\n').find(line => line.includes("name:'Sign out on all devices'"))
  assert.ok(logout.includes('await '+call+';await expect(page).toHaveURL'))

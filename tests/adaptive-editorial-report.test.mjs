@@ -52,9 +52,15 @@ test('remedy cover thumbnails are sourced only from a selected approved library 
     ...base, items: [{ remedySlug: 'colchicum-autumnale', displayName: 'Colchicum autumnale', itemType: 'homeopathy' }],
   }, 'en', origin))
   assert.match(withLibrary, /\/RemedyPhoto1 Do Q/, 'approved source appears on cover and in appendix')
-  assert.match(withLibrary, /\(SELECTED REMEDY\)/)
+  const signedCore = withLibrary.slice(0, withLibrary.indexOf('/Signature Do Q'))
+  assert.match(signedCore, /\(1\. Colchicum autumnale\)/, 'selected item identity remains in the signed core')
+  assert.match(signedCore, /\/RemedyPhoto1 Do Q/, 'approved photograph remains beside the selected core item')
+  assert.match(withLibrary.slice(withLibrary.indexOf('/Signature Do Q')), /\/RemedyPhoto1 Do Q/,
+    'the complete approved appendix retains its photograph after the signature')
+  assert.doesNotMatch(withLibrary, /\(SELECTED REMEDY\)/, 'the selected title replaces the obsolete repeated micro-label')
   const withoutLibrary = source(buildPrescriptionPdf(base, 'en', origin))
-  assert.doesNotMatch(withoutLibrary, /SELECTED REMEDY/)
+  assert.doesNotMatch(withoutLibrary, /SELECTED REMEDY|\/RemedyPhoto\d+ Do Q|Colchicum autumnale/)
+  assert.match(withoutLibrary, /\(1\. Synthetic remedy\)/, 'unlinked authored items retain their own identity without a library photo')
 })
 
 test('invoices remain on their approved template, never using recommendation rings', () => {
@@ -70,7 +76,13 @@ test('invoices remain on their approved template, never using recommendation rin
 test('mobile report and print use adaptive layouts without static page counts', () => {
   const view = readFileSync('components/prescription-document.jsx','utf8')
   const styles = readFileSync('components/consultation-report.css','utf8')
-  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-card-photo']) {
+  const thumbnail = readFileSync('components/remedy-report-thumbnail.jsx', 'utf8')
+  assert.match(view, /import \{ RemedyReportThumbnail \} from '\.\/remedy-report-thumbnail'/)
+  assert.match(view, /const remedy = item\.remedySlug \? getRemedy\(locale, item\.remedySlug\) : null/)
+  assert.match(view, /<RemedyReportThumbnail src=\{remedy\?\.primary_image\} number=\{number\} \/>/)
+  assert.match(thumbnail, /className="canonical-remedy-unified-thumb"/)
+  assert.match(styles, /\.canonical-remedy-unified-thumb/)
+  for (const marker of ['canonical-report-hero','canonical-progress-dial']) {
     assert.ok(view.includes(marker), marker+' is rendered from client data')
     assert.ok(styles.includes(marker), marker+' has responsive styling')
   }
