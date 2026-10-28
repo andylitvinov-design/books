@@ -601,6 +601,11 @@
   .detailedCompact { display: block; }
   .hero { scroll-margin-top: 9px; }
 }
+/* Keep the first practice within 350px at wider iPhone widths without
+   shrinking the six 51px help tiles or their readable labels. */
+@media (min-width: 390px) and (max-width: 430px) {
+  .topGrid { padding-top: 5px; padding-bottom: 4px; }
+}
 @media (max-width: 350px) {
   .topGrid { grid-template-columns: minmax(0,1.12fr) minmax(0,.88fr);
     gap: 6px 7px; padding: 8px 7px 8px; }
