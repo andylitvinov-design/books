@@ -208,6 +208,50 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="pump"]').click();
           assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
             label+" Academy course routes still work");
+          if (locale === "ru") {
+            const picker = root.locator('[data-support-mystery-courses]');
+            assert.equal(await picker.locator('[data-support-mystery-course]').count(),3,
+              label+" Maya, Egyptian and Greek curricula always visible in Courses mode");
+            const pickerGeometry = await picker.evaluate(node => ({
+              pageWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+              cards:[...node.querySelectorAll('[data-support-mystery-course]')].map(item => {
+                const box=item.getBoundingClientRect();
+                return {left:box.left,right:box.right,width:box.width};
+              }),
+            }));
+            assert.ok(pickerGeometry.scrollWidth <= pickerGeometry.pageWidth + 3,
+              label+" courses picker does not overflow iPhone: "+JSON.stringify(pickerGeometry));
+            assert.ok(pickerGeometry.cards.every(card => card.width >= 78 &&
+              card.left >= -2 && card.right <= pickerGeometry.pageWidth + 2),
+              label+" all three mystery choices visible without horizontal scrolling");
+
+            const dropdown = root.locator('[data-support-filter="program"] select');
+            for (const programme of ["maya","egypt","greek"]) {
+              await dropdown.selectOption(programme);
+              assert.equal(await picker.locator('[data-support-mystery-course="'+programme+'"][aria-pressed="true"]').count(),1,
+                label+" selecting "+programme+" in the native iPhone dropdown matches the course card");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" original course never autoplays");
+              assert.equal(await root.locator('[data-support-video]').count(),4,
+                label+" four original course lesson previews");
+              const lessonId = await root.locator('[data-support-video]').first().getAttribute("data-support-video");
+              assert.match(lessonId ?? "",/^[a-zA-Z0-9_-]{11}$/,label+" original YouTube chapter");
+              const href=await root.locator('[data-support-active-course-link]').getAttribute("href");
+              assert.ok(href?.startsWith("/ru/academy/mysteries/"), label+" course links to existing native Academy source");
+            }
+            const links=await root.locator('[data-support-courses-panel] a').evaluateAll(entries =>
+              entries.map(entry=>entry.getAttribute("href")||""));
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-demeter"),label+" Demeter originals linked");
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-dionysus"),label+" Dionysus originals linked");
+            await picker.locator('[data-support-mystery-course="maya"]').click();
+            assert.equal(await dropdown.inputValue(),"maya",label+" quick card and programme select share state");
+            if (width === 390) await page.screenshot({
+              path:output+"/"+browserType.name()+"-ru-mystery-courses-390.png",fullPage:true,
+            });
+          } else {
+            assert.equal(await root.locator('[data-support-mystery-courses]').count(),0,
+              label+" Russian-only original voice lessons not marketed to EN/ES");
+          }
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();

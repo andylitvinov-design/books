@@ -24,9 +24,20 @@ export type SupportMobileVideo = {
   id: string;
   title: string;
   topics: MeditationTopic[];
-  program: "sun" | "reiki" | "energy";
+  program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek";
   author: "andrey" | "psimaster";
   sourceLanguage: "en" | "ru";
+};
+
+export type SupportMobileCourse = {
+  id: "maya" | "egypt" | "greek";
+  title: string;
+  shortTitle: string;
+  poster: string;
+  href: string;
+  videoCount: number;
+  videoGroups: { title: string; href: string; count: number }[];
+  videos: SupportMobileVideo[];
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
@@ -67,7 +78,7 @@ const copy = {
     optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
+    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
@@ -79,6 +90,9 @@ const copy = {
     talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
     energyTitle: "Courses & programmes", energyIntro: "Explore original lessons here or continue to the Academy catalogue.",
     coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
+    mysteryCourses: "Original mystery courses", mysterySource: "Russian originals · PsiMaster archive",
+    watchLesson: "Watch lesson", openCourse: "Explore course", lessonCount: "videos",
+    originalCourseVideos: "Original course recordings",
     healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
@@ -109,7 +123,7 @@ const copy = {
     optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
-    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
+    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
@@ -121,6 +135,9 @@ const copy = {
     talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
     energyTitle: "Курсы и программы", energyIntro: "Авторские уроки и действующий каталог Академии.",
     coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
+    mysteryCourses: "Курсы мистерий", mysterySource: "Оригинал на русском · архив PsiMaster",
+    watchLesson: "Смотреть урок", openCourse: "Открыть программу", lessonCount: "видео",
+    originalCourseVideos: "Оригинальные видеоуроки",
     healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
@@ -151,7 +168,7 @@ const copy = {
     optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
+    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
@@ -163,6 +180,9 @@ const copy = {
     talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
     energyTitle: "Cursos y programas", energyIntro: "Clases originales y catálogo completo de la Academia.",
     coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
+    mysteryCourses: "Cursos originales de misterios", mysterySource: "Audio original en ruso · archivo PsiMaster",
+    watchLesson: "Ver lección", openCourse: "Ver programa", lessonCount: "vídeos",
+    originalCourseVideos: "Lecciones originales en vídeo",
     healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
@@ -187,7 +207,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale; videos: SupportMobileVideo[] }) {
+export function HolisticSupportMobile({ locale, videos, courses = [] }: {
+  locale: PublicLocale;
+  videos: SupportMobileVideo[];
+  courses?: SupportMobileCourse[];
+}) {
   const t = copy[locale];
   const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
   const [choice, setChoice] = useState<Choice>("meditation");
@@ -238,11 +262,15 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     : null, [focus, recommendation, videos, locale]);
   const recommendedTalisman = TAOIST_TALISMANS.find(item => item.id === recommended?.talismans[0]?.id) ?? null;
 
+  // Keep historical course lessons out of score-matched meditation suggestions.
+  // They are accessible exclusively when the visitor chooses Courses.
+  const browseVideos = useMemo(() => choice === "pump"
+    ? [...videos, ...courses.flatMap(course => course.videos)]
+    : videos, [choice, videos, courses]);
   const relevantVideos = useMemo(() => {
-    const filtered = videos.filter(video => (master === "all" || video.author === master) &&
+    const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const eligible = choice === "pump" ? filtered.filter(video => video.topics.includes("energy"))
-      : theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
+    const eligible = theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
     if (goalMatch && choice === "meditation") {
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
@@ -256,9 +284,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
     return eligible.slice(0, 4);
-  }, [videos, master, program, theme, choice, suggested, goalMatch]);
+  }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
+  const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
@@ -301,10 +330,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   };
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
-    if (value === "pump") { setTheme("energy"); setProgram("all"); }
+    if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
   };
-  const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
-  const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
+  const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
+  const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
   const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
@@ -418,6 +447,23 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
+              {choice === "pump" && courses.length > 0 ? (
+                <div className={styles.mysteryPicker} data-support-mystery-courses>
+                  <div className={styles.mysteryPickerHeading}>
+                    <strong>{t.mysteryCourses}</strong><span>{t.mysterySource}</span>
+                  </div>
+                  <div className={styles.mysteryPickerGrid} role="group" aria-label={t.mysteryCourses}>
+                    {courses.map(course => (
+                      <button key={course.id} type="button" className={styles.mysteryPickerCard}
+                        data-support-mystery-course={course.id} aria-pressed={activeMystery?.id === course.id}
+                        onClick={() => { setProgram(course.id); setMaster("all"); setTheme("all"); setPlaying(false); setSelectedId(null); }}>
+                        <Image src={course.poster} alt="" width={300} height={180} unoptimized loading="lazy" />
+                        <span><strong>{course.shortTitle}</strong><small>{course.videoCount} {t.lessonCount}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -433,7 +479,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </label>
                   <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
-                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
+                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); if (choice === "pump") { setMaster("all"); setTheme("all"); } }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
@@ -454,11 +500,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{choice === "pump" ? t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
+                    <h2>{choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
+                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{choice === "pump" ? t.watchLesson : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
+                    {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
+                      data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                   </div>
                 )}
               </div>
@@ -470,8 +518,9 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               </Link>
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
-                  <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>
-                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
+                  <h3>{activeMystery ? t.originalCourseVideos : choice === "pump" ? t.energyTitle : t.gallery}</h3>
+                  <Link href={activeMystery?.videoGroups[0]?.href ?? (choice === "pump" ? "/" + locale + "/academy?view=videos" : "/" + locale + "/holistic-support#meditation-practices")}
+                    prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
                 {goalSelection && goalMatch && choice === "meditation" ?
                   <p className={styles.gallerySelection} data-support-goal-basis role="status">
@@ -506,6 +555,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 <div className={styles.courseLinks}>
                   <Link href={"/" + locale + "/academy"} prefetch={false}>{t.coursesAll}<ArrowRight size={18} aria-hidden="true" /></Link>
                   <Link href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}>{t.coursesReiki}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  {activeMystery ? <Link href={activeMystery.href} prefetch={false}>{t.openCourse}: {activeMystery.title}<ArrowRight size={18} aria-hidden="true" /></Link> : null}
+                  {activeMystery?.videoGroups.map(group => (
+                    <Link href={group.href} key={group.href} prefetch={false}>{group.title} · {group.count} {t.lessonCount}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  ))}
                 </div>
               </div> : null}
             </>
