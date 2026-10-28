@@ -168,7 +168,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const backgroundLink = page.locator("[data-mandala-video-download]");
           await backgroundLink.waitFor({ state: "visible", timeout: 45000 });
           const filename = await backgroundLink.getAttribute("download");
-          assert.match(filename || "", /^holistic-house-money-background\\.(webm|mp4)$/);
+          assert.match(filename || "", /^holistic-house-money-background\.(webm|mp4)$/);
           const [backgroundDownload] = await Promise.all([
             page.waitForEvent("download", { timeout: 20000 }),
             backgroundLink.click(),
