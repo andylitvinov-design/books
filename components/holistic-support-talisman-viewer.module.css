@@ -285,7 +285,7 @@
   .filterChip small { font-size: clamp(9px,2.55vw,11px); }
   .modePill { top: 10px; right: 9px; min-height: 31px; padding: 5px 8px; font-size: 11px; }
   .modePill svg { width: 14px; height: 14px; }
-  .hero { height: 338px; min-height: 338px; max-height: none; padding: 10px 10px 13px; }
+  .hero { height: 288px; min-height: 288px; max-height: 288px; padding: 10px 10px 13px; }
   .photoStage { inset: 34px 50% 74px 0; }
   .shade { background: linear-gradient(90deg,#09292015 0%,#0d31284c 32%,#0c332bbf 48%,#092e2af5 65%),
     linear-gradient(0deg,#072920f0,transparent 38%); }
@@ -305,7 +305,7 @@
   .categoryHeader p { display: none; }
   .filterChip > svg:first-child { display: none; }
   .filterChip { padding: 6px 5px; }
-  .hero { height: 325px; min-height: 325px; }
+  .hero { height: 282px; min-height: 282px; max-height: 282px; }
   .photoStage { inset: 35px 51% 76px 0; }
   .heroCopy { width: 53%; padding-top: 45px; }
   .heroCopy h2 { font-size: 20px; }
