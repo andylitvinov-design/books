@@ -5,6 +5,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import type { PublicMentorCourse, PublicPractitioner } from "@/lib/practitioners/public-types";
@@ -70,6 +71,19 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   ]);
   if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
   if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
+  // Derived only from published reviews of public services; no private client data.
+  // A database error must not be shown as an apparent zero rating.
+  if (practitioners.length) {
+    try {
+      const summaries = await createServiceReviewRepository(config)
+        .listPublicSummariesForPractitioners(practitioners.map(master=>master.id));
+      const byId = new Map(summaries.map(row=>[row.practitionerId,row]));
+      practitioners = practitioners.map(master=>({
+        ...master,
+        reviewSummary: byId.get(master.id) || {count:0,average:0},
+      }));
+    } catch { /* Preserve the existing directory if review statistics are unavailable. */ }
+  }
   // The separate course repository returns only published courses from active, approved masters.
   // Send title/locale/slug only; course slides, draft data and private media stay server-side.
   const masterSlugs = new Set(practitioners.map((master) => master.slug));

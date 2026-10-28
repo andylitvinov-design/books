@@ -66,3 +66,46 @@ if(!process.execArgv.includes('--conditions=react-server')){
     assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
   })
 }
+
+test('practitioner public review summary reuses published service rows without private identities',async()=>{
+  const [repository,route,profile,directory,component,grid]=await Promise.all([
+    readFile('lib/practitioners/reviews.js','utf8'),
+    readFile('app/api/marketplace/reviews/route.js','utf8'),
+    readFile('app/[locale]/masters/[slug]/page.tsx','utf8'),
+    readFile('app/[locale]/masters/page.tsx','utf8'),
+    readFile('components/practitioner-reviews.tsx','utf8'),
+    readFile('components/master-network-explorer.tsx','utf8'),
+  ])
+  assert.match(repository,/MASTER_PUBLIC_REVIEWS/)
+  assert.match(repository,/where r.status='published'/)
+  assert.match(repository,/s.active and s.localized_copy/)
+  assert.match(repository,/p.active and p.public_profile/)
+  assert.match(repository,/listPublicForPractitioner/)
+  assert.match(repository,/listPublicSummariesForPractitioners/)
+  assert.match(repository,/serviceId:row.service_id,serviceSlug:row.service_slug/)
+  assert.doesNotMatch(repository,/reviewerAccountId:row|reviewer_account_id:row/)
+  assert.match(route,/practitionerSlug=params.get\('practitionerSlug'\)/)
+  assert.match(route,/listPublicForPractitioner\(practitionerSlug,page\)/)
+  assert.match(route,/params.has\('serviceId'\)/)
+  assert.match(profile,/<PractitionerReviews practitionerSlug=\{practitioner.slug\}/)
+  assert.match(profile,/href="#practitioner-reviews"/)
+  assert.match(directory,/listPublicSummariesForPractitioners/)
+  assert.match(component,/credentials: "same-origin"/)
+  assert.match(component,/data.summary.count \? data.summary.average.toFixed\(1\) : "—"/)
+  assert.match(component,/getPublicServiceDetailHref\(locale, practitionerSlug, service.slug\) \+ "#reviews"/)
+  assert.match(grid,/className=\{styles.profileReviewLink\}/)
+  assert.match(grid,/master.reviewSummary\?\.count/)
+  assert.match(grid,/No reviews yet/)
+})
+
+test('legacy consultation canonical route retains the same approved review identity',async()=>{
+  const [landing,links,component]=await Promise.all([
+    readFile('app/[locale]/services/alchemy-of-soul/page.tsx','utf8'),
+    readFile('lib/practitioners/public-service-links.js','utf8'),
+    readFile('components/service-reviews.tsx','utf8'),
+  ])
+  assert.match(links,/homeopathy-consultation/)
+  assert.match(landing,/getPublicService\("andy-litvinov", "homeopathy-consultation", locale\)/)
+  assert.match(landing,/<ServiceReviews serviceId=\{reviewService.service.id\} locale=\{locale\}/)
+  assert.match(component,/title:"Отзывы о мастере и услуге"/)
+})

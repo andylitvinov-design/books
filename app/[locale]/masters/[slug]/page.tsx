@@ -12,6 +12,7 @@ import { createPractitionerCourseRepository } from "@/lib/practitioners/course-r
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
+import { PractitionerReviews } from "@/components/practitioner-reviews";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
 import PractitionerVideoGallery from "@/components/practitioner-video-gallery";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
@@ -193,6 +194,9 @@ export default async function MasterProfile({ params }: PageProps) {
               {ru ? "Выбрать услугу" : es ? "Elegir un servicio" : "Choose a service"}
               <span aria-hidden="true">→</span>
             </Link>
+            <Link className={styles.secondary} href="#practitioner-reviews">
+              {ru ? "Отзывы о мастере" : es ? "Opiniones del profesional" : "Practitioner reviews"} ★
+            </Link>
             {practitioner.canMessage && (
               <Link className={styles.secondary}
                 href={'/' + locale + '/app/messages?to=' + encodeURIComponent(practitioner.slug)}
@@ -211,6 +215,7 @@ export default async function MasterProfile({ params }: PageProps) {
 
         <nav className={styles.sectionNav} aria-label={ru ? "Разделы профиля" : es ? "Secciones del perfil" : "Profile sections"}>
           <a href="#practitioner-services">{ru ? "Услуги" : es ? "Servicios" : "Services"}</a>
+          <a href="#practitioner-reviews">{ru ? "Отзывы" : es ? "Opiniones" : "Reviews"}</a>
           <a href="#practitioner-meditations">{ru ? "Медитации" : es ? "Meditaciones" : "Meditations"}</a>
           <a href="#practitioner-articles">{ru ? "Статьи" : es ? "Artículos" : "Articles"}</a>
           <a href="#practitioner-about">{ru ? "О мастере" : es ? "Acerca de" : "About"}</a>
@@ -247,6 +252,9 @@ export default async function MasterProfile({ params }: PageProps) {
           )}
         </section>
 
+
+        <PractitionerReviews practitionerSlug={practitioner.slug} locale={locale}
+          services={services.map(service=>({id:service.id,slug:service.slug,title:service.copy.title}))} />
 
         <section id="practitioner-meditations" className={styles.meditations} aria-labelledby="practitioner-meditations-heading">
           <header className={styles.sectionHeading}>
