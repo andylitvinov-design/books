@@ -1598,3 +1598,91 @@
 @media(prefers-reduced-motion:reduce){
  .hh-app .hh-inner-request-details>summary svg{transition:none}
 }
+
+
+/* 28-Oct approved public → protected practitioner design continuity.
+   The private AppWorkspace keeps the same authenticated APIs, RLS and editor
+   state. Only its obsolete personal-account chrome is removed. */
+body:has(.hh-app--practice-inner){
+  background:radial-gradient(circle at 12% 8%,#e8f0e7,transparent 34%),
+    linear-gradient(160deg,#f7f1e6,#f1ecdf);
+}
+.hh-app.hh-app--practice-inner{
+  --hh-ink:#193e33;--hh-paper:#fffefa;--hh-accent:#008e71;
+  --hh-line:#e8ddce;--hh-muted:#86796b;
+  width:min(100%,1020px);min-height:100svh;margin:0 auto;
+  padding:clamp(10px,2.4vw,23px) clamp(10px,3vw,26px)
+    calc(106px + env(safe-area-inset-bottom));
+  background:transparent;color:#214136;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard{
+  max-width:100%;width:100%;gap:10px;margin:0;
+  padding:0;color:#1d4034;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-head,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-v4-launch,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-setup{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+  width:100%;max-width:100%;min-width:0;
+  display:grid;gap:12px;margin:0!important;padding:0!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;border-radius:0!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel>.hh-practice-form-heading{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-header{
+  margin:0 0 6px;padding:5px 2px 8px;
+  color:#193d32;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{
+  margin:0 0 5px;font:800 clamp(23px,4vw,30px)/1.12 system-ui,-apple-system,sans-serif;
+  color:#183c31;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading p{
+  margin:0;color:#857a6c;font:520 12px/1.38 system-ui,sans-serif;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-back,
+.hh-app.hh-app--practice-inner .hh-practice-inner-alert{
+  min-width:44px;min-height:44px;max-width:44px;max-height:44px;
+  color:#0c8167;background:#fffcf7;border:1px solid #eae1d5;
+  border-radius:50%;padding:0;
+}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="clients"]>div,
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="requests"]>div{
+  min-width:0;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-card{
+  border-color:#e7ded2;border-radius:17px;
+  box-shadow:0 5px 15px #5846310a;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-actions button{
+  background:linear-gradient(115deg,#00a27f,#007c62);
+  color:white;border-color:#008d6d;
+}
+.hh-app.hh-app--practice-inner .hh-practice-form-panel :is(button,a,summary,input,textarea,select):focus-visible{
+  outline:3px solid #008d72;outline-offset:2px;
+}
+@media(max-width:720px){
+ .hh-app.hh-app--practice-inner{padding:10px 11px calc(111px + env(safe-area-inset-bottom))}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+   padding:0!important;gap:8px;margin:0!important
+ }
+ .hh-app.hh-app--practice-inner .hh-practice-inner-header{padding:0 0 6px;margin:0}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:clamp(21px,5.5vw,27px)}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard:has([data-service-slide-editor]) .hh-practice-inner-dock{
+   display:none!important; /* Don't cover the service wizard Save/Continue. */
+ }
+ .hh-app.hh-app--practice-inner:has(input:focus,textarea:focus) .hh-practice-inner-dock{
+   display:none!important; /* Native keyboard must not hide Send/Save. */
+ }
+}
+@media(max-width:355px){
+ .hh-app.hh-app--practice-inner{padding-inline:7px}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app.hh-app--practice-inner *{scroll-behavior:auto!important;transition:none!important}
+}
