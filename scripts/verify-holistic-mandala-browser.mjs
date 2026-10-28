@@ -56,6 +56,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
+        const categoryControls=page.locator("[data-video-theme]");
+        assert.equal(await categoryControls.count(),4,"exactly four actual themes");
+        for(const id of ["money","energy","relationships","goals"]){
+          const select=page.locator('[data-video-theme="'+id+'"]');
+          await select.click();
+          await page.waitForFunction(key=>
+            document.querySelector('[data-video-theme="'+key+'"]')?.getAttribute("aria-pressed")==="true",
+            id,{timeout:10000});
+          assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
+        }
+        await page.locator('[data-video-theme="money"]').click();
+        await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');
         await preset.click();
         assert.equal(await page.locator("[data-selected-mandala]").getAttribute("data-selected-mandala"), "star");
@@ -137,14 +149,29 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        assert.equal(await create.isEnabled(), false,"real photo requires permission");
+        await page.locator("[data-video-photo-consent]").check();
         assert.equal(await create.isEnabled(), true);
         if (engine === "chromium" && locale === "ru" && width === 390) {
+          await page.locator('[data-video-aspect="landscape"]').click();
+          await page.waitForFunction(()=>
+            document.querySelector('[data-video-aspect="landscape"]')?.getAttribute("aria-pressed")==="true",
+            undefined,{timeout:10000});
+          await page.locator('[data-video-duration="10"]').click();
+          await page.locator('[data-video-music="harmony"]').click();
           await create.click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
           const filename = await videoLink.getAttribute("download");
           assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
-          assert.equal(await page.locator("[data-mandala-video-preview]").count(), 1);
+          const encoded=page.locator("[data-mandala-video-preview]");
+          await encoded.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>{
+            const v=document.querySelector("[data-mandala-video-preview]");
+            return v&&v.videoWidth>0&&v.videoHeight>0;
+          },undefined,{timeout:20000});
+          assert.deepEqual(await encoded.evaluate(v=>({width:v.videoWidth,height:v.videoHeight})),
+            {width:1280,height:720},"real downloaded 16:9 video resolution");
           const [videoDownload] = await Promise.all([
             page.waitForEvent("download", { timeout: 20000 }),
             videoLink.click(),
