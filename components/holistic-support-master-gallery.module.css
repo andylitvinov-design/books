@@ -458,7 +458,7 @@
   }
   .viewer[data-support-directory-kind="healing"] .more { padding: 13px 11px 16px; }
 }
-@media(max-width:350px) {
+@media (max-width:350px) {
   .reikiStage { min-height: 282px; padding: 7px; }
   .reikiStage:not([data-active-tab="filter"]) { height: 282px; min-height: 282px; max-height: 282px; }
   .reikiStage .reikiStageTab { font-size: 9.5px; border-radius: 12px; }
