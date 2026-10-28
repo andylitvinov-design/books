@@ -65,7 +65,7 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(editor, /data-goal-currency/);
   assert.match(editor, /value=\{amounts\[item\.id\]\?\.\[field\] \?\? ""\}/);
   assert.match(editor, /updateAmount\(item\.id, field/);
-  assert.match(editor, /currency: "CAD"/);
+  assert.match(editor, /initial\?\.currency \?\? "CAD"/);
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
 test("recommendations lead to existing resources without pretending a booking or an exact match", () => {
