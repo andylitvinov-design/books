@@ -6,22 +6,6 @@ on:
   pull_request:
     branches:
       - codex/meditation-category-rail-20261028
-      - codex/public-book-library
-    paths:
-      - 'components/holistic-support-guest-quest.*'
-      - 'components/holistic-support-today-pick.*'
-      - 'components/holistic-support-mobile.*'
-      - 'components/app/test-explorer-google-banner.*'
-      - 'lib/holistic-support/guest-quest.*'
-      - 'lib/holistic-support/today-pick.*'
-      - 'app/[locale]/client/tests/page.tsx'
-      - 'app/api/app/[...path]/route.js'
-      - 'tests/holistic-support-guest-quest.test.mjs'
-      - 'tests/holistic-support-today-pick.test.mjs'
-      - 'scripts/verify-support-guest-quest.mjs'
-      - '.github/workflows/hh-support-guest-quest.yml'
-permissions:
-  contents: read
 jobs:
   focused-quest:
     runs-on: ubuntu-latest
