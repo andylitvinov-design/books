@@ -68,7 +68,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
     assert.ok(client.includes(key), key);
   }
   for (const label of [
-    "Мастер", "Программа", "Тема", "Тест или консультация", "Талисман",
+    "Мастер", "Программа", "Тема", "Консультация", "Талисман",
     "Подобрать рекомендации", "Начать медитацию", "Мой прогресс",
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);

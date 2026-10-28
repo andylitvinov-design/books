@@ -59,7 +59,7 @@ type PublishedConsultation = {
 type DirectoryResponse = { masters?: EnergySupportMaster[]; consultations?: PublishedConsultation[] };
 const words = {
   en: {
-    masters: "Masters", healing: "Reiki support", consultation: "Test / session",
+    masters: "Masters", healing: "Reiki support", consultation: "Consultation",
     verified: "Published practitioner", publicOffer: "Published service", online: "Online",
     method: "Method", allMethods: "All practices", price: "Price", allPrices: "All offers",
     freeOnly: "Free", paidOnly: "With a published price",
@@ -83,7 +83,7 @@ const words = {
     prev: "Previous", next: "Next", close: "Close request", requestTitle: "Request support",
   },
   ru: {
-    masters: "Мастера", healing: "Рейки поддержка", consultation: "Тест / сессия",
+    masters: "Мастера", healing: "Рейки поддержка", consultation: "Консультация",
     verified: "Опубликованный мастер", publicOffer: "Опубликованная услуга", online: "Онлайн",
     method: "Метод", allMethods: "Все практики", price: "Цена", allPrices: "Все предложения",
     freeOnly: "Бесплатно", paidOnly: "С опубликованной ценой",
@@ -107,7 +107,7 @@ const words = {
     prev: "Назад", next: "Вперёд", close: "Закрыть заявку", requestTitle: "Запросить поддержку",
   },
   es: {
-    masters: "Maestros", healing: "Apoyo Reiki", consultation: "Test / sesión",
+    masters: "Maestros", healing: "Apoyo Reiki", consultation: "Consulta",
     verified: "Profesional publicado", publicOffer: "Servicio publicado", online: "En línea",
     method: "Método", allMethods: "Todas las prácticas", price: "Precio", allPrices: "Todas",
     freeOnly: "Gratis", paidOnly: "Con precio publicado",
@@ -218,6 +218,8 @@ const consultationUi = {
     heading: "Services", subtitle: "Choose your direction", all: "All services",
     categories: { all: "Consultations", psycho: "Psycho-homeopathy", imagery: "Guided imagery",
       constellations: "Systemic constellations", business: "Business consulting" },
+    categoryShort: { all: "Sessions", psycho: "Homeopathy", imagery: "Imagery",
+      constellations: "Constellations", business: "Business" },
     master: "Practitioner", allMasters: "All practitioners", format: "Format", allFormats: "Any format",
     price: "Price", reset: "Reset", showNext: "More service categories",
     online: "Online", inPerson: "In person", hybrid: "Online / in person",
@@ -232,6 +234,8 @@ const consultationUi = {
     heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
     categories: { all: "Консультации", psycho: "Психогомеопатия", imagery: "Гайдед имажери",
       constellations: "Системные расстановки", business: "Бизнес-консалтинг" },
+    categoryShort: { all: "Консультации", psycho: "Гомеопатия", imagery: "Имажери",
+      constellations: "Расстановки", business: "Бизнес" },
     master: "Мастер", allMasters: "Все мастера", format: "Формат", allFormats: "Все форматы",
     price: "Цена", reset: "Сбросить", showNext: "Следующие категории услуг",
     online: "Онлайн", inPerson: "Очно", hybrid: "Онлайн / очно",
@@ -246,6 +250,8 @@ const consultationUi = {
     heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
     categories: { all: "Consultas", psycho: "Psicohomeopatía", imagery: "Imágenes guiadas",
       constellations: "Constelaciones sistémicas", business: "Consultoría empresarial" },
+    categoryShort: { all: "Consultas", psycho: "Homeopatía", imagery: "Imágenes",
+      constellations: "Constelaciones", business: "Empresas" },
     master: "Profesional", allMasters: "Todos", format: "Formato", allFormats: "Cualquier formato",
     price: "Precio", reset: "Restablecer", showNext: "Más categorías",
     online: "En línea", inPerson: "Presencial", hybrid: "En línea / presencial",
@@ -715,11 +721,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             {CONSULTATION_CATEGORIES.map(({ id: category, Icon }) =>
               <button type="button" key={category} className={styles.consultCategory}
                 data-support-consultation-category={category}
-                aria-pressed={consultCategory === category}
+                aria-pressed={consultCategory === category} aria-label={c.categories[category]}
                 onClick={() => { setConsultCategory(category); setSelectedId(null);
                   setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
                 <Icon size={25} aria-hidden="true"/>
-                <span>{c.categories[category]}</span>
+                <span>{c.categoryShort[category]}</span>
               </button>)}
           </div>
           <button type="button" className={styles.consultCategoryNext} aria-label={c.showNext}

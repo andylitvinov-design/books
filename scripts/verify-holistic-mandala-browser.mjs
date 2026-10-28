@@ -56,6 +56,20 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
+        // Support-home visual parity is functional, not only decorative.
+        const supportTop=page.locator("[data-video-support-layout]");
+        await supportTop.waitFor({state:"visible",timeout:12000});
+        assert.equal(await supportTop.locator('input[type="range"]').count(),4);
+        const hero=page.locator("[data-video-mandala-hero]");
+        await hero.waitFor({state:"visible",timeout:12000});
+        assert.equal(await hero.locator('nav a').count(),4);
+        assert.equal(await page.locator("[data-video-hero-create]").count(),1);
+        assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
+        await page.locator("[data-video-recommend-focus]").click();
+        await page.waitForFunction(() =>
+          document.querySelector('[data-video-theme="energy"]')?.getAttribute("aria-pressed")==="true",
+          undefined,{timeout:9000});
+
         const categoryControls=page.locator("[data-video-theme]");
         assert.equal(await categoryControls.count(),4,"exactly four actual themes");
         for(const id of ["money","energy","relationships","goals"]){
@@ -157,6 +171,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const create = page.locator("[data-mandala-video-generate]");
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
+        // Selecting a different genuine MP4 starts a new async decode.
+        // Wait for the actual master canplay event rather than testing a stale state.
+        await page.waitForFunction(() => {
+          const button=document.querySelector("[data-mandala-video-generate]");
+          const master=document.querySelector("[data-mandala-master-mp4]");
+          return Boolean(button && !button.disabled && master && master.readyState >= 2);
+        },undefined,{timeout:25000});
         assert.equal(await create.isEnabled(), true);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator('[data-video-aspect="landscape"]').click();
@@ -213,12 +234,29 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
         await focus.click();
+        try {
+          await page.waitForFunction(() =>
+            document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus") === "true",
+            undefined, {timeout:12000});
+        } catch {
+          const diagnostic=await page.evaluate(()=>{
+            const button=document.querySelector("button[class*='focusButton']");
+            const wrapper=document.querySelector("[data-mandala-focus]");
+            const advanced=document.querySelector("[data-mandala-advanced]");
+            return {buttonPressed:button?.getAttribute("aria-pressed"),focus:wrapper?.getAttribute("data-mandala-focus"),
+              advancedOpen:advanced?.hasAttribute("open"),buttonVisible:Boolean(button?.getBoundingClientRect().width)};
+          });
+          throw new Error(engine+" "+locale+" "+width+"px focus transition failed: "+JSON.stringify(diagnostic));
+        }
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "true");
         const poster = page.locator(".academy-video-poster");
         assert.equal(await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').count(), 0);
         await poster.click();
         await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').waitFor({ state: "attached", timeout: 15000 });
         await page.keyboard.press("Escape");
+        await page.waitForFunction(() =>
+          document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus")==="false",
+          undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
 
         const overflow = await page.evaluate(() => ({

@@ -98,3 +98,77 @@
 }
 
 .offline{flex:none;margin:0 0 7px;padding:7px 10px;border:1px solid #e6d3b0;border-radius:9px;background:#fff7e9;color:#79572f;font-size:12px}
+
+
+/* Unified Holistic House inbox design: visual enhancement only.
+   The existing verified CRM/direct/website data source and voice composer are unchanged. */
+.shell[data-detail-open]{--cream:#fffdf8;--line:#e9dfd1;--ink:#233f34;--soft:#81766b;--green:#00866e;
+ color:var(--ink);background:transparent}
+.shell .heading{padding:8px 2px 13px;gap:10px}
+.shell .heading h1{font:780 clamp(25px,4vw,32px)/1.16 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.035em;color:#193c32;margin:0 0 6px}
+.shell .heading span{color:#897c6f;font:500 12px/1.4 system-ui,sans-serif}
+.shell .refresh{border-radius:50%;border-color:#e8dfd3;color:#1a816c;
+ background:#fffefa;box-shadow:0 3px 10px #5845330a}
+.shell .tabs{background:transparent;border:0;gap:8px;padding:0;margin-bottom:13px}
+.shell .tabs button{display:flex;gap:6px;justify-content:center;align-items:center;
+ min-height:45px;border:1px solid #e7dccc;border-radius:13px;background:#fffefa;color:#786e61;
+ box-shadow:0 3px 12px #4e46330a;font:750 12px/1.3 system-ui,sans-serif}
+.shell .tabs button[aria-selected="true"]{background:linear-gradient(110deg,#019d7a,#00785f);
+ color:#fff;border-color:#008f72;box-shadow:0 5px 12px #0d8b6726}
+.shell .tabs button span{background:#ebe5db;color:#766958}
+.shell .tabs button[aria-selected="true"] span{background:#d8f2e5;color:#007c60}
+.shell .window{border-radius:19px;border-color:#e9dfd1;
+ background:#fffefa;box-shadow:0 6px 24px #5446310e;min-width:0}
+.shell .people{background:#fdf9f2;border-color:#ece2d4}
+.shell .search{padding:10px;border-bottom:1px solid #ede3d6}
+.shell .search input{min-height:45px;border:1px solid #e7ded2;border-radius:12px;
+ background:#fffefa;font:500 16px/1.25 system-ui,sans-serif;color:#223f33}
+.shell .search input::placeholder{color:#988a7c}
+.shell .person,.shell .personSelected{min-height:79px;gap:11px;padding:11px 12px;
+ border-color:#eee7dc;color:#24463b}
+.shell .personSelected{border-left:3px solid #00a17b;padding-left:9px;background:#e5f3e9}
+.shell .person:hover{background:#f6f2ea}
+.shell .avatar,.shell .avatarSmall{background:linear-gradient(145deg,#f0ddcf,#e1ece3);
+ color:#447d68;border:2px solid #fff;box-shadow:0 0 0 1px #cbdacf}
+.shell .personHead strong{font:760 14px/1.35 system-ui,sans-serif;color:#213d34}
+.shell .personHead time{font:550 10px/1.35 system-ui,sans-serif;color:#96897a}
+.shell .preview{color:#786e61;font:520 12px/1.35 system-ui,sans-serif}
+.shell .personText small{color:#22856d;font:660 10px/1.3 system-ui,sans-serif}
+.shell .unread{background:#008d72;color:white}
+.shell .personBar{background:#fffdf8;border-color:#e8decf}
+.shell .personLabel strong{font:780 15px/1.3 system-ui,sans-serif;color:#223f34}
+.shell .personLabel small{color:#928273;font:550 11px/1.35 system-ui,sans-serif}
+.shell .detail,.shell .chatHolder{background:#fffefa}
+.shell .requestPane{background:linear-gradient(155deg,#fffcf6,#f6f0e6)}
+.shell .requestBubble{background:#fffefa;border-color:#e8dace;box-shadow:0 4px 11px #5548370c}
+.shell .requestActions{background:#fffdf9;border-color:#e9ddce}
+.shell .requestActions a{min-height:44px;border-color:#07866a;background:#e3f3e9;color:#08735b}
+.shell .cardButton{background:#e5f3ea;border:1px solid #c9e5d6;color:#126c55;border-radius:12px}
+.shell .placeholder{color:#7f8f80}
+.shell .placeholder svg{color:#099077}
+.shell .info{color:#756d61}
+.shell :is(button,a,input):focus-visible{outline:3px solid #02896d;outline-offset:2px}
+@media(max-width:700px){
+ .shell .heading{padding:3px 3px 10px}
+ .shell .heading h1{font-size:25px}
+ .shell .heading span{font-size:11px}
+ .shell .tabs{margin-bottom:8px;gap:6px}
+ .shell .tabs button{min-height:44px;font-size:12px}
+ .shell .window{border-radius:16px}
+ .shell .person,.shell .personSelected{padding:11px 10px;min-height:76px}
+ .shell .personHead strong{font-size:13px}
+ .shell .personBar{min-height:60px}
+ .shell .requestBubble{max-width:96%;padding:11px 12px}
+ .shell .requestActions{padding:12px}
+ .shell .search input{font-size:16px!important}
+ /* Never override --hh-mobile-window-height; it follows the visual viewport
+    and iPhone keyboard, keeping the actual Send/record button visible. */
+}
+@media(max-width:355px){
+ .shell .person,.shell .personSelected{padding:9px 8px;gap:7px}
+ .shell .avatar{height:40px;width:40px}
+ .shell .heading h1{font-size:23px}
+ .shell .tabs button{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.shell *{transition:none!important}}

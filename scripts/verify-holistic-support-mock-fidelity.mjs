@@ -6,6 +6,32 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { qaSupportDirectoryResponse } from "./fixtures/holistic-support-directory.mjs";
 import { createSupportDashboardRecorder } from "./helpers/support-dashboard-diagnostics.mjs";
+async function assertSupportToolIdentities(root, label) {
+  const tools = root.locator('[data-support-tool]');
+  assert.equal(await tools.count(), 7, label + " seven distinct support tools");
+  const identities = await tools.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-support-tool")));
+  assert.deepEqual(Array.from(identities).sort(),
+    ["consultation", "healing", "masters", "meditation", "pump", "talisman", "tests"],
+    label + " original six tools plus separate Tests exactly once");
+}
+async function assertSupportTestsLinks(root, locale, label) {
+  await root.locator('[data-support-tool="tests"]').click();
+  const panel = root.locator('[data-support-tests-panel]');
+  await panel.waitFor({ state: "visible" });
+  assert.equal(await panel.count(), 1, label + " one separate Tests panel");
+  assert.equal(await panel.locator('a').count(), 3, label + " exactly three explicit Tests links");
+  for (const [selector, path] of [
+    ["data-support-open-tests", "/client/tests"],
+    ["data-support-tests-personality", "/personality-profiles"],
+    ["data-support-tests-guide", "/tests"],
+  ]) {
+    const link = panel.locator('[' + selector + ']');
+    assert.equal(await link.count(), 1, label + " unique " + selector);
+    assert.equal(await link.getAttribute("href"), "/" + locale + path,
+      label + " locale-only Tests URL without photo, ratings, state, query or fragment transfer");
+  }
+  assert.equal(await root.locator('iframe').count(), 0, label + " Tests selection does not start media");
+}
 const recordSupportDashboardFailure = createSupportDashboardRecorder();
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -52,7 +78,7 @@ for (const browserType of [chromium, webkit]) {
           }, null, {timeout:30000});
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
-          assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
+          await assertSupportToolIdentities(root, label);
           const mandalaAction=root.locator('[data-support-video-mandala]');
           assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
           assert.equal(await mandalaAction.getAttribute("href"),
@@ -599,6 +625,7 @@ for (const browserType of [chromium, webkit]) {
           await offers.locator('[role="status"] button').first().click();
           assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
             label+" reset recovers all published services without losing the catalogue");
+          await assertSupportTestsLinks(root, locale, label);
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});

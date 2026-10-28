@@ -420,3 +420,118 @@ test('scoped ownership permits ordinary added assertions and nested callback ret
   const changed=spliceSource(verifier,statement.getStart(file),'assert.ok(true, "independent check");\nconst unrelated = () => { return 42; };\n')
   supportDiagnosticContract(changed)
 })
+
+// Exercise the actual verifier assertions without importing Playwright or opening a browser.
+function supportToolsAssertions(text = verifier) {
+  const file = ts.createSourceFile('support.mjs', text, ts.ScriptTarget.Latest, true)
+  const names = ['assertSupportToolIdentities', 'assertSupportTestsLinks']
+  const context = vm.createContext({ assert })
+  for (const name of names) {
+    const definitions = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name)
+    assert.equal(definitions.length, 1)
+    vm.runInContext(definitions[0].getText(file) + '\nthis.' + name + ' = ' + name, context)
+  }
+  const { block } = caseParts(text)
+  for (const name of names) {
+    const calls = block.statements.filter(node => ts.isExpressionStatement(node) && ts.isAwaitExpression(node.expression)
+      && ts.isCallExpression(node.expression.expression) && node.expression.expression.expression.getText() === name)
+    assert.equal(calls.length, 1, 'assertion must run directly inside every uncaught browser case: ' + name)
+  }
+  return context
+}
+function supportToolsRoot(locale, change = {}) {
+  const ids = change.ids || ['meditation', 'consultation', 'talisman', 'healing', 'pump', 'masters', 'tests']
+  const paths = { 'data-support-open-tests': '/client/tests', 'data-support-tests-personality': '/personality-profiles', 'data-support-tests-guide': '/tests' }
+  let selected = false
+  const panel = { waitFor: async () => assert.equal(selected, true), count: async () => 1,
+    locator(selector) {
+      if (selector === 'a') return { count: async () => 3 }
+      const key = selector.slice(1, -1); assert.ok(Object.hasOwn(paths, key))
+      return { count: async () => change.linkCount ?? 1, getAttribute: async name => {
+        assert.equal(name, 'href'); return change.href || '/' + locale + paths[key]
+      } }
+    } }
+  return { locator(selector) {
+    if (selector === '[data-support-tool]') return { count: async () => ids.length,
+      evaluateAll: async callback => callback(ids.map(id => ({ getAttribute: name => { assert.equal(name, 'data-support-tool'); return id } }))) }
+    if (selector === '[data-support-tool="tests"]') return { click: async () => { selected = true } }
+    if (selector === '[data-support-tests-panel]') return panel
+    if (selector === 'iframe') return { count: async () => change.iframes ?? 0 }
+    throw Error('Unexpected selector ' + selector)
+  } }
+}
+for (const locale of ['en', 'ru', 'es']) test('actual seven-tool and private Tests-link assertions ' + locale, async () => {
+  const contract = supportToolsAssertions(), root = supportToolsRoot(locale)
+  await contract.assertSupportToolIdentities(root, 'synthetic')
+  await contract.assertSupportTestsLinks(root, locale, 'synthetic')
+})
+for (const [name, change] of [
+  ['missing Tests', { ids: ['meditation', 'consultation', 'talisman', 'healing', 'pump', 'masters'] }],
+  ['duplicate original replacing Tests', { ids: ['meditation', 'consultation', 'talisman', 'healing', 'pump', 'masters', 'masters'] }],
+  ['wrong Tests identity', { ids: ['meditation', 'consultation', 'talisman', 'healing', 'pump', 'masters', 'wrong-tests'] }],
+  ['duplicate Tests', { ids: ['meditation', 'consultation', 'talisman', 'healing', 'pump', 'masters', 'tests', 'tests'] }],
+  ['photo query leak', { href: '/ru/client/tests?photo=PRIVATE_SENTINEL' }],
+  ['ratings query leak', { href: '/ru/client/tests?energy=3' }],
+  ['state fragment leak', { href: '/ru/client/tests#state=PRIVATE_SENTINEL' }],
+  ['wrong locale', { href: '/en/client/tests' }],
+  ['duplicate Tests destination', { linkCount: 2 }],
+  ['automatic media', { iframes: 1 }],
+]) test('actual support assertion rejects ' + name, async () => {
+  const contract = supportToolsAssertions(), root = supportToolsRoot('ru', change)
+  await assert.rejects(async () => {
+    await contract.assertSupportToolIdentities(root, 'synthetic')
+    await contract.assertSupportTestsLinks(root, 'ru', 'synthetic')
+  })
+})
+test('seven-tool assertions cannot silently leave the executed browser case', () => {
+  for (const call of ['await assertSupportToolIdentities(root, label);', 'await assertSupportTestsLinks(root, locale, label);']) {
+    assert.equal(verifier.split(call).length, 2)
+    assert.throws(() => supportToolsAssertions(verifier.replace(call, '')))
+  }
+})
+
+const supportMobileSource = readFileSync(new URL('../components/holistic-support-mobile.tsx', import.meta.url), 'utf8')
+function actualSupportTestsSource(text, locale) {
+  const file = ts.createSourceFile('mobile.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX), nodes = []
+  assert.equal(file.parseDiagnostics.length, 0)
+  const visit = node => { nodes.push(node); ts.forEachChild(node, visit) }; visit(file)
+  const attr = (node, name) => node.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.text === name)
+  const opening = nodes.filter(n => ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n))
+  const one = name => { const found = opening.filter(n => attr(n, name)); assert.equal(found.length, 1, name); return found[0] }
+  const declaration = name => { const found = nodes.filter(n => ts.isVariableDeclaration(n) && n.name.getText(file) === name); assert.equal(found.length, 1); return found[0] }
+  const choices = declaration('choices').initializer.elements.map(node => ({ id: node.properties.find(p => p.name?.getText(file) === 'id').initializer.text }))
+  const filter = nodes.filter(n => ts.isCallExpression(n) && n.expression.getText(file) === 'choices.filter'); assert.equal(filter.length, 1)
+  const visible = choices.filter(vm.runInNewContext('(' + filter[0].arguments[0].getText(file) + ')'))
+  const rendered = opening.filter(n => attr(n, 'data-support-tool'))
+  assert.equal(rendered.filter(n => ts.isJsxExpression(attr(n, 'data-support-tool').initializer)).length, 1)
+  const identities = visible.map(x => x.id).concat(rendered.map(n => attr(n, 'data-support-tool').initializer.text).filter(Boolean))
+  assert.deepEqual(identities.sort(), ['consultation', 'healing', 'masters', 'meditation', 'pump', 'talisman', 'tests'])
+  const context = vm.createContext({ locale, photoUrl: 'PRIVATE_PHOTO_SENTINEL', scores: { energy: 3 },
+    fetch: () => { throw Error('Network forbidden') }, window: { requestAnimationFrame: callback => callback(), matchMedia: () => ({ matches: true }) },
+    document: { getElementById: id => { assert.equal(id, 'support-tests-panel'); return { scrollIntoView: options => assert.equal(options.block, 'start') } } } })
+  const state = { goalFilterOpen: true, choice: 'meditation', playing: true, selectedId: 'previous' }
+  for (const key of Object.keys(state)) context['set' + key[0].toUpperCase() + key.slice(1)] = value => { state[key] = value }
+  const compile = expression => vm.runInContext(ts.transpile('(' + expression.getText(file) + ')', { target: ts.ScriptTarget.ES2022 }), context)
+  context.changeChoice = compile(declaration('changeChoice').initializer)
+  const button = rendered.filter(n => attr(n, 'data-support-tool').initializer.text === 'tests'); assert.equal(button.length, 1)
+  compile(attr(button[0], 'onClick').initializer.expression)()
+  assert.deepEqual(state, { goalFilterOpen: false, choice: 'tests', playing: false, selectedId: null })
+  let panel = one('data-support-tests-panel'); while (panel && !ts.isConditionalExpression(panel)) panel = panel.parent
+  assert.ok(panel); assert.equal(panel.condition.getText(file), 'choice === "tests"')
+  for (const [name, path] of [['data-support-open-tests', '/client/tests'], ['data-support-tests-personality', '/personality-profiles'], ['data-support-tests-guide', '/tests']]) {
+    const link = one(name); assert.equal(link.tagName.getText(file), 'Link'); assert.equal(attr(link, 'onClick'), undefined)
+    assert.equal(attr(link, 'prefetch').initializer.expression.getText(file), 'false')
+    assert.equal(compile(attr(link, 'href').initializer.expression), '/' + locale + path)
+  }
+}
+for (const locale of ['en', 'ru', 'es']) test('actual Tests producer has seven tools and locale-only private handoff ' + locale, () => actualSupportTestsSource(supportMobileSource, locale))
+for (const [name, from, to] of [
+  ['missing Tests identity', 'data-support-tool="tests"', 'data-removed-tool="tests"'],
+  ['duplicate Tests identity', 'data-support-tool="masters"', 'data-support-tool="tests"'],
+  ['photo URL leak', '"/client/tests"}', '"/client/tests?photo=" + photoUrl}'],
+  ['rating URL leak', '"/client/tests"}', '"/client/tests?energy=" + scores.energy}'],
+  ['playback retained', 'setChoice(value); setPlaying(false);', 'setChoice(value); setPlaying(true);'],
+]) test('actual Tests producer rejects ' + name, () => {
+  assert.equal(supportMobileSource.split(from).length, 2)
+  assert.throws(() => actualSupportTestsSource(supportMobileSource.replace(from, to), 'ru'))
+})

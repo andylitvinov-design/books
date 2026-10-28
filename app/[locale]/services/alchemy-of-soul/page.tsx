@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { DistanceHomeopathyGuide } from "@/components/distance-homeopathy-guide";
 import { AlchemySoulLanding } from "@/components/alchemy-soul-landing";
-import { ServiceReviews } from "@/components/service-reviews";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { AlchemyServiceReviews } from "@/components/alchemy-service-reviews";
 import { isPublicLocale } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -45,22 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AlchemyOfTheSoulPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
-  // The older homeopathy offering intentionally canonicalizes here. Keep its
-  // original service ID so reviews link to the same master's published service.
-  // The Spanish static landing is approved, but this legacy listing has no ES
-  // localized catalogue snapshot: use EN only to resolve its public ID.
-  const reviewService = await createPractitionerRepository(getAppConfig())
-    .getPublicService("andy-litvinov", "homeopathy-consultation", locale === "es" ? "en" : locale)
-    .catch(() => null);
   return (
     <>
       <PublicSiteHeader locale={locale as PublicLocale} />
       <AlchemySoulLanding locale={locale as PublicLocale} />
-      {reviewService && (
-        <div className={styles.reviewSection}>
-          <ServiceReviews serviceId={reviewService.service.id} locale={locale} sectionId="service-reviews" />
-        </div>
-      )}
+      <AlchemyServiceReviews locale={locale as PublicLocale} />
       <details className={styles.guideDisclosure} data-alchemy-extended-guide>
         <summary>{locale === "ru" ? "Дополнительно: полная статья о дистанционной гомеопатии" : locale === "es" ? "Lectura opcional: guía de homeopatía a distancia" : "Optional reading: full distance-homeopathy guide"}</summary>
         <DistanceHomeopathyGuide locale={locale as PublicLocale} embedded />

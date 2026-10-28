@@ -7,6 +7,7 @@ import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeExpressReports from './practice-express-reports'
 import PracticeMaterials from './practice-materials'
+import {PracticeInnerHeader,PracticeInnerBottomNavigation} from './practice-inner-navigation'
 import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
@@ -161,7 +162,7 @@ export function PracticeEntry({data,locale}){
     <p className="hh-kicker">{ru?'Для специалистов':'For practitioners'}</p>
     <h2>{practice?(ru?'Моя практика':'My Practice'):(ru?'Вы практик?':'Are you a practitioner?')}</h2>
     <p>{practice?(ru?'Управляйте публичным профилем, услугами и заявками в том же аккаунте.':'Manage your public profile, services and requests from the same Account.'):(ru?'Предложите свои услуги через Holistic House. Публикация проходит модерацию.':'Offer your services through Holistic House. Public profiles are moderated before publication.')}</p>
-    <Link className="hh-primary" href={'/'+locale+'/app/practice'} prefetch={false}>{practice?(ru?'Открыть My Practice':'Open My Practice'):(ru?'Стать мастером':'Become a Master')}</Link>
+    <Link className="hh-primary" href={'/'+locale+'/practice'} prefetch={false}>{practice?(ru?'Открыть My Practice':'Open My Practice'):(ru?'Стать мастером':'Become a Master')}</Link>
   </section>
 }
 
@@ -509,7 +510,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
           <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
         </button>
-        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages'+(isOwner?'?tab=requests':''))}>
+        <button type="button" onClick={()=>window.location.assign('/'+(locale==='es'?'en':locale)+'/app/messages?section=clients&tab=chats')}>
           <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
           <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
@@ -643,6 +644,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
+        <PracticeInnerHeader locale={locale} panel={activePanel} requests={requests}
+          onBack={closePanel} onNavigate={choosePanel}/>
         <div className="hh-practice-form-heading">
           <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='express-reports'?(ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
@@ -740,17 +743,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
               onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))} />
           </details>
         </>}
-        {activePanel==='requests'&&<>
-          <div className="hh-practice-metrics">
-            <div><strong>{services.length}</strong><span>{d.servicesMetric}</span></div>
-            <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
-            <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
-          </div>
-          <Requests items={requests} t={t} locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true}
-            isOwner={isOwner} accountId={accountId} onCreateReport={openExpressReportFor}
-            onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
-            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
-        </>}
+        {activePanel==='requests'&&<Requests items={requests} services={services} t={t}
+          locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true}
+          isOwner={isOwner} accountId={accountId} onCreateReport={openExpressReportFor}
+          onOpenRequest={item=>{setFocusRequestId(item.id);choosePanel('clients')}}
+          onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
+          onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
+        <PracticeInnerBottomNavigation locale={locale} panel={activePanel}
+          onBack={closePanel} onNavigate={choosePanel} onOpenMaterials={openMaterialsPanel}/>
       </section>}
     {!needsOnboarding&&!activePanel&&<details className="hh-practice-v4-community">
       <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
@@ -929,12 +929,31 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
         onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
-function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,enabled=false,isOwner=false,accountId}){
+function Requests({items,services=[],t,locale,busy,onStatus,onSaveContact,onCreateReport,onOpenRequest,enabled=false,isOwner=false,accountId}){
   const [proposals,setProposals]=useState({})
   const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
   const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
-  const ru=t.requests==='Заявки'
-  return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
+  const ru=locale==='ru',es=locale==='es'
+  const newCount=items.filter(item=>item.status==='requested').length
+  const workCount=items.filter(item=>['contacted','reschedule_proposed','confirmed','booked','in_progress'].includes(item.status)).length
+  const doneCount=items.filter(item=>['completed','closed'].includes(item.status)).length
+  const labels={
+    en:{requested:'New',contacted:'Discussing',reschedule_proposed:'Time proposed',confirmed:'Confirmed',
+      booked:'Booked',in_progress:'In progress',completed:'Completed',closed:'Closed',declined:'Declined'},
+    ru:{requested:'Новая',contacted:'Уточнение',reschedule_proposed:'Предложено время',confirmed:'Подтверждена',
+      booked:'Записан',in_progress:'В работе',completed:'Завершена',closed:'Закрыта',declined:'Отклонена'},
+    es:{requested:'Nueva',contacted:'En diálogo',reschedule_proposed:'Hora propuesta',confirmed:'Confirmada',
+      booked:'Reservada',in_progress:'En curso',completed:'Terminada',closed:'Cerrada',declined:'Rechazada'}
+  }[locale]||{}
+  const lang=locale==='es'?'es':locale==='ru'?'ru':'en'
+  return <section className="hh-section hh-inner-requests" data-practice-inner-requests>
+    <div className="hh-inner-request-stats" aria-label={ru?'Настоящие показатели заявок':es?'Solicitudes reales':'Actual request counts'}>
+      {[[newCount,ru?'Новые':es?'Nuevas':'New','new'],
+         [workCount,ru?'В работе':es?'En curso':'In progress','working'],
+         [doneCount,ru?'Завершены':es?'Terminadas':'Completed','done']].map(([value,label,kind])=>
+          <div key={kind} data-kind={kind}><strong>{value}</strong><small>{label}</small></div>)}
+    </div>
+    <div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
     <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
       <select value={status} onChange={event=>setStatus(event.target.value)} aria-label={ru?'Фильтр заявок':'Filter requests'}>
         <option value="open">{ru?'Требуют внимания':'Needs attention'}</option>
@@ -950,9 +969,51 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,ena
         <option value="all">{ru?'Все заявки':'All requests'}</option>
       </select>
     </label>
-  </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
+  </div>
+    <div className="hh-inner-request-tabs" role="group" aria-label={ru?'Фильтр заявок':es?'Filtrar solicitudes':'Filter requests'}>
+      {[['all',ru?'Все':es?'Todas':'All'],
+        ['requested',ru?'Новые':es?'Nuevas':'New'],
+        ['open',ru?'Активные':es?'Activas':'Active'],
+        ['completed',ru?'Завершены':es?'Finalizadas':'Completed']].map(([value,label])=>
+         <button key={value} type="button" aria-pressed={status===value} onClick={()=>setStatus(value)}>
+          {label}{value==='requested'?' · '+newCount:''}
+         </button>)}
+    </div>
+    <p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{enabled&&isOwner&&isOwnerFreeExpressRequest(x)
+    {visible.map(x=>{
+      const service=services.find(item=>item.id===x.serviceId)
+      const title=service?.localizedCopy?.[lang]?.title||service?.copy?.title||
+        x.serviceTitle||x.remoteBooking?.serviceTitle||(ru?'Индивидуальная услуга':es?'Servicio personal':'Personal service')
+      const person=x.contact?.displayName||x.contact?.name||
+        (typeof x.contact==='string'?x.contact:null)||(ru?'Клиент':es?'Cliente':'Client')
+      const state=labels[x.status]||x.status
+      const hasAmount=x.remoteBooking?.price!=null&&Number.isFinite(Number(x.remoteBooking.price))
+      const canReply=x.accountRequest===true||x.reportEligible===true
+      return <article className="hh-panel hh-inner-request-card" key={x.id} data-request-status={x.status}>
+        <div className="hh-inner-request-card-head">
+          <span className="hh-inner-request-avatar" aria-hidden="true">{String(person).trim().slice(0,1).toUpperCase()||'•'}</span>
+          <span className="hh-inner-request-identity"><strong>{person}</strong>
+            <small>{new Date(x.createdAt).toLocaleString(lang==='ru'?'ru-RU':lang==='es'?'es-ES':'en-CA')}</small>
+          </span>
+          <span className="hh-inner-request-state" data-status={x.status}>{state}</span>
+        </div>
+        <div className="hh-inner-request-service"><strong>{title}</strong>
+          <small>{x.remoteBooking
+             ?(ru?'Дистанционно':es?'A distancia':'Remote')+' · '+x.remoteBooking.duration+' min'
+             :ru?'Условия уточняются':es?'Condiciones por confirmar':'Details to confirm'}</small>
+          {hasAmount&&<b>{x.remoteBooking.price} {x.remoteBooking.currency||''}</b>}
+        </div>
+        <div className="hh-inner-request-actions">
+          <button type="button" onClick={()=>onOpenRequest?.(x)}>
+            {canReply?(ru?'Ответить':es?'Responder':'Reply'):(ru?'Открыть заявку':es?'Abrir solicitud':'Open request')}
+            <ChevronRight size={16} aria-hidden="true"/>
+          </button>
+          <small>{ru?'Заявка ≠ запись или оплата':es?'No es reserva ni pago':'Not booked or paid'}</small>
+        </div>
+        <details className="hh-inner-request-details">
+          <summary>{ru?'Подробности и действия':es?'Detalles y acciones':'Details and actions'} <ChevronRight size={16} aria-hidden="true"/></summary>
+          <div className="hh-inner-request-advanced"><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{enabled&&isOwner&&isOwnerFreeExpressRequest(x)
         ?<FreeExpressOwnerCase request={x} locale={locale} accountId={accountId}/>
         :x.message&&<p>{x.message}</p>}
       <div className="hh-actions">
@@ -1013,7 +1074,7 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,ena
           <button disabled={busy} onClick={()=>onStatus(x,'declined')}>{locale==='ru'?'Отменить до начала':'Decline before start'}</button>
         </>}
         {x.status==='in_progress'&&<button disabled={busy} onClick={()=>onStatus(x,'completed')}>{locale==='ru'?'Завершить сеанс':'Mark completed'}</button>}
-      </div>}</article>)}
+      </div>}</div></details></article>})}
   </section>
 }
 

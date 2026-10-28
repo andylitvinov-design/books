@@ -561,13 +561,13 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'portrait', label: locale === 'ru' ? 'Мой профиль' : 'My Profile', href: root + '/portrait', icon: UserRound },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
-    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
+    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.
   const mobileNav = [
-    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: root + '/practice', icon: Users },
+    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
     { id: 'portfolio', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/portfolio', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
@@ -588,7 +588,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
-        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={root + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={'/' + locale + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>

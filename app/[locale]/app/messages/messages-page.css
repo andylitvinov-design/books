@@ -27,4 +27,26 @@
   }
 }
 
-/* Messages uses the same consolidated six-destination Cabinet bar, never a separate dock. */
+/* Messages reuses the shared Cabinet mobile dock, never a second bottom bar. */
+
+
+/* Mock-aligned inner Messages: keep real secure conversation and shared single
+   five-tab app dock, never a second bottom bar. */
+.hh-app.hh-messages-page{--hh-ink:#224337;--hh-accent:#008c71;
+ background:transparent;color:#233f33}
+.hh-app.hh-messages-page .hh-mobile-app-nav{--hh-accent:#008c71}
+@media(max-width:760px){
+ .hh-app.hh-messages-page{padding-top:8px;padding-bottom:calc(100px + env(safe-area-inset-bottom));}
+ .hh-app.hh-messages-page .hh-mobile-app-nav{
+  border:1px solid #eee4d8;border-bottom:0;border-radius:20px 20px 0 0;
+  background:#fffdfaF5;box-shadow:0 -5px 18px #4b3c2a10;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+ }
+ .hh-app.hh-messages-page .hh-mobile-app-nav a[aria-current="page"]{color:#00866e;background:#e4f4ec;border-radius:13px}
+ .hh-app.hh-messages-page .hh-mobile-app-nav a{min-height:48px;min-width:0;
+  font:650 10px/1.2 system-ui,sans-serif}
+ .hh-app.hh-messages-page .hh-mobile-app-nav a:focus-visible{outline:3px solid #008d72;outline-offset:2px}
+ /* This original keyboard gate stays authoritative. */
+ .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-mobile-app-nav{display:none!important}
+}
+@media(max-width:350px){.hh-app.hh-messages-page{width:calc(100% - 10px)}}
