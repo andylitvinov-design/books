@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, Target, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, Target, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
@@ -9,13 +9,17 @@ export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
 export type GoalCurrency = "CAD" | "EUR" | "USD" | "GBP";
-export type GoalSelection = {
-  sector: GoalSector;
+export type GoalSectorSnapshot = {
   concerns: string[];
   tasks: string[];
   ratings: Record<string, GoalRating>;
   amounts?: Record<string, GoalAmount>;
   currency?: GoalCurrency;
+};
+export type GoalSelection = GoalSectorSnapshot & {
+  sector: GoalSector;
+  // Accepted categories stay only in this page's React state, never on a server.
+  savedSectors?: Partial<Record<GoalSector, GoalSectorSnapshot>>;
 };
 type Item = { id: string; en: string; ru: string; es: string };
 type Axis = Item & { unit: "score" | "currency" | "months" };
@@ -57,7 +61,6 @@ const sectors: Record<GoalSector, Items> = {
     axes: [
       axis("vitality", "Energy", "Энергия", "Energía"),
       axis("sleepQuality", "Sleep quality", "Качество сна", "Calidad del sueño"),
-      axis("bodyComfort", "Body comfort", "Комфорт в теле", "Bienestar corporal"),
       axis("calm", "Inner calm", "Спокойствие", "Calma interior"),
     ],
   },
@@ -82,7 +85,6 @@ const sectors: Record<GoalSector, Items> = {
       axis("monthlyIncome", "Monthly income", "Доход в месяц", "Ingreso mensual", "currency"),
       axis("incomeStability", "Income stability", "Стабильность дохода", "Estabilidad de ingresos"),
       axis("reserveMonths", "Reserve in months", "Финансовый резерв", "Meses de reserva", "months"),
-      axis("moneyConfidence", "Financial confidence", "Финансовая уверенность", "Confianza financiera"),
     ],
   },
   love: {
@@ -106,7 +108,6 @@ const sectors: Record<GoalSector, Items> = {
       axis("connection", "Closeness", "Близость", "Cercanía"),
       axis("trust", "Trust", "Доверие", "Confianza"),
       axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
-      axis("support", "Emotional support", "Поддержка", "Apoyo emocional"),
     ],
   },
   goals: {
@@ -128,7 +129,6 @@ const sectors: Record<GoalSector, Items> = {
     ],
     axes: [
       axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
-      axis("motivation", "Motivation", "Мотивация", "Motivación"),
       axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
       axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
     ],
@@ -153,7 +153,6 @@ const sectors: Record<GoalSector, Items> = {
     axes: [
       axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
       axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
-      axis("values", "Living my values", "Соответствие ценностям", "Vivir mis valores"),
       axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
     ],
   },
@@ -162,28 +161,34 @@ const ui = {
   en: {
     title: "Goal & task filter", sector: "Life area", current: "1. What matters right now?",
     desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
-    ratingHelp: "Four indicators for this area. Self-ratings 1–10; money fields use actual amounts.",
+    ratingHelp: "Three indicators. Self-ratings 1–10; financial amounts have their own units."
     now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
     currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown. Changing currency clears income values.",
     clear: "Reset filter", close: "Close filter",
+    save: "Save", next: "Next category", accepted: "Accepted",
+    savedNote: "Saved on this page only",
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
     desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
-    ratingHelp: "Четыре показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
+    ratingHelp: "Три показателя. Оценки 1–10; доход и резерв — в реальных единицах."
     now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
     currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно. Смена валюты очищает суммы дохода без конвертации.",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
+    save: "Сохранить", next: "Следующая категория", accepted: "Принято",
+    savedNote: "Сохранено только на этой странице",
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
     desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
-    ratingHelp: "Cuatro indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
+    ratingHelp: "Tres indicadores. Escalas 1–10; ingresos y reserva con unidades reales."
     now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
     currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional. Cambiar moneda borra los ingresos sin convertirlos.",
     clear: "Restablecer filtro", close: "Cerrar filtro",
+    save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
+    savedNote: "Guardado solo en esta página",
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
   },
 } as const;
