@@ -64,3 +64,13 @@ test('cabinet lists, replaces, and deletes only voluntarily saved private photo'
   assert.match(cabinet,/result\.removed!==true/)
   assert.match(cabinet,/photo.*never shared/)
 })
+
+test('strict CSP exposes blob previews on Support and signed images only in My Videos',()=>{
+  const policy=read('middleware.ts')
+  assert.match(policy,/const privateSupportPhotoCabinet/)
+  assert.match(policy,/const privateSupportPhotoOrigin/)
+  assert.ok(policy.includes('supportMobilePublishedMedia || privateSupportPhotoCabinet'))
+  assert.ok(policy.includes('directMessageStorageOrigin + privateSupportPhotoOrigin'))
+  assert.ok(policy.includes('if (!privateSupportPhotoCabinet) return'))
+  assert.ok(policy.includes('url.origin'))
+})
