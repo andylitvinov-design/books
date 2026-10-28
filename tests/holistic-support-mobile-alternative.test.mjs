@@ -410,3 +410,83 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
 });
+
+
+test("Academy Reiki discovery exposes existing initiations and learning paths with honest pricing", () => {
+  const input = read("lib/academy/reiki-public-offers.ts");
+  assert.match(input, /REIKI_LEVEL_PRICES\.tantra\.amountEur/);
+  assert.match(input, /REIKI_LEVEL_PRICES\.yggdrasil\.amountEur/);
+  assert.match(input, /REIKI_FREE_COURSE_PATH/);
+  assert.doesNotMatch(input, /createOrder|chargePayment|insert into|service_role|fetch\(/);
+  const compile = ts.transpileModule(input, {
+    fileName: "reiki-public-offers.ts", reportDiagnostics: true,
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  });
+  assert.deepEqual((compile.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error), []);
+  const code = input
+    .replace(/^import type .*;\s*$/gm, "")
+    .replace(/^import \{ REIKI_LEVEL_PRICES \} .*;\s*$/m, "")
+    .replace(/^import \{ REIKI_FREE_COURSE_PATH \} .*;\s*$/m, "");
+  const runtime = ts.transpileModule(code, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const exports = {};
+  const canonicalPrice = JSON.parse(JSON.stringify({
+    tantra: { amountEur: 50, durationMinutes: 30 },
+    yggdrasil: { amountEur: 100, durationMinutes: 60 },
+  }));
+  // The source must use the canonical rate, never copy a speculative course fee.
+  const canonical = read("lib/academy/reiki-level-pricing.js");
+  assert.match(canonical, /tantra: Object\.freeze\(\{ amountEur: 50, durationMinutes: 30 \}\)/);
+  assert.match(canonical, /yggdrasil: Object\.freeze\(\{ amountEur: 100, durationMinutes: 60 \}\)/);
+  const freePath = read("lib/academy/reiki-free-course.ts")
+    .match(/REIKI_FREE_COURSE_PATH = "([^"]+)"/)?.[1];
+  assert.ok(freePath);
+  const evaluate = new Function("exports", "module", "REIKI_LEVEL_PRICES", "REIKI_FREE_COURSE_PATH", runtime);
+  evaluate(exports, { exports }, canonicalPrice, freePath);
+  const all = exports.listReikiPublicOffers("ru");
+  assert.equal(all.length, 9);
+  assert.equal(new Set(all.map(o => o.id)).size, all.length);
+  assert.ok(all.every(o => o.source === "existing_academy" && o.certificateAvailable === null));
+  assert.ok(all.every(o => o.href.startsWith("/ru/academy/")));
+  assert.ok(all.every(o => o.reportFormats === null && o.deliveryWindow === null));
+  const filter = (format, focus, price = "all", certificateRequested = false) =>
+    exports.matchReikiPublicOffers(all, { format, focus, price, certificateRequested });
+  assert.equal(filter("initiation", "love").length, 2, "free + personal Tantra");
+  assert.equal(filter("initiation", "balance").length, 2, "Yggdrasil");
+  assert.equal(filter("initiation", "strength").length, 1, "Kundalini enquiry");
+  assert.equal(filter("course", "love").length, 2, "free + Tantra learning");
+  assert.equal(filter("course", "strength").length, 2, "free + Kundalini learning");
+  assert.equal(filter("course", "balance").length, 2, "free + Yggdrasil learning");
+  assert.equal(filter("course", "purpose").length, 0, "no invented runic Reiki programme");
+  assert.equal(filter("initiation", "love", "mid").length, 1, "canonical personal €50");
+  assert.equal(filter("initiation", "balance", "high").length, 1, "canonical personal €100");
+  assert.equal(filter("course", "love", "free").length, 1, "only confirmed free programme");
+  assert.equal(filter("course", "strength", "premium").length, 0, "no fabricated paid tuition");
+  assert.equal(filter("course", "balance", "all", true).length, 0, "certificate never assumed");
+  assert.equal(filter("initiation", "love", "all", true).length, 0, "unknown is not yes");
+  for (const locale of ["en", "ru", "es"]) {
+    const records = exports.listReikiPublicOffers(locale);
+    assert.equal(records.length, all.length, locale);
+    assert.ok(records.every(item => item.href.startsWith("/" + locale + "/academy/")), locale);
+    assert.ok(records.every(item => item.title && item.description && item.photo && item.practitionerPhoto));
+  }
+});
+
+test("Reiki shelf renders distinct service-name cards for all three formats without duplicating checkout", () => {
+  const gallery = read("components/holistic-support-master-gallery.tsx");
+  const css = read("components/holistic-support-master-gallery.module.css");
+  const directory = read("lib/practitioners/public-remote-support-masters.ts");
+  for (const marker of ["data-support-reiki-offers", "data-reiki-results-format",
+    "data-reiki-offer-format", "data-support-reiki-card-action",
+    "data-support-master-thumb", "data-support-master-rail"]) assert.ok(gallery.includes(marker), marker);
+  assert.match(gallery, /academyReikiOffers\.map\(offer =>/);
+  assert.match(gallery, /visibleMasters\.map\(master =>/);
+  assert.match(gallery, /master\.serviceTitle/);
+  assert.match(directory, /serviceTitle: service\.copy\?\.title/);
+  assert.match(gallery, /setSelectedId\(master\.serviceId\); setOrderOpen\(true\)/);
+  assert.match(gallery, /r\.noCertificate/);
+  assert.match(css, /\.reikiOfferGrid\{display:grid/);
+  assert.match(css, /@media\(max-width:640px\)/);
+  assert.doesNotMatch(gallery, /createPaymentIntent|confirmPayment|createBooking\(/);
+});
