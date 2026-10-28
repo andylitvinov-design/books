@@ -23,6 +23,8 @@ try {
       page.on("pageerror", error => errors.push(error.message));
       await page.route("**/api/app/auth/status", route =>
         route.fulfill({ status: 401, contentType: "application/json", body: '{"code":"SIGN_IN_REQUIRED"}' }));
+      await page.route("**/api/app/support-journey/test-status", route =>
+        route.fulfill({ status: 200, contentType: "application/json", body: '{"completed":false}' }));
       await page.route("**/www.youtube-nocookie.com/**", route => route.abort());
       try {
         const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
@@ -39,6 +41,13 @@ try {
         assert.equal(await quest.locator("[data-support-quest-step]").count(), 7, label + " seven actions");
         assert.equal(await quest.locator("[data-support-quest-completed]").innerText(), "0/7", label + " initial progress");
         assert.equal(await quest.locator("[data-support-quest-budget]").count(), 1, label + " budget");
+        const top = root.locator("[data-support-today-pick]");
+        assert.equal(await top.locator("[data-support-pick]").count(), 4, label + " four top hints");
+        assert.deepEqual(await top.locator("[data-support-pick]").evaluateAll(nodes =>
+          nodes.map(node => node.getAttribute("data-support-pick"))),
+          ["test", "ideas", "video", "course"], label + " stable hint order");
+        assert.equal(await top.locator('[data-support-pick="test"]').getAttribute("data-done"),
+          "false", label + " no fabricated pre-test badge");
         const score = root.locator('[data-support-scale="energy"] input');
         await score.focus();
         await score.press("ArrowRight");
@@ -57,15 +66,24 @@ try {
         assert.notEqual(await quest.locator('[data-support-quest-step="test"]').getAttribute("data-status"),
           "done", label + " mere test browsing never confirms result");
         await quest.locator('[data-support-quest-step="test"]').click();
-        assert.equal(await quest.locator('[data-support-quest-detail] a').getAttribute("href"),
-          "/" + locale + "/client/tests", label + " actual free test destination");
-        await quest.locator("[data-support-test-self-report]").click();
-        assert.equal(await quest.locator('[data-support-quest-step="test"]').getAttribute("data-status"),
-          "done", label + " explicit manual self-report");
+        const suggestedHref = await quest.locator('[data-support-quest-detail] a').getAttribute("href");
+        assert.equal(suggestedHref,
+          "/" + locale + "/client/tests?focus=body,resources", label + " ranked by changed energy scale");
+        assert.equal(await top.locator('[data-support-pick="test"]').getAttribute("href"),
+          suggestedHref, label + " same authentic Test Explorer link");
+        assert.equal(await top.locator('[data-support-pick="test"]').getAttribute("data-done"),
+          "false", label + " opening a link is not test completion");
+        // Existing guest/account verification is mocked here, not a fabricated manual badge.
+        await page.unroute("**/api/app/support-journey/test-status");
+        await page.route("**/api/app/support-journey/test-status", route =>
+          route.fulfill({ status: 200, contentType: "application/json", body: '{"completed":true}' }));
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
+        await page.locator('[data-support-pick="test"][data-done="true"]').waitFor({ timeout: 35000 });
 
         const storage = await page.evaluate(() =>
           JSON.parse(localStorage.getItem("hh-support-free-journey-v1") || "{}"));
-        assert.deepEqual(Object.keys(storage).sort(), ["completed", "starts"], label + " anonymous only");
+        assert.deepEqual(Object.keys(storage).sort(), ["completed", "starts", "videoQuestionAnswered"],
+          label + " anonymous flags and no video-question answer");
         assert.equal(JSON.stringify(storage).includes("energy"), false, label + " no personal data");
 
         const pageWidth = await page.evaluate(() => ({
@@ -106,13 +124,30 @@ try {
         await page.locator("[data-support-play]").click();
         assert.equal(await page.locator('[data-support-quest-step="firstVideo"]').getAttribute("data-status"),
           "done", label + " first actual Play click");
+        assert.equal(await page.locator('[data-support-pick="video"]').getAttribute("data-done"), "false",
+          label + " video hint awaits a reflection answer, not a Play click");
+        await page.locator("[data-support-video-question-answer]").click();
+        assert.equal(await page.locator('[data-support-pick="video"]').getAttribute("data-done"), "true",
+          label + " actual voluntary video question answered");
         assert.notEqual(await page.locator('[data-support-quest-step="secondVideo"]').getAttribute("data-status"),
           "done", label + " one launch is not two");
         await page.locator('[data-support-video]').nth(1).click();
         await page.locator("[data-support-play]").click();
         assert.equal(await page.locator('[data-support-quest-step="secondVideo"]').getAttribute("data-status"),
           "done", label + " second actual Play click");
+        // The public route reuses its existing ranked Test Explorer and offers login
+        // above the form without requiring a subscription or real Google OAuth.
+        const testPage = await context.newPage();
+        await testPage.route("**/api/app/auth/status", route =>
+          route.fulfill({ status: 401, contentType: "application/json", body: '{"code":"SIGN_IN_REQUIRED"}' }));
+        const testResponse = await testPage.goto(origin + suggestedHref, {
+          waitUntil: "domcontentloaded", timeout: 90000,
+        });
+        assert.equal(testResponse?.status(), 200, label + " personalized Test Explorer opens");
+        await testPage.locator("[data-test-explorer-google-banner]").waitFor({ timeout: 35000 });
+        await testPage.locator("[data-test-explorer-google-signin]:not([disabled])").waitFor({ timeout: 35000 });
         assert.equal(errors.length, 0, label + " page errors: " + errors.join("; "));
+        await testPage.close();
         if (locale === "ru" && width === 390) {
           await page.locator("#support-progress").screenshot({
             path: output + "/progress-ru-390.png", animations: "disabled",
