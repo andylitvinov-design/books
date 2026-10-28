@@ -41,7 +41,7 @@ test('only verified private Telegram owner commands are recognized',()=>{
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
   assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_edit','materials','track'])
   assert.deepEqual(ownerScopedTelegramCommands({mode:'shared_practice',ownerVideoEnabled:true})
-    .map(x=>x.command),['audio','combine','done','video','materials','track'])
+    .map(x=>x.command),['audio','combine','done','video','video_edit','materials','track'])
   assert.deepEqual(ownerScopedTelegramCommands({mode:'dedicated',ownerAiEnabled:true,ownerVideoEnabled:true}),[])
   const live=ownerAiMenu({five:{enough:true,available:['ux','product','engineering','critic','chair']},gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
