@@ -179,7 +179,8 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const methods = [...new Set((masters || []).flatMap(master => master.methods || [])
     .filter((value): value is string => Boolean(value) && offersMethod(value)))];
   const visibleMasters = (masters || []).filter(master =>
-    (!method || master.methods.includes(method)) && master.methods.some(offersMethod));
+    (!method || master.methods.includes(method)) &&
+    (!supportedMethods || master.methods.some(offersMethod)));
   const visibleOffers = (offers || []).filter(offer => {
     if (priceFilter === "free") return offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact");
     if (priceFilter === "published") return offer.pricingMode !== "contact" && offer.price !== null && Number.isFinite(offer.price);
