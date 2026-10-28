@@ -83,7 +83,7 @@ test("five goal sectors with problem, task and now/want controls, in EN/RU/ES", 
   assert.match(editor, /data-goal-currency/);
   assert.match(editor, /value=\{amounts\[item\.id\]\?\.\[field\] \?\? ""\}/);
   assert.match(editor, /updateAmount\(item\.id, field/);
-  assert.match(editor, /initial\?\.currency \?\? "CAD"/);
+  assert.match(editor, /initialDraft\?\.currency \?\? "CAD"/);
   assert.match(editor, /monthlyIncome: \{ current: null, desired: null \}/);
   assert.match(editor, /"Сохранить"/);
   assert.match(editor, /"Следующая категория"/);
