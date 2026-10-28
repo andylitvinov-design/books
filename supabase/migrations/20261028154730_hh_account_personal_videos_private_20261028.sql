@@ -18,6 +18,7 @@ create table if not exists app_private.personal_videos(
   created_at timestamptz not null default now(),
   ready_at timestamptz,
   deleted_at timestamptz,
+  released_at timestamptz,
   check((status='ready' and ready_at is not null) or status<>'ready')
 );
 create index if not exists hh_personal_videos_by_owner
