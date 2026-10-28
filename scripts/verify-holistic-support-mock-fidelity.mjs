@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { qaSupportDirectoryResponse } from "./fixtures/holistic-support-directory.mjs";
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3118";
@@ -23,6 +24,11 @@ for (const browserType of [chromium, webkit]) {
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
+        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+          const kind = new URL(route.request().url()).searchParams.get("kind");
+          await route.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
+        });
         try {
           const res = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 75000 });
@@ -37,7 +43,7 @@ for (const browserType of [chromium, webkit]) {
           }, null, {timeout:30000});
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
-          assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
+          assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1,
             label + " recommendations below the four self-rating scales");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
@@ -95,10 +101,10 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.gallery.length===1 && geometry.gallery[0].y-geometry.a[0].y<285,
-            label+" three-zone dashboard exposes meditation thumbnails by 285px");
-          assert.ok(geometry.gallery[0].bottom<=geometry.hero[0].y+2,
-            label+" other meditations appear BEFORE the scenic player");
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
+            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
+          assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
+            label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
             t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
@@ -153,22 +159,46 @@ for (const browserType of [chromium, webkit]) {
             assert.match(src??"", /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?autoplay=1/,
               label+" consent-to-play original");
           }
-          // The former recommended talisman card is intentionally gone;
-          // its existing gallery remains reachable in its own help mode.
+          // Talisman has the same hero-first stage and source images in a
+          // three-tile shelf. Navigation and local quote must not submit.
           await root.locator('[data-support-tool="talisman"]').click();
-          assert.equal(await root.locator('[data-support-talisman-viewer]').count(),1,
-            label+" same-screen talisman viewer retained");
+          const talisman=root.locator('[data-support-talisman-viewer]');
+          await talisman.waitFor({state:"visible",timeout:8000});
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
+            label+" three verified Fu illustrations below their large hero");
+          const tRects=await talisman.evaluate(el=>{
+            const a=el.querySelector('[data-support-talisman]')?.getBoundingClientRect();
+            const b=el.querySelector('[data-support-talisman-rail]')?.getBoundingClientRect();
+            return {heroBottom:a?.bottom,railTop:b?.top};
+          });
+          assert.ok(tRects.railTop>=tRects.heroBottom-2,
+            label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(), 2, label+" Academy course links");
-          assert.equal(await root.locator('[data-support-player] iframe').count(), 0, label+" switching courses does not autoplay");
+          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
+            label+" Academy course routes still work");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+            label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
-          const healing = root.locator('[data-support-healing-panel]');
+          const healing=root.locator('[data-support-healing-panel] [data-support-master-viewer]');
           await healing.waitFor({state:"visible",timeout:8000});
-          assert.equal(await healing.locator('a[href$="/masters"]').count(), 1, label+" masters entry");
-          assert.equal(await healing.locator('a[href$="/services/remote-energy-support"]').count(), 1, label+" energy service entry");
-          await healing.locator('button[aria-controls="support-mobile-master-request"]').click();
-          assert.equal(await healing.locator('#support-mobile-master-request').count(), 1, label+" existing optional master finder");
+          const heroMaster=healing.locator('[data-support-master-hero]');
+          await heroMaster.waitFor({state:"visible",timeout:8000});
+          assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
+            label+" fixture's published specialist options beneath large hero");
+          await healing.locator('[data-support-master-thumb="qa-energy-two"]').click();
+          assert.equal(await heroMaster.getAttribute("data-support-master-hero"),"qa-energy-two",
+            label+" clicking master thumbnail changes selection");
+          await root.locator('[data-support-tool="masters"]').click();
+          assert.equal(await root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]').count(),1,
+            label+" Masters shortcut opens same-page hero catalogue");
+          await root.locator('[data-support-tool="consultation"]').click();
+          const offers=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
+          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
+            label+" published-only consultation gallery reuses the scenic stage");
+          assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
+            label+" secure service request is an explicit navigation, not a silent booking");
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
