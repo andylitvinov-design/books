@@ -81,7 +81,7 @@ const translations = {
 const compactLabels = {
   en: {
     help: "Links and API setup", selected: "Selected scene", photo: "Your public portrait", imageReady: "Reference photo is ready. Your face stays visible in the prompt.",
-    photoDownload: "Save portrait", photoStep: "For a no-charge web draft: save the portrait, copy the prompt and upload both in Kling Web. Provider free-credit and commercial-use rules still apply.",
+    photoDownload: "Save portrait", photoStep: "For Kling Web: save the portrait and copy the prompt. Kling Web may use its own credits; check pricing and commercial rights before starting there.",
     freeTitle: "Prepare for free", edit: "Edit prompt, source and format", task: "Check an existing Kling task",
     paidOff: "API rendering is OFF to prevent charges. You can prepare the scene free; no video has been generated yet.",
     paidOn: "Paid API mode: check the current Kling price and approve this one job before generating.",
@@ -90,7 +90,7 @@ const compactLabels = {
   },
   ru: {
     help: "Справка и настройки API", selected: "Выбранный сюжет", photo: "Ваша публичная фотография", imageReady: "Фото подставлено. В сценарии лицо должно оставаться узнаваемым.",
-    photoDownload: "Сохранить фото", photoStep: "Бесплатный черновик: сохраните фото, скопируйте сценарий и загрузите их в Kling Web. Бесплатные кредиты и права коммерческого использования проверяются отдельно.",
+    photoDownload: "Сохранить фото", photoStep: "Для Kling Web: сохраните фото и скопируйте сценарий. Веб-сервис может списывать свои кредиты — проверьте тариф и коммерческие права до генерации.",
     freeTitle: "Подготовить бесплатно", edit: "Изменить текст, источник и формат", task: "Проверить уже созданную задачу",
     paidOff: "API-рендер выключен во избежание расходов. Можно бесплатно подготовить сценарий; видео пока не создано.",
     paidOn: "Платный API: проверьте реальную стоимость Kling и подтвердите только один рендер.",
@@ -99,7 +99,7 @@ const compactLabels = {
   },
   es: {
     help: "Ayuda y configuración", selected: "Escena seleccionada", photo: "Tu retrato público", imageReady: "Foto seleccionada. El prompt conserva el rostro reconocible.",
-    photoDownload: "Guardar foto", photoStep: "Borrador sin API: guarda la foto, copia el prompt y súbelos a Kling Web. Verifica créditos gratuitos y derechos comerciales.",
+    photoDownload: "Guardar foto", photoStep: "Para Kling Web: guarda la foto y copia el prompt. El servicio web puede consumir créditos; revisa el precio y los derechos comerciales antes de generar.",
     freeTitle: "Preparar gratis", edit: "Editar texto, fuente y formato", task: "Consultar un trabajo existente",
     paidOff: "La API está desactivada para evitar cargos. Puedes preparar gratis la escena; todavía no se ha creado un vídeo.",
     paidOn: "API de pago: revisa el precio de Kling y aprueba únicamente esta generación.",
