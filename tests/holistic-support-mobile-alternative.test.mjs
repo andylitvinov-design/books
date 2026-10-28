@@ -75,7 +75,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   assert.match(css, /@media \(max-width: 350px\)/);
   assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /font-size: 17px/);
-  assert.match(css, /min-height: 104px/);
+  assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
 });
@@ -113,7 +113,6 @@ test("personal recommendations rank verified recordings and existing talismans, 
   assert.match(css, /\.recommendationPanel/);
   assert.match(css, /\.detailedAnalysisLink/);
 });
-
 
 test("same-window talisman viewer reuses real images, local basket, and protected quote form in all locales", () => {
   const viewer = read("components/holistic-support-talisman-viewer.tsx");

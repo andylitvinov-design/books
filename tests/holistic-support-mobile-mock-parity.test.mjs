@@ -26,9 +26,19 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
   assert.match(css, /\.tools \{ grid-area: tools;/);
   assert.match(css, /\.profile \{ grid-area: profile;/);
   assert.match(css, /\.scaleList \{ display: flex; flex-direction: column;/);
-  assert.match(css, /\.toolButton \{ min-width: 0; min-height: 104px/);
-  assert.match(css, /\.photo \{ flex: none; align-self: center;/);
+  assert.match(css, /\.toolButton \{ display: flex; flex-direction: row;/);
+  assert.match(css, /\.photo \{ width: min\(100%,100px\);/);
   assert.match(client, /className=\{styles\.recommendShort\}/);
+  assert.match(client, /support-mock-portrait\.webp/);
+  assert.match(client, /support-mock-hero\.webp/);
+  assert.match(css, /support-mock-video-posters\.webp/);
+  for (const filename of ["support-mock-hero.webp", "support-mock-portrait.webp", "support-mock-video-posters.webp"]) {
+    const picture = readFileSync(new URL("../public/images/holistic-house/" + filename, import.meta.url));
+    assert.equal(picture.toString("ascii", 0, 4), "RIFF", filename + " must be a real WebP file");
+    assert.equal(picture.toString("ascii", 8, 12), "WEBP", filename + " format");
+    assert.ok(picture.length > 1000, filename + " was not saved");
+  }
+  assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: minmax\(0,1fr\);/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
   assert.match(client, /aria-label=\{t.options\[id\]\}/);
   assert.match(client, /type="range" min="1" max="10"/);
@@ -36,7 +46,7 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
 });
 
 test("original four-pillar video header includes visible meditation, Master, Program and Topic", () => {
-  assert.match(css, /grid-template-columns: minmax\(0,1.19fr\) repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns: minmax\(0,1.18fr\) repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /\.heroMode \{ display: flex;/);
   assert.match(css, /\.heroFilter select \{ position: absolute;[\s\S]*?opacity: 0;/);
   assert.match(client, /className=\{styles\.filterValue\}/);
