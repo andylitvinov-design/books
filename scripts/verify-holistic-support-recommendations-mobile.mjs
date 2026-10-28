@@ -91,6 +91,8 @@ for (const engine of [chromium, webkit]) {
           assert.equal(await gallery.locator("[data-support-video]").count(), 4, label + " still four real videos");
           const after = await gallery.locator("[data-support-video]").allTextContents();
           assert.equal(after.length, before.length, label + " ranking did not add recordings");
+          const relationshipFirstId = await gallery.locator("[data-support-video]").first().getAttribute("data-support-video");
+          assert.notDeepEqual(after, before, label + " first ranking visibly reorders the rail");
 
           const selectedThumb = gallery.locator("[data-support-video]").last();
           const id = await selectedThumb.getAttribute("data-support-video");
@@ -116,6 +118,8 @@ for (const engine of [chromium, webkit]) {
           }[locale]), label + " new minimum replaces previous topic");
           const firstId = await gallery.locator("[data-support-video]").first().getAttribute("data-support-video");
           assert.match(firstId, /^[A-Za-z0-9_-]{11}$/, label + " verified original video ID");
+          assert.notEqual(firstId, relationshipFirstId,
+            label + " a new minimum really changes the first recommended thumbnail");
 
           // The independent talisman flow still opens an existing SKU and local
           // quotation dialog; a click is NOT a lead, charge or delivery.
