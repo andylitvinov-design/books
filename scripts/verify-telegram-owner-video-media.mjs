@@ -61,22 +61,6 @@ try{
  }
  if(seen.join(',')!=='blue,yellow,red')
    throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED colors='+seen.join(','))
- // A portrait original must keep its geometry inside the 16:9 canvas:
- // 640/800 input at 1080px tall yields exactly 864px of blue content.
- // Cropping/stretching the artwork or producing a portrait MP4 fails this.
- const strip=spawnSync(binary,['-hide_banner','-loglevel','error','-i',target,
-   '-frames:v','1','-vf','crop=1920:2:0:540,format=rgb24',
-   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:16384})
- if(strip.status!==0||strip.stdout?.length!==1920*2*3)
-   throw Error('VIDEO_ASPECT_FRAME_READ_FAILED')
- let blueWidth=0
- for(let i=0;i<1920*3;i+=3){
-   const [r,g,b]=strip.stdout.subarray(i,i+3)
-   if(b>r+60&&b>g+60)blueWidth++
- }
- if(Math.abs(blueWidth-864)>8)
-   throw Error('VIDEO_ASPECT_RATIO_SQUEEZED width='+blueWidth)
-
  // Full-capacity integration: interleave 15 photos and 15 audio pieces using
  // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
  const imageBytes=await Promise.all(photos.map(file=>readFile(file)))
@@ -104,6 +88,41 @@ try{
    timeout:60000,encoding:'utf8',maxBuffer:128000})
  if(fullDecoded.status!==0||!/Video: h264/.test(fullDecoded.stderr)||
    !/Audio: aac/.test(fullDecoded.stderr))throw Error('VIDEO_15X15_CODEC_FAILED')
+ // Regression: a real 640x800 portrait still must occupy exactly 864
+ // center pixels inside the 1920x1080 video; verify encoded pixel rows.
+ const portrait=join(dir,'portrait-blue.jpg')
+ run(['-f','lavfi','-i','color=c=blue:s=640x800:d=1',
+   '-frames:v','1','-update','1',portrait])
+ const portraitBytes=await readFile(portrait)
+ const portraitParts=[
+   {kind:'photo',mime:'image/jpeg',ext:'jpg',
+     fileId:'CI_PORTRAIT_IMAGE',uniqueId:'CI_PORTRAIT_UNIQUE',
+     bytes:portraitBytes.length,duration:0,updateId:950},
+   {kind:'audio',mime:'audio/mpeg',ext:'mp3',
+     fileId:'CI_PORTRAIT_AUDIO',uniqueId:'CI_PORTRAIT_AUDIO_UNIQUE',
+     bytes:soundBytes[0].length,duration:2,updateId:951}
+ ]
+ const portraitMp4=await renderOwnerTelegramVideo(portraitParts,{
+   executable,fetchPart:p=>p.kind==='photo'?portraitBytes:soundBytes[0]})
+ const portraitTarget=join(dir,'portrait-output.mp4')
+ await writeFile(portraitTarget,portraitMp4)
+ const portraitInfo=spawnSync(binary,['-hide_banner','-i',portraitTarget,'-f','null','-'],{
+   timeout:30000,encoding:'utf8',maxBuffer:128000})
+ if(portraitInfo.status!==0||!/1920x1080 \\[SAR 1:1 DAR 16:9\\]/.test(portraitInfo.stderr))
+   throw Error('VIDEO_PORTRAIT_GEOMETRY_METADATA_FAILED')
+ const strip=spawnSync(binary,['-hide_banner','-loglevel','error','-i',portraitTarget,
+   '-frames:v','1','-vf','crop=1920:2:0:540,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:16384})
+ if(strip.status!==0||strip.stdout?.length!==1920*2*3)
+   throw Error('VIDEO_ASPECT_FRAME_READ_FAILED')
+ let blueWidth=0
+ for(let i=0;i<1920*3;i+=3){
+   const [r,g,b]=strip.stdout.subarray(i,i+3)
+   if(b>r+60&&b>g+60)blueWidth++
+ }
+ if(Math.abs(blueWidth-864)>8)
+   throw Error('VIDEO_ASPECT_RATIO_SQUEEZED width='+blueWidth)
+ console.log('MEDIA_PORTRAIT_ASPECT_PASSED input=640x800 active='+blueWidth+'x1080 frame=1920x1080')
  // Regression for actual owner incident: 11 successive audio tracks and
  // only then 3 photographs. Combined duration exceeds the removed 120s cap.
  // Use synthetic files only; no Telegram or private owner material.
