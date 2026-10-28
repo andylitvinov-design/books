@@ -32,8 +32,8 @@ test("video mandala and mobile Support use a single four-tab app shell", () => {
   assert.match(css, /\.mobileAppNav\{display:block\}/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.equal((studio.match(/<MandalaFreeVideoStudio /g) || []).length, 1, "reuse one video engine");
-  assert.match(videoStudio, /support-reference-avatar\\.webp/);
-  assert.match(videoCss, /\\.supportTop\\{grid-template-columns:minmax\\(0,1\\.14fr\\)/);
+  assert.ok(videoStudio.includes("support-reference-avatar.webp"), "shared reference portrait");
+  assert.ok(videoCss.includes(".supportTop{grid-template-columns:minmax(0,1.14fr)"), "compact same three-column layout");
 });
 
 test("every locale keeps an equivalent canonical editor; browser test covers real mobile shortcut", () => {
