@@ -113,7 +113,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // The chosen template must be an ACTUAL first-party MP4 stream, not
         // a canvas or CSS loop imitating footage.
         const realSrc = await selectedClip.getAttribute("data-real-mp4");
-        assert.match(realSrc || "", /^\\/videos\\/holistic-house\\/money-films-v1\\/golden-rain\\.mp4$/);
+        assert.match(realSrc || "", /^\/videos\/holistic-house\/money-films-v1\/golden-rain\.mp4$/);
         assert.equal(await selectedClip.evaluate(el => el.tagName), "VIDEO");
         await page.waitForFunction(() => {
           const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
@@ -125,7 +125,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.ok(secondTime > firstTime + .17, "actual H.264 video must advance in time");
         const master = page.locator('[data-mandala-master-mp4]');
         await master.waitFor({state:"attached",timeout:20000});
-        assert.match(await master.getAttribute("src") || "", /money-films-v1\\/golden-rain\\.mp4$/);
+        assert.match(await master.getAttribute("src") || "", /money-films-v1\/golden-rain\.mp4$/);
         const cinema = page.locator("[data-mandala-cinematic-canvas]");
         await cinema.waitFor({ state: "attached" });
         const frameHash = () => cinema.evaluate(canvas => {
