@@ -88,7 +88,7 @@ const run = async (locale, width) => {
       "First option: Google creates or opens existing cabinet");
     assert.equal(await cart.locator("[data-talisman-contact]").count(),1,
       "Guest fallback has just one visible contact field");
-    assert.equal(await cart.locator(".optional input:visible,.optional textarea:visible").count(),0,
+    assert.equal(await cart.locator("details").first().getAttribute("open"),null,
       "Additional name and wishes are collapsed");
     await cart.locator("[data-talisman-contact]").fill("visitor@example.test");
     await cart.locator('[data-talisman-reply-consent] input[type="checkbox"]').check();
@@ -119,13 +119,14 @@ const run = async (locale, width) => {
       "Verified Google email removes repeated contact fields");
     assert.match(await purchased.locator("[data-talisman-google-ready]").innerText(),
       /test-buyer@example\.test/);
-    assert.match(await purchased.locator(".total").innerText(),/45/);
+    assert.match(await purchased.locator("[data-talisman-total]").innerText(),/45/);
     assert.equal(await purchased.locator('[data-talisman-reply-consent] input[type="checkbox"]').isChecked(),false,
       "Consent is not inferred from Google sign-in");
     await purchased.locator('[data-talisman-reply-consent] input[type="checkbox"]').check();
+    const providerRequest = page.waitForRequest(req =>
+      req.url() === "https://paypal.me/psitrends/45EUR", {timeout:20000});
     await purchased.locator("[data-talisman-pay-now]").click();
-    await page.waitForFunction(() => document.querySelector("[data-talisman-payment-pending]") ||
-      document.readyState==="complete",null,{timeout:20000}).catch(()=>{});
+    await providerRequest;
     assert.equal(captured.checkouts.length,1);
     assert.deepEqual(Object.keys(captured.checkouts[0]).sort(),
       ["items","locale","method","operationId","replyConsent","sourcePath"].sort());
