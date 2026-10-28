@@ -75,12 +75,16 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   // A database error must not be shown as an apparent zero rating.
   if (practitioners.length) {
     try {
-      const summaries = await createServiceReviewRepository(config)
-        .listPublicSummariesForPractitioners(practitioners.map(master=>master.id));
-      const byId = new Map(summaries.map(row=>[row.practitionerId,row]));
+      const summaries: {practitionerId: string;count: number;average: number}[] =
+        await createServiceReviewRepository(config)
+          .listPublicSummariesForPractitioners(practitioners.map(master=>master.id));
+      const byId = new Map<string,{count:number;average:number}>();
+      for (const {practitionerId,count,average} of summaries) {
+        byId.set(practitionerId,{count,average});
+      }
       practitioners = practitioners.map(master=>({
         ...master,
-        reviewSummary: byId.get(master.id) || {count:0,average:0},
+        reviewSummary: byId.get(master.id) ?? {count:0,average:0},
       }));
     } catch { /* Preserve the existing directory if review statistics are unavailable. */ }
   }
