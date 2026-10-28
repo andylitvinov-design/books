@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import MessagesHub from '@/components/app/messages-hub'
+import MessagesOrdersClients from '@/components/app/messages-orders-clients'
 import MessagesBottomNavigation from '@/components/app/messages-bottom-navigation'
 import '../[[...path]]/workspace.css'
 import './messages-page.css'
@@ -21,7 +22,7 @@ export default async function MemberMessages({params}:{params:Promise<{locale:st
         {locale==='ru'?'Мой кабинет':locale==='es'?'Mi cuenta':'My account'}
       </Link>
     </header>
-    <MessagesHub locale={locale}/>
+    <MessagesOrdersClients locale={locale}><MessagesHub locale={locale}/></MessagesOrdersClients>
     <MessagesBottomNavigation locale={locale}/>
   </main>
 }

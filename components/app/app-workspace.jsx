@@ -564,6 +564,14 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
+  // Five prominent mobile destinations mirror the Orders / Clients design.
+  // The complete six-section Cabinet remains available in its account menu.
+  const mobileNav = [
+    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: root + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
+    { id: 'portfolio', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+  ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
     (id === 'course' && ['business','coaching'].includes(page)) ||
@@ -776,15 +784,15 @@ export default function AppWorkspace({ locale, path = [] }) {
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
       {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
-        {nav.map(({ id, label, href, icon: Icon }) => (
+        <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
+          className="hh-mobile-app-nav-home"
+          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
+        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
+        {mobileNav.map(({ id, label, href, icon: Icon }) => (
           <Link key={id} href={href} prefetch={false}
             aria-current={navIsActive(id) ? 'page' : undefined}
           ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
         ))}
-        <Link href={locale === 'ru' ? '/ru' : '/'} prefetch={false}
-          className="hh-mobile-app-nav-home"
-          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
-        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
       </nav>}
     </main>
     </SubscriptionProvider>
