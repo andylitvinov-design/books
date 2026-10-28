@@ -43,6 +43,41 @@ test("every chosen domain returns an actual existing topic video and symbolic ca
   }
 });
 
+test("all-focus prioritizes lower scores and balances genuine topic categories", () => {
+  const options = [video("eeeeeeeeeee", ["energy", "business", "love"]),
+    ...library];
+  const ratings = Object.freeze({ energy: 8, money: 9, relationships: 1, goals: 6 });
+  const result = recommendSupportContent({
+    focus: "all", scores: ratings, videos: options, talismans: TAOIST_TALISMANS, locale: "en",
+  });
+  assert.equal(result.focus, "all");
+  assert.equal(result.videos[0].id, "aaaaaaaaaaa", "lowest relationships score leads to love recording");
+  assert.equal(result.talismans[0].id, "fu-harmony", "same priority reaches symbolic suggestion");
+  const firstThree = result.videos.slice(0, 3);
+  assert.ok(firstThree.some(item => item.topics.includes("love")));
+  assert.ok(firstThree.some(item => item.topics.includes("business")));
+  assert.ok(firstThree.some(item => item.topics.includes("energy")));
+  assert.equal(new Set(result.videos.map(item => item.id)).size, result.videos.length);
+  assert.equal(result.matchedVideo, true);
+  assert.deepEqual(ratings, { energy: 8, money: 9, relationships: 1, goals: 6 }, "never mutates input");
+});
+
+test("all-focus uses each self-rating rather than forcing Energy or default Money", () => {
+  const lowEnergy = recommendSupportContent({
+    focus: "all", scores: { energy: 1, money: 9, relationships: 9, goals: 9 },
+    videos: library, talismans: TAOIST_TALISMANS,
+  });
+  const lowMoney = recommendSupportContent({
+    focus: "all", scores: { energy: 9, money: 1, relationships: 9, goals: 9 },
+    videos: library, talismans: TAOIST_TALISMANS,
+  });
+  assert.equal(lowEnergy.videos[0].id, "ddddddddddd");
+  assert.equal(lowMoney.videos[0].id, "ccccccccccc");
+  assert.equal(lowEnergy.talismans[0].id, "fu-balance");
+  assert.equal(lowMoney.talismans[0].id, "fu-prosperity");
+  assert.equal(lowEnergy.talismans.length, 3, "reuses three distinct published talismans");
+});
+
 test("secondary input scores affect the ranked *alternatives*, not the chosen focus", () => {
   const options = [
     video("eeeeeeeeeee", ["energy", "love"]),
