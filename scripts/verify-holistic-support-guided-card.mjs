@@ -64,6 +64,10 @@ for (const engine of [chromium, webkit]) {
         const question={ru:"Почему именно эта тема?",en:"Why this topic?",es:"¿Por qué esta opción?"}[locale];
         await guide.locator("[data-support-guide-compose] input").fill(question);
         await guide.locator("[data-support-guide-compose] button").click();
+        // React commits the local conversation on the next render. A direct
+        // immediate count is flaky on WebKit 430px even when the reply arrives.
+        await guide.locator("[data-support-guide-message]").nth(2)
+          .waitFor({state:"visible",timeout:8000});
         assert.equal(await guide.locator("[data-support-guide-phase='review']").count(),1,
           tag+" answer a question without skipping current stage");
         assert.ok(await guide.locator("[data-support-guide-message]").count()>=3,

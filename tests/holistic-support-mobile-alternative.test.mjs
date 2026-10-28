@@ -157,7 +157,7 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
   assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
@@ -304,10 +304,13 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+test("Russian course media picker returns in Courses while the four profiles live in Tests", () => {
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
   const courseCss = read("components/holistic-support-course-profiles.module.css");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /const scene = choice === "meditation" \|\| choice === "pump"/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
+  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
+  assert.match(client, /data-support-active-course-link/);
   assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
   assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
@@ -316,9 +319,8 @@ test("original Russian mysteries remain Academy links beside the four profile Co
   assert.match(courseProfiles, /src=\{course\.poster\}/);
   assert.match(courseProfiles, /\/academy\`/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
-  // The original route/manifests remain covered separately above. The new
-  // profile screen links to those originals rather than pretending its old,
-  // now-unreachable inline course picker is still a visible UI.
+  // Original manifests remain single-source. The course picker is reachable
+  // again, while the four self-rating profile cards belong to Tests.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
