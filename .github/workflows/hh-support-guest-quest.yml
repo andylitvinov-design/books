@@ -1,33 +1,24 @@
-name: Holistic Support free quest — seven steps and guest battery
+name: Holistic Support guest quest QA
 on:
+  push:
+    branches:
+      - codex/support-quest-seven-steps-20261028
   pull_request:
+    branches:
+      - codex/meditation-category-rail-20261028
+      - codex/public-book-library
     paths:
       - 'components/holistic-support-guest-quest.*'
       - 'components/holistic-support-today-pick.*'
+      - 'components/holistic-support-mobile.*'
       - 'components/app/test-explorer-google-banner.*'
-      - 'app/[locale]/client/tests/page.tsx'
-      - 'lib/holistic-support/today-pick.*'
-      - 'tests/holistic-support-today-pick.test.mjs'
-      - 'components/holistic-support-mobile.tsx'
-      - 'components/holistic-support-mobile.module.css'
       - 'lib/holistic-support/guest-quest.*'
+      - 'lib/holistic-support/today-pick.*'
+      - 'app/[locale]/client/tests/page.tsx'
       - 'app/api/app/[...path]/route.js'
       - 'tests/holistic-support-guest-quest.test.mjs'
-      - 'tests/holistic-support-mobile-mock-parity.test.mjs'
-      - 'scripts/verify-support-guest-quest.mjs'
-      - '.github/workflows/hh-support-guest-quest.yml'
-  push:
-    branches: ['codex/public-book-library', 'codex/support-quest-seven-steps-20261028']
-    paths:
-      - 'components/holistic-support-guest-quest.*'
-      - 'components/holistic-support-today-pick.*'
-      - 'components/app/test-explorer-google-banner.*'
-      - 'app/[locale]/client/tests/page.tsx'
-      - 'lib/holistic-support/today-pick.*'
       - 'tests/holistic-support-today-pick.test.mjs'
-      - 'components/holistic-support-mobile.tsx'
-      - 'lib/holistic-support/guest-quest.*'
-      - 'tests/holistic-support-guest-quest.test.mjs'
+      - 'scripts/verify-support-guest-quest.mjs'
       - '.github/workflows/hh-support-guest-quest.yml'
 permissions:
   contents: read
