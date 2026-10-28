@@ -11,6 +11,7 @@ const library = [
   video("bbbbbbbbbbb", ["energy", "health"]),
   video("ccccccccccc", ["business"]),
   video("ddddddddddd", ["energy"]),
+  video("ggggggggggg", ["goals"]),
 ];
 const defaultScores = { energy: 4, money: 6, relationships: 7, goals: 5 };
 
@@ -30,7 +31,7 @@ test("every chosen domain returns an actual existing topic video and symbolic ca
     energy: ["ddddddddddd", "fu-balance"],
     money: ["ccccccccccc", "fu-prosperity"],
     relationships: ["aaaaaaaaaaa", "fu-harmony"],
-    goals: ["ccccccccccc", "fu-prosperity"],
+    goals: ["ggggggggggg", "fu-prosperity"],
   };
   for (const [focus, [youtubeId, talismanId]] of Object.entries(expected)) {
     const result = recommendSupportContent({
@@ -118,4 +119,16 @@ test("deduplicates source recordings; no assumed products or side effects", () =
   assert.deepEqual(first.videos.map(item => item.id), second.videos.map(item => item.id));
   assert.equal(new Set(first.videos.map(item => item.id)).size, first.videos.length);
   assert.equal(first.talismans.length, 3);
+});
+
+test("goals and meaning prefer published mystery videos instead of business media", () => {
+  const recommendations = recommendSupportContent({
+    focus: "goals",
+    scores: { energy: 3, money: 1, relationships: 2, goals: 8 },
+    videos: [video("ccccccccccc", ["business"]), video("ggggggggggg", ["goals"])],
+    talismans: TAOIST_TALISMANS,
+    locale: "ru",
+  });
+  assert.equal(recommendations.videos[0].id, "ggggggggggg");
+  assert.equal(recommendations.matchedVideo, true);
 });
