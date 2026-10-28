@@ -135,6 +135,6 @@ test("recommendations move under the check-in; tests move under five support act
   assert.match(client, /\/masters/);
   assert.match(client, /<HolisticInlineSupportOrder/);
   assert.match(css, /\.toolButton:last-child \{ grid-column: 1 \/ -1/);
-  assert.match(css, /grid-template-rows: repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-rows: repeat\(5, 44px\); align-content: start/);
   assert.match(css, /\.detailedCompact \{ display: inline; \}/);
 });
