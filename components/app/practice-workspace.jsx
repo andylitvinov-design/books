@@ -166,7 +166,7 @@ export function PracticeEntry({data,locale}){
   </section>
 }
 
-export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
+export default function PracticeWorkspace({locale,ownerTools=null,accountId=null,showcaseEntry=false}){
   const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[selectedExpressRequestId,setSelectedExpressRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false),[meditationType,setMeditationType]=useState(''),[meditationPickerOpen,setMeditationPickerOpen]=useState(false),[creationGoal,setCreationGoal]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
@@ -321,6 +321,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     setError('')
   }
   function closePanel(){
+    // Every inner screen returns to the same public practitioner mock-up,
+    // including guests, rather than revealing the former Cabinet dashboard.
+    if(showcaseEntry){window.location.assign('/'+locale+'/practice');return}
     setActivePanel(null)
     setProCourseStart(false)
     setMeditationType('')
@@ -445,10 +448,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else if(index===1)choosePanel('services')
     else shareProfile()
   }
-  return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined} data-practice-one-screen>
+  return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined}
+    data-practice-one-screen data-practice-design="unified-20261028" data-practice-showcase-inner={showcaseEntry||undefined}>
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
-        <Link href={'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
+        <Link href={showcaseEntry?'/'+locale+'/practice':'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
         <ChevronRight aria-hidden="true" />
         <strong>{d.breadcrumb}</strong>
       </nav>

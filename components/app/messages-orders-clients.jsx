@@ -115,7 +115,7 @@ export default function MessagesOrdersClients({locale='en',children}){
   function chooseSection(value){
     setSection(value)
     const url=new URL(window.location.href)
-    if(value==='orders')url.searchParams.delete('section')
+    if(value==='orders')url.searchParams.set('section','orders')
     else url.searchParams.set('section','clients')
     if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to')}
     window.history.replaceState(window.history.state,'',url)

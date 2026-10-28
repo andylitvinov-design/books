@@ -13,7 +13,7 @@ import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/mess
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
-    tabs:'Message folders',chats:'Inbox',requestsTab:'Client requests',emptyChats:'No conversations yet.',emptyRequests:'No client requests yet.',noMatches:'No matching people.',
+    tabs:'Message folders',chats:'Conversations',requestsTab:'Requests',emptyChats:'No conversations yet.',emptyRequests:'No client requests yet.',noMatches:'No matching people.',
     choose:'Select a person to read the conversation',back:'Conversations',card:'Client card',refresh:'Refresh',loading:'Loading conversations…',
     telegram:'Telegram',website:'Website request',business:'Business request',direct:'Holistic House',
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
@@ -22,7 +22,7 @@ const COPY={
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
     more:'More conversations',other:'Other requests',portal:'Private website conversations'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
-    tabs:'Разделы сообщений',chats:'Входящие',requestsTab:'Заявки',emptyChats:'Пока нет переписок.',emptyRequests:'Пока нет заявок.',noMatches:'Ничего не найдено.',
+    tabs:'Разделы сообщений',chats:'Переписка',requestsTab:'Заявки',emptyChats:'Пока нет переписок.',emptyRequests:'Пока нет заявок.',noMatches:'Ничего не найдено.',
     choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
     telegram:'Telegram',website:'Заявка с сайта',business:'Бизнес-заявка',direct:'Holistic House',
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',

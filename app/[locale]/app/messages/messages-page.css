@@ -50,3 +50,36 @@
  .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-mobile-app-nav{display:none!important}
 }
 @media(max-width:350px){.hh-app.hh-messages-page{width:calc(100% - 10px)}}
+
+/* Approved Messenger-style conversation UI is the entry view, not the older
+   Orders/Clients shell. Orders remain an explicit separate view. */
+.hh-app.hh-messages-page .hh-messages-context-nav{
+ display:flex;justify-content:flex-end;align-items:center;min-width:0;margin:0 0 8px;
+}
+.hh-app.hh-messages-page .hh-messages-context-link{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;
+ max-width:100%;border:1px solid #d7e5db;border-radius:999px;
+ padding:7px 13px;background:#f3faf4;color:#176d54;text-decoration:none;
+ font:700 12px/1.25 system-ui,-apple-system,sans-serif;
+}
+.hh-app.hh-messages-page .hh-messages-context-link:hover{background:#e7f4eb}
+.hh-app.hh-messages-page .hh-messages-context-link:focus-visible{
+ outline:3px solid #168c70;outline-offset:3px;
+}
+@media(max-width:760px){
+ .hh-app.hh-messages-page .hh-messages-context-nav{margin:0 5px 6px}
+ .hh-app.hh-messages-page .hh-messages-context-link{min-height:44px}
+}
+@media(max-width:350px){
+ .hh-app.hh-messages-page .hh-messages-context-link{font-size:11px;padding:7px 11px}
+}
+
+/* The old extra toolbar must not shrink an open iPhone conversation or cover
+   the composer when Safari's keyboard is visible. Show Orders from the list. */
+@media(max-width:760px){
+ .hh-app.hh-messages-page:has([data-simple-messages][data-detail-open="true"]) .hh-messages-context-nav,
+ .hh-app.hh-messages-page:has([data-messages-hub][data-thread-open="true"]) .hh-messages-context-nav,
+ .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-messages-context-nav{
+  display:none;
+ }
+}

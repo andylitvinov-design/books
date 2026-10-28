@@ -48,7 +48,7 @@ test('Pro cards keep photos left, inline pills, and accessible 320px actions',()
     for(const key of ['diagnostic','energy','meditation','personal']){
       const card=find(view,'data-profi-offer',key)
       assert.equal(find(card,'data-profi-offer-details',key).props['aria-expanded'],false)
-      assert.ok(find(card,'data-profi-selected-offer',key).props.href.includes('/app/practice?'))
+      assert.ok(find(card,'data-profi-selected-offer',key).props.href.includes('/practice?start='))
     }
   }
 })
@@ -180,7 +180,7 @@ test('Pro page contains a separate free-tests and private/personal-professional 
     assert.deepEqual(entries.map(x=>x.props.href),[
       '/'+locale+'/client/tests',
       '/'+appLocale+'/app/portrait',
-      '/'+appLocale+'/app/practice?panel=profile'
+      '/'+locale+'/practice?start=profile'
     ])
     assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-profiles')))
     assert.ok(entries.every(x=>x.props.prefetch===false))
@@ -244,14 +244,14 @@ test('actual interactive learner track explores five steps but launches only exi
 
 test('all four Pro offers link directly to the right existing editor; Details expands in place',()=>{
   const choices=[
-    ['diagnostic','?panel=services&create=1&starter=diagnostic','create-service'],
-    ['energy','?panel=services&create=1&starter=energy','create-service'],
-    ['meditation','?panel=materials&materialTab=courses&create=1','create-course'],
-    ['personal','?panel=services&create=1&starter=personal','create-service'],
+    ['diagnostic','?start=diagnostic','create-service'],
+    ['energy','?start=energy','create-service'],
+    ['meditation','?start=meditation','create-course'],
+    ['personal','?start=personal','create-service'],
   ]
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
-    const root='/'+(locale==='es'?'en':locale)+'/app/practice'
+    const root='/'+locale+'/practice'
     for(const [kind,url,action] of choices){
       let tree=widget.render()
       let card=find(tree,'data-profi-offer',kind)
@@ -305,7 +305,9 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
   assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
   assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
-  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'\]/g)||[]).length,2)
+  assert.equal((auth.match(/validPracticeContinuation\(continueTo,profi\)/g)||[]).length,2)
+  assert.match(auth,/continueTo==='my-practice'/)
+  assert.match(auth,/continueTo==='practice-preview'/)
   assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
   assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
   assert.match(auth,/profi === 'requests' \? '\?panel=requests'/)
