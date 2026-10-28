@@ -740,17 +740,34 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {consultations ? t.exploreServices : t.exploreMasters}<ArrowRight size={17} aria-hidden="true"/>
             </Link>
           </div>
-          <div className={styles.rail} role="group" data-support-master-rail>
+          <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail>
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;
               return <button type="button" key={id(entry)}
-                data-support-master-thumb={id(entry)} className={styles.thumb}
+                data-support-master-thumb={id(entry)}
+                className={consultations ? styles.consultCard : styles.thumb}
                 aria-pressed={id(entry) === id(selected)}
-                aria-label={offer?.title || master?.name} onClick={() => select(id(entry))}>
-                {master?.photo ? <Image src={master.photo} alt="" fill unoptimized sizes="180px"/> :
-                  <span className={styles.thumbFallback} aria-hidden="true"><Sparkles size={38}/></span>}
-                <span className={styles.thumbTitle}>{offer?.title || master?.name}</span>
+                aria-label={offer?.title || master?.name}
+                onClick={() => {
+                  select(id(entry));
+                  if (consultations) document.getElementById("support-consultation-featured")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}>
+                {offer ? <>
+                  <span className={styles.consultCardImage}>
+                    <Image src={consultationCover(offer)} alt="" fill unoptimized sizes="210px"/>
+                  </span>
+                  <span className={styles.consultCardCopy}>
+                    <strong>{offer.title}</strong>
+                    <small>{offer.description}</small>
+                    <b>{consultationPrice(offer)}</b>
+                  </span>
+                </> : <>
+                  {master?.photo ? <Image src={master.photo} alt="" fill unoptimized sizes="180px"/> :
+                    <span className={styles.thumbFallback} aria-hidden="true"><Sparkles size={38}/></span>}
+                  <span className={styles.thumbTitle}>{master?.name}</span>
+                </>}
               </button>;
             })}
           </div>
