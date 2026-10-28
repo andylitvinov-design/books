@@ -1,6 +1,7 @@
 'use client'
 import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
+import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
@@ -26,6 +27,7 @@ const COPY={
 }
 const VALID_TABS=new Set(['chats','requests'])
 export default function MessagesHub({locale='en'}){
+  const searchParams=useSearchParams()
   const t=COPY[locale]||COPY.en
   const [tab,setTab]=useState('chats')
   const [refreshKey,setRefreshKey]=useState(0)
@@ -43,11 +45,14 @@ export default function MessagesHub({locale='en'}){
   const [directOpen,setDirectOpen]=useState(false)
   const [telegramUrl,setTelegramUrl]=useState('')
   const [telegramCopied,setTelegramCopied]=useState(false)
+  const [directDestination,setDirectDestination]=useState('')
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
+    const to=params.get('to')||''
+    setDirectDestination(/^[a-z0-9-]{2,90}$/.test(to)?to:'')
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
-  },[])
+  },[searchParams])
   useEffect(()=>{
     const controller=new AbortController()
     // Verify owner access without waiting for practice/business requests.
@@ -130,6 +135,13 @@ export default function MessagesHub({locale='en'}){
   }
   // Owner-only one-window inbox. Preserve the existing authenticated provider
   // link check and member two-tab UI; no duplicate CRM or public send action.
+  // A verified owner may also order from another practitioner. Keep this
+  // private voice chat in the existing direct-messages store, not owner CRM.
+  if(ownerAccountId&&directDestination)return <div className={styles.hub} data-private-direct-order-chat>
+    <a href={'/'+locale+'/app/messages?section=clients'}>{locale==='ru'?'← К клиентам':locale==='es'?'← Clientes':'← Clients'}</a>
+    <DirectMessageInbox key={ownerAccountId+':'+directDestination} locale={locale} embedded
+      ownerCrmAvailable expectedAccountId={ownerAccountId}/>
+  </div>
   if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
     accountId={ownerAccountId} requests={requestData?.requests||[]}
     businessEnquiries={requestData?.businessEnquiries||[]}

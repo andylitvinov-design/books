@@ -191,3 +191,43 @@ jobs:
             Holistic-House-Unsigned-iPhone.ipa
             Holistic-House-Unsigned-iPhone.sha256
             hh-xcodebuild-device.log
+
+      # Personal Apple Accounts can have strict extension/entitlement limits.
+      # Use a *copy* of the validated hardware app: remove only its optional
+      # HHCourseWidget.appex, never native core frameworks, OAuth routes or push code.
+      - name: Pack extension-free unsigned iPhone IPA for personal AltStore signing
+        run: |
+          source_app="$(find ios-hh-device-build/Build/Products/Debug-iphoneos -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$source_app"
+          test -d "$source_app/PlugIns/HHCourseWidget.appex"
+          mkdir -p ios-hh-personal-lite/Payload
+          ditto "$source_app" ios-hh-personal-lite/Payload/App.app
+          lite="ios-hh-personal-lite/Payload/App.app"
+          test -d "$lite/PlugIns/HHCourseWidget.appex"
+          rm -rf "$lite/PlugIns/HHCourseWidget.appex"
+          rmdir "$lite/PlugIns"
+          test ! -e "$lite/PlugIns"
+          test ! -e "$lite/_CodeSignature"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$lite/Info.plist")" = "com.holistichouse.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$lite/Info.plist")" = "Holistic House"
+          main_binary="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$lite/Info.plist")"
+          /usr/bin/lipo -archs "$lite/$main_binary" | tr ' ' '\n' | grep -qx arm64
+          node -e "const c=require('./ios-hh-personal-lite/Payload/App.app/capacitor.config.json');if(c.appId!=='com.holistichouse.app'||c.server?.url!=='https://holistichouse.vercel.app/en/app/messages'||c.server?.cleartext!==false)process.exit(1)"
+          (cd ios-hh-personal-lite && zip -qry ../Holistic-House-iPhone-Personal-Lite-Unsigned.ipa Payload)
+          unzip -t Holistic-House-iPhone-Personal-Lite-Unsigned.ipa >/dev/null
+          if unzip -Z1 Holistic-House-iPhone-Personal-Lite-Unsigned.ipa | grep -Eq 'PlugIns/|[.]appex/'; then
+            echo "Unexpected native extension in Lite IPA" >&2
+            exit 1
+          fi
+          shasum -a 256 Holistic-House-iPhone-Personal-Lite-Unsigned.ipa > Holistic-House-iPhone-Personal-Lite-Unsigned.sha256
+          echo "Unmodified main native iPhone arm64 executable; OPTIONAL WIDGET REMOVED; still UNSIGNED"
+      - name: Upload separately verified iPhone Lite personal-install candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Holistic-House-iPhone-Personal-Lite-Unsigned
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            Holistic-House-iPhone-Personal-Lite-Unsigned.ipa
+            Holistic-House-iPhone-Personal-Lite-Unsigned.sha256

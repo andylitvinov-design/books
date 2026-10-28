@@ -720,3 +720,46 @@
   box-shadow: 0 7px 18px #7143b35c; color: #fff;
 }
 .page .toolButton[data-support-tool="talisman"][aria-pressed="true"] svg { color: #fff; }
+
+/* The video belongs to a real published master: an accessible, compact
+   profile shortcut on the video backdrop, independent of YouTube playback. */
+.heroMasterLink {
+  position: absolute; z-index: 4; top: 83px; right: 18px;
+  display: inline-flex; align-items: center; gap: 9px;
+  max-width: calc(100% - 36px); min-height: 56px;
+  padding: 5px 12px 5px 5px; border: 1px solid #fff9;
+  border-radius: 999px; background: #fffcf6f2; color: #223a32;
+  text-decoration: none; box-shadow: 0 7px 23px #08251d55;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.heroMasterLink:hover { background: #fffefa; box-shadow: 0 8px 25px #08251d77; }
+.heroMasterLink:focus-visible { outline: 3px solid #f2cc7b; outline-offset: 3px; }
+.heroMasterAvatar {
+  display: block; flex: none; width: 46px; height: 46px;
+  object-fit: cover; border-radius: 50%; background: #e4eee7;
+}
+.heroMasterCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; }
+.heroMasterCopy strong, .heroMasterCopy small {
+  display: block; max-width: 100%; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.heroMasterCopy strong { color: #1c3b31; font-size: 14px; font-weight: 850; line-height: 1.12; }
+.heroMasterCopy small { color: #5b6d64; font-size: 11px; line-height: 1.15; }
+.heroMasterArrow { flex: none; margin-left: auto; color: #436356; }
+@media (max-width: 640px) {
+  .heroMasterLink {
+    top: 64px; right: 9px; max-width: min(63%, 220px); min-height: 50px;
+    gap: 6px; padding: 4px 7px 4px 4px;
+  }
+  .heroMasterAvatar { width: 42px; height: 42px; }
+  .heroMasterCopy strong { font-size: 12px; }
+  .heroMasterCopy small { font-size: 10px; }
+  .heroMasterArrow { width: 15px; height: 15px; }
+}
+@media (max-width: 350px) {
+  .heroMasterLink { top: 55px; right: 7px; max-width: min(61%, 176px); min-height: 44px; gap: 5px; }
+  .heroMasterAvatar { width: 36px; height: 36px; }
+  .heroMasterCopy strong { font-size: 11px; }
+  .heroMasterCopy small { font-size: 9px; }
+  .heroMasterArrow { width: 13px; height: 13px; }
+}
