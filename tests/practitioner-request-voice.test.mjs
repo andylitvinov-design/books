@@ -34,7 +34,7 @@ test('existing encrypted request messages own the media reference and idempotent
   assert.match(server,/and uploader_account_id=\$3/)
   assert.match(server,/seal\(\{text,\.\.\.\(assetId\?\{assetId\}:\{\}\)\}/)
   assert.match(server,/set message_id=\$1/)
-  assert.match(server,/asset\.message_id===row\.id/)
+  assert.match(server,/asset\?\.message_id===row\.id/)
   assert.match(server,/visibility='participants'/)
   assert.match(server,/if\(assetId&&visibility!=='participants'\)/)
   assert.match(server,/if\(quota>=40\)/)
@@ -87,7 +87,7 @@ test('both participants now record and hear voice inside the exact request conve
   assert.match(conversation,/assetId:operation\.assetId/)
   assert.match(conversation,/method:'PUT'/)
   assert.match(conversation,/uploadToSignedUrl/)
-  assert.match(conversation,/media\/\?assetId=/)
+  assert.match(conversation,/media\?assetId=/)
   assert.match(conversation,/item\.attachment\?\.kind==='audio'/)
   assert.match(conversation,/practitioner-client-messages\/media\/'/)
   assert.match(conversation,/pending\.current=null;setText\(''\);setAudioFile\(null\)/)
@@ -106,7 +106,7 @@ test('voice capture is manually initiated, 120 seconds max and never publishes',
 })
 
 test('order chat retains original RLS and authenticated practitioner/request client logic',()=>{
-  assert.match(server,/r\.account_id===actor\.id/)
+  assert.match(server,/row\.account_id===actor\.id/)
   assert.match(server,/row\.practitioner_account_id===actor\.id/)
   assert.match(server,/if\(!isRequester&&!isPractitioner\)throw new AppError\('NOT_FOUND',404\)/)
   assert.match(server,/canReplyToConsultation/)
