@@ -135,10 +135,10 @@ export function HolisticReikiOfferShelf({
                 <p>{master.description || master.bio}</p>
                 <div className={styles.meta}>
                   <span><HandHeart size={13}/>{master.name} · {master.methods.join(", ")}</span>
-                  <span><Clock3 size={13}/>{t.deadline}: {timeText}</span>
-                  <span>{t.report}: {reportText}</span>
-                  {format === "session" ? <span>{t.role}: {roleText}</span> :
-                    <span>{t.certificate}: {option?.certificate ? t.selected : master.reikiOffer ? t.notIncluded : t.unknown}</span>}
+                  {timeText !== t.unknown && <span><Clock3 size={13}/>{t.deadline}: {timeText}</span>}
+                  {option?.report && <span>{t.report}: {reportText}</span>}
+                  {format === "session" && master.reikiOffer?.role && <span>{t.role}: {roleText}</span>}
+                  {format !== "session" && option?.certificate && <span>{t.certificate}: {t.selected}</span>}
                 </div>
                 <div className={styles.bottom}>
                   <strong className={styles.price}>{priced}</strong>
@@ -164,9 +164,7 @@ export function HolisticReikiOfferShelf({
               <p>{offer.description}</p>
               <div className={styles.meta}>
                 <span><HandHeart size={13}/>{ownerName} · {offer.method}</span>
-                <span><Clock3 size={13}/>{t.deadline}: {t.unknown}</span>
-                <span>{t.report}: {t.unknown}</span>
-                <span>{t.certificate}: {t.unknown}</span>
+
               </div>
               <div className={styles.bottom}>
                 <span className={styles.academyPrice} data-reiki-academy-prices={offer.id}>
