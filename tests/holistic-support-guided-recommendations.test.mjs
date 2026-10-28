@@ -31,7 +31,7 @@ test("each card performs a real, non-mutating action in existing modules", () =>
   assert.match(client, /journeyVideo = goalMatch\?\.videos\[0\] \?\? quickRanked\.videos\[0\]/);
   assert.match(client, /encodeURIComponent\(journeyVideo\.id\)/);
   assert.match(client, /setSelectedId\(journeyVideo\?\.id \?\? null\)/);
-  assert.match(client, /scrollToSupport\("support-meditation-gallery"\)/);
+  assert.match(client, /scrollToSupport\("support-meditation-player"\)/);
   assert.match(client, /data-support-journey-action="support"/);
   assert.match(client, /changeChoice\(selectedChoice\)/);
   assert.match(client, /href="#support-progress" data-support-journey-action="progress"/);
