@@ -20,12 +20,19 @@ for (const browserType of [chromium, webkit]) {
       for (const width of [320, 390, 430]) {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
-          hasTouch: true, isMobile: true, reducedMotion: "reduce" });
+          hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
         const errors = [];
+        const directoryEvents = [];
+        const watched = url => url.includes("/api/public/remote-energy-support-masters");
         page.on("pageerror", error => errors.push(error.message));
+        page.on("requestfailed", req => { if (watched(req.url()))
+          directoryEvents.push("FAILED " + (req.failure()?.errorText ?? "unknown") + " " + req.url()); });
+        page.on("response", res => { if (watched(res.url()))
+          directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
-        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+        await page.route(/\\/api\\/public\\/remote-energy-support-masters(?:\\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
+          directoryEvents.push("MOCK " + (kind || "masters"));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
@@ -216,7 +223,8 @@ for (const browserType of [chromium, webkit]) {
           if (await retry.count()) await retry.click();
           await heroMaster.waitFor({state:"visible",timeout:20000}).catch(async error => {
             const status = await healing.innerText().catch(() => "(directory unmounted)");
-            throw new Error(label + " master gallery failed after bounded retry: " + status + " / " + error.message);
+            throw new Error(label + " master gallery failed after bounded retry: " + status +
+              " | directory=" + JSON.stringify(directoryEvents) + " / " + error.message);
           });
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
