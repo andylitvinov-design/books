@@ -30,7 +30,7 @@ export async function POST(request) {
     const locale = input.locale
     const sourcePath = input.sourcePath
     if (!['en','ru','es'].includes(locale) ||
-        !['paypal','square'].includes(input.method) ||
+        !['paypal','square','wise'].includes(input.method) ||
         sourcePath !== '/' + locale + '/holistic-support' &&
           sourcePath !== '/' + locale + '/holistic-support/mobile' &&
           sourcePath !== '/' + locale + '/talismans/cart' ||

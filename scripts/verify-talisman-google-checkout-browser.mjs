@@ -84,6 +84,8 @@ const run = async (locale, width) => {
     await cart.locator("[data-talisman-payment-unavailable]").waitFor();
     assert.equal(await cart.locator("[data-talisman-pay-now]").count(),0,
       "No fake Pay button for illustrative Fu with unapproved prices");
+    assert.equal(await cart.locator("[data-talisman-manual-rails] summary").count(),1,
+      "Wise / Interac / ZEN must be inquiries, not fake charges");
     assert.equal(await cart.locator("[data-talisman-google-start]").count(),1,
       "First option: Google creates or opens existing cabinet");
     assert.equal(await cart.locator("[data-talisman-contact]").count(),1,
@@ -126,7 +128,8 @@ const run = async (locale, width) => {
     const providerRequest = page.waitForRequest(req =>
       req.url() === "https://paypal.me/psitrends/45EUR", {timeout:20000});
     await purchased.locator("[data-talisman-pay-now]").click();
-    await providerRequest;
+    const sent = await providerRequest;
+    assert.equal(sent.url(),"https://paypal.me/psitrends/45EUR");
     assert.equal(captured.checkouts.length,1);
     assert.deepEqual(Object.keys(captured.checkouts[0]).sort(),
       ["items","locale","method","operationId","replyConsent","sourcePath"].sort());
@@ -137,8 +140,9 @@ const run = async (locale, width) => {
     assert.equal(captured.checkouts[0].method,"paypal");
     assert.equal(captured.checkouts[0].totalMinor,undefined);
     assert.equal(captured.checkouts[0].currency,undefined);
-    assert.ok(captured.external.some(url=>url==="https://paypal.me/psitrends/45EUR"),
-      "Only a synthetic pinned provider payment URL is opened");
+    // The browser request event is the reliable proof of attempted provider
+    // navigation; the route abort callback can run a tick later in WebKit.
+    assert.equal(sent.url(),"https://paypal.me/psitrends/45EUR");
     assert.deepEqual(captured.unexpected,[]);
     if (locale==="ru") await page.screenshot({
       path:"artifacts/talisman-google-checkout/ru-390-google-pay.png",

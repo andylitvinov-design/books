@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_CART_UPDATED_EVENT, TALISMAN_GOOGLE_RETURN_KEY, isTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./taoist-talisman-cart.module.css";
 
-type PaymentChoice = "square" | "paypal";
+type PaymentChoice = "square" | "paypal" | "wise";
 type VerifiedProfile = { email: string; displayName: string };
 type PricePreview = {
   available: boolean; amountMinor?: number; currency?: string;
@@ -21,14 +22,22 @@ const phoneValid = (value: string) => /^\+[1-9][0-9]{7,14}$/.test(value.replace(
 const providerHost = (value: string) => {
   try {
     const url = new URL(value);
+    const isWise = ["wise.com","www.wise.com"].includes(url.hostname);
+    const fields = [...url.searchParams.keys()].sort();
+    const wiseOk = isWise && /^\/pay\/business\/[A-Za-z0-9._-]+\/?$/.test(url.pathname) &&
+      fields.join(",") === "amount,currency,description" &&
+      /^\d{1,7}\.\d{2}$/.test(url.searchParams.get("amount") || "") &&
+      url.searchParams.get("currency") === "EUR" &&
+      /^Holistic House - Fu: fu-(?:prosperity|harmony|balance)(?:,fu-(?:prosperity|harmony|balance)){0,2}$/.test(
+        url.searchParams.get("description") || "");
     const matched = url.hostname === "paypal.me"
       ? /^\/psitrends\/[1-9][0-9]*(?:\.[0-9]{2})?EUR$/.test(url.pathname)
       : url.hostname === "square.link"
         ? /^\/u\/[A-Za-z0-9_-]{5,120}$/.test(url.pathname)
         : url.hostname === "checkout.square.site"
-          ? /^\/[A-Za-z0-9_-]{5,120}$/.test(url.pathname) : false;
+          ? /^\/[A-Za-z0-9_-]{5,120}$/.test(url.pathname) : wiseOk;
     return url.protocol === "https:" && matched && !url.username &&
-      !url.password && !url.port && !url.search && !url.hash ? url.href : null;
+      !url.password && !url.port && (isWise || !url.search) && !url.hash ? url.href : null;
   } catch { return null; }
 };
 const copy = {
@@ -62,6 +71,11 @@ const copy = {
     receiptPending: "Checkout opened · payment not yet verified", receiptLink: "Open payment page again",
     quoteLabel: "For a custom-made item without a published price", quoteButton: "Ask the maker for a fixed price",
     authNotice: "Google creates or opens your Holistic House account. New accounts may need to finish onboarding in My House.",
+    other: "Other payment options",
+    manualNote: "Wise (personal WiseTag), Interac Canada and ZEN are transfer enquiries, not online charges. Confirm the price, recipient, currency and payment reference before sending money.",
+    manualWise: "Ask about Wise transfer",
+    manualInterac: "Ask for Interac CAD details",
+    manualZen: "Ask for ZEN bank details",
   },
   ru: {
     back: "Назад к талисманам", title: "Корзина талисманов", intro: "Проверьте талисманы, войдите через Google и оплачивайте только утверждённую стоимость.",
@@ -93,6 +107,11 @@ const copy = {
     receiptPending: "Платёжная страница открыта · поступление не проверено", receiptLink: "Открыть оплату повторно",
     quoteLabel: "Для индивидуального изготовления без утверждённой цены", quoteButton: "Уточнить фиксированную стоимость",
     authNotice: "Google открывает или создаёт учётную запись Holistic House. Для нового кабинета может потребоваться завершить первоначальную настройку.",
+    other: "Другие способы оплаты",
+    manualNote: "Wise (личный WiseTag), Interac в Канаде и ZEN — согласование перевода, не онлайн-списание. До отправки денег подтвердите цену, валюту, получателя и назначение.",
+    manualWise: "Уточнить перевод Wise",
+    manualInterac: "Запросить Interac в CAD",
+    manualZen: "Запросить реквизиты ZEN",
   },
   es: {
     back: "Volver a los talismanes", title: "Carrito de talismanes", intro: "Revisa tus diseños, entra con Google y paga solo precios aprobados.",
@@ -124,6 +143,11 @@ const copy = {
     receiptPending: "Página de pago abierta · cobro pendiente de verificar", receiptLink: "Abrir el pago otra vez",
     quoteLabel: "Para un artículo personalizado sin precio aprobado", quoteButton: "Consultar un precio fijo",
     authNotice: "Google abre o crea tu cuenta Holistic House. Las cuentas nuevas quizá deban completar el registro.",
+    other: "Otras formas de pago",
+    manualNote: "Wise (Wisetag personal), Interac Canadá y ZEN requieren acordar transferencia; no son cargos en línea. Confirma precio, destinatario y referencia.",
+    manualWise: "Consultar transferencia Wise",
+    manualInterac: "Pedir datos Interac en CAD",
+    manualZen: "Pedir datos bancarios ZEN",
   },
 } as const;
 
@@ -215,9 +239,36 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
     return () => controller.abort();
   }, [idsKey, locale]);
 
-  const approvedMethods = (["square","paypal"] as PaymentChoice[])
+  const approvedMethods = (["square","paypal","wise"] as PaymentChoice[])
     .filter(method => pricing?.methods?.[method]?.amountMinor);
   const chosenMethod = approvedMethods.includes(payment) ? payment : approvedMethods[0];
+  // Manual transfer links contain only published catalog IDs, never a visitor
+  // contact, private goal, medical result, cart token or unverified bank details.
+  const manualTransferLink = (rail: "wise" | "interac" | "zen") => {
+    const requests = {
+      en: {
+        wise: "Please confirm the recipient and exact EUR amount for a Wise transfer. I have not paid.",
+        interac: "Please confirm if Interac is available in Canada, the exact CAD amount and recipient. I have not paid.",
+        zen: "Please confirm ZEN bank-transfer availability, the verified beneficiary and EUR details. I have not paid.",
+      },
+      ru: {
+        wise: "Уточните получателя и точную сумму EUR для перевода Wise. Пока ничего не оплачено.",
+        interac: "Подтвердите возможность Interac в Канаде, сумму CAD и получателя. Пока ничего не оплачено.",
+        zen: "Уточните возможность ZEN, получателя и реквизиты EUR. Пока ничего не оплачено.",
+      },
+      es: {
+        wise: "Confirma destinatario y total EUR de Wise. Todavía no he pagado.",
+        interac: "Confirma la opción Interac en Canadá, total CAD y destinatario. No he pagado.",
+        zen: "Confirma transferencia ZEN, beneficiario y datos EUR. No he pagado.",
+      },
+    };
+    return whatsappEnquiryUrl({
+      locale, service: "Holistic House · Daoist Fu talismans",
+      request: requests[locale][rail],
+      option: idsKey,
+      pagePath: "/" + locale + "/talismans/cart",
+    });
+  };
   const payable = pricing?.available === true && approvedMethods.length > 0;
   const format = (minor:number, currency:string) => new Intl.NumberFormat(locale,{
     style:"currency",currency,minimumFractionDigits:2,
@@ -322,7 +373,10 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
       });
       const data = await response.json().catch(() => null);
       const url = typeof data?.checkoutUrl === "string" ? providerHost(data.checkoutUrl) : null;
-      if (!response.ok || !url || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "") ||
+      const expected = pricing?.methods?.[chosenMethod];
+      if (!response.ok || !url || !expected ||
+          data.amountMinor !== expected.amountMinor || data.currency !== expected.currency ||
+          !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "") ||
           data.status !== "payment_not_verified") {
         if (response.status === 409) paymentOperationId.current = null;
         throw new Error("PROVIDER_UNCONFIRMED");
@@ -394,7 +448,7 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
           <p className={styles.stepLabel}>2 · {t.checkoutTitle}</p>
           {!pricing?.available || !approvedMethods.length
             ? <p className={styles.notice} role="status" data-talisman-payment-unavailable>
-                {pricingBusy ? "…" : t.checkoutDisabled}</p>
+                {pricingBusy ? "…" : !pricing?.available ? t.checkoutDisabled : t.noProvider}</p>
             : <>
                 <fieldset className={styles.methods}>
                   <legend>{t.methodTitle}</legend>
@@ -417,6 +471,15 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
             {paymentUrl && <a href={paymentUrl} rel="noopener noreferrer">{t.receiptLink}</a>}
           </p>}
         </section>
+        <details className={styles.manualTransfers} data-talisman-manual-rails>
+          <summary>{t.other}</summary>
+          <p>{t.manualNote}</p>
+          <div className={styles.manualTransferLinks}>
+            <a href={manualTransferLink("wise")} target="_blank" rel="noopener noreferrer">{t.manualWise} →</a>
+            <a href={manualTransferLink("interac")} target="_blank" rel="noopener noreferrer">{t.manualInterac} →</a>
+            <a href={manualTransferLink("zen")} target="_blank" rel="noopener noreferrer">{t.manualZen} →</a>
+          </div>
+        </details>
         {!profile && <div className={styles.guestBlock}>
           <p className={styles.stepLabel}>{t.fallback}</p>
           <label className={styles.oneContact}>{t.contactLabel}

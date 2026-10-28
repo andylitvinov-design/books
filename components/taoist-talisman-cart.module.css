@@ -103,3 +103,13 @@
   .shell .items .remove{grid-column:2;justify-self:end;width:auto;max-width:none;min-height:36px;padding:4px 10px}
   .paymentStep .methodRows{grid-template-columns:1fr}
 }
+
+/* Transfer enquiries are never described as captured payments. */
+.manualTransfers{margin:11px 0 4px;border:1px solid #dfccbc;border-radius:12px;background:#fffaf4}
+.manualTransfers>summary{min-height:47px;display:list-item;cursor:pointer;padding:13px 14px;color:#6a4b37;font:800 12px/1.35 Arial,Helvetica,sans-serif;list-style-position:inside}
+.manualTransfers[open]{padding-bottom:12px}
+.manualTransfers>p{margin:0 13px 10px;color:#735e4d;font:12px/1.55 Arial,Helvetica,sans-serif}
+.manualTransferLinks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:0 11px}
+.manualTransferLinks a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:9px 6px;background:#fff;border:1px solid #ddc4ae;border-radius:9px;color:#70472f;font:700 11px/1.3 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none}
+.manualTransferLinks a:hover{border-color:#9b7050;background:#f5ebe2}
+@media(max-width:390px){.manualTransferLinks{grid-template-columns:1fr}.manualTransferLinks a{justify-content:flex-start;padding:10px 14px}}

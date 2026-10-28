@@ -55,6 +55,30 @@ test("server owns exact EUR sum and does not leak hosted checkout links in publi
   assert.equal(view.amountMinor,7500);
   assert.deepEqual(view.methods.paypal,{currency:"EUR",amountMinor:7500});
   assert.doesNotMatch(JSON.stringify(view),/paypal\.me|square\.link|checkoutUrl|payment_status|user_id/);
+  // Wise Business OPEN is a separate owner-approved rail, not a personal
+  // WiseTag. Its hosted link has only product IDs, exact amount and currency.
+  const wiseEnv = {
+    ...fixture,
+    HH_TALISMAN_WISE_BUSINESS_APPROVED: "true",
+    HH_WISE_PAYMENTS_ENABLED: "true",
+    HH_WISE_PAYEE_APPROVED: "true",
+    HH_WISE_PAYMENT_OPEN_LINK: "https://wise.com/pay/business/approved-owner",
+  };
+  const wise = configuredTalismanBasket(["fu-prosperity","fu-harmony"],"en",wiseEnv);
+  assert.equal(wise.methods.wise.currency,"EUR");
+  assert.equal(wise.methods.wise.amountMinor,7500);
+  assert.equal(new URL(wise.methods.wise.url).searchParams.get("amount"),"75.00");
+  assert.equal(new URL(wise.methods.wise.url).searchParams.get("currency"),"EUR");
+  const wiseDisabled = configuredTalismanBasket(["fu-prosperity"],"en",{
+    ...wiseEnv, HH_TALISMAN_WISE_BUSINESS_APPROVED:"false",
+  });
+  assert.equal(wiseDisabled.methods.wise,undefined);
+  const wisetagOnly = configuredTalismanBasket(["fu-prosperity"],"en",{
+    ...wiseEnv, HH_WISE_PAYMENT_OPEN_LINK:undefined,
+    HH_WISE_PAYMENT_WISETAG_LINK:"https://wise.com/pay/me/approved-owner",
+    HH_WISE_WISETAG_BUSINESS_VERIFIED:"true",
+  });
+  assert.equal(wisetagOnly.methods.wise,undefined);
   assert.equal(configuredTalismanBasket(["fu-harmony"],"es",fixture).items[0].title,
     "Fu · Armonía y vínculos");
   const off = configuredTalismanBasket(["fu-harmony"],"ru",{
@@ -131,6 +155,12 @@ test("Google account button, one-contact fallback and trusted purchase CTA are s
   assert.match(cart,/data-talisman-payment-ready=\{payable \? "true" : "false"\}/);
   assert.match(cart,/data-talisman-pay-now/);
   assert.match(cart,/data-talisman-payment-pending/);
+  assert.match(cart,/data-talisman-manual-rails/);
+  assert.match(cart,/manualTransferLink\("interac"\)/);
+  assert.match(cart,/manualTransferLink\("wise"\)/);
+  assert.match(cart,/manualTransferLink\("zen"\)/);
+  assert.match(cart,/data\.amountMinor !== expected\.amountMinor/);
+  assert.match(endpoint,/\['paypal','square','wise'\]/);
   assert.match(cart,/sourcePath: "\/" \+ locale \+ "\/holistic-support"/);
   assert.match(viewer,/consumeBrowserTalismanGoogleReturn/);
   assert.doesNotMatch(viewer,/fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|autoplay=1/);
