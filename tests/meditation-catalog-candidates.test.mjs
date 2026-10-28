@@ -52,3 +52,57 @@ test("risks can be explicitly excluded and not silently relabelled",()=>{
  const a=rankMeditationCatalog({videos,editorialPreview:true,request:{language:"ru",goal:"energy",maxRisk:"low",limit:30}});
  assert.ok(a.every(x=>x.video.claims_risk==="low"));
 });
+
+test("previously published original IDs are recommended without promoting archived candidates", () => {
+ const ids=["HqfixazXqRY","w2BN-HYmHUk"];
+ const found=rankMeditationCatalog({videos, publishedSourceIds:ids,
+   request:{language:"en",goal:"energy",sourceKind:"original"}});
+ assert.ok(found.length>=1);
+ assert.ok(found.every(x=>x.playback==="embedded" && ids.includes(x.video.youtube_id)));
+ const withoutWhitelist=rankMeditationCatalog({videos,request:{language:"en",goal:"energy",sourceKind:"original"}});
+ assert.equal(withoutWhitelist.length,0);
+});
+test("verified public listing suggests original YouTube link only; no iframe without full QA",()=>{
+ const link=videos.find(x=>x.youtube_id==="fWfG5gXHK5Y");
+ const publicLink={...link,discovery_status:"link_only",metadata_checked_at:"2026-10-28T00:00:00Z"};
+ const hits=rankMeditationCatalog({videos:[publicLink],request:{
+   language:"en",goal:"money",situations:["money_worries"],desiredStates:["calm"],
+ }});
+ assert.equal(hits.length,1);
+ assert.equal(hits[0].playback,"youtube_only");
+ assert.ok(hits[0].reasons.some(x=>x.facet==="situation" && x.value==="money_worries"));
+ const noDate=rankMeditationCatalog({videos:[{...publicLink,metadata_checked_at:null}],
+   request:{language:"en",goal:"money"}});
+ assert.equal(noDate.length,0);
+ const unsafe=rankMeditationCatalog({videos:[{...publicLink,claims_risk:"high"}],
+   request:{language:"en",goal:"money",maxRisk:"high",includeHighClaims:true}});
+ assert.equal(unsafe.length,0);
+});
+test("fully published/embeddable editorial recording can play in-site",()=>{
+ const title=videos.find(x=>x.youtube_id==="qbPE5zaiNqs");
+ const approved={...title,editorial_status:"approved",embed_status:"confirmed",
+   rights_status:"embed_approved",content_checked_at:"2026-10-28T00:00:00Z"};
+ const hits=rankMeditationCatalog({videos:[approved],request:{language:"en",goal:"relationships"}});
+ assert.equal(hits.length,1);
+ assert.equal(hits[0].playback,"embedded");
+});
+test("public integration keeps original library and precise, local client-only state",()=>{
+ const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+ const gallery=read("components/holistic-meditation-gallery.tsx");
+ const finder=read("components/holistic-meditation-finder.tsx");
+ const server=read("lib/holistic-support/meditation-discovery-server.ts");
+ const page=read("app/[locale]/holistic-support/page.tsx");
+ assert.match(gallery,/data-meditation-finder-toggle/);
+ assert.match(gallery,/HolisticMeditationFinder/);
+ assert.match(finder,/data-meditation-audio-language/);
+ assert.match(finder,/data-meditation-goal=\{item\}/);
+ assert.match(finder,/data-meditation-results/);
+ assert.match(finder,/youtube_only/);
+ assert.match(server,/getAppConfig/);
+ assert.match(server,/createClient/);
+ assert.match(server,/freeMeditationVideos\("ru"\)/);
+ assert.match(server,/englishGuidedMeditations/);
+ assert.match(server,/AbortSignal\.timeout\(4000\)/);
+ assert.match(page,/loadMeditationDiscovery\(locale\)/);
+ assert.doesNotMatch(finder,/localStorage|sessionStorage|sendBeacon|navigator\.geolocation|URLSearchParams|fetch\(/);
+});
