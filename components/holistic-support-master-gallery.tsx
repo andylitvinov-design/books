@@ -335,6 +335,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
+      data-support-master-hero={selected && reikiFormat === "session" ? id(selected) : undefined}
       aria-label={r.heading}>
       <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/support-mock-hero.webp"
         alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 900px"/>
