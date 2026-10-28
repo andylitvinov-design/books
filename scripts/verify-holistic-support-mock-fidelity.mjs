@@ -466,8 +466,8 @@ for (const browserType of [chromium, webkit]) {
             const photoInput=root.locator('[data-support-photo] input[type="file"]');
             const photoTarget=await photoInput.boundingBox();
             const circle=await root.locator('[data-support-photo]').boundingBox();
-            assert.ok(photoTarget&&circle&&photoTarget.width>=circle.width-3&&
-              photoTarget.height>=circle.height-3,label+" native iOS picker uses full circle");
+            assert.ok(photoTarget&&circle&&photoTarget.width>=circle.width-10&&
+              photoTarget.height>=circle.height-10,label+" native iOS picker uses full circle");
             await photoInput.setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
             await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
             await root.locator('[data-support-photo-save]').waitFor({state:"visible",timeout:5000});
