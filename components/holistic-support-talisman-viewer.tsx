@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Leaf, ShoppingBag, Sparkles, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_GOOGLE_RETURN_KEY } from "@/lib/practitioners/taoist-talisman-cart";
+import { readBrowserTalismanCart, saveBrowserTalismanCart, pendingBrowserTalismanGoogleReturn, TALISMAN_GOOGLE_RETURN_KEY } from "@/lib/practitioners/taoist-talisman-cart";
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
 import styles from "./holistic-support-talisman-viewer.module.css";
 
@@ -79,15 +79,9 @@ export function HolisticSupportTalismanViewer({
   // Reopen the same basket after Google OAuth without putting product IDs,
   // private notes, contacts or session tokens in the redirect URL.
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("hh_enquiry") !== "google") return;
+    if (!pendingBrowserTalismanGoogleReturn()) return;
     try {
-      const pending = JSON.parse(window.sessionStorage.getItem(TALISMAN_GOOGLE_RETURN_KEY) || "null");
-      if (!pending || pending.path !== url.pathname ||
-          !Number.isFinite(pending.createdAt) ||
-          Date.now() - pending.createdAt > 10 * 60 * 1000 ||
-          pending.createdAt > Date.now() + 60000 ||
-          readBrowserTalismanCart().length === 0) return;
+      const url = new URL(window.location.href);
       setOrderOpen(true);
       window.sessionStorage.removeItem(TALISMAN_GOOGLE_RETURN_KEY);
       url.searchParams.delete("hh_enquiry");
