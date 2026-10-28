@@ -57,14 +57,6 @@ jobs:
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
-          # Playwright ships an ffmpeg helper but not ffprobe. Explicitly install
-          # the system binaries used to inspect the downloaded MP4/WebM and PCM.
-          if ! command -v ffprobe >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg
-          fi
-          command -v ffprobe
-          command -v ffmpeg
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
