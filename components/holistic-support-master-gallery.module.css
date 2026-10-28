@@ -661,140 +661,185 @@
   .reikiQuickFormat button svg { width:14px;height:14px; }
 }
 
-/* Reiki marketplace: a calm, service-first catalogue rather than a full-screen booking form.
-   Keep the published-offer filters, safe request workflow and all mobile locales intact. */
+/* Reiki sales catalogue: one quiet header, real format/method filters and a compact
+   scenic offer card. Adjust this block rather than adding cascading mobile overrides. */
 .viewer[data-support-directory-kind="healing"] {
-  min-width: 0; padding: 10px; border: 1px solid #e8e6dc; border-radius: 22px;
-  background: linear-gradient(180deg,#fffdf7,#faf7ef); box-shadow: 0 6px 22px #1a483410;
+  width: 100%; min-width: 0; margin-inline: auto; padding: 8px;
+  border: 0; background: transparent; box-shadow: none;
 }
 .reikiBrowse {
-  display: grid; gap: 13px; min-width: 0; padding: 16px 14px 12px;
-  border: 1px solid #e6eade; border-radius: 19px; background: #fffcf5;
+  display: grid; gap: 10px; min-width: 0; padding: 13px;
+  border: 1px solid #e1e9df; border-radius: 16px; background: #fffcf6;
 }
 .reikiBrowseHeading {
-  display: flex; justify-content: space-between; align-items: center; gap: 13px; min-width: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 9px; min-width: 0;
 }
-.reikiBrowseHeading > div { min-width: 0; }
 .reikiBrowseHeading h2 {
-  margin: 0; color: #193c31; font: 900 clamp(22px,3vw,30px)/1.14 Arial,Helvetica,sans-serif;
+  min-width: 0; margin: 0; color: #1e4535;
+  font: 850 clamp(20px,2.7vw,25px)/1.15 Arial,Helvetica,sans-serif;
   letter-spacing: -.025em;
 }
-.reikiBrowseHeading p {
-  max-width: 650px; margin: 5px 0 0; color: #6a786a;
-  font: 520 13px/1.36 Arial,Helvetica,sans-serif;
+.reikiBrowseIntro {
+  margin: -3px 0 0; color: #69766b;
+  font: 500 12px/1.32 Arial,Helvetica,sans-serif;
 }
 .viewer .reikiFindButton {
-  display: inline-flex; flex: none; align-items: center; justify-content: center;
-  gap: 7px; min-height: 44px; padding: 9px 13px;
-  border: 1px solid #b7d6c6; border-radius: 12px; background: #f7fcf7;
-  color: #087353; font: 800 13px/1.18 Arial,Helvetica,sans-serif; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 0 0 auto; min-height: 44px; max-width: 160px; padding: 7px 11px;
+  border: 1px solid #bad7c8; border-radius: 11px; background: #f4faf5;
+  color: #087354; font: 800 12px/1.16 Arial,Helvetica,sans-serif;
+  text-align: center; cursor: pointer;
 }
 .viewer .reikiFindButton:hover,.viewer .reikiFindButton[aria-expanded="true"] {
-  background: #e5f6ed; border-color: #39a583;
+  border-color: #38a584; background: #e6f6ec;
 }
 .viewer .reikiFindButton:focus-visible { outline: 3px solid #e6b75f; outline-offset: 2px; }
 .reikiBrowse .reikiQuickFormat {
-  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; padding: 0; background: transparent;
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 7px; padding: 0; background: transparent;
 }
 .viewer .reikiBrowse .reikiQuickFormat button {
-  display: flex; gap: 9px; min-height: 54px; padding: 10px 13px; border-radius: 13px;
-  border: 1px solid #caddcb; background: #f3f8f1; color: #285142;
-  font: 850 14px/1.16 Arial,Helvetica,sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 0; min-height: 46px; padding: 6px;
+  border: 1px solid #cbded1; border-radius: 11px;
+  background: #f5f9f3; color: #244a39;
+  font: 800 12px/1.16 Arial,Helvetica,sans-serif; text-align: center;
 }
 .viewer .reikiBrowse .reikiQuickFormat button[aria-pressed="true"] {
-  border-color: #0b9877; color: #fff; background: linear-gradient(115deg,#008d6b,#13ac83);
-  box-shadow: 0 4px 12px #086e5830;
+  border-color: #078f6e; background: linear-gradient(115deg,#078e6e,#12a881);
+  color: #fff; box-shadow: 0 3px 8px #086e5820;
 }
-.reikiBrowse .reikiFocusBar { display: grid; gap: 8px; padding: 0; margin: 0; background: transparent; }
+.reikiBrowse .reikiFocusBar {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 6px; margin: 0; padding: 0; background: transparent;
+}
 .viewer .reikiBrowse .reikiFocusButton {
-  min-height: 81px; padding: 9px 5px; gap: 5px;
-  border-radius: 13px; background: #fffdf8; border: 1px solid #c8ddd0;
+  min-width: 0; min-height: 66px; padding: 6px 3px; gap: 3px;
+  border: 1px solid #c8ddd0; border-radius: 11px; background: #fffdfa;
 }
-.reikiBrowse .reikiFocusButton strong { font-size: 13px; line-height: 1.18; }
-.reikiBrowse .reikiFocusButton small { font-size: 11px; line-height: 1.18; }
+.reikiBrowse .reikiFocusButton strong {
+  font-size: clamp(10px,1.2vw,12px); line-height: 1.13; font-weight: 800;
+}
+.reikiBrowse .reikiFocusButton small {
+  color: #687b6d; font-size: clamp(9px,1vw,10px); line-height: 1.14;
+}
 .viewer .reikiBrowse .reikiFocusButton[aria-pressed="true"] {
-  border-color: #079a75; color: #fff; background: linear-gradient(125deg,#009b76,#10a17d);
+  border-color: #078e70; background: linear-gradient(125deg,#068e6e,#12a27e);
+  color: #fff;
 }
-.reikiBrowse .reikiFocusButton[aria-pressed="true"] small { color: #effff5; }
+.reikiBrowse .reikiFocusButton[aria-pressed="true"] small { color: #f0fff7; }
 .viewer[data-support-directory-kind="healing"] .reikiStage {
-  margin-top: 10px; min-height: 415px; border-radius: 20px; padding: 18px 19px;
-  box-shadow: 0 8px 24px #173b2c24;
+  margin-top: 8px; min-height: 365px; padding: 13px 14px;
+  border-radius: 17px; box-shadow: 0 5px 14px #173b2c1d;
 }
-.reikiStage[data-active-tab="main"] .reikiStageContent { order: 1; min-height: 285px; align-items: flex-end; }
-.reikiStage[data-active-tab="main"] .reikiStageTabs { order: 2; margin-top: auto; }
-.reikiStage[data-active-tab="main"] .reikiTabCopy { max-width: min(72%,570px); gap: 10px; padding-bottom: 14px; }
-.reikiStage[data-active-tab="main"] .reikiTabCopy h2 { font-size: clamp(32px,4.2vw,48px); line-height: 1.06; }
-.reikiStage[data-active-tab="main"] .reikiTabCopy p { font-size: clamp(14px,1.85vw,18px); line-height: 1.32; }
+.reikiStage[data-active-tab="main"] .reikiStageContent {
+  order: 1; min-height: 252px; align-items: flex-end;
+}
+.reikiStage[data-active-tab="main"] .reikiStageTabs {
+  order: 2; margin-top: auto;
+}
+.reikiStage[data-active-tab="main"] .reikiTabCopy {
+  width: min(83%,540px); max-width: min(83%,540px); gap: 6px; padding: 0 0 6px;
+}
+.reikiStage[data-active-tab="main"] .reikiTabCopy h2 {
+  font-size: clamp(27px,3.25vw,36px); line-height: 1.07;
+}
+.reikiStage[data-active-tab="main"] .reikiTabCopy p {
+  font-size: clamp(12px,1.5vw,14px); line-height: 1.29;
+}
 .reikiStage[data-active-tab="main"] .reikiStageTab {
-  min-height: 40px; max-height: 44px; background: #173e35a9; border-color: #dcf0e2aa;
-  border-radius: 13px;
+  min-height: 44px; max-height: 44px; padding: 5px 3px;
+  border: 1px solid #e1eee1a1; border-radius: 11px;
+  background: #173e35a0; font-size: 11px;
 }
 .reikiStage[data-active-tab="main"] .reikiStageTab[aria-selected="true"] {
-  background: #008f6dbf; border-color: #b6f5db;
+  border-color: #b6f5db; background: #078f6ac7;
 }
 .viewer[data-support-directory-kind="healing"] .reikiStage .reikiMainActions {
-  flex-wrap: nowrap; max-width: 520px; margin-top: 5px;
+  max-width: 430px; min-width: 0; flex-wrap: nowrap; gap: 6px; margin-top: 2px;
 }
 .viewer[data-support-directory-kind="healing"] .reikiStage .reikiApply {
-  min-height: 53px; font-size: 15px; border-radius: 13px;
+  min-height: 46px; padding: 6px 10px; border-radius: 11px; font-size: 13px;
 }
-.viewer[data-support-directory-kind="healing"] .reikiStage .reikiSecondary { min-height: 51px; border-radius: 13px; }
+.viewer[data-support-directory-kind="healing"] .reikiStage .reikiSecondary {
+  min-height: 46px; padding: 6px 10px; border-radius: 11px; font-size: 11px;
+}
+.viewer[data-support-directory-kind="healing"] .reikiStage[data-active-tab="filter"] {
+  min-height: 0; height: auto; max-height: none;
+}
 @media(max-width:640px) {
-  .viewer[data-support-directory-kind="healing"] { padding: 6px; border-radius: 19px; }
-  .reikiBrowse { gap: 10px; padding: 12px 10px 11px; border-radius: 15px; }
-  .reikiBrowseHeading { align-items: flex-start; gap: 8px; }
-  .reikiBrowseHeading h2 { font-size: clamp(20px,5.6vw,24px); }
-  .reikiBrowseHeading p { max-width: 240px; margin-top: 4px; font-size: 11px; line-height: 1.29; }
+  .viewer[data-support-directory-kind="healing"] {
+    width: calc(100% - 12px); max-width: 430px; padding: 0;
+  }
+  .reikiBrowse { gap: 7px; padding: 10px 9px; border-radius: 13px; }
+  .reikiBrowseHeading { gap: 6px; }
+  .reikiBrowseHeading h2 {
+    font-size: clamp(17px,5.1vw,21px); white-space: nowrap;
+  }
+  .reikiBrowseIntro { margin: -2px 0 1px; font-size: 11px; line-height: 1.26; }
   .viewer .reikiFindButton {
-    max-width: 122px; gap: 4px; padding: 6px 8px; border-radius: 10px;
-    font-size: 10.5px; text-align: center;
+    max-width: 124px; min-height: 44px; padding: 6px;
+    gap: 4px; font-size: 10.5px; border-radius: 10px;
   }
   .reikiFindButton svg { width: 15px; height: 15px; flex: none; }
-  .reikiBrowse .reikiQuickFormat { gap: 6px; }
+  .reikiBrowse .reikiQuickFormat { gap: 5px; }
   .viewer .reikiBrowse .reikiQuickFormat button {
-    min-height: 49px; gap: 5px; padding: 6px 4px; border-radius: 11px;
-    font-size: clamp(11px,3.2vw,13px); text-align: center;
+    min-height: 44px; gap: 4px; padding: 5px 2px; border-radius: 9px;
+    font-size: clamp(10.5px,3vw,12px);
   }
-  .reikiBrowse .reikiQuickFormat button svg { width: 16px; height: 16px; }
-  .reikiBrowse .reikiFocusBar { gap: 5px; }
+  .reikiBrowse .reikiQuickFormat button svg { flex: none; width: 15px; height: 15px; }
+  .reikiBrowse .reikiFocusBar { gap: 4px; }
   .viewer .reikiBrowse .reikiFocusButton {
-    min-height: 76px; padding: 7px 3px; border-radius: 10px;
+    min-height: 64px; padding: 5px 2px; gap: 3px; border-radius: 9px;
   }
-  .reikiBrowse .reikiFocusButton strong { font-size: clamp(10px,2.75vw,12px); }
-  .reikiBrowse .reikiFocusButton small { font-size: clamp(8.5px,2.35vw,10px); }
+  .reikiBrowse .reikiFocusButton strong { font-size: clamp(9.6px,2.8vw,11px); }
+  .reikiBrowse .reikiFocusButton small { font-size: clamp(8.4px,2.4vw,9.5px); }
   .viewer[data-support-directory-kind="healing"] .reikiStage {
-    min-height: 350px; height: auto; max-height: none; padding: 10px;
-    margin-top: 7px; border-radius: 16px; gap: 7px;
+    min-height: 305px; height: auto; max-height: none;
+    margin-top: 7px; padding: 9px; border-radius: 14px; gap: 5px;
   }
   .reikiStage[data-active-tab="main"] .reikiStageContent {
-    order: 1; min-height: 280px; flex: 1 1 auto; overflow: visible;
+    order: 1; min-height: 231px; flex: 1 1 auto; overflow: visible;
   }
   .reikiStage[data-active-tab="main"] .reikiTabCopy {
-    width: 80%; max-width: 80%; gap: 7px; padding: 6px 0 10px;
+    width: 85%; max-width: 85%; gap: 5px; padding: 4px 0 4px;
   }
   .reikiStage[data-active-tab="main"] .reikiTabCopy h2 {
-    font-size: clamp(25px,6.9vw,33px); -webkit-line-clamp: 3;
+    font-size: clamp(22px,6.2vw,27px); line-height: 1.07;
+    -webkit-line-clamp: 2;
   }
   .reikiStage[data-active-tab="main"] .reikiTabCopy p {
-    font-size: clamp(11px,3.15vw,13px); -webkit-line-clamp: 3; line-height: 1.3;
+    font-size: clamp(11px,3vw,12px); line-height: 1.24; -webkit-line-clamp: 2;
   }
+  .reikiStage[data-active-tab="main"] .reikiSelectedPrice { font-size: 12px; }
+  .reikiStage[data-active-tab="main"] .reikiPill { padding: 4px 7px; font-size: 10px; }
+  .reikiStage[data-active-tab="main"] .reikiCaution { font-size: 9.5px; line-height: 1.18; }
   .reikiStage[data-active-tab="main"] .reikiStageTabs { gap: 4px; }
   .reikiStage[data-active-tab="main"] .reikiStageTab {
-    min-height: 40px; max-height: none; padding: 5px 2px;
-    border-radius: 10px; font-size: clamp(9.2px,2.7vw,11px);
+    min-height: 44px; max-height: 44px; padding: 4px 2px;
+    border-radius: 9px; font-size: clamp(9.4px,2.7vw,10.5px);
   }
   .viewer[data-support-directory-kind="healing"] .reikiStage .reikiApply {
-    min-height: 47px; font-size: clamp(11.5px,3.35vw,14px);
+    min-height: 44px; padding: 6px; border-radius: 10px;
+    font-size: clamp(11px,3.1vw,13px);
   }
   .viewer[data-support-directory-kind="healing"] .reikiStage .reikiSecondary {
-    min-height: 47px; font-size: 11px;
+    min-height: 44px; padding: 6px 8px; border-radius: 10px; font-size: 10.5px;
+  }
+  .viewer[data-support-directory-kind="healing"] .reikiStage[data-active-tab="filter"] {
+    min-height: 0; height: auto; max-height: none;
   }
 }
 @media(max-width:350px) {
-  .reikiBrowseHeading p { max-width: 184px; }
-  .viewer .reikiFindButton { max-width: 109px; font-size: 10px; }
-  .reikiBrowse .reikiFocusButton strong { font-size: 9.5px; }
-  .reikiBrowse .reikiFocusButton small { font-size: 8px; }
-  .reikiStage[data-active-tab="main"] .reikiTabCopy { width: 86%; max-width: 86%; }
-  .reikiStage[data-active-tab="main"] .reikiTabCopy h2 { font-size: 24px; }
+  .reikiBrowseHeading h2 { font-size: 16px; }
+  .viewer .reikiFindButton { max-width: 107px; font-size: 10px; }
+  .reikiBrowse .reikiFocusBar {
+    display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px;
+    scroll-snap-type: x proximity; scrollbar-width: thin;
+  }
+  .viewer .reikiBrowse .reikiFocusButton { flex: 0 0 73px; min-height: 62px; scroll-snap-align: start; }
+  .reikiStage[data-active-tab="main"] .reikiTabCopy { width: 88%; max-width: 88%; }
+  .reikiStage[data-active-tab="main"] .reikiTabCopy h2 { font-size: 21px; }
+  .reikiStage[data-active-tab="main"] .reikiTabCopy p { font-size: 10.5px; }
 }
