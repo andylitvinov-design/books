@@ -17,6 +17,8 @@ export default function MessagesBottomNavigation({locale='en'}){
     {ITEMS.map(({path,Icon,en,ru,es})=>{
       const active=path==='messages'
       const label=locale==='ru'?ru:locale==='es'?es:en
+      // Practice is the approved five-tab public dashboard before and after Google sign-in.
+      // Private editing still uses /app/practice?panel=...; the dock never opens the old landing.
       const href=path==='practice'?'/'+locale+'/practice':
         path==='messages'?'/'+locale+'/app/messages':
         path==='materials'?'/'+accountLocale+'/app/practice?panel=materials':

@@ -137,3 +137,146 @@
 .musicTools button:disabled{opacity:.5;cursor:not-allowed}
 .musicTools label{display:flex;flex:1 1 150px;flex-direction:column;gap:3px;color:#456c5b;font-size:12px;font-weight:700}
 .musicTools input{accent-color:#07976e;width:100%;min-height:24px}
+
+/* Home/Support visual parity — one existing editor, one real media canvas.
+   On 320–430px the three-column check-in/portrait/tools matches the site's
+   compact support home, while the actual video takes the whole hero. */
+.studio{max-width:1040px;padding:0 0 24px;--ink:#173e34;background:transparent}
+.supportTop{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,.82fr) minmax(0,1.04fr);align-items:stretch;gap:9px;margin:1px 0 12px;min-width:0}
+.assessmentCard,.supportTools{min-width:0;border:1px solid #e4e7dc;border-radius:22px;background:linear-gradient(150deg,#fffdfa,#f8f8f1);box-shadow:0 8px 23px rgba(30,67,44,.07);padding:12px 11px}
+.assessmentCard h2,.supportTools h2{margin:0;color:#1e3e34;font:800 16px/1.16 Arial,Helvetica,sans-serif}
+.assessmentCard>p{margin:6px 0 8px;color:#7b8378;font:11px/1.28 Arial,Helvetica,sans-serif}
+.assessmentScales{display:flex;flex-direction:column;gap:5px;margin:5px 0 9px}
+.assessmentScale{display:flex;flex-direction:column;min-width:0;gap:1px;color:#2f483c;font:800 11px/1.2 Arial,Helvetica,sans-serif}
+.scaleControls{display:flex;align-items:center;gap:5px;min-width:0}
+.scaleControls svg{flex:none;width:17px;height:17px}
+.assessmentScale[data-tone="money"] svg{color:#e4a526}
+.assessmentScale[data-tone="energy"] svg{color:#21a36c}
+.assessmentScale[data-tone="relationships"] svg{color:#e35779}
+.assessmentScale[data-tone="goals"] svg{color:#9659c2}
+.scaleControls input{min-width:0;flex:1;max-width:100%;height:20px;accent-color:#159b74;cursor:pointer}
+.assessmentScale[data-tone="money"] input{accent-color:#e7a92b}
+.assessmentScale[data-tone="relationships"] input{accent-color:#df5776}
+.assessmentScale[data-tone="goals"] input{accent-color:#9360c8}
+.scaleControls output{display:grid;place-items:center;flex:none;min-width:23px;height:23px;border-radius:9px;background:#e6f1e8;color:#274f3d;font-weight:850;font-size:13px}
+.assessmentScale[data-tone="money"] output{background:#fbecd2}
+.assessmentScale[data-tone="relationships"] output{background:#fae2e5}
+.assessmentScale[data-tone="goals"] output{background:#f0e4f6}
+.supportTestLink{display:flex;align-items:center;justify-content:center;gap:5px;min-height:37px;padding:5px 6px;border:1px solid #badcc5;border-radius:10px;background:#eff8f0;text-decoration:none;color:#137151;font-size:12px;font-weight:800}
+.centerProfile{display:flex;align-items:center;flex-direction:column;gap:8px;min-width:0;padding:3px 0 0}
+.centerProfile .photoPortrait{display:grid;flex:none;width:clamp(72px,96%,145px);margin:0 auto 1px;aspect-ratio:1;border:3px solid #9cced2;box-shadow:0 0 0 4px #fff,0 3px 14px rgba(28,76,64,.13)}
+.centerProfile .photoEmpty small{font-size:10px}
+.videoMandalaChoice,.profileFocus,.recommendButton{display:flex;align-items:center;justify-content:center;min-width:0;width:100%;border-radius:13px;padding:8px 4px;text-align:center;line-height:1.16}
+.videoMandalaChoice{gap:5px;min-height:40px;border:1px solid #9ccfb5;background:#e4f3e9;color:#116b50;font-weight:800;font-size:12px}
+.profileFocus{display:flex;flex-direction:column;gap:4px;min-height:43px;border:1px solid #e8e4dc;background:#fffcf7;color:#234c3c}
+.profileFocus small{font-size:10px;color:#81847b}
+.profileFocus strong{font-size:12px;line-height:1.1}
+.recommendButton{display:flex;gap:4px;min-height:43px;border:1px solid #159f77;background:#03966c;color:#fff;font-weight:800;font-size:13px}
+.recommendButton:disabled{opacity:.55}
+.supportTools h2{margin-bottom:10px}
+.supportToolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.supportToolGrid a{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:5px;min-width:0;min-height:78px;padding:7px 3px;border:1px solid #e6dfd5;border-radius:13px;background:#fffcf5;text-decoration:none;color:#27483c;text-align:center;font-size:11px;font-weight:800;line-height:1.13;overflow-wrap:anywhere}
+.supportToolGrid a.toolPrimary{background:linear-gradient(145deg,#0bb68b,#058a67);border-color:#58cea6;color:#fff}
+.supportToolGrid a:nth-child(3) svg{color:#9462c0}
+.supportToolGrid a:nth-child(4) svg{color:#60718a}
+.supportShortcuts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.supportShortcuts a{display:grid;place-items:center;min-height:32px;padding:4px;border:1px solid #cdded2;border-radius:10px;background:#f0f6ef;text-decoration:none;color:#236b51;text-align:center;font-size:11px;font-weight:800}
+.hero{position:relative;isolation:isolate;overflow:hidden;border:1px solid #b7bbae;border-radius:26px;background:#152e28;min-height:350px;margin:7px 0 0;scroll-margin-top:15px;box-shadow:0 8px 26px rgba(36,54,38,.1)}
+.heroCanvas,.heroShade{position:absolute;inset:0;overflow:hidden}
+.heroCanvas{z-index:0;background:radial-gradient(circle at 65% 40%,#9d7633,#132c31 75%)}
+.heroCanvas canvas{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.13) contrast(1.06)}
+.heroShade{z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(9,31,27,.86) 0%,rgba(13,33,29,.72) 39%,rgba(12,32,27,.18) 83%),linear-gradient(0deg,rgba(5,21,18,.55),transparent 67%)}
+.heroOverlay{position:relative;z-index:2;display:flex;flex-direction:column;min-height:350px;padding:16px 15px 15px;color:#fff}
+.heroTabs{display:grid;grid-template-columns:1.20fr 1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.heroTabs>*{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:46px;padding:7px 3px;border:1px solid rgba(236,246,230,.5);border-radius:999px;background:rgba(21,45,42,.73);color:#fff;text-decoration:none;text-align:center;font-size:12px;line-height:1.12;font-weight:800;backdrop-filter:blur(6px)}
+.heroTabs>.heroMode{border-color:#36caa0;background:linear-gradient(115deg,#079e73,#0ab78a);color:white}
+.heroThemes{display:flex;flex-wrap:wrap;gap:5px;scroll-margin-top:75px}
+.heroThemes button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1 1 0;min-width:0;min-height:34px;padding:6px 4px;border:1px solid rgba(242,251,238,.45);border-radius:999px;background:rgba(15,38,33,.67);color:#f9f4e9;font-size:10px;font-weight:750;line-height:1.15}
+.heroThemes button[aria-pressed="true"]{border-color:#2bcba0;background:#0da77d;color:#fff}
+.heroBody{display:flex;align-items:flex-start;flex-direction:column;justify-content:flex-end;gap:8px;flex:1;padding:18px 2px 0}
+.heroAudio,.heroSound{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:5px 9px;border:1px solid rgba(246,243,211,.65);border-radius:999px;background:rgba(17,42,35,.67);color:#fff;font-size:11px;font-weight:800}
+.heroAudio:disabled{opacity:.65;cursor:not-allowed}
+.heroSound{min-height:24px;padding:2px 8px;border-color:transparent;background:rgba(5,29,23,.35);font-size:10px;opacity:.9}
+.heroBody h2{margin:2px 0 0;max-width:min(82%,430px);color:#fff;font:800 clamp(25px,4.2vw,43px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.026em;text-shadow:0 3px 12px rgba(0,0,0,.22)}
+.heroBody p{max-width:78%;margin:1px 0 5px;font-size:13px;line-height:1.25;color:#f3f8ee;text-shadow:0 2px 9px #0a201c}
+.heroCreate{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:min(100%,445px);min-height:50px;padding:9px 14px;border:2px solid #a4d5b7;border-radius:15px;background:linear-gradient(100deg,#04966d,#1ec092);color:white;font-size:15px;font-weight:850;box-shadow:0 3px 0 rgba(8,49,31,.5),0 5px 20px rgba(0,0,0,.2)}
+.heroCreate:disabled{opacity:.6}
+.hero+.backgroundMode{margin:10px 0 5px}
+.backgroundMode{border-radius:13px}
+.templates{padding:13px 11px 12px;margin:9px 0 12px;border-radius:0 0 22px 22px;border-top:0}
+.templates .sectionHeading{margin-bottom:8px}
+.templateRail{grid-auto-columns:clamp(80px,24%,142px);gap:7px;padding:2px 2px 8px}
+.templateTile{aspect-ratio:.83;border-width:2px;border-radius:12px}
+.templateTile canvas{object-fit:cover}
+.templateTile .tileName{left:5px;right:5px;bottom:7px;font-size:11px}
+.templateTile .tileCheck{width:21px;height:21px;right:5px;top:5px}
+.templateFooter{margin:1px 3px 0}
+.settings{padding:14px 11px;border-radius:21px;margin:12px 0}
+.settings .settingCard{padding:9px 9px}
+.settings .pills button{flex:1 1 40px;min-height:39px;font-size:11px}
+.settings .sectionHeading button{font-size:11px}
+.musicRail button{flex-basis:112px;min-height:76px}
+.musicRail{scroll-padding:6px}
+.captionCard{padding:10px}
+.consent{border-radius:10px}
+.generate{min-height:46px;margin:10px 0 7px;border-radius:13px;background:#edf8ef;color:#087651;border:1px solid #9fcab4;font-size:14px;box-shadow:none}
+.generate:hover:not(:disabled){background:#e0f2e5}
+.result{scroll-margin-top:76px}
+.studio>.bottomNav{display:none}
+@media(max-width:760px){
+  .studio{padding:0 0 20px}
+  .supportTop{gap:7px}
+  .assessmentCard,.supportTools{padding:10px 8px;border-radius:18px}
+  .assessmentCard h2,.supportTools h2{font-size:12px}
+  .assessmentCard>p{font-size:10px}
+  .centerProfile{gap:6px}
+  .supportToolGrid a{min-height:70px}
+  .hero{min-height:330px;border-radius:22px}
+  .heroOverlay{min-height:330px;padding:11px}
+  .heroTabs>*{font-size:10.5px;min-height:44px}
+  .heroBody h2{font-size:30px}
+  .heroBody p{font-size:12px}
+  .heroCreate{min-height:48px;font-size:14px}
+  .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:390px){
+  .supportTop{grid-template-columns:minmax(0,1fr) minmax(0,.84fr) minmax(0,1fr);gap:5px}
+  .assessmentCard,.supportTools{padding:8px 6px;border-radius:14px}
+  .assessmentCard h2,.supportTools h2{font-size:11px}
+  .assessmentScale{font-size:9px}
+  .scaleControls{gap:2px}
+  .scaleControls svg{width:13px;height:13px}
+  .scaleControls output{min-width:17px;height:19px;font-size:11px}
+  .centerProfile .photoPortrait{width:clamp(68px,96%,110px)}
+  .videoMandalaChoice{font-size:10px;min-height:37px;gap:3px}
+  .profileFocus{min-height:39px}
+  .profileFocus strong{font-size:10px}
+  .recommendButton{font-size:11px;min-height:40px}
+  .supportToolGrid{gap:4px}
+  .supportToolGrid a{min-height:64px;font-size:9px;padding:4px 1px}
+  .supportToolGrid a svg{width:20px;height:20px}
+  .supportShortcuts a{font-size:9px}
+  .hero{min-height:325px}
+  .heroOverlay{min-height:325px;padding:10px 8px}
+  .heroTabs{gap:4px}
+  .heroTabs>*{font-size:10px;min-height:41px;padding:4px 2px}
+  .heroThemes button{font-size:9px;min-height:32px;padding:5px 1px}
+  .heroThemes svg{width:11px;height:11px}
+  .heroBody h2{font-size:27px}
+  .heroBody p{max-width:86%;font-size:11px}
+  .heroCreate{font-size:12.5px;min-height:45px;padding:7px}
+  .templateRail{grid-auto-columns:clamp(75px,24%,105px);gap:5px}
+  .templateTile .tileName{font-size:10px}
+  .settings .pills button{font-size:10px}
+}
+@media(max-width:345px){
+  .assessmentCard h2,.supportTools h2{font-size:10px}
+  .assessmentCard>p{font-size:9px}
+  .assessmentScale{font-size:8.5px}
+  .centerProfile .photoPortrait{width:70px}
+  .heroTabs>*{font-size:9px}
+  .heroThemes button{font-size:8px}
+  .heroBody h2{font-size:25px}
+  .settingCard .pills{gap:3px}
+  .settings .pills button{font-size:9px;padding:4px 2px}
+}

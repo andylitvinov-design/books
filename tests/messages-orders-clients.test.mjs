@@ -70,6 +70,7 @@ test('five wide-enough mobile destinations are consistent in client and master r
   assert.deepEqual([...nav.matchAll(/\{path:'([^']*)'/g)].map(m=>m[1]),['','practice','messages','materials','profile'])
   assert.match(nav,/ru:'Заявки'/)
   assert.match(nav,/es:'Solicitudes'/)
+  assert.match(nav,/path==='practice'\?'\/'\+locale\+'\/practice'/)
   assert.match(workspace,/const mobileNav = \[/)
   assert.match(css,/repeat\(5,minmax\(0,1fr\)\)!important/)
   assert.match(orderCss,/@media\(max-width:350px\)/)

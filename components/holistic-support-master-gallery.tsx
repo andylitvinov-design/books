@@ -721,7 +721,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             {CONSULTATION_CATEGORIES.map(({ id: category, Icon }) =>
               <button type="button" key={category} className={styles.consultCategory}
                 data-support-consultation-category={category}
-                aria-pressed={consultCategory === category} aria-label={c.categories[category]}
+                aria-pressed={consultCategory === category}
+                aria-label={c.categoryShort[category] === c.categories[category]
+                  ? c.categories[category]
+                  : `${c.categoryShort[category]}: ${c.categories[category]}`}
                 onClick={() => { setConsultCategory(category); setSelectedId(null);
                   setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
                 <Icon size={25} aria-hidden="true"/>
