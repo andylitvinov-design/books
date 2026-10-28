@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users, CalendarDays, Clock3, GraduationCap, Mic, Zap } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { filterPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
+import { HolisticReikiOfferShelf } from "@/components/holistic-reiki-offer-shelf";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
 import { matchReikiVariants } from "@/lib/practitioners/reiki-offer.mjs";
@@ -144,7 +146,7 @@ const reikiUi = {
     preferences: "Published offers describe the master's conditions; actual availability is confirmed separately.",
     heading: "Find Reiki support", intro: "Published options, with conditions confirmed before a request.",
     heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
-    show: "Show available options", count: "Published matching offers", resetFilters: "Reset filters",
+    show: "Show available options", count: "Options to explore", resetFilters: "Reset filters",
     notBooked: "No booking, payment or certificate is created by choosing.",
     initiation: "Explore a Reiki initiation", course: "Free Reiki Practitioner course",
     initiationNote: "See the original initiation request. Timing and certificate are not yet verified.",
@@ -166,7 +168,7 @@ const reikiUi = {
     preferences: "Фильтр сверяет опубликованные условия мастера. Наличие времени и выдача сертификата подтверждаются отдельно.",
     heading: "Подбор Рейки-поддержки", intro: "Опубликованные предложения. Условия подтверждаются при заявке.",
     heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
-    show: "Показать варианты", count: "Опубликованных совпадений", resetFilters: "Сбросить",
+    show: "Показать варианты", count: "Вариантов для просмотра", resetFilters: "Сбросить",
     notBooked: "Выбор не означает запись, оплату или выдачу сертификата.",
     initiation: "Инициация Рейки", course: "Бесплатный курс Reiki Practitioner",
     initiationNote: "Запрос инициации на действующей странице. Срок и сертификат пока не подтверждены.",
@@ -188,7 +190,7 @@ const reikiUi = {
     preferences: "Las condiciones provienen de ofertas publicadas. Horarios y certificados se confirman por separado.",
     heading: "Encuentra apoyo Reiki", intro: "Opciones publicadas, condiciones por confirmar.",
     heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
-    show: "Ver opciones", count: "Ofertas publicadas compatibles", resetFilters: "Restablecer",
+    show: "Ver opciones", count: "Opciones para explorar", resetFilters: "Restablecer",
     notBooked: "Elegir no reserva, paga ni concede certificados.",
     initiation: "Iniciación Reiki", course: "Curso gratuito Reiki Practitioner",
     initiationNote: "Consulta la solicitud original. Plazo y certificado aún sin verificar.",
@@ -457,7 +459,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
   const reikiLearningMatches = (reikiPrice === "all" || reikiPrice === "free") && !reikiCertificate;
-  const reikiCount = visibleMasters.length;
+  const reikiAcademyOffers = kind === "healing" && reikiFormat !== "session"
+    ? filterPublicReikiAcademyOffers(locale, { kind: reikiFormat, price: reikiPrice }) : [];
+  const reikiCount = visibleMasters.length + reikiAcademyOffers.length;
   const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
     : "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#initiation-choices";
   const reikiLearningLabel = reikiFormat === "course" ? r.course : r.initiation;
@@ -617,8 +621,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               reikiFormat === "session" && selectedMaster && cheapest ?
               <button type="button" className={styles.reikiApply}
                 data-support-reiki-request onClick={() => setOrderOpen(true)}>{r.request}<ArrowRight size={17}/></button> :
-              reikiFormat !== "session" && !selectedMaster && reikiLearningMatches ?
-                <Link className={styles.reikiApply} href={reikiLearningPath}>{r.learn}<ArrowRight size={17}/></Link> :
+              reikiFormat !== "session" && !selectedMaster && (reikiAcademyOffers.length > 0 || reikiLearningMatches) ?
+                <a className={styles.reikiApply} href="#support-reiki-offers"
+                  data-support-reiki-open-offers>{r.show}<ArrowRight size={17}/></a> :
                 <button type="button" className={styles.reikiApply}
                   onClick={() => setReikiTab("filter")}>{r.choose}<Filter size={17}/></button>}
             <button type="button" className={styles.reikiSecondary}
@@ -704,11 +709,18 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         </div>
       </section>}
       {reikiStage}
-      {kind === "healing" && reikiFormat !== "session" && ready && !selectedMaster ? <section className={styles.reikiLearning} data-support-reiki-learning>
-        <h3>{reikiLearningLabel}</h3>
-        <p>{reikiLearningMatches ? reikiLearningIntro : r.learningNone}</p>
-        {reikiLearningMatches && <Link href={reikiLearningPath} prefetch={false}>{r.learn}<ArrowRight size={18}/></Link>}
-      </section> : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
+      {kind === "healing" ? <HolisticReikiOfferShelf
+        locale={locale} format={reikiFormat} price={reikiPrice}
+        time={reikiTime} report={reikiReport} role={reikiRole}
+        certificate={reikiCertificate}
+        masters={visibleMasters} academyOffers={reikiAcademyOffers}
+        allMasters={masters || []} selectedId={selectedId || selectedMaster?.serviceId || null}
+        loading={!ready} failed={failed}
+        onSelectMaster={itemId => select(itemId)}
+        onRequestMaster={itemId => { select(itemId); setOrderOpen(true); }}
+        onReset={() => { setReikiFocus("love"); resetReikiFilters(); }}
+        onRetry={() => setAttempt(previous => previous + 1)}/>
+      : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
         <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
