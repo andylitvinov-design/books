@@ -124,7 +124,54 @@ jobs:
           apk=android/app/build/outputs/apk/release/app-release.apk
           test -s "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > hh-website-apk-signature.txt
-          grep -E '^Verified using v[23] scheme' hh-website-apk-signature.txt
+          grep -E '^Verified using v[23] scheme .*: true
+          grep -E '^Signer #1 certificate SHA-256 digest: [a-f0-9]{64}      - name: Retain approved signed candidate for manual Play Console review
+        uses: actions/upload-artifact@v4
+        with:
+          name: HH-Play-AAB-${{ inputs.version_code }}-NOT-PUBLISHED
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            hh-play-release-sha256.txt
+      - name: Remove ephemeral signing key and Firebase config
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/hh-upload.jks"
+          rm -f android/app/google-services.json android/app/hh-play-signing.gradle
+ hh-website-apk-signature.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > hh-website-apk-badging.txt
+          grep -F "package: name='com.holistichouse.app' versionCode='$HH_PLAY_VERSION_CODE' versionName='$HH_PLAY_VERSION_NAME'" hh-website-apk-badging.txt
+          grep -F "targetSdkVersion:'36'" hh-website-apk-badging.txt
+          cp "$apk" "Holistic-House-Android-v$HH_PLAY_VERSION_NAME.apk"
+          sha256sum "Holistic-House-Android-v$HH_PLAY_VERSION_NAME.apk" > hh-website-apk-sha256.txt
+          echo "PRIVATE release candidate only; public distribution requires device QA, owner approval and GitHub Release"
+      - name: Retain private website APK candidate (NOT publicly downloadable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: HH-Website-APK-${{ inputs.version_code }}-NOT-PUBLISHED
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            Holistic-House-Android-v*.apk
+            hh-website-apk-sha256.txt
+            hh-website-apk-signature.txt
+            hh-website-apk-badging.txt
+      - name: Retain approved signed candidate for manual Play Console review
+        uses: actions/upload-artifact@v4
+        with:
+          name: HH-Play-AAB-${{ inputs.version_code }}-NOT-PUBLISHED
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            hh-play-release-sha256.txt
+      - name: Remove ephemeral signing key and Firebase config
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/hh-upload.jks"
+          rm -f android/app/google-services.json android/app/hh-play-signing.gradle
+ hh-website-apk-signature.txt
           grep -E '^Signer #1 certificate SHA-256 digest: [a-f0-9]{64}      - name: Retain approved signed candidate for manual Play Console review
         uses: actions/upload-artifact@v4
         with:
