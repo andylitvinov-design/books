@@ -185,6 +185,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       }
     }
     if(params.get('panel')==='marketing')setActivePanel('marketing')
+    if(['requests','events','profile','analytics'].includes(params.get('panel')))setActivePanel(params.get('panel'))
     if(params.get('panel')==='express-reports')setActivePanel('express-reports')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')
@@ -484,50 +485,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       profileLive={profileLive} onSaved={load} />}
 
     {!needsOnboarding&&<section id="hh-practice-workspace-top" className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
-      <div className="hh-practice-v4-grid">
-        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
-          <UsersRound aria-hidden="true"/><span>{d.clients}</span><small>{ru?'Контакты':locale==='es'?'Contactos':'Contacts'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
-          <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
-        </button>
-        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages'+(isOwner?'?tab=requests':''))}>
-          <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
-          <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
-          <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
-        </button>
-        <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={activePanel==='materials'&&materialTab!=='courses'}>
-          <FileText aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span><small>{ru?'Библиотека':locale==='es'?'Biblioteca':'Library'}</small>
-        </button>
-        <button type="button" onClick={()=>openMaterialsPanel('courses')} aria-pressed={activePanel==='materials'&&materialTab==='courses'}>
-          <BookOpen aria-hidden="true"/><span>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</span><small>{ru?'Управление':locale==='es'?'Gestionar':'Manage'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('analytics')} aria-pressed={activePanel==='analytics'}>
-          <BarChart3 aria-hidden="true"/><span>{ru?'Аналитика':locale==='es'?'Analíticas':'Insights'}</span><small>{ru?'Практика':locale==='es'?'Práctica':'Practice'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('profile')} aria-pressed={activePanel==='profile'}>
-          <IdCard aria-hidden="true"/><span>{ru?'Профиль':locale==='es'?'Perfil':'Profile'}</span>
-        </button>
-        <button type="button" onClick={()=>choosePanel('more')} aria-pressed={['more','marketing','crm','events'].includes(activePanel)}>
-          <Plus aria-hidden="true"/><span>{ru?'Ещё':locale==='es'?'Más':'More'}</span>
-        </button>
-      </div>
-      {!activePanel&&<nav className="hh-practice-community-shortcuts" aria-label={ru?'Сообщество мастеров':locale==='es'?'Comunidad de mentores':'Mentor community'}>
-        <Link href={'/'+locale+'/masters'} prefetch={false}>
-          <UsersRound aria-hidden="true"/>
-          <span><strong>{ru?'Сообщество наставников':locale==='es'?'Comunidad de mentores':'Explore mentor community'}</strong>
-            <small>{ru?'Статьи и профили':locale==='es'?'Artículos y perfiles':'Articles & profiles'}</small></span>
-          <ChevronRight aria-hidden="true"/>
-        </Link>
-        <button type="button" onClick={()=>openMaterialsPanel('articles')}>
-          <FileText aria-hidden="true"/>
-          <span><strong>{ru?'Написать статью':locale==='es'?'Escribir artículo':'Write an article'}</strong>
-            <small>{ru?'Публикация после проверки':locale==='es'?'Publicación tras revisión':'Published after review'}</small></span>
-          <ChevronRight aria-hidden="true"/>
-        </button>
-      </nav>}
+      <nav className="hh-practice-v4-grid" aria-label={locale==='ru'?'Меню мастера':locale==='es'?'Menú del profesional':'Practitioner menu'} data-practice-simple-nav>
+        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages'+(isOwner?'?tab=requests':''))}><MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span></button>
+        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={['clients','requests','crm','express-reports'].includes(activePanel)}><UsersRound aria-hidden="true"/><span>{d.clients}</span></button>
+        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={['services','events'].includes(activePanel)}><Leaf aria-hidden="true"/><span>{d.services}</span></button>
+        <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={activePanel==='materials'}><BookOpen aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span></button>
+        <button type="button" onClick={()=>choosePanel(isOwner?'marketing':'analytics')} aria-pressed={['marketing','analytics'].includes(activePanel)}><Megaphone aria-hidden="true"/><span>{isOwner?(ru?'Продвижение':locale==='es'?'Promoción':'Promotion'):(ru?'Обзор':locale==='es'?'Resumen':'Overview')}</span></button>
+        <button type="button" onClick={()=>choosePanel('profile')} aria-pressed={activePanel==='profile'}><IdCard aria-hidden="true"/><span>{ru?'Профиль':locale==='es'?'Perfil':'Profile'}</span></button>
+      </nav>
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
@@ -562,91 +527,31 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </Link>
       <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
     </p>}
-    {!needsOnboarding&&!activePanel&&<>
-      <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
-        {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{ru?'Полный отчёт · мой':locale==='es'?'Informe completo · propietario':'Full report · owner only'}
-        </button>}
-        <button type="button" aria-pressed={activePanel==='express-reports'} onClick={()=>choosePanel('express-reports')}>
-          <FileText aria-hidden="true"/>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
-        </button>
-        {!isOwner&&<button type="button" aria-pressed={activePanel==='requests'}
-          onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
-        <button type="button" onClick={shareProfile}>
-          <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
-        </button>
-      </nav>
-      <details className="hh-practice-v4-extra" data-practice-more-tools>
-        <summary><BarChart3 aria-hidden="true"/><span>{ru?'Другие инструменты':locale==='es'?'Otras herramientas':'More tools'}</span><ChevronRight aria-hidden="true"/></summary>
-      <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
-        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
-        <div className="hh-practice-tool-grid">
-          <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
-            onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
-          {isOwner&&<PracticeTile Icon={Megaphone}
-            title={locale==='ru'?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
-            description={locale==='ru'?'Growth Studio, SEO, кампании и видео.':locale==='es'?'Growth Studio, SEO, campañas y vídeos.':'Growth Studio, SEO, campaigns and video.'}
-            onClick={()=>choosePanel('marketing')} active={activePanel==='marketing'} />}
-          {isOwner&&<PracticeTile Icon={UsersRound}
-            title={locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
-            description={locale==='ru'?'Контакты, статусы и подписчики.':locale==='es'?'Contactos, estados y suscriptores.':'Contacts, stages and subscribers.'}
-            onClick={()=>choosePanel('crm')} active={activePanel==='crm'} />}
-          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={isOwner?(ru?'Курсы, медитации, статьи и видео.':locale==='es'?'Cursos, meditaciones, artículos y vídeos.':'Courses, meditations, articles and videos.'):ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
-            onClick={()=>choosePanel('materials')} active={activePanel==='materials'} />
-          <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
-            description={locale==='ru'?'Создавайте встречи и семинары, управляйте датами и публикациями.':locale==='es'?'Organiza encuentros, talleres y publicaciones.':'Create workshops and gatherings, manage dates and publication.'}
-            onClick={()=>choosePanel('events')} active={activePanel==='events'} />
-          <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
-            onClick={()=>choosePanel('services')} active={activePanel==='services'} />
-          <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'}
-            description={ru?'Разбор ситуации без препаратов, в личный кабинет клиента.':locale==='es'?'Análisis sin remedios, en la cuenta del cliente.':'Private situation reviews without remedies.'}
-            onClick={()=>choosePanel('express-reports')} active={activePanel==='express-reports'}/>
-          {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
-            onClick={()=>openOwner('reports')} />}
-          {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
-            onClick={()=>openOwner('payment')} />:
-          <PracticeTile Icon={IdCard} title={d.myData} description={t.profile}
-            onClick={()=>choosePanel('profile')} active={activePanel==='profile'} />}
-        </div>
-        <button className="hh-practice-activity" type="button" aria-pressed={activePanel==='requests'}
-          onClick={()=>choosePanel('requests')}>
-          <span className="hh-practice-tool-icon"><BarChart3 aria-hidden="true" /></span>
-          <span className="hh-practice-activity-copy">
-            <strong>{d.activity}</strong>
-            <small>{d.activityHint} · {openRequests} {d.requestsMetric.toLowerCase()}</small>
-          </span>
-          <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
-        </button>
-      </section>
-      </details>
-    </>}
     {needsOnboarding? <div id="hh-practice-onboarding">{creationGoal&&<p className="hh-practice-registration-intent" role="status">{creationCopy.registration}</p>}<MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='express-reports'?(ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='marketing'?'Marketing':activePanel==='analytics'?'Analytics':activePanel==='materials'?'Materials':activePanel==='express-reports'?'Express reports':activePanel==='events'?'Events':activePanel==='services'?d.services:activePanel==='profile'?d.myData:activePanel==='requests'?t.requests:activePanel==='crm'?'CRM':d.clients}</h2>
           <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
         </div>
-        {activePanel==='more'&&<div className="hh-practice-inline-more" data-practice-inline-more>
-          <div className="hh-practice-tool-grid">
-            <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
-              description={ru?'Создать встречу или семинар':'Create a meeting or workshop'} onClick={()=>choosePanel('events')} />
-            {isOwner&&<PracticeTile Icon={Megaphone} title={ru?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
-              description={ru?'Growth Studio, SEO и кампании':'Growth Studio, SEO & campaigns'} onClick={()=>choosePanel('marketing')} />}
-            {isOwner&&<PracticeTile Icon={UsersRound} title={ru?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
-              description={ru?'Контакты и подписчики':'Contacts and subscribers'} onClick={()=>choosePanel('crm')} />}
-            <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
-              description={ru?'Приватный разбор ситуации, без гомеопатии':'Private situation review, without remedies'} onClick={()=>choosePanel('express-reports')} />
-            {isOwner&&<PracticeTile Icon={FileText} title={d.createReport}
-              description={ru?'Новый отчёт для клиента':'New client report'} onClick={()=>openOwner('report')} />}
-            {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint} onClick={()=>openOwner('reports')} />}
-            {isOwner&&<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint} onClick={()=>openOwner('payment')} />}
-            <PracticeTile Icon={Share2} title={ru?'Поделиться профилем':locale==='es'?'Compartir mi perfil':'Share my profile'}
-              description={ru?'Ссылка на мою публичную страницу':'Public profile link'} onClick={shareProfile} />
-          </div>
-        </div>}
+        {['clients','requests','crm','express-reports'].includes(activePanel)&&<nav className="hh-practice-context-nav" aria-label={ru?'Работа с клиентами':'Client tools'}>
+          <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>{d.clients}</button>
+          <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>{t.requests}</button>
+          <button type="button" onClick={()=>choosePanel('express-reports')} aria-pressed={activePanel==='express-reports'}>{ru?'Экспресс-отчёты':'Express reports'}</button>
+          {isOwner&&<button type="button" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'CRM · Контакты':'CRM · Contacts'}</button>}
+          {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('reports')}>{d.reports}</button>}
+          {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('payment')}>{d.invoices}</button>}
+        </nav>}
+        {['services','events'].includes(activePanel)&&<nav className="hh-practice-context-nav" aria-label={ru?'Услуги и мероприятия':'Services and events'}>
+          <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>{d.services}</button>
+          <button type="button" onClick={()=>choosePanel('events')} aria-pressed={activePanel==='events'}>{ru?'Мероприятия':locale==='es'?'Eventos':'Events'}</button>
+        </nav>}
+        {['marketing','analytics'].includes(activePanel)&&<nav className="hh-practice-context-nav" aria-label="Marketing and insights">
+          {isOwner&&<button type="button" onClick={()=>choosePanel('marketing')} aria-pressed={activePanel==='marketing'}>{ru?'Маркетинг':'Marketing'}</button>}
+          <button type="button" onClick={()=>choosePanel('analytics')} aria-pressed={activePanel==='analytics'}>{ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'}</button>
+        </nav>}
         {activePanel==='marketing'&&isOwner&&<div className="hh-practice-marketing">
           <p className="hh-practice-marketing-intro">{ru?'Ваши инструменты продвижения в одном месте. Автопубликация и реклама без отдельного подтверждения не запускаются.':locale==='es'?'Herramientas de promoción en un solo lugar. No se activan anuncios ni publicaciones automáticas.':'Your promotion tools in one place. No ads or automatic publishing are activated.'}</p>
           <div className="hh-practice-marketing-grid">
@@ -787,7 +692,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     </section>
     </details>}
 
-    {ownerTools && !activePanel && <details className="hh-practice-more-tools">
+    {ownerTools && activePanel==='profile' && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
       <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button><button type="button" className="hh-practice-new-service" disabled={busy} onClick={()=>openOwner('tools')}>{ru?'Дополнительные инструменты администратора':'Additional administrative tools'} →</button></div>
