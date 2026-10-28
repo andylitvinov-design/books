@@ -12,6 +12,8 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportInlineGuide } from "@/components/holistic-support-inline-guide";
 import { SupportGuestQuestPanel, useSupportGuestQuest } from "@/components/holistic-support-guest-quest";
+import { HolisticSupportTodayPick } from "@/components/holistic-support-today-pick";
+import { supportTestHref } from "@/lib/holistic-support/today-pick.mjs";
 import type { QuestStepId } from "@/lib/holistic-support/guest-quest.mjs";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
@@ -201,6 +203,9 @@ const copy = {
     healingTitle: "Reiki support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
+    videoQuestion: "After listening, did you take a moment to reflect on this meditation?",
+    videoQuestionPositive: "Yes, I reflected", videoQuestionLater: "Not now",
+    videoQuestionDone: "Reflection noted", videoQuestionHint: "This optional answer is not stored. A check indicates your reflection, not verified watch time.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photos, video IDs and test results are not stored here. Only anonymous player-start counts and step flags stay in this browser; they are not automatically saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
@@ -313,6 +318,9 @@ const copy = {
     healingTitle: "Рейки поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
+    videoQuestion: "После медитации удалось немного поразмышлять об этой практике?",
+    videoQuestionPositive: "Да, я поразмышлял", videoQuestionLater: "Позже",
+    videoQuestionDone: "Рефлексия отмечена", videoQuestionHint: "Ответ не сохраняется. Галочка означает личное подтверждение, а не проверку времени просмотра.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Оценки, фото, названия видео и ответы тестов здесь не сохраняются. В браузере остаются только общий счётчик запусков и отметки шагов; в кабинет они автоматически не переносятся.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
@@ -425,6 +433,9 @@ const copy = {
     healingTitle: "Apoyo Reiki", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
+    videoQuestion: "Después de escuchar, ¿pudiste reflexionar un momento sobre esta meditación?",
+    videoQuestionPositive: "Sí, reflexioné", videoQuestionLater: "Ahora no",
+    videoQuestionDone: "Reflexión registrada", videoQuestionHint: "No se guarda la respuesta. La marca no certifica el tiempo de reproducción.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "No se guardan puntuaciones, fotos, vídeos concretos ni respuestas. Solo un contador anónimo de inicios y los pasos marcados quedan en este navegador, no en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
@@ -668,7 +679,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     });
   };
   const changeChoice = (value: Choice) => {
-    if (value === "pump") quest.mark("course");
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
   };
@@ -686,6 +696,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
+  // Existing editorial test filters only: no check-in numbers or private answers in the URL.
+  const testHref = supportTestHref(locale, {
+    scores, editedCheckins, goalSector: goalSelection?.sector ?? null,
+    category: meditationCategoryOverride,
+  });
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
   const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
@@ -707,6 +722,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       : selectedChoice === "healing" ? "support-healing-panel" : "support-mobile-experience");
   };
   const scene = choice === "meditation";
+  const openTodayVideo = () => {
+    changeChoice("meditation");
+    setMeditationCategoryOverride("all");
+    scrollToSupport("support-meditation-player");
+  };
+  const openTodayCourse = () => {
+    changeChoice("pump");
+    scrollToSupport("support-mobile-experience");
+  };
   const onQuestStep = (id: QuestStepId) => {
     if (id === "checkin") { scrollToSupport("mobile-assessment-title"); return; }
     if (id === "category") { changeChoice("meditation"); scrollToSupport("meditation-category-options"); return; }
@@ -732,6 +756,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
           </button>
         </header>
+        <HolisticSupportTodayPick locale={locale} testHref={testHref}
+          testDone={quest.record.completed.test}
+          ideasDone={quest.record.completed.recommendation}
+          videoDone={quest.record.videoQuestionAnswered}
+          courseDone={quest.record.completed.course}
+          onIdeas={onRecommendations} onVideo={openTodayVideo} onCourse={openTodayCourse} />
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
@@ -840,7 +870,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </div>
           ) : choice === "pump" ? (
             <HolisticSupportCourseProfiles locale={locale} courses={courses}
-              savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
+              savedSectors={goalSavedSectors} active={activeCourseProfile}
+              onSelect={sector => { setActiveCourseProfile(sector); quest.mark("course"); }}
               onTests={() => changeChoice("tests")}
               onFillProfile={openCourseProfileFilter}
               onRecommendations={showCourseProfileRecommendations} />
@@ -942,6 +973,23 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </div>
                 )}
               </div>
+              {playing && selected ? (
+                <section className={styles.videoReflection} data-support-video-question
+                  aria-label={t.videoQuestion}>
+                  <div>
+                    <strong>{quest.record.videoQuestionAnswered ? t.videoQuestionDone : t.videoQuestion}</strong>
+                    <p>{t.videoQuestionHint}</p>
+                  </div>
+                  {!quest.record.videoQuestionAnswered ? <div className={styles.videoReflectionActions}>
+                    <button type="button" data-support-video-question-answer
+                      onClick={quest.answerVideoQuestion}>
+                      <Check size={17} aria-hidden="true" />{t.videoQuestionPositive}
+                    </button>
+                    <button type="button" className={styles.videoReflectionLater}
+                      onClick={() => setPlaying(false)}>{t.videoQuestionLater}</button>
+                  </div> : <Check size={24} className={styles.videoReflectionCheck} aria-hidden="true" />}
+                </section>
+              ) : null}
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
                   <h3>{activeMystery ? t.originalCourseVideos : t.gallery}</h3>
@@ -1018,7 +1066,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <span className={styles.testsEyebrow}><TestTubeDiagonal size={18} aria-hidden="true" />{t.testsShort}</span>
                 <h2 id="support-tests-title">{t.testsTitle}</h2>
                 <p>{t.testsIntro}</p>
-                <Link href={"/" + locale + "/client/tests"} prefetch={false} className={styles.testsPrimary}
+                <Link href={testHref} prefetch={false} className={styles.testsPrimary}
                   data-support-open-tests>{t.tests}<ArrowRight size={18} aria-hidden="true" /></Link>
               </div>
               <div className={styles.testsLinks}>
@@ -1060,7 +1108,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
 
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <SupportGuestQuestPanel locale={locale} quest={quest} averageScore={averageScore}
-            focusLabel={activeFocusLabel} onStep={onQuestStep} />
+            focusLabel={activeFocusLabel} onStep={onQuestStep} testHref={testHref} />
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>
         <footer className={styles.disclaimer}>
