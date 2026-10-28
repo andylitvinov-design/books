@@ -588,7 +588,8 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {consultations ? t.exploreServices : t.exploreMasters}<ArrowRight size={17} aria-hidden="true"/>
             </Link>
           </div>
-          <div className={styles.rail} role="group" data-support-master-rail>
+          <div className={styles.rail} role="group" data-support-master-rail
+            data-single={kind === "healing" && entries.length === 1 ? "true" : "false"}>
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;
