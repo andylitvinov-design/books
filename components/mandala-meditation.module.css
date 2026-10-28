@@ -130,7 +130,7 @@
 .freeVideoPanel h2{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0;color:#4b4836;font:400 23px/1.22 Georgia,serif}
 .freeVideoBadge{margin-left:auto;padding:5px 9px;border-radius:999px;background:#d8ead7;color:#275942;font:800 13px/1 Arial,Helvetica,sans-serif}
 .freeVideoIntro{margin:7px 0 12px;color:#635c4e;font:13px/1.45 Arial,Helvetica,sans-serif}
-.freeVideoPreview{display:flex;justify-content:center;align-items:center;overflow:hidden;min-height:100px;max-height:260px;padding:7px;border-radius:14px;background:#21352e}
+.freeVideoPreview{display:flex;justify-content:center;align-items:center;overflow:hidden;height:260px;min-height:260px;max-height:260px;padding:7px;border-radius:14px;background:#21352e}
 .freeVideoPreview canvas,.freeVideoPreview video{display:block;width:auto;max-width:100%;height:auto;max-height:246px;margin:auto;border-radius:8px;object-fit:contain}
 .freeVideoFieldset{min-width:0;margin:12px 0 0;padding:0;border:0}
 .freeVideoFieldset legend{font:800 12px/1.4 Arial,Helvetica,sans-serif;color:#5f513f;padding:0 0 7px}
