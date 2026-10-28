@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
@@ -282,6 +282,10 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  // Safari numeric-input blur may move the narrow-screen action before click.
+  // A touch release commits once; keyboard/mouse still uses native click.
+  const nextTouchStart = useRef<{ x: number; y: number } | null>(null);
+  const nextTouchReleaseAt = useRef(0);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
@@ -494,7 +498,27 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.save} data-support-goal-save
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
-            onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
+            onPointerDown={event => {
+              if (event.pointerType === "touch" && event.isPrimary)
+                nextTouchStart.current = { x: event.clientX, y: event.clientY };
+            }}
+            onPointerUp={event => {
+              if (event.pointerType !== "touch" || !event.isPrimary) return;
+              const start = nextTouchStart.current;
+              nextTouchStart.current = null;
+              // Do not activate a dragged/scrolled finger or a cancelled touch.
+              if (!start || Math.abs(event.clientX - start.x) > 16 ||
+                Math.abs(event.clientY - start.y) > 16) return;
+              nextTouchReleaseAt.current = Date.now();
+              nextSector();
+            }}
+            onPointerCancel={() => { nextTouchStart.current = null; }}
+            onClick={event => {
+              // iOS may deliver a synthetic click after the same touch release.
+              // Never save/advance twice, but keep Enter/Space and mouse intact.
+              if (event.detail === 0 || Date.now() - nextTouchReleaseAt.current > 500)
+                nextSector();
+            }}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
         <fieldset className={styles.formatFieldset} data-support-goal-formats>
           <legend>{t.formatTitle}</legend>
