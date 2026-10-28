@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { recommendSupportContent } from "../lib/holistic-support/recommendation-engine.js";
+import { recommendSupportByLowestScores, recommendSupportContent } from "../lib/holistic-support/recommendation-engine.js";
 import { TAOIST_TALISMANS } from "../lib/practitioners/taoist-talismans.js";
 
 const video = (id, topics, sourceLanguage = "en") => ({
@@ -118,4 +118,59 @@ test("deduplicates source recordings; no assumed products or side effects", () =
   assert.deepEqual(first.videos.map(item => item.id), second.videos.map(item => item.id));
   assert.equal(new Set(first.videos.map(item => item.id)).size, first.videos.length);
   assert.equal(first.talismans.length, 3);
+});
+
+
+test("lowest self-rating selects topic without a focus button", () => {
+  const base = { energy: 8, money: 8, relationships: 8, goals: 8 };
+  const expected = {
+    energy: ["bbbbbbbbbbb", "ddddddddddd"],
+    money: ["ccccccccccc"],
+    relationships: ["aaaaaaaaaaa"],
+    goals: ["ccccccccccc"],
+  };
+  for (const [domain, accepted] of Object.entries(expected)) {
+    const result = recommendSupportByLowestScores({
+      scores: { ...base, [domain]: 1 }, videos: library, locale: "en",
+    });
+    assert.deepEqual(result.priorities, [domain], domain);
+    assert.equal(result.minimum, 1);
+    assert.ok(accepted.includes(result.videos[0].id), domain + " chosen from real tagged recordings");
+    assert.equal(result.matchedVideo, true);
+  }
+});
+
+test("ties are jointly considered; input order never picks a hidden focus", () => {
+  const videos = [
+    video("lllllllllll", ["energy"]),
+    video("mmmmmmmmmmm", ["love"]),
+    video("nnnnnnnnnnn", ["business"]),
+  ];
+  const scores = { energy: 2, money: 9, relationships: 2, goals: 9 };
+  const result = recommendSupportByLowestScores({ scores, videos });
+  assert.equal(result.minimum, 2);
+  assert.deepEqual(result.priorities, ["energy", "relationships"]);
+  assert.deepEqual(result.videos.slice(0, 2).map(item => item.id),
+    ["lllllllllll", "mmmmmmmmmmm"]);
+  assert.equal(result.videos[2].id, "nnnnnnnnnnn");
+  assert.deepEqual(scores, { energy: 2, money: 9, relationships: 2, goals: 9 });
+});
+
+test("unchanged scores are stable; invalid, duplicate and unverified IDs cannot enter the gallery", () => {
+  const options = [
+    video("lllllllllll", ["energy"], "en"),
+    video("mmmmmmmmmmm", ["energy"], "ru"),
+    video("lllllllllll", ["energy"], "en"),
+    video("bad-id", ["business"]),
+    video("nnnnnnnnnnn", ["unknown"]),
+  ];
+  const normalized = recommendSupportByLowestScores({
+    scores: { energy: -2, money: 100, relationships: NaN, goals: "1" },
+    videos: options, locale: "ru",
+  });
+  assert.deepEqual(normalized.scores,
+    { energy: 5, money: 5, relationships: 5, goals: 5 });
+  assert.deepEqual(normalized.priorities, ["energy", "money", "relationships", "goals"]);
+  assert.deepEqual(normalized.videos.map(item => item.id), ["mmmmmmmmmmm", "lllllllllll"]);
+  assert.deepEqual(recommendSupportByLowestScores({ videos: [], scores: defaultScores }).videos, []);
 });

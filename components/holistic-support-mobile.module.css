@@ -505,6 +505,48 @@
   .progressFocus strong,.progressAverage strong { font-size: 10px; }
   .progressFocus span,.progressAverage span { font-size: 8px; }
 }
+
+/* The owner-approved mobile flow: lowest-rating picker at left, photo alone in
+   the centre, four original recordings ABOVE the large guided video. */
+.assessment > .recommendButton {
+  width: 100%; max-width: none; min-height: 46px; margin: 12px 0 0;
+  border-radius: 13px; padding: 9px 10px;
+}
+.gallerySelection {
+  margin: 0 0 9px; color: #16543f; font-size: 13px; font-weight: 750;
+  line-height: 1.35; overflow-wrap: anywhere;
+}
+.videoSection { background: #fffbf3; }
+.videoSourceRow { display: flex; justify-content: flex-end; align-items: center;
+  min-height: 39px; padding: 2px 19px 6px; background: #fffaf1; }
+.videoSourceRow .youtubeLink { margin: 0; }
+.heroBody .playButton { position: relative; top: 8px; }
+@media (max-width: 640px) {
+  .page .assessment > .recommendButton {
+    display: flex; align-items: center; justify-content: center; flex-direction: row;
+    width: 100%; min-width: 0; max-width: none; min-height: 41px;
+    margin: 5px 0 0; padding: 6px 3px; gap: 4px;
+    font-size: clamp(10px,2.85vw,13px); font-weight: 850;
+    line-height: 1.08; border-radius: 10px; white-space: normal;
+    background: linear-gradient(110deg,#0b9c70,#047557);
+    color: white;
+  }
+  .assessment > .recommendButton svg { flex: none; width: 16px; height: 16px; }
+  .profile { justify-content: center; }
+  .videoSection { padding: 11px 9px 8px; }
+  .videoHeading { margin-bottom: 7px; }
+  .gallerySelection { font-size: clamp(11px,2.85vw,13px); margin-bottom: 7px; }
+  .videoHint { margin-top: 5px; }
+  .heroBody .playButton { top: 8px; }
+  .videoSourceRow { min-height: 34px; padding: 0 10px 4px; }
+}
+@media (max-width: 350px) {
+  .page .assessment > .recommendButton { min-height: 39px; padding: 5px 2px;
+    font-size: 10.5px; gap: 3px; }
+  .assessment > .recommendButton svg { width: 14px; height: 14px; }
+  .gallerySelection { font-size: 10.5px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }
