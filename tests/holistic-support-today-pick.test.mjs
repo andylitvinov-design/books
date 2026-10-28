@@ -72,8 +72,8 @@ test("Test explorer ranks by canonical topic filters and offers optional server-
 test("Video checkmark needs a voluntary question response after a real player start", () => {
   const page = read("components/holistic-support-mobile.tsx");
   const quest = read("components/holistic-support-guest-quest.tsx");
-  assert.match(page, /if \(!selected \|\| !quest\.launch\(\)\) return/);
-  assert.match(page, /playing && selected \? \(/);
+  assert.match(page, /if \(!selected \|\| \(choice === "meditation" && !quest\.launch\(\)\)\) return/);
+  assert.match(page, /choice === "meditation" && playing && selected \? \(/);
   assert.match(page, /data-support-video-question-answer/);
   assert.match(page, /onClick=\{quest\.answerVideoQuestion\}/);
   assert.match(page, /videoDone=\{quest\.record\.videoQuestionAnswered\}/);
