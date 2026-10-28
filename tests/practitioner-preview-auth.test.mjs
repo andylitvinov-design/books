@@ -84,6 +84,45 @@ test('existing protected service, meditation and course editors remain available
   assert.ok(editor.includes('setMeditationType(meditation)'))
 })
 
+test('old plain practice URL issues an immediate 307 before old Account streaming', () => {
+  // In-page redirects in Next.js stream HTTP 200 + a one-second meta refresh.
+  // This leaked the old Cabinet screen in the iPhone in-app browser.
+  assert.ok(middleware.includes('const oldPractice = request.nextUrl.pathname.match'))
+  assert.ok(middleware.includes('/app\\/practice\\/?
+  assert.ok(showcase.includes("if (key === 'practice') {"))
+  assert.ok(showcase.includes("window.scrollTo({ top: 0, behavior: 'smooth' })"))
+  assert.ok(showcase.includes("home:'/' + locale"))
+  assert.ok(!showcase.includes("home:'/' + appLocale + '/app/portrait'"))
+  assert.ok(showcase.includes("practice:'/' + locale + '/practice'"))
+})
+
+test('every old plain My Practice link now resolves to the new public screen', () => {
+  assert.ok(legacyAppRoute.includes("path[0] === 'practice' && path.length === 1"))
+  assert.ok(legacyAppRoute.includes("const privateEditorIntent = ['panel','materialTab','create','starter','meditation','requestId']"))
+  assert.ok(legacyAppRoute.includes("if (!privateEditorIntent) redirect('/' + locale + '/practice')"))
+  assert.ok(accountWorkspace.includes("href: '/' + locale + '/practice'"))
+  assert.ok(accountWorkspace.includes("href={'/' + locale + '/practice'}"))
+  assert.ok(homePersonalSpace.includes('href={"/" + activeLocale + "/practice"}'))
+  assert.ok(editor.includes("href={'/'+locale+'/practice'}"))
+})
+
+test('Google My Practice callback goes to new screen except for explicit protected editors', () => {
+  assert.ok(auth.includes("continueTo === 'practice-preview'"))
+  assert.ok(auth.includes("continueTo === 'my-practice'"))
+  assert.ok(auth.includes("? profi"))
+  assert.ok(auth.includes(": `${origin}/${locale}/practice`"))
+  assert.ok(auth.includes("? `${origin}/${locale}/app/practice${profi === 'course'"))
+  assert.ok(showcase.includes("panel=services&create=1&starter=session"))
+})
+))
+  assert.ok(middleware.includes("['GET', 'HEAD'].includes(request.method)"))
+  assert.ok(middleware.includes("'panel', 'materialTab', 'create', 'starter', 'meditation', 'requestId'"))
+  assert.ok(middleware.includes("new URL('/' + oldPractice[1] + '/practice', request.url)"))
+  assert.ok(middleware.includes('status: 307'))
+  assert.ok(middleware.includes("'Cache-Control': 'private, no-store'"))
+  assert.ok(legacyAppRoute.includes("if (!privateEditorIntent) redirect('/' + locale + '/practice')"))
+})
+
 test('the Practice tab remains on the approved screen, without Google or a personal-login detour', () => {
   assert.ok(showcase.includes("if (key === 'practice') {"))
   assert.ok(showcase.includes("window.scrollTo({ top: 0, behavior: 'smooth' })"))
