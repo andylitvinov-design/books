@@ -1,0 +1,83 @@
+.quest { display: grid; gap: 13px; min-width: 0; color: #233c31; }
+.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
+.heading h2 { margin: 0; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; letter-spacing: -.02em; }
+.heading p { margin: 5px 0 0; color: #677368; font-size: 14px; line-height: 1.35; }
+.counter { display: grid; place-items: center; flex: none; min-width: 64px; height: 56px; padding: 4px 9px; border: 2px solid #9ddec1; border-radius: 16px; background: #e7f5e9; color: #12694a; font-size: 22px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.track { height: 11px; overflow: hidden; border-radius: 999px; background: #e9dfcc; }
+.track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #35bd89, #078d65); transition: width .25s ease; }
+.path { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.step { display: flex; align-items: center; gap: 11px; min-width: 0; min-height: 66px; padding: 9px 12px; border: 1px solid #e4d9c7; border-radius: 15px; background: #fcf6e9; color: #273c31; text-align: left; box-shadow: 0 2px 4px #2c33220a; }
+.step[data-status="done"] { border-color: #b9dfc3; background: #eef8ee; }
+.step[data-status="next"] { border-color: #e4c573; background: #fff5d6; }
+.step[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #418c71; }
+.stepBadge { display: grid; place-items: center; flex: none; width: 39px; height: 39px; border: 2px solid #dccaa9; border-radius: 50%; background: #fff9e9; color: #997536; }
+.step[data-status="done"] .stepBadge { border-color: #058961; background: #098c61; color: white; }
+.step[data-status="next"] .stepBadge { border-color: #d49a2b; background: #ffd978; color: #665014; }
+.stepText { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.stepText strong { font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.stepText small { color: #75786a; font-size: 12px; line-height: 1.15; }
+.step[data-status="done"] .stepText small { color: #187457; font-weight: 750; }
+.stepArrow { flex: none; color: #8c9182; }
+.details { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid #ead5a1; border-radius: 17px; background: linear-gradient(135deg, #fff9e5, #fffaf1); }
+.detailHeading { display: flex; align-items: center; gap: 9px; color: #735b25; font-size: 16px; }
+.details p { margin: 0; font-size: 14px; line-height: 1.45; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.action { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; padding: 10px 16px; border: 0; border-radius: 13px; background: #087c59; color: white; font-size: 15px; font-weight: 800; text-decoration: none; }
+.action:hover { background: #096a4e; }
+.confirmTest { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid #8ebca0; border-radius: 13px; background: #eef7ed; color: #146648; font-size: 13px; font-weight: 800; }
+.manualNote { color: #737369; font-size: 12px !important; }
+.battery { display: grid; gap: 9px; padding: 15px 16px; border: 1px solid #c9dfc7; border-radius: 17px; background: #f5f9ed; }
+.battery[data-empty="true"] { border-color: #e5c69d; background: #fff7e9; }
+.batteryTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.batteryTitle strong { display: inline-flex; align-items: center; gap: 7px; font-size: 17px; }
+.batteryTitle strong svg { color: #22976b; }
+.batteryTitle span { color: #276f4f; font-size: 13px; font-weight: 800; }
+.batterySegments { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; }
+.batterySegments span { height: 14px; border: 1px solid #e5d9c5; border-radius: 5px; background: #e9e2d3; }
+.batterySegments span[data-charged="true"] { border-color: #51ad82; background: linear-gradient(180deg, #31bf86, #0b9061); }
+.battery p { margin: 0; font-size: 13px; line-height: 1.43; color: #647263; }
+.signIn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: fit-content; min-height: 48px; padding: 10px 15px; border: 1px solid #b4d7bf; border-radius: 13px; background: #fffdfa; color: #0b7955; font-size: 15px; font-weight: 800; text-decoration: none; }
+.signIn:hover { background: #e5f3e8; }
+.member { display: inline-flex; align-items: center; gap: 8px; color: #136a4e; font-size: 14px; font-weight: 800; }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.summary > div { display: grid; gap: 6px; min-width: 0; padding: 13px; border-radius: 14px; background: #f8f3e9; }
+.summary span { display: flex; align-items: center; gap: 6px; color: #567262; font-size: 13px; font-weight: 750; }
+.summary strong { overflow-wrap: anywhere; font-size: 19px; font-weight: 800; line-height: 1.2; }
+.summary small { color: #73746d; font-size: 11px; line-height: 1.32; }
+.premium { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px 12px; padding: 1px 3px; }
+.premium a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: #126f55; font-size: 13px; font-weight: 800; text-decoration: underline; }
+.premium small { color: #777970; font-size: 12px; line-height: 1.3; }
+
+@media (max-width: 640px) {
+  .quest { gap: 10px; }
+  .heading { align-items: center; }
+  .heading h2 { font-size: 23px; }
+  .heading p { font-size: 12px; }
+  .counter { min-width: 58px; height: 49px; border-radius: 13px; font-size: 20px; }
+  .path { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .step { min-height: 54px; padding: 6px 10px; border-radius: 12px; }
+  .stepBadge { width: 37px; height: 37px; }
+  .stepText strong { font-size: 14px; }
+  .stepText small { font-size: 11px; }
+  .details { padding: 12px; }
+  .battery { padding: 12px; }
+}
+@media (max-width: 430px) {
+  .heading h2 { font-size: 21px; }
+  .heading p { font-size: 12px; }
+  .stepText strong { font-size: 14px; }
+  .batteryTitle strong { font-size: 16px; }
+  .batteryTitle span { font-size: 12px; }
+  .summary strong { font-size: 17px; }
+  .premium small { font-size: 11px; }
+}
+@media (max-width: 340px) {
+  .step { gap: 7px; }
+  .stepText strong { font-size: 13px; }
+  .summary { gap: 6px; }
+  .summary > div { padding: 9px; }
+  .batterySegments { gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track span { transition: none; }
+}
