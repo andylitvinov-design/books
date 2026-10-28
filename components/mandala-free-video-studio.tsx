@@ -1334,7 +1334,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-mandala-video-preview/>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
-                download={"holistic-house-"+(backgroundOnly?"money-background":"personal-mandala")+"."+result.extension}
+                download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 data-mandala-video-download>
                 <Download size={18} aria-hidden="true"/>{ui.save} · {Math.max(1,Math.round(result.bytes/1024))} KB
               </a>
