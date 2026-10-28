@@ -56,7 +56,7 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.match(service,/aria-pressed=\{status===entry\.key\}/)
  assert.match(service,/onClick=\{\(\)=>setStatus\(entry\.key\)\}/)
  assert.match(service,/visible\.map\(item=>\{/)
- assert.match(service,/<\\/details>\\}\\)\\}\\s*<\\/div>\\}/)
+ assert.match(service,/<\/details>\}\)\}\s*<\/div>\}/)
  assert.match(service,/item\.localizedCopy\?\.\[lang\]\?\.title/)
  assert.match(service,/data-status=\{item\.status\}/)
  assert.match(service,/onToggle=\{event=>\{if\(event\.currentTarget\.open\)/)
