@@ -368,7 +368,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     event.target.value = ''
     queueFiles(files)
   }
-  function queueFiles(files,ownerCut=false) {
+  function queueFiles(files,ownerCut=false,sourceCutUrl=null) {
     if (files.length === 0) return
     if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
@@ -377,7 +377,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
     alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
-      target, ownerCut, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
+      target, ownerCut, sourceCutUrl, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
     setError('')
     setMessage('')
@@ -421,7 +421,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         ruToken.token.expiresAt<Date.now()+30_000||
         entriesRef.current.some(item=>item.state!=='done'))
         throw Error('telegram_cut_state')
-      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})],true)
+      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})],true,selected.url)
       setMessage(t.telegramCutImported)
     }catch(reason){setError(humanError(reason,t))}
     finally{setImportingTelegramCut(false)}
@@ -480,6 +480,18 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         if (entry.videoId) {
           await finish(entry,entry.videoId,auth,desired.id)
           continue
+        }
+        // Prevent a selected private cut from silently changing between
+        // importing into the browser and pressing the YouTube upload button.
+        // If an upload session already started, only resume/probe it.
+        if (entry.ownerCut===true && !sessions.current.has(entry.id)) {
+          const latest=await fetch('/api/admin/telegram-video/drafts',{
+            credentials:'same-origin',redirect:'error',cache:'no-store',signal:controller.signal
+          })
+          if(!latest.ok)throw Error('telegram_cut_unavailable')
+          const selected=validatedOwnerTelegramCut((await latest.json()).selected)
+          if(selected.url!==entry.sourceCutUrl||selected.bytes!==entry.file.size)
+            throw Error('telegram_cut_unavailable')
         }
         const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',language:target,synthetic,madeForKids})
         update(entry.id,{state:'sending'})
