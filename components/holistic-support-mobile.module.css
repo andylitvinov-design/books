@@ -766,7 +766,7 @@
 
 
 /* Dedicated green Tests tab and a compact, native-style in-page explorer. */
-.toolShortcuts .testsShortcut { flex-basis:100%; width:100%; min-height:38px;
+.toolShortcuts .testsShortcut { flex-basis:100%; width:100%; min-height:44px;
   border-color:#087d5e; background:linear-gradient(120deg,#0ca478,#087556); color:#fff;
   box-shadow:0 3px 8px #0d775829; }
 .toolShortcuts .testsShortcut[aria-pressed="true"] { background:#075b46; border-color:#04503b; color:#fff; }
@@ -799,7 +799,7 @@
 .testsPrimary:focus-visible,.testsLinks a:focus-visible,.toolShortcuts .testsShortcut:focus-visible {
   outline:3px solid #e6b460; outline-offset:2px; }
 @media (max-width:640px) {
-  .toolShortcuts .testsShortcut { grid-column:1/-1; min-height:29px; padding:3px 4px;
+  .toolShortcuts .testsShortcut { grid-column:1/-1; min-height:44px; padding:7px 4px;
     border-radius:8px; font-size:clamp(10px,2.8vw,12px); }
   .testsPanel { padding:8px; gap:8px; border-radius:14px; }
   .testsHero { min-height:184px; padding:15px; gap:8px; border-radius:12px; }
@@ -814,7 +814,7 @@
   .testsLinks small { font-size:10px; }
 }
 @media (max-width:350px) {
-  .toolShortcuts .testsShortcut { min-height:27px; font-size:10px; }
+  .toolShortcuts .testsShortcut { min-height:44px; font-size:10px; }
   .testsHero { min-height:174px; padding:12px; }
   .testsHero h2 { font-size:21px; }
   .testsLinks { grid-template-columns:1fr; }
