@@ -11,6 +11,12 @@ The GitHub Actions workflow `.github/workflows/holistic-house-native.yml` now bu
 - **Unsigned IPA cannot be installed directly through Safari or a link**, and it must **never** be presented as a signed Apple release, TestFlight download or independently verified E2E app.
 - GitHub's private-to-the-owner Actions artifact expires after **14 days**, so this is *not* a stable public download endpoint.
 
+## Рекомендуемый для бесплатного Apple Account вариант — Lite
+
+A separate **hardware iPhoneOS, arm64** archive `Holistic-House-iPhone-Personal-Lite-Unsigned` is produced from a *copy* of the same validated `com.holistichouse.app` device bundle. Only the optional `HHCourseWidget.appex` is removed from the copy, to avoid using another personal App ID and reduce sideload extension/signing failures; the main native executable, allowed HTTPS origin and OAuth routing remain intact. CI verifies SHA256 and that the Lite IPA contains no extensions. The main regular IPA is retained unchanged.
+
+For the owner's personal iPhone, prefer extracting `Holistic-House-iPhone-Personal-Lite-Unsigned.ipa` from the successful [Native Installers](https://github.com/andylitvinov-design/books/actions/workflows/holistic-house-native.yml) run. Free Apple personal provisioning still requires **AltServer or Xcode signing**, a physically trusted iPhone, and renewal about every 7 days; this is **not** a Safari-installable signed release. Native Google OAuth/private messages remain unverified until physical device testing. Never use a third-party public IPA signing website with the owner's Apple account.
+
 ## Получение файла и бесплатная установка на свой iPhone
 
 1. Open [Holistic House Native Installers](https://github.com/andylitvinov-design/books/actions/workflows/holistic-house-native.yml) on GitHub while signed in; choose a **successful** run containing an **iPhone arm64** build (not `iOS-Simulator-Only`).
