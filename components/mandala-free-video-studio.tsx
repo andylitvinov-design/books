@@ -883,7 +883,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className={videoStyles.referencePortrait}
                   src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true" />
-                <span className={videoStyles.referencePhotoLabel}><Camera size={16} aria-hidden="true"/>{ui.addPhoto}</span>
               </span>}
             <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
           </button>
