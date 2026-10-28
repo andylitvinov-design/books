@@ -815,7 +815,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-portrait-mode>{t.withPhoto}</button>
         <button type="button" aria-pressed={backgroundOnly} onClick={()=>setBackgroundOnly(true)}
           data-video-background-mode>{t.backgroundOnly}</button>
-      </fieldset>
+      </fieldset>}
       <section className={videoStyles.templates} data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
