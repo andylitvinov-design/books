@@ -12,7 +12,7 @@ const translation = {
     connecting:'Connecting…', reconnecting:'Reconnecting…', connected:'You are listening',
     hosting:'You are broadcasting', muted:'Microphone muted', mute:'Mute microphone',
     unmute:'Turn microphone on', leave:'Leave broadcast', end:'End broadcast',
-    ending:'Ending…', sound:'Enable sound', speakers:'Listeners',
+    ending:'Ending…', forceEnd:'End existing broadcast', sound:'Enable sound', speakers:'Listeners', 
     permission:'Microphone permission was denied. Allow the microphone in your browser settings.',
     signIn:'Sign in to the existing practitioner cabinet before starting a broadcast.',
     stopped:'The host has left. The broadcast has ended.', generic:'Connection failed. Please try again.',
@@ -26,7 +26,7 @@ const translation = {
     connecting:'Подключаем…', reconnecting:'Восстанавливаем соединение…', connected:'Вы слушаете эфир',
     hosting:'Вы ведёте эфир', muted:'Микрофон выключен', mute:'Выключить микрофон',
     unmute:'Включить микрофон', leave:'Покинуть эфир', end:'Завершить эфир',
-    ending:'Завершаем…', sound:'Включить звук', speakers:'Слушателей',
+    ending:'Завершаем…', forceEnd:'Завершить предыдущий эфир', sound:'Включить звук', speakers:'Слушателей',
     permission:'Доступ к микрофону запрещён. Разрешите микрофон в настройках браузера.',
     signIn:'Сначала войдите в существующий кабинет практика.',
     stopped:'Ведущий вышел. Трансляция завершена.', generic:'Не удалось подключиться. Попробуйте ещё раз.',
@@ -40,7 +40,7 @@ const translation = {
     connecting:'Conectando…', reconnecting:'Reconectando…', connected:'Estás escuchando',
     hosting:'Estás transmitiendo', muted:'Micrófono silenciado', mute:'Silenciar micrófono',
     unmute:'Activar micrófono', leave:'Salir', end:'Finalizar transmisión',
-    ending:'Finalizando…', sound:'Activar sonido', speakers:'Oyentes',
+    ending:'Finalizando…', forceEnd:'Finalizar transmisión existente', sound:'Activar sonido', speakers:'Oyentes',
     permission:'Se denegó el micrófono. Permítelo en el navegador.',
     signIn:'Entra primero en tu gabinete profesional.',
     stopped:'El anfitrión salió. La transmisión terminó.', generic:'No se pudo conectar. Inténtalo de nuevo.',
@@ -179,6 +179,7 @@ export function LiveAudioRoom({role='listener', locale='en'}) {
 
   async function leave() {
     if (busyRef.current) return
+    const wasConnected = connected
     if (role === 'host') {
       busyRef.current = true
       setPhase('ending')
@@ -192,7 +193,7 @@ export function LiveAudioRoom({role='listener', locale='en'}) {
         }
       } catch (cause) {
         setError(messages(cause?.message, t))
-        setPhase('connected')
+        setPhase(wasConnected ? 'connected' : 'idle')
         busyRef.current = false
         return
       }
@@ -244,11 +245,18 @@ export function LiveAudioRoom({role='listener', locale='en'}) {
             </button>
           </>
         ) : (
-          <button className="hh-live-primary" type="button" onClick={join} disabled={disabled}>
-            {role === 'host' ? <Mic size={18}/> : <Headphones size={18}/>}
-            {busy ? (phase === 'ending' ? t.ending : t.connecting) :
-              role === 'host' ? t.host : t.listener}
-          </button>
+          <>
+            <button className="hh-live-primary" type="button" onClick={join} disabled={disabled}>
+              {role === 'host' ? <Mic size={18}/> : <Headphones size={18}/>}
+              {busy ? (phase === 'ending' ? t.ending : t.connecting) :
+                role === 'host' ? t.host : t.listener}
+            </button>
+            {role === 'host' && status?.live ? (
+              <button className="hh-live-end" type="button" onClick={leave} disabled={busy}>
+                <Square size={17}/>{t.forceEnd}
+              </button>
+            ) : null}
+          </>
         )}
       </div>
       {error ? <p className="hh-live-error" role="alert">{error}</p> : null}
