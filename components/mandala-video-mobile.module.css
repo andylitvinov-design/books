@@ -307,3 +307,14 @@
   .supportShortcuts{margin-top:5px;gap:4px}
   .supportShortcuts a{min-height:25px;padding:2px;font-size:clamp(9.4px,2.66vw,11px)}
 }
+
+/* Owner-approved: categories directly above the actual player, not floating
+   on top of the rendered picture. Preserve video canvas as a single source. */
+.hero{overflow:visible;margin-top:55px}
+.heroThemes{position:absolute;left:0;right:0;top:-48px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;z-index:3}
+.heroThemes button{background:#eaf4eb;color:#165944;border:1px solid #bbd8c8;min-height:40px;border-radius:13px;font-weight:800}
+.heroThemes button[aria-pressed="true"]{background:#069e76;color:#fff}
+.heroTabs{margin-bottom:6px}
+.heroOverlay{overflow:hidden;border-radius:inherit}
+.heroCanvas{overflow:hidden;border-radius:inherit}
+@media(max-width:390px){.heroThemes button{font-size:9px;min-height:40px}.hero{margin-top:53px}}
