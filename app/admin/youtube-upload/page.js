@@ -110,8 +110,8 @@ export default async function YoutubeUploadPage({searchParams}) {
         <p style={{margin:'6px 0'}}>{telegramVisibilityConnected
           ?locale==='ru'?'✅ Право изменения видимости подключено. В Dot: /video_visibility':
             '✅ Visibility permission is connected. In Dot: /video_visibility'
-          :locale==='ru'?'Для изменения статуса уже загруженного ролика Google запрашивает дополнительное разрешение. Оно позволяет редактировать видео; сайт будет менять только видимость конкретного подтверждённого ролика.':
-            'Changing an uploaded video to Public requires an additional Google permission. It grants video editing rights; this feature changes only the visibility of a specifically approved video.'}</p>
+          :locale==='ru'?'Google требует дополнительное разрешение: оно даёт приложению право редактировать и удалять видео. Функция Holistic House использует его ТОЛЬКО для смены видимости конкретного подтверждённого ролика; удаление видео не выполняет.':
+            'Google requires an additional permission that can edit and delete videos. This Holistic House feature uses it ONLY to change visibility of one specifically approved video; it never deletes videos.'}</p>
         {!telegramVisibilityConnected&&<Link prefetch={false}
           href="/api/admin/telegram-video/youtube/start?visibility=1">
           {locale==='ru'?'🔐 Однократно разрешить управление видимостью':
