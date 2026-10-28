@@ -12,6 +12,7 @@ on:
       - 'lib/youtube/mobile-qa-guard.mjs'
       - 'tests/youtube-phone-upload.test.mjs'
       - 'tests/youtube-upload-history.test.mjs'
+      - 'tests/youtube-phone-telegram-cut-import.test.mjs'
       - 'tests/youtube-upload-readback.test.mjs'
       - '.github/workflows/youtube-phone-uploader.yml'
       - 'components/app/compact-video-composer.*'
@@ -33,7 +34,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Protocol + persistent history unit tests
-        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-upload-readback.test.mjs tests/youtube-practitioner-store.test.mjs tests/practice-video-composer-compact.test.mjs
+        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-phone-telegram-cut-import.test.mjs tests/youtube-upload-readback.test.mjs tests/youtube-practitioner-store.test.mjs tests/practice-video-composer-compact.test.mjs
       - name: Browser transport and server history syntax
         run: |
           node --check lib/youtube/phone-upload-protocol.mjs
@@ -51,6 +52,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Lint practitioner YouTube implementation
         run: npx eslint lib/youtube/practitioner-upload-model.mjs lib/youtube/practitioner-upload-store.js app/api/app/practice/youtube/route.js components/app/practice-youtube-uploader.jsx components/app/compact-video-composer.jsx lib/practitioners/browser-presentation-upload.js
+      - name: Lint owner Telegram-to-phone handoff
+        run: npx eslint components/youtube-phone-uploader.jsx app/admin/youtube-upload/page.js lib/youtube/phone-upload-protocol.mjs tests/youtube-phone-telegram-cut-import.test.mjs
       - name: Next.js production build
         run: npm run build
       - name: Install isolated Chromium and WebKit for phone UX acceptance

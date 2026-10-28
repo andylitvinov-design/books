@@ -17,9 +17,10 @@ export const metadata = {
   manifest:'/youtube-phone-upload.webmanifest',
 }
 
-export default async function YoutubeUploadPage() {
+export default async function YoutubeUploadPage({searchParams}) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
+  const importTelegramCut=(await searchParams)?.import==='telegramCut'
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
@@ -73,6 +74,7 @@ export default async function YoutubeUploadPage() {
     <nav className={styles.mobileLinks} aria-label={locale === 'ru' ? 'Разделы кабинета' : 'Cabinet links'}>
       <Link prefetch={false} href="/admin">{locale === 'ru' ? '← Кабинет' : '← Cabinet'}</Link>
       <Link prefetch={false} href="/admin/videos">{locale === 'ru' ? 'Видео сайта' : 'Website videos'}</Link>
+      <Link prefetch={false} href="/admin/youtube-upload?import=telegramCut">{locale === 'ru' ? 'MP4 из Telegram' : 'Telegram MP4'}</Link>
     </nav>
     <section aria-label="Telegram audio and photo videos" style={{margin:'12px 0',padding:12,border:'1px solid #bcae94',borderRadius:12}}>
       <h2 style={{margin:'0 0 6px',fontSize:'1rem'}}>🎬 Telegram → Видео → Русский YouTube</h2>
@@ -98,7 +100,7 @@ export default async function YoutubeUploadPage() {
         {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
     </section>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
-      oauthSource={oauthSource} setupAvailable={setupAvailable}
+      oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
   </main>
 }
