@@ -55,7 +55,7 @@ const copy = {
     focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
-    recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", toolsTitle: "2. Choose what helps",
+    recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
@@ -88,7 +88,7 @@ const copy = {
     focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
-    recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", toolsTitle: "2. Выбери, что поможет",
+    recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
@@ -121,7 +121,7 @@ const copy = {
     focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
-    recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", toolsTitle: "2. Elige lo que te ayuda",
+    recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
@@ -281,8 +281,11 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               })}
             </div>
             <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis>
-              <BarChart3 size={18} aria-hidden="true" />{t.detailed}<ArrowRight size={17} aria-hidden="true" />
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span>
+              <span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
             </Link>
           </section>
 
