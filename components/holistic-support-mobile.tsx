@@ -83,7 +83,7 @@ const copy = {
     healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
-    freeVideo: "Create a free video with my photo", freeVideoHint: "Choose a focus, mandala and effects · save MP4/WebM on your device.",
+    freeVideo: "Create a free video with my photo + voice", freeVideoHint: "Choose a focus, mandala and effects · save MP4/WebM on your device.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Selected focus",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navProgress: "My progress", navSettings: "Settings",
@@ -121,7 +121,7 @@ const copy = {
     healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
-    freeVideo: "Создать бесплатное видео с моим фото", freeVideoHint: "Выбери цель, мандалу и эффекты · сохрани MP4/WebM на устройство.",
+    freeVideo: "Создать бесплатное видео с фото и голосом", freeVideoHint: "Выбери цель, мандалу и эффекты · сохрани MP4/WebM на устройство.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Текущий фокус",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navProgress: "Мой прогресс", navSettings: "Настройки",
@@ -159,7 +159,7 @@ const copy = {
     healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
-    freeVideo: "Crear un vídeo gratis con mi foto", freeVideoHint: "Elige intención, mandala y efectos · guarda MP4/WebM en tu móvil.",
+    freeVideo: "Crear vídeo gratis con mi foto y voz", freeVideoHint: "Elige intención, mandala y efectos · guarda MP4/WebM en tu móvil.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Enfoque actual",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navProgress: "Mi progreso", navSettings: "Ajustes",
@@ -450,7 +450,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </div>
                 )}
               </div>
-              <Link href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
+              <Link href={"/" + locale + "/video-studio"} prefetch={false}
                 className={styles.freeVideoEntry} data-support-free-personal-video>
                 <span aria-hidden="true">✧</span>
                 <span><strong>{t.freeVideo}</strong><small>{t.freeVideoHint}</small></span>
