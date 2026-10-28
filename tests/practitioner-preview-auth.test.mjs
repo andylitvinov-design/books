@@ -12,6 +12,9 @@ const rootLayout = read('app/layout.tsx')
 const middleware = read('middleware.ts')
 const promoBanner = read('components/sitewide-antistress-banner.tsx')
 const siteBottomNavigation = read('components/mobile-bottom-navigation.tsx')
+const legacyAppRoute = read('app/[locale]/app/[[...path]]/page.jsx')
+const accountWorkspace = read('components/app/app-workspace.jsx')
+const homePersonalSpace = read('components/home-personal-space.tsx')
 
 test('public practice preview supports EN/RU/ES with request-specific CSP nonces', () => {
   assert.ok(page.includes("['en', 'ru', 'es']"))
@@ -79,4 +82,31 @@ test('existing protected service, meditation and course editors remain available
   assert.ok(showcase.includes("practice:'/' + locale + '/practice'"))
   assert.ok(editor.includes("const meditation=params.get('meditation')"))
   assert.ok(editor.includes('setMeditationType(meditation)'))
+})
+
+test('the Practice tab remains on the approved screen, without Google or a personal-login detour', () => {
+  assert.ok(showcase.includes("if (key === 'practice') {"))
+  assert.ok(showcase.includes("window.scrollTo({ top: 0, behavior: 'smooth' })"))
+  assert.ok(showcase.includes("home:'/' + locale"))
+  assert.ok(!showcase.includes("home:'/' + appLocale + '/app/portrait'"))
+  assert.ok(showcase.includes("practice:'/' + locale + '/practice'"))
+})
+
+test('every old plain My Practice link now resolves to the new public screen', () => {
+  assert.ok(legacyAppRoute.includes("path[0] === 'practice' && path.length === 1"))
+  assert.ok(legacyAppRoute.includes("const privateEditorIntent = ['panel','materialTab','create','starter','meditation','requestId']"))
+  assert.ok(legacyAppRoute.includes("if (!privateEditorIntent) redirect('/' + locale + '/practice')"))
+  assert.ok(accountWorkspace.includes("href: '/' + locale + '/practice'"))
+  assert.ok(accountWorkspace.includes("href={'/' + locale + '/practice'}"))
+  assert.ok(homePersonalSpace.includes('href={"/" + activeLocale + "/practice"}'))
+  assert.ok(editor.includes("href={'/'+locale+'/practice'}"))
+})
+
+test('Google My Practice callback goes to new screen except for explicit protected editors', () => {
+  assert.ok(auth.includes("continueTo === 'practice-preview'"))
+  assert.ok(auth.includes("continueTo === 'my-practice'"))
+  assert.ok(auth.includes("? profi"))
+  assert.ok(auth.includes(": `${origin}/${locale}/practice`"))
+  assert.ok(auth.includes("? `${origin}/${locale}/app/practice${profi === 'course'"))
+  assert.ok(showcase.includes("panel=services&create=1&starter=session"))
 })
