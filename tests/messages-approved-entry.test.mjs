@@ -23,7 +23,7 @@ test('default EN/RU/ES messages route renders approved Messenger without old Ord
 test('approved Messenger preserves existing CRM plus direct and client request auth, not a fake chat',()=>{
   assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
   assert.match(simple,/data-simple-messages/)
-  assert.match(simple,/className=\{styles\.personSelected:styles\.person\}/)
+  assert.match(simple,/className=\{selectedKey===row\.key\?styles\.personSelected:styles\.person\}/)
   assert.match(simple,/<CrmMessengerPanel/)
   assert.match(simple,/<DirectMessageInbox/)
   assert.match(simple,/<PracticeRequestConversation/)
