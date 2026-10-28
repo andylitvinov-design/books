@@ -8,8 +8,8 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: hh-money-film-masters-once
-  cancel-in-progress: false
+  group: hh-money-film-masters-${{ github.event.pull_request.number }}-${{ github.sha }}
+  cancel-in-progress: true
 jobs:
   render-and-commit:
     if: github.repository == 'andylitvinov-design/books' && github.event.pull_request.head.ref == 'feat/real-money-mp4-library-20261028' && github.event.pull_request.head.repo.full_name == 'andylitvinov-design/books'
