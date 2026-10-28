@@ -92,20 +92,26 @@ test("new TSX and route transpile without TypeScript parser diagnostics", () => 
   }
 });
 
-test("lowest self-ratings—not a separate focus—rank four published meditations in the existing rail", () => {
+test("quick matching uses the lowest ratings while goal filtering expands the same video stage", () => {
   const model = read("lib/holistic-support/recommendation-engine.js");
   const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
   const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
   const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
-  assert.match(assessment, /data-support-recommendations/);
-  assert.match(assessment, /onClick=\{onRecommendations\}/);
+  assert.match(assessment, /data-support-goal-filter-trigger/);
+  assert.match(assessment, /onClick=\{openGoalFilter\}/);
+  assert.doesNotMatch(assessment, /data-support-recommendations/);
   assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
-  assert.doesNotMatch(profile, /focusSelector|data-support-recommendations|<select/);
+  assert.match(profile, /focusSelector|data-support-active-focus/);
+  assert.match(profile, /data-support-recommendations/);
+  assert.match(profile, /onClick=\{onRecommendations\}/);
+  assert.doesNotMatch(profile, /<select/);
   assert.match(profile, /data-support-photo/);
   assert.match(tools, /choices\.filter\(item => item\.id !== "pump"\)/);
   assert.match(tools, /data-support-tool="pump"/);
   assert.match(tools, /className=\{styles\.toolShortcuts\}/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
+  assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
+  assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
   assert.match(client, /setRecommendation\(\{ \.\.\.scores \}\)/);
   assert.match(client, /setRecommendation\(null\)/);
   assert.match(client, /data-support-meditation-basis role="status"/);
@@ -135,7 +141,8 @@ test("lowest self-ratings—not a separate focus—rank four published meditatio
   assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.toolShortcuts \{ display: grid;/);
   assert.match(css, /\.toolMicro \{ display: block;/);
-  assert.match(css, /\.page \.assessment > \.recommendButton/);
+  assert.match(css, /\.page \.assessment > \.goalFilterTrigger/);
+  assert.match(css, /\.page \.profile > \.recommendButton/);
   assert.match(css, /\.gallerySelection/);
   assert.match(css, /\.heroBody \.playButton \{ position: relative; top: 8px;/);
   assert.match(model, /export function recommendSupportByLowestScores/);
