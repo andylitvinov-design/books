@@ -32,6 +32,8 @@ const translations = {
     allMoney: "See all 12 looks", lessMoney: "Show four favourites", moneyNote: "A creative attention exercise, not a promise of income.",
     previewPlay: "Preview movement", previewPause: "Pause preview",
     clipPlay: "Tap to play scene", clipPause: "Pause scene", clipReady: "Moving preview",
+    renderMode: "Video template format", withPortrait: "With my photo", backgroundOnly: "Background video only",
+    backgroundHint: "Save a moving scene without a portrait to place behind your own footage in any editor.",
     effect: "Animation", effects: ["Golden light", "Energy flow", "Prosperity symbols", "Temple glow"],
     aspect: "Format", square: "Square · 1:1", portrait: "Vertical · 9:16",
     duration: "Duration", seconds: "sec",
@@ -55,6 +57,8 @@ const translations = {
     allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
     previewPlay: "Посмотреть движение", previewPause: "Пауза",
     clipPlay: "Нажмите для видео", clipPause: "Пауза видео", clipReady: "Видео в движении",
+    renderMode: "Формат видеошаблона", withPortrait: "С моей фотографией", backgroundOnly: "Только видеофон",
+    backgroundHint: "Сохраните движущийся фон без портрета, чтобы подложить его под своё видео в редакторе.",
     effect: "Эффект", effects: ["Золотой свет", "Поток энергии", "Символы процветания", "Сияние храма"],
     aspect: "Формат", square: "Квадрат · 1:1", portrait: "Вертикальный · 9:16",
     duration: "Длительность", seconds: "сек",
@@ -78,6 +82,8 @@ const translations = {
     allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
     previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
     clipPlay: "Toca para ver el vídeo", clipPause: "Pausar vídeo", clipReady: "Vista en movimiento",
+    renderMode: "Formato de plantilla", withPortrait: "Con mi foto", backgroundOnly: "Solo fondo de vídeo",
+    backgroundHint: "Guarda un fondo animado sin retrato para colocarlo detrás de tu propio vídeo en un editor.",
     effect: "Animación", effects: ["Luz dorada", "Flujo de energía", "Símbolos de prosperidad", "Luz del templo"],
     aspect: "Formato", square: "Cuadrado · 1:1", portrait: "Vertical · 9:16",
     duration: "Duración", seconds: "seg",
@@ -162,6 +168,12 @@ function chooseMime(): string {
   return supported.find(mime => MediaRecorder.isTypeSupported(mime)) || "";
 }
 
+const BACKGROUND_CLIP = "local-money-background-only";
+
+function loadSceneImage(url: string): Promise<HTMLImageElement | null> {
+  return url === BACKGROUND_CLIP ? Promise.resolve(null) : loadLocalImage(url);
+}
+
 function loadLocalImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
@@ -175,7 +187,7 @@ function loadLocalImage(url: string): Promise<HTMLImageElement> {
 // external services or third-party assets. The original user photograph is
 // already composited in the local mandala PNG; no pixel is transmitted.
 function paint(
-  ctx: CanvasRenderingContext2D, art: HTMLImageElement,
+  ctx: CanvasRenderingContext2D, art: HTMLImageElement | null,
   effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null, title: string,
 ) {
   const width = ctx.canvas.width;
@@ -184,6 +196,7 @@ function paint(
     paintCinematicMoneyFrame(ctx, art, moneyScene, time, aspect, title);
     return;
   }
+  if (!art) return;
   const centerX = width / 2;
   const centerY = height / 2;
   const size = width * 0.96;
@@ -283,6 +296,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
   const [quality, setQuality] = useState<Quality>("hd");
+  const [backgroundOnly, setBackgroundOnly] = useState(false);
   const [duration, setDuration] = useState<(typeof durations)[number]>(10);
   const [recording, setRecording] = useState(false);
   const [notice, setNotice] = useState("");
@@ -290,8 +304,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
-  const source = moneyScene && photoUrl ? photoUrl : frameUrl;
-  const signature = JSON.stringify([source, frameUrl, photoUrl, moneyScene, effect, aspect, duration, quality]);
+  const source = moneyScene && backgroundOnly ? BACKGROUND_CLIP : moneyScene && photoUrl ? photoUrl : frameUrl;
+  const signature = JSON.stringify([source, frameUrl, photoUrl, moneyScene, effect, aspect, duration, quality, backgroundOnly]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Decode a user's photo once for all 12 preview cards. This avoids 12
@@ -333,7 +347,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
-  }, [frameUrl, photoUrl, effect, moneyScene, aspect, duration, quality]);
+  }, [frameUrl, photoUrl, effect, moneyScene, aspect, duration, quality, backgroundOnly]);
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
@@ -343,7 +357,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
     let animation = 0;
     let startedAt = 0;
     let lastFrame = -1000;
-    void loadLocalImage(source).then(image => {
+    void loadSceneImage(source).then(image => {
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -376,7 +390,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
     setResult(null);
     let stream: MediaStream | null = null;
     try {
-      const image = await loadLocalImage(snapshot);
+      const image = await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
@@ -503,7 +517,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
             {showAllMoney ? t.lessMoney : t.allMoney}
           </button>
           <button type="button" className={styles.moneyFlowPreviewButton}
-            data-mandala-money-preview disabled={recording || !frameUrl}
+            data-mandala-money-preview disabled={recording || !source}
             aria-pressed={previewPlaying}
             onClick={() => setPreviewPlaying(value => !value)}>
             {previewPlaying ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
@@ -517,13 +531,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
           style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
       </div>
+      <fieldset className={styles.freeVideoFieldset} disabled={recording} data-mandala-output-mode>
+        <legend>{t.renderMode}</legend>
+        <div className={styles.freeVideoOptions}>
+          <button type="button" aria-pressed={!backgroundOnly} onClick={() => setBackgroundOnly(false)}>{t.withPortrait}</button>
+          <button type="button" aria-pressed={backgroundOnly}
+            onClick={() => { setBackgroundOnly(true); if (!moneyScene) setMoneyScene("golden-rain"); }}>{t.backgroundOnly}</button>
+        </div>
+        {backgroundOnly ? <p className={styles.freeVideoPrivacy}>{t.backgroundHint}</p> : null}
+      </fieldset>
       <p className={styles.freeVideoPrivacy}>{t.photoNote}</p>
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
         <div className={styles.freeVideoOptions}>
           {effects.map((option, index) => (
             <button type="button" key={option} aria-pressed={effect === option}
-              onClick={() => { setMoneyScene(null); setEffect(option); setPreviewPlaying(false); }}>{t.effects[index]}</button>
+              onClick={() => { setBackgroundOnly(false); setMoneyScene(null); setEffect(option); setPreviewPlaying(false); }}>{t.effects[index]}</button>
           ))}
         </div>
       </fieldset>
@@ -566,7 +589,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
       {!source ? <p className={styles.freeVideoNotice}>{t.imagePending}</p> : null}
       {notice ? <p className={styles.freeVideoNotice} role="status" aria-live="polite">{notice}</p> : null}
       {result && <a href={result.url} className={styles.freeVideoDownload}
-        download={"holistic-house-personal-mandala." + result.extension} data-mandala-video-download>
+        download={"holistic-house-" + (backgroundOnly ? "money-background" : "personal-mandala") + "." + result.extension} data-mandala-video-download>
         <Download size={18} aria-hidden="true" />{t.download} · {Math.max(1, Math.round(result.bytes / 1024))} KB
       </a>}
       <p className={styles.freeVideoPrivacy}>{t.privacy}</p>
