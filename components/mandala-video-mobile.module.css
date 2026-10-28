@@ -318,3 +318,31 @@
 .heroOverlay{overflow:hidden;border-radius:inherit}
 .heroCanvas{overflow:hidden;border-radius:inherit}
 @media(max-width:390px){.heroThemes button{font-size:9px;min-height:40px}.hero{margin-top:53px}}
+
+/* Video editor hierarchy v2: the screenshot's dense chips must not obscure
+   the moving image. Categories live in the light control strip above it. */
+@media(max-width:759px){
+  .studio{max-width:100%;padding-bottom:calc(94px + env(safe-area-inset-bottom))}
+  .hero{margin-top:62px;min-height:365px;border-radius:20px;box-shadow:0 8px 24px #173a2e21}
+  .heroOverlay{min-height:365px;padding:11px 12px 12px}
+  .heroTabs{display:flex;gap:5px;margin-bottom:8px}
+  .heroTabs>*{flex:1 1 0;min-width:0;min-height:36px;padding:5px 3px;border-radius:11px;font-size:clamp(9px,2.6vw,11px)}
+  .heroTabs>a:last-child{display:none}
+  .heroThemes{top:-54px;gap:5px}
+  .heroThemes button{min-height:45px;padding:5px 3px;border-radius:12px;line-height:1.1;font-size:clamp(9px,2.65vw,11px);box-shadow:0 2px 5px #163a2d10}
+  .heroThemes svg{flex:none}
+  .heroBody{padding:12px 2px 0;gap:7px}
+  .heroBody h2{font-size:clamp(24px,6.2vw,30px);max-width:95%;line-height:1.08}
+  .heroBody p{font-size:12px;max-width:94%;margin-bottom:3px}
+  .heroShade{background:linear-gradient(0deg,rgba(7,29,23,.92) 0%,rgba(8,30,25,.55) 39%,rgba(8,30,25,.03) 75%)}
+  .heroCanvas canvas{filter:saturate(1.12) contrast(1.07)}
+  .heroCreate{width:100%;min-height:48px;border-radius:12px;font-size:clamp(12px,3.5vw,15px)}
+  .templates{border:1px solid #e2e7dc;border-radius:19px;margin-top:12px}
+  .templateTile{border-radius:12px}
+  .supportTop{margin-bottom:12px}
+}
+@media(max-width:350px){
+  .hero{margin-top:67px}
+  .heroThemes{top:-60px}
+  .heroThemes button{font-size:8.5px;min-height:51px;flex-direction:column;gap:2px}
+}
