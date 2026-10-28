@@ -275,16 +275,19 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           className={item.visibility==='practitioner_note'?styles.privateNote:item.mine?styles.mine:styles.other}>
           <strong>{item.visibility==='practitioner_note'?t.privateNote:
             item.mine?t.me:item.role==='practitioner'?t.master:t.client}</strong>
-          <p>{item.text}</p>
+          {item.text&&<p>{item.text}</p>}
+          {item.attachment?.kind==='audio'&&<audio controls preload="none"
+            aria-label={t.audio} className={styles.audioMessage}
+            src={'/api/app/practitioner-client-messages/media/'+encodeURIComponent(item.attachment.id)}/>}
           <time dateTime={item.createdAt}>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(item.createdAt))}</time>
         </article>)}
       </div>
       {(view.canReply||(!inline&&view.canNote))&&<div className={styles.compose}>
         {!inline&&view.canNote&&<div className={styles.modes} role="group" aria-label={t.title}>
           <button type="button" aria-pressed={visibility==='participants'} disabled={busy||!view.canReply}
-            onClick={()=>{setVisibility('participants');setText('');pending.current=null}}>{t.reply}</button>
+            onClick={()=>{setVisibility('participants');setText('');setAudioFile(null);pending.current=null}}>{t.reply}</button>
           <button type="button" aria-pressed={visibility==='practitioner_note'} disabled={busy}
-            onClick={()=>{setVisibility('practitioner_note');setText('');pending.current=null}}>{t.writeNote}</button>
+            onClick={()=>{setVisibility('practitioner_note');setText('');setAudioFile(null);pending.current=null}}>{t.writeNote}</button>
         </div>}
         <label htmlFor={'practice-chat-'+requestId}>
           {visibility==='practitioner_note'?t.privateNote:t.reply}
@@ -299,7 +302,22 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
             if(pending.current&&pending.current.text!==event.target.value.trim())pending.current=null
             setText(event.target.value)
           }}/>
-        <button type="button" disabled={busy||!text.trim()} onClick={send}>
+        {visibility==='participants'&&view.canReply&&<div className={styles.audioComposer}>
+          <label className={styles.audioPick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
+            <input type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
+              disabled={busy} onChange={event=>chooseAudio(event.target.files?.[0]||null)}/>
+          </label>
+          <DirectVoiceRecorder key={requestId} locale={lang} disabled={busy}
+            onRecorded={chooseAudio}/>
+          {audioFile&&<div className={styles.audioDraft}>
+            <span>{audioFile.name} · {Math.ceil(audioFile.size/1024)} KB</span>
+            {audioPreview&&<audio controls preload="metadata" src={audioPreview}
+              aria-label={t.audio}/>}
+            <button type="button" disabled={busy} onClick={()=>chooseAudio(null)}>{t.removeAudio}</button>
+          </div>}
+        </div>}
+        <button type="button" disabled={busy||(!text.trim()&&!(visibility==='participants'&&audioFile))}
+          onClick={send}>
           {visibility==='practitioner_note'?t.saveNote:t.send}
         </button>
       </div>}
