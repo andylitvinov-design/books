@@ -52,13 +52,28 @@ for (const engine of [chromium, webkit]) {
         });
         page.on("pageerror", error => errors.push(error.message));
         page.on("request", request => {
-          if (request.method() !== "GET" && request.method() !== "HEAD" &&
-            new URL(request.url()).pathname.startsWith("/api/"))
-            unexpectedWrites.push(request.method() + " " + new URL(request.url()).pathname);
+          const url = new URL(request.url());
+          if (url.origin === origin && !["GET", "HEAD"].includes(request.method()))
+            unexpectedWrites.push(request.method() + " " + url.pathname);
+        });
+        // Fail closed *before transport*, including Next.js server actions and
+        // CRM/payment paths outside /api/. An after-the-fact request listener
+        // cannot prevent a mutation. All browser acceptance is read-only.
+        await page.route(url => url.origin === origin, async route => {
+          if (!["GET", "HEAD"].includes(route.request().method())) {
+            await route.abort("blockedbyclient");
+            return;
+          }
+          await route.fallback();
         });
         // Synthetic public catalog only: proves UI without using personal accounts,
         // posting enquiries, charging, or assuming real provider availability.
+        // This narrower route takes priority; it must never fulfill a write.
         await page.route(url => url.pathname === directoryPath, async route => {
+          if (route.request().method() !== "GET") {
+            await route.abort("blockedbyclient");
+            return;
+          }
           const requestUrl = new URL(route.request().url());
           const isConsultation = requestUrl.searchParams.get("kind") === "consultation";
           fixtureCalls.push({ kind: isConsultation ? "consultation" : "masters",
