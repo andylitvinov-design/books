@@ -74,6 +74,7 @@ export default async function YoutubeUploadPage({searchParams}) {
     <nav className={styles.mobileLinks} aria-label={locale === 'ru' ? 'Разделы кабинета' : 'Cabinet links'}>
       <Link prefetch={false} href="/admin">{locale === 'ru' ? '← Кабинет' : '← Cabinet'}</Link>
       <Link prefetch={false} href="/admin/videos">{locale === 'ru' ? 'Видео сайта' : 'Website videos'}</Link>
+      <Link prefetch={false} href="/admin/youtube-upload?import=telegramCut">{locale === 'ru' ? 'MP4 из Telegram' : 'Telegram MP4'}</Link>
     </nav>
     <section aria-label="Telegram audio and photo videos" style={{margin:'12px 0',padding:12,border:'1px solid #bcae94',borderRadius:12}}>
       <h2 style={{margin:'0 0 6px',fontSize:'1rem'}}>🎬 Telegram → Видео → Русский YouTube</h2>
