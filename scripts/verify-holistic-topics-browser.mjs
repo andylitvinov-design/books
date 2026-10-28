@@ -21,6 +21,9 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          // Playwright page.route cannot intercept requests handled by a service worker.
+          // Block SWs so fixture-only directory GETs never fall through to local API (503).
+          serviceWorkers: "block",
         });
         const errors = [];
         const unexpectedWrites = [];
