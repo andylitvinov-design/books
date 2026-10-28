@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
-  ArrowRight, BarChart3, Bell, BookOpen, CheckCircle2, ChevronRight, ClipboardList,
+  ArrowRight, BarChart3, Bell, BookOpen, ChevronRight, ClipboardList,
   FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus,
-  ShieldCheck, Sparkles, UserRound, Users
+  Sparkles, UserRound, Users
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
@@ -140,13 +140,15 @@ function destination(locale, key) {
   const appLocale = locale === 'es' ? 'en' : locale
   const root = '/' + appLocale + '/app/practice'
   const routes = {
-    home:'/' + appLocale + '/app/portrait',
-    practice:root,
+    // The Home tab is the public homepage, never the old personal login gate.
+    home:'/' + locale,
+    // The highlighted tab retains the same signed-in preview; editors live in their own tools.
+    practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
     meditation:root + '?panel=materials&materialTab=courses&create=1&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
-    reiki:root + '?panel=services&create=1&starter=energy',
+    reiki:root + '?panel=services&create=1&starter=reiki',
     course:root + '?panel=materials&materialTab=courses&create=1',
     material:root + '?panel=materials&materialTab=articles',
     session:root + '?panel=services',
@@ -157,7 +159,7 @@ function destination(locale, key) {
     masters:'/' + appLocale + '/masters',
     clients:root + '?panel=clients',
     requests:root + '?panel=requests',
-    messages:'/' + appLocale + '/app/messages',
+    messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',
     analytics:root + '?panel=analytics',
@@ -214,11 +216,23 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   function openAction(key) {
     if (busy) return
+    // This selected tab is already the new practitioner page. It must never
+    // request Google sign-in or send a visitor to the legacy Account landing.
+    if (key === 'practice') {
+      setPendingAction('')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    // Home is public navigation, not entry to the private personal Cabinet.
+    if (key === 'home') {
+      router.push(destination(locale, key))
+      return
+    }
     if (signedIn) {
       router.push(destination(locale, key))
       return
     }
-    // An action first offers Google sign-in; merely browsing is always free.
+    // Actual edit/actions prompt Google, then open the existing protected tool.
     setNotice('')
     setPendingAction(key)
   }
@@ -273,7 +287,6 @@ export default function PracticeShowcase({ locale = 'en' }) {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div>
-          <div className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" /> HOLISTIC HOUSE <span>·</span> {t.preview}</div>
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
@@ -300,7 +313,6 @@ export default function PracticeShowcase({ locale = 'en' }) {
         </div>
       </section>
 
-      <div className={styles.sectionTitle}><h2>{t.creations}</h2></div>
       <div className={styles.quickGrid} aria-label={t.creations}>
         {CREATE.map(({ key, label, Icon, tint }) =>
           <button key={key} type="button" className={styles.quickTile + ' ' + styles[tint]}
@@ -354,17 +366,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
         </div>
       </section>
 
-      <aside className={styles.gate} aria-live="polite">
-        <ShieldCheck size={18} aria-hidden="true"/>
-        <div><strong>{signedIn ? t.signedIn : session === 'checking' ? t.loading : t.gate}</strong>
-          <p>{t.hint}</p>
-          {notice && <p className={styles.alert} role="alert">{notice}</p>}
-        </div>
-        {!signedIn && <button type="button" className={styles.signIn} disabled={Boolean(busy)} onClick={() => void openAction('practice')}>
-          <LockKeyhole size={15} aria-hidden="true"/>{t.signIn}
-        </button>}
-      </aside>
-      <p className={styles.moderation}><CheckCircle2 size={15} aria-hidden="true"/> {t.moderation}</p>
+      {notice && !pendingAction && <p className={styles.notice} role="status">{notice}</p>}
     </div>
 
     {pendingAction && !signedIn && <div className={styles.modalBackdrop}>

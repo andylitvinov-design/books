@@ -14,7 +14,7 @@ const PUBLIC_FIELDS = [
   "techniques", "time_of_day", "posture", "experience_level", "intensity",
   "spiritual_style", "music_style", "voice_style", "safety_flags", "claims_risk",
   "metadata_confidence", "editorial_status", "embed_status", "rights_status",
-  "metadata_checked_at", "content_checked_at", "discovery_status",
+  "metadata_checked_at", "content_checked_at", "discovery_status", "youtube_oembed_checked_at",
 ].join(",");
 
 /**

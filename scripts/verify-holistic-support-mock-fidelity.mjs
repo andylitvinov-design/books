@@ -451,12 +451,25 @@ for (const browserType of [chromium, webkit]) {
             label+" courses never show session practitioner selector");
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
             label+" courses show certificate preference");
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),4,
+            label+" four real Academy training cards, including free practitioner programme");
+          assert.equal(await healing.locator('[data-reiki-academy-cta="reiki-practitioner-course"]').count(),1,
+            label+" one canonical free programme CTA");
           await reikiFilter.locator('[data-support-reiki-certificate] input').check();
           assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
             label+" no fictional certified training offers");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
             label+" initiation may request a certificate");
+          await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" three real linked initiation pathways appear on selection");
+          await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" 21–50 EUR selects only published-price Tantra initiation");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="tantra-initiation"]').count(),1,
+            label+" canonical Tantra €50 level-one option");
+          await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
           await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
             label+" return to session resets certificate and restores provider");

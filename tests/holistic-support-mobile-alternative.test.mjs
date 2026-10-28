@@ -68,7 +68,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
     assert.ok(client.includes(key), key);
   }
   for (const label of [
-    "Мастер", "Программа", "Тема", "Тест или консультация", "Талисман",
+    "Мастер", "Программа", "Тема", "Консультация", "Талисман",
     "Подобрать рекомендации", "Начать медитацию", "Мой прогресс",
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);
@@ -334,7 +334,7 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
-  assert.match(gallery, /data-support-reiki-unavailable/);
+  assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
   assert.match(gallery, /setReikiFocus\("love"\)/);
   assert.match(gallery, /onClick=\{\(\) => \{ setReikiFocus\(value\); setMethod\(""\);/);
   assert.match(gallery, /<RemoteEnergySupportBooking/);

@@ -129,3 +129,106 @@
 @media (prefers-reduced-motion: reduce) {
   .quickTile, .tool { transition: none; }
 }
+
+
+/* Approved practitioner phone mock: compact, uninterrupted workspace.
+   Scoped above legacy rules to survive global mobile typography and iOS viewport. */
+.screen { background:radial-gradient(circle at 12% 8%,#e6f1e9,transparent 35%),linear-gradient(165deg,#f7f1e6,#f1ecdf); font-size:13px; line-height:1.32; overflow-x:clip; }
+.screen .shell { width:min(100%,760px); margin:0 auto; padding:16px clamp(11px,4.3vw,27px) 100px; }
+.screen .header { gap:10px; margin-bottom:11px; }
+.screen .header h1 { font-size:clamp(23px,5.65vw,32px); line-height:1.1; font-weight:850; margin-bottom:4px; }
+.screen .header p { font-size:clamp(11px,2.9vw,13px); line-height:1.23; }
+.screen .notification { width:40px; height:40px; }
+.screen .identity { grid-template-columns:58px minmax(0,1fr) 134px; gap:9px; min-height:85px; padding:9px; margin-bottom:12px; border-radius:19px; }
+.screen .avatar { width:56px; height:56px; }
+.screen .identityCopy { gap:3px; }
+.screen .identityCopy strong { font-size:clamp(13px,3.5vw,18px); line-height:1.12; }
+.screen .identityCopy small { font-size:clamp(9px,2.6vw,11px); line-height:1.2; }
+.screen .identityCopy button { gap:3px; font-size:clamp(9px,2.5vw,11px); line-height:1.18; }
+.screen .metrics { grid-column:auto; grid-template-columns:repeat(2,minmax(0,1fr)); align-self:stretch; gap:4px; }
+.screen .metrics button { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:1px; min-height:65px; padding:4px 1px; border-radius:14px; }
+.screen .metrics button svg { width:18px; height:18px; flex:none; }
+.screen .metrics button small { grid-area:auto; font-size:9px; line-height:1.04; margin:1px 0 0; }
+.screen .metrics button b { grid-area:auto; font-size:20px; line-height:1.04; margin:0; }
+.screen .metrics button span { grid-area:auto; font-size:9px; line-height:1.04; }
+.screen .quickGrid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:12px; }
+.screen .quickTile { display:flex; flex-direction:row; justify-content:flex-start; align-items:center; gap:5px; min-height:67px; padding:7px 5px; border-radius:15px; }
+.screen .tileIcon { display:grid; flex:0 0 29px; width:29px; height:31px; border-radius:10px; }
+.screen .tileIcon svg { width:22px; height:22px; }
+.screen .tileCopy { flex:1; display:grid; align-content:center; gap:2px; padding-right:4px; }
+.screen .tileCopy strong { font-size:clamp(10px,2.8vw,13px); line-height:1.15; font-weight:800; letter-spacing:-.03em; }
+.screen .tileCopy small { font-size:clamp(9px,2.3vw,11px); line-height:1.12; }
+.screen .tileArrow { top:50%; right:2px; width:12px; height:12px; transform:translateY(-50%); }
+.screen .hero { display:flex; align-items:center; min-height:210px; margin-bottom:13px; border-radius:21px; background:linear-gradient(90deg,#0b322be9 0%,#214839bf 49%,#244e2e15 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp') 65% center/cover no-repeat; }
+.screen .heroContent { max-width:320px; padding:16px 16px 15px; }
+.screen .heroBadge { padding:4px 10px; font-size:9px; line-height:1.1; }
+.screen .hero h2 { font-size:clamp(28px,7.3vw,38px); line-height:1.05; margin:9px 0 6px; }
+.screen .hero p { font-size:clamp(12px,3.2vw,15px); line-height:1.25; margin-bottom:12px; }
+.screen .heroButton { min-width:156px; min-height:40px; padding:8px 13px; border-radius:15px; font-size:14px !important; }
+.screen .sectionTitle { gap:6px; margin-bottom:7px; }
+.screen .sectionTitle h2 { font-size:clamp(16px,4.35vw,21px); line-height:1.15; }
+.screen .sectionTitle button { gap:4px; font-size:clamp(10px,2.6vw,12px); }
+.screen .offers { margin-bottom:14px; }
+.screen .offerRail { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px; overflow:visible; padding:2px 1px 4px; scroll-snap-type:none; }
+.screen .offerCard { flex:none; width:100%; min-width:0; height:97px; padding:7px; border-radius:13px; }
+.screen .offerIcon { width:29px; height:29px; flex:none; }
+.screen .offerCard strong { font-size:clamp(9px,2.55vw,13px); line-height:1.08; letter-spacing:-.025em; overflow-wrap:anywhere; }
+.screen .toolGrid { gap:7px; }
+.screen .tool { min-height:56px; gap:7px; padding:7px 8px; border-radius:16px; }
+.screen .toolIcon { width:35px; height:37px; }
+.screen .toolCopy strong { font-size:clamp(11px,3vw,14px); line-height:1.13; }
+.screen .toolCopy small { font-size:clamp(9px,2.5vw,11px); line-height:1.16; }
+.screen .tool > svg:last-child { width:13px; }
+.screen .bottomNav { z-index:55; left:max(5px,calc((100vw - 760px)/2)); right:max(5px,calc((100vw - 760px)/2)); gap:2px; padding:6px 7px max(8px,env(safe-area-inset-bottom,8px)); background:#fffefbf2; backdrop-filter:blur(14px); }
+.screen .navItem { min-height:50px; font-size:clamp(9px,2.4vw,11px) !important; line-height:1.12; }
+.screen .signInModal { max-height:calc(100dvh - 30px); overflow-y:auto; }
+.notice { margin:13px 0 0; padding:9px 11px; border:1px solid #decbb3; border-radius:12px; background:#fffaf2; color:#7b4c3d; font-size:12px; }
+@media(max-width:590px) {
+  .screen .shell { padding-top:15px; }
+  .screen .identity { grid-template-columns:54px minmax(0,1fr) 124px; gap:8px; min-height:78px; padding:8px; }
+  .screen .avatar { width:52px; height:52px; }
+  .screen .avatar svg { width:28px; height:28px; }
+  .screen .metrics { grid-column:auto; }
+  .screen .metrics button { min-height:64px; padding:4px 2px; }
+  .screen .metrics button svg { width:17px; height:17px; }
+  .screen .metrics button b { font-size:19px; }
+  .screen .identityCopy button svg { width:13px; height:13px; }
+  .screen .quickTile { min-height:63px; gap:5px; }
+  .screen .tileIcon { width:28px; height:29px; flex-basis:28px; }
+  .screen .hero { min-height:190px; background-position:61% center; }
+  .screen .heroContent { max-width:275px; padding:14px 15px; }
+  .screen .hero h2 { font-size:clamp(26px,7vw,31px); }
+  .screen .heroButton { min-height:38px; }
+  .screen .offerCard { height:86px; padding:6px 4px; border-radius:12px; }
+  .screen .offerIcon { width:26px; height:26px; }
+  .screen .offerIcon svg { width:16px; height:16px; }
+  .screen .tool { min-height:53px; }
+  .screen .toolIcon { width:33px; height:35px; }
+  .screen .toolIcon svg { width:21px; height:21px; }
+}
+@media(max-width:354px) {
+  .screen .shell { padding-inline:10px; }
+  .screen .identity { grid-template-columns:48px minmax(0,1fr) 112px; gap:6px; padding:7px; }
+  .screen .avatar { width:47px; height:47px; }
+  .screen .identityCopy strong { font-size:12px; }
+  .screen .identityCopy button { font-size:9px; }
+  .screen .metrics button { min-height:62px; }
+  .screen .metrics button b { font-size:18px; }
+  .screen .quickGrid { gap:5px; }
+  .screen .quickTile { min-height:64px; gap:3px; padding:5px 3px; border-radius:12px; }
+  .screen .tileIcon { width:24px; height:26px; flex-basis:24px; }
+  .screen .tileIcon svg { width:19px; height:19px; }
+  .screen .tileCopy strong { font-size:9.5px; }
+  .screen .tileCopy small { font-size:8.5px; }
+  .screen .hero { min-height:186px; }
+  .screen .heroContent { max-width:248px; }
+  .screen .hero h2 { font-size:26px; }
+  .screen .offerRail { gap:4px; }
+  .screen .offerCard { height:78px; padding:5px 3px; }
+  .screen .offerCard strong { font-size:8.3px; }
+  .screen .tool { min-height:51px; gap:5px; padding:6px; border-radius:13px; }
+  .screen .toolIcon { width:29px; height:32px; }
+  .screen .toolIcon svg { width:20px; height:20px; }
+  .screen .toolCopy strong { font-size:10.5px; }
+  .screen .toolCopy small { font-size:9px; }
+}

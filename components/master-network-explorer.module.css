@@ -115,68 +115,63 @@
 .actions > .primary,.actions > .energyButton { margin-inline-start:auto; }
 
 
-/* The same catalogue card, in a compact profile-first layout: Details left, Order right. */
-.practitionerServicesGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+/* The same approved marketplace card; scenic, horizontally browseable master storefront. */
+.practitionerServicesGrid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
 .profileServiceCard {
-  display: grid;
-  grid-template-columns: minmax(92px,130px) minmax(0,1fr);
-  grid-template-rows: auto auto auto minmax(0,1fr) auto auto;
-  column-gap: 13px;
-  row-gap: 0;
-  min-height: 0;
-  padding: 13px;
-  border-color: #e1d4c6;
-  background: #fffdfa;
+  display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;border:1px solid #e3ddd1;
+  border-radius:22px;background:#fffdf8;box-shadow:0 9px 26px #28392b12;
 }
-.profileServiceCard > .serviceCover,.profileCoverFallback {
-  grid-column: 1;
-  grid-row: 1 / 5;
-  width: 100%;
-  height: 100%;
-  min-height: 154px;
-  margin: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(145deg,#eee6dc,#e7edf0);
+.profileServiceCard > .serviceCover {
+  flex:none;width:100%;height:163px;margin:0 0 12px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(135deg,#e5e6d8,#b9cfc4);
 }
-.profileServiceCard > .serviceCover img { width: 100%; height: 100%; min-height: 154px; object-fit: cover; }
-.profileCoverFallback { display: grid; place-items: center; color: #a07464; }
-.profileCoverFallback span { display: grid; place-items: center; width: 55px; height: 55px; border-radius: 50%; background: #fffcf7bf; font: 32px/1 Georgia,serif; }
-.profileServiceCard > .cardTop { grid-column: 2; grid-row: 1; justify-content: flex-start; margin-bottom: 5px; }
-.profileServiceCard > .area { grid-column: 2; grid-row: 2; margin: 0 0 5px; font-size: 9px; }
-.profileServiceCard > h3 { grid-column: 2; grid-row: 3; margin: 0 0 6px; font-size: clamp(18px, 2vw, 23px); line-height: 1.17; }
-.profileServiceCard > .description { grid-column: 2; grid-row: 4; margin: 0; font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; }
-.profileServiceCard > .meta { grid-column: 1 / -1; grid-row: 5; align-items: center; margin: 10px 0 9px; }
+.profileServiceCard > .serviceCover img { width:100%;height:100%;object-fit:cover;transition:transform .25s; }
+.profileServiceCard > .serviceCover:hover img { transform:scale(1.035); }
+.profileServiceCard > .cardTop { justify-content:flex-start;margin:0 4px 6px; }
+.profileServiceCard > .cardTop .price,.profileServiceCard > .cardTop .freePrice {
+  padding:6px 11px;border-radius:99px;font-size:11px;
+}
+.profileServiceCard > .area { margin:0 4px 6px;color:#93644f;font-size:10px;letter-spacing:.09em; }
+.profileServiceCard > h3 { margin:0 4px 7px;min-height:2.4em;color:#493329;font-size:clamp(21px,2vw,25px);line-height:1.17; }
+.profileServiceCard > .description {
+  margin:0 4px 12px;min-height:2.7em;color:#78685c;font-size:12px;line-height:1.45;-webkit-line-clamp:2;
+}
+.profileServiceCard > .meta { gap:5px;margin:0 4px 10px; }
+.profileServiceCard > .meta span { background:#eef2ed;color:#506859;font-size:10px; }
 .profileServiceCard > .actions {
-  grid-column: 1 / -1;
-  grid-row: 6;
-  display: grid;
-  grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr);
-  gap: 9px;
-  align-items: center;
+  display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+  gap:8px;align-items:center;margin:auto 2px 2px;
 }
-.profileServiceCard .secondary { min-height: 43px; padding: 5px; }
-.profileServiceCard .primary { width: 100%; min-width: 0; min-height: 43px; margin: 0; padding: 9px 12px; }
-@media (max-width: 760px) { .practitionerServicesGrid { grid-template-columns: 1fr; } }
-@media (max-width: 640px) {
-  .practitionerServicesGrid { gap: 9px; }
-  .profileServiceCard { grid-template-columns: 104px minmax(0,1fr); padding: 12px; column-gap: 11px; border-radius: 17px; }
-  .profileServiceCard > .serviceCover,.profileCoverFallback { min-height: 138px; }
-  .profileServiceCard > .serviceCover img { min-height: 138px; }
-  .profileServiceCard > h3 { font-size: 20px; }
-  .profileServiceCard > .description { -webkit-line-clamp: 2; font-size: 11.5px; line-height: 1.4; }
-  .profileServiceCard > .cardTop .price,.profileServiceCard > .cardTop .freePrice { padding: 5px 9px; font-size: 10px; }
-  .profileServiceCard > .meta { margin-top: 8px; margin-bottom: 8px; }
-  .profileServiceCard .secondary { font-size: 12px; }
-  .profileServiceCard .primary { font-size: 12px; min-height: 42px; }
+.profileServiceCard .secondary {
+  min-width:0;min-height:43px;padding:7px;color:#087151;font-size:11px;text-align:center;
+}
+.profileServiceCard .primary {
+  display:inline-flex;gap:8px;min-width:0;min-height:44px;width:100%;margin:0;padding:10px 13px;
+  background:linear-gradient(100deg,#0c8b61,#08714d);box-shadow:0 7px 15px #086e501b;
+  color:#fff;font-size:12px;text-align:center;
+}
+.profileServiceCard .primary:hover { background:#055c44; }
+.profileServiceCard .mediaIntroLink { font-size:11px;color:#0c7151; }
+.profileServiceCard .area + h3 { word-break:normal; }
+@media (max-width: 940px) { .practitionerServicesGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 650px) {
+  .practitionerServicesGrid {
+    display:flex;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;
+    padding:3px 2px 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .practitionerServicesGrid::-webkit-scrollbar { display:none; }
+  .profileServiceCard { flex:0 0 min(78vw,295px);padding:9px;border-radius:18px;scroll-snap-align:start; }
+  .profileServiceCard > .serviceCover { height:153px;margin-bottom:10px;border-radius:13px; }
+  .profileServiceCard > h3 { font-size:21px; }
+  .profileServiceCard > .description { font-size:11px; }
+  .profileServiceCard .primary { min-height:43px;padding:9px 10px;font-size:11px; }
+  .profileServiceCard .secondary { padding:6px;font-size:11px; }
 }
 @media (max-width: 360px) {
-  .profileServiceCard { grid-template-columns: 84px minmax(0,1fr); padding: 10px; column-gap: 9px; }
-  .profileServiceCard > h3 { font-size: 18px; }
-  .profileServiceCard > .area { font-size: 8px; }
-  .profileServiceCard > .description { font-size: 11px; }
-  .profileServiceCard .primary { padding: 8px 10px; font-size: 11px; }
+  .profileServiceCard { flex-basis:260px; }
+  .profileServiceCard > .serviceCover { height:143px; }
 }
+@media (prefers-reduced-motion: reduce) { .profileServiceCard > .serviceCover img { transition:none; } }
 
 /* On 320-430px show complete quick filters rather than clipped horizontal chips. */
 @media(max-width:640px){
@@ -269,3 +264,13 @@
 .mediaIntroLink{display:inline-flex;align-items:center;align-self:flex-start;min-height:34px;padding:7px 11px;margin-bottom:10px;border-radius:9px;
   text-decoration:none;color:#236f64;background:#e8f5ec;font:750 11px/1.4 system-ui,-apple-system,sans-serif}
 .mediaIntroLink:hover,.mediaIntroLink:focus-visible{background:#d5efdf;text-decoration:underline}
+
+/* Reuse the service review flow without squeezing a third CTA into the mobile order row. */
+.profileServiceCard .profileReviewLink { grid-column:1 / -1; display:inline-flex; align-items:center; min-height:36px;
+  padding:7px 4px 1px; border-top:1px solid #eadfd5; color:#793c50; font:650 11px/1.4 system-ui,sans-serif;
+  text-underline-offset:3px; }
+.masterRating { display:flex; align-items:center; flex-wrap:wrap; gap:5px; width:fit-content;
+  min-height:32px; margin:0 0 8px; color:#784752; font:600 11px/1.45 system-ui,sans-serif;
+  text-decoration:none; }
+.masterRating strong { color:#704031; }
+.masterRating:hover,.profileReviewLink:hover { text-decoration:underline; }
