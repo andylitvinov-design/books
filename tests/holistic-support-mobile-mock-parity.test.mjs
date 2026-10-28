@@ -31,6 +31,13 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
   assert.match(client, /className=\{styles\.recommendShort\}/);
   assert.match(client, /support-mock-portrait\.webp/);
   assert.match(client, /support-mock-hero\.webp/);
+  assert.match(css, /support-mock-video-posters\.webp/);
+  for (const filename of ["support-mock-hero.webp", "support-mock-portrait.webp", "support-mock-video-posters.webp"]) {
+    const picture = readFileSync(new URL("../public/images/holistic-house/" + filename, import.meta.url));
+    assert.equal(picture.toString("ascii", 0, 4), "RIFF", filename + " must be a real WebP file");
+    assert.equal(picture.toString("ascii", 8, 12), "WEBP", filename + " format");
+    assert.ok(picture.length > 1000, filename + " was not saved");
+  }
   assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: minmax\(0,1fr\);/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
   assert.match(client, /aria-label=\{t.options\[id\]\}/);
