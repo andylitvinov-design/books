@@ -420,7 +420,9 @@ export function RemoteEnergySupportBooking({
     setError("");
     // The public topic is a controlled value; private words are never in URL
     // or sessionStorage. They are reviewed in the authenticated request form.
-    const topic = goal;
+    // In the published master gallery, selecting a theme is optional.
+    // Use a neutral, controlled label rather than fabricating a personal goal.
+    const topic = goal || (mode === "inline" && requestKind === "energy" ? "Personal intention" : "");
     if (!topic) {
       setError("focus");
       document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
