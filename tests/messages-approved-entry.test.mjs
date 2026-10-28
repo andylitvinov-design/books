@@ -43,6 +43,9 @@ test('new mobile labels and compact orders escape are correct for RU/EN/ES',()=>
     assert.ok(page.includes(label),label)
   assert.match(css,/hh-messages-context-link/)
   assert.match(css,/min-height:44px/)
+  assert.match(css,/data-detail-open="true"/)
+  assert.match(css,/data-thread-open="true"/)
+  assert.match(css,/input:focus,textarea:focus/)
   assert.match(css,/env\(safe-area-inset-bottom\)/)
 })
 test('page renders valid Next TSX and order branch remains explicit',()=>{

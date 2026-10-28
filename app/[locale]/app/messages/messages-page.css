@@ -73,3 +73,13 @@
 @media(max-width:350px){
  .hh-app.hh-messages-page .hh-messages-context-link{font-size:11px;padding:7px 11px}
 }
+
+/* The old extra toolbar must not shrink an open iPhone conversation or cover
+   the composer when Safari's keyboard is visible. Show Orders from the list. */
+@media(max-width:760px){
+ .hh-app.hh-messages-page:has([data-simple-messages][data-detail-open="true"]) .hh-messages-context-nav,
+ .hh-app.hh-messages-page:has([data-messages-hub][data-thread-open="true"]) .hh-messages-context-nav,
+ .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-messages-context-nav{
+  display:none;
+ }
+}
