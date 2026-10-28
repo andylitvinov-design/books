@@ -231,6 +231,14 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Google returns to the same public page with a one-use non-personal
+  // OAuth continuation flag. The client-side scoring/photo dashboard never
+  // touches browser storage, CRM, private notes or account identity.
+  useEffect(() => {
+    if (window.location.search.includes("hh_enquiry=google"))
+      setChoice("healing");
+  }, []);
+
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
   const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
