@@ -338,7 +338,7 @@ export function HolisticSupportGoalFilter({
             </button>
           ))}
         </nav>
-        <div className={styles.fields}>
+        <div className={styles.fields} data-support-goal-details>
           <section className={styles.fieldGroup} aria-labelledby="goal-problems">
             <h3 id="goal-problems">{t.current}</h3>
             <p>{t.select}</p>
@@ -422,7 +422,7 @@ export function HolisticSupportGoalFilter({
         </div>
       </div>
       <footer className={styles.actions} data-support-goal-actions>
-        <div className={styles.categoryActions}>
+        <div className={styles.categoryActions} data-support-goal-category-actions>
           <button type="button" className={styles.save} data-support-goal-save
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
