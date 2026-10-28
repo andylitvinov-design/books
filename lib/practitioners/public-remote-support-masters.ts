@@ -78,7 +78,15 @@ export type PublicConsultationOffer = {
   price: number | null;
   currency: string;
   href: string;
+  deliveryFormat: string;
+  photos: string[];
+  presentations: { type: "audio" | "video"; url: string }[];
 };
+
+// Display only media explicitly marked public, without exposing private storage paths.
+function publicConsultationPhoto(path: string): string {
+  return /^\/(?:images\/|api\/public\/)[a-zA-Z0-9_/%.-]+$/.test(path) ? path : "";
+}
 
 export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"): Promise<PublicConsultationOffer[]> {
   const config = getAppConfig();
@@ -109,6 +117,14 @@ export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"
           price,
           currency: service.currency || "",
           href: getPublicServiceDetailHref(locale, practitioner.slug, service.slug),
+          deliveryFormat: service.deliveryFormat,
+          photos: [...new Set([service.imagePath, ...(service.photos || [])]
+            .map(publicConsultationPhoto).filter(Boolean))].slice(0, 5),
+          presentations: (service.serviceIntroductions || [])
+            .filter(intro => intro.language === locale && intro.media.kind === "external" &&
+              isPublicPresentationUrl(intro.media.url))
+            .map(intro => ({ type: intro.type, url: (intro.media as { kind: "external"; url: string }).url })),
+
         };
       })
   );

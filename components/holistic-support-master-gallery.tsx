@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
-import { ArrowRight, BookOpen, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -48,6 +48,9 @@ type PublishedConsultation = {
   price: number | null;
   currency: string;
   href: string;
+  deliveryFormat: string;
+  photos: string[];
+  presentations: { type: "video" | "audio"; url: string }[];
 };
 type DirectoryResponse = { masters?: EnergySupportMaster[]; consultations?: PublishedConsultation[] };
 const words = {
@@ -56,7 +59,7 @@ const words = {
     verified: "Published practitioner", publicOffer: "Published service", online: "Online",
     method: "Method", allMethods: "All practices", price: "Price", allPrices: "All offers",
     freeOnly: "Free", paidOnly: "With a published price",
-    galleryMasters: "Choose a master", galleryOffers: "Other consultations",
+    galleryMasters: "Choose a master", galleryOffers: "Other services",
     reikiFocus: "Reiki support intention",
     reikiOptions: {
       strength: { label: "Strength support", method: "Kundalini Reiki" },
@@ -80,7 +83,7 @@ const words = {
     verified: "Опубликованный мастер", publicOffer: "Опубликованная услуга", online: "Онлайн",
     method: "Метод", allMethods: "Все практики", price: "Цена", allPrices: "Все предложения",
     freeOnly: "Бесплатно", paidOnly: "С опубликованной ценой",
-    galleryMasters: "Выбери мастера", galleryOffers: "Другие консультации",
+    galleryMasters: "Выбери мастера", galleryOffers: "Другие услуги",
     reikiFocus: "Цель Рейки поддержки",
     reikiOptions: {
       strength: { label: "Поддержка силы", method: "Кундалини Рейки" },
@@ -104,7 +107,7 @@ const words = {
     verified: "Profesional publicado", publicOffer: "Servicio publicado", online: "En línea",
     method: "Método", allMethods: "Todas las prácticas", price: "Precio", allPrices: "Todas",
     freeOnly: "Gratis", paidOnly: "Con precio publicado",
-    galleryMasters: "Elige un profesional", galleryOffers: "Otras consultas",
+    galleryMasters: "Elige un profesional", galleryOffers: "Otros servicios",
     reikiFocus: "Objetivo del apoyo Reiki",
     reikiOptions: {
       strength: { label: "Apoyo a la fuerza", method: "Kundalini Reiki" },
@@ -193,6 +196,80 @@ const reikiUi = {
   },
 } as const;
 
+
+type ConsultationCategory = "all" | "psycho" | "imagery" | "constellations" | "business";
+const CONSULTATION_CATEGORIES = [
+  { id: "all", Icon: MessageCircle },
+  { id: "psycho", Icon: Leaf },
+  { id: "imagery", Icon: Eye },
+  { id: "constellations", Icon: Users },
+  { id: "business", Icon: BriefcaseBusiness },
+] as const;
+
+const consultationUi = {
+  en: {
+    heading: "Services", subtitle: "Choose your direction", all: "All services",
+    categories: { all: "Consultations", psycho: "Psycho-homeopathy", imagery: "Guided imagery",
+      constellations: "Systemic constellations", business: "Business consulting" },
+    master: "Practitioner", allMasters: "All practitioners", format: "Format", allFormats: "Any format",
+    price: "Price", reset: "Reset", showNext: "More service categories",
+    online: "Online", inPerson: "In person", hybrid: "Online / in person",
+    order: "Request service", details: "Details", published: "Published service",
+    media: "View approved introduction", photos: "Service photos",
+    notice: "A request is not a confirmed booking or payment.",
+  },
+  ru: {
+    heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
+    categories: { all: "Консультации", psycho: "Психогомеопатия", imagery: "Гайдед имажери",
+      constellations: "Системные расстановки", business: "Бизнес-консалтинг" },
+    master: "Мастер", allMasters: "Все мастера", format: "Формат", allFormats: "Все форматы",
+    price: "Цена", reset: "Сбросить", showNext: "Следующие категории услуг",
+    online: "Онлайн", inPerson: "Очно", hybrid: "Онлайн / очно",
+    order: "Заказать", details: "Подробнее", published: "Опубликованная услуга",
+    media: "Открыть опубликованную презентацию", photos: "Фото услуги",
+    notice: "Заявка не означает подтверждённую запись или оплату.",
+  },
+  es: {
+    heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
+    categories: { all: "Consultas", psycho: "Psicohomeopatía", imagery: "Imágenes guiadas",
+      constellations: "Constelaciones sistémicas", business: "Consultoría empresarial" },
+    master: "Profesional", allMasters: "Todos", format: "Formato", allFormats: "Cualquier formato",
+    price: "Precio", reset: "Restablecer", showNext: "Más categorías",
+    online: "En línea", inPerson: "Presencial", hybrid: "En línea / presencial",
+    order: "Solicitar", details: "Detalles", published: "Servicio publicado",
+    media: "Ver presentación publicada", photos: "Fotos del servicio",
+    notice: "Solicitar no confirma una reserva ni realiza un pago.",
+  },
+} as const;
+
+/** Browse real approved offers by shared topics, without manufacturing category inventory. */
+function matchesConsultationCategory(offer: PublishedConsultation, category: ConsultationCategory) {
+  if (category === "all") return true;
+  const source = [offer.title, offer.description, offer.areaKey, offer.href].join(" ").toLowerCase();
+  switch (category) {
+    case "psycho": return /homeopath|homeopat|гомеопат|alchemy|алхими|alquimia/.test(source);
+    case "imagery": return /imagery|imagin|образн|имажери|guided|гипнотерап|hypnotherap|hipnoterap/.test(source);
+    case "constellations": return /constellat|constelac|расстанов|системн|systemic/.test(source);
+    case "business": return /business|бизнес|empresa|negocio|consulting|консалтинг|consultor/.test(source);
+  }
+}
+function consultationCover(offer: PublishedConsultation) {
+  if (offer.photos?.[0]) return offer.photos[0];
+  if (matchesConsultationCategory(offer, "imagery")) return "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp";
+  if (matchesConsultationCategory(offer, "constellations")) return "/images/holistic-house/video-posters/constellations-en-v1.webp";
+  if (matchesConsultationCategory(offer, "business")) return "/images/holistic-house/hero-olive-incense.webp";
+  if (/andrey|andy|андре/i.test(offer.practitionerName)) {
+    return "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp";
+  }
+  return "/images/holistic-house/hero-olive-incense.webp";
+}
+function consultationFormatName(format: string, locale: PublicLocale) {
+  if (format === "online") return consultationUi[locale].online;
+  if (format === "in_person" || format === "offline") return consultationUi[locale].inPerson;
+  if (format === "hybrid") return consultationUi[locale].hybrid;
+  return format || consultationUi[locale].allFormats;
+}
+
 function validMaster(value: unknown): value is EnergySupportMaster {
   return Boolean(value && typeof value === "object" &&
     "slug" in value && typeof value.slug === "string" &&
@@ -228,6 +305,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const [method, setMethod] = useState("");
   const [reikiFocus, setReikiFocus] = useState<ReikiFocus>("love");
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "published">("all");
+  const [consultCategory, setConsultCategory] = useState<ConsultationCategory>("all");
+  const [consultMaster, setConsultMaster] = useState("");
+  const [consultFormat, setConsultFormat] = useState("");
+  const [consultDetailsOpen, setConsultDetailsOpen] = useState(false);
+  const [consultPhotoIndex, setConsultPhotoIndex] = useState(0);
+  const categoryRailRef = useRef<HTMLDivElement>(null);
   const [reikiTab, setReikiTab] = useState<ReikiTab>("main");
   const [reikiFormat, setReikiFormat] = useState<ReikiFormat>("session");
   const [reikiPrice, setReikiPrice] = useState<ReikiPrice>("all");
@@ -302,7 +385,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     (!supportedMethods || master.methods.some(offersMethod)) &&
     (kind !== "healing" || master.priceOptions.some(option =>
       matchesReikiEuroPrice(master, reikiPrice, option.price))));
+  const consultationMasters = [...new Set((offers || []).map(offer => offer.practitionerName))].sort();
+  const consultationFormats = [...new Set((offers || []).map(offer => offer.deliveryFormat).filter(Boolean))];
   const visibleOffers = (offers || []).filter(offer => {
+    if (!matchesConsultationCategory(offer, consultCategory)) return false;
+    if (consultMaster && offer.practitionerName !== consultMaster) return false;
+    if (consultFormat && offer.deliveryFormat !== consultFormat) return false;
     if (priceFilter === "free") return offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact");
     if (priceFilter === "published") return offer.pricingMode !== "contact" && offer.price !== null && Number.isFinite(offer.price);
     return true;
@@ -313,7 +401,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const selectedMaster = !consultations ? (selected as EnergySupportMaster | null) : null;
   const selectedOffer = consultations ? (selected as PublishedConsultation | null) : null;
   const index = selected ? entries.findIndex(entry => id(entry) === id(selected)) : 0;
-  const select = (itemId: string) => { setSelectedId(itemId); };
+  const select = (itemId: string) => { setSelectedId(itemId); setConsultPhotoIndex(0); setConsultDetailsOpen(false); };
   const step = (delta: number) => {
     if (!entries.length) return;
     select(id(entries[(index + delta + entries.length) % entries.length]));
@@ -339,6 +427,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         ? publishedPrice(selectedOffer.price, selectedOffer.currency, locale) : null)
     : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
   const displayPrice = currentPrice || t.quote;
+  const c = consultationUi[locale];
+  const currentConsultPhoto = selectedOffer?.photos?.[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
+  const consultationPrice = (offer: PublishedConsultation) =>
+    offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact")
+      ? t.freeOnly
+      : offer.pricingMode !== "contact" && offer.price !== null
+        ? publishedPrice(offer.price, offer.currency, locale) || t.quote : t.quote;
 
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
@@ -504,6 +599,65 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>;
         })}
       </div>}
+      {consultations && <section className={styles.consultBrowse} aria-label={c.heading}
+        data-support-consultation-categories>
+        <div className={styles.consultHeading}>
+          <h2>{c.heading}</h2><p>{c.subtitle}</p>
+          <Link href={"/" + locale + "/services"} prefetch={false}>{c.all}<ArrowRight size={17} aria-hidden="true"/></Link>
+        </div>
+        <div className={styles.consultCategoryWrap}>
+          <div ref={categoryRailRef} className={styles.consultCategoryRail} role="group"
+            aria-label={c.heading}>
+            {CONSULTATION_CATEGORIES.map(({ id: category, Icon }) =>
+              <button type="button" key={category} className={styles.consultCategory}
+                data-support-consultation-category={category}
+                aria-pressed={consultCategory === category}
+                onClick={() => { setConsultCategory(category); setSelectedId(null);
+                  setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
+                <Icon size={25} aria-hidden="true"/>
+                <span>{c.categories[category]}</span>
+              </button>)}
+          </div>
+          <button type="button" className={styles.consultCategoryNext} aria-label={c.showNext}
+            onClick={() => categoryRailRef.current?.scrollBy({ left: 250, behavior: "smooth" })}>
+            <ChevronRight size={22} aria-hidden="true"/>
+          </button>
+        </div>
+        <div className={styles.consultFilters} data-support-consultation-filters>
+          <label className={styles.consultField} data-support-consultation-master>
+            <span><UserRound size={15} aria-hidden="true"/>{c.master}</span>
+            <select value={consultMaster} aria-label={c.master}
+              onChange={event => { setConsultMaster(event.target.value); setSelectedId(null); }}>
+              <option value="">{c.allMasters}</option>
+              {consultationMasters.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+          <label className={styles.consultField} data-support-consultation-format>
+            <span><PlayCircle size={15} aria-hidden="true"/>{c.format}</span>
+            <select value={consultFormat} aria-label={c.format}
+              onChange={event => { setConsultFormat(event.target.value); setSelectedId(null); }}>
+              <option value="">{c.allFormats}</option>
+              {consultationFormats.map(value => <option key={value} value={value}>
+                {consultationFormatName(value, locale)}
+              </option>)}
+            </select>
+          </label>
+          <label className={styles.consultField} data-support-offer-price-filter>
+            <span><ShoppingCart size={15} aria-hidden="true"/>{c.price}</span>
+            <select value={priceFilter} aria-label={c.price}
+              onChange={event => { setPriceFilter(event.target.value as typeof priceFilter); setSelectedId(null); }}>
+              <option value="all">{t.allPrices}</option>
+              <option value="free">{t.freeOnly}</option>
+              <option value="published">{t.paidOnly}</option>
+            </select>
+          </label>
+          <button type="button" className={styles.consultReset} aria-label={c.reset} title={c.reset}
+            onClick={() => { setConsultCategory("all"); setConsultMaster(""); setConsultFormat("");
+              setPriceFilter("all"); setSelectedId(null); setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
+            <SlidersHorizontal size={22} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>}
       {reikiStage}
       {kind === "healing" && reikiFormat !== "session" ? <section className={styles.reikiLearning} data-support-reiki-learning>
         <h3>{reikiLearningLabel}</h3>
@@ -526,61 +680,84 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
         {kind !== "healing" && <section className={styles.hero} data-support-master-hero={id(selected)}
+          data-support-consultation-hero={consultations ? "true" : undefined}
+          id={consultations ? "support-consultation-featured" : undefined}
           aria-label={selectedMaster?.name || selectedOffer?.title}
           onTouchStart={event => { const touch=event.touches[0]; if(touch) touchStart.current={x:touch.clientX,y:touch.clientY}; }}
           onTouchEnd={endSwipe}>
+          {selectedOffer && <Image src={currentConsultPhoto} alt="" fill unoptimized
+            className={styles.consultPhoto} sizes="(max-width: 640px) 100vw, 900px"/>}
           {selectedMaster?.photo && <div className={styles.photoStage} aria-hidden="true">
             <Image src={selectedMaster.photo} alt="" fill unoptimized
               sizes="(max-width: 640px) 65vw, 480px" className={styles.photo}/>
           </div>}
           <div className={styles.shade} aria-hidden="true"/>
-          {!selectedMaster && <div className={styles.symbolArt} aria-hidden="true">
+          {!selectedMaster && !consultations && <div className={styles.symbolArt} aria-hidden="true">
             {consultations ? <TestTube2 size={125} strokeWidth={0.9}/> : <UserRound size={120} strokeWidth={0.9}/>}
           </div>}
-          <div className={styles.filters} role="group" aria-label={label}>
+          {!consultations && <div className={styles.filters} role="group" aria-label={label}>
             <span className={styles.mode} data-support-master-mode>
-              {consultations ? <TestTube2 size={17} aria-hidden="true"/> : <HandHeart size={17} aria-hidden="true"/>}{label}
+              <HandHeart size={17} aria-hidden="true"/>{label}
             </span>
-            {consultations ? <label className={styles.filter} data-support-offer-price-filter>
-              <strong>{t.price}</strong>
-              <small>{priceFilter === "free" ? t.freeOnly : priceFilter === "published" ? t.paidOnly : t.allPrices}</small>
-              <select value={priceFilter} aria-label={t.price} onChange={e => { setPriceFilter(e.target.value as typeof priceFilter); setSelectedId(null); }}>
-                <option value="all">{t.allPrices}</option>
-                <option value="free">{t.freeOnly}</option>
-                <option value="published">{t.paidOnly}</option>
-              </select><ChevronDown size={14} aria-hidden="true"/>
-            </label> : <label className={styles.filter} data-support-master-method-filter>
+            <label className={styles.filter} data-support-master-method-filter>
               <strong>{t.method}</strong>
               <small>{method || t.allMethods}</small>
               <select value={method} aria-label={t.method} onChange={e => { setMethod(e.target.value); setSelectedId(null); }}>
                 <option value="">{t.allMethods}</option>
                 {methods.map(value => <option key={value} value={value}>{value}</option>)}
               </select><ChevronDown size={14} aria-hidden="true"/>
-            </label>}
-            <span className={styles.staticFilter}><strong>{consultations ? t.verified : t.online}</strong>
-              <small>{selectedOffer?.practitionerName || selectedMaster?.title || t.online}</small></span>
-          </div>
+            </label>
+            <span className={styles.staticFilter}><strong>{t.online}</strong>
+              <small>{selectedMaster?.title || t.online}</small></span>
+          </div>}
           <div className={styles.copy}>
             <span className={styles.eyebrow}><ShieldCheck size={16} aria-hidden="true"/>
-              {consultations ? t.publicOffer : t.verified}</span>
+              {consultations ? c.published : t.verified}</span>
             <h2>{selectedOffer?.title || selectedMaster?.name}</h2>
             <p>{selectedOffer?.description || selectedMaster?.description || selectedMaster?.bio || t.description}</p>
             <span className={styles.price}>{displayPrice}</span>
+            {selectedOffer && <span className={styles.consultProvider}>{selectedOffer.practitionerName}
+              {" · "}{consultationFormatName(selectedOffer.deliveryFormat, locale)}</span>}
           </div>
+          {selectedOffer && !!selectedOffer.presentations?.length &&
+            <a className={styles.consultMedia} href={selectedOffer.presentations[0].url}
+              target="_blank" rel="noopener noreferrer" aria-label={c.media}>
+              <PlayCircle size={25} aria-hidden="true"/>
+            </a>}
+          {selectedOffer && selectedOffer.photos?.length > 1 && <div className={styles.consultPreviews}
+            role="group" aria-label={c.photos}>
+            {selectedOffer.photos.slice(0,4).map((photo, photoIndex) =>
+              <button key={photo} type="button" aria-pressed={photoIndex === consultPhotoIndex}
+                onClick={() => setConsultPhotoIndex(photoIndex)}>
+                <Image src={photo} alt="" fill unoptimized sizes="70px"/>
+                <span className="sr-only">{photoIndex+1}</span>
+              </button>)}
+          </div>}
           {entries.length > 1 && <div className={styles.arrows} role="group" aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
             <button type="button" onClick={() => step(-1)} aria-label={t.prev} data-support-master-prev><ChevronLeft size={22}/></button>
             <button type="button" onClick={() => step(1)} aria-label={t.next} data-support-master-next><ChevronRight size={22}/></button>
           </div>}
           <div className={styles.actions}>
-            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} data-support-offer-request>
-              <BookOpen size={21} aria-hidden="true"/>{t.openOffer}<ArrowRight size={21} aria-hidden="true"/>
+            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} prefetch={false}
+              data-support-offer-request>
+              <ShoppingCart size={21} aria-hidden="true"/>{c.order}<ArrowRight size={21} aria-hidden="true"/>
             </Link> : selectedMaster && cheapest ? <button type="button" className={styles.primary}
               data-support-master-request onClick={() => setOrderOpen(true)}>
               <HandHeart size={21} aria-hidden="true"/>{t.request}<ArrowRight size={21} aria-hidden="true"/>
             </button> : <Link href={profileLink} className={styles.primary}>{t.details}<ArrowRight size={21}/></Link>}
+            {selectedOffer && <button type="button" className={styles.secondary}
+              aria-controls="support-consultation-details" aria-expanded={consultDetailsOpen}
+              onClick={() => setConsultDetailsOpen(open => !open)}>{c.details}</button>}
             {selectedMaster && <Link className={styles.secondary} href={profileLink}>{t.details}</Link>}
           </div>
         </section>}
+        {selectedOffer && consultDetailsOpen && <div id="support-consultation-details"
+          className={styles.consultDetails} data-support-consultation-details>
+          <strong>{selectedOffer.title}</strong>
+          <p>{selectedOffer.description || t.consultNote}</p>
+          <p>{selectedOffer.practitionerName} · {consultationFormatName(selectedOffer.deliveryFormat, locale)}</p>
+          <small>{c.notice}</small>
+        </div>}
         <section className={styles.more} aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
           <div className={styles.heading}>
             <h3>{consultations ? t.galleryOffers : t.galleryMasters}</h3>
@@ -588,17 +765,34 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               {consultations ? t.exploreServices : t.exploreMasters}<ArrowRight size={17} aria-hidden="true"/>
             </Link>
           </div>
-          <div className={styles.rail} role="group" data-support-master-rail>
+          <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail>
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;
               return <button type="button" key={id(entry)}
-                data-support-master-thumb={id(entry)} className={styles.thumb}
+                data-support-master-thumb={id(entry)}
+                className={consultations ? styles.consultCard : styles.thumb}
                 aria-pressed={id(entry) === id(selected)}
-                aria-label={offer?.title || master?.name} onClick={() => select(id(entry))}>
-                {master?.photo ? <Image src={master.photo} alt="" fill unoptimized sizes="180px"/> :
-                  <span className={styles.thumbFallback} aria-hidden="true"><Sparkles size={38}/></span>}
-                <span className={styles.thumbTitle}>{offer?.title || master?.name}</span>
+                aria-label={offer?.title || master?.name}
+                onClick={() => {
+                  select(id(entry));
+                  if (consultations) document.getElementById("support-consultation-featured")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}>
+                {offer ? <>
+                  <span className={styles.consultCardImage}>
+                    <Image src={consultationCover(offer)} alt="" fill unoptimized sizes="210px"/>
+                  </span>
+                  <span className={styles.consultCardCopy}>
+                    <strong>{offer.title}</strong>
+                    <small>{offer.description}</small>
+                    <b>{consultationPrice(offer)}</b>
+                  </span>
+                </> : <>
+                  {master?.photo ? <Image src={master.photo} alt="" fill unoptimized sizes="180px"/> :
+                    <span className={styles.thumbFallback} aria-hidden="true"><Sparkles size={38}/></span>}
+                  <span className={styles.thumbTitle}>{master?.name}</span>
+                </>}
               </button>;
             })}
           </div>
