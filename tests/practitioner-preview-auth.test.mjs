@@ -45,7 +45,7 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(showcase.includes('pendingAction && !signedIn'))
   assert.ok(showcase.includes('aria-modal="true"'))
   assert.ok(showcase.includes('async function confirmSignIn()'))
-  assert.ok(showcase.includes("appFetch('auth/start', { locale, continueTo:'practice-preview' })"))
+  assert.ok(showcase.includes("appFetch('auth/start', { locale, continueTo:'practice-preview', profi:key })"))
   assert.ok(auth.includes("continueTo === 'practice-preview'"))
   assert.ok(showcase.includes('CREATE.map('))
   assert.ok(showcase.includes('CATEGORIES.map('))
@@ -99,7 +99,7 @@ test('every old plain My Practice link now resolves to the new public screen', (
   assert.ok(accountWorkspace.includes("href: '/' + locale + '/practice'"))
   assert.ok(accountWorkspace.includes("href={'/' + locale + '/practice'}"))
   assert.ok(homePersonalSpace.includes('href={"/" + activeLocale + "/practice"}'))
-  assert.ok(editor.includes("href={'/'+locale+'/practice'}"))
+  assert.ok(editor.includes("showcaseEntry?'/'+locale+'/practice'"))
 })
 
 test('Google My Practice callback goes to new screen except for explicit protected editors', () => {

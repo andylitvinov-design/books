@@ -51,10 +51,17 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
-          const mandalaAction=root.locator('[data-support-video-mandala]');
-          assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
+          const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
+          assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
+          assert.equal(await testsAction.getAttribute("aria-controls"),"support-tests-panel",label+" Tests stays in-page");
+          const mandalaAction=root.locator('#support-tools [data-support-video-mandala]');
+          assert.equal(await mandalaAction.count(),1,label+" Video Mandala is the right-hand full-width green tab");
           assert.equal(await mandalaAction.getAttribute("href"),
             "/"+locale+"/holistic-support/mandala",label+" genuine existing video studio route");
+          assert.equal(await root.locator('[data-support-mobile-bottom-nav] a').nth(0).getAttribute("href"),
+            "/"+locale+"/holistic-support/mobile",label+" Home stays in the new Support UI");
+          assert.equal(await root.locator('[data-support-mobile-bottom-nav] a').nth(1).getAttribute("href"),
+            "/"+locale+"/practice",label+" Practice opens approved public guest showcase");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
             label + " goal filter beneath the self-ratings");
           assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
@@ -197,19 +204,20 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
-          await filter.locator('[data-support-goal-save]').click();
-          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
-            label+" Save marks the money category as Accepted");
+          // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
             label+" Next moves to the next diagnostic sector");
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" prior Accepted category retains its checkmark");
           await filter.locator('[data-goal-concern="loneliness"] input').check();
           await filter.locator('[data-goal-task="closeness"] input').check();
+          // The explicit Save button remains independently useful.
           await filter.locator('[data-support-goal-save]').click();
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
-            label+" multiple sectors retain independent Accepted marks");
+            label+" independent Save and auto-Next keep separate Accepted marks");
           await filter.locator('[data-goal-sector="money"]').click();
           assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
             label+" return restores Money selections");
@@ -217,6 +225,14 @@ for (const browserType of [chromium, webkit]) {
             label+" return restores Money tasks");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
+          const formats=filter.locator('[data-support-goal-format]');
+          assert.equal(await formats.count(),9,label+" nine real recommendation formats");
+          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
+            label+" all formats are checked by default");
+          await filter.locator('[data-support-goal-format="consultation"] input').uncheck();
+          await filter.locator('[data-support-goal-format="initiations"] input').uncheck();
+          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
+            label+" visitor can remove unwanted consultation and initiation formats");
           // The third measure must finish BEFORE the buttons begin: no
           // sticky overlay, no oversized reset card, no squeezed primary CTA.
           const layout=await filter.evaluate(el=>{
@@ -275,8 +291,16 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
           const results=root.locator('[data-support-goal-results]');
           await results.waitFor({state:"visible",timeout:8000});
-          assert.equal(await results.locator('[data-support-goal-action]').count(),5,
-            label+" five real recommendation categories");
+          assert.equal(await results.locator('[data-support-goal-action]').count(),7,
+            label+" only seven opted-in recommendation categories remain");
+          assert.equal(await results.locator('[data-support-goal-action="consultation"]').count(),0,
+            label+" opt-out suppresses consultation results");
+          assert.equal(await results.locator('[data-support-goal-action="initiations"]').count(),0,
+            label+" opt-out suppresses initiation results");
+          assert.equal(await results.locator('[data-support-goal-action="healing"]').count(),1,
+            label+" energy support remains selectable");
+          assert.match(await results.locator('[data-support-goal-action="mandala"]').getAttribute("href")??"",
+            /\/holistic-support\/mandala$/,label+" existing mandala route");
           assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"false",
             label+" the Tests recommendation switches the same-page Tests tab");
           assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
@@ -387,6 +411,8 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-goal-filter-trigger]').click();
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
             label+" two Accepted sector badges persist after closing/reopening the editor");
+          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
+            label+" opt-out preference persists after closing and reopening");
           assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
             label+" chosen currency preserved when editing");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
@@ -396,7 +422,22 @@ for (const browserType of [chromium, webkit]) {
             label+" changing currency must not silently convert or relabel prior income");
           assert.equal(await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').inputValue(),"1",
             label+" reserve months remain unaffected by currency");
+          if(width===390) {
+            // Empty selection must NOT silently show an unrequested meditation.
+            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
+              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
+            }
+            await filter.locator('[data-support-goal-apply]').click();
+            await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
+            await root.locator('[data-support-goal-no-inline]').waitFor({state:"visible",timeout:8000});
+            assert.equal(await root.locator('[data-support-player]').count(),0,
+              label+" no default video when all formats opted out");
+            await root.locator('[data-support-goal-no-inline] button').click();
+            await filter.waitFor({state:"visible",timeout:8000});
+          }
           await filter.locator('[data-support-goal-reset]').click();
+          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
+            label+" Reset restores all formats checked");
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
           assert.equal(await root.locator('[data-goal-axis]').count(),3,

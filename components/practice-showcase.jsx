@@ -146,6 +146,9 @@ function destination(locale, key) {
     practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
+    diagnostic:root + '?panel=services&create=1&starter=diagnostic',
+    energy:root + '?panel=services&create=1&starter=energy',
+    personal:root + '?panel=services&create=1&starter=personal',
     meditation:root + '?panel=materials&materialTab=courses&create=1&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
     reiki:root + '?panel=services&create=1&starter=reiki',
@@ -209,10 +212,23 @@ export default function PracticeShowcase({ locale = 'en' }) {
     const controller = new AbortController()
     void checkSession(controller.signal)
     const params = new URLSearchParams(window.location.search)
+    const start = params.get('start')
+    if (['diagnostic','energy','personal','meditation','profile'].includes(start)) setPendingAction(start)
     if (params.get('auth') === 'cancelled' || params.get('auth') === 'failed')
       setNotice(t.authCancelled)
     return () => controller.abort()
   }, [checkSession, t.authCancelled])
+
+  // A public Pro "Create" click carries only a known offer category. The
+  // guest sees this same showcase with the Google dialog; a signed-in user
+  // continues directly to the existing verified editor, not a second dashboard.
+  useEffect(() => {
+    if (!signedIn) return
+    const start = new URLSearchParams(window.location.search).get('start')
+    if (!['diagnostic','energy','personal','meditation','profile'].includes(start)) return
+    setPendingAction('')
+    router.replace(destination(locale, start))
+  }, [signedIn, locale, router])
 
   function openAction(key) {
     if (busy) return
@@ -223,8 +239,8 @@ export default function PracticeShowcase({ locale = 'en' }) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-    // Home is public navigation, not entry to the private personal Cabinet.
-    if (key === 'home') {
+    // Public exploration and the approved showcase never demand a Google session.
+    if (['home','masters','community'].includes(key)) {
       router.push(destination(locale, key))
       return
     }
@@ -255,7 +271,9 @@ export default function PracticeShowcase({ locale = 'en' }) {
         }
       }
       // Allowlisted continuation: the callback returns to this same public UI.
-      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview' })
+      // Only a fixed action code crosses Google OAuth. The callback resolves
+      // it to a pre-approved protected page; no drafts or client data in state.
+      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview', profi:key })
       if (!result?.redirectUrl || !result.redirectUrl.startsWith('https://'))
         throw new Error('INVALID_OAUTH_REDIRECT')
       window.location.assign(result.redirectUrl)
@@ -283,7 +301,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const metric = signedIn && practice ? String(active) : t.countUnknown
   const requestMetric = signedIn && practice ? String(newRequests) : t.countUnknown
 
-  return <div className={styles.screen} data-practice-showcase data-auth-state={session}>
+  return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
       <header className={styles.header}>
         <div>

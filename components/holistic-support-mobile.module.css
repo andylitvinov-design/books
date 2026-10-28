@@ -158,7 +158,7 @@
 .disclaimer { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin: 17px 7px; color: #67685f; font-size: 13px; line-height: 1.4; }
 .disclaimer p { margin: 0; }
 .disclaimer a { display: inline-flex; align-items: center; gap: 5px; flex: none; min-height: 44px; color: #087e5a; font-size: 14px; font-weight: 800; }
-.bottomNav { position: fixed; z-index: 58; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 70px; padding: 8px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-top: 1px solid #dfe4dc; border-radius: 23px 23px 0 0; background: #fffdf8f7; box-shadow: 0 -7px 24px #27433720; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.bottomNav { position: fixed; z-index: 58; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 70px; padding: 8px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-top: 1px solid #dfe4dc; border-radius: 23px 23px 0 0; background: #fffdf8f7; box-shadow: 0 -7px 24px #27433720; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .bottomNav > :is(a,button) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 50px; min-width: 0; padding: 3px 2px; border: 0; background: transparent; color: #69716e; font-size: 13px; line-height: 1.15; text-align: center; text-decoration: none; }
 .bottomNav > :is(a,button):hover { color: #078362; }
 .bottomNav > :is(a,button):first-child { color: #078362; font-weight: 800; }
@@ -635,8 +635,8 @@
   .mysteryPickerCard { transition: none; }
 }
 
-/* Central quick action uses the existing private, local Video Mandala studio. */
-.videoMandalaShortcut {
+/* Central Tests shortcut reveals the new design's inline Tests panel. */
+.testsShortcut {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px; max-width: 175px; width: 100%; padding: 7px 9px;
   border: 1px solid #9ed8b9; border-radius: 14px; background: #e5f5e9;
@@ -644,25 +644,41 @@
   text-align: center; text-decoration: none; overflow-wrap: anywhere;
   box-shadow: 0 4px 11px #1f7a5a19;
 }
-.videoMandalaShortcut svg { flex: none; }
-.videoMandalaShortcut:hover, .videoMandalaShortcut:focus-visible {
+.testsShortcut svg { flex: none; }
+.page .profile > .testsShortcut { font-size:13px; font-weight:850; line-height:1.15; }
+.profile > .testsShortcut[aria-pressed="true"] { border-color:#159b73; background:#d0efdb; color:#075b46; }
+.testsShortcut:hover, .testsShortcut:focus-visible {
   background: #d3eddf; outline-offset: 2px;
 }
 @media (max-width: 640px) {
-  .profile > .videoMandalaShortcut {
+  .page .profile > .testsShortcut {
     align-self: center; width: 100%; min-width: 0; min-height: 44px;
     padding: 5px 2px; gap: 3px; border-radius: 10px;
     font-size: clamp(9.5px,2.65vw,12px); line-height: 1.12;
     white-space: normal;
   }
-  .profile > .videoMandalaShortcut svg { width: 14px; height: 14px; }
+  .page .profile > .testsShortcut svg { width: 14px; height: 14px; }
 }
 @media (max-width: 350px) {
-  .profile > .videoMandalaShortcut { font-size: 9.5px; padding: 5px 1px; gap: 2px; }
-  .profile > .videoMandalaShortcut svg { width: 12px; height: 12px; }
+  .page .profile > .testsShortcut { font-size: 9.5px; padding: 5px 1px; gap: 2px; }
+  .page .profile > .testsShortcut svg { width: 12px; height: 12px; }
 }
 
 
+/* If a visitor selects only external catalogs (or no types at all), do
+   not show an unrelated video as a fabricated recommendation. */
+.goalNoInline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  min-width: 0; padding: 16px; border-top: 1px solid #e2e9dd;
+  color: #426551; background: #fafcf6; font-size: 13px; }
+.goalNoInline p { flex: 1; margin: 0; line-height: 1.4; }
+.goalNoInline button { min-height: 42px; padding: 8px 12px; border: 1px solid #b5daca;
+  border-radius: 10px; background: #edf8ef; color: #12644d; font-weight: 800; font-size: 13px; }
+.goalEmptyNotice { margin: 0; padding: 8px 10px; border: 1px solid #e1e2d5;
+  border-radius: 10px; color: #556e5e; background: #fffdf8; font-size: 13px; }
+@media (max-width: 640px) {
+  .goalNoInline { padding: 11px 9px; }
+  .goalNoInline button { width: 100%; }
+}
 /* Real, source-backed cross-category suggestions after the goal filter. */
 .goalResults { display: grid; gap: 10px; min-width: 0; padding: 13px 16px;
   border-bottom: 1px solid #cfdfd0; background: linear-gradient(145deg,#f1f9ee,#fffdf5); }
@@ -765,11 +781,11 @@
 }
 
 
-/* Dedicated green Tests tab and a compact, native-style in-page explorer. */
-.toolShortcuts .testsShortcut { flex-basis:100%; width:100%; min-height:44px;
+/* The full-width right-hand Video Mandala link replaces the Tests bar. */
+.toolShortcuts .mandalaShortcut { flex-basis:100%; width:100%; min-height:44px;
   border-color:#087d5e; background:linear-gradient(120deg,#0ca478,#087556); color:#fff;
   box-shadow:0 3px 8px #0d775829; }
-.toolShortcuts .testsShortcut[aria-pressed="true"] { background:#075b46; border-color:#04503b; color:#fff; }
+.toolShortcuts .mandalaShortcut:hover,.toolShortcuts .mandalaShortcut:focus-visible { background:#075b46; border-color:#04503b; color:#fff; }
 .testsPanel { display:grid; gap:10px; min-width:0; padding:12px;
   border:1px solid #e1e3d6; border-radius:18px; background:#fffaf2; }
 .testsHero { display:flex; flex-direction:column; align-items:flex-start; gap:10px;
@@ -796,10 +812,10 @@
 .testsNotice { display:flex; align-items:flex-start; gap:7px; margin:0 2px; color:#61786b;
   font-size:11px; line-height:1.35; }
 .testsNotice svg { flex:none; color:#43836b; }
-.testsPrimary:focus-visible,.testsLinks a:focus-visible,.toolShortcuts .testsShortcut:focus-visible {
+.testsPrimary:focus-visible,.testsLinks a:focus-visible,.toolShortcuts .mandalaShortcut:focus-visible {
   outline:3px solid #e6b460; outline-offset:2px; }
 @media (max-width:640px) {
-  .toolShortcuts .testsShortcut { grid-column:1/-1; min-height:44px; padding:7px 4px;
+  .toolShortcuts .mandalaShortcut { grid-column:1/-1; min-height:44px; padding:7px 4px;
     border-radius:8px; font-size:clamp(10px,2.8vw,12px); }
   .testsPanel { padding:8px; gap:8px; border-radius:14px; }
   .testsHero { min-height:184px; padding:15px; gap:8px; border-radius:12px; }
@@ -814,7 +830,7 @@
   .testsLinks small { font-size:10px; }
 }
 @media (max-width:350px) {
-  .toolShortcuts .testsShortcut { min-height:44px; font-size:10px; }
+  .toolShortcuts .mandalaShortcut { min-height:44px; font-size:10px; }
   .testsHero { min-height:174px; padding:12px; }
   .testsHero h2 { font-size:21px; }
   .testsLinks { grid-template-columns:1fr; }
@@ -830,5 +846,13 @@
   }
 }
 
-.mandalaAppHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:53px;padding:6px 13px;background:#fffdf8;border-bottom:1px solid #e5e6db;color:#184739;font:800 17px/1.2 Arial,Helvetica,sans-serif}
-.mandalaAppHeader a,.mandalaAppHeader button{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #d9e6db;border-radius:50%;background:#f6faf3;color:#175d48;text-decoration:none}
+/* The approved one-screen mobile support dock has five destinations, including
+   the EXISTING authenticated Messages page. Keep every target usable at 320px. */
+.bottomNav > :is(a,button) span { display: block; max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 350px) {
+  .bottomNav { grid-template-columns: repeat(5, minmax(0, 1fr)); padding-right: max(4px, env(safe-area-inset-right)); padding-left: max(4px, env(safe-area-inset-left)); }
+  .bottomNav > :is(a,button) { font-size: 10px; line-height: 1.12; min-height: 50px; padding-inline: 1px; }
+  .bottomNav > :is(a,button) svg { width: 21px; height: 21px; }
+}
+
+.mandalaAppHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:53px;padding:6px 13px;background:#fffdf8;border-bottom:1px solid #e5e6db;color:#184739;font:800 17px/1.2 Arial,Helvetica,sans-serif}.mandalaAppHeader a,.mandalaAppHeader button{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #d9e6db;border-radius:50%;background:#f6faf3;color:#175d48;text-decoration:none}

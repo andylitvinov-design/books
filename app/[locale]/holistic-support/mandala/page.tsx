@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { HolisticSupportMobileNav } from "@/components/holistic-support-mobile-nav";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -51,13 +51,9 @@ export default async function MandalaMeditationPage({ params }: Props) {
   if (!isPublicLocale(locale)) notFound();
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
-      <div className={styles.desktopSiteHeader}><PublicSiteHeader locale={locale} /></div>
-      <div className={styles.mobileTopChrome}>
-        <HolisticSupportMobileNav locale={locale} page="mandala"
-          progressHref={"/" + locale + "/holistic-support/mobile#support-progress"} />
-      </div>
+      <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
-
+      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }

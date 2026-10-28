@@ -87,9 +87,10 @@ const isDistractionSensitivePage = (pathname: string) =>
   // The alternative Support screen is an immersive mobile application.
   // Suppress the sitewide promo ribbon only there; standard Support keeps it.
   /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname) ||
-  /^\/(?:ru|en|es)\/holistic-support\/mandala(?:\/|$)/.test(pathname) ||
   // The standalone practitioner mockup has its own hero and must open at the header.
   /^\/(?:ru|en|es)\/practice\/?$/.test(pathname) ||
+  // The private practitioner editor shares the new minimal header and dock.
+  /^\/(?:ru|en|es)\/app\/practice\/?$/.test(pathname) ||
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
   // Keep the fire landing hero and its CTA inside the first phone viewport.

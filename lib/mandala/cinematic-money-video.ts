@@ -361,27 +361,20 @@ function portrait(ctx:Ctx,image:HTMLImageElement|null,w:number,h:number,t:number
     glint(ctx,w*.5,py,w*.035,.90);
     return;
   }
-  // A framed central medallion, not a full-screen enlarged face.
-  // The effects remain visible around it, matching the original mandala.
+  // Keep the face as a central medallion: the surrounding moving video
+  // must remain visible, not become a full-screen portrait.
   const radius=Math.min(w*.27,h*.205);
   const src=getPortraitLayer(image);
-  ctx.save();
-  ctx.translate(w*.5,py);
-  ctx.shadowColor="rgba(255,208,120,.7)";
-  ctx.shadowBlur=Math.max(10,radius*.17);
+  ctx.save();ctx.translate(w*.5,py);
+  ctx.shadowColor="rgba(255,208,120,.7)";ctx.shadowBlur=Math.max(10,radius*.17);
   ctx.beginPath();ctx.arc(0,0,radius+7,0,Math.PI*2);
   ctx.fillStyle="rgba(250,236,196,.9)";ctx.fill();
-  ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
+  ctx.shadowBlur=0;ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
   const scale=Math.max(radius*2/src.width,radius*2/src.height);
-  const dw=src.width*scale,dh=src.height*scale;
-  ctx.drawImage(src,-dw/2,-dh/2,dw,dh);
+  ctx.drawImage(src,-src.width*scale/2,-src.height*scale/2,src.width*scale,src.height*scale);
   ctx.restore();
-  ctx.save();
-  ctx.beginPath();ctx.arc(w*.5,py,radius+4,0,Math.PI*2);
-  ctx.strokeStyle="rgba(255,229,158,.95)";
-  ctx.lineWidth=4;ctx.stroke();
-  ctx.restore();
+  ctx.save();ctx.beginPath();ctx.arc(w*.5,py,radius+4,0,Math.PI*2);
+  ctx.strokeStyle="rgba(255,229,158,.95)";ctx.lineWidth=4;ctx.stroke();ctx.restore();
 }
 
 function movingCoins(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,front:boolean){

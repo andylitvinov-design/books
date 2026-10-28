@@ -259,29 +259,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
 
-        // The full site seven-tab dock and marketing ribbon must not fight
-        // the same four-tab app chrome shown on the referring Support screen.
-        const dock = page.locator("[data-support-mobile-bottom-nav]");
-        await dock.waitFor({ state: "visible", timeout: 10000 });
-        assert.equal(await dock.locator(":scope > :is(a, button)").count(), 4);
-        assert.equal(await page.locator(".mobile-bottom-navigation").count(), 0);
-        assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(), 0);
-        assert.equal(await page.locator(".section-site-header:visible").count(), 0);
-
         const overflow = await page.evaluate(() => ({
           view: window.innerWidth,
           page: document.documentElement.scrollWidth,
         }));
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
-        if (locale === "ru" && width === 390) {
-          const referringPage = await page.goto(BASE + "/ru/holistic-support/mobile", { waitUntil: "domcontentloaded" });
-          assert.equal(referringPage?.status(), 200);
-          await page.locator("[data-support-video-mandala]").click();
-          await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/);
-          await page.locator("[data-video-mandala-hero]").waitFor({ state: "visible" });
-          assert.equal(await page.locator("[data-mandala-free-video]").count(), 1);
-          assert.equal(await page.locator("[data-support-mobile-bottom-nav] > :is(a, button)").count(), 4);
-        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus");
         passes++;

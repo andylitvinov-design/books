@@ -133,7 +133,7 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(middleware,/const ownerMessengerImages =/)
   assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''/)
   assert.match(middleware,/directMessageStorageOrigin/)
-  assert.match(middleware,/ownerMessengerImages\) \? ' blob:' : ''/)
+  assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
   assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
 })

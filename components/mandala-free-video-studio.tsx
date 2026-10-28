@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -208,7 +207,7 @@ const supportDesignCopy = {
     check:"1. Check in with yourself", scoreGuide:"Rate each area from 1 to 10",
     help:"2. Choose what helps", test:"Tests", focus:"Focus",
     mandala:"Video mandala",recommend:"Find my focus",
-    meditation:"Meditation", testSession:"Test / session", talisman:"Talisman",
+    meditation:"Meditation", testSession:"Session", talisman:"Talisman",
     reiki:"Reiki support", courses:"Courses", masters:"Masters",
     heroTabs:["Video mandala","Templates","Masters","Theme"],
     heroBadge:"Original audio is optional",heroTitle:"Create your personal video",
@@ -220,7 +219,7 @@ const supportDesignCopy = {
     check:"1. Оцени себя сейчас", scoreGuide:"Поставь баллы от 1 до 10",
     help:"2. Выбери, что поможет",test:"Тесты",focus:"Фокус",
     mandala:"Видео-мандала",recommend:"Подобрать",
-    meditation:"Медитация", testSession:"Тест / сессия",talisman:"Талисман",
+    meditation:"Медитация", testSession:"Сессия",talisman:"Талисман",
     reiki:"Рейки поддержка",courses:"Курсы",masters:"Мастера",
     heroTabs:["Видео-мандала","Шаблоны","Мастера","Тема"],
     heroBadge:"Оригинальный звуковой фон",heroTitle:"Создай своё личное видео",
@@ -232,7 +231,7 @@ const supportDesignCopy = {
     check:"1. Evalúa cómo estás",scoreGuide:"Valora del 1 al 10",
     help:"2. Elige lo que te ayuda",test:"Pruebas",focus:"Enfoque",
     mandala:"Vídeo mandala",recommend:"Elegir tema",
-    meditation:"Meditación",testSession:"Test / sesión",talisman:"Talismán",
+    meditation:"Meditación",testSession:"Sesión",talisman:"Talismán",
     reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",
     heroTabs:["Vídeo mandala","Plantillas","Guías","Tema"],
     heroBadge:"Sonido original opcional",heroTitle:"Crea tu vídeo personal",
@@ -861,7 +860,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </label>;
             })}
           </div>
-          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/tests"} prefetch={false}>
+          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/holistic-support/mobile?view=tests"} prefetch={false}>
             <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
           </Link>
         </section>
@@ -874,10 +873,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               // This is a private local blob, never optimized or uploaded.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl} alt="" draggable={false}/>
-            ) : <span className={videoStyles.photoEmpty}>
-              <Image src="/images/holistic-house/support-reference-avatar.webp"
-                alt="" width={176} height={176} unoptimized />
-            </span>}
+            ) : <span className={videoStyles.photoEmpty}><Camera size={31} aria-hidden="true"/><small>{ui.addPhoto}</small></span>}
             <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
           </button>
           <button type="button" className={videoStyles.videoMandalaChoice}
@@ -896,18 +892,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
           <h2 id="video-tools-heading">{supportUi.help}</h2>
           <div className={videoStyles.supportToolGrid}>
-            <Link href={"/"+locale+"/holistic-support/mobile#support-mobile-experience"} prefetch={false}
+            <Link href={"/"+locale+"/holistic-support/mobile?view=meditation#support-mobile-experience"} prefetch={false}
               className={videoStyles.toolPrimary}><Play size={23} aria-hidden="true"/><span>{supportUi.meditation}</span></Link>
-            <Link href={"/"+locale+"/tests"} prefetch={false}>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=consultation"} prefetch={false}>
               <TestTubeDiagonal size={23} aria-hidden="true"/><span>{supportUi.testSession}</span></Link>
-            <Link href={"/"+locale+"/talismans"} prefetch={false}>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=talisman"} prefetch={false}>
               <Sparkles size={24} aria-hidden="true"/><span>{supportUi.talisman}</span></Link>
-            <Link href={"/"+locale+"/holistic-support/mobile#support-tools"} prefetch={false}>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=healing#support-mobile-experience"} prefetch={false}>
               <HandHeart size={24} aria-hidden="true"/><span>{supportUi.reiki}</span></Link>
           </div>
           <div className={videoStyles.supportShortcuts}>
-            <Link href={"/"+locale+"/academy"} prefetch={false}>{supportUi.courses}</Link>
-            <Link href={"/"+locale+"/masters"} prefetch={false}>{supportUi.masters}</Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=pump"} prefetch={false}>{supportUi.courses}</Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=masters"} prefetch={false}>{supportUi.masters}</Link>
           </div>
         </section>
       </div>
@@ -924,7 +920,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <a href="#video-hero" className={videoStyles.heroMode} aria-current="page">
               <Play size={16} aria-hidden="true"/>{supportUi.heroTabs[0]}</a>
             <a href="#video-templates">{supportUi.heroTabs[1]}</a>
-            <Link href={"/"+locale+"/masters"} prefetch={false}>{supportUi.heroTabs[2]}</Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=masters"} prefetch={false}>{supportUi.heroTabs[2]}</Link>
             <a href="#video-hero-themes">{supportUi.heroTabs[3]}</a>
           </nav>
           <div className={videoStyles.heroThemes} id="video-hero-themes"
