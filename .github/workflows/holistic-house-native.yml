@@ -215,7 +215,7 @@ jobs:
           node -e "const c=require('./ios-hh-personal-lite/Payload/App.app/capacitor.config.json');if(c.appId!=='com.holistichouse.app'||c.server?.url!=='https://holistichouse.vercel.app/en/app/messages'||c.server?.cleartext!==false)process.exit(1)"
           (cd ios-hh-personal-lite && zip -qry ../Holistic-House-iPhone-Personal-Lite-Unsigned.ipa Payload)
           unzip -t Holistic-House-iPhone-Personal-Lite-Unsigned.ipa >/dev/null
-          if unzip -Z1 Holistic-House-iPhone-Personal-Lite-Unsigned.ipa | grep -Eq 'PlugIns/|\\.appex/'; then
+          if unzip -Z1 Holistic-House-iPhone-Personal-Lite-Unsigned.ipa | grep -Eq 'PlugIns/|[.]appex/'; then
             echo "Unexpected native extension in Lite IPA" >&2
             exit 1
           fi
