@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, Compass, Home, Settings2 } from "lucide-react";
+import { ArrowLeft, BarChart3, Compass, Home, Settings2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
@@ -49,6 +49,17 @@ export function HolisticSupportMobileNav({
 
   return (
     <>
+      {page === "mandala" ? (
+        <header className={styles.mandalaAppHeader} data-support-app-header>
+          <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}
+            aria-label={locale === "ru" ? "Назад к поддержке" : locale === "es" ? "Volver al apoyo" : "Back to Support"}>
+            <ArrowLeft size={20} aria-hidden="true" />
+          </Link>
+          <span>Holistic House</span>
+          <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
+            onClick={() => updateOpen(!settingsOpen)}><Settings2 size={20} aria-hidden="true" /></button>
+        </header>
+      ) : null}
       {settingsOpen ? (
         <section className={styles.settingsPanel} id="support-mobile-settings" aria-label={t.settings}>
           <h2><Settings2 size={22} aria-hidden="true" />{t.settings}</h2>

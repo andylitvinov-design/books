@@ -52,11 +52,12 @@ export default async function MandalaMeditationPage({ params }: Props) {
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.desktopSiteHeader}><PublicSiteHeader locale={locale} /></div>
-      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
-      <div className={styles.mobileAppNav}>
+      <div className={styles.mobileTopChrome}>
         <HolisticSupportMobileNav locale={locale} page="mandala"
           progressHref={"/" + locale + "/holistic-support/mobile#support-progress"} />
       </div>
+      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+
     </main>
   );
 }

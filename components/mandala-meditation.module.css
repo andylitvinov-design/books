@@ -248,3 +248,6 @@
   .mobileAppNav :is(a,button):focus-visible{outline:3px solid #f5b43e;outline-offset:3px}
   .workshop{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
 }
+
+.mobileTopChrome{display:none}
+@media(max-width:759px){.mobileTopChrome{display:block}}
