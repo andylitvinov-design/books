@@ -66,7 +66,7 @@ test('14:00 Toronto cron accepts only DST-correct UTC hours',()=>{
 })
 
 test('14:00 sender has private separate FORCE RLS and existing verified owner transport',()=>{
-  const migration=readFileSync(new URL('../supabase/migrations/20261028170000_hh_owner_market_intel_telegram_receipt.sql',import.meta.url),'utf8')
+  const migration=readFileSync(new URL('../supabase/migrations/20261028165619_hh_owner_market_intel_telegram_receipt_20261028.sql',import.meta.url),'utf8')
   assert.match(migration,/owner_daily_market_intelligence_sends/)
   assert.match(migration,/force row level security/)
   assert.match(migration,/revoke all on table/)
