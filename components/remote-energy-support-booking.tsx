@@ -353,6 +353,7 @@ export function RemoteEnergySupportBooking({
     try {
       const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
       const draft = readRemoteSupportDraft(window.sessionStorage, selected.serviceId);
+      if (!draft) return;
       if (pending?.path !== window.location.pathname ||
           pending?.service !== remoteSupportPublicServiceTitle(draft)) return;
       setContactDraft(draft);
@@ -727,7 +728,7 @@ export function RemoteEnergySupportBooking({
                           locale={locale} quick cartContact stayAfterSave
                           whatsappUrl={whatsappEnquiryUrl({
                             locale, service: remoteSupportPublicServiceTitle(contactDraft),
-                            request: "Please confirm the Reiki support enquiry", pagePath: "/" + locale + "/holistic-support/mobile",
+                            request: "Please confirm the Reiki support enquiry",
                           })}
                           publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
                           publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}
