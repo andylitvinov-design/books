@@ -257,3 +257,7 @@
   .publicContact>p{font-size:12px}
   .publicContact input{font-size:16px}
 }
+
+
+.optionalTime{display:inline-block;margin-left:5px;color:#527c73;font:700 11px/1.4 system-ui,sans-serif}
+@media(max-width:650px){.optionalTime{display:block;margin:5px 0 0;font-size:11px;line-height:1.45}}
