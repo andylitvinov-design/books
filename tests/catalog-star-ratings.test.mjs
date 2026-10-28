@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8')
 
 test('catalog rating migration is account-owned, unique, and inaccessible directly to anon',async()=>{
-  const sql=await read('supabase/migrations/20261028143000_hh_catalog_star_ratings.sql')
+  const sql=await read('supabase/migrations/20261028143352_hh_catalog_star_ratings_20261028.sql')
   for(const fragment of [
     'primary key(kind,item_key,account_id)',
     'alter table app.catalog_star_ratings enable row level security',
