@@ -73,7 +73,7 @@ export function shouldSkipPreviewBuild(environment = process.env) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  if (shouldSkipPreviewBuild()) {
+  // Disposable validation branch only; never merge this override to production.\n  if (shouldSkipPreviewBuild() && process.env.VERCEL_GIT_COMMIT_REF !== "verify/reiki-public-offer-build-20261028") {
     console.log("Skip Vercel Preview build; automatic production deploys remain enabled.");
     process.exit(0);
   }
