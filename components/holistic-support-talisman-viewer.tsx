@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Coins, Flower2, Heart, Leaf, ShoppingBag, Sparkles, Target, UserRound, Waves, Zap, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import { readBrowserTalismanCart, saveBrowserTalismanCart, pendingBrowserTalismanGoogleReturn, TALISMAN_GOOGLE_RETURN_KEY } from "@/lib/practitioners/taoist-talisman-cart";
+import { readBrowserTalismanCart, saveBrowserTalismanCart, consumeBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
 import styles from "./holistic-support-talisman-viewer.module.css";
 
@@ -113,17 +113,10 @@ export function HolisticSupportTalismanViewer({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
 
-  // The exact public basket, never personal scores or notes, survives Google.
+  // Public cart-only OAuth continuation is encapsulated in the catalog
+  // utility: no private scores or browser storage inside the scenic viewer.
   useEffect(() => {
-    if (!pendingBrowserTalismanGoogleReturn()) return;
-    try {
-      const url = new URL(window.location.href);
-      setOrderOpen(true);
-      window.sessionStorage.removeItem(TALISMAN_GOOGLE_RETURN_KEY);
-      url.searchParams.delete("hh_enquiry");
-      url.searchParams.delete("auth");
-      window.history.replaceState(window.history.state,"",url.pathname + url.search + url.hash);
-    } catch { /* Invalid browser storage never triggers a purchase. */ }
+    if (consumeBrowserTalismanGoogleReturn()) setOrderOpen(true);
   }, []);
 
   useEffect(() => {
