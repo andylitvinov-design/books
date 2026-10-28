@@ -24,17 +24,31 @@ alter table app_private.telegram_owner_video_jobs
   add column if not exists metadata_edit_state text
     check(metadata_edit_state is null or metadata_edit_state in ('pending','applying','uncertain')),
   add column if not exists metadata_edit_expires_at timestamptz;
-alter table app_private.telegram_owner_video_jobs
-  add constraint hh_dot_youtube_metadata_draft_complete
-  check (
-    (metadata_edit_nonce is null and metadata_edit_field is null and
-      metadata_edit_value is null and metadata_edit_state is null and
-      metadata_edit_expires_at is null)
-    or
-    (metadata_edit_nonce is not null and metadata_edit_field is not null and
-      metadata_edit_value is not null and metadata_edit_state is not null and
-      metadata_edit_expires_at is not null)
-  );
+-- Supabase migration runners may replay this additive file after the
+-- initial MCP DDL; do not fail on an already installed constraint.
+do $
+begin
+ if not exists (
+   select 1 from pg_constraint c
+   join pg_class t on t.oid=c.conrelid
+   join pg_namespace n on n.oid=t.relnamespace
+   where n.nspname='app_private'
+     and t.relname='telegram_owner_video_jobs'
+     and c.conname='hh_dot_youtube_metadata_draft_complete'
+ ) then
+   alter table app_private.telegram_owner_video_jobs
+     add constraint hh_dot_youtube_metadata_draft_complete
+     check (
+       (metadata_edit_nonce is null and metadata_edit_field is null and
+        metadata_edit_value is null and metadata_edit_state is null and
+        metadata_edit_expires_at is null)
+       or
+       (metadata_edit_nonce is not null and metadata_edit_field is not null and
+        metadata_edit_value is not null and metadata_edit_state is not null and
+        metadata_edit_expires_at is not null)
+     );
+ end if;
+end $;
 -- Retain the existing FORCE RLS and current manager policy.
 alter table app_private.telegram_owner_video_jobs enable row level security;
 alter table app_private.telegram_owner_video_jobs force row level security;
