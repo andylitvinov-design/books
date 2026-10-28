@@ -144,7 +144,7 @@ const reikiUi = {
     role: "Preferred provider", roles: { practitioner: "Practitioner", master: "Reiki master" },
     certificate: "Request a certificate", certificateNote: "Only for initiation or training; issuance must be confirmed.",
     preferences: "Published offers describe the master's conditions; actual availability is confirmed separately.",
-    heading: "Find Reiki support", intro: "Published Reiki sessions, initiations and courses. Confirm details before requesting.",
+    heading: "Find Reiki support", intro: "Published Reiki sessions, initiations and courses.",
     heroTitle: "Reiki support for you", photoHint: "Choose a session, initiation or course in one place.",
     show: "Show available options", count: "Options to explore", resetFilters: "Reset filters",
     notBooked: "No booking, payment or certificate is created by choosing.",
@@ -155,7 +155,7 @@ const reikiUi = {
     learn: "View original programme", details: "About this support",
     mediaNone: "No approved video or audio introduction has been published for this provider.",
     mediaOpen: "Open", provider: "Provider profile", request: "Request published session",
-    choose: "Select filters",
+    choose: "Find a service",
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
@@ -166,7 +166,7 @@ const reikiUi = {
     role: "Исполнитель", roles: { practitioner: "От практика", master: "От Рейки-мастера" },
     certificate: "С выдачей сертификата", certificateNote: "Только для инициации и курса. Выдача уточняется отдельно.",
     preferences: "Фильтр сверяет опубликованные условия мастера. Наличие времени и выдача сертификата подтверждаются отдельно.",
-    heading: "Подбор Рейки-поддержки", intro: "Опубликованные сессии мастеров, инициации и курсы Рейки. Условия подтверждаются при заявке.",
+    heading: "Подбор Рейки-поддержки", intro: "Сессии мастеров, инициации и курсы Рейки.",
     heroTitle: "Энергетическая поддержка", photoHint: "Сессия, инициация или обучение — под ваш запрос.",
     show: "Показать варианты", count: "Вариантов для просмотра", resetFilters: "Сбросить",
     notBooked: "Выбор не означает запись, оплату или выдачу сертификата.",
@@ -177,7 +177,7 @@ const reikiUi = {
     learn: "Открыть программу", details: "О поддержке",
     mediaNone: "У исполнителя пока нет опубликованной видео- или аудиопрезентации.",
     mediaOpen: "Открыть", provider: "Профиль исполнителя", request: "Запросить сессию",
-    choose: "Подобрать по фильтру",
+    choose: "Подобрать услугу",
   },
   es: {
     tabs: { main: "Inicio", filter: "Filtro", description: "Descripción", media: "Vídeo / audio" },
@@ -188,7 +188,7 @@ const reikiUi = {
     role: "Profesional preferido", roles: { practitioner: "Practicante", master: "Maestro Reiki" },
     certificate: "Solicitar certificado", certificateNote: "Solo para iniciación o curso; se confirma aparte.",
     preferences: "Las condiciones provienen de ofertas publicadas. Horarios y certificados se confirman por separado.",
-    heading: "Encuentra apoyo Reiki", intro: "Sesiones, iniciaciones y cursos Reiki publicados. Confirma los detalles al solicitar.",
+    heading: "Encuentra apoyo Reiki", intro: "Sesiones, iniciaciones y cursos Reiki publicados.",
     heroTitle: "Apoyo energético Reiki", photoHint: "Sesión, iniciación o curso en un solo lugar.",
     show: "Ver opciones", count: "Opciones para explorar", resetFilters: "Restablecer",
     notBooked: "Elegir no reserva, paga ni concede certificados.",
@@ -199,7 +199,7 @@ const reikiUi = {
     learn: "Ver el programa", details: "Sobre el apoyo",
     mediaNone: "Aún no hay presentación de vídeo o audio publicada.",
     mediaOpen: "Abrir", provider: "Perfil del profesional", request: "Solicitar sesión",
-    choose: "Elegir filtros",
+    choose: "Elegir servicio",
   },
 } as const;
 
@@ -706,16 +706,14 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
       {kind === "healing" && <section className={styles.reikiBrowse}
         aria-labelledby="reiki-marketplace-heading" data-support-reiki-marketplace>
         <div className={styles.reikiBrowseHeading}>
-          <div>
-            <h2 id="reiki-marketplace-heading">{t.healing}</h2>
-            <p>{r.intro}</p>
-          </div>
+          <h2 id="reiki-marketplace-heading">{t.healing}</h2>
           <button type="button" className={styles.reikiFindButton}
             data-support-reiki-find aria-expanded={reikiTab === "filter"}
             aria-controls="reiki-active-panel" onClick={() => setReikiTab("filter")}>
             <SlidersHorizontal size={17} aria-hidden="true"/>{r.choose}
           </button>
         </div>
+        <p className={styles.reikiBrowseIntro}>{r.intro}</p>
         <div className={styles.reikiQuickFormat} role="group"
           aria-label={r.format} data-support-reiki-quick-format>
           {(["session", "initiation", "course"] as const).map(value =>
