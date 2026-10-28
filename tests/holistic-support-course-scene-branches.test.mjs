@@ -52,7 +52,9 @@ function selection(input = home) {
 }
 test("Courses restores original live course videos; Tests alone shows four diagnostic profiles", () => {
   const { file, branch, testsBranch } = selection();
-  assert.ok(branch.whenTrue.getText(file).includes('choice === "pump" ? t.watchLesson : t.play'));
+  // The free guest meditation budget must NOT block the existing original Courses.
+  assert.ok(branch.whenTrue.getText(file).includes('choice === "pump" ? t.watchLesson : quest.ready && !quest.canPlay ? t.playLimitReached : t.play'));
+  assert.ok(branch.whenTrue.getText(file).includes('disabled={choice === "meditation" && !quest.canPlay}'));
   assert.ok(branch.whenTrue.getText(file).includes("activeMystery?.videoGroups.map"));
   assert.ok(testsBranch.whenTrue.getText(file).includes('/client/tests'));
   const mutant = home.replace('const scene = choice === "meditation" || choice === "pump";', 'const scene = choice === "meditation";');
@@ -64,7 +66,10 @@ test("the selected original programme menu retains selection and playback reset"
   const select = one(all(group, x => ts.isJsxElement(x) && x.openingElement.tagName.getText(file) === "select"));
   const handler = attr(select.openingElement, "onChange").initializer.expression;
   const calls = [];
-  const bindings = Object.fromEntries(["setProgram", "setPlaying", "setSelectedId", "setMaster", "setTheme"].map(name => [name, value => calls.push([name, value])]));
+  const bindings = {
+    ...Object.fromEntries(["setProgram", "setPlaying", "setSelectedId", "setMaster", "setTheme"].map(name => [name, value => calls.push([name, value])])),
+    quest: { mark: value => calls.push(["quest.mark", value]) },
+  };
   const callback = evaluate(handler.getText(file), { ...bindings, choice: "meditation" });
   for (const program of ["all", "sun", "reiki"]) {
     calls.length = 0; callback({ target: { value: program } });
@@ -72,7 +77,11 @@ test("the selected original programme menu retains selection and playback reset"
   }
   calls.length = 0;
   evaluate(handler.getText(file), { ...bindings, choice: "pump" })({target:{value:"egypt"}});
-  assert.deepEqual(calls,[["setProgram","egypt"],["setPlaying",false],["setSelectedId",null],["setMaster","all"],["setTheme","all"]]);
+  assert.deepEqual(calls,[["setProgram","egypt"],["setPlaying",false],["setSelectedId",null],["quest.mark","course"],["setMaster","all"],["setTheme","all"]]);
+  // Resetting Programme to "All" is browsing, not a completed course choice.
+  calls.length = 0;
+  evaluate(handler.getText(file), { ...bindings, choice: "pump" })({target:{value:"all"}});
+  assert.deepEqual(calls,[["setProgram","all"],["setPlaying",false],["setSelectedId",null],["setMaster","all"],["setTheme","all"]]);
 });
 
 const iconNames = ["ArrowRight", "BookOpen", "CheckCircle2", "Coins", "Compass", "Heart", "HeartPulse", "ListChecks", "Sparkles"];
