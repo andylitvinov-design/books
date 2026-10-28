@@ -95,7 +95,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /portraitSource = photoUrl \\|\\| frameUrl/);
+  assert.match(studio, /portraitSource = photoUrl \|\| frameUrl/);
   assert.match(studio, /BACKGROUND_CLIP = "local-money-background-only"/);
   assert.match(studio, /data-video-background-mode/);
   assert.match(studio, /data-mandala-output-mode/);
