@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
-  Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
-  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
+  Coins, Flower2, HandHeart, Heart, Leaf, Play, RotateCcw,
+  ShieldCheck, Sparkles, Target, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
+import { HolisticSupportMobileNav } from "@/components/holistic-support-mobile-nav";
 import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection, type GoalSelection } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
@@ -428,11 +429,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
-            <Link href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
+            <a href={"/" + locale + "/holistic-support/mandala"}
               className={styles.videoMandalaShortcut} data-support-video-mandala
               aria-label={t.videoMandala}>
               <Sparkles size={15} aria-hidden="true" /><span>{t.videoMandala}</span>
-            </Link>
+            </a>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <div className={styles.focusSelector} data-support-active-focus aria-label={t.focusLabel}>
               <span className={styles.focusCaption}>{t.focusLabelShort}</span>
@@ -718,25 +719,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
         </footer>
       </div>
 
-      {settingsOpen ? <section className={styles.settingsPanel} id="support-mobile-settings" aria-label={t.settings}>
-        <h2><Settings2 size={22} aria-hidden="true" />{t.settings}</h2>
-        <p>{t.language}</p>
-        <div className={styles.localeLinks}>
-          {(["en", "ru", "es"] as PublicLocale[]).map(language => <Link key={language}
-            href={"/" + language + "/holistic-support/mobile"} hrefLang={language} aria-current={locale === language ? "page" : undefined}>
-            {language.toUpperCase()}</Link>)}
-        </div>
-        <p>{t.privateInfo}</p>
-        <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
-      </section> : null}
-
-      <nav className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
-        <Link href={"/" + locale + "/"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
-        <Link href={"/" + locale + "/app"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
-        <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
-        <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
-          onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
-      </nav>
+      <HolisticSupportMobileNav locale={locale} page="mobile"
+        progressHref="#support-progress" labels={t}
+        settingsOpen={settingsOpen} onSettingsOpenChange={setSettingsOpen} />
     </main>
   );
 }

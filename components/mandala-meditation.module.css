@@ -236,3 +236,15 @@
   .advancedWorkbench .workspace{grid-template-columns:1fr}
 }
 @media(max-width:350px){.workshop{width:calc(100% - 12px)}}
+
+/* The Mandala editor is a child of the compact mobile Support app.
+   Keep the normal public site header on desktop; use the exact same 4-tab
+   app navigation as /holistic-support/mobile at iPhone sizes. */
+.desktopSiteHeader{display:block}
+.mobileAppNav{display:none}
+@media(max-width:759px){
+  .desktopSiteHeader{display:none}
+  .mobileAppNav{display:block}
+  .mobileAppNav :is(a,button):focus-visible{outline:3px solid #f5b43e;outline-offset:3px}
+  .workshop{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
+}

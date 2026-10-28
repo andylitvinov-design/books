@@ -21,7 +21,8 @@ test("alternate support screen is separate, linked and localized without replaci
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
   assert.match(nav, /holistic-support\\\/mobile/);
-  assert.match(client, /data-support-mobile-bottom-nav/);
+  assert.match(client, /<HolisticSupportMobileNav/);
+  assert.match(read("components/holistic-support-mobile-nav.tsx"), /data-support-mobile-bottom-nav/);
 });
 
 test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
