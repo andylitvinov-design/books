@@ -328,6 +328,8 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          // Wait for the actual React state on WebKit, never infer an Accepted mark.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"visible",timeout:8000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
@@ -654,6 +656,21 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
+          await root.locator('[data-support-player]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-profile-hero]').count(),0,
+            label+" Courses must not show diagnostic profiles");
+          assert.ok(await root.locator('[data-support-video]').count()>0,
+            label+" original video lessons are reachable");
+          if(locale==="ru") {
+            const mysteryPicker=root.locator('[data-support-mystery-courses]');
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),3,
+              label+" three Russian original Maya/Egypt/Greek courses restored");
+            await mysteryPicker.locator('[data-support-mystery-course="egypt"]').click();
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course="egypt"]').getAttribute('aria-pressed'),"true",
+              label+" Egypt programme selection works");
+            assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
+              /^\/ru\/academy\//,label+" source Academy programme link");
+          }
           const academyHrefs=await root.locator('[data-support-courses-panel] a')
             .evaluateAll(links => links.map(a => a.getAttribute("href")));
           // Academy's two canonical links remain, while optional published
@@ -861,6 +878,18 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="tests"]').click();
           const testsPanel=root.locator('[data-support-tests-panel]');
           await testsPanel.waitFor({state:"visible",timeout:8000});
+          assert.equal(await testsPanel.locator('[data-support-profile]').count(),4,
+            label+" four self-assessment profiles shown in Tests");
+          assert.equal(await root.locator('[data-support-player]').count(),0,
+            label+" course player not shown in Tests");
+          const moneyProfile=testsPanel.locator('[data-support-profile="money"]');
+          await moneyProfile.click();
+          assert.equal(await moneyProfile.getAttribute('aria-pressed'),"true",
+            label+" Tests money profile changes active state");
+          assert.equal(await testsPanel.locator('[data-support-profile-hero]').getAttribute('data-sector'),"money",
+            label+" Tests hero reflects selected profile");
+          assert.equal(await testsPanel.locator('[data-support-profile-test]').count(),1,
+            label+" tests hero has a real CTA");
           assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
             label+" Tests do not mix with a consultation/CRM booking");
           assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
