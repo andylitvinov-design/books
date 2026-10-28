@@ -56,7 +56,7 @@ test("local-only scores remain private and explanations have full EN/RU/ES parit
     "Мои оценки и открытые видео", "Mis valoraciones y vídeos abiertos",
   ]) assert.ok(client.includes(value), value);
   assert.match(client, /setProfileSector\(goalSelection\?\.sector \?\? \(\{/);
-  assert.match(client, /scores\[focus\]\}\/10/);
+  assert.match(client, /focusScores\[focus\]\}\/10/);
   assert.doesNotMatch(client, /journeyCategory\[focus\].*scores|journeyCategory\[focus\].*concerns/);
   assert.doesNotMatch(client, /\.setItem\(|sendBeacon\(|fetch\("/);
 });
@@ -81,18 +81,18 @@ test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")), []);
 });
 
-test("five-domain iPhone header returns to the original wide, compact proportions", () => {
-  assert.ok(client.includes('const checkinOrder: CheckinArea[] = [...focusOrder, "meaning"]'),
-    "keep all five independent check-ins and their goal-filter synchronization");
-  assert.ok(client.includes('checkinOrder.map(id =>'), "all five sliders remain in the left card");
+test("four-domain iPhone header returns to the original wide, compact proportions", () => {
+  assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'),
+    "one Meaning score covers Goals, retaining four linked check-ins");
+  assert.ok(client.includes('checkinOrder.map(id =>'), "all four sliders remain in the left card");
   for (const rule of [
     "minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr)",
     "minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr)",
-    "grid-template-rows: 12px 15px; min-height: 28px",
-    "grid-template-rows: 12px 15px; min-height: 27px",
+    "grid-template-rows: 14px 18px; min-height: 33px",
+    "grid-template-rows: 12px 17px; min-height: 30px",
     ".page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }",
   ]) assert.ok(css.includes(rule), "mobile header contract: " + rule);
   assert.ok(css.indexOf("Restore the original broad, short iPhone dashboard proportions") >
     css.indexOf("The fifth assessment is the real Meaning score"),
-    "compact geometry must override the initial five-row styling");
+    "compact geometry must override earlier five-row styling");
 });
