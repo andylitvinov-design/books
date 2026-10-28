@@ -248,7 +248,13 @@ export function ServicesSmartDiscovery({
 }) {
   const locale: Locale = givenLocale === "ru" || givenLocale === "es" ? givenLocale : "en";
   const t = COPY[locale];
-  const stars = useCatalogRatings("service", [...services.map(item => item.id), ...editorialOffers.map(item => "editorial:" + item.id)]);
+  const remoteOfferingId = services.find(service=>service.slug==="remote-energy-support")?.id;
+  const editorialRatingKey = (id:string) => id==="remote-energy-support"
+    ? remoteOfferingId ?? null : "editorial:" + id;
+  const stars = useCatalogRatings("service", [
+    ...services.map(item => item.id),
+    ...editorialOffers.map(item=>editorialRatingKey(item.id)).filter((key):key is string=>Boolean(key)),
+  ]);
   const [minimumStars,setMinimumStars] = useState(0);
   const [sortRated,setSortRated] = useState(false);
   const [query,setQuery] = useState("");
@@ -299,8 +305,8 @@ export function ServicesSmartDiscovery({
     ? sortByStars(suggestions, entry => entry.service.id, stars.ratings) : suggestions)
     .filter(entry => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[entry.service.id], minimumStars));
   const editorialByStars = (sortRated
-    ? sortByStars(editorial, item => "editorial:" + item.id, stars.ratings) : editorial)
-    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings["editorial:" + item.id], minimumStars));
+    ? sortByStars(editorial, item => editorialRatingKey(item.id) ?? "", stars.ratings) : editorial)
+    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[editorialRatingKey(item.id) ?? ""], minimumStars));
 
   // Scroll only after a new selection has rendered. AI updates should not
   // unexpectedly pull the visitor back to the results while they read.
@@ -568,6 +574,7 @@ export function ServicesSmartDiscovery({
           <h3>{t.curated}</h3>
           <div className={styles.editorialList}>{editorialByStars.map(item=>{
             const id = "editorial:"+item.id;
+            const ratingId = editorialRatingKey(item.id);
             const expanded = expandedCard===id;
             const ordering = orderingCard===id;
             const whatsappUrl = editorialEnquiryUrl(item,locale);
@@ -582,7 +589,7 @@ export function ServicesSmartDiscovery({
               </div>
               <div className={styles.editorialCardCopy}>
                 <h4>{item.title}</h4>
-                <CatalogStarRating locale={locale} summary={stars.ratings[id]} onRate={value=>stars.rate(id,value)} unavailable={stars.unavailable} compact/>
+                <CatalogStarRating locale={locale} summary={ratingId?stars.ratings[ratingId]:undefined} onRate={ratingId?value=>stars.rate(ratingId,value):undefined} unavailable={stars.unavailable} compact/>
                 <p>{item.promise}</p>
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>
