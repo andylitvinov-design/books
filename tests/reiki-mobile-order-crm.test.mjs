@@ -5,6 +5,7 @@ import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 import {
   remoteSupportPublicServiceTitle, remoteSupportPublicRequestSummary,
   readRemoteSupportDraft, REMOTE_SUPPORT_DRAFT_KEY,
+  readRemoteSupportPublicDraft, REMOTE_SUPPORT_PUBLIC_DRAFT_KEY,
 } from "../lib/practitioners/remote-energy-support.js";
 import { normalizePublicServiceEnquiry } from "../lib/practitioners/public-service-enquiry-input.mjs";
 
@@ -42,6 +43,21 @@ test("public request has only verified published preferences and not sensitive n
   assert.equal(remoteSupportPublicServiceTitle({...draft,duration:999}), "");
   const storage = {getItem(key) { return key === REMOTE_SUPPORT_DRAFT_KEY ? JSON.stringify(draft) : null; }};
   assert.equal(readRemoteSupportDraft(storage, draft.serviceId, now)?.startsAt, draft.startsAt);
+  const unscheduled = { ...draft, version: 1, date: "", time: "" };
+  delete unscheduled.startsAt;
+  const publicStorage = {getItem(key) {
+    return key === REMOTE_SUPPORT_PUBLIC_DRAFT_KEY ? JSON.stringify(unscheduled) : null;
+  }};
+  assert.equal(readRemoteSupportPublicDraft(publicStorage, draft.serviceId, now)?.date, "");
+  assert.equal(readRemoteSupportPublicDraft(publicStorage, draft.serviceId, now)?.time, "");
+  assert.match(remoteSupportPublicRequestSummary(unscheduled, "ru"), /По согласованию/);
+  assert.match(remoteSupportPublicRequestSummary(unscheduled, "en"), /To be agreed/);
+  assert.equal(readRemoteSupportPublicDraft({getItem:()=>JSON.stringify({
+    ...unscheduled, intention:"private diagnosis",
+  })}, draft.serviceId, now), null, "Never persist sensitive client notes");
+  assert.equal(readRemoteSupportPublicDraft({getItem:()=>JSON.stringify({
+    ...unscheduled, date: "2026-10-30", time: "",
+  })}, draft.serviceId, now), null, "Require both optional date and time");
   const payload = {
     operationId: "13b822f6-8d70-4b1c-b44e-d0c31ad1d82f",
     serviceTitle: title, description: summary,
@@ -64,11 +80,14 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   const mobile = read("components/holistic-support-mobile.tsx");
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/remote-energy-support-booking.module.css");
-  assert.match(jsx, /if \(mode === "inline"\) \{[\s\S]*?setContactDraft\(draft\);\s*return;/);
+  assert.match(jsx, /if \(mode === "inline"\) \{[\s\S]*?setContactDraft\(publicDraft\);\s*return;/);
   assert.match(jsx, /data-remote-public-order-contact/);
   assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
   assert.match(jsx, /onSaved=\{\(\) => \{/);
-  assert.match(jsx, /readRemoteSupportDraft\(window\.sessionStorage, selected\.serviceId\)/);
+  assert.match(jsx, /readRemoteSupportPublicDraft\(window\.sessionStorage, selected\.serviceId\)/);
+  assert.match(jsx, /required=\{mode !== "inline"\}/);
+  assert.match(jsx, /"Заказать"/);
+  assert.match(jsx, /"Выберите и дату, и время или оставьте оба поля пустыми."/);
   assert.match(jsx, /pending\?\.service !== remoteSupportPublicServiceTitle\(draft\)/);
   assert.match(jsx, /remoteSupportPublicRequestSummary\(contactDraft, locale\)/);
   assert.match(mobile, /window\.location\.search\.includes\("hh_enquiry=google"\)/);
