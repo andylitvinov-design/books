@@ -28,7 +28,7 @@ const translations = {
     photoNote: "Your photograph stays still; coins and scenery move. A clear portrait or transparent PNG looks best.",
     quality: "Video quality", hd: "HD · 720p (faster)", fullhd: "Full HD · 1080p",
     landscape: "Wide · 16:9",
-    moneyHeading: "Money flow · 12 visual stories", moneyIntro: "Choose a symbolic flow around your own photograph. Four favourites first.",
+    moneyHeading: "12 moving money-flow video templates", moneyIntro: "Tap a video card to watch it move and apply that exact scene to your personal clip. Swipe for other looks.",
     allMoney: "See all 12 looks", lessMoney: "Show four favourites", moneyNote: "A creative attention exercise, not a promise of income.",
     previewPlay: "Preview movement", previewPause: "Pause preview",
     clipPlay: "Tap to play scene", clipPause: "Pause scene", clipReady: "Moving preview",
@@ -51,7 +51,7 @@ const translations = {
     photoNote: "Фото остаётся неподвижным, движутся монеты и окружение. Лучше подходит портрет или PNG без фона.",
     quality: "Качество видео", hd: "HD · 720p (быстрее)", fullhd: "Full HD · 1080p",
     landscape: "Горизонтальный · 16:9",
-    moneyHeading: "Денежный поток · 12 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
+    moneyHeading: "12 видеошаблонов «Денежный поток»", moneyIntro: "Нажмите на видеокарточку: начнётся движение, а выбранная сцена попадёт в ваш ролик. Листайте варианты свайпом.",
     allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
     previewPlay: "Посмотреть движение", previewPause: "Пауза",
     clipPlay: "Нажмите для видео", clipPause: "Пауза видео", clipReady: "Видео в движении",
@@ -74,7 +74,7 @@ const translations = {
     photoNote: "Tu foto permanece inmóvil; se mueven las monedas y el entorno. Usa un retrato claro o un PNG sin fondo.",
     quality: "Calidad de vídeo", hd: "HD · 720p (más rápido)", fullhd: "Full HD · 1080p",
     landscape: "Horizontal · 16:9",
-    moneyHeading: "Flujo de prosperidad · 12 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
+    moneyHeading: "12 plantillas de vídeo en movimiento", moneyIntro: "Toca una tarjeta para ver movimiento y aplicar esa escena a tu vídeo. Desliza para ver más.",
     allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
     previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
     clipPlay: "Toca para ver el vídeo", clipPause: "Pausar vídeo", clipReady: "Vista en movimiento",
@@ -460,11 +460,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
     <section className={styles.freeVideoPanel} data-mandala-free-video aria-label={t.heading}>
       <h2><Film size={21} aria-hidden="true" />{t.heading}<span className={styles.freeVideoBadge}>$0</span></h2>
       <p className={styles.freeVideoIntro}>{t.description}</p>
-      <div className={styles.freeVideoPreview}>
-        <canvas ref={canvasRef} width={540} height={960} aria-label={t.heading} data-mandala-cinematic-canvas
-          style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
-        {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
-      </div>
       <section className={styles.moneyFlowSection} data-mandala-money-effects aria-label={t.moneyHeading}>
         <h3>{t.moneyHeading}</h3>
         <p>{t.moneyIntro}</p>
@@ -517,6 +512,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
         </div>
         <p className={styles.moneyFlowNote}>{t.moneyNote}</p>
       </section>
+      <div className={styles.freeVideoPreview}>
+        <canvas ref={canvasRef} width={540} height={960} aria-label={t.heading} data-mandala-cinematic-canvas
+          style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
+        {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
+      </div>
       <p className={styles.freeVideoPrivacy}>{t.photoNote}</p>
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
