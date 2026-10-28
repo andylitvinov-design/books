@@ -4,11 +4,11 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
-test("approved mobile video design is the one canonical Mandala editor with four theme choices", () => {
+test("approved mobile video design is the one canonical Mandala editor with six theme choices", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const parent=read("components/mandala-meditation-client.tsx");
   const ui=read("components/mandala-video-mobile.module.css");
-  for(const theme of ["money","relationships","energy","goals"]){
+  for(const theme of ["money","energy","life","health","relationships","goals"]){
     assert.match(studio,new RegExp('"'+theme+'"'));
   }
   assert.match(studio,/const themeChoices: VideoTheme\[\]/);
@@ -29,7 +29,7 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(ui,/@media\(max-width:380px\)/);
 });
 
-test("money, energy, relationships and goals have real local frame engines, not fake poster links", async () => {
+test("money, energy, life, health, relationships and goals share original native footage and fallback frames", async () => {
   const ts=await import("typescript");
   const client=read("components/mandala-free-video-studio.tsx");
   const local=read("lib/mandala/holistic-video-themes.ts");
@@ -47,7 +47,7 @@ test("money, energy, relationships and goals have real local frame engines, not 
     "light-path","open-door","guiding-stars","meaning-tree"]) assert.ok(local.includes('"'+id+'"'),id);
   for(const language of ["en","ru","es"]) assert.ok(client.includes(language+': {'));
   assert.match(cinematic,/movingCoins\(ctx,scene,t,w,h,true\)/);
-  assert.equal((scenes.match(/ id: "/g)||[]).length,12);
+  assert.equal((scenes.match(/ id: "/g)||[]).length,16);
   for(const path of ["components/mandala-free-video-studio.tsx",
     "lib/mandala/holistic-video-themes.ts","lib/mandala/local-video-music.ts"]){
     const diagnostics=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
