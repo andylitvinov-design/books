@@ -67,7 +67,7 @@ export default function PractitionerMeditationsModeration(){
            {item.kind==='video'?<video controls preload="none" playsInline src={path} style={{width:'100%',maxHeight:300,borderRadius:12}}/>:
              <audio controls preload="none" src={path} style={{width:'100%'}}/>}
            {item.videoReady&&<><strong><Film size={15} aria-hidden="true"/> Rendered video</strong>
-             <video controls preload="none" playsInline src={videoUrl} style={{width:'100%',maxHeight:300,borderRadius:12}/></>}
+             <video controls preload="none" playsInline src={videoUrl} style={{width:'100%',maxHeight:300,borderRadius:12}}/></>}
          </div>}
          {!hasVideo&&<p style={{color:'#985a39',margin:0}}>Audio-only submission. An approved final video still needs to be made before YouTube upload.</p>}
          {item.mode==='ai_quote'&&<p style={{color:'#985a39',margin:0}}>AI video requested: price and vendor approval required. No render has been purchased.</p>}
