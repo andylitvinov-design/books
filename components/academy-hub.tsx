@@ -229,7 +229,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         href: "/" + locale + "/academy/" + record.routeKey,
         courseHref: originalVideo ? "/" + locale + "/academy/" + originalVideo.routeKey : undefined,
         takeLabel: originalVideo ? entry.videoCta : undefined,
-        image: recordImage(record, index),
+        image: originalVideo ? recordImage(originalVideo) : recordImage(record, index),
         archiveKind: "course" as const,
       }];
     })
