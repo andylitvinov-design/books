@@ -37,7 +37,9 @@ for (const browserType of [chromium, webkit]) {
           }, null, {timeout:30000});
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
-          assert.equal(await root.locator('[data-support-tool]').count(), 4, label + " tools");
+          assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
+          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
+          assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
           // These two locally bundled original-mock visuals must actually load.
@@ -83,8 +85,8 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<295,
-            label+" top dashboard must be compact enough to expose practice early");
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
+            label+" five readable 43px action rows plus detailed tests must expose the player early");
           assert.ok(geometry.readableTools.every(t =>
             t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
@@ -137,6 +139,16 @@ for (const browserType of [chromium, webkit]) {
             const src = await root.locator('[data-support-player] iframe').getAttribute("src");
             assert.match(src??"", /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?autoplay=1/,label+" consent-to-play original");
           }
+          await root.locator('[data-support-tool="pump"]').click();
+          assert.equal(await root.locator('[data-support-courses-panel] a').count(), 2, label+" Academy course links");
+          assert.equal(await root.locator('[data-support-player] iframe').count(), 0, label+" switching courses does not autoplay");
+          await root.locator('[data-support-tool="healing"]').click();
+          const healing = root.locator('[data-support-healing-panel]');
+          await healing.waitFor({state:"visible",timeout:8000});
+          assert.equal(await healing.locator('a[href$="/masters"]').count(), 1, label+" masters entry");
+          assert.equal(await healing.locator('a[href$="/services/remote-energy-support"]').count(), 1, label+" energy service entry");
+          await healing.locator('button[aria-controls="support-mobile-master-request"]').click();
+          assert.equal(await healing.locator('#support-mobile-master-request').count(), 1, label+" existing optional master finder");
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});

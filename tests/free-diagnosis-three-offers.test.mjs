@@ -72,6 +72,9 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(enquiryCss, /animation:expressUnfold/);
   assert.match(enquiryCss, /@media\(max-width:720px\)/);
+  // All of the focus-card surface, not just its tiny radio, is a fast touch
+  // target in Safari; native form radio and consent remain unchanged.
+  assert.match(enquiryCss, /touch-action:manipulation/);
   assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
   assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
   assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);
