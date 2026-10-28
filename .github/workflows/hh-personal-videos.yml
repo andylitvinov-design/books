@@ -5,7 +5,7 @@ name: HH Personal Video Privacy
       - codex/public-book-library
     paths:
       - 'app/api/app/personal-videos/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/**/app/**/page.jsx'
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-personal-videos.jsx'
       - 'lib/app/personal-videos.js'
