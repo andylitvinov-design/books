@@ -46,14 +46,15 @@ test("original four-pillar video header includes visible meditation, Master, Pro
 });
 
 test("four source-verified videos are all visible at once, not hidden in a swipe gallery", () => {
-  assert.match(client, /\.slice\(0, 4\)/);
+  assert.match(client, /matchingVideos\.slice\(safePage \* 4, safePage \* 4 \+ 4\)/);
+  assert.match(client, /data-support-video-pager/);
   assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /scroll-snap-type: none/);
   assert.match(client, /shortVideoTitle\(video.title, locale\)/);
   assert.match(client, /aria-label=\{video.title\}/);
   assert.match(client, /className=\{styles\.seeAll\}/);
-  assert.match(client, /progressTotal = relevantVideos\.length/);
-  assert.match(client, /progressCount = relevantVideos\.filter/);
+  assert.match(client, /progressTotal = matchingVideos\.length/);
+  assert.match(client, /progressCount = matchingVideos\.filter/);
   assert.match(page, /freeMeditationVideos\("ru"\)/);
   assert.match(page, /englishGuidedMeditations/);
   assert.match(client, /onClick=\{startVideo\}/);
