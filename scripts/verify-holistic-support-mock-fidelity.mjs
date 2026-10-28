@@ -51,6 +51,10 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
+          const mandalaAction=root.locator('[data-support-video-mandala]');
+          assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
+          assert.equal(await mandalaAction.getAttribute("href"),
+            "/"+locale+"/holistic-support/mandala",label+" genuine existing video studio route");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
             label + " goal filter beneath the self-ratings");
           assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
@@ -197,6 +201,10 @@ for (const browserType of [chromium, webkit]) {
           await talisman.waitFor({state:"visible",timeout:8000});
           assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
             label+" three verified Fu illustrations below their large hero");
+          const talismanHeight = await talisman.locator('[data-support-talisman]').evaluate(
+            element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(talismanHeight - geometry.hero[0].height) <= 10,
+            label+" talisman stage uses the same compact height as meditation");
           const tRects=await talisman.evaluate(el=>{
             const a=el.querySelector('[data-support-talisman]')?.getBoundingClientRect();
             const b=el.querySelector('[data-support-talisman-rail]')?.getBoundingClientRect();
@@ -226,6 +234,23 @@ for (const browserType of [chromium, webkit]) {
             throw new Error(label + " master gallery failed after bounded retry: " + status +
               " | directory=" + JSON.stringify(directoryEvents) + " / " + error.message);
           });
+          const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
+          assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
+            "true",label+" only published Tantra Reiki selected initially");
+          const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(Math.abs(masterHeight-geometry.hero[0].height)<=10,
+            label+" Reiki hero matches compact meditation hero");
+          await healing.locator('[data-support-reiki-focus="strength"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          assert.equal(await healing.locator('[data-support-master-request]').count(),0,
+            label+" no fake Kundalini Reiki offering");
+          await healing.locator('[data-support-reiki-focus="purpose"]').click();
+          await healing.locator('[data-support-reiki-unavailable]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="balance"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
+          await healing.locator('[data-support-reiki-focus="love"]').click();
+          await healing.locator('[data-support-master-hero]').waitFor({state:"visible"});
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
           await healing.locator('[data-support-master-thumb="qa-energy-two"]').click();
