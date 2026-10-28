@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
-  Coins, Compass, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
+  Coins, Compass, HandHeart, Heart, Home, Layers, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, Zap,
 } from "lucide-react";
 
@@ -28,14 +28,15 @@ export type SupportMobileVideo = {
   sourceLanguage: "en" | "ru";
 };
 
-type Focus = "energy" | "money" | "relationships" | "goals";
+type Scale = "energy" | "money" | "relationships" | "goals";
+type Focus = Scale | "all";
 type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing";
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
 
-const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
-const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
+const focusOrder: Scale[] = ["energy", "money", "relationships", "goals"];
+const scoreIcons = { all: Layers, energy: Zap, money: Coins, relationships: Heart, goals: Target };
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
   { id: "consultation", Icon: TestTubeDiagonal },
@@ -43,10 +44,11 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "pump", Icon: RotateCcw },
   { id: "healing", Icon: HandHeart },
 ];
-const focusTopics: Record<Focus, MeditationTopic> = {
+const focusTopics: Record<Scale, MeditationTopic> = {
   energy: "energy", money: "business", relationships: "love", goals: "business",
 };
 const focusRequest: Record<Focus, string> = {
+  all: "Personal support across energy, money, relationships and goals",
   energy: "Inner balance and calm", money: "Work and money",
   relationships: "Connection and relationships", goals: "Work and money",
 };
@@ -54,7 +56,7 @@ const focusRequest: Record<Focus, string> = {
 const copy = {
   en: {
     assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
-    focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
+    focusLabel: "Your focus", focusLabelShort: "Focus", focusAllShort: "All", allSummary: "All four areas, giving priority to your lower self-ratings.", upload: "Add your photo", replace: "Change your photo",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
@@ -62,7 +64,7 @@ const copy = {
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    foci: { all: "All areas", energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Energy Healing" },
     optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Energy" },
     optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
@@ -70,7 +72,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
-    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
+    heroTitle: { all: "Find your next step", energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
     youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating",
@@ -91,7 +93,7 @@ const copy = {
   },
   ru: {
     assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
-    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
+    focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", focusAllShort: "Все", allSummary: "Все четыре сферы, с приоритетом более низких оценок.", upload: "Добавить фото", replace: "Изменить фото",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
@@ -99,7 +101,7 @@ const copy = {
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    foci: { all: "Все сферы", energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Энергетическая поддержка" },
     optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Энергия" },
     optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
@@ -107,7 +109,7 @@ const copy = {
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
-    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
+    heroTitle: { all: "Найди следующую практику", energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
     youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка",
@@ -128,7 +130,7 @@ const copy = {
   },
   es: {
     assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
-    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
+    focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", focusAllShort: "Todas", allSummary: "Las cuatro áreas, priorizando las puntuaciones más bajas.", upload: "Añadir foto", replace: "Cambiar foto",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
@@ -136,7 +138,7 @@ const copy = {
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    foci: { all: "Todas las áreas", energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Sanación energética" },
     optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Energía" },
     optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
@@ -144,7 +146,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
-    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
+    heroTitle: { all: "Encuentra tu siguiente paso", energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
     youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación",
@@ -180,11 +182,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
 
 export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale; videos: SupportMobileVideo[] }) {
   const t = copy[locale];
-  const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
-  const [focus, setFocus] = useState<Focus>("energy");
+  const [scores, setScores] = useState<Record<Scale, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
+  const [focus, setFocus] = useState<Focus>("all");
   const [choice, setChoice] = useState<Choice>("meditation");
   // Explicit button click freezes a private, local-only recommendation snapshot.
-  const [recommendation, setRecommendation] = useState<{ focus: Focus; scores: Record<Focus, number> } | null>(null);
+  const [recommendation, setRecommendation] = useState<{ focus: Focus; scores: Record<Scale, number> } | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -220,8 +222,8 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const relevantVideos = useMemo(() => {
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
-    const themed = filtered.filter(video => video.topics.includes(wanted));
+    const wanted = choice === "pump" ? "energy" : theme === "all" ? (focus === "all" ? null : focusTopics[focus]) : theme;
+    const themed = wanted ? filtered.filter(video => video.topics.includes(wanted)) : filtered;
     // The explicit theme selector filters strictly. Focus alone is a ranking
     // hint so four verified videos can still be explored without false claims.
     if (choice === "pump" || theme !== "all") return themed.slice(0, 4);
@@ -230,7 +232,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
       return filtered.slice().sort((a, b) =>
         (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
-    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4);
+    return wanted ? [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4) : filtered.slice(0, 4);
   }, [videos, master, program, theme, focus, choice, recommended]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
@@ -280,12 +282,26 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
-            <p className={styles.subText}>{t.scoreGuide}</p>
+            <fieldset className={styles.scaleGroup}>
+              <legend className={styles.focusLegend}>{t.focusLabel}</legend>
+              <div className={styles.focusHeader} data-support-focus-header>
+                <p className={styles.subText} data-support-focus-guide>{t.scoreGuide}</p>
+              <label className={styles.allFocus} data-focus-option="all">
+                <input type="radio" name="support-focus" value="all" data-support-focus="all"
+                  checked={focus === "all"} onChange={() => chooseFocus("all")}
+                  aria-label={t.focusLabelShort + ": " + t.foci.all} />
+                <span data-support-focus-all-caption>{t.focusAllShort}</span>
+              </label>
+              </div>
             <div className={styles.scaleList}>
               {focusOrder.map(id => {
-                const Icon = scoreIcons[id];
-                return <label className={styles.scaleRow} key={id} data-support-scale={id}>
-                  <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
+                return <div className={styles.scaleRow} key={id} data-support-scale={id}>
+                  <label className={styles.inlineFocus} data-focus-option={id} title={t.focusLabelShort + ": " + t.foci[id]}>
+                    <input type="radio" name="support-focus" value={id} data-support-focus={id}
+                      checked={focus === id} onChange={() => chooseFocus(id)}
+                      aria-label={t.focusLabelShort + ": " + t.foci[id]} />
+                    <span className={styles.focusLegend}>{t.focusLabelShort}</span>
+                  </label>
                   <span className={styles.scaleDetail}>
                     <span className={styles.scaleLabel}>{t.foci[id]}</span>
                     <input type="range" min="1" max="10" step="1" value={scores[id]}
@@ -293,9 +309,10 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                       onChange={event => { setRecommendation(null); setScores(previous => ({ ...previous, [id]: Number(event.target.value) })); }} />
                   </span>
                   <output className={styles.scaleValue} data-tone={id}>{scores[id]}</output>
-                </label>;
+                </div>;
               })}
             </div>
+            </fieldset>
 
 
                       <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
@@ -306,7 +323,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </Link>
           </section>
 
-          <section className={styles.profile} aria-label={t.focusLabel}>
+          <section className={styles.profile} aria-label={t.upload}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
@@ -318,15 +335,6 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
-            <label className={styles.focusSelector}>
-              <span className={styles.focusCaption}><span className={styles.focusCaptionLong}>{t.focusLabel}</span><span className={styles.focusCaptionShort}>{t.focusLabelShort}</span></span>
-              <span className={styles.focusValue}><FocusIcon size={22} aria-hidden="true" />
-                <select value={focus} onChange={event => chooseFocus(event.target.value as Focus)}
-                  aria-label={t.focusLabel}>
-                  {focusOrder.map(id => <option key={id} value={id}>{t.foci[id]}</option>)}
-                </select><ChevronDown size={18} aria-hidden="true" />
-              </span>
-            </label>
             <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
               <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
             </button>
@@ -361,7 +369,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           aria-label={t.recommendationTitle} aria-live="polite">
           <div className={styles.recommendationLead}>
             <h2><Sparkles size={21} aria-hidden="true" />{t.recommendationTitle}</h2>
-            <p>{t.foci[recommendation.focus]}: {recommendation.scores[recommendation.focus]}/10. {t.recommendationWhy}</p>
+            <p>{recommendation.focus === "all" ? t.allSummary : `${t.foci[recommendation.focus]}: ${recommendation.scores[recommendation.focus]}/10.`} {t.recommendationWhy}</p>
           </div>
           <div className={styles.recommendationGrid}>
             {recommended?.videos[0] ? <article className={styles.recommendationCard} data-support-recommended-video={recommended.videos[0].id}>

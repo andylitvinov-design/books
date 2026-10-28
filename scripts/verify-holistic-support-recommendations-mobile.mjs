@@ -37,8 +37,15 @@ for (const engine of [chromium, webkit]) {
             label + ": four accessible self-ratings");
           assert.equal(await root.locator('[data-support-detailed-analysis]').getAttribute("href"),
             "/" + locale + "/personality-profiles", label + ": canonical profile, no duplicate test flow");
-          const focus = root.locator("select").first();
-          await focus.selectOption("relationships");
+          await page.waitForFunction(() => {
+            const input = document.querySelector('[data-support-focus="all"]');
+            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+          }, null, {timeout:30000});
+          const focus = root.locator('input[type="radio"][name="support-focus"]');
+          assert.equal(await focus.count(), 5, label + ": four inline domains and All");
+          assert.equal(await root.locator('[data-support-focus="all"]').isChecked(), true, label + ": All initially");
+          await root.locator('[data-support-focus="relationships"]').check();
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1, label + ": exclusive focus");
           const slider = root.locator('[data-support-scale="relationships"] input[type="range"]');
           await slider.focus();
           await slider.press("Home");
@@ -111,6 +118,32 @@ for (const engine of [chromium, webkit]) {
             "fu-harmony", label + ": expanding the existing catalog keeps recommendation priority");
           await catalogToggle.click();
           await catalog.waitFor({ state: "hidden" });
+          // The new broad focus still uses one native radio group and the same
+          // private recommendation snapshot; changing focus never submits a quote.
+          await root.locator('[data-support-focus="all"]').check();
+          await recommendations.waitFor({ state: "hidden" });
+          await root.locator('[data-support-focus="all"]').focus();
+          await root.locator('[data-support-focus="all"]').press("ArrowRight");
+          assert.equal(await root.locator('[data-support-focus="energy"]').isChecked(), true,
+            label + ": native radio keyboard selects one domain");
+          await root.locator('[data-support-focus="all"]').check();
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1,
+            label + ": exactly one after keyboard and All");
+          await root.locator('[data-support-recommendations]').click();
+          await recommendations.waitFor({ state: "visible" });
+          assert.equal(await recommendations.locator('[data-support-recommended-talisman]').getAttribute('data-support-recommended-talisman'),
+            "fu-harmony", label + ": All prioritizes lower relationship rating");
+          await recommendations.locator('[data-support-recommended-talisman] button').click();
+          await viewer.waitFor({ state: "visible" });
+          assert.equal(await viewer.locator('[data-support-talisman-filter="goal"] select').inputValue(),
+            "all", label + ": viewer does not silently force a specific focus");
+          assert.equal(await viewer.locator('[data-support-talisman]').getAttribute('data-support-talisman'),
+            "fu-harmony", label + ": broad ranking reaches existing viewer");
+          assert.equal(await page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]').count(), 0,
+            label + ": changing broad focus does not open a quote");
+          await slider.focus();
+          await slider.press("ArrowRight");
+          await recommendations.waitFor({ state: "hidden" });
           const geometry = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scrollWidth: document.documentElement.scrollWidth,

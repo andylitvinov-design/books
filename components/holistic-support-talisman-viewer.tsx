@@ -9,18 +9,19 @@ import { readBrowserTalismanCart, saveBrowserTalismanCart } from "@/lib/practiti
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
 import styles from "./holistic-support-talisman-viewer.module.css";
 
-type Focus = "energy" | "money" | "relationships" | "goals";
-const byGoal: Record<Focus, string> = {
+type SpecificFocus = "energy" | "money" | "relationships" | "goals";
+type Focus = SpecificFocus | "all";
+const byGoal: Record<SpecificFocus, string> = {
   energy: "fu-balance", money: "fu-prosperity",
   relationships: "fu-harmony", goals: "fu-prosperity",
 };
-const goals: Focus[] = ["energy", "money", "relationships", "goals"];
+const goals: Focus[] = ["all", "energy", "money", "relationships", "goals"];
 
 const translations = {
   en: {
     mode: "Talisman", tradition: "Tradition", daoist: "Daoist Fu",
     master: "Master", masterValue: "On request", goal: "Goal",
-    goals: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    goals: { all: "All areas", energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     recommended: "For your chosen focus", symbol: "Symbolic design", price: "Price confirmed by the master",
     request: "Request talisman", detail: "Details", closeDetail: "Hide details",
     gallery: "More talismans", browse: "Browse all", hideBrowse: "Close catalogue",
@@ -33,7 +34,7 @@ const translations = {
   ru: {
     mode: "Талисман", tradition: "Традиция", daoist: "Даосские Фу",
     master: "Мастер", masterValue: "По запросу", goal: "Цель",
-    goals: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    goals: { all: "Все сферы", energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     recommended: "По выбранной цели", symbol: "Символический рисунок", price: "Стоимость уточняется у мастера",
     request: "Заказать талисман", detail: "Подробнее", closeDetail: "Скрыть описание",
     gallery: "Другие талисманы", browse: "Весь каталог", hideBrowse: "Свернуть каталог",
@@ -46,7 +47,7 @@ const translations = {
   es: {
     mode: "Talismán", tradition: "Tradición", daoist: "Fu taoísta",
     master: "Maestro", masterValue: "A consultar", goal: "Objetivo",
-    goals: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    goals: { all: "Todas las áreas", energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     recommended: "Para tu objetivo", symbol: "Diseño simbólico", price: "Precio confirmado por el maestro",
     request: "Solicitar talismán", detail: "Detalles", closeDetail: "Ocultar detalles",
     gallery: "Más talismanes", browse: "Ver catálogo", hideBrowse: "Cerrar catálogo",
@@ -85,7 +86,7 @@ export function HolisticSupportTalismanViewer({
 
   // Only three published illustrative symbols. A goal is a browsing preference,
   // not a clinical inference, new stock-keeping unit or promise of availability.
-  const preferredId = byGoal[goal];
+  const preferredId = goal === "all" ? rankedIds?.[0] : byGoal[goal];
   const ranked = new Map((rankedIds || []).map((id, index) => [id, index]));
   const items = [...TAOIST_TALISMANS].sort((a, b) => {
     const rank = (id: string) => (id === preferredId ? -1 : ranked.get(id) ?? 100);

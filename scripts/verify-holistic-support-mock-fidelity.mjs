@@ -10,6 +10,59 @@ const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3118";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Loopback only");
 const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
+// Geometry evidence is limited to fixed synthetic selectors and numeric bounds.
+async function recordSupportGeometry({ geometry, engine, locale, width, page }) {
+  assert.ok(["chromium", "webkit"].includes(engine));
+  assert.ok(["ru", "en", "es"].includes(locale));
+  assert.ok([320, 390, 430].includes(width));
+  const rectKeys = ["x", "y", "right", "bottom", "width", "height", "shown",
+    "left", "top", "buttonLeft", "buttonRight", "buttonTop", "buttonBottom", "textFits", "fits", "hitAreaClear"];
+  const measured = {};
+  for (const key of ["client", "scroll"]) {
+    assert.ok(Number.isFinite(geometry[key]));
+    measured[key] = geometry[key];
+  }
+  for (const key of ["a", "photo", "tools", "toolsSection", "readableTools", "hero", "tabs", "videos", "footer",
+    "assessmentHeading", "scaleGroup", "allFocus", "scaleRows", "recommendations", "toolsHeading", "toolGrid", "detailedTests", "focusControls", "focusInputs", "focusSliders", "readableFocusHeader", "readableScores"]) {
+    measured[key] = (geometry[key] || []).map(rect => Object.fromEntries(rectKeys
+      .filter(name => Number.isFinite(rect[name]) || typeof rect[name] === "boolean")
+      .map(name => [name, rect[name]])));
+  }
+  const stem = engine + "-" + locale + "-" + width;
+  await writeFile(output + "/" + stem + "-geometry.json", JSON.stringify({ engine, locale, width, geometry: measured }, null, 2) + "\n");
+  await page.screenshot({ path: output + "/" + stem + ".png", fullPage: true });
+}
+// Validate the real native input and its associated label, not just the drawn square.
+// Compact mobile targets are >=24 CSS px with >=4px clearance to every slider
+// and other Focus target. Desktop labels remain 44px in the stylesheet.
+function assertFocusTargets(geometry, label) {
+  const { focusControls, focusInputs, focusSliders, client } = geometry;
+  assert.equal(focusControls.length, 5, label + " five visible Focus labels");
+  assert.equal(focusInputs.length, 5, label + " five native Focus inputs");
+  assert.equal(focusSliders.length, 4, label + " four independent sliders");
+  assert.equal(geometry.readableFocusHeader.length, 2, label + " visible guide and compact All caption");
+  assert.ok(geometry.readableFocusHeader.every(t => t.textFits &&
+    t.left >= t.buttonLeft-2 && t.right <= t.buttonRight+2 && t.top >= t.buttonTop-2 && t.bottom <= t.buttonBottom+2),
+    label + " score guide and All caption fit their containers without clipping");
+  const [guide, allCaption] = geometry.readableFocusHeader;
+  assert.ok(guide.right + 4 <= focusControls[0].x, label + " score guide never overlaps All hit target");
+  assert.ok(allCaption.left >= focusInputs[0].right + 4, label + " All caption never overlaps its native radio");
+  assert.equal(geometry.scaleRows.length, 4, label + " four full-height scale rows");
+  assert.ok(geometry.scaleRows.every(r => r.height >= 39), label + " scale rows retain >=39px height");
+  const within = r => r.shown && r.width >= 24 && r.height >= 24 && r.x >= 0 && r.right <= client;
+  assert.ok(focusControls.every(r => within(r) && r.hitAreaClear), label + " Focus label targets >=24px and unobstructed at corners/center");
+  assert.ok(focusInputs.every(within), label + " native Focus inputs >=24px within viewport");
+  for (let i = 0; i < focusControls.length; i++) {
+    const target = focusControls[i], input = focusInputs[i];
+    assert.ok(input.x >= target.x && input.right <= target.right && input.y >= target.y && input.bottom <= target.bottom,
+      label + " native radio contained in its clickable label");
+    for (const neighbor of [...focusControls.slice(i + 1), ...focusSliders]) {
+      const dx = Math.max(0, target.x - neighbor.right, neighbor.x - target.right);
+      const dy = Math.max(0, target.y - neighbor.bottom, neighbor.y - target.bottom);
+      assert.ok(Math.hypot(dx, dy) >= 4, label + " Focus target has >=4px clearance from sliders and other foci");
+    }
+  }
+}
 const evidence = [];
 const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
 for (const browserType of [chromium, webkit]) {
@@ -59,7 +112,34 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
+              assessmentHeading:measure('#mobile-assessment-title'),
+              scaleGroup:measure('fieldset'), allFocus:measure('[data-focus-option="all"]'),
+              scaleRows:measure('[data-support-scale]'), recommendations:measure('[data-support-recommendations]'),
+              toolsHeading:measure('#mobile-tools-title'), toolGrid:measure('#support-tools > div'),
+              detailedTests:measure('[data-support-detailed-analysis]'),
               photo:measure('[data-support-photo]'),
+              focusControls: [...root.querySelectorAll('[data-focus-option]')].map(el => {
+                const r = el.getBoundingClientRect();
+                const points = [[1,1], [r.width-1,1], [1,r.height-1], [r.width-1,r.height-1], [r.width/2,r.height/2]];
+                return {x:r.left,y:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,
+                  shown:getComputedStyle(el).display!=="none", hitAreaClear:points.every(([x,y]) => {
+                    const hit = document.elementFromPoint(r.left+x,r.top+y);
+                    return Boolean(hit && (hit===el || el.contains(hit)));
+                  })};
+              }),
+              focusInputs:measure('input[name="support-focus"]'),
+              focusSliders:measure('[data-support-scale] input[type="range"]'),
+              readableFocusHeader: ['[data-support-focus-guide]', '[data-support-focus-all-caption]'].map(selector => {
+                const text = root.querySelector(selector), container = text.parentElement;
+                const e = text.getBoundingClientRect(), b = container.getBoundingClientRect();
+                const range = document.createRange(); range.selectNodeContents(text);
+                const t = range.getBoundingClientRect();
+                const linesFit = [...range.getClientRects()].every(line => line.left >= e.left-2 && line.right <= e.right+2 &&
+                  line.top >= e.top-2 && line.bottom <= e.bottom+2);
+                return {left:t.left,right:t.right,top:t.top,bottom:t.bottom,
+                  buttonLeft:b.left,buttonRight:b.right,buttonTop:b.top,buttonBottom:b.bottom,
+                  textFits: linesFit && text.scrollWidth <= text.clientWidth+2 && text.scrollHeight <= text.clientHeight+2};
+              }),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
               readableTools: [...root.querySelectorAll('[data-support-tool]')].map(btn => {
@@ -83,6 +163,7 @@ for (const browserType of [chromium, webkit]) {
               footer:measure('[data-support-mobile-bottom-nav]'),
             };
           });
+          await recordSupportGeometry({ geometry, engine: browserType.name(), locale, width, page });
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
@@ -90,7 +171,6 @@ for (const browserType of [chromium, webkit]) {
             const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
             console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
-            await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
             label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
@@ -100,6 +180,7 @@ for (const browserType of [chromium, webkit]) {
             label+" all action captions visible within buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.readableScores.every(t=>t.fits),
             label+" all four focus labels visible: "+JSON.stringify(geometry.readableScores));
+          assertFocusTargets(geometry, label);
           assert.ok(geometry.hero[0].height>=268, label+" hero remains the dominant workspace");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
@@ -115,7 +196,6 @@ for (const browserType of [chromium, webkit]) {
             assert.ok(Math.abs(assessment.y-tools.y)<4,label+" ratings and tools same row");
             assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
           }
-          if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
@@ -126,7 +206,22 @@ for (const browserType of [chromium, webkit]) {
           await page.waitForFunction(() => document.querySelector('[data-support-scale="relationships"] output')?.textContent?.trim() === "2",
             null,{timeout:8000});
 
-          await root.locator('select[aria-label]').first().selectOption("relationships");
+          const foci = root.locator('input[type="radio"][name="support-focus"]');
+          assert.equal(await foci.count(), 5, label + " four inline foci and All");
+          assert.equal(await root.locator('[data-support-focus="all"]').isChecked(), true, label + " All initially");
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1, label + " exactly one initial focus");
+          // Tap a label edge (not its center) to prove the native mobile hit area.
+          // No click may be intercepted by, or alter, an adjacent slider.
+          const ratingsBeforeFocus = await root.locator('[data-support-scale] input[type="range"]').evaluateAll(nodes => nodes.map(input => input.value));
+          for (const focus of ["energy", "money", "relationships", "goals", "all"]) {
+            await root.locator('[data-focus-option="' + focus + '"]').tap({ position: { x: 1, y: 1 } });
+            assert.equal(await root.locator('[data-support-focus="' + focus + '"]').isChecked(), true, label + " native edge tap selects " + focus);
+            assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1, label + " native edge tap remains exclusive");
+            assert.deepEqual(await root.locator('[data-support-scale] input[type="range"]').evaluateAll(nodes => nodes.map(input => input.value)), ratingsBeforeFocus,
+              label + " Focus edge tap never changes any slider");
+          }
+          await root.locator('[data-support-focus="relationships"]').check();
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1, label + " exclusive focus after change");
           await root.locator('[data-support-recommendations]').click();
           const panel = root.locator('[data-support-personal-recommendations]');
           await panel.waitFor({state:"visible",timeout:8000});

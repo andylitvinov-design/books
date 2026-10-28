@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import { runInNewContext } from "node:vm";
+import { recommendSupportContent } from "../lib/holistic-support/recommendation-engine.js";
+import { TAOIST_TALISMANS } from "../lib/practitioners/taoist-talismans.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const route = read("app/[locale]/holistic-support/mobile/page.tsx");
@@ -184,4 +187,191 @@ test("same-window talisman viewer reuses real images, local basket, and protecte
   });
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
     .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
+});
+
+test("inline Focus is one native radio group beside unchanged four scales, never a second photo selector", () => {
+  assert.match(client, /useState<Focus>\("all"\)/);
+  assert.match(client, /type="radio" name="support-focus" value="all"/);
+  assert.match(client, /type="radio" name="support-focus" value=\{id\}/);
+  assert.match(client, /checked=\{focus === "all"\}/);
+  assert.match(client, /checked=\{focus === id\}/);
+  assert.doesNotMatch(client, /select value=\{focus\}|className=\{styles\.focusSelector\}/);
+  assert.match(css, /\.page \.inlineFocus input\[type="radio"\]:checked/);
+  assert.match(client, /recommendation\.focus === "all" \? t\.allSummary/);
+  for (const label of ["All areas", "Все сферы", "Todas las áreas"]) assert.ok(client.includes(label));
+});
+
+// Executes the real transpiled component and its state handlers in a network-free
+// element harness. Browser layout, native radio keys and touch remain CI gates.
+function focusHarness(source, exportName) {
+  const slots = [];
+  let cursor = 0;
+  const jsx = (type, props, key) => ({ type, props: props || {}, key });
+  const react = {
+    useState(initial) {
+      const i = cursor++;
+      if (!(i in slots)) slots[i] = typeof initial === "function" ? initial() : initial;
+      return [slots[i], value => { slots[i] = typeof value === "function" ? value(slots[i]) : value; }];
+    },
+    useRef(value) { return react.useState(() => ({ current: value }))[0]; },
+    useMemo: fn => fn(), useEffect() {},
+  };
+  const code = ts.transpileModule(source, {
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const exported = {};
+  const localRequire = name => {
+    if (name === "react") return react;
+    if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "Fragment" };
+    if (name === "lucide-react") return new Proxy({}, { get: (_, key) => String(key) });
+    if (name === "next/image" || name === "next/link") return { default: name };
+    if (name.endsWith(".module.css")) return { default: new Proxy({}, { get: (_, key) => String(key) }) };
+    if (name === "@/lib/holistic-support/recommendation-engine") return { recommendSupportContent };
+    if (name === "@/lib/practitioners/taoist-talismans") return { TAOIST_TALISMANS };
+    if (name === "@/lib/practitioners/taoist-talisman-cart") return {
+      readBrowserTalismanCart() { throw new Error("No cart operation in focus tests"); },
+      saveBrowserTalismanCart() { throw new Error("No cart operation in focus tests"); },
+    };
+    if (name.startsWith("@/components/")) return new Proxy({}, { get: (_, key) => String(key) });
+    throw new Error("Unexpected module: " + name);
+  };
+  runInNewContext(code, {
+    exports: exported, require: localRequire,
+    window: { requestAnimationFrame: fn => { fn(); return 1; }, matchMedia: () => ({ matches: true }) },
+    document: { getElementById: () => null },
+  }, { timeout: 1000 });
+  return props => { cursor = 0; return exported[exportName](props); };
+}
+function focusNodes(node) {
+  if (Array.isArray(node)) return node.flatMap(focusNodes);
+  if (!node || typeof node !== "object") return [];
+  return [node, ...focusNodes(node.props?.children)];
+}
+const focusFixture = [
+  { id: "aaaaaaaaaaa", title: "Synthetic love", topics: ["love"], sourceLanguage: "en", author: "andrey", program: "sun" },
+  { id: "bbbbbbbbbbb", title: "Synthetic energy", topics: ["energy"], sourceLanguage: "en", author: "andrey", program: "sun" },
+  { id: "ccccccccccc", title: "Synthetic business", topics: ["business"], sourceLanguage: "en", author: "andrey", program: "sun" },
+];
+
+test("real Focus state handlers keep one selected, invalidate old results, and rank All privately", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const render = focusHarness(client, "HolisticSupportMobile");
+    const nodes = () => focusNodes(render({ locale, videos: focusFixture }));
+    const radios = () => nodes().filter(n => n.type === "input" && n.props.name === "support-focus");
+    const setFocus = value => radios().find(n => n.props.value === value).props.onChange();
+    assert.equal(radios().length, 5);
+    const initialIds = nodes().filter(n => "data-support-video" in n.props).map(n => n.props["data-support-video"]);
+    assert.deepEqual(initialIds, focusFixture.map(video => video.id), "All does not duplicate a short source library");
+    assert.deepEqual(radios().filter(n => n.props.checked).map(n => n.props.value), ["all"]);
+    for (const value of ["energy", "money", "relationships", "goals", "all"]) {
+      setFocus(value);
+      assert.deepEqual(radios().filter(n => n.props.checked).map(n => n.props.value), [value]);
+      assert.equal(nodes().filter(n => "data-support-personal-recommendations" in n.props).length, 0);
+    }
+    const relationship = nodes().find(n => n.props["data-support-scale"] === "relationships");
+    focusNodes(relationship).find(n => n.props.type === "range").props.onChange({ target: { value: "1" } });
+    nodes().find(n => "data-support-recommendations" in n.props).props.onClick();
+    assert.equal(nodes().find(n => "data-support-recommended-video" in n.props).props["data-support-recommended-video"], "aaaaaaaaaaa");
+    assert.equal(nodes().find(n => "data-support-recommended-talisman" in n.props).props["data-support-recommended-talisman"], "fu-harmony");
+    assert.equal(nodes().filter(n => n.type === "iframe").length, 0);
+    setFocus("energy");
+    assert.equal(nodes().filter(n => "data-support-personal-recommendations" in n.props).length, 0);
+    nodes().find(n => "data-support-recommendations" in n.props).props.onClick();
+    assert.equal(nodes().find(n => "data-support-recommended-talisman" in n.props).props["data-support-recommended-talisman"], "fu-balance");
+    const energy = nodes().find(n => n.props["data-support-scale"] === "energy");
+    focusNodes(energy).find(n => n.props.type === "range").props.onChange({ target: { value: "9" } });
+    assert.equal(nodes().filter(n => "data-support-personal-recommendations" in n.props).length, 0);
+  }
+});
+
+test("existing talisman viewer honors All ranking, preserves explicit goals and never submits on focus", () => {
+  const viewer = read("components/holistic-support-talisman-viewer.tsx");
+  for (const locale of ["en", "ru", "es"]) {
+    const render = focusHarness(viewer, "HolisticSupportTalismanViewer");
+    const nodes = () => focusNodes(render({ locale, focus: "all", rankedIds: ["fu-harmony", "fu-prosperity", "fu-balance"], catalogOpen: false, onToggleCatalog() {} }));
+    assert.equal(nodes().find(n => "data-support-talisman" in n.props).props["data-support-talisman"], "fu-harmony");
+    assert.equal(nodes().find(n => n.type === "select").props.value, "all");
+    nodes().find(n => n.type === "select").props.onChange({ target: { value: "energy" } });
+    assert.equal(nodes().find(n => "data-support-talisman" in n.props).props["data-support-talisman"], "fu-balance");
+    nodes().find(n => "data-support-talisman-next" in n.props).props.onClick();
+    assert.notEqual(nodes().find(n => "data-support-talisman" in n.props).props["data-support-talisman"], "fu-balance");
+  }
+});
+
+
+test("native browser acceptance retains canonical geometry and exercises exclusive All and keyboard", () => {
+  const mock = read("scripts/verify-holistic-support-mock-fidelity.mjs");
+  const browser = read("scripts/verify-holistic-support-recommendations-mobile.mjs");
+  assert.match(mock, /geometry\.hero\[0\]\.y-geometry\.a\[0\]\.y<285/);
+  assert.match(mock, /geometry\.readableScores\.every\(t=>t\.fits\)/);
+  assert.match(mock, /focusControls\.length, 5/);
+  assert.match(browser, /native radio keyboard selects one domain/);
+  assert.match(browser, /All prioritizes lower relationship rating/);
+  assert.match(browser, /broad ranking reaches existing viewer/);
+  assert.match(browser, /recommendations\.waitFor\(\{ state: "hidden" \}\)/);
+  assert.doesNotMatch(mock, /select\[aria-label\].*selectOption/);
+  assert.doesNotMatch(browser, /const focus = root\.locator\("select"\)/);
+});
+
+
+test("actual relevant-video memo passes strict TypeScript narrowing for nullable All topic", () => {
+  const start = client.indexOf("  const relevantVideos = useMemo(() => {");
+  const endMarker = "  }, [videos, master, program, theme, focus, choice, recommended]);";
+  const end = client.indexOf(endMarker, start);
+  assert.ok(start >= 0 && end > start);
+  const actualMemo = client.slice(start, end + endMarker.length);
+  const source = `
+    export {};
+    type Topic = "business" | "love" | "energy" | "health";
+    type Focus = "all" | "energy" | "money" | "relationships" | "goals";
+    declare const videos: {id: string; author: string; program: string; topics: Topic[]}[];
+    declare const master: string, program: string, choice: string;
+    declare const theme: Topic | "all", focus: Focus;
+    declare const focusTopics: Record<Exclude<Focus, "all">, Topic>;
+    declare const recommended: {videos: {id: string}[]} | null;
+    declare function useMemo<T>(fn: () => T, deps: unknown[]): T;
+    ${actualMemo}
+  `;
+  const filename = "/__focus_relevance_semantics__.ts";
+  const options = { strict: true, noEmit: true, skipLibCheck: true, target: ts.ScriptTarget.ES2022 };
+  const host = ts.createCompilerHost(options);
+  const getSourceFile = host.getSourceFile.bind(host);
+  host.getSourceFile = (name, ...args) => name === filename
+    ? ts.createSourceFile(name, source, ts.ScriptTarget.ES2022, true) : getSourceFile(name, ...args);
+  const program = ts.createProgram([filename], options, host);
+  const errors = ts.getPreEmitDiagnostics(program).filter(d => d.category === ts.DiagnosticCategory.Error && d.file?.fileName === filename);
+  assert.deepEqual(errors.map(e => ts.flattenDiagnosticMessageText(e.messageText, " ")), []);
+});
+
+test('Focus hit areas use 44px desktop labels and honest 24px compact native controls, not overflow extensions',()=>{
+  const focusCss=css.slice(css.indexOf('/* Exclusive Focus belongs'));
+  const compact=focusCss.split('@media (max-width: 640px) {')[1].split('@media (max-width: 350px) {')[0];
+  const small=focusCss.split('@media (max-width: 350px) {')[1];
+  const declaration=(part,selector)=>{
+    const start=part.indexOf(selector+' {');assert.ok(start>=0,selector);
+    return part.slice(start+selector.length+2,part.indexOf('}',start));
+  };
+  const size=(rules,property)=>Number(rules.match(new RegExp('(?:^|;|\\s)'+property+':\\s*(\\d+)px'))?.[1]);
+  const label=declaration(compact,'.inlineFocus');
+  for(const dimension of ['width','height','min-width'])assert.ok(size(label,dimension)>=24,dimension);
+  const input=declaration(compact,'.page .allFocus input[type="radio"], .page .inlineFocus input[type="radio"]');
+  for(const dimension of ['width','height'])assert.ok(size(input,dimension)>=24,dimension);
+  const row=declaration(compact,'.scaleRow');
+  assert.match(row,/grid-template-columns: 24px minmax\(0,1fr\) 23px/);
+  assert.match(row,/grid-template-rows: 15px 24px/);
+  assert.ok(size(row,'column-gap')>=4);
+  assert.ok(size(row,'min-height')>=39);
+  assert.match(declaration(compact,'.scaleList'),/row-gap: 0;/);
+  assert.match(declaration(small,'.scaleRow'),/grid-template-columns: 24px minmax\(0,1fr\) 20px/);
+  assert.ok(size(declaration(compact,'.allFocus'),'min-height')>=24);
+  const desktop=focusCss.split('@media')[0];
+  assert.ok(size(declaration(desktop,'.allFocus'),'min-height')>=44);
+  assert.doesNotMatch(declaration(desktop,'.focusHeader .subText'),/font-size|line-height|overflow/);
+  assert.match(declaration(desktop,'.inlineFocus'),/flex: 0 0 44px; height: 44px/);
+  assert.doesNotMatch(focusCss,/position: absolute(?!; width: 1px)|inset: -|margin: -[2-9]|max-width: 21px/);
+  const header=client.split('<div className={styles.focusHeader} data-support-focus-header>')[1].split('</div>')[0];
+  assert.ok(header.includes('{t.scoreGuide}')&&header.includes('data-focus-option="all"'));
+  assert.ok(header.includes('data-support-focus-all-caption>{t.focusAllShort}'));
+  assert.ok(header.includes('aria-label={t.focusLabelShort + ": " + t.foci.all}'));
+  for(const short of ['All','Все','Todas'])assert.ok(client.includes('focusAllShort: "'+short+'"'));
 });

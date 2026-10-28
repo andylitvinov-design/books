@@ -9,9 +9,12 @@ for (const locale of ['en', 'ru']) {
   test(locale + ' verifier checks the exact portrait before using real My Tests navigation', async () => {
     const origin = 'http://127.0.0.1:3100', path = '/' + locale + '/app/tests'
     const events = []
-    const profile = { name: 'profile', getByRole(role, options) {
+    const profile = { name: 'profile', locator(selector) {
+      assert.equal(selector, '[data-profile-report-archive]'); return archive
+    } }
+    const archive = { name: 'archive', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
     const link = { name: 'link', first() { return this }, async click() {
@@ -27,12 +30,12 @@ for (const locale of ['en', 'ru']) {
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
       async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
-      async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
+      async toHaveAttribute(name, href) { if(value.name === 'profile') { assert.equal(name,'data-profile-mode');assert.equal(href,'account');events.push('account-mode');return } assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
     })
     await assertCabinetPortrait(page, expect, { origin, locale })
     await openCabinetMyTests(page, expect, { origin, locale })
     assert.deepEqual(events, [
-      'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:heading',
+      'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'account-mode', 'visible:archive', 'visible:heading',
       'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
     ])
   })
@@ -62,4 +65,21 @@ test('Spanish cabinet keeps its public root link and verifies the canonical port
   assert.equal(source.split("toHaveURL(origin+'/en/app/portrait')").length - 1, 2)
   assert.ok(source.includes("toHaveAttribute('lang','en')"))
   assert.ok(source.includes(".hh-app .hh-entry"))
+})
+
+// This is the actual signed-in account branch, not the separate legacy explorer.
+test('portrait oracle matches current account report archive, never legacy tabs', () => {
+  const runtime = read('components/app/profile-domains.jsx')
+  const workspace = read('components/app/app-workspace.jsx')
+  const helper = read('scripts/helpers/cabinet-navigation-verifier.mjs')
+  assert.match(workspace, /<ProfileDomains locale=\{locale\} mode="account"/)
+  assert.match(workspace, /reportsContent=\{<>/)
+  assert.ok(runtime.includes("const external = mode === 'legacy'"))
+  assert.match(runtime, /reportsContent && <section[^>]*data-profile-report-archive/)
+  assert.match(runtime, /<h1 id="hh-account-report-title">\{t.archivePanelTitle\}<\/h1>/)
+  assert.ok(runtime.includes("archivePanelTitle: 'My reports'"))
+  assert.ok(runtime.includes("archivePanelTitle: 'Мои отчёты'"))
+  assert.ok(helper.includes("toHaveAttribute('data-profile-mode', 'account')"))
+  assert.ok(helper.includes("profile.locator('[data-profile-report-archive]')"))
+  assert.doesNotMatch(helper.slice(helper.indexOf('export async function assertCabinetPortrait'),helper.indexOf('export async function openCabinetMyTests')), /hh-domain-more|My profile & reports/)
 })
