@@ -47,8 +47,10 @@ export default async function AlchemyOfTheSoulPage({ params }: Props) {
   if (!isPublicLocale(locale)) notFound();
   // The older homeopathy offering intentionally canonicalizes here. Keep its
   // original service ID so reviews link to the same master's published service.
+  // The Spanish static landing is approved, but this legacy listing has no ES
+  // localized catalogue snapshot: use EN only to resolve its public ID.
   const reviewService = await createPractitionerRepository(getAppConfig())
-    .getPublicService("andy-litvinov", "homeopathy-consultation", locale)
+    .getPublicService("andy-litvinov", "homeopathy-consultation", locale === "es" ? "en" : locale)
     .catch(() => null);
   return (
     <>

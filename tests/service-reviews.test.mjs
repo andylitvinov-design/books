@@ -105,7 +105,7 @@ test('legacy consultation canonical route retains the same approved review ident
     readFile('components/service-reviews.tsx','utf8'),
   ])
   assert.match(links,/homeopathy-consultation/)
-  assert.match(landing,/getPublicService\("andy-litvinov", "homeopathy-consultation", locale\)/)
+  assert.match(landing,/getPublicService\("andy-litvinov", "homeopathy-consultation", locale === "es" \? "en" : locale\)/)
   assert.match(landing,/<ServiceReviews serviceId=\{reviewService.service.id\} locale=\{locale\}/)
   assert.match(component,/title:"Отзывы о мастере и услуге"/)
 })
