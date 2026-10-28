@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
+import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
@@ -19,6 +19,15 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <>
+      <header className={styles.mandalaAppHeader} data-support-app-header>
+        <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}
+          aria-label={locale === "ru" ? "Назад к поддержке" : locale === "es" ? "Volver al apoyo" : "Back to Support"}>
+          <ArrowLeft size={20} aria-hidden="true" />
+        </Link>
+        <span>Holistic House</span>
+        <button type="button" aria-label={t.settings} aria-expanded={settingsOpen} aria-controls="mandala-support-settings"
+          onClick={() => setSettingsOpen(open => !open)}><Settings2 size={20} aria-hidden="true" /></button>
+      </header>
       {settingsOpen ? (
         <section className={styles.settingsPanel} id="mandala-support-settings" aria-label={t.settings} data-mandala-settings-panel>
           <h2><Settings2 size={21} aria-hidden="true" />{t.settings}</h2>

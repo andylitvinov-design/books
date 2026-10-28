@@ -95,7 +95,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl/);
+  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
   assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
