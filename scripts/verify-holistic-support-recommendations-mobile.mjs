@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { qaSupportDirectoryResponse } from "./fixtures/holistic-support-directory.mjs";
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -26,6 +27,11 @@ for (const engine of [chromium, webkit]) {
         const errors = [];
         page.on("pageerror", err => errors.push(err.message));
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
+        await page.route("**/api/public/remote-energy-support-masters?**", async route => {
+          const kind = new URL(route.request().url()).searchParams.get("kind");
+          await route.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
+        });
         try {
           const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -69,9 +75,9 @@ for (const engine of [chromium, webkit]) {
             };
           });
           assert.ok(geometry.gallery && geometry.hero &&
-            geometry.gallery.top < geometry.hero.top &&
-            geometry.gallery.bottom <= geometry.hero.top + 2,
-            label + " thumbnails must be above the main player");
+            geometry.hero.top < geometry.gallery.top &&
+            geometry.hero.bottom <= geometry.gallery.top + 2,
+            label + " original scenic video must be ABOVE miniature thumbnails");
           assert.ok(geometry.scroll <= geometry.width + 2, label + " no width overflow");
 
           const relationships = assessment.locator('[data-support-scale="relationships"] input[type="range"]');
@@ -145,6 +151,36 @@ for (const engine of [chromium, webkit]) {
           await modal.locator('button[aria-label]').first().click();
           await modal.waitFor({ state:"hidden" });
 
+          await root.locator('[data-support-tool="masters"]').click();
+          const masterViewer = root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]');
+          await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          assert.equal(await masterViewer.locator('[data-support-master-thumb]').count(),2,
+            label + " published fixture masters selectable under large profile");
+          await masterViewer.locator('[data-support-master-thumb="qa-energy-two"]').click();
+          assert.equal(await masterViewer.locator('[data-support-master-hero]').getAttribute("data-support-master-hero"),
+            "qa-energy-two",label+" second master updates hero");
+          await masterViewer.locator('[data-support-master-request]').click();
+          const masterDialog=page.locator('dialog[aria-labelledby="support-master-order-title"]');
+          await masterDialog.waitFor({state:"visible",timeout:10000});
+          assert.equal(await masterDialog.locator('[data-remote-support-specialist="qa-energy-two"]').count(),1,
+            label+" selected published master reaches the existing booking workflow");
+          await masterDialog.locator('button[aria-label]').first().click();
+          await masterDialog.waitFor({state:"hidden",timeout:8000});
+          await root.locator('[data-support-tool="consultation"]').click();
+          const consultViewer=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
+          await consultViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          assert.equal(await consultViewer.locator('[data-support-master-thumb]').count(),2,
+            label+" two published service offerings available in miniature gallery");
+          assert.equal(await consultViewer.locator('[data-support-offer-request]').count(),1,
+            label+" a real service-link request replaces duplicate generic finder");
+          await consultViewer.locator('[data-support-offer-price-filter] select').selectOption("free");
+          assert.equal(await consultViewer.locator('[data-support-master-thumb]').count(),1,
+            label+" price filter hides non-free consultation offers");
+          await root.locator('[data-support-tool="healing"]').click();
+          await root.locator('[data-support-healing-panel] [data-support-master-hero]')
+            .waitFor({state:"visible",timeout:10000});
+          assert.equal(await root.locator('[data-support-healing-panel] [data-support-master-thumb]').count(),2,
+            label+" energy mode keeps the master gallery");
           if (width === 390) {
             await root.locator('[data-support-photo] input[type="file"]').setInputFiles({
               name:"synthetic.png", mimeType:"image/png",
