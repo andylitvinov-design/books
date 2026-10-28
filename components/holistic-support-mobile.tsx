@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
-import { HolisticSupportInlineGuide } from "@/components/holistic-support-inline-guide";
+import { HolisticSupportInlineGuide, type SupportGuideTest } from "@/components/holistic-support-inline-guide";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
@@ -389,11 +389,12 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation" }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", guideTests = {} }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
   initialChoice?: SupportMobileChoice;
+  guideTests?: Record<string, SupportGuideTest[]>;
 }) {
   const t = copy[locale];
   // Single owner for the five synchronized check-ins in both UI locations.
@@ -729,6 +730,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
           {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
             key={guideVersion} locale={locale} scores={scores} editedCheckins={editedCheckins}
             goalSelection={goalSelection} videos={videos} preferredVideo={guidePreferredVideo}
+            guideTests={guideTests}
             onClose={() => setGuideOpen(false)} onRefine={openGoalFilter}
             onVideo={openGuideVideo} onChoice={openGuideChoice} /> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
