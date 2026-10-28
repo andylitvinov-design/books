@@ -117,7 +117,7 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
           operationId: operationId.current,
           serviceTitle: "Daoist talismans · basket quote",
           description,
-          sourcePath: "/" + locale + (inline ? "/holistic-support/mobile" : "/holistic-support"),
+          sourcePath: "/" + locale + "/holistic-support",
           locale, contact: { displayName:name, email, phone }, contactConsent:true,
           website:"",
         }),
