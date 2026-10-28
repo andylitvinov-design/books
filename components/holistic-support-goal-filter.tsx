@@ -127,6 +127,14 @@ const sectors: Record<GoalSector, Items> = {
   },
   meaning: {
     concerns: [
+      // Original Meaning topics come first; former Goals questions follow.
+      make("emptiness", "Emptiness", "Пустота", "Vacío"),
+      make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
+      make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
+      make("noInspiration", "No inspiration", "Нет вдохновения", "Sin inspiración"),
+      make("uncertainty", "Uncertainty", "Неопределённость", "Incertidumbre"),
+      make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
+
       // The former Goals problems now belong to Meaning and direction.
       make("stuck", "Feeling stuck", "Застой", "Estancamiento"),
       make("distraction", "Distraction", "Рассеянность", "Distracción"),
@@ -134,15 +142,16 @@ const sectors: Record<GoalSector, Items> = {
       make("fear", "Fear of failure", "Страх неудачи", "Miedo al fracaso"),
       make("tooMany", "Too many demands", "Слишком много задач", "Demasiadas tareas"),
       make("unclearGoals", "Unclear goal", "Нет ясной цели", "Meta poco clara"),
-
-      make("emptiness", "Emptiness", "Пустота", "Vacío"),
-      make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
-      make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
-      make("noInspiration", "No inspiration", "Нет вдохновения", "Sin inspiración"),
-      make("uncertainty", "Uncertainty", "Неопределённость", "Incertidumbre"),
-      make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
     ],
     tasks: [
+      // Start with purpose and values; keep every former Goals action.
+      make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
+      make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
+      make("creativity", "Create", "Творить", "Crear"),
+      make("quiet", "Inner quiet", "Внутренняя тишина", "Paz interior"),
+      make("values", "Clarify values", "Прояснить ценности", "Aclarar valores"),
+      make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
+
       // Preserve Goal actions and motivation alongside values and purpose.
       make("direction", "Find direction", "Найти направление", "Encontrar rumbo"),
       make("nextStep", "Take the next step", "Сделать шаг", "Dar el siguiente paso"),
@@ -150,23 +159,17 @@ const sectors: Record<GoalSector, Items> = {
       make("courage", "Feel courageous", "Стать смелее", "Ganar valentía"),
       make("priorities", "Set priorities", "Выбрать главное", "Priorizar"),
       make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
-
-      make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
-      make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
-      make("creativity", "Create", "Творить", "Crear"),
-      make("quiet", "Inner quiet", "Внутренняя тишина", "Paz interior"),
-      make("values", "Clarify values", "Прояснить ценности", "Aclarar valores"),
-      make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
     ],
     axes: [
+      // Overall Meaning score aligns with the first Meaning indicator.
+      axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
+      axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
+      axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
+
       // The former Goals measures stay independent and editable within Meaning.
       axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
       axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
       axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
-
-      axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
-      axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
-      axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
     ],
   },
 };
