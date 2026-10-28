@@ -699,7 +699,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   // Existing editorial test filters only: no check-in numbers or private answers in the URL.
   const testHref = supportTestHref(locale, {
     scores, editedCheckins, goalSector: goalSelection?.sector ?? null,
-    category: meditationCategoryOverride,
+    goalConcerns: goalSelection?.concerns ?? [], category: meditationCategoryOverride,
   });
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
