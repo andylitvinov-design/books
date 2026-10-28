@@ -43,12 +43,11 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
-              p:measure('[aria-label] [data-support-photo]'), // portrait is nested in its own profile region
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
               hero:measure('[data-support-player]'),
-              tabs:measure('[data-support-player] .heroMode, [data-support-player] .heroFilter'),
+              tabs:measure('[data-support-mode], [data-support-filter]'),
               videos:measure('[data-support-video]'),
               footer:measure('[data-support-mobile-bottom-nav]'),
             };
@@ -60,7 +59,7 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
           assert.ok(geometry.videos.every(v=>Math.abs(v.y-geometry.videos[0].y)<3), label+" four cards in one row");
-          const tabs = await page.locator('[data-support-player] .heroMode, [data-support-player] .heroFilter').all();
+          const tabs = await page.locator('[data-support-mode], [data-support-filter]').all();
           assert.equal(tabs.length, 4, label+" four real filter/meditation pills");
           for (const tab of tabs) {
             const box=await tab.boundingBox();
@@ -75,7 +74,10 @@ for (const browserType of [chromium, webkit]) {
 
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
-          await current.fill("2");
+          await current.focus();
+          await current.press("Home");
+          await current.press("ArrowRight");
+          assert.equal(await current.inputValue(),"2",label+" keyboard slider works");
           await root.locator('select[aria-label]').first().selectOption("relationships");
           await root.locator('[data-support-recommendations]').click();
           const panel = root.locator('[data-support-personal-recommendations]');
