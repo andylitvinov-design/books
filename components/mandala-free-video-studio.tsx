@@ -57,6 +57,7 @@ const translations = {
     voiceRequired: "Add your own voice to create this video with sound.",
     voiceInvalid: "Could not decode your recording or it exceeds 60 seconds. Telegram OGG/Opus may be unsupported by Safari. Record here or use MP3/M4A.",
     voicePrivacy: "Your original voice is in the exported file. Photo and audio stay in this browser; sending to Telegram is your choice.",
+    backgroundMode: "Money videos: portrait or background", backgroundOnly: "Animated background without photo", withPhoto: "Use my photo",
     preparingResult: "Recording…",
   },
   ru: {
@@ -82,6 +83,7 @@ const translations = {
     voiceRequired: "Добавьте голосовую запись, чтобы создать видео со звуком.",
     voiceInvalid: "Не удаётся прочитать аудио или запись длиннее 60 секунд. OGG/Opus из Telegram может не поддерживаться Safari. Запишите голос здесь или используйте MP3/M4A.",
     voicePrivacy: "В ролик войдёт ваш оригинальный голос. Фото и аудио остаются в браузере; отправка в Telegram только по вашему выбору.",
+    backgroundMode: "Денежное видео: портрет или фон", backgroundOnly: "Движущийся фон без фотографии", withPhoto: "С моей фотографией",
     preparingResult: "Запись…",
   },
   es: {
@@ -107,6 +109,7 @@ const translations = {
     voiceRequired: "Añade tu grabación de voz para crear un vídeo con sonido.",
     voiceInvalid: "No se pudo decodificar el audio o dura más de 60 segundos. OGG/Opus puede fallar en Safari. Graba aquí o usa MP3/M4A.",
     voicePrivacy: "Tu voz original estará en el vídeo. La foto y el audio permanecen en este navegador; tú eliges cuándo compartirlos.",
+    backgroundMode: "Vídeo de dinero: foto o fondo", backgroundOnly: "Fondo animado sin foto", withPhoto: "Con mi foto",
     preparingResult: "Grabando…",
   },
 } as const;
@@ -300,6 +303,10 @@ function chooseMime(hasAudio = false): string {
   return supported.find(mime => MediaRecorder.isTypeSupported(mime)) || "";
 }
 
+const BACKGROUND_CLIP = "local-money-background-only";
+function loadSceneImage(url: string): Promise<HTMLImageElement | null> {
+  return url === BACKGROUND_CLIP ? Promise.resolve(null) : loadLocalImage(url);
+}
 function loadLocalImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
@@ -313,7 +320,7 @@ function loadLocalImage(url: string): Promise<HTMLImageElement> {
 // external services or third-party assets. The original user photograph is
 // already composited in the local mandala PNG; no pixel is transmitted.
 function paint(
-  ctx: CanvasRenderingContext2D, art: HTMLImageElement,
+  ctx: CanvasRenderingContext2D, art: HTMLImageElement | null,
   effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null, title: string,
   theme: VideoTheme = "money", otherScene: LocalSceneId = "sun-flight",
   speed: Speed = "slow", brightness: Brightness = "soft",
@@ -322,6 +329,7 @@ function paint(
   const height = ctx.canvas.height;
   const adjustedTime = time * (speed === "dynamic" ? 1.45 : .76);
   if (theme !== "money") {
+    if (!art) return;
     paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
     if(brightness === "bright"){
       ctx.fillStyle="rgba(255,246,197,.075)";ctx.fillRect(0,0,width,height);
@@ -335,6 +343,7 @@ function paint(
     }
     return;
   }
+  if (!art) return;
   const centerX = width / 2;
   const centerY = height / 2;
   const size = width * 0.96;
@@ -450,6 +459,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
   const [quality, setQuality] = useState<Quality>("hd");
+  const [backgroundOnly, setBackgroundOnly] = useState(false);
   const [duration, setDuration] = useState<(typeof durations)[number]>(20);
   const [speed,setSpeed] = useState<Speed>("slow");
   const [brightness,setBrightness] = useState<Brightness>("soft");
@@ -467,7 +477,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
-  const source = photoUrl || frameUrl;
+  const portraitSource = photoUrl || frameUrl;
+  const source = theme === "money" && backgroundOnly ? BACKGROUND_CLIP : portraitSource;
   const sceneName = theme === "money"
     ? moneyTemplateLabels[moneyScene || "golden-rain"]?.[locale] ||
       moneyScenes.find(item => item.id === moneyScene)?.label[locale] || ""
@@ -475,13 +486,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,
-    effect,aspect,duration,quality,speed,brightness,music,caption,standalone,
+    effect,aspect,duration,quality,speed,brightness,music,caption,standalone,backgroundOnly,
     audioFile?.name,audioFile?.size,audioFile?.lastModified]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const audioRef = useRef(audioFile);
   audioRef.current = audioFile;
-  const canGenerate = Boolean(source) && (!photoUrl || photoConsent) && !preparing && !recording
+  const canGenerate = Boolean(source) && (!photoUrl || backgroundOnly || photoConsent) && !preparing && !recording
     && (!standalone || Boolean(audioFile));
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -554,7 +565,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let animation = 0;
     let startedAt = 0;
     let lastFrame = -1000;
-    void loadLocalImage(source).then(image => {
+    void loadSceneImage(source).then(image => {
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -601,7 +612,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         musicSession = await startAmbientMusic(music);
         if(music !== "none" && !musicSession) setMusicWarning(ui.musicFallback);
       }
-      const image=await loadLocalImage(snapshot);
+      const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
@@ -727,7 +738,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   async function shareVideo(){
     if(!result)return;
-    const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
+    const file=new File([result.blob],"holistic-house-"+(backgroundOnly?"money-background":"personal")+"."+result.extension,{type:result.mime});
     if(typeof navigator.share!=="function" ||
       (typeof navigator.canShare==="function" && !navigator.canShare({files:[file]}))){
       setNotice(ui.shareUnsupported);return;
@@ -740,7 +751,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectCategory=(next:VideoTheme)=>{
     setTheme(next);setShowAllMoney(false);setPreviewPlaying(false);
     if(next==="money")setMoneyScene("golden-rain");
-    else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
+    else {setBackgroundOnly(false);setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
   };
 
   return (
@@ -797,6 +808,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       {voiceControls}
       {standalone && !audioFile && <p role="status" className={videoStyles.warning}>{t.voiceRequired}</p>}
+      {theme === "money" && <fieldset className={videoStyles.backgroundMode} disabled={recording || preparing}
+        data-mandala-output-mode>
+        <legend>{t.backgroundMode}</legend>
+        <button type="button" aria-pressed={!backgroundOnly} onClick={()=>setBackgroundOnly(false)}
+          data-video-portrait-mode>{t.withPhoto}</button>
+        <button type="button" aria-pressed={backgroundOnly} onClick={()=>setBackgroundOnly(true)}
+          data-video-background-mode>{t.backgroundOnly}</button>
+      </fieldset>
       <section className={videoStyles.templates} data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
@@ -820,7 +839,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
                 else{setMoneyScene(money.id);setPreviewPlaying(true);}
               }}>
-              <CinematicSceneThumbnail scene={money.id} title={name} photo={sharedThumbnailPhoto}
+              <CinematicSceneThumbnail scene={money.id} title={name} photo={backgroundOnly ? null : sharedThumbnailPhoto}
                 playing={moneyScene===money.id&&previewPlaying&&!recording}/>
               <span className={videoStyles.tilePlay} aria-hidden="true">
                 {moneyScene===money.id&&previewPlaying?<Pause size={18}/>:<Play size={18} fill="currentColor"/>}
@@ -958,14 +977,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section>
 
-      {photoUrl ? (
+      {photoUrl && !backgroundOnly ? (
         <label className={videoStyles.consent}>
           <input type="checkbox" data-video-photo-consent checked={photoConsent}
             disabled={recording||preparing} onChange={event=>setPhotoConsent(event.target.checked)}/>
           <span>{ui.consent}</span>
         </label>
       ) : null}
-      {photoUrl&&!photoConsent?<p role="status" className={videoStyles.warning}>{ui.consentHelp}</p>:null}
+      {photoUrl&&!photoConsent&&!backgroundOnly?<p role="status" className={videoStyles.warning}>{ui.consentHelp}</p>:null}
 
       {recording ? (
         <div className={videoStyles.recording}>
@@ -995,7 +1014,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-mandala-video-preview/>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
-                download={"holistic-house-personal-mandala."+result.extension}
+                download={"holistic-house-"+(backgroundOnly?"money-background":"personal-mandala")+"."+result.extension}
                 data-mandala-video-download>
                 <Download size={18} aria-hidden="true"/>{ui.save} · {Math.max(1,Math.round(result.bytes/1024))} KB
               </a>
