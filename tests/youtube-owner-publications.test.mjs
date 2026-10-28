@@ -63,6 +63,8 @@ test('publication table is private, consented, indexed and source-unique',()=>{
  assert.match(sql,/r.source_owner_auth_user_id=practitioner_presentation_uploads.owner_auth_user_id/)
  const correction=code('supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql')
  assert.match(correction,/r.source_id=practitioner_presentation_uploads.id/)
+ const reviewOnly=code('supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql')
+ assert.match(reviewOnly,/current_setting\('hh.moderator',true\)='1'/)
  assert.match(sql,/r.state in \('requested','approved','publishing','uncertain','uploaded'\)/)
  assert.doesNotMatch(sql,/grant\s+.*youtube_owner_publication_requests\s+to\s+(?:anon|authenticated)|disable row level security/i)
 })
