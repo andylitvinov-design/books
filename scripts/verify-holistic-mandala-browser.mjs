@@ -341,10 +341,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
 
-        const overflow = await page.evaluate(() => ({
-          view: window.innerWidth,
-          page: document.documentElement.scrollWidth,
-        }));
+        const overflow = await page.evaluate(() => {
+          const viewport = window.innerWidth;
+          return {
+            view: viewport,
+            page: document.documentElement.scrollWidth,
+            // Geometry if a native input or control regresses again.
+            culprits: [...document.querySelectorAll("body *")]
+              .filter(el => el instanceof HTMLElement && el.getBoundingClientRect().right > viewport + 2)
+              .slice(0, 8).map(el => ({tag:el.tagName,
+                className:typeof el.className==="string"?el.className.slice(0,90):"",
+                right:Math.round(el.getBoundingClientRect().right)})),
+          };
+        });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus");
