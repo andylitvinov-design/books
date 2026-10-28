@@ -65,6 +65,46 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
   }));
 }
 
+/** Master-authored Reiki services share the existing moderated service records.
+ * The legacy remote-support booking remains intact for older published offers.
+ * No draft, paused service, credentials claim or unapproved price is leaked.
+ */
+export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promise<EnergySupportMaster[]> {
+  const [legacy, records] = await Promise.all([
+    listRemoteEnergySupportMasters(locale),
+    createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale),
+  ]);
+  const masterOffers: EnergySupportMaster[] = records.flatMap(record =>
+    record.services
+      .filter(service => service.status === "published" && service.active &&
+        service.areaKey === "energy_spiritual" && ["online", "hybrid"].includes(service.deliveryFormat) &&
+        Boolean(service.reikiOffer?.variants.length))
+      .map(service => ({
+        slug: record.slug,
+        name: record.profile.displayName || record.profile.name || service.practitionerName,
+        title: record.profile.professionalTitle || "",
+        photo: record.profile.photoPath || "",
+        serviceId: service.id,
+        serviceHref: getPublicServiceDetailHref(locale, record.slug, service.slug),
+        methods: service.methods || [],
+        bio: record.profile.shortBio || "",
+        description: service.copy?.shortDescription || "",
+        languages: service.languages || [],
+        currency: service.reikiOffer!.currency,
+        reikiOffer: service.reikiOffer,
+        reviewCount: 0, reviewAverage: 0,
+        // The structured Reiki variants, not legacy duration-only options,
+        // control the price, report and certificate matched by the filter.
+        priceOptions: [],
+        presentations: (service.serviceIntroductions || [])
+          .filter(intro => intro.language === locale && intro.media.kind === "external" &&
+            isPublicPresentationUrl(intro.media.url))
+          .map(intro => ({ type: intro.type, url: (intro.media as {kind:"external";url:string}).url })),
+      }))
+  );
+  return [...masterOffers, ...legacy];
+}
+
 /** Other approved 1:1/intro/assessment offers, never copied from the energy-only catalog.
  * Discovery is read-only: the service page or secure Cabinet owns enquiry/booking.
  */
