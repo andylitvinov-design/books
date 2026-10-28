@@ -11,6 +11,7 @@ import {
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
+import { HolisticSupportCourseProfiles } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -276,6 +277,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   // clears it. Ties are matched jointly and never become a hidden focus choice.
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
+  const [profileSector, setProfileSector] = useState<GoalSector>("energy");
   const [goalSelection, setGoalSelection] = useState<GoalSelection | null>(null);
   // Local-only accepted diagnostic sectors, maintained when the filter closes.
   const [goalSavedSectors, setGoalSavedSectors] =
@@ -371,7 +373,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const openGoalFilter = () => {
+    setProfileSector(goalSelection?.sector ?? "energy");
     setPlaying(false); setGoalFilterOpen(true);
+    window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
+      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+  };
+  const openCourseProfileFilter = (sector: GoalSector) => {
+    setProfileSector(sector);
+    setPlaying(false);
+    setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
@@ -407,6 +417,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
+  const showCourseProfileRecommendations = (sector: GoalSector) => {
+    const saved = goalSavedSectors[sector];
+    // Do not claim a tailored report before the visitor accepts the
+    // relevant self-rating. Reuse the existing consent-free local editor.
+    if (!saved) { openCourseProfileFilter(sector); return; }
+    setProfileSector(sector);
+    applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
+      recommendationFormats: goalRecommendationFormats });
+  };
   const resetGoalFilter = () => {
     setGoalSavedSectors({}); setGoalRecommendationFormats([...GOAL_RECOMMENDATION_FORMATS]);
     setGoalSelection(null); setRecommendation(null); setTheme("all");
@@ -438,7 +457,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
   const goalHasInlineFormat = activeGoalFormats.some(id =>
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
-  const scene = choice === "meditation" || choice === "pump";
+  const scene = choice === "meditation";
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
@@ -615,13 +634,19 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
           </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
-            savedSectors={goalSavedSectors} onSave={saveGoalSector}
+            savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
             selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
             onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
               <p>{activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}</p>
               <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
             </div>
+          ) : choice === "pump" ? (
+            <HolisticSupportCourseProfiles locale={locale} courses={courses}
+              savedSectors={goalSavedSectors}
+              onTests={() => changeChoice("tests")}
+              onFillProfile={openCourseProfileFilter}
+              onRecommendations={showCourseProfileRecommendations} />
           ) : scene ? (
             <>
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
