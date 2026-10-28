@@ -208,6 +208,42 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
           await root.locator('[data-support-goal-action="talismans"]').click();
           await root.locator('[data-support-talisman-viewer]').waitFor({state:"visible",timeout:8000});
+          // Owner-approved shopping mock: verify actual category navigation,
+          // three selectors and the existing quote dialog at all iPhone sizes.
+          const categories=talisman.locator("[data-support-talisman-category]");
+          assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const catRail=talisman.locator("[data-support-talisman-categories]");
+          assert.ok(await catRail.evaluate(el=>el.scrollWidth>el.clientWidth),
+            label+" more categories must really exist beyond the visible row");
+          await talisman.locator("[data-support-talisman-categories-next]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-support-talisman-categories]")?.scrollLeft>0,
+            null,{timeout:5000});
+          await talisman.locator('[data-support-talisman-category="relationships"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony",label+" love selects the existing harmony artwork");
+          await talisman.locator('[data-support-talisman-category="money"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity",label+" money selects the existing prosperity artwork");
+          await talisman.locator('[data-support-talisman-filter="master"]').click();
+          assert.equal(await talisman.locator("#talisman-master-note").isVisible(),true,
+            label+" maker disclosure does not invent a named master");
+          await talisman.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),1,
+            label+" description filter narrows to one real item");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("all");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
+            label+" clearing description restores all actual Fu art");
+          await talisman.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
+          await talisman.locator("[data-support-talisman-request]").click();
+          const order=page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
+          await order.waitFor({state:"visible",timeout:8000});
+          assert.equal(await order.locator('[data-cart-talisman="fu-prosperity"]').count(),1,
+            label+" Order opens the existing cart for the selected public item");
+          assert.equal(await order.locator("[data-talisman-quote-saved]").count(),0,
+            label+" opening a quote does not fabricate a CRM receipt or payment");
+          await order.locator("button[aria-label]").first().click();
+          await order.waitFor({state:"hidden",timeout:8000});
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-goal-filter-trigger]').click();
           assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
