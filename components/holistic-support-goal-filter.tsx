@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, Target, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
-export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
-export type GoalCheckinKey = "energy" | "money" | "relationships" | "goals" | "meaning";
-// Explicit single-source-of-truth mapping. Meaning is NOT the Goals check-in.
+export type GoalSector = "energy" | "money" | "love" | "meaning";
+export type GoalCheckinKey = "energy" | "money" | "relationships" | "meaning";
+// One Meaning check-in also covers purpose, direction and personal goals.
 export const goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey> = {
-  energy: "energy", money: "money", love: "relationships",
-  goals: "goals", meaning: "meaning",
+  energy: "energy", money: "money", love: "relationships", meaning: "meaning",
 };
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
@@ -43,7 +42,7 @@ type Axis = Item & { unit: "score" | "currency" | "months" };
 type Items = { concerns: Item[]; tasks: Item[]; axes: Axis[] };
 
 export const goalSectorFocus: Record<GoalSector, "energy" | "money" | "relationships" | "goals"> = {
-  energy: "energy", money: "money", love: "relationships", goals: "goals", meaning: "goals",
+  energy: "energy", money: "money", love: "relationships", meaning: "goals",
 };
 const make = (id: string, en: string, ru: string, es: string): Item => ({ id, en, ru, es });
 const axis = (id: string, en: string, ru: string, es: string, unit: Axis["unit"] = "score"): Axis =>
@@ -52,7 +51,6 @@ const sectorOrder: { id: GoalSector; Icon: LucideIcon }[] = [
   { id: "energy", Icon: Zap },
   { id: "money", Icon: Coins },
   { id: "love", Icon: Heart },
-  { id: "goals", Icon: Target },
   { id: "meaning", Icon: Flower2 },
 ];
 
@@ -127,31 +125,16 @@ const sectors: Record<GoalSector, Items> = {
       axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
     ],
   },
-  goals: {
+  meaning: {
     concerns: [
+      // The former Goals problems now belong to Meaning and direction.
       make("stuck", "Feeling stuck", "Застой", "Estancamiento"),
       make("distraction", "Distraction", "Рассеянность", "Distracción"),
       make("procrastination", "Putting it off", "Откладывание", "Postergación"),
       make("fear", "Fear of failure", "Страх неудачи", "Miedo al fracaso"),
       make("tooMany", "Too many demands", "Слишком много задач", "Demasiadas tareas"),
       make("unclearGoals", "Unclear goal", "Нет ясной цели", "Meta poco clara"),
-    ],
-    tasks: [
-      make("direction", "Find direction", "Найти направление", "Encontrar rumbo"),
-      make("nextStep", "Take the next step", "Сделать шаг", "Dar el siguiente paso"),
-      make("habits", "Build a habit", "Создать привычку", "Crear un hábito"),
-      make("courage", "Feel courageous", "Стать смелее", "Ganar valentía"),
-      make("priorities", "Set priorities", "Выбрать главное", "Priorizar"),
-      make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
-    ],
-    axes: [
-      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
-      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
-      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
-    ],
-  },
-  meaning: {
-    concerns: [
+
       make("emptiness", "Emptiness", "Пустота", "Vacío"),
       make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
       make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
@@ -160,6 +143,14 @@ const sectors: Record<GoalSector, Items> = {
       make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
     ],
     tasks: [
+      // Preserve Goal actions and motivation alongside values and purpose.
+      make("direction", "Find direction", "Найти направление", "Encontrar rumbo"),
+      make("nextStep", "Take the next step", "Сделать шаг", "Dar el siguiente paso"),
+      make("habits", "Build a habit", "Создать привычку", "Crear un hábito"),
+      make("courage", "Feel courageous", "Стать смелее", "Ganar valentía"),
+      make("priorities", "Set priorities", "Выбрать главное", "Priorizar"),
+      make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
+
       make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
       make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
       make("creativity", "Create", "Творить", "Crear"),
@@ -168,6 +159,11 @@ const sectors: Record<GoalSector, Items> = {
       make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
     ],
     axes: [
+      // The former Goals measures stay independent and editable within Meaning.
+      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
+      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
+      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
+
       axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
       axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
       axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
@@ -178,7 +174,7 @@ const ui = {
   en: {
     title: "Goal & task filter", sector: "Life area", current: "1. What matters right now?",
     desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
-    ratingHelp: "Three indicators. Self-ratings 1–10; financial amounts have their own units.",
+    ratingHelp: "Area indicators (up to six). Self-ratings 1–10; financial amounts have their own units.",
     now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
     currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown. Changing currency clears income values.",
     clear: "Reset filter", close: "Close filter",
@@ -194,12 +190,12 @@ const ui = {
       healing: "Reiki & energy support", masters: "Masters",
       initiations: "Initiations", mandala: "Video mandalas",
     },
-    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
+    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
     desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
-    ratingHelp: "Три показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
+    ratingHelp: "Показатели сферы (до шести). Оценки 1–10; доход и резерв — в реальных единицах.",
     now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
     currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно. Смена валюты очищает суммы дохода без конвертации.",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
@@ -215,12 +211,12 @@ const ui = {
       healing: "Рейки и энергоподдержка", masters: "Мастера",
       initiations: "Инициации", mandala: "Видеомандалы",
     },
-    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
+    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
     desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
-    ratingHelp: "Tres indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
+    ratingHelp: "Indicadores del área (hasta seis). Escalas 1–10; ingresos y reserva con unidades reales.",
     now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
     currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional. Cambiar moneda borra los ingresos sin convertirlos.",
     clear: "Restablecer filtro", close: "Cerrar filtro",
@@ -236,7 +232,7 @@ const ui = {
       healing: "Reiki y apoyo energético", masters: "Guías",
       initiations: "Iniciaciones", mandala: "Mandala en vídeo",
     },
-    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
+    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
   },
 } as const;
 
@@ -306,7 +302,7 @@ export function HolisticSupportGoalFilter({
   }
   function getRating(id: string, index: number): GoalRating {
     const current = sector === "money" && id === "incomeStability" ? scores.money
-      : index === 0 && sector !== "meaning" && sector !== "money" ? scores[goalSectorFocus[sector]] : 5;
+      : index === 0 && sector !== "money" ? scores[goalSectorCheckinKey[sector]] : 5;
     return ratings[id] ?? { current, desired: Math.max(current, 8) };
   }
   function updateRating(id: string, index: number, field: keyof GoalRating, value: number) {
