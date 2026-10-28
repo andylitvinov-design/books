@@ -662,7 +662,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   };
   const startVideo = () => {
     // A click/YouTube player start, never proof that the meditation was watched.
-    if (!selected || !quest.launch()) return;
+    // The guest battery counts meditation previews only, not free Academy lessons.
+    if (!selected || (choice === "meditation" && !quest.launch())) return;
     setPlaying(true);
   };
   const chooseMeditationCategory = (value: MeditationCategory) => {
@@ -979,16 +980,16 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                     <h2>{choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : meditationCategory === "all" ? t.heroTitle[focus] : t.meditationCategoryHero[meditationCategory]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play disabled={!quest.canPlay}><Play size={28} fill="currentColor" aria-hidden="true" />{quest.ready && !quest.canPlay ? t.playLimitReached : choice === "pump" ? t.watchLesson : t.play}</button> :
+                      data-support-play disabled={choice === "meditation" && !quest.canPlay}><Play size={28} fill="currentColor" aria-hidden="true" />{choice === "pump" ? t.watchLesson : quest.ready && !quest.canPlay ? t.playLimitReached : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
-                    {quest.ready && !quest.canPlay ? <Link href="#support-progress" className={styles.heroCourseLink} data-support-guest-limit-cta>
+                    {choice === "meditation" && quest.ready && !quest.canPlay ? <Link href="#support-progress" className={styles.heroCourseLink} data-support-guest-limit-cta>
                       {t.playToContinue}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                     {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
                       data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                   </div>
                 )}
               </div>
-              {playing && selected ? (
+              {choice === "meditation" && playing && selected ? (
                 <section className={styles.videoReflection} data-support-video-question
                   aria-label={t.videoQuestion}>
                   <div>
