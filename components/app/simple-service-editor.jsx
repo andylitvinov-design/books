@@ -292,7 +292,8 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   }
   const updateReiki=(patch)=>set('reikiOffer',{...reiki,...patch})
   const updateReikiVariant=(index,patch)=>updateReiki({variants:reiki.variants.map((variant,i)=>i===index?{...variant,...patch}:variant)})
-  const reikiPrices=reiki?reikiOfferPricing({...reiki,variants:reiki.variants.filter(v=>v.price!==''&&v.price!=null)}):null
+  const reikiPrices=reiki?reikiOfferPricing({...reiki,variants:reiki.variants
+    .filter(v=>v.price!==''&&v.price!=null).map(variant=>({...variant,price:Number(variant.price)}))}):null
   const makePayload=()=>({
     ...draft,languages:commas(languagesText),methods:commas(methodsText),
     benefits:lines(benefitsText,5),faq:lines(faqText,6),
