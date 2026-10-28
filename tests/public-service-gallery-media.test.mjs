@@ -55,3 +55,19 @@ test('public directory uses moderated service introductions and strict public UR
  assert.match(src,/\[\.\.\.new Set\(\[service.imagePath/)
  assert.doesNotMatch(src,/service\.photos\s*\|\|\s*\[\]\)\s*\.map\(\s*\w*\s*=>\s*\w*\s*\)/)
 })
+
+test('CSP admits approved Storage media only on public Support mobile, not private reports',()=>{
+ const middleware=readFileSync(new URL('../middleware.ts',import.meta.url),'utf8')
+ assert.match(middleware,/supportMobilePublishedMedia = \/\^\\\/\(en\|ru\|es\)/)
+ assert.match(middleware,/supportMobilePublishedMedia\)\)return ''/)
+ assert.match(middleware,/supportMobilePublishedMedia \? listingImageOrigin : ''/)
+ const allowed=/^\/(en|ru|es)\/holistic-support\/mobile\/?$/
+ for(const path of ['/en/holistic-support/mobile','/ru/holistic-support/mobile',
+   '/es/holistic-support/mobile/'])assert.ok(allowed.test(path),path)
+ for(const path of ['/ru/app/portrait','/ru/app/consultations',
+   '/en/client/session/private','/api/public/remote-energy-support-masters',
+   '/admin/videos','/en/holistic-support'])assert.ok(!allowed.test(path),path)
+ const gallery=readFileSync(new URL('../components/holistic-support-master-gallery.tsx',import.meta.url),'utf8')
+ assert.match(gallery,/selectedOffer.presentations\[0\].type === "audio"/)
+ assert.match(gallery,/<Headphones size=\{25\}/)
+})
