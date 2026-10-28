@@ -950,3 +950,71 @@
   .journeyContent small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .journeyHeading .goalResultsHeading h2 { font-size: 14px; }
 }
+
+
+/* Meaning is the fourth assessment; it includes purpose and goals.
+   There is no fifth Goals slider or duplicate score. */
+.scaleIcon[data-tone="meaning"] { color: #7654b6; background: #e9e2f5; }
+.scaleValue[data-tone="meaning"] { background: #e9e2f5; }
+.scaleRow[data-support-scale="meaning"] input { accent-color: #8059bf; }
+@media (max-width: 640px) {
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 13px 18px; min-height: 31px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10px,2.95vw,12px); }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 19px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .page .assessment .scaleRow { grid-template-rows: 13px 17px; min-height: 30px; }
+  .page .assessment .scaleLabel { font-size: 10.3px; }
+  .page .assessment .scaleRow input { height: 17px; }
+}
+
+/* Restore the original broad, short iPhone dashboard proportions with
+   four synchronized assessments: Energy, Money, Relationships, Meaning. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr);
+  }
+}
+@media (max-width: 640px) {
+  .page .assessment { padding-top: 7px; padding-bottom: 6px; }
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 14px 18px; min-height: 33px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10.6px, 2.95vw, 12.5px); }
+  .page .assessment .scaleIcon { width: 19px; height: 19px; }
+  .page .assessment .scaleIcon svg { width: 15px; height: 15px; }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 20px; font-size: 12px; }
+  .page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }
+}
+@media (max-width: 350px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr);
+  }
+  .page .assessment .scaleRow {
+    grid-template-rows: 12px 17px; min-height: 30px;
+  }
+  .page .assessment .scaleIcon { height: 17px; }
+  .page .assessment .scaleRow input { height: 17px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; }
+}
+
+
+/* The real iPhone three-column row must not stretch the check-in card.
+   At 390px the original 77px action tiles made the entire header 291px tall
+   although the check-in CTA finished by 255px. Keep the same four action tiles,
+   all labels and the bottom Video Mandala shortcut; just recover 18px. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .tools .toolGrid { grid-template-rows: repeat(2, minmax(0, 68px)); }
+  .page .tools .toolButton,
+  .page .tools .toolButton:last-child {
+    min-height: 68px;
+    padding-block: 3px;
+    gap: 3px;
+  }
+}

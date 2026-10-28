@@ -30,6 +30,20 @@
 .panel .sector[aria-pressed="true"] .accepted { color: #e7fff3; }
 .fields { display: grid; gap: 13px; min-width: 0; padding: 12px;
   border: 1px solid #eee8db; border-radius: 18px; background: #fffdf8; }
+/* A single shared rating, rendered above the concern/task editor.
+   This is not an extra now→want measure and never duplicates its state. */
+.sharedCheckin { display: grid; gap: 3px; min-width: 0; padding: 9px 11px 8px;
+  border: 1px solid #b9dbc8; border-radius: 12px; background: #eef8f0; color: #1b4737; }
+.sharedCheckinTop { display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; min-width: 0; }
+.sharedCheckinTop strong { font-size: 14px; line-height: 1.18; font-weight: 830;
+  overflow-wrap: anywhere; }
+.sharedCheckinTop output { flex: none; min-width: 43px; padding: 4px 6px;
+  border-radius: 9px; background: #d7eadc; color: #18593d;
+  text-align: center; font-size: 15px; line-height: 1.15; font-weight: 850; }
+.sharedCheckin input[type="range"] { display: block; width: 100%; min-width: 0;
+  height: 28px; margin: 0; accent-color: #008f68; cursor: pointer; }
+.sharedCheckin small { font-size: 11px; line-height: 1.18; color: #617a68; }
 .fieldGroup + .fieldGroup { padding-top: 12px; border-top: 1px solid #eee8de; }
 .fieldGroup h3,.metricsHeading h3 { margin: 0 0 3px; font-size: 17px; line-height: 1.25;
   font-weight: 850; color: #1b3029; }
@@ -125,68 +139,75 @@
   background: #f5faf4; color: #355147; font-size: 14px; line-height: 1.2; font-weight: 700; }
 .panel :is(button,input,select):focus-visible { outline: 3px solid #eeae36; outline-offset: 2px; }
 @media (max-width: 640px) {
-  .panel { gap: 9px; padding: 10px 8px; border-radius: 18px; }
+  .panel { gap: 10px; padding: 10px 7px; border-radius: 18px; }
   .header h2 { font-size: clamp(16px,4.1vw,20px); }
   .header h2 svg { width: 19px; height: 19px; }
-  .columns { grid-template-columns: minmax(91px,32%) minmax(0,1fr); gap: 6px; }
+  /* Give the content + reading space; keep the five-category rail legible. */
+  .columns { grid-template-columns: minmax(88px,28%) minmax(0,1fr); gap: 7px; }
   .sectors { gap: 6px; }
   .panel .sector { flex-direction: column; align-items: flex-start; justify-content: center;
-    gap: 4px; min-height: 64px; padding: 7px 6px; border-radius: 12px;
-    font-size: clamp(10px,2.8vw,13px); line-height: 1.16; font-weight: 760; }
-  .sector svg { width: 20px; height: 20px; }
-  .fields { gap: 11px; padding: 8px 6px; border-radius: 13px; }
+    gap: 5px; min-height: 68px; padding: 8px 6px; border-radius: 12px;
+    font-size: clamp(11.5px,3.1vw,14px); line-height: 1.21; font-weight: 770; }
+  .sector svg { width: 21px; height: 21px; }
+  .fields { gap: 12px; padding: 10px 7px; border-radius: 13px; }
+  .sharedCheckin { padding: 9px 8px 8px; gap: 3px; border-radius: 11px; }
+  .sharedCheckinTop { gap: 5px; }
+  .sharedCheckinTop strong { font-size: clamp(13px,3.55vw,15px); line-height: 1.19; }
+  .sharedCheckinTop output { min-width: 40px; padding: 4px 5px; font-size: 15px; }
+  .sharedCheckin input[type="range"] { height: 30px; }
+  .sharedCheckin small { font-size: clamp(11px,2.9vw,12px); line-height: 1.25; }
   .fieldGroup + .fieldGroup { padding-top: 9px; }
-  .fieldGroup h3 { font-size: clamp(12px,3.35vw,16px); }
-  .fieldGroup p { font-size: 10px; margin-bottom: 6px; }
-  .checks { gap: 4px; }
-  .check { min-height: 42px; padding: 5px 4px; gap: 4px;
-    border-radius: 9px; font-size: clamp(10px,2.65vw,12px); line-height: 1.16; }
-  .check input { width: 15px; height: 15px; }
+  .fieldGroup h3 { font-size: clamp(14.5px,3.9vw,17px); line-height: 1.25; }
+  .fieldGroup p { font-size: clamp(11.5px,3vw,12.5px); line-height: 1.29; margin-bottom: 8px; }
+  .checks { gap: 6px; }
+  .check { min-height: 47px; padding: 8px 6px; gap: 6px;
+    border-radius: 10px; font-size: clamp(12px,3.25vw,14px); line-height: 1.22; }
+  .check input { width: 18px; height: 18px; }
   .metricsGroup { margin-top: 1px; padding: 10px 0 0; border-radius: 0; }
-  .metricsHeading h3 { font-size: clamp(12px,3.35vw,15px); }
-  .metricsHeading p { font-size: 10px; }
+  .metricsHeading h3 { font-size: clamp(14.5px,3.8vw,17px); }
+  .metricsHeading p { font-size: clamp(11.5px,2.9vw,12.5px); line-height: 1.29; }
   .ratings { gap: 4px; }
   .axis { grid-template-columns: minmax(0,1fr); gap: 3px; min-height: 0;
     padding: 5px 6px; }
-  .axis > strong { font-size: clamp(10px,2.9vw,13px); }
+  .axis > strong { font-size: clamp(12px,3.2vw,14px); line-height: 1.22; }
   .sliders { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; }
   .slider { min-height: 43px; padding: 2px 4px; }
-  .slider span { font-size: 10px; }
-  .slider output { min-width: 20px; min-height: 20px; font-size: 12px; }
+  .slider span { font-size: clamp(11px,2.9vw,12px); }
+  .slider output { min-width: 22px; min-height: 22px; font-size: 13px; }
   .amountField input { padding: 2px 3px; height: 28px; }
-  .amountField small { font-size: 9px; }
+  .amountField small { font-size: 10.5px; }
   /* Stay in document flow: never float above fourth axis or the fixed iOS dock. */
   .actions { position: static; display: flex; flex-direction: column; gap: 6px;
     margin-top: 3px; padding: 11px 0 8px; }
   .categoryActions { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
   .formatFieldset { margin-top: 2px; padding: 8px 7px 9px; border-radius: 12px; }
-  .formatFieldset legend { font-size: clamp(12px,3.5vw,15px); }
-  .formatHelp { margin-bottom: 7px; font-size: 10.5px; }
+  .formatFieldset legend { font-size: clamp(14px,3.6vw,16px); }
+  .formatHelp { margin-bottom: 9px; font-size: clamp(11.5px,3vw,12.5px); line-height: 1.3; }
   .formatGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
-  .formatChoice { min-height: 43px; padding: 6px 5px; gap: 5px;
-    border-radius: 9px; font-size: clamp(10.5px,2.9vw,12.5px); }
-  .formatChoice input { width: 16px; height: 16px; }
-  .panel .save,.panel .next { min-height: 46px; padding: 6px 5px;
-    font-size: clamp(10.5px,2.95vw,13px); gap: 4px; }
+  .formatChoice { min-height: 47px; padding: 7px 7px; gap: 6px;
+    border-radius: 10px; font-size: clamp(12px,3.15vw,14px); line-height: 1.22; }
+  .formatChoice input { width: 18px; height: 18px; }
+  .panel .save,.panel .next { min-height: 48px; padding: 7px 7px;
+    font-size: clamp(12px,3.2vw,14px); line-height: 1.2; gap: 5px; }
   .panel .save svg,.panel .next svg { width: 16px; height: 16px; }
-  .panel .accepted { font-size: 10px; gap: 3px; }
-  .panel .apply { width: 100%; min-height: 58px; padding: 9px 10px;
-    font-size: clamp(13px,3.7vw,16px); line-height: 1.18; font-weight: 850;
+  .panel .accepted { font-size: 11.5px; gap: 4px; }
+  .panel .apply { width: 100%; min-height: 60px; padding: 10px 11px;
+    font-size: clamp(14px,3.8vw,17px); line-height: 1.2; font-weight: 850;
     overflow-wrap: anywhere; }
   .apply svg { width: 20px; height: 20px; }
   .apply span { min-width: 0; }
-  .apply small { font-size: clamp(10px,2.7vw,11px); line-height: 1.2; }
+  .apply small { font-size: clamp(11px,2.85vw,12px); line-height: 1.23; }
   .panel .reset { align-self: center; width: min(100%,240px); min-height: 44px;
     padding: 7px 12px; border-color: #d5e2d6; background: transparent;
-    font-size: 13px; line-height: 1.2; font-weight: 650; }
+    font-size: 13.5px; line-height: 1.2; font-weight: 650; }
 }
 @media (max-width: 360px) {
-  .columns { grid-template-columns: 92px minmax(0,1fr); gap: 5px; }
-  .panel .sector { font-size: 10px; min-height: 62px; }
+  .columns { grid-template-columns: minmax(82px,27%) minmax(0,1fr); gap: 5px; }
+  .panel .sector { font-size: 11.5px; min-height: 66px; }
   .checks { grid-template-columns: 1fr; }
-  .check { min-height: 39px; font-size: 11.5px; }
+  .check { min-height: 46px; font-size: 12.5px; }
   .axis { grid-template-columns: minmax(0,1fr); gap: 3px; }
-  .axis > strong { font-size: 10px; }
+  .axis > strong { font-size: 12px; }
   .slider { padding: 2px 3px; }
   .currencyLabel select { min-height: 32px; }
 }

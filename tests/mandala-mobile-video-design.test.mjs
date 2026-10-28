@@ -55,6 +55,34 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(ui,/@media\(max-width:380px\)/);
 });
 
+test("talisman-style video catalog changes real theme, scene, motion and duration state in all locales", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  assert.match(studio,/data-video-catalog/);
+  assert.match(studio,/data-video-category-rail/);
+  assert.match(studio,/data-video-category=\{item\}/);
+  assert.match(studio,/const videoCategories = \["energy","money","relationships","goals","health"\]/);
+  assert.match(studio,/next==="health" \? "gentle-shield"/);
+  assert.match(studio,/data-video-catalog-filters/);
+  assert.match(studio,/data-video-style/);
+  assert.match(studio,/data-video-motion/);
+  assert.match(studio,/data-video-length/);
+  assert.match(studio,/setSpeed\(event.currentTarget.value as Speed\)/);
+  assert.match(studio,/setDuration\(Number\(event.currentTarget.value\)/);
+  assert.match(studio,/data-video-theme-active=\{videoCategory\}/);
+  assert.match(studio,/data-preview-playing=\{previewPlaying/);
+  assert.match(studio,/data-video-hero-create/);
+  assert.match(studio,/href="#video-settings"/);
+  for(const value of ["Video mandala","Vídeo mandala","Видео-мандала","Wellbeing","Bienestar","Здоровье"])
+    assert.ok(studio.includes(value),value);
+  assert.match(css,/\.catalogShell\{/);
+  assert.match(css,/\.categoryRail\{/);
+  assert.match(css,/\.catalogFilters\{/);
+  assert.match(css,/\.catalogShell \.heroMain\{/);
+  assert.match(css,/@media\(max-width:390px\)/);
+  assert.doesNotMatch(studio,/\bfetch\s*\(|FormData|localStorage|sessionStorage/i);
+});
+
 test("money, energy, relationships and goals have real local frame engines, not fake poster links", async () => {
   const ts=await import("typescript");
   const client=read("components/mandala-free-video-studio.tsx");
@@ -111,7 +139,7 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
   assert.match(studio,/disabled=\{!canGenerate\}/);
-  assert.match(studio,/const source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
+  assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
   assert.doesNotMatch(studio+audio,/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
@@ -154,7 +182,7 @@ test("mobile theme is a compact accessible menu, and hero returns to live select
   assert.match(studio,/setThemeMenuOpen\(false\)/);
   assert.match(studio,/aria-expanded=\{themeMenuOpen\}/);
   assert.match(studio,/aria-controls="video-hero-themes"/);
-  assert.match(studio,/theme==="money"&&!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording/);
+  assert.match(studio,/data-hero-promo=\{!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-theme-toggle/);

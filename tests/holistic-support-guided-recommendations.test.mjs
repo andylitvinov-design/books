@@ -56,7 +56,7 @@ test("local-only scores remain private and explanations have full EN/RU/ES parit
     "Мои оценки и открытые видео", "Mis valoraciones y vídeos abiertos",
   ]) assert.ok(client.includes(value), value);
   assert.match(client, /setProfileSector\(goalSelection\?\.sector \?\? \(\{/);
-  assert.match(client, /scores\[focus\]\}\/10/);
+  assert.match(client, /focusScores\[focus\]\}\/10/);
   assert.doesNotMatch(client, /journeyCategory\[focus\].*scores|journeyCategory\[focus\].*concerns/);
   assert.doesNotMatch(client, /\.setItem\(|sendBeacon\(|fetch\("/);
 });
@@ -72,6 +72,13 @@ test("five rows fit the existing compact responsive card without a new app shell
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
+test("right action tiles no longer stretch four-score left card to 291px", () => {
+  assert.ok(css.indexOf("The real iPhone three-column row") > css.indexOf("Restore the original broad"),
+    "right-hand action heights override older tall dashboard rules");
+  assert.match(css, /\.page \.tools \.toolGrid \{ grid-template-rows: repeat\(2, minmax\(0, 68px\)\); \}/);
+  assert.match(css, /\.page \.tools \.toolButton:last-child \{[\s\S]*?min-height: 68px;/);
+});
+
 test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   const result = ts.transpileModule(client, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
@@ -79,4 +86,20 @@ test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   });
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")), []);
+});
+
+test("four-domain iPhone header returns to the original wide, compact proportions", () => {
+  assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'),
+    "one Meaning score covers Goals, retaining four linked check-ins");
+  assert.ok(client.includes('checkinOrder.map(id =>'), "all four sliders remain in the left card");
+  for (const rule of [
+    "minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr)",
+    "minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr)",
+    "grid-template-rows: 14px 18px; min-height: 33px",
+    "grid-template-rows: 12px 17px; min-height: 30px",
+    ".page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }",
+  ]) assert.ok(css.includes(rule), "mobile header contract: " + rule);
+  assert.ok(css.indexOf("Restore the original broad, short iPhone dashboard proportions") >
+    css.indexOf("The fifth assessment is the real Meaning score"),
+    "compact geometry must override earlier five-row styling");
 });

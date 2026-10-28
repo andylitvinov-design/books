@@ -78,7 +78,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await hero.waitFor({state:"visible",timeout:12000});
         assert.equal(await hero.locator('nav a, nav button').count(),4);
         assert.equal(await hero.getAttribute("data-hero-promo"),"true",
-          "golden illustrative hero is visible until actual preview starts");
+          "illustrative theme scene is visible until actual preview starts");
         assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
         assert.equal(await page.locator("#video-hero-themes").isVisible(),false);
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
@@ -88,6 +88,21 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           document.querySelector('[data-video-theme="energy"]')?.getAttribute("aria-pressed")==="true",
           undefined,{timeout:9000});
 
+        // New Talisman-style controls drive the same local renderer and settings.
+        const catalog=page.locator("[data-video-catalog]");
+        await catalog.waitFor({state:"visible"});
+        assert.equal(await catalog.locator("[data-video-category]").count(),5);
+        assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
+        await page.locator('[data-video-category="health"]').click();
+        assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
+        assert.equal(await page.locator("[data-video-style]").inputValue(),"gentle-shield");
+        await page.locator("[data-video-motion]").selectOption("dynamic");
+        await page.locator("[data-video-length]").selectOption("30");
+        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-category="energy"]').click();
+        await page.locator("[data-video-style]").selectOption("green-vortex");
+        assert.equal(await page.locator('[data-video-template="green-vortex"]').getAttribute("aria-pressed"),"true");
         const categoryControls=page.locator("[data-video-theme]");
         assert.equal(await categoryControls.count(),4,"exactly four actual themes");
         for(const id of ["money","energy","relationships","goals"]){

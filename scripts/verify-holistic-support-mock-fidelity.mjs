@@ -49,7 +49,10 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
-          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
+            label + " four top check-ins; Goals is part of Meaning");
+          assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
+            label+" no duplicate Goals scale");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
@@ -171,7 +174,7 @@ for (const browserType of [chromium, webkit]) {
             label+" theme chosen by minimum, not a Focus selector");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
-          // The scenic workspace itself expands into a five-sector goal editor.
+          // The workspace expands into four sectors, including merged Meaning and Goals.
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
@@ -181,7 +184,59 @@ for (const browserType of [chromium, webkit]) {
             const title=document.getElementById("support-goal-filter-title");
             return !!title && title.getBoundingClientRect().top >= 59;
           }, null, {timeout:4000});
-          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          assert.equal(await filter.locator('[data-goal-sector]').count(),4,label+" four merged goal sectors");
+          assert.equal(await filter.locator('[data-goal-sector="goals"]').count(),0,
+            label+" no standalone Goals category");
+          // Live two-way sync between upper-left check-ins and the new compact
+          // first slider in the filter, without dragging the separate axes.
+          const checkinPairs = [
+            ["energy","energy"], ["money","money"],
+            ["love","relationships"], ["meaning","meaning"],
+          ];
+          for (const [sector, key] of checkinPairs) {
+            await filter.locator('[data-goal-sector="'+sector+'"]').click();
+            const inside=filter.locator('[data-support-goal-checkin-input]');
+            const top=root.locator('[data-support-scale="'+key+'"] input[type="range"]');
+            assert.equal(await inside.inputValue(),await top.inputValue(),
+              label+" "+sector+" inherits the exact top-left score");
+            assert.equal(await filter.locator('[data-support-goal-checkin="'+sector+'"]').count(),1,
+              label+" one shared slider ahead of concerns for "+sector);
+            const placement=await filter.locator('[data-support-goal-details]').evaluate(el=>{
+              const a=el.querySelector('[data-support-goal-checkin]')?.getBoundingClientRect();
+              const b=el.querySelector('#goal-problems')?.getBoundingClientRect();
+              return {firstBottom:a?.bottom,problemsTop:b?.top,visible:a?.width>0};
+            });
+            assert.ok(placement.visible && placement.firstBottom<=placement.problemsTop+2,
+              label+" shared score comes before category questions: "+JSON.stringify(placement));
+            if(width===390 || sector==="meaning" || sector==="love") {
+              await inside.focus(); await inside.press("End");
+              assert.equal(await top.inputValue(),"10",
+                label+" dragging goal-filter "+sector+" immediately updates top card");
+              await top.focus(); await top.press("Home"); await top.press("ArrowRight");
+              assert.equal(await inside.inputValue(),"2",
+                label+" editing top-left "+key+" immediately updates filter");
+            }
+          }
+          // One Meaning score and category includes ALL former Goals choices.
+          const meaningTop=root.locator('[data-support-scale="meaning"] input[type="range"]');
+          await filter.locator('[data-goal-sector="meaning"]').click();
+          await meaningTop.focus(); await meaningTop.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" Meaning rating is synchronized");
+          for (const id of ["unclearGoals","stuck","lostPurpose","valueConflict"]) {
+            assert.equal(await filter.locator('[data-goal-concern="'+id+'"]').count(),1,
+              label+" merged Meaning concern "+id);
+          }
+          for (const id of ["direction","nextStep","habits","motivation","values","purpose"]) {
+            assert.equal(await filter.locator('[data-goal-task="'+id+'"]').count(),1,
+              label+" merged Meaning action "+id);
+          }
+          for (const id of ["goalClarity","actions","progress","meaningAxis","selfContact","inspirationAxis"]) {
+            assert.equal(await filter.locator('[data-goal-axis="'+id+'"]').count(),1,
+              label+" retained Meaning/Goals measured axis "+id);
+          }
+          assert.equal(await filter.locator('[data-goal-axis]').count(),6,
+            label+" merged Meaning has six independent editable indicators");
           await filter.locator('[data-goal-sector="money"]').click();
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
             await filter.locator('[data-goal-concern="'+concern+'"] input').check();
@@ -226,6 +281,17 @@ for (const browserType of [chromium, webkit]) {
             label+" return restores Money selections");
           assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
             label+" return restores Money tasks");
+          // A later edit to the global check-in makes a previously accepted
+          // sector stale until it is explicitly saved again.
+          const topMoney=root.locator('[data-support-scale="money"] input[type="range"]');
+          await topMoney.focus(); await topMoney.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" check-in changes in upper-left remain live during accepted review");
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),0,
+            label+" accepted badge disappears when global score changes");
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" saving again accepts updated top rating");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
           const formats=filter.locator('[data-support-goal-format]');
@@ -286,6 +352,34 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(!layout.applyClipped && !layout.resetClipped && !layout.saveClipped &&
               !layout.nextClipped,
             label+" full action labels must remain visible: "+JSON.stringify(layout));
+          const readability=await filter.evaluate(el=>{
+            const rail=el.querySelector('[data-support-goal-sectors]');
+            const details=el.querySelector('[data-support-goal-details]');
+            const heading=details.querySelector('#goal-problems');
+            const option=details.querySelector('[data-goal-concern]');
+            const optionInput=option.querySelector('input');
+            const sector=rail.querySelector('[data-goal-sector]');
+            const right=details.getBoundingClientRect(),left=rail.getBoundingClientRect();
+            const optionBoxes=[...details.querySelectorAll('[data-goal-concern],[data-goal-task]')];
+            return {
+              leftWidth:left.width,rightWidth:right.width,
+              headingFont:parseFloat(getComputedStyle(heading).fontSize),
+              optionFont:parseFloat(getComputedStyle(option).fontSize),
+              sectorFont:parseFloat(getComputedStyle(sector).fontSize),
+              checkboxWidth:optionInput.getBoundingClientRect().width,
+              contentOverflow:optionBoxes.some(item=>{
+                const rect=item.getBoundingClientRect();
+                return rect.left<right.left-2||rect.right>right.right+2;
+              }),
+            };
+          });
+          assert.ok(readability.rightWidth>=readability.leftWidth*1.85,
+            label+" narrower left rail must give more room to questions: "+JSON.stringify(readability));
+          assert.ok(readability.headingFont>=14.4 && readability.optionFont>=12 &&
+            readability.sectorFont>=11.4 && readability.checkboxWidth>=17,
+            label+" readable iPhone goal labels and tap targets: "+JSON.stringify(readability));
+          assert.equal(readability.contentOverflow,false,
+            label+" large option labels must wrap within right column");
           if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
           const filterOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -486,8 +580,16 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
-            label+" Academy course routes still work");
+          const academyHrefs=await root.locator('[data-support-courses-panel] a')
+            .evaluateAll(links => links.map(a => a.getAttribute("href")));
+          // Academy's two canonical links remain, while optional published
+          // Maya/Egyptian/Greek course links may increase the total.
+          assert.ok(academyHrefs.includes("/"+locale+"/academy") &&
+            academyHrefs.includes("/"+locale+"/academy/reiki/tantra-reiki/discover"),
+            label+" existing Academy and free Reiki paths remain available");
+          assert.ok(academyHrefs.length>=2 && academyHrefs.every(href =>
+            typeof href === "string" && href.startsWith("/"+locale+"/academy")),
+            label+" additional published course links stay in localized Academy: "+JSON.stringify(academyHrefs));
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();

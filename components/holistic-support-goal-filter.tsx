@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, Target, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
-export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
+export type GoalSector = "energy" | "money" | "love" | "meaning";
+export type GoalCheckinKey = "energy" | "money" | "relationships" | "meaning";
+// One Meaning check-in also covers purpose, direction and personal goals.
+export const goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey> = {
+  energy: "energy", money: "money", love: "relationships", meaning: "meaning",
+};
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
 export type GoalCurrency = "CAD" | "EUR" | "USD" | "GBP";
@@ -17,6 +22,9 @@ export const GOAL_RECOMMENDATION_FORMATS = [
 ] as const;
 export type GoalRecommendationFormat = typeof GOAL_RECOMMENDATION_FORMATS[number];
 export type GoalSectorSnapshot = {
+  // Captured from the same live slider shown in the top-left self-rating card.
+  // If that shared slider changes, "Accepted" must no longer be shown.
+  checkin?: number;
   concerns: string[];
   tasks: string[];
   ratings: Record<string, GoalRating>;
@@ -34,7 +42,7 @@ type Axis = Item & { unit: "score" | "currency" | "months" };
 type Items = { concerns: Item[]; tasks: Item[]; axes: Axis[] };
 
 export const goalSectorFocus: Record<GoalSector, "energy" | "money" | "relationships" | "goals"> = {
-  energy: "energy", money: "money", love: "relationships", goals: "goals", meaning: "goals",
+  energy: "energy", money: "money", love: "relationships", meaning: "goals",
 };
 const make = (id: string, en: string, ru: string, es: string): Item => ({ id, en, ru, es });
 const axis = (id: string, en: string, ru: string, es: string, unit: Axis["unit"] = "score"): Axis =>
@@ -43,7 +51,6 @@ const sectorOrder: { id: GoalSector; Icon: LucideIcon }[] = [
   { id: "energy", Icon: Zap },
   { id: "money", Icon: Coins },
   { id: "love", Icon: Heart },
-  { id: "goals", Icon: Target },
   { id: "meaning", Icon: Flower2 },
 ];
 
@@ -118,8 +125,17 @@ const sectors: Record<GoalSector, Items> = {
       axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
     ],
   },
-  goals: {
+  meaning: {
     concerns: [
+      // Original Meaning topics come first; former Goals questions follow.
+      make("emptiness", "Emptiness", "Пустота", "Vacío"),
+      make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
+      make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
+      make("noInspiration", "No inspiration", "Нет вдохновения", "Sin inspiración"),
+      make("uncertainty", "Uncertainty", "Неопределённость", "Incertidumbre"),
+      make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
+
+      // The former Goals problems now belong to Meaning and direction.
       make("stuck", "Feeling stuck", "Застой", "Estancamiento"),
       make("distraction", "Distraction", "Рассеянность", "Distracción"),
       make("procrastination", "Putting it off", "Откладывание", "Postergación"),
@@ -128,6 +144,15 @@ const sectors: Record<GoalSector, Items> = {
       make("unclearGoals", "Unclear goal", "Нет ясной цели", "Meta poco clara"),
     ],
     tasks: [
+      // Start with purpose and values; keep every former Goals action.
+      make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
+      make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
+      make("creativity", "Create", "Творить", "Crear"),
+      make("quiet", "Inner quiet", "Внутренняя тишина", "Paz interior"),
+      make("values", "Clarify values", "Прояснить ценности", "Aclarar valores"),
+      make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
+
+      // Preserve Goal actions and motivation alongside values and purpose.
       make("direction", "Find direction", "Найти направление", "Encontrar rumbo"),
       make("nextStep", "Take the next step", "Сделать шаг", "Dar el siguiente paso"),
       make("habits", "Build a habit", "Создать привычку", "Crear un hábito"),
@@ -136,32 +161,15 @@ const sectors: Record<GoalSector, Items> = {
       make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
     ],
     axes: [
-      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
-      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
-      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
-    ],
-  },
-  meaning: {
-    concerns: [
-      make("emptiness", "Emptiness", "Пустота", "Vacío"),
-      make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
-      make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
-      make("noInspiration", "No inspiration", "Нет вдохновения", "Sin inspiración"),
-      make("uncertainty", "Uncertainty", "Неопределённость", "Incertidumbre"),
-      make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
-    ],
-    tasks: [
-      make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
-      make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
-      make("creativity", "Create", "Творить", "Crear"),
-      make("quiet", "Inner quiet", "Внутренняя тишина", "Paz interior"),
-      make("values", "Clarify values", "Прояснить ценности", "Aclarar valores"),
-      make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
-    ],
-    axes: [
+      // Overall Meaning score aligns with the first Meaning indicator.
       axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
       axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
       axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
+
+      // The former Goals measures stay independent and editable within Meaning.
+      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
+      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
+      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
     ],
   },
 };
@@ -169,12 +177,14 @@ const ui = {
   en: {
     title: "Goal & task filter", sector: "Life area", current: "1. What matters right now?",
     desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
-    ratingHelp: "Three indicators. Self-ratings 1–10; financial amounts have their own units.",
+    ratingHelp: "Area indicators (up to six). Self-ratings 1–10; financial amounts have their own units.",
     now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
     currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown. Changing currency clears income values.",
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
+    checkinTitle: "Overall now",
+    checkinHint: "Same rating as the top-left check-in",
     formatTitle: "4. What would you like to receive?",
     formatHelp: "All formats are included. Uncheck anything you don't want to see.",
     formatLabels: {
@@ -183,17 +193,19 @@ const ui = {
       healing: "Reiki & energy support", masters: "Masters",
       initiations: "Initiations", mandala: "Video mandalas",
     },
-    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
+    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
     desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
-    ratingHelp: "Три показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
+    ratingHelp: "Показатели сферы (до шести). Оценки 1–10; доход и резерв — в реальных единицах.",
     now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
     currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно. Смена валюты очищает суммы дохода без конвертации.",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
+    checkinTitle: "Общая оценка сейчас",
+    checkinHint: "Связана с оценкой вверху слева",
     formatTitle: "4. Что включить в рекомендации?",
     formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
     formatLabels: {
@@ -202,17 +214,19 @@ const ui = {
       healing: "Рейки и энергоподдержка", masters: "Мастера",
       initiations: "Инициации", mandala: "Видеомандалы",
     },
-    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
+    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
     desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
-    ratingHelp: "Tres indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
+    ratingHelp: "Indicadores del área (hasta seis). Escalas 1–10; ingresos y reserva con unidades reales.",
     now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
     currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional. Cambiar moneda borra los ingresos sin convertirlos.",
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
+    checkinTitle: "Valoración general actual",
+    checkinHint: "La misma puntuación del bloque superior izquierdo",
     formatTitle: "4. ¿Qué quieres en las recomendaciones?",
     formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
     formatLabels: {
@@ -221,7 +235,7 @@ const ui = {
       healing: "Reiki y apoyo energético", masters: "Guías",
       initiations: "Iniciaciones", mandala: "Mandala en vídeo",
     },
-    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
+    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
   },
 } as const;
 
@@ -238,7 +252,8 @@ export function summarizeGoalSelection(locale: PublicLocale, selection: GoalSele
 
 type Props = {
   locale: PublicLocale;
-  scores: Record<"energy" | "money" | "relationships" | "goals", number>;
+  scores: Record<GoalCheckinKey, number>;
+  onCheckinChange: (sector: GoalSector, value: number) => void;
   initial: GoalSelection | null;
   preferredSector?: GoalSector;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
@@ -251,8 +266,8 @@ type Props = {
 };
 
 export function HolisticSupportGoalFilter({
-  locale, scores, initial, preferredSector, savedSectors, selectedFormats, onSelectedFormatsChange,
-  onSave, onApply, onReset, onClose,
+  locale, scores, onCheckinChange, initial, preferredSector, savedSectors,
+  selectedFormats, onSelectedFormatsChange, onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
   const initialSector = preferredSector ?? initial?.sector ?? "energy";
@@ -268,8 +283,10 @@ export function HolisticSupportGoalFilter({
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
   const selected = sectors[sector];
+  const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
-  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id]);
+  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id] &&
+    accepted[id]?.checkin === scores[goalSectorCheckinKey[id]]);
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
@@ -288,7 +305,7 @@ export function HolisticSupportGoalFilter({
   }
   function getRating(id: string, index: number): GoalRating {
     const current = sector === "money" && id === "incomeStability" ? scores.money
-      : index === 0 && sector !== "meaning" && sector !== "money" ? scores[goalSectorFocus[sector]] : 5;
+      : index === 0 && sector !== "money" ? scores[goalSectorCheckinKey[sector]] : 5;
     return ratings[id] ?? { current, desired: Math.max(current, 8) };
   }
   function updateRating(id: string, index: number, field: keyof GoalRating, value: number) {
@@ -317,7 +334,7 @@ export function HolisticSupportGoalFilter({
       if (item.unit === "score") values[item.id] = getRating(item.id, index);
       else if (amounts[item.id]) entered[item.id] = amounts[item.id];
     });
-    return { concerns: [...concerns], tasks: [...tasks], ratings: values,
+    return { checkin: currentCheckin, concerns: [...concerns], tasks: [...tasks], ratings: values,
       ...(sector === "money" ? { amounts: entered, currency } : {}) };
   }
   function saveCurrent() {
@@ -375,6 +392,21 @@ export function HolisticSupportGoalFilter({
           ))}
         </nav>
         <div className={styles.fields} data-support-goal-details>
+          <label className={styles.sharedCheckin} data-support-goal-checkin={sector}>
+            <span className={styles.sharedCheckinTop}>
+              <strong>{t.checkinTitle}</strong>
+              <output data-support-goal-checkin-value>{currentCheckin}/10</output>
+            </span>
+            <input type="range" min="1" max="10" step="1"
+              data-support-goal-checkin-input value={currentCheckin}
+              aria-label={t.labels[sector] + ": " + t.checkinTitle}
+              aria-valuetext={currentCheckin + " / 10"}
+              onChange={event => {
+                onCheckinChange(sector, Number(event.target.value));
+                markDirty();
+              }} />
+            <small>{t.checkinHint}</small>
+          </label>
           <section className={styles.fieldGroup} aria-labelledby="goal-problems">
             <h3 id="goal-problems">{t.current}</h3>
             <p>{t.select}</p>
