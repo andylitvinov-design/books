@@ -78,6 +78,33 @@ import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
 import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
+// Only a button on the public practitioner showroom may request one of these
+// pre-existing protected destinations after Google OAuth. Never put client data,
+// a draft, a URL or an arbitrary return path into the OAuth continuation.
+const PRACTICE_PREVIEW_ACTIONS = Object.freeze({
+  create:'/app/practice?panel=services&create=1&starter=session',
+  service:'/app/practice?panel=services&create=1&starter=session',
+  session:'/app/practice?panel=services',
+  meditation:'/app/practice?panel=materials&materialTab=courses&create=1&meditation=audio',
+  talisman:'/app/practice?panel=services&create=1&starter=energy',
+  reiki:'/app/practice?panel=services&create=1&starter=reiki',
+  course:'/app/practice?panel=materials&materialTab=courses&create=1',
+  material:'/app/practice?panel=materials&materialTab=articles',
+  meditationList:'/app/practice?panel=materials&materialTab=courses',
+  talismanList:'/app/practice?panel=services',
+  reikiList:'/app/practice?panel=services',
+  courseList:'/app/practice?panel=materials&materialTab=courses',
+  clients:'/app/practice?panel=clients',
+  requests:'/app/practice?panel=requests',
+  messages:'/app/messages?section=clients&tab=chats',
+  services:'/app/practice?panel=services',
+  materials:'/app/practice?panel=materials',
+  analytics:'/app/practice?panel=analytics',
+  profile:'/app/practice?panel=profile',
+})
+const validPracticeContinuation=(continueTo,profi)=>
+  profi===null || (continueTo==='practice-preview' && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)) ||
+  (continueTo==='my-practice' && ['session','intro','workshop','diagnostic','energy','personal','course','profile','requests'].includes(profi))
 export const runtime = 'nodejs'
 // The Cabinet Postgres and verified Supabase Auth run in ca-central-1.
 // Keep only this private API close to its data source (not the whole site).
@@ -160,7 +187,7 @@ async function handle(request, { params }) {
         !['cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -205,7 +232,7 @@ async function handle(request, { params }) {
         coachingLang = url.searchParams.get('coachingLang')
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -249,7 +276,9 @@ async function handle(request, { params }) {
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching/intake`
               : continueTo === 'practice-preview'
-                ? `${origin}/${locale}/practice`
+                ? profi && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)
+                  ? `${origin}/${locale==='es'?'en':locale}${PRACTICE_PREVIEW_ACTIONS[profi]}`
+                  : `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
