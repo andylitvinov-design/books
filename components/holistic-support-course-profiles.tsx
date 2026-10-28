@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, Coins, Compass,
   Heart, HeartPulse, ListChecks, Sparkles,
@@ -13,7 +12,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { SupportMobileCourse } from "@/components/holistic-support-mobile";
 import styles from "./holistic-support-course-profiles.module.css";
 
-type ProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
+export type CourseProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
 
 const profiles = [
   { id: "energy", Icon: HeartPulse },
@@ -80,17 +79,18 @@ const content = {
 } as const;
 
 export function HolisticSupportCourseProfiles({
-  locale, courses, savedSectors, onTests, onFillProfile, onRecommendations,
+  locale, courses, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
 }: {
   locale: PublicLocale;
   courses: SupportMobileCourse[];
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+  active: CourseProfileSector;
+  onSelect: (sector: CourseProfileSector) => void;
   onTests: () => void;
   onFillProfile: (sector: GoalSector) => void;
   onRecommendations: (sector: GoalSector) => void;
 }) {
   const t = content[locale];
-  const [active, setActive] = useState<ProfileSector>("energy");
   const current = t.profile[active];
 
   return <section className={styles.root} data-support-course-profiles aria-labelledby="support-course-profiles-title">
@@ -98,7 +98,7 @@ export function HolisticSupportCourseProfiles({
     <div className={styles.profiles} role="group" aria-label={t.heading}>
       {profiles.map(({ id, Icon }) => <button type="button" key={id} className={styles.profile}
         data-support-profile={id} data-active={active === id} aria-pressed={active === id}
-        onClick={() => setActive(id)}>
+        onClick={() => onSelect(id)}>
         <Icon size={23} aria-hidden="true" />
         <strong>{t.profile[id].label}</strong>
         <small>{t.profile[id].hint}</small>
