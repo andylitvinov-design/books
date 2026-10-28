@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Run the new metadata contract suite inside the existing owner-video CI command.
+import './owner-telegram-youtube-metadata.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
