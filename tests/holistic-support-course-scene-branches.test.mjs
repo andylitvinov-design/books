@@ -48,10 +48,34 @@ function selection(input = home) {
   assert.equal(attr(course, "courses").initializer.expression.getText(file), "courses");
   return { file, component, scene, branch, pump };
 }
+// Follow only closed local string-union aliases used by Choice. Missing,
+// cyclic, imported or arbitrary types cannot be hidden among ignored bindings.
+function localChoiceTypeClosure(file) {
+  const aliases = file.statements.filter(ts.isTypeAliasDeclaration);
+  const ordered = [], active = new Set(), completed = new Set();
+  const visit = name => {
+    assert.ok(!active.has(name), "cyclic selected type alias: " + name);
+    if (completed.has(name)) return;
+    const alias = one(aliases.filter(node => node.name.text === name));
+    assert.ok(!alias.typeParameters?.length, "selected aliases cannot be generic");
+    active.add(name);
+    const inspect = type => {
+      if (ts.isUnionTypeNode(type)) { for (const member of type.types) inspect(member); return; }
+      if (ts.isParenthesizedTypeNode(type)) { inspect(type.type); return; }
+      if (ts.isLiteralTypeNode(type) && ts.isStringLiteral(type.literal)) return;
+      assert.ok(ts.isTypeReferenceNode(type) && ts.isIdentifier(type.typeName)
+        && !type.typeArguments?.length, "selected type must be a closed local string union");
+      visit(type.typeName.text);
+    };
+    inspect(alias.type);
+    active.delete(name); completed.add(name); ordered.push(alias.getText(file));
+  };
+  visit("Choice");
+  return ordered.join("\n");
+}
 function impossibleComparisons(input) {
   const { file, scene, branch, pump } = selection(input);
-  const choice = one(file.statements.filter(x => ts.isTypeAliasDeclaration(x) && x.name.text === "Choice"));
-  const selected = choice.getText(file) + '\ndeclare const choice: Choice;\ndeclare const React: any;\n' +
+  const selected = localChoiceTypeClosure(file) + '\ndeclare const choice: Choice;\ndeclare const React: any;\n' +
     'declare namespace JSX { interface IntrinsicElements { [name: string]: any } }\n' +
     "const scene = " + scene.initializer.getText(file) + ";\nconst selected = (" + pump.condition.getText(file) +
     ") ? null : scene ? " + branch.whenTrue.getText(file) + " : null;";
@@ -79,6 +103,47 @@ test("actual Courses branch is separate; meditation JSX has no impossible pump c
   assert.deepEqual(impossibleComparisons(mutant), [{ code: 2367, expression: 'choice === "pump"' }]);
   assert.ok(branch.whenTrue.getText(file).includes("data-support-player"));
 });
+
+test("selected compiler follows direct and aliased Choice unions and rejects incomplete closures", () => {
+  const check = definition => {
+    const file = parse(definition);
+    assert.equal(file.parseDiagnostics.length, 0);
+    return localChoiceTypeClosure(file);
+  };
+  assert.equal(check('type Choice = "meditation" | "pump";'), 'type Choice = "meditation" | "pump";');
+  assert.equal(check('type Choice = SupportMobileChoice; export type SupportMobileChoice = "meditation" | "pump";'),
+    'export type SupportMobileChoice = "meditation" | "pump";\ntype Choice = SupportMobileChoice;');
+  assert.equal(check('type Choice = (Middle); type Middle = Base; type Base = "meditation" | "pump";'),
+    'type Base = "meditation" | "pump";\ntype Middle = Base;\ntype Choice = (Middle);');
+  for (const definition of [
+    'type Choice = Missing;',
+    'type Choice = Next; type Next = Choice;',
+    'type Choice = "meditation"; type Choice = "pump";',
+    'type Choice = any;',
+    'type Choice = Other.Choice;',
+    'type Choice = Box<"meditation">; type Box<T> = T;',
+    'type Choice<T> = "meditation";',
+    'type Choice = "meditation" | number;',
+  ]) assert.throws(() => check(definition), undefined, definition);
+  // Run the real selected compiler and its injected impossible comparison for
+  // both supported producer shapes, not just a source-string closure check.
+  const file = parse(home);
+  const closure = localChoiceTypeClosure(file);
+  const union = file.statements.filter(ts.isTypeAliasDeclaration)
+    .find(node => node.name.text === "SupportMobileChoice");
+  const direct = union ? home.replace(/type Choice = SupportMobileChoice;/,
+    'type Choice = ' + union.type.getText(file) + ';') : home;
+  for (const source of [home, direct]) {
+    assert.deepEqual(impossibleComparisons(source), []);
+    const { branch } = selection(source);
+    const fragment = one(all(branch.whenTrue, ts.isJsxFragment));
+    const offset = fragment.openingFragment.end;
+    const mutant = source.slice(0, offset) + '{choice === "pump" ? null : null}' + source.slice(offset);
+    assert.deepEqual(impossibleComparisons(mutant), [{ code: 2367, expression: 'choice === "pump"' }]);
+  }
+  assert.ok(closure.includes('type Choice'), "selected source includes the actual Choice declaration");
+});
+
 test("actual meditation program callback retains selection, pause and selected-video reset", () => {
   const { file, branch } = selection();
   const group = one(all(branch.whenTrue, x => ts.isJsxElement(x) && attr(x.openingElement, "data-support-filter")?.initializer?.text === "program"));

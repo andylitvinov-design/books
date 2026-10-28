@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { isPublicLocale } from "@/data/academy/catalog";
@@ -50,8 +51,9 @@ export default async function MandalaMeditationPage({ params }: Props) {
   if (!isPublicLocale(locale)) notFound();
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
-      <PublicSiteHeader locale={locale} />
+      <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }

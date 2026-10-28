@@ -279,9 +279,11 @@ async function handle(request, { params }) {
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching/intake`
               : continueTo === 'practice-preview'
-                ? profi && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)
-                  ? `${origin}/${locale==='es'?'en':locale}${PRACTICE_PREVIEW_ACTIONS[profi]}`
-                  : `${origin}/${locale}/practice`
+                // Auth returns to the SAME public practitioner dashboard,
+                // never the legacy editor. The validated action is only a
+                // proposed next step the person may select after signing in.
+                ? `${origin}/${locale}/practice${profi && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)
+                    ? '?ready='+encodeURIComponent(profi) : ''}`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
