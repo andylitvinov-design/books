@@ -60,7 +60,7 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
     "golden-shield", "abundance-circle", "life-gifts", "dreams",
   ];
   for (const id of ids) assert.match(effects, new RegExp('id: "' + id + '"'));
-  assert.equal((effects.match(/ id: "/g) || []).length, 12, "exactly twelve client-safe concepts");
+  assert.equal((effects.match(/ id: "/g) || []).length, 16, "all sixteen client-safe money visual stories");
   for (const locale of ["en", "ru", "es"]) assert.match(effects, new RegExp(locale + ': "'));
   assert.match(studio, /moneyTemplates/);
   assert.match(studio, /data-mandala-money-option/);
@@ -125,7 +125,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
 test("existing 12 money scenes retain tap-triggered animated thumbnails", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(studio,/data-mandala-scene-preview=\{scene\}/);
+  assert.match(studio,/data-mandala-scene-preview=\{id\}/);
   assert.match(studio,/data-scene-playing=\{playing&&visible\?"true":"false"\}/);
   assert.match(studio,/IntersectionObserver/);
   assert.match(studio,/window\.requestAnimationFrame\(draw\)/);
