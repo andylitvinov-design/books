@@ -423,6 +423,13 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
             label+" session has no certificate toggle");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(2).click();
+          // Academy programmes are real source-backed offers, not a single generic course link.
+          const courseCards=healing.locator('[data-support-reiki-offer][data-reiki-offer-format="course"]');
+          assert.equal(await courseCards.count(),2,label+" free Reiki Practitioner and Tantra training cards");
+          assert.equal(await healing.locator('[data-support-reiki-offer="reiki-free-practitioner"]').count(),1,
+            label+" one existing free Practitioner programme, no duplicate enrollment");
+          assert.match(await healing.locator('[data-support-reiki-offer="tantra-learning"] a').getAttribute("href") ?? "",
+            /\/academy\/reiki\/tantra-reiki$/,label+" original training route");
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),0,
             label+" courses never show session practitioner selector");
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
@@ -431,6 +438,10 @@ for (const browserType of [chromium, webkit]) {
           assert.ok((await reikiFilter.locator('[data-support-reiki-apply]').innerText()).includes("0"),
             label+" no fictional certified training offers");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(1).click();
+          assert.equal(await healing.locator('[data-support-reiki-offer="tantra-free-initiation"]').count(),1,
+            label+" original Tantra free initiation request card");
+          assert.equal(await healing.locator('[data-support-reiki-offer="tantra-personal-initiation"]').count(),1,
+            label+" personal initiation with canonical price");
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),1,
             label+" initiation may request a certificate");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(0).click();
