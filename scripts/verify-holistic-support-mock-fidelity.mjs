@@ -207,7 +207,13 @@ for (const browserType of [chromium, webkit]) {
           const healing=root.locator('[data-support-healing-panel] [data-support-master-viewer]');
           await healing.waitFor({state:"visible",timeout:8000});
           const heroMaster=healing.locator('[data-support-master-hero]');
-          await heroMaster.waitFor({state:"visible",timeout:8000});
+          // WebKit can hydrate the public directory more slowly after repeated
+          // mobile routes. Keep the real hero assertion; diagnose status/errors
+          // rather than treating a loading placeholder as a successful result.
+          await heroMaster.waitFor({state:"visible",timeout:25000}).catch(async error => {
+            const status = await healing.innerText().catch(() => "(directory unmounted)");
+            throw new Error(label + " master gallery failed after fetch: " + status + " / " + error.message);
+          });
           assert.equal(await healing.locator('[data-support-master-thumb]').count(),2,
             label+" fixture's published specialist options beneath large hero");
           await healing.locator('[data-support-master-thumb="qa-energy-two"]').click();
@@ -218,7 +224,7 @@ for (const browserType of [chromium, webkit]) {
             label+" Masters shortcut opens same-page hero catalogue");
           await root.locator('[data-support-tool="consultation"]').click();
           const offers=root.locator('[data-support-master-viewer][data-support-directory-kind="consultation"]');
-          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:8000});
+          await offers.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:25000});
           assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
