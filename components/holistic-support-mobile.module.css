@@ -464,3 +464,43 @@
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }
 }
+
+/* Optional in-place before/after mandala between the original video hero and
+   its source-backed gallery. The existing mobile three-zone header is untouched. */
+.mandalaEntry {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 10px 20px; min-width: 0; padding: 13px 20px;
+  border-bottom: 1px solid #e3e5d7;
+  background: linear-gradient(112deg,#f0f5e9,#fdf8ea);
+}
+.mandalaEntry p {
+  flex: 1 1 220px; max-width: 370px; margin: 0; color: #526e5a;
+  font-size: 13px; line-height: 1.4;
+}
+.mandalaToggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 1 auto; gap: 9px; min-width: 0; min-height: 51px; padding: 10px 17px;
+  border: 1px solid #0c7957; border-radius: 14px;
+  background: #0d8462; color: white; font-size: 16px;
+  font-weight: 850; line-height: 1.22;
+  box-shadow: 0 4px 12px #0b6f4b29;
+}
+.mandalaToggle:hover { background: #076b4f; }
+.mandalaToggle svg { flex: none; }
+.mandalaToggle svg:last-child { transition: transform .22s ease; }
+.mandalaToggle[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.mandalaReveal { display: block; min-width: 0; animation: showMandala .35s ease-out both; }
+.mandalaReveal[hidden] { display: none; }
+@keyframes showMandala {
+  from { opacity: 0; transform: translateY(-9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 640px) {
+  .mandalaEntry { display: grid; justify-items: stretch; gap: 6px; padding: 10px 11px; }
+  .mandalaToggle { width: 100%; min-height: 46px; padding: 9px 11px; font-size: clamp(14px, 4vw, 16px); }
+  .mandalaEntry p { font-size: 12px; text-align: center; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mandalaReveal { animation: none; }
+  .mandalaToggle svg:last-child { transition: none; }
+}
