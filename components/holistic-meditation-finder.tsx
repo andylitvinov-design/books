@@ -178,10 +178,10 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
   const [maxDurationMinutes, setMaxDurationMinutes] = useState(0);
   const [timeOfDay, setTimeOfDay] = useState("any");
   const [spiritualStyle, setSpiritualStyle] = useState("any");
-  const [experienceLevel, setExperienceLevel] = useState("any");
-  const [intensity, setIntensity] = useState("any");
+  const [experienceLevel, setExperienceLevel] = useState<"any" | "beginner" | "intermediate" | "advanced">("any");
+  const [intensity, setIntensity] = useState<"any" | "gentle" | "moderate" | "intense">("any");
   const [posture, setPosture] = useState("any");
-  const [musicStyle, setMusicStyle] = useState("any");
+  const [musicStyle, setMusicStyle] = useState<"any" | "voice_only" | "music_under_voice" | "ambient_only">("any");
   const [exactOnly, setExactOnly] = useState(false);
   const [includeApprox, setIncludeApprox] = useState(false);
   const [freeServicesOnly, setFreeServicesOnly] = useState(false);
@@ -303,13 +303,13 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
           <p className={styles.durationNote}>{t.advancedNote}</p>
           <div className={styles.selects}>
             <label>{t.experience}
-              <select value={experienceLevel} onChange={e => {setExperienceLevel(e.target.value);setApplied(null);}}>
+              <select value={experienceLevel} onChange={e => {setExperienceLevel(e.target.value as typeof experienceLevel);setApplied(null);}}>
                 <option value="any">{t.all}</option>
                 {facet("level").map(option=><option key={option.facet_key} value={option.facet_key}>{titleOf(option,locale)}</option>)}
               </select>
             </label>
             <label>{t.intensityLabel}
-              <select value={intensity} onChange={e => {setIntensity(e.target.value);setApplied(null);}}>
+              <select value={intensity} onChange={e => {setIntensity(e.target.value as typeof intensity);setApplied(null);}}>
                 <option value="any">{t.all}</option>
                 {(["gentle","moderate","intense"] as const).map(v=><option key={v} value={v}>{t.intensityOptions[v]}</option>)}
               </select>
@@ -321,7 +321,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
               </select>
             </label>
             <label>{t.musicLabel}
-              <select value={musicStyle} onChange={e => {setMusicStyle(e.target.value);setApplied(null);}}>
+              <select value={musicStyle} onChange={e => {setMusicStyle(e.target.value as typeof musicStyle);setApplied(null);}}>
                 <option value="any">{t.all}</option>
                 {(["voice_only","music_under_voice","ambient_only"] as const).map(v=><option key={v} value={v}>{t.musicOptions[v]}</option>)}
               </select>
