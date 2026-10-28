@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_CART_UPDATED_EVENT, TALISMAN_GOOGLE_RETURN_KEY } from "@/lib/practitioners/taoist-talisman-cart";
+import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_CART_UPDATED_EVENT, TALISMAN_GOOGLE_RETURN_KEY, isTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./taoist-talisman-cart.module.css";
 
@@ -163,6 +163,22 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
     return () => window.removeEventListener(TALISMAN_CART_UPDATED_EVENT, sync);
   }, []);
 
+  // The standalone /talismans/cart page is already mounted after OAuth;
+  // unlike the mobile viewer, no separate gallery needs to be reopened.
+  useEffect(() => {
+    if (pathname !== "/" + locale + "/talismans/cart") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("hh_enquiry") !== "google") return;
+    try {
+      if (isTalismanGoogleReturn(window.sessionStorage,pathname,url.search)) {
+        window.sessionStorage.removeItem(TALISMAN_GOOGLE_RETURN_KEY);
+        url.searchParams.delete("hh_enquiry");
+        url.searchParams.delete("auth");
+        window.history.replaceState(window.history.state,"",url.pathname + url.search + url.hash);
+      }
+    } catch { /* Google profile is fetched independently; no payment starts. */ }
+  }, [pathname,locale]);
+
   useEffect(() => {
     let active = true;
     fetch("/api/app/auth/contact-profile", {credentials:"same-origin",cache:"no-store"})
@@ -219,7 +235,8 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
     if (googleBusy || busy || payBusy) return;
     setGoogleBusy(true); setError("");
     try {
-      const source = pathname === "/" + locale + "/holistic-support/mobile"
+      const source = pathname === "/" + locale + "/holistic-support/mobile" ||
+        pathname === "/" + locale + "/talismans/cart"
         ? pathname : "/" + locale + "/holistic-support";
       const response = await fetch("/api/app/auth/start", {
         method:"POST",credentials:"same-origin",
