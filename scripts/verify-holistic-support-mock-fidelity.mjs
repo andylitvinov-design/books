@@ -165,6 +165,12 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
+          // Regression for real iPhone screenshot: heading must not sit behind
+          // the iOS status bar after the programmatic scroll to this panel.
+          await page.waitForFunction(() => {
+            const title=document.getElementById("support-goal-filter-title");
+            return !!title && title.getBoundingClientRect().top >= 59;
+          }, null, {timeout:4000});
           assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
           await filter.locator('[data-goal-sector="money"]').click();
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
@@ -177,9 +183,11 @@ for (const browserType of [chromium, webkit]) {
             label+" more than three problems can be selected");
           assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
             label+" more than three goals can be selected");
-          assert.equal(await filter.locator('[data-goal-axis]').count(),4,label+" four money indicators");
-          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),4,
-            label+" two subjective indicators have now and want sliders");
+          assert.equal(await filter.locator('[data-goal-axis]').count(),3,label+" three money indicators");
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),2,
+            label+" one subjective indicator has now and want sliders");
+          assert.equal(await filter.locator('[data-support-goal-details] [data-support-goal-axes]').count(),1,
+            label+" now/want measures are inside the right-hand diagnostic column");
           assert.equal(await filter.locator('[data-goal-metric]').count(),4,
             label+" income and reserve have real-unit now and want controls");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
@@ -189,6 +197,76 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" Save marks the money category as Accepted");
+          await filter.locator('[data-support-goal-next]').click();
+          assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
+            label+" Next moves to the next diagnostic sector");
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" prior Accepted category retains its checkmark");
+          await filter.locator('[data-goal-concern="loneliness"] input').check();
+          await filter.locator('[data-goal-task="closeness"] input').check();
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
+            label+" multiple sectors retain independent Accepted marks");
+          await filter.locator('[data-goal-sector="money"]').click();
+          assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
+            label+" return restores Money selections");
+          assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
+            label+" return restores Money tasks");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
+            label+" accepted Money amount remains when switching categories");
+          // The third measure must finish BEFORE the buttons begin: no
+          // sticky overlay, no oversized reset card, no squeezed primary CTA.
+          const layout=await filter.evaluate(el=>{
+            const last=el.querySelector('[data-goal-axis]:last-child');
+            const footer=el.querySelector('[data-support-goal-actions]');
+            const apply=el.querySelector('[data-support-goal-apply]');
+            const reset=el.querySelector('[data-support-goal-reset]');
+            const sector=el.querySelector('[data-goal-sector]');
+            const details=el.querySelector('[data-support-goal-details]');
+            const metrics=el.querySelector('[data-support-goal-axes]');
+            const save=el.querySelector('[data-support-goal-save]');
+            const next=el.querySelector('[data-support-goal-next]');
+            const panel=el.getBoundingClientRect(), a=apply.getBoundingClientRect(),
+              f=footer.getBoundingClientRect(), l=last.getBoundingClientRect(),
+              d=details.getBoundingClientRect(), m=metrics.getBoundingClientRect(),
+              sa=save.getBoundingClientRect(), ne=next.getBoundingClientRect();
+            return {
+              position:getComputedStyle(footer).position,
+              panelWidth:panel.width, actionWidth:a.width,
+              footerTop:f.top, lastAxisBottom:l.bottom,
+              footerHeight:f.height, applyHeight:a.height,
+              metricLeft:m.left, metricRight:m.right, metricWidth:m.width,
+              detailsLeft:d.left, detailsRight:d.right,
+              saveY:sa.y, nextY:ne.y, saveRight:sa.right, nextLeft:ne.left,
+              applySize:parseFloat(getComputedStyle(apply).fontSize),
+              resetSize:parseFloat(getComputedStyle(reset).fontSize),
+              sectorSize:parseFloat(getComputedStyle(sector).fontSize),
+              saveSize:parseFloat(getComputedStyle(save).fontSize),
+              applyClipped:apply.scrollHeight>apply.clientHeight+2 || apply.scrollWidth>apply.clientWidth+2,
+              resetClipped:reset.scrollHeight>reset.clientHeight+2 || reset.scrollWidth>reset.clientWidth+2,
+              saveClipped:save.scrollHeight>save.clientHeight+2 || save.scrollWidth>save.clientWidth+2,
+              nextClipped:next.scrollHeight>next.clientHeight+2 || next.scrollWidth>next.clientWidth+2,
+            };
+          });
+          assert.equal(layout.position,"static",label+" actions must be in document flow");
+          assert.ok(layout.footerTop>=layout.lastAxisBottom-2,
+            label+" CTA must never cover final slider: "+JSON.stringify(layout));
+          assert.ok(layout.actionWidth>=layout.panelWidth*.76,
+            label+" recommendation CTA must use the panel width, not narrow left cell: "+JSON.stringify(layout));
+          assert.ok(layout.metricLeft>=layout.detailsLeft-2 &&
+              layout.metricRight<=layout.detailsRight+2 && layout.metricWidth<layout.panelWidth*.8,
+            label+" all measures must fit the right diagnostic column: "+JSON.stringify(layout));
+          assert.ok(Math.abs(layout.saveY-layout.nextY)<=3 && layout.saveRight<=layout.nextLeft+3,
+            label+" Save and Next must share one row without overlap: "+JSON.stringify(layout));
+          assert.ok(layout.applySize<=17 && layout.resetSize<=15 && layout.sectorSize<=15 &&
+              layout.saveSize<=15,
+            label+" button font sizes must override parent .page button shorthand: "+JSON.stringify(layout));
+          assert.ok(!layout.applyClipped && !layout.resetClipped && !layout.saveClipped &&
+              !layout.nextClipped,
+            label+" full action labels must remain visible: "+JSON.stringify(layout));
           if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
           const filterOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -307,6 +385,8 @@ for (const browserType of [chromium, webkit]) {
           await order.waitFor({state:"hidden",timeout:8000});
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-goal-filter-trigger]').click();
+          assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
+            label+" two Accepted sector badges persist after closing/reopening the editor");
           assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
             label+" chosen currency preserved when editing");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
@@ -319,8 +399,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-support-goal-reset]').click();
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
-          assert.equal(await root.locator('[data-goal-axis]').count(),4,
-            label+" energy also has four distinct measures");
+          assert.equal(await root.locator('[data-goal-axis]').count(),3,
+            label+" energy has three compact measures in the right column");
+          assert.equal(await root.locator('[data-goal-accepted]').count(),0,
+            label+" Reset clears all previously accepted sector badges");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
           assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
