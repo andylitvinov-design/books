@@ -34,11 +34,12 @@ test("public mandala adapts original seven Power Place geometries and stone-mosa
   assert.match(mosaic, /id="pebbles"/);
 });
 
-test("private photo never leaves the browser and can be cropped or removed", () => {
+test("private mandala photo is decoded locally and can be cropped or removed", () => {
   const client = read("components/mandala-meditation-client.tsx");
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /image\.size > 10 \* 1024 \* 1024/);
-  assert.match(client, /URL\.createObjectURL\(image\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(read("lib/mandala/prepare-browser-photo.ts"), /25_000_000/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /URL\.createObjectURL\(prepared\)/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
   assert.match(client, /setZoom\(/);
