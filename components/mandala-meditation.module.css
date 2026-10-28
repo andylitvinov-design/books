@@ -236,3 +236,11 @@
   .advancedWorkbench .workspace{grid-template-columns:1fr}
 }
 @media(max-width:350px){.workshop{width:calc(100% - 12px)}}
+
+/* Keep the video editor in the approved mobile Support shell, rather than
+   returning to the site's older marketing header and bottom navigation. */
+@media (max-width: 640px) {
+  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .siteHeaderWrap { display: none; }
+  .workshop { width: calc(100% - 12px); padding-top: 5px; padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+}

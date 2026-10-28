@@ -114,8 +114,10 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
     assert.ok(studio.includes(key));
   assert.match(studio,/setScores\(prev=>\(\{\.\.\.prev,\[key\]:Number/);
   assert.match(studio,/selectCategory\(lowestTheme\)/);
-  assert.match(studio,/href=\{"\/"\+locale\+"\/talismans"\}/);
-  assert.match(studio,/href=\{"\/"\+locale\+"\/masters"\}/);
+  for(const view of ["tests","meditation","consultation","talisman","healing","pump","masters"]) {
+    assert.ok(studio.includes("/holistic-support/mobile?view="+view), "new design category: "+view);
+  }
+  assert.doesNotMatch(studio,/href=\{"\/"\+locale\+"\/(?:tests|talismans|masters|academy)"\}/);
   assert.match(studio,/href="#video-templates"/);
   assert.match(studio,/data-mandala-money-preview/);
   assert.match(studio,/data-mandala-cinematic-canvas/);

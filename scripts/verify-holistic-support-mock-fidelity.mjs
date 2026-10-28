@@ -51,10 +51,17 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
-          const mandalaAction=root.locator('[data-support-video-mandala]');
-          assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
+          const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
+          assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
+          assert.equal(await testsAction.getAttribute("aria-controls"),"support-tests-panel",label+" Tests stays in-page");
+          const mandalaAction=root.locator('#support-tools [data-support-video-mandala]');
+          assert.equal(await mandalaAction.count(),1,label+" Video Mandala is the right-hand full-width green tab");
           assert.equal(await mandalaAction.getAttribute("href"),
             "/"+locale+"/holistic-support/mandala",label+" genuine existing video studio route");
+          assert.equal(await root.locator('[data-support-mobile-bottom-nav] a').nth(0).getAttribute("href"),
+            "/"+locale+"/holistic-support/mobile",label+" Home stays in the new Support UI");
+          assert.equal(await root.locator('[data-support-mobile-bottom-nav] a').nth(1).getAttribute("href"),
+            "/"+locale+"/practice",label+" Practice opens approved public guest showcase");
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-goal-filter-trigger]').count(), 1,
             label + " goal filter beneath the self-ratings");
           assert.equal(await root.locator('[data-support-active-focus]').count(), 1,
