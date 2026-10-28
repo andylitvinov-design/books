@@ -493,7 +493,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
               }}>
               <span className={styles.moneyFlowMedia}>
                 <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]}
-                  photo={sharedThumbnailPhoto}
+                  photo={backgroundOnly ? null : sharedThumbnailPhoto}
                   playing={moneyScene === scene.id && previewPlaying && !recording} />
                 <span className={styles.moneyFlowPlayBadge} aria-hidden="true">
                   {moneyScene === scene.id && previewPlaying
