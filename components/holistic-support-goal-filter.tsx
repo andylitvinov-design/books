@@ -240,6 +240,7 @@ type Props = {
   locale: PublicLocale;
   scores: Record<"energy" | "money" | "relationships" | "goals", number>;
   initial: GoalSelection | null;
+  preferredSector?: GoalSector;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
   selectedFormats: GoalRecommendationFormat[];
   onSelectedFormatsChange: (formats: GoalRecommendationFormat[]) => void;
@@ -250,12 +251,12 @@ type Props = {
 };
 
 export function HolisticSupportGoalFilter({
-  locale, scores, initial, savedSectors, selectedFormats, onSelectedFormatsChange,
+  locale, scores, initial, preferredSector, savedSectors, selectedFormats, onSelectedFormatsChange,
   onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
-  const initialSector = initial?.sector ?? "energy";
-  const initialDraft = initial ?? savedSectors[initialSector];
+  const initialSector = preferredSector ?? initial?.sector ?? "energy";
+  const initialDraft = initial?.sector === initialSector ? initial : savedSectors[initialSector];
   const [sector, setSector] = useState<GoalSector>(initialSector);
   const [concerns, setConcerns] = useState<string[]>(initialDraft?.concerns ?? []);
   const [tasks, setTasks] = useState<string[]>(initialDraft?.tasks ?? []);

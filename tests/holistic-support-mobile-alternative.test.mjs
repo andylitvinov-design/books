@@ -152,9 +152,11 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Courses", healing: "Reiki support"/);
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
-  assert.match(client, /data-support-courses-panel/);
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
-  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(read("app/[locale]/services/remote-energy-support/page.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /data-support-tool="masters"/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /"\/masters"/);
@@ -298,28 +300,31 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries are visible in Courses mode as 3 iPhone cards and selectable native program dropdown entries", () => {
-  for (const word of ["Мистерии Майя", "Мистерии Египта", "Мистерии Греции"]) {
-    assert.ok(client.includes(word), word);
-  }
-  assert.match(client, /data-support-mystery-courses/);
-  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
-  assert.match(client, /aria-pressed=\{activeMystery\?\.id === course\.id\}/);
-  assert.match(client, /setProgram\(course\.id\)/);
-  assert.match(client, /setMaster\("all"\); setTheme\("all"\); setPlaying\(false\)/);
+test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  const courseCss = read("components/holistic-support-course-profiles.module.css");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
+  assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
+  assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
+  assert.match(courseProfiles, /src=\{course\.poster\}/);
+  assert.match(courseProfiles, /\/academy\`/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
+  // The original route/manifests remain covered separately above. The new
+  // profile screen links to those originals rather than pretending its old,
+  // now-unreachable inline course picker is still a visible UI.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
-  assert.match(client, /data-support-active-course-link/);
-  assert.match(client, /activeMystery\?\.videoGroups\.map\(group =>/);
   assert.match(client, /data-support-filter="program"/);
   assert.match(client, /\{activeProgramValues\.map\(key =>/);
-  assert.match(client, /choice === "pump" \? t\.watchLesson : t\.play/);
-  assert.match(css, /\.mysteryPickerGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.mysteryPickerCard\[aria-pressed="true"\]/);
-  assert.match(css, /\.mysteryPickerCard:focus-visible/);
-  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
+  assert.match(courseCss, /\.originals \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(courseCss, /\.originals a:focus-visible/);
+  assert.match(courseCss, /@media \(max-width:640px\)[\s\S]*?\.originals \{ grid-template-columns:1fr/);
+  assert.match(courseCss, /@media \(max-width:350px\)/);
   assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
 });
 
