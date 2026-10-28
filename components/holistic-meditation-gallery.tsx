@@ -6,6 +6,8 @@ import { BriefcaseBusiness, Heart, HeartPulse, Play, Sparkles } from "lucide-rea
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
+import { HolisticMeditationFinder } from "@/components/holistic-meditation-finder";
+import type { MeditationCatalogRecord } from "@/lib/holistic-support/meditation-catalog-types";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-meditation-gallery.module.css";
@@ -51,10 +53,15 @@ const copy = {
 export function HolisticMeditationGallery({
   locale,
   videos,
+  catalogVideos = [],
+  publishedSourceIds = [],
 }: {
   locale: PublicLocale;
   videos: MeditationVideo[];
+  catalogVideos?: MeditationCatalogRecord[];
+  publishedSourceIds?: string[];
 }) {
+  const [finderOpen, setFinderOpen] = useState(false);
   const [activeTopic, setActiveTopic] = useState<FilterTopic>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [minimumStars,setMinimumStars] = useState(0);
@@ -68,6 +75,17 @@ export function HolisticMeditationGallery({
 
   return (
     <div className={styles.gallery} data-holistic-meditation-gallery>
+      <button type="button" className={styles.finderToggle}
+        data-meditation-finder-toggle aria-expanded={finderOpen}
+        onClick={() => setFinderOpen(value => !value)}>
+        {finderOpen ? (locale === "ru" ? "Библиотека медитаций" : locale === "es" ? "Biblioteca de meditaciones" : "Meditation library")
+          : (locale === "ru" ? "Подобрать по моему запросу" : locale === "es" ? "Encontrar mi meditación" : "Find a meditation for me")}
+      </button>
+      {finderOpen ? (
+        <HolisticMeditationFinder locale={locale} videos={catalogVideos}
+          publishedSourceIds={publishedSourceIds} onBack={() => setFinderOpen(false)} />
+      ) : (
+        <>
       <div className={styles.filters} role="group" aria-label={t.filter}>
         {filterOrder.map(topic => {
           const Icon = topic === "all" ? null : icons[topic];
@@ -148,6 +166,8 @@ export function HolisticMeditationGallery({
         </div>
       ) : (
         <p className={styles.empty} role="status">{t.empty}</p>
+      )}
+        </>
       )}
     </div>
   );
