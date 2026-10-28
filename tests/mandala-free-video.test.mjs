@@ -120,3 +120,27 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   }
   assert.doesNotMatch(studio+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
 });
+
+
+test("money-flow template gallery is real user-triggered moving video, not symbol thumbnails", () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  const css = read("components/mandala-meditation.module.css");
+  const mobile = read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio, /data-mandala-scene-preview=\{scene\}/);
+  assert.match(studio, /data-scene-playing=\{playing && visible/);
+  assert.match(studio, /requestAnimationFrame\(draw\)/);
+  assert.match(studio, /IntersectionObserver/);
+  assert.match(studio, /if \(!playing \|\| !visible\) return/);
+  assert.match(studio, /setPreviewPlaying\(true\)/);
+  assert.match(studio, /const \[moneyScene, setMoneyScene\]/);
+  assert.match(studio, /CinematicSceneThumbnail scene=\{scene\.id\}/);
+  assert.match(studio, /photo=\{sharedThumbnailPhoto\}/);
+  assert.match(studio, /width=\{320\} height=\{192\}/);
+  assert.match(css, /\.moneyFlowMedia/);
+  assert.match(css, /\.moneyFlowPlayBadge/);
+  assert.match(css, /scroll-snap-type:x mandatory/);
+  assert.match(mobile, /preview cards must show real moving footage/);
+  assert.match(mobile, /clipFrameOne/);
+  // The user starts a scene, and the same engine records the final video.
+  assert.doesNotMatch(studio, /\bfetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage/);
+});
