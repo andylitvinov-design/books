@@ -544,7 +544,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let musicSession:AmbientSession|null=null;
     let voiceContext:AudioContext|null=null;
     let voiceSource:AudioBufferSourceNode|null=null;
-    let renderDuration = duration;
+    let renderDuration: number = duration;
     try {
       // Start AudioContext within this explicit click: iPhone Safari suspends
       // contexts constructed after an asynchronous user-gesture boundary.
