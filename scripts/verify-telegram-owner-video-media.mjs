@@ -44,18 +44,23 @@ try{
   timeout:30000,encoding:'utf8',maxBuffer:128000})
  if(decoded.status!==0||!/Video: h264/.test(decoded.stderr)||
    !/Audio: aac/.test(decoded.stderr))throw Error('UNEXPECTED_VIDEO_OR_AUDIO_CODEC')
- function pixelAt(seconds){
-  const result=spawnSync(binary,['-hide_banner','-loglevel','error','-ss',String(seconds),
-    '-i',target,'-frames:v','1','-vf','scale=1:1:flags=neighbor,format=rgb24',
-    '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:4096})
-  if(result.status!==0||result.stdout?.length!==3)throw Error('VIDEO_FRAME_READ_FAILED')
-  return [...result.stdout]
+ // Decode the actual stream, not three arbitrary seek points: 2 fps rounds
+ // fractional photograph slices, so a fixed timestamp can hit a boundary.
+ const frames=spawnSync(binary,['-hide_banner','-loglevel','error','-i',target,
+   '-vf','scale=1:1:flags=neighbor,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:8192})
+ if(frames.status!==0||!frames.stdout?.length||frames.stdout.length%3)
+   throw Error('VIDEO_FRAME_READ_FAILED')
+ const seen=[]
+ for(let i=0;i<frames.stdout.length;i+=3){
+   const [r,g,b]=frames.stdout.subarray(i,i+3)
+   const color=b>r+60&&b>g+60?'blue':
+     r>b+60&&g>b+60?'yellow':
+     r>g+60&&r>b+60?'red':null
+   if(color&&seen.at(-1)!==color)seen.push(color)
  }
- const blue=pixelAt(0.25),yellow=pixelAt(1),red=pixelAt(3.5)
- if(!(blue[2]>blue[0]+60&&blue[2]>blue[1]+60&&
-      yellow[0]>yellow[2]+60&&yellow[1]>yellow[2]+60&&
-      red[0]>red[1]+60&&red[0]>red[2]+60))
-   throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED')
+ if(seen.join(',')!=='blue,yellow,red')
+   throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED colors='+seen.join(','))
 
  // Full-capacity integration: interleave 15 photos and 15 audio pieces using
  // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
