@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   ArrowRight, BarChart3, Bell, BookOpen, CheckCircle2, ChevronRight, ClipboardList,
   FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus,
@@ -262,7 +263,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>
-        <span className={styles.avatar} aria-hidden="true">{signedIn && initials ? initials : <UserRound size={42}/>}</span>
+        <span className={styles.avatar} aria-hidden="true">{signedIn ? (initials || <UserRound size={42}/>) : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
         <div className={styles.identityCopy}>
           <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
           <small>{t.practitioner}</small>
