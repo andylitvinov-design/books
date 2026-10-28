@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo, type SupportMobileChoice } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { GREEK_VIDEO_SERIES } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -48,13 +49,15 @@ const mysteryCollections = [
     shortTitle: "Египет",
     topics: ["energy", "health"],
   },
-  {
-    id: "greek",
+  // Each Greek channel is a standalone numbered blog series, never a mixed
+  // twelve-video "Greece" feed. All IDs still point to the original manifest.
+  ...GREEK_VIDEO_SERIES.map(series => ({
+    id: series.id,
     programId: "mysteries/greece-rome/beauty-and-power",
-    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
-    shortTitle: "Греция",
-    topics: ["love", "energy"],
-  },
+    videoIds: [series.logicalId],
+    shortTitle: series.shortTitle,
+    topics: ["love", "energy"] as MeditationTopic[],
+  })),
 ] as const;
 
 const pageTitle = {
@@ -116,6 +119,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
           courseVideos.push({
             id,
             title: media.lessonTitle || academyDisplayTitle(record, "ru"),
+            lessonOrder: media.order ?? courseVideos.length + 1,
             topics: [...entry.topics],
             program: entry.id,
             author: "psimaster",
@@ -137,6 +141,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         // A verified first lesson provides a truthful source thumbnail.
         poster: "https://i.ytimg.com/vi/" + encodeURIComponent(courseVideos[0].id) + "/hqdefault.jpg",
         href: "/ru/academy/" + curriculum.routeKey,
+        seriesHref: entry.id.startsWith("greek-") ? videoGroups[0]?.href : undefined,
         videoCount: courseVideos.length,
         videoGroups,
         videos: courseVideos,
