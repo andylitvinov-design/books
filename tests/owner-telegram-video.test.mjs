@@ -25,7 +25,9 @@ const media=(file,attr)=>({update_id:1001,message:{date:TIME/1000,chat:privateBa
 const photo={file_id:'PHOTO_PHOTO_555',file_unique_id:'UNIQUE_PHOTO_555',file_size:900}
 const audio={file_id:'AUDIO_AUDIO_555',file_unique_id:'UNIQUE_AUDIO_555',file_size:2000,
   mime_type:'audio/mpeg',duration:4}
-const callback=(data)=>({update_id:1200,callback_query:{id:'callback-1234',data,from,
+// Each Telegram update gets its own sender object: the rejected-user
+// negative test must not mutate the owner identity for later regressions.
+const callback=(data)=>({update_id:1200,callback_query:{id:'callback-1234',data,from:{...from},
   message:{chat:privateBase,from:{is_bot:true,username:BOT}}}})
 const parsed=(update)=>parseOwnerVideoUpdate(update,{now:TIME,botUsername:BOT})
 function part(kind,index,options={}){
@@ -104,6 +106,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.equal(parsed(spoof),null)
  const unpaired=callback('hh-video:done');unpaired.callback_query.from.id=555
  assert.equal(parsed(unpaired),null)
+ assert.equal(from.id,privateBase.id,'negative user fixture cannot mutate owner for subsequent tests')
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
  assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
  assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
