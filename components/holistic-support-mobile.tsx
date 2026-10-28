@@ -737,7 +737,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               data-support-photo-save onClick={() => { void savePhoto(); }}>{photoBusy ? t.photoSaving : t.photoSave}</button>}
             {photoSaved && <Link href={"/" + locale + "/app/videos"} className={styles.photoSaved}
               data-support-photo-saved>{t.photoSaved}</Link>}
-            {photoSignIn && <Link href={"/" + locale + "/app"} className={styles.photoSaved}>{t.photoSignIn}</Link>}
+            {photoSignIn && <Link href={"/" + locale + "/app"} className={styles.photoSaved} data-support-photo-signin>{t.photoSignIn}</Link>}
             <button type="button" className={styles.testsShortcut} data-support-tool="tests"
               aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
               onClick={() => changeChoice("tests")}>
