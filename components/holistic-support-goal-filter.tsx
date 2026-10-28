@@ -240,7 +240,11 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
     const numeric = raw === "" ? null : Number(raw);
     if (numeric !== null && (!Number.isFinite(numeric) || numeric < 0 || numeric > max)) return;
     setAmounts(previous => ({
-      ...previous, [id]: { current: null, desired: null, ...previous[id], [field]: numeric },
+      ...previous,
+      [id]: {
+        current: field === "current" ? numeric : (previous[id]?.current ?? null),
+        desired: field === "desired" ? numeric : (previous[id]?.desired ?? null),
+      },
     }));
   }
   function apply(event: FormEvent<HTMLFormElement>) {
