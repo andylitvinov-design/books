@@ -38,7 +38,7 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 5, label + " tools");
-          assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
+          assert.equal(await root.locator('section:has([data-support-photo]) [data-support-recommendations]').count(), 1, label + " recommendations beneath scores");
           assert.equal(await root.locator('#support-tools [data-support-detailed-analysis]').count(), 1, label + " detailed tests beneath help choices");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
@@ -60,6 +60,7 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
+              profile:measure('section:has([data-support-photo])'),
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
@@ -92,12 +93,12 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
           if(width===320) {
             const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
-            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
+            console.log("Support readable dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
-            label+" five readable 43px action rows plus detailed tests must expose the player early");
+          assert.ok(geometry.hero[0].y-geometry.a[0].y<350,
+            label+" two-row readable phone dashboard must expose practice within 350px");
           assert.ok(geometry.readableTools.every(t =>
             t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
@@ -115,9 +116,15 @@ for (const browserType of [chromium, webkit]) {
             assert.ok(box && box.x>=0 && box.x+box.width<=width+2,label+" all filter pills visible");
           }
           {
-            const assessment=geometry.a[0], tools=geometry.toolsSection[0], photo=geometry.photo[0];
-            assert.ok(Math.abs(assessment.y-tools.y)<4,label+" ratings and tools same row");
-            assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
+            const assessment=geometry.a[0], tools=geometry.toolsSection[0], profile=geometry.profile[0];
+            assert.ok(Math.abs(assessment.y-profile.y)<4,
+              label+" ratings and personal focus share the first row");
+            assert.ok(tools.y>=assessment.bottom-3,
+              label+" six large help options occupy the second row");
+            assert.ok(tools.bottom<=geometry.hero[0].y-2,
+              label+" all actions end before the video player begins");
+            assert.equal(await root.locator('#support-tools .toolGrid > [data-support-detailed-analysis]').count(),1,
+              label+" detailed tests are the sixth action");
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
