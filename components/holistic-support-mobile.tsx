@@ -452,7 +452,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </>
           ) : choice === "talisman" ? (
             <div data-support-talisman-experience>
-              <HolisticSupportTalismanViewer locale={locale} focus={focus}
+              <HolisticSupportTalismanViewer key={focus} locale={locale} focus={focus}
                 rankedIds={recommended?.talismans.map(item => item.id)}
                 catalogOpen={talismanCatalogOpen} onToggleCatalog={() => setTalismanCatalogOpen(open => !open)} />
               <div id="support-talisman-full-catalog" className={styles.insetPanel} hidden={!talismanCatalogOpen}>
