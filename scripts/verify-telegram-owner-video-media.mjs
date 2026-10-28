@@ -72,15 +72,19 @@ try{
  const seconds=cutDuration?
    Number(cutDuration[1])*3600+Number(cutDuration[2])*60+Number(cutDuration[3]):0
  if(cutInfo.status!==0||!/Video: h264/.test(cutInfo.stderr)||
-   !/Audio: aac/.test(cutInfo.stderr)||seconds<1.5||seconds>3.5)
+   !/Audio: aac/.test(cutInfo.stderr)||
+   !/1920x1080 \[SAR 1:1 DAR 16:9\]/.test(cutInfo.stderr)||
+   seconds<1.5||seconds>3.5)
    throw Error('VIDEO_CUT_CODEC_OR_DURATION_FAILED')
  const firstCut=spawnSync(binary,['-hide_banner','-loglevel','error',
    '-ss','0.5','-i',cutFile,'-frames:v','1',
    '-vf','scale=1:1:flags=neighbor,format=rgb24',
    '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:4096})
  const firstColor=[...firstCut.stdout||[]]
+ // The current photo/audio contract attaches late photos to PRECEDING
+ // audio; at 2.5s this deliberately shows the red final image, not blue.
  if(firstCut.status!==0||firstColor.length!==3||
-   firstColor[0]<=firstColor[2]+60||firstColor[1]<=firstColor[2]+60)
+   firstColor[0]<=firstColor[1]+60||firstColor[0]<=firstColor[2]+60)
    throw Error('VIDEO_CUT_STILL_SHOWS_REMOVED_INTRO')
  if(!mp4.equals(await readFile(target)))throw Error('VIDEO_CUT_MUTATED_ORIGINAL')
  let rejects=false
