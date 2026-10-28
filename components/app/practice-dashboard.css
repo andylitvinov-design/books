@@ -1371,7 +1371,7 @@
   margin:0;color:#78665a;font:500 12px/1.45 system-ui,sans-serif
 }
 .hh-app .hh-practice-first-actions-grid{
-  min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+  min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
 }
 .hh-app .hh-practice-first-action{
   display:flex;align-items:center;gap:12px;min-width:0;width:100%;
@@ -1383,6 +1383,10 @@
 .hh-app .hh-practice-first-action.is-service{
   color:#fffdf8;border-color:#874b60;
   background:linear-gradient(100deg,#772d4a 0%,#78374f 65%,#67434e 100%)
+}
+.hh-app .hh-practice-first-action.is-reiki{
+  color:#fffaf2;border-color:#8b7057;
+  background:linear-gradient(120deg,#74513b,#97734f 72%,#826044)
 }
 .hh-app .hh-practice-first-action.is-meditation{
   color:#fffdf7;border-color:#58766d;
