@@ -1,6 +1,8 @@
 import { PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '../lib/billing/public-plan.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -11,7 +13,40 @@ const css = read('components/app/course-entry-selector.module.css')
 test('My Course first renders the selection slide and keeps the existing course wizard', () => {
   assert.match(wrapper, /<CourseEntrySelector/)
   // Direct banner entry skips the selector; generic My Courses still has its current-course cards.
-  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry\) return/)
+  // Exercise the actual JSX return predicate, not a formatting-specific regex.
+  const ast = ts.createSourceFile('my-course.jsx', wrapper, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
+  const candidates = []
+  const visit = node => {
+    if (ts.isIfStatement(node) && ts.isReturnStatement(node.thenStatement) &&
+        node.thenStatement.expression && ts.isJsxSelfClosingElement(node.thenStatement.expression) &&
+        node.thenStatement.expression.tagName.getText(ast) === 'CourseEntrySelector') candidates.push(node.expression)
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
+  assert.equal(candidates.length, 1, 'exact selector return predicate must remain identifiable')
+  const predicate = candidates[0].getText(ast)
+  // Reject executable calls, dynamic property access or newly introduced inputs.
+  const allowedIdentifiers = new Set(['showCourse','coursesIndexEntry','courses','length','testReturn','programmeEntry','personalEntry','fastAntistressEntry'])
+  const inspect = node => {
+    if (ts.isIdentifier(node)) assert.ok(allowedIdentifiers.has(node.text), 'unreviewed predicate input '+node.text)
+    assert.ok(!ts.isCallExpression(node) && !ts.isNewExpression(node) && !ts.isElementAccessExpression(node) &&
+      !ts.isArrowFunction(node) && !ts.isFunctionExpression(node), 'selector predicate must remain pure')
+    ts.forEachChild(node, inspect)
+  }
+  inspect(candidates[0])
+  for (const showCourse of [false,true]) for (const coursesIndexEntry of [false,true]) {
+    for (const count of [0,1,2]) for (let flags=0;flags<16;flags++) {
+      const testReturn=Boolean(flags&1),programmeEntry=Boolean(flags&2),personalEntry=Boolean(flags&4),fastAntistressEntry=Boolean(flags&8)
+      const context={showCourse,coursesIndexEntry,courses:Object.freeze(Array(count).fill(null)),testReturn,programmeEntry,personalEntry,fastAntistressEntry}
+      let expected=false
+      if (flags===0) {
+        if (!showCourse) expected=true
+        else if (coursesIndexEntry && count===0) expected=true
+      }
+      const actual=vm.runInNewContext('('+predicate+')',context,{timeout:100})
+      assert.equal(actual,expected,JSON.stringify({showCourse,coursesIndexEntry,count,flags}))
+    }
+  }
   assert.match(wrapper, /personalEntry = stage === 0 &&/)
   assert.match(wrapper, /onOpen=\{\(\) => \{/)
   assert.match(wrapper, /selectCourse\(state\.course\.id\)/)
@@ -160,7 +195,7 @@ test('programme links offer one clear fast-start button without creating a cours
   const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
   assert.ok(consent)
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Continue to the first check-in/)
+  assert.equal(textOf(consent).trim(), "Yes, I'd like to enrol")
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
 })
@@ -302,12 +337,98 @@ test('iPhone My Courses layout puts scales below both columns and keeps Plan ful
   assert.match(css, /\.addTile\{grid-template-columns:43px minmax\(0,1fr\) 17px;min-height:79px/)
 })
 
-test('course page brand, Account menu and both tabs share the Courses destination', () => {
+// Cabinet menus share `nav`; the redesigned mobile dock intentionally uses
+// `mobileNav`. Check the actual links in each surface, not a global map count.
+function assertCourseNavigationSurfaces(workspace) {
+  const ast = ts.createSourceFile('app-workspace.jsx', workspace, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
+  const all = []
+  const visit = node => { all.push(node); ts.forEachChild(node, visit) }
+  visit(ast)
+  const exports = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'AppWorkspace' &&
+    node.modifiers?.some(item => item.kind === ts.SyntaxKind.ExportKeyword) &&
+    node.modifiers?.some(item => item.kind === ts.SyntaxKind.DefaultKeyword))
+  assert.equal(exports.length, 1, 'bind the exported AppWorkspace, not a detached fixture')
+  const statements = exports[0].body.statements
+  const finalReturn = statements.at(-1)
+  assert.ok(ts.isReturnStatement(finalReturn), 'the workspace ends in its live return')
+  const rendered = ts.isParenthesizedExpression(finalReturn.expression) ? finalReturn.expression.expression : finalReturn.expression
+  assert.ok(ts.isJsxElement(rendered) && rendered.openingElement.tagName.getText(ast) === 'SubscriptionProvider')
+  const earlyGuards = statements.filter(ts.isIfStatement)
+  assert.deepEqual(earlyGuards.map(node => node.expression.getText(ast).replace(/\s/g, '')), [
+    "deleted||state==='deletion'", "state==='loading'", "state==='ready'&&!data",
+    "state!=='ready'&&page==='course'&&state!=='unavailable'",
+    "state!=='ready'&&page==='portrait'&&!stressSignup", "state!=='ready'",
+  ], 'only reviewed pre-navigation guards may exit the workspace early')
+  assert.ok(earlyGuards.every(node => ts.isReturnStatement(node.thenStatement) && !node.elseStatement))
+  const exits = []
+  const inspectExits = node => {
+    if (ts.isFunctionLike(node)) return // callbacks have independent lifetimes
+    if (ts.isReturnStatement(node) || ts.isThrowStatement(node)) exits.push(node)
+    ts.forEachChild(node, inspectExits)
+  }
+  statements.forEach(inspectExits)
+  const expectedExits = [...earlyGuards.map(node => node.thenStatement), finalReturn]
+  assert.equal(exits.length, expectedExits.length, 'no additional unconditional or conditional early exits')
+  assert.ok(exits.every((node, index) => node === expectedExits[index]), 'only reviewed early exits and the final return remain')
+  const attr = (node, name) => node.attributes.properties.find(item =>
+    ts.isJsxAttribute(item) && item.name.text === name)?.initializer
+  const property = (node, name) => node.properties.find(item =>
+    ts.isPropertyAssignment(item) && item.name.getText(ast) === name)?.initializer
+  const nav = all.filter(node => ts.isVariableDeclaration(node) && node.name.getText(ast) === 'nav')
+  assert.equal(nav.length, 1, 'one canonical Cabinet navigation declaration')
+  assert.ok(ts.isArrayLiteralExpression(nav[0].initializer))
+  assert.ok(nav[0].parent.parent.parent === exports[0].body, 'canonical nav belongs directly to the exported workspace')
+  assert.ok(earlyGuards.every(node => node.end < nav[0].pos), 'reviewed early exits precede navigation declarations')
+  const course = nav[0].initializer.elements.filter(node => ts.isObjectLiteralExpression(node) &&
+    property(node, 'id')?.text === 'course')
+  assert.equal(course.length, 1, 'one Courses destination')
+  const href = property(course[0], 'href')
+  assert.ok(ts.isBinaryExpression(href) && href.operatorToken.kind === ts.SyntaxKind.PlusToken &&
+    ts.isIdentifier(href.left) && href.left.text === 'root' &&
+    ts.isStringLiteral(href.right) && href.right.text === '/course?view=courses', 'canonical Courses destination')
+  for (const className of ['hh-account-menu', 'hh-nav']) {
+    const surfaces = all.filter(node => ts.isJsxElement(node) && attr(node.openingElement, 'className')?.text === className)
+    assert.equal(surfaces.length, 1, 'one live '+className+' surface')
+    let ancestor = surfaces[0]
+    while (ancestor && ancestor !== finalReturn && !ts.isFunctionLike(ancestor)) ancestor = ancestor.parent
+    assert.ok(ancestor === finalReturn, 'surface belongs to the exported final return')
+    const maps = []
+    const inspect = node => {
+      if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === 'map' && ts.isIdentifier(node.expression.expression) &&
+          node.expression.expression.text === 'nav') maps.push(node)
+      ts.forEachChild(node, inspect)
+    }
+    inspect(surfaces[0])
+    assert.equal(maps.length, 1, className+' consumes canonical nav')
+    assert.ok(ts.isJsxExpression(maps[0].parent), 'map remains a rendered JSX expression')
+    const owner = maps[0].parent.parent
+    if (className === 'hh-nav') assert.ok(owner === surfaces[0], 'desktop map is rendered directly')
+    else assert.ok(ts.isJsxElement(owner) && owner.openingElement.tagName.getText(ast) === 'div' && owner.parent === surfaces[0], 'account map is rendered directly in its menu')
+    const guards = []
+    for (let node = surfaces[0].parent; node && !ts.isReturnStatement(node); node = node.parent) {
+      if (ts.isConditionalExpression(node)) assert.fail('navigation must not be hidden in an unreviewed ternary')
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken && ts.isJsxElement(ts.isParenthesizedExpression(node.right) ? node.right.expression : node.right)) guards.push(node.left.getText(ast).replace(/\s/g, ''))
+    }
+    assert.deepEqual(guards, className === 'hh-nav' ? ["!documentReader&&!practiceInner&&page!=='runs'"] : ['!documentReader&&!practiceInner'], 'existing private/document-reader visibility guard is retained')
+
+    const callback = maps[0].arguments[0]
+    assert.ok(ts.isArrowFunction(callback) && callback.parameters.length === 1)
+    assert.equal(callback.parameters[0].name.getText(ast).replace(/\s/g, ''), '{id,label,href}')
+    const body = ts.isParenthesizedExpression(callback.body) ? callback.body.expression : callback.body
+    assert.ok(ts.isJsxElement(body) && body.openingElement.tagName.getText(ast) === 'Link')
+    const target = attr(body.openingElement, 'href')
+    assert.ok(ts.isJsxExpression(target) && ts.isIdentifier(target.expression) && target.expression.text === 'href', className+' forwards the canonical href')
+    assert.ok(body.children.some(node => ts.isJsxExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'label'), className+' retains the destination label')
+  }
+}
+
+test('course page brand, Account menu and desktop tabs retain the canonical Courses destination', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const theme = read('components/app/my-course-theme.css')
   assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
   assert.match(workspace, /nav\.find\(item => navIsActive\(item\.id\)\)\?\.label/)
-  assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
+  assertCourseNavigationSurfaces(workspace)
   assert.match(workspace, /page === 'course'/)
   assert.match(theme, /:has\(\[data-course-selector\]\) \.hh-header/)
   assert.match(theme, /@media\(max-width:620px\)/)
@@ -356,4 +477,25 @@ test('closing is owner-scoped, revision-checked, and archives past cycles withou
   assert.match(daily, /if\(\['archived','closed'\]\.includes\(course.status\)\)notAllowed\('COURSE_NOT_ACTIVE',409\)/)
   assert.match(migration, /status in \('active','paused','completed','archived','closed'\)/)
   assert.doesNotMatch(server, /delete from app_private\.growth_(?:cycles|sessions|courses)/i)
+})
+
+ test('course navigation oracle rejects broken destinations, missing surfaces and disconnected links', () => {
+  const workspace = read('components/app/app-workspace.jsx')
+  for (const [before, after] of [
+    ["href: root + '/course?view=courses'", "href: root + '/tests'"],
+    ['className="hh-account-menu"', 'className="removed-account-menu"'],
+    ['className="hh-nav"', 'className="removed-nav"'],
+    ['{nav.map(({ id, label, href })', '{mobileNav.map(({ id, label, href })'],
+    ['<Link key={id} href={href}', '<Link key={id} href={root}'],
+    ['>{label}</Link>', '>{id}</Link>'],
+    ['  return (\n    <SubscriptionProvider', '  return null;\n  return (\n    <SubscriptionProvider'],
+    ['  return (\n    <SubscriptionProvider', '  if (true) return null;\n  return (\n    <SubscriptionProvider'],
+    ['export default function AppWorkspace', 'function AppWorkspace'],
+    ['{nav.map(({ id, label, href })', '{false && nav.map(({ id, label, href })'],
+    ['!documentReader && !practiceInner && <header', 'false && <header'],
+    ["!documentReader && !practiceInner && page !== 'runs' && (", "!practiceInner && page !== 'runs' && ("],
+  ]) {
+    assert.ok(workspace.includes(before), 'control must alter live source: '+before)
+    assert.throws(() => assertCourseNavigationSurfaces(workspace.replace(before, after)))
+  }
 })

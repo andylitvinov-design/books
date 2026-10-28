@@ -104,3 +104,24 @@ test("2-minute support is the single primary offer, followed by smaller course a
   assert.match(css, /@media \(max-width:\s*360px\)/);
   assert.match(css, /prefers-reduced-motion/);
 });
+
+test("narrow Temple panel reclaims only its duplicate gutter and retains the hard quote-width checks", () => {
+  // Source regression only: real WebKit geometry is still required by the
+  // unchanged preview/result assertions in verify-ideas-mobile-browser.mjs.
+  const narrowRules = [...css.matchAll(/@media \(max-width:\s*400px\)\s*\{([\s\S]*?)\n\}/g)]
+    .map(match => match[1]).join("\n");
+  const templeRule = narrowRules.match(/\.detail:has\(> \[data-tests-coaching-temple\]\)\s*\{([^}]+)\}/);
+  assert.ok(templeRule, "Only the selected Temple panel gets the narrow-screen gutter override");
+  assert.equal(templeRule[1].trim(), "padding-inline: 8px;",
+    "Reclaim horizontal wrapper space without shrinking typography, vertical spacing or hiding content");
+  assert.equal(css.match(/\.detail:has\(> \[data-tests-coaching-temple\]\)/g)?.length, 1,
+    "Keep one bounded override; ordinary wider panels stay unchanged");
+  assert.match(ui, /path === "temple" \? <div data-tests-coaching-temple>/);
+  assert.match(css, /\.detail:focus-visible \{ outline: 3px solid #187c7b; outline-offset: 3px; \}/);
+  const quoteCss = read("components/ideas-discovery.module.css");
+  assert.match(quoteCss, /\.root \.aphorisms li\{width:100%;padding:10px 9px\}/);
+  assert.match(quoteCss, /\.aphorisms p \{ font-size:14px; \}/);
+  const browser = read("scripts/verify-ideas-mobile-browser.mjs");
+  assert.match(browser, /previewRects\.every\(rect => rect\.width >= width \* \.72\)/);
+  assert.match(browser, /responseRects\.every\(rect => rect\.width >= width \* \.72\)/);
+});

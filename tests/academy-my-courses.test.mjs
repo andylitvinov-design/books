@@ -23,6 +23,17 @@ const nodes = tree => tree == null || typeof tree !== 'object' ? []
 const words = tree => tree == null || typeof tree === 'boolean' ? ''
   : typeof tree !== 'object' ? String(tree)
     : Array.isArray(tree) ? tree.map(words).join(' ') : words(tree.props?.children)
+const assertGrowthCard = tree => assert.ok(nodes(tree).some(n =>
+  n.props?.['data-academy-owned-growth'] === 'owned-growth-course'), 'Required owned growth course is missing')
+const assertReikiCard = tree => assert.ok(nodes(tree).some(n =>
+  n.props?.['data-academy-owned-reiki'] !== undefined), 'Required owned Reiki course is missing')
+const assertPrivateViewCleared = tree => assert.equal(tree, null, 'Changed owner must not receive prior owner cards')
+function replaceExactly(before, after) {
+  return text => {
+    assert.equal(text.split(before).length - 1, 1, 'The mutation must target exactly one real source expression')
+    return text.replace(before, after)
+  }
+}
 const bootstrap = id => ({
   account: { id, onboardingState: 'active' },
   results: [], runs: [], requests: [], consents: [], services: [],
@@ -37,7 +48,7 @@ const reiki = {
   enrolled: true, slideId: 'flight-04', status: 'completed',
   answers: { 'flight-04': 'Synthetic feedback' },
 }
-function harness(handler, locale = 'en') {
+function harness(handler, locale = 'en', transformSource = value => value) {
   let index = 0, pending = [], dirty = false, tree, props = { locale }
   const slots = [], calls = [], listeners = new Map(), channels = []
   const same = (a, b) => Array.isArray(a) && a.length === b?.length && a.every((v, i) => Object.is(v, b[i]))
@@ -66,7 +77,9 @@ function harness(handler, locale = 'en') {
     calls.push({ path, body, method, options })
     return handler(path, body, method, options, calls.length)
   }
-  const jsx = (type, props) => ({ type, props })
+  // Run the actual local GrowthCard/ReikiCard renderers. External UI imports
+  // remain inert string tags, so no framework, image loader or network runs.
+  const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : ({ type, props })
   const deps = {
     react: hooks,
     'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -99,7 +112,7 @@ function harness(handler, locale = 'en') {
     assert.ok(deps[name], 'Unmocked dependency ' + name)
     return deps[name]
   }, window, document, BroadcastChannel: Channel, AbortController, console }
-  vm.runInNewContext(compile(source, 'academy-my-courses.tsx'), runtime)
+  vm.runInNewContext(compile(transformSource(source), 'academy-my-courses.tsx'), runtime)
   function render(next = props) {
     props = next; index = 0; pending = []; dirty = false
     tree = runtime.exports.AcademyMyCourses(props)
@@ -151,8 +164,8 @@ test('signed-in course owner sees their live growth and Reiki progress and one-c
   })
   await h.settle()
   const items = nodes(h.tree)
-  assert.ok(items.some(n => n.props?.['data-academy-owned-growth'] === 'owned-growth-course'))
-  assert.ok(items.some(n => n.props?.['data-academy-owned-reiki'] !== undefined))
+  assertGrowthCard(h.tree)
+  assertReikiCard(h.tree)
   assert.ok(words(h.tree).includes('My courses'))
   assert.ok(words(h.tree).includes('Stress & tension'))
   assert.ok(words(h.tree).includes('Reiki Practitioner'))
@@ -186,7 +199,7 @@ test('a changed account between reads never sees the first owner private courses
     return path === 'course' ? growth : reiki
   })
   await h.settle()
-  assert.equal(h.tree, null)
+  assertPrivateViewCleared(h.tree)
   h.unmount()
 })
 
@@ -197,7 +210,7 @@ test('a partial course backend outage still shows the independently authorized R
     return reiki
   }, 'es')
   await h.settle()
-  assert.ok(nodes(h.tree).some(n => n.props?.['data-academy-owned-reiki'] !== undefined))
+  assertReikiCard(h.tree)
   assert.match(words(h.tree), /Mis cursos/)
   assert.match(words(h.tree), /Parte del progreso no está disponible/)
   assert.ok(nodes(h.tree).some(n => n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'))
@@ -212,4 +225,43 @@ test('responsive cards stay inside the screen, with 320px and 430px breakpoints'
   assert.match(css, /min-width: 0/)
   assert.match(css, /:focus-visible/)
   assert.match(css, /min-height: 44px/)
+})
+
+for (const [name, expression, required, retained, message] of [
+  ['growth', '<GrowthCard course={first} locale={locale} featured />', assertGrowthCard, assertReikiCard,
+    'Required owned growth course is missing'],
+  ['Reiki', '<ReikiCard progress={current.energywork} locale={locale} />', assertReikiCard, assertGrowthCard,
+    'Required owned Reiki course is missing'],
+]) test(`actual nested-card fixture rejects a genuinely removed ${name} card`, async () => {
+  const h = harness((path, _, method, options) => {
+    assert.equal(method, 'GET')
+    if (path === 'bootstrap') return bootstrap('owner-a')
+    assert.equal(options.accountId, 'owner-a')
+    assert.ok(['course', 'academy-energywork'].includes(path), 'Only synthetic course reads are allowed')
+    return path === 'course' ? growth : reiki
+  }, 'en', replaceExactly(expression, 'null'))
+  try {
+    await h.settle()
+    retained(h.tree)
+    assert.throws(() => required(h.tree), error => error.name === 'AssertionError' && error.message.includes(message))
+  } finally { h.unmount() }
+})
+
+test('actual nested-card fixture rejects removal of the post-read account revalidation', async () => {
+  let bootstrapReads = 0
+  const h = harness((path, _, method, options) => {
+    assert.equal(method, 'GET')
+    if (path === 'bootstrap') return bootstrap(++bootstrapReads === 1 ? 'owner-a' : 'owner-b')
+    assert.equal(options.accountId, 'owner-a')
+    assert.ok(['course', 'academy-energywork'].includes(path), 'Only synthetic course reads are allowed')
+    return path === 'course' ? growth : reiki
+  }, 'en', replaceExactly('fresh.account.id !== accountId', 'false'))
+  try {
+    await h.settle()
+    assert.equal(bootstrapReads, 2)
+    assertGrowthCard(h.tree)
+    assertReikiCard(h.tree)
+    assert.throws(() => assertPrivateViewCleared(h.tree), error =>
+      error.name === 'AssertionError' && error.message.includes('Changed owner must not receive prior owner cards'))
+  } finally { h.unmount() }
 })

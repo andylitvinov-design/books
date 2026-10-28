@@ -48,7 +48,7 @@ const expected = {
   },
   business: {
     ids: ["business-review", "business-constellations", "business-coaching"],
-    hrefs: ["/services/free-situation-review?topic=business", "/services/business-consulting#business-offers", "/services/business-consulting#business-direct-request"],
+    hrefs: ["/services/free-situation-review?topic=business", "/services/business-consulting#business-offers", "/services/business-consulting#business-offers"],
     free: [true, false, false],
   },
 };
@@ -134,4 +134,135 @@ test("paid offers are clearly unbooked requests, no medical promises or false fr
   assert.match(source, /не лечение и не гарантия улучшения/);
   assert.match(source, /no es un tratamiento médico/);
   assert.doesNotMatch(source, /diagnose|cure|guaranteed improvement|verified booking/);
+});
+
+// Isolated public-source rendering only: no React browser, requests, consent or CRM writes.
+function loadPublicModule(path, mocks, globals = {}) {
+  const code = ts.transpileModule(read(path), {
+    fileName: path,
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+  }).outputText;
+  const exports = {};
+  runInNewContext(code, {
+    ...globals, exports,
+    require: name => {
+      assert.ok(Object.hasOwn(mocks, name), "Unexpected public handoff import: " + name);
+      return mocks[name];
+    },
+  });
+  return exports;
+}
+
+test("generic paid business coaching opens localized format choices rather than the free-default form", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const tree = exports.GoalSupportOffers({ locale, direction: "business" });
+    const card = nodes(tree).find(node => node.props["data-goal-support-card"] === "business-coaching");
+    const action = nodes(card).find(node => node.props["data-goal-support-action"] === "business-coaching");
+    assert.equal(card.props["data-home-offer-free"], undefined);
+    assert.equal(action.type, "Link");
+    assert.equal(action.props.href, "/" + locale + "/services/business-consulting#business-offers");
+    assert.equal(action.props.prefetch, false);
+    assert.equal(action.props["data-business-direct-option"], undefined, "No unchosen paid duration is inferred");
+    assert.ok(action.props["aria-label"].trim());
+  }
+});
+
+test("the business choice anchor renders visible localized options and explicit native-link format handoffs", () => {
+  const { businessConsultingCopy } = loadPublicModule("data/business-consulting-copy.ts", {});
+  const landingMocks = {
+    ...modules,
+    "@/components/acquisition-event-link": { AcquisitionEventLink: "AcquisitionEventLink" },
+    "@/components/contact-channel-chooser": { ContactChannelChooser: "ContactChannelChooser" },
+    "@/components/public-site-header": { PublicSiteHeader: "PublicSiteHeader" },
+    "@/components/business-website-enquiry": { BusinessWebsiteEnquiry: "BusinessWebsiteEnquiry" },
+    "@/components/service-video-showcase": { ServiceVideoShowcase: "ServiceVideoShowcase" },
+    "@/lib/whatsapp-enquiry": { whatsappEnquiryUrl: () => "unused-contact-draft" },
+    "@/data/business-consulting-copy": { businessConsultingCopy },
+    "./business-consulting-landing.module.css": styleMock,
+  };
+  const { BusinessConsultingLanding } = loadPublicModule("components/business-consulting-landing.tsx", landingMocks);
+  const { AcquisitionEventLink } = loadPublicModule("components/acquisition-event-link.tsx", {
+    ...modules, "@/data/local-acquisition": { ACQUISITION_EVENTS: [] },
+  });
+  for (const locale of ["en", "ru", "es"]) {
+    const tree = BusinessConsultingLanding({ locale });
+    const choices = nodes(tree).filter(node => node.type === "section" && node.props.id === "business-offers");
+    assert.equal(choices.length, 1);
+    const section = choices[0];
+    assert.equal(section.props.hidden, undefined);
+    assert.notEqual(section.props["aria-hidden"], true);
+    const heading = nodes(section).find(node => node.type === "h2" && node.props.id === section.props["aria-labelledby"]);
+    assert.equal(heading.props.children, businessConsultingCopy[locale].offersTitle);
+    const cards = nodes(section).filter(node => node.type === "article" && node.props["data-business-offer"]);
+    assert.deepEqual(cards.map(card => card.props["data-business-offer"]), ["free", "express", "full"]);
+    for (const [index, kind] of ["free", "express", "full"].entries()) {
+      const card = cards[index];
+      assert.equal(card.props.hidden, undefined);
+      assert.ok(nodes(card).some(node => node.type === "h3" && node.props.children === businessConsultingCopy[locale].offers[index].name));
+      const links = nodes(card).filter(node => node.type === "AcquisitionEventLink" && node.props.attributes?.["data-business-direct-option"] === kind);
+      assert.equal(links.length, 1);
+      const link = AcquisitionEventLink(links[0].props);
+      assert.equal(link.type, "Link");
+      assert.equal(link.props.href, "#business-direct-request");
+      assert.equal(link.props["data-business-direct-option"], kind);
+      assert.equal(link.props.prefetch, false);
+      assert.notEqual(link.props.tabIndex, -1);
+      assert.equal(link.props.children[0], { en: "Website request", ru: "Заявка с сайта", es: "Solicitud en la web" }[locale]);
+    }
+    assert.ok(nodes(tree).some(node => node.type === "BusinessWebsiteEnquiry" && node.props.locale === locale));
+  }
+  const route = read("app/[locale]/services/business-consulting/page.tsx");
+  assert.match(route, /<BusinessConsultingLanding locale=\{locale as BusinessLocale\}/);
+  assert.match(route, /if \(!isPublicLocale\(locale\)\) notFound\(\)/);
+  assert.doesNotMatch(read("components/acquisition-event-link.tsx"), /preventDefault\(|tabIndex=\{-1\}/);
+});
+
+test("explicit business format clicks reach the existing form without silently choosing free", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const effects = [];
+    const stateUpdates = [];
+    let stateIndex = 0;
+    let choose;
+    class MockElement {
+      constructor(kind) { this.kind = kind; }
+      closest(selector) {
+        assert.equal(selector, "[data-business-direct-option]");
+        return { getAttribute: name => name === "data-business-direct-option" ? this.kind : null };
+      }
+    }
+    const { BusinessWebsiteEnquiry } = loadPublicModule("components/business-website-enquiry.tsx", {
+      ...modules,
+      react: {
+        useState: initial => { const index = stateIndex++; return [initial, value => stateUpdates.push([index, value])]; },
+        useRef: initial => ({ current: initial }),
+        useEffect: effect => effects.push(effect),
+      },
+      "@/components/phone-country-input": { PhoneCountryInput: "PhoneCountryInput" },
+      "@/lib/business-consulting/intake-policy": { parseBusinessReplyContact: () => { throw new Error("No submission in handoff test"); } },
+      "@/lib/business-consulting/review-context": { readBusinessReviewContext: () => null },
+      "./business-website-enquiry.module.css": styleMock,
+    }, {
+      Element: MockElement, URLSearchParams,
+      window: { location: { search: "" } },
+      document: {
+        addEventListener: (type, handler) => { assert.equal(type, "click"); choose = handler; },
+        removeEventListener: () => {},
+      },
+    });
+    const tree = BusinessWebsiteEnquiry({ locale });
+    assert.equal(tree.props.id, "business-direct-request");
+    const select = nodes(tree).find(node => node.type === "select" && node.props["data-business-field"] === "format");
+    assert.equal(select.props.value, "free", "Generic direct links would otherwise start at free");
+    assert.deepEqual(nodes(select).filter(node => node.type === "option").map(node => node.props.value), ["free", "express", "full", "mentoring"]);
+    effects.forEach(effect => effect());
+    assert.equal(typeof choose, "function");
+    for (const kind of ["free", "express", "full", "mentoring"]) {
+      stateUpdates.length = 0;
+      choose({ target: new MockElement(kind) });
+      assert.deepEqual(stateUpdates.filter(([index]) => index === 0), [[0, kind]]);
+    }
+    stateUpdates.length = 0;
+    choose({ target: new MockElement("unlisted") });
+    assert.deepEqual(stateUpdates.filter(([index]) => index === 0), []);
+  }
 });

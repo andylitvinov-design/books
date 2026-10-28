@@ -6,12 +6,17 @@
  */
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { observePortraitNavigation } from './helpers/portrait-navigation-diagnostics.mjs'
+import { alignAndMeasureStablePortraitFrame } from './helpers/portrait-frame-readiness.mjs'
+import { precompilePortraitClaim } from './helpers/portrait-claim-precompile.mjs'
 
 assertIsolated()
 const origin = process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Only isolated loopback browser QA allowed')
+// Complete the observed cold route's unauthenticated compile before browser creation.
+await precompilePortraitClaim({ origin })
 const name = process.env.HH_TEST_BROWSER === 'webkit' ? 'webkit' : 'chromium'
 const engine = name === 'webkit' ? webkit : chromium
 const output = 'artifacts/portrait-mobile'
@@ -20,37 +25,18 @@ const browser = await engine.launch()
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })
 const page = await context.newPage()
 const problems = []
-const bootstrapStatuses = []
-let verifiedAccountLanding = false
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
-// Confirm a successful same-origin protected bootstrap, not only visible UI.
-// WebKit may abort an older fetch when an authenticated page navigates away.
-page.on('response', response => {
+const navigationDiagnostics = observePortraitNavigation(page, { origin })
+let completed = false
+const open = async path => {
+  navigationDiagnostics.mark('goto-start', path)
   try {
-    const address = new URL(response.url())
-    if (verifiedAccountLanding && address.origin === origin && address.pathname === '/api/app/bootstrap' &&
-      bootstrapStatuses.length < 50) bootstrapStatuses.push(response.status())
-  } catch { /* Ignore non-HTTP browser-internal resources only. */ }
-})
-const open = path => page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
-
-// WebKit can complete synthetic Google onboarding while the app's own final
-// /en/app/portrait navigation is still pending. In that *one observed* case,
-// wait for the authenticated landing before retrying the requested Reports
-// navigation exactly once. All other interruptions/timeouts still fail.
-async function openReportsAfterAuth(locale) {
-  const path = '/' + locale + '/app/portfolio'
-  try {
-    return await open(path)
+    const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
+    navigationDiagnostics.mark('goto-complete', path)
+    return response
   } catch (error) {
-    const cause = String(error)
-    const ownRedirect = name === 'webkit' && locale === 'en' &&
-      cause.includes('Navigation to "' + origin + path + '" is interrupted by another navigation to "' + origin + '/en/app/portrait"')
-    if (!ownRedirect) throw error
-    await expect(page).toHaveURL(/\/en\/app\/portrait(?:[?#]|$)/, { timeout: 30000 })
-    await expect(page.locator('[data-profile-domains]')).toBeVisible({ timeout: 30000 })
-    console.log('PORTRAIT_QA', name, 'one pending authenticated landing navigation finished; retry Reports once')
-    return open(path)
+    navigationDiagnostics.mark('goto-failed', path)
+    throw error
   }
 }
 const card = () => page.locator('[data-testid="insights-psychological-portrait"]')
@@ -143,11 +129,11 @@ try {
   // The current signed-in Profile is ProfileDomains (not the older
   // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
   await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
-  verifiedAccountLanding = true
+  navigationDiagnostics.mark('signed-in')
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
-    await openReportsAfterAuth(locale)
+    await open('/'+locale+'/app/portfolio')
     await expect(card()).toBeVisible({timeout:90000})
     await expect(buttons()).toHaveCount(5,{timeout:30000})
     await expect(card().locator('[class*="visualState"]')).toHaveCount(0)
@@ -191,6 +177,7 @@ try {
     await all.click()
     await expect(all).toHaveAttribute('aria-pressed','true')
     await expect(card().locator('svg[data-radar-mode="summary"]')).toBeVisible()
+    await expect(card().locator('[data-summary-sector]')).toHaveCount(4)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       for (const sector of labels) {
@@ -229,41 +216,9 @@ try {
     for (const width of [320, 390, 430]) {
       for (const height of [550, 768, 844]) {
         await page.setViewportSize({ width, height })
-        await card().locator('[data-portrait-sectors]').evaluate(async el => {
-          // Align the *viewport* after scrollIntoView: a clipping <details>
-          // ancestor may consume its scroll request on short iPhones. Keep the
-          // exact 470/535px size, no-clipping, and >=44px touch assertions.
-          el.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' })
-          const viewportOffset = el.getBoundingClientRect().top
-          window.scrollBy({ top: viewportOffset - 6, behavior: 'instant' })
-          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-        })
-        const frame = await card().evaluate(el => {
-          const rect = node => node.getBoundingClientRect()
-          const upper = rect(el.querySelector('[data-portrait-sectors]'))
-          const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
-          const middle = el.querySelector('[data-testid="portrait-view-switch"]')
-          const middleButtons = [...(middle?.querySelectorAll('button') || [])]
-          const picture = rect(el.querySelector('[data-radar-layout="full-circle"]'))
-          const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
-          const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] a, [data-testid="portrait-quick-actions"] button')]
-          return {
-            firstTop: upper.top,
-            lastBottom: lower.bottom,
-            pageScrollY: window.scrollY,
-            maxScrollY: document.documentElement.scrollHeight - window.innerHeight,
-            span: lower.bottom - upper.top,
-            pictureWidth:picture.width,
-            pictureHeight:picture.height,
-            minTopTap: Math.min(...upperButtons.map(node => rect(node).height)),
-            miniTabCount: middleButtons.length,
-            middleVisible: Boolean(middle && rect(middle).top >= upper.bottom && rect(middle).bottom <= lower.top),
-            minMiddleTap: middleButtons.length ? Math.min(...middleButtons.map(node => rect(node).height)) : 0,
-            minBottomTap: Math.min(...lowerButtons.map(node => rect(node).height)),
-            viewportHeight: innerHeight,
-            overflow: document.documentElement.scrollWidth - innerWidth,
-          }
-        })
+        // Observe the current anchor and mini-tab controls in the same stable frame.
+        // One initial viewport alignment; no retry or geometry-gate relaxation.
+        const frame = await card().evaluate(alignAndMeasureStablePortraitFrame, { width, height })
         // Log the *actual* browser geometry before gating short/regular phones.
         console.log('PORTRAIT_ONE_SCREEN', JSON.stringify({ engine:name, locale, width, height, ...frame }))
         const shortViewport = height <= 630
@@ -276,7 +231,7 @@ try {
           `${locale} ${width}x${height}: both menu rows must be onscreen above bottom nav`)
         assert.ok(frame.miniTabCount === 3 && frame.middleVisible && frame.minMiddleTap >= 44,
           `${locale} ${width}x${height}: Chart / Axes / Tests must remain between green focus chips and chart, at least 44px tall`)
-        assert.ok(frame.minTopTap >= 44 && frame.minBottomTap >= 44,
+        assert.ok(frame.lowerControlCount === 3 && frame.minTopTap >= 44 && frame.minBottomTap >= 44,
           `${locale} ${width}x${height}: both menu rows need 44px touch targets`)
         assert.ok(frame.overflow <= 1, `${locale} ${width}x${height}: horizontal overflow`)
         if (width === 390 && height === 768) {
@@ -390,6 +345,14 @@ try {
       await expect(action).toBeVisible()
       await action.click()
       await expect(page).toHaveURL(/\/en\/app\/runs\/[^/?#]+\?mode=quick/,{timeout:60000})
+      // A changed URL alone does not prove the destination's bootstrap and run loaded.
+      // Assert the real quick-runner UI before starting the next locale; do not answer it.
+      const openedRun = page.url()
+      await expect(page.locator('.hh-runner.hh-runner--quick')).toBeVisible()
+      const firstQuestion = page.locator('.hh-runner.hh-runner--quick .hh-quick-form > fieldset.hh-quick-question').first()
+      await expect(firstQuestion).toBeVisible()
+      await expect(firstQuestion).toHaveJSProperty('disabled', false)
+      await expect(page).toHaveURL(openedRun)
       console.log('PORTRAIT_QA',name,'explicit test start reached synthetic authenticated run')
     } else {
       await goalsAction.click()
@@ -404,31 +367,19 @@ try {
   const devOverlayBlocked = problems.some(item => item.includes('/__nextjs_original-stack-frames'))
   const appProblems = problems.filter(item => !item.includes('/__nextjs_original-stack-frames') &&
     !(devOverlayBlocked && item === '[object Event]'))
-  // These exact WebKit messages are from *previous* in-flight requests discarded
-  // during intentional navigation under Next dev. Never ignore an unknown host,
-  // path, error class, repeated bootstrap failure or an absent successful
-  // authenticated bootstrap. Production/browser auth remains independently gated.
-  const abandonedDevHotUpdate = /^\/127\.0\.0\.1:3100\/_next\/static\/webpack\/[\w.-]+\.webpack\.hot-update\.json due to access control checks\.$/
-  const abandonedOldBootstrap = /^\/127\.0\.0\.1:3100\/api\/app\/bootstrap due to access control checks\.$/
-  const navigationAborts = name === 'webkit' ? appProblems.filter(item =>
-    abandonedDevHotUpdate.test(item) || abandonedOldBootstrap.test(item)) : []
-  const unexpected = appProblems.filter(item => !navigationAborts.includes(item))
-  if (navigationAborts.length) {
-    const bootstrapAborts = navigationAborts.filter(item => abandonedOldBootstrap.test(item)).length
-    const devHotAborts = navigationAborts.filter(item => abandonedDevHotUpdate.test(item)).length
-    assert.ok(bootstrapAborts <= 2 && devHotAborts <= 1,
-      'Unexpected repeated WebKit bootstrap/HMR failures: ' + navigationAborts.join('; '))
-    assert.ok(bootstrapStatuses.includes(200),
-      'WebKit navigation may abort an old bootstrap only after a successful same-origin bootstrap')
-    assert.ok(!bootstrapStatuses.some(code => code === 401 || code === 403),
-      'Protected bootstrap must never reject an authenticated test account')
-    console.log('PORTRAIT_WEBKIT_DEV_NAV_ABORTS', JSON.stringify({
-      bootstrapAborts, devHotAborts, successfulBootstrapResponses:bootstrapStatuses.filter(code=>code===200).length,
-    }))
-  }
-  assert.equal(unexpected.length,0,'Browser script errors: '+unexpected.join('; '))
-  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
+  // Retain the existing strict application-error gate: the canonical UI update
+  // is not authority to reclassify unresolved WebKit transport failures.
+  assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
+  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 scored sectors + separate Goal profile')
+  completed = true
 } finally {
+  navigationDiagnostics.mark(completed ? 'success' : 'failure')
+  try {
+    await writeFile(`${output}/${name}-navigation.json`, JSON.stringify(navigationDiagnostics.stop(), null, 2) + '\n')
+  } catch {
+    // A diagnostic write must never replace the original browser failure.
+    console.warn('PORTRAIT_NAVIGATION_DIAGNOSTICS_UNAVAILABLE')
+  }
   await context.close()
   await browser.close()
 }

@@ -5,7 +5,7 @@
 .refresh{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--green);cursor:pointer}
 /* Owner folders keep requests separate while sharing the same selected conversation. */
 .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:0 0 9px;padding:4px;border:1px solid #e4d8ca;border-radius:13px;background:#f3ece3}
-.tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:43px;padding:7px 10px;border:1px solid transparent;border-radius:10px;background:transparent;color:#75685f;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer}
+.tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:44px;padding:7px 10px;border:1px solid transparent;border-radius:10px;background:transparent;color:#75685f;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer}
 .tabs button[aria-selected="true"]{border-color:#d6e6d8;background:#fffdf8;color:#286b5b;box-shadow:0 2px 7px #44332210}
 .tabs button span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:#e6dfd6;color:#61544c;font:700 11px/1 system-ui,sans-serif}
 .tabs button[aria-selected="true"] span{background:#e1f0e5;color:#286b5b}
@@ -41,13 +41,14 @@
 .chatHolder{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .chatHolder[hidden]{display:none!important}
 .requestPane{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:auto;padding:15px;background:#fefbf7;gap:15px}
+.requestPane[hidden]{display:none!important}
 .requestBubble{align-self:flex-start;max-width:min(90%,570px);border:1px solid #eadfd6;border-radius:14px 14px 14px 5px;background:#fff;padding:14px 16px;overflow-wrap:anywhere;white-space:pre-wrap}
 .requestBubble small{font-size:11px;color:#8d8179}
 .requestBubble p{margin:7px 0 0;line-height:1.55;font-size:14px}
 .requestActions{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#fff}
 .requestActions p,.requestActions small{margin:0;color:var(--soft);font-size:12px}
 .requestActions span{overflow-wrap:anywhere}
-.requestActions a{display:inline-flex;gap:9px;align-items:center;min-height:42px;border:1px solid #d3dfd9;border-radius:10px;background:#edf5f0;padding:9px 13px;color:#24584f;text-decoration:none;font-weight:700;font-size:13px}
+.requestActions a{display:inline-flex;gap:9px;align-items:center;min-height:44px;border:1px solid #d3dfd9;border-radius:10px;background:#edf5f0;padding:9px 13px;color:#24584f;text-decoration:none;font-weight:700;font-size:13px}
 .requestActions a:hover{background:#e1eee6}
 .srOnly{position:absolute;width:1px;height:1px;padding:0;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}
 .shell button:focus-visible,.shell a:focus-visible,.shell input:focus-visible{outline:3px solid #397d6b;outline-offset:2px}
@@ -56,7 +57,7 @@
  .shell{padding-bottom:0}
  .heading{padding:4px 4px 11px}
  .tabs{margin-bottom:7px}
- .tabs button{font-size:12px;min-height:42px;padding:6px 5px}
+ .tabs button{font-size:12px;min-height:44px;padding:6px 5px}
  .shell[data-detail-open="true"] .tabs{display:none}
  .heading h1{font-size:28px}
  .window{display:block;height:clamp(440px,61dvh,650px);border-radius:16px}

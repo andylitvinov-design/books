@@ -63,7 +63,11 @@ test('public course read uses published snapshot rather than pending draft',()=>
 })
 test('existing materials and Academy catalog use new builder without replacing Reiki',()=>{
  const material=read('components/app/practice-materials.jsx')
- assert.match(material,/<PractitionerCourseBuilder locale=\{locale\} accountId=\{accountId\} searchQuery=\{query\} startCreate=\{quickCreateCourse\} onOpenYoutube=\{isOwner\?onOpenYoutube:null\}\/>/)
+ const builderProps=material.match(/<PractitionerCourseBuilder\b([^>]+)\/>/)?.[1]
+ assert.ok(builderProps,'Actual mounted builder must be retained')
+ for(const prop of ['locale={locale}','accountId={accountId}','searchQuery={query}',
+  'startCreate={quickCreateCourse}','meditationType={meditationType}','onOpenYoutube={isOwner?onOpenYoutube:null}'])
+  assert.ok(builderProps.split(/\s+/).includes(prop),prop)
  assert.match(material,/data-open-reiki-course-audio/)
  assert.match(material,/quickCreateCourse=false/)
  assert.match(read('components/app/practitioner-course-builder.jsx'),/startCreate=false/)

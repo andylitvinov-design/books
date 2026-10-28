@@ -65,3 +65,24 @@ test('each file has single-gesture Play/Pause and authenticated Range-capable na
  assert.match(css,/@media\(max-width:350px\)/)
  assert.match(css,/\.player\[hidden\]/)
 })
+
+
+test('recent audio Play Refresh All and Dot retain at least 44px touch targets under scoped and mobile CSS',()=>{
+ const rules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+ for(const name of ['play','refresh','all','dotLink']){
+  const base=rules.find(([,selector])=>selector.trim()==='.'+name)?.[2]
+  assert.ok(base,'explicit base sizing for '+name)
+  for(const dimension of ['min-width','min-height']){
+   const value=base.match(new RegExp('(?:^|;)\\s*'+dimension+':(\\d+)px'))
+   assert.ok(value&&Number(value[1])>=44,name+' '+dimension+' must be at least 44px')
+  }
+  const control=new RegExp('\\.'+name+'(?:[^\\w-]|$)')
+  for(const [,selector,body] of rules){
+   if(!control.test(selector))continue
+   for(const [,dimension,value] of body.matchAll(/(?:^|;)\s*((?:min-)?(?:width|height)):(\d+)px/g))
+    assert.ok(Number(value)>=44,selector.trim()+' '+dimension+' cannot shrink a target below 44px')
+  }
+ }
+ const track=css.match(/\.row\{[^}]*grid-template-columns:(\d+)px minmax/)
+ assert.ok(track&&Number(track[1])>=44,'Play grid track must fit its 44px control')
+})

@@ -6,10 +6,12 @@ import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
-import { promisify } from 'node:util'
+import { promisify, types as nodeTypes } from 'node:util'
+import { performance as nodePerformance } from 'node:perf_hooks'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
+import { verifyAboutVideoCaptionLayout } from './verify-about-video-caption-layout.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -22,6 +24,326 @@ let server, app, browser
 const exec = promisify(execFile)
 const testToken = 'synthetic-video-browser-test-only'
 const namespace = 'holistic-house:site-videos:v1'
+
+// BEGIN bounded About overflow diagnostics (passive, failure-only, no DOM content).
+function aboutOverflowDiagnosticSnapshot() {
+  const number = value => typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(Math.max(-100000, Math.min(100000, value)) * 10) / 10 : null
+  const count = (value, cap) => typeof value === 'number' && Number.isInteger(value) && value >= 0 ? Math.min(value, cap) : 0
+  const viewportWidth = number(innerWidth)
+  const known = new Set()
+  const styleValues = {
+    display: ['none', 'block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid', 'contents', 'flow-root', 'table'],
+    position: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
+    boxSizing: ['border-box', 'content-box'],
+    overflowX: ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    overflowY: ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    flexWrap: ['nowrap', 'wrap', 'wrap-reverse'],
+    whiteSpace: ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces'],
+    overflowWrap: ['normal', 'anywhere', 'break-word'],
+  }
+  const rect = value => Object.fromEntries(['left', 'right', 'top', 'bottom', 'width', 'height'].map(key => [key, number(value[key])]))
+  const measure = element => {
+    if (!element) return { present: false }
+    known.add(element)
+    const style = getComputedStyle(element)
+    return { present: true, rect: rect(element.getBoundingClientRect()),
+      clientWidth: number(element.clientWidth), scrollWidth: number(element.scrollWidth),
+      styles: Object.fromEntries(Object.entries(styleValues).map(([key, values]) => {
+        const observed = style[key]
+        return [key, values.find(value => value === observed) ?? 'other']
+      })) }
+  }
+  const sections = [
+    ['about-shell', 'main.about-shell'],
+    ['about-header', 'main.about-shell > .section-site-header'],
+    ['about-intro-video', 'main.about-shell > #psychic-alchemy-video'],
+    ['about-intro-slot', 'main.about-shell > [data-video-slot="about-intro"]'],
+    ['about-introduction', 'main.about-shell > .about-introduction'],
+    ['about-portrait', 'main.about-shell > .about-introduction > .about-portrait'],
+    ['about-introduction-copy', 'main.about-shell > .about-introduction > .about-introduction-copy'],
+    ['about-biography', 'main.about-shell > .about-biography'],
+    ['about-explore', 'main.about-shell > .about-explore'],
+    ['about-gallery', 'main.about-shell > #about-testimonials[data-personal-testimonials="about"]'],
+    ['about-gallery-row', 'main.about-shell > #about-testimonials > [role="region"]'],
+    ['about-consultation-video', 'main.about-shell > [data-video-slot="consultation"]'],
+    ['about-consultation', 'main.about-shell > .about-consultation'],
+    ['about-consultation-capture', 'main.about-shell > .about-consultation > [data-consultation-capture]'],
+    ['about-cabinet-entry', 'main.about-shell > .about-client-cabinet'],
+  ].map(([alias, selector]) => {
+    const elements = document.querySelectorAll(selector)
+    return { alias, count: count(elements.length, 2), ...measure(elements[0]) }
+  })
+  const indexed = (elements, prefix, cap) => Array.from({ length: cap }, (_, index) => ({
+    alias: `${prefix}-${String(index + 1).padStart(2, '0')}`, ...measure(elements[index]),
+  }))
+  const shellChildren = document.querySelector('main.about-shell')?.children ?? []
+  const bodyChildren = document.body?.children ?? []
+  const cards = document.querySelectorAll('main.about-shell > #about-testimonials [data-testimonial-video-id]')
+  const snapshot = { status: 'captured', viewportWidth,
+    roots: [{ alias: 'document-root', ...measure(document.documentElement) }, { alias: 'body-root', ...measure(document.body) }],
+    sections, shellChildCount: count(shellChildren.length, 13), shellChildren: indexed(shellChildren, 'shell-child', 12),
+    bodyChildCount: count(bodyChildren.length, 13), bodyChildren: indexed(bodyChildren, 'body-child', 12),
+    cardCount: count(cards.length, 11), cards: indexed(cards, 'gallery-card', 10) }
+  // Unknown wide nodes have no selectors, tag/class/id, content, attributes or URLs.
+  // Rectangles may include descendants clipped by a scroll container: not a cause verdict.
+  const walker = document.body ? document.createTreeWalker(document.body, 1) : null
+  let wideCount = 0, scanned = 0
+  const wideRects = []
+  while (scanned < 2048) {
+    const element = walker?.nextNode()
+    if (!element) break
+    scanned++
+    if (known.has(element)) continue
+    const bounds = rect(element.getBoundingClientRect())
+    if (bounds.width !== null && bounds.width > 0 && viewportWidth !== null &&
+        ((bounds.right !== null && bounds.right > viewportWidth + 2) || (bounds.left !== null && bounds.left < -2))) {
+      wideCount = Math.min(wideCount + 1, 33)
+      if (wideRects.length < 12) wideRects.push(bounds)
+    }
+  }
+  const scanLimited = scanned === 2048 && Boolean(walker?.nextNode())
+  return { ...snapshot, unknown: { elementCount: scanned + (scanLimited ? 1 : 0), scanned,
+    scanLimited, wideCount, wideRects } }
+}
+
+// Independent Node boundary: page data is untrusted even when the reader above
+// produced it. Only own data descriptors are read; aliases are never read from DOM.
+function canonicalAboutOverflowDiagnostic(raw, path) {
+  const caseAlias = path === '/en/about' ? 'about-en-overflow' : path === '/ru/about' ? 'about-ru-overflow' : null
+  if (!caseAlias) return null
+  const invalid = () => { throw new Error('Invalid bounded observation') }
+  const own = (value, key) => {
+    if (!value || typeof value !== 'object' || nodeTypes.isProxy(value)) return invalid()
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) return invalid()
+    return descriptor.value
+  }
+  const boolean = value => typeof value === 'boolean' ? value : invalid()
+  const numeric = value => value === null ? null : typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(Math.max(-100000, Math.min(100000, value)) * 10) / 10 : invalid()
+  const count = (value, cap) => typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? Math.min(value, cap) : invalid()
+  const arrayLength = value => {
+    if (nodeTypes.isProxy(value) || !Array.isArray(value)) return invalid()
+    return count(own(value, 'length'), 4294967295)
+  }
+  const rect = value => Object.fromEntries(['left', 'right', 'top', 'bottom', 'width', 'height'].map(key => [key, numeric(own(value, key))]))
+  const styleValues = {
+    display: ['none', 'block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid', 'contents', 'flow-root', 'table', 'other'],
+    position: ['static', 'relative', 'absolute', 'fixed', 'sticky', 'other'],
+    boxSizing: ['border-box', 'content-box', 'other'],
+    overflowX: ['visible', 'hidden', 'clip', 'scroll', 'auto', 'other'],
+    overflowY: ['visible', 'hidden', 'clip', 'scroll', 'auto', 'other'],
+    flexWrap: ['nowrap', 'wrap', 'wrap-reverse', 'other'],
+    whiteSpace: ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces', 'other'],
+    overflowWrap: ['normal', 'anywhere', 'break-word', 'other'],
+  }
+  const styles = value => Object.fromEntries(Object.entries(styleValues).map(([key, values]) => {
+    const observed = own(value, key)
+    const canonical = values.find(value => value === observed)
+    if (canonical === undefined) return invalid()
+    return [key, canonical]
+  }))
+  const row = (value, alias, section = false) => {
+    const result = { alias, present: boolean(own(value, 'present')) }
+    if (section) result.count = count(own(value, 'count'), 2)
+    if (result.present) {
+      result.rect = rect(own(value, 'rect'))
+      result.clientWidth = numeric(own(value, 'clientWidth'))
+      result.scrollWidth = numeric(own(value, 'scrollWidth'))
+      result.styles = styles(own(value, 'styles'))
+    }
+    return result
+  }
+  const rows = (value, aliases, section = false) => {
+    if (arrayLength(value) < aliases.length) return invalid()
+    return aliases.map((alias, index) => row(own(value, String(index)), alias, section))
+  }
+  const aliases = (prefix, length) => Array.from({ length }, (_, index) => `${prefix}-${String(index + 1).padStart(2, '0')}`)
+  let measurement = { status: 'unavailable' }
+  try {
+    if (own(raw, 'status') !== 'captured') return { schemaVersion: 1, caseAlias, measurement }
+    const unknown = own(raw, 'unknown')
+    const wideRects = own(unknown, 'wideRects')
+    const rectCount = Math.min(arrayLength(wideRects), 12)
+    measurement = {
+      status: 'captured', viewportWidth: numeric(own(raw, 'viewportWidth')),
+      roots: rows(own(raw, 'roots'), ['document-root', 'body-root']),
+      sections: rows(own(raw, 'sections'), ['about-shell', 'about-header', 'about-intro-video', 'about-intro-slot',
+        'about-introduction', 'about-portrait', 'about-introduction-copy', 'about-biography', 'about-explore',
+        'about-gallery', 'about-gallery-row', 'about-consultation-video', 'about-consultation', 'about-consultation-capture', 'about-cabinet-entry'], true),
+      shellChildCount: count(own(raw, 'shellChildCount'), 13), shellChildren: rows(own(raw, 'shellChildren'), aliases('shell-child', 12)),
+      bodyChildCount: count(own(raw, 'bodyChildCount'), 13), bodyChildren: rows(own(raw, 'bodyChildren'), aliases('body-child', 12)),
+      cardCount: count(own(raw, 'cardCount'), 11), cards: rows(own(raw, 'cards'), aliases('gallery-card', 10)),
+      unknown: { elementCount: count(own(unknown, 'elementCount'), 2049), scanned: count(own(unknown, 'scanned'), 2048),
+        scanLimited: boolean(own(unknown, 'scanLimited')), wideCount: count(own(unknown, 'wideCount'), 33),
+        wideRects: Array.from({ length: rectCount }, (_, index) => rect(own(wideRects, String(index)))) },
+    }
+  } catch { /* Malformed/accessor/proxy observations have no reportable payload. */ }
+  return { schemaVersion: 1, caseAlias, measurement }
+}
+
+async function withAboutOverflowDiagnostic(operation, diagnose) {
+  try { return await operation() }
+  catch (error) {
+    let active = true, timer
+    try {
+      const deadline = nodePerformance.now() + 1000
+      const isActive = () => active && nodePerformance.now() < deadline
+      await Promise.race([
+        Promise.resolve().then(() => diagnose(isActive)),
+        new Promise(resolve => { timer = setTimeout(resolve, 1000) }),
+      ])
+    } catch { /* Diagnostics must never replace the original failure. */ }
+    finally {
+      active = false
+      try { if (timer !== undefined) clearTimeout(timer) } catch { /* Preserve the original failure. */ }
+    }
+    throw error
+  }
+}
+// END bounded About overflow diagnostics.
+
+// BEGIN bounded public detail-video contract (source-tested, no browser/provider calls).
+// These literals are independent of the renderer and registry. Update only with
+// source-routing plus independent delivery/isolation evidence; not registry self-comparison.
+const detailVideoCases = [
+  {"alias": "alchemy-en", "route": "/en/services/alchemy-of-soul", "canonicalPath": "/en/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "7c6b243f048b9c0581ae29619a4a89fc"},
+  {"alias": "hypnotherapy-en", "route": "/en/services/hypnotherapy-course", "canonicalPath": "/en/services/hypnotherapy-course", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "8c1634ce904434a91931429b6a7eefe1"},
+  {"alias": "alchemy-ru", "route": "/ru/services/alchemy-of-soul", "canonicalPath": "/ru/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "Cz6SxXJNZbw"},
+  {"alias": "hypnotherapy-ru", "route": "/ru/services/hypnotherapy-course", "canonicalPath": "/ru/services/hypnotherapy-course", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "eLsjFaKCBhI"},
+  {"alias": "alchemy-legacy-en", "route": "/en/services/psychohomeopathy", "canonicalPath": "/en/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "en", "audioLanguage": "en", "provider": "heygen", "videoId": "7c6b243f048b9c0581ae29619a4a89fc"},
+  {"alias": "alchemy-legacy-ru", "route": "/ru/services/psychohomeopathy", "canonicalPath": "/ru/services/alchemy-of-soul", "selector": "[data-alchemy-panel=\"video\"]", "locale": "ru", "audioLanguage": "ru", "provider": "youtube", "videoId": "Cz6SxXJNZbw"},
+  {"alias": "imagery-es", "route": "/es/services/imagery-therapy", "canonicalPath": "/es/services/imagery-therapy", "selector": "[data-service-video=\"hypnotherapy\"]", "locale": "es", "audioLanguage": "en", "provider": "heygen", "videoId": "8c1634ce904434a91931429b6a7eefe1"},
+  {"alias": "constellations-en", "route": "/en/services/systemic-constellations", "canonicalPath": "/en/services/systemic-constellations", "selector": "[data-service-video=\"constellation-case\"]", "locale": "en", "audioLanguage": "en", "provider": "youtube", "videoId": "sfVFOQNr2qk"},
+  {"alias": "free-review-en", "route": "/en/services/free-situation-review", "canonicalPath": "/en/services/free-situation-review", "selector": "[data-free-review-intro-video][data-intro-audio-language=\"en\"]", "locale": "en", "audioLanguage": "en", "provider": "youtube", "videoId": "s30Y42IwPcg"},
+]
+
+function detailVideoWatchUrl(contract) {
+  return contract.provider === 'heygen'
+    ? `https://app.heygen.com/share/${contract.videoId}`
+    : `https://www.youtube.com/watch?v=${contract.videoId}`
+}
+
+function classifyDetailVideoSource(raw, contract) {
+  if (typeof raw !== 'string' || !raw) return 'missing'
+  if (raw.length > 2048 || raw !== raw.trim()) return 'invalid'
+  let url
+  try { url = new URL(raw) } catch { return 'invalid' }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash) return 'invalid'
+  const origin = contract.provider === 'heygen' ? 'https://app.heygen.com' : 'https://www.youtube-nocookie.com'
+  if (url.origin !== origin) return 'wrong-origin'
+  const path = contract.provider === 'heygen' ? `/embeds/${contract.videoId}` : `/embed/${contract.videoId}`
+  if (url.pathname !== path) return 'wrong-video'
+  if (contract.provider === 'heygen') return url.search ? 'wrong-parameters' : 'match'
+  const parameters = { autoplay: '1', playsinline: '1', rel: '0', hl: contract.locale, cc_lang_pref: contract.audioLanguage }
+  if ([...url.searchParams].length !== Object.keys(parameters).length) return 'wrong-parameters'
+  for (const [name, value] of Object.entries(parameters)) {
+    if (url.searchParams.getAll(name).length !== 1 || url.searchParams.get(name) !== value) return 'wrong-parameters'
+  }
+  return 'match'
+}
+// END bounded public detail-video contract.
+
+// BEGIN bounded About gallery contract (public identity/rendering metadata only).
+// The About archive is not the compact home/services preview. Keep these ten
+// independently pinned IDs in EN-first order, including each original audio language.
+const aboutTestimonialVideos = [
+  ['Dk0LBmOivQo', 'en'], ['aUJde6A-9p0', 'en'], ['fE6sD1zr1Js', 'en'],
+  ['itjo2_z2NGk', 'en'], ['4NrryHcEF1A', 'en'], ['hYwRNMxIMjc', 'en'],
+  ['MIVLm1GUTtM', 'ru'], ['ttQxUHopaUM', 'ru'], ['VABgpmn4ZYA', 'ru'], ['muOnIHllI7E', 'ru'],
+]
+function aboutPosterIdentityMatches(raw, id, configuredOrigin) {
+  // Next 15.5.21 reassigns img.src = img.src when onError is present. Its
+  // resolved URL can replace the original relative content attribute.
+  // Accept only these two exact representations under the configured origin;
+  // no parsing/normalization, optimizer URLs, fallbacks or suffixes are allowed.
+  if (!['http://127.0.0.1:3100', 'https://holistichouse.vercel.app'].includes(configuredOrigin)) return false
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(id)) return false
+  const relative = `/images/holistic-house/testimonial-posters/${id}.webp`
+  return raw === relative || raw === configuredOrigin + relative
+}
+function classifyAboutGallery(snapshot, configuredOrigin) {
+  if (!snapshot || !Array.isArray(snapshot.cards)) return 'invalid'
+  if (snapshot.galleryCount !== 1) return 'gallery-count'
+  if (snapshot.locale !== 'en') return 'gallery-locale'
+  if (snapshot.cards.length !== aboutTestimonialVideos.length) return 'card-count'
+  if (snapshot.playerCount !== aboutTestimonialVideos.length) return 'player-count'
+  if (snapshot.iframeCount !== 0) return 'eager-iframe'
+  if (snapshot.watchLinkCount !== 0) return 'external-watch-link'
+  for (const [index, [id, language]] of aboutTestimonialVideos.entries()) {
+    const card = snapshot.cards[index]
+    if (!card || card.id !== id) return 'video-order-or-identity'
+    if (card.playerCount !== 1) return 'card-player-count'
+    if (card.playerLocale !== 'en') return 'player-locale'
+    if (card.audioLanguage !== language) return 'audio-language'
+    if (card.playCount !== 1 || card.playDisabled !== false) return 'poster-not-ready'
+    if (!aboutPosterIdentityMatches(card.posterSrc, id, configuredOrigin)) return 'poster-identity'
+  }
+  return 'match'
+}
+// END bounded About gallery contract.
+
+// BEGIN bounded About poster diagnostics (measurement only; never an acceptance rule).
+function aboutPosterDiagnosticSnapshot(galleries, { ids, origin }) {
+  function sourceKind(raw, id) {
+    if (typeof raw !== 'string' || !raw) return 'absent'
+    if (raw.length > 2048 || raw !== raw.trim()) return 'invalid'
+    const expected = `/images/holistic-house/testimonial-posters/${id}.webp`
+    if (raw === expected) return 'expected-relative'
+    if (raw === origin + expected) return 'expected-absolute'
+    let url
+    try { url = new URL(raw, origin) } catch { return 'invalid' }
+    if (url.username || url.password) return 'credentials-present'
+    if (url.protocol === 'data:') return 'data-source'
+    if (url.protocol === 'blob:') return 'blob-source'
+    if (!['http:', 'https:'].includes(url.protocol)) return 'other-scheme'
+    if (url.origin === origin) {
+      if (url.pathname === expected) return url.search || url.hash ? 'same-path-with-suffix' : 'same-path-other-form'
+      if (url.pathname === '/_next/image' && url.searchParams.get('url') === expected) return 'same-id-next-image'
+      if (/^\/images\/holistic-house\/testimonial-posters\/[A-Za-z0-9_-]{11}\.webp$/.test(url.pathname)) return 'other-local-testimonial'
+      return 'other-same-origin'
+    }
+    if (url.origin === 'https://i.ytimg.com' && !url.search && !url.hash
+      && [`/vi/${id}/hqdefault.jpg`, `/vi/${id}/maxresdefault.jpg`].includes(url.pathname)) return 'same-id-provider-thumbnail'
+    return 'other-origin'
+  }
+  function imageState(node, id) {
+    return {
+      present: Boolean(node),
+      source: sourceKind(node?.getAttribute('src'), id),
+      currentSource: sourceKind(node?.currentSrc, id),
+      complete: node?.complete === true,
+      hasNaturalWidth: typeof node?.naturalWidth === 'number' && Number.isFinite(node.naturalWidth) && node.naturalWidth > 0,
+    }
+  }
+  const gallery = galleries[0]
+  const cards = gallery ? [...gallery.querySelectorAll('[data-testimonial-video-id]')].slice(0, 11) : []
+  return {
+    status: 'captured', galleryCount: Math.min(galleries.length, 2), cardCount: cards.length,
+    cards: Array.from({ length: 10 }, (_, index) => {
+      const card = cards[index]
+      const id = ids[index]
+      const player = card?.querySelector('.site-video-player')
+      const fallback = player ? [...player.querySelectorAll('img.site-video-fallback-poster')].slice(0, 2) : []
+      const posters = player ? [...player.querySelectorAll('img.site-video-poster')].slice(0, 2) : []
+      return {
+        alias: `about-video-${String(index + 1).padStart(2, '0')}`,
+        present: Boolean(card), idMatches: Boolean(card) && card.getAttribute('data-testimonial-video-id') === id,
+        fallbackCount: fallback.length, posterCount: posters.length,
+        fallback: imageState(fallback[0], id), primary: imageState(posters[0], id),
+      }
+    }),
+  }
+}
+async function withAboutPosterDiagnostic(operation, diagnose) {
+  try { return await operation() } catch (error) {
+    try { await diagnose() } catch { /* Measurement must never replace the original failure. */ }
+    throw error
+  }
+}
+// END bounded About poster diagnostics.
 
 try {
   if (!live) {
@@ -61,6 +383,8 @@ try {
     }
   }
   browser = await chromium.launch({ headless: true })
+  await verifyAboutVideoCaptionLayout(browser, expect)
+  pass('Anonymous minimal-caption fixture: baseline overflow reproduced; contained with accessible names and unchanged normal flow at 1365/390px')
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []
@@ -78,11 +402,66 @@ try {
     // Readiness concerns the outer application page, not imported source markup.
     await expect(page.locator('main').first()).toBeVisible()
   }
+  async function recordAboutOverflowDiagnostic(path, isActive) {
+    if (path !== '/en/about' && path !== '/ru/about') return
+    if (typeof isActive !== 'function' || !isActive()) return
+    let observed = null
+    try { observed = await page.evaluate(aboutOverflowDiagnosticSnapshot) }
+    catch { /* No error details or DOM content are emitted. */ }
+    if (!isActive()) return
+    const diagnostic = canonicalAboutOverflowDiagnostic(observed, path)
+    const serialized = JSON.stringify(diagnostic)
+    if (!isActive()) return
+    try { writeFileSync(`${evidence}/about-overflow-diagnostic.json`, serialized) }
+    catch { /* The original overflow assertion remains primary if writing fails. */ }
+    if (!isActive()) return
+    console.error('OBSERVATION: about-overflow', serialized)
+  }
+  async function recordAboutPosterDiagnostic() {
+    let measurement = { status: 'unavailable' }
+    try {
+      measurement = await page.locator('#about-testimonials[data-personal-testimonials="about"]')
+        .evaluateAll(aboutPosterDiagnosticSnapshot, { ids: aboutTestimonialVideos.map(([id]) => id), origin })
+    } catch { /* No error text, URLs or DOM contents are emitted. */ }
+    const diagnostic = { schemaVersion: 1, caseAlias: 'about-en-gallery', ...measurement }
+    try { writeFileSync(`${evidence}/about-poster-diagnostic.json`, JSON.stringify(diagnostic, null, 2)) }
+    catch { /* Still report the bounded measurement when artifact writing fails. */ }
+    console.error('OBSERVATION: about-poster', JSON.stringify(diagnostic))
+  }
+  async function readAboutGallery() {
+    // Read only public identity/cardinality attributes. No titles, narratives,
+    // transcripts, frame URLs, HTML dumps or client information enter diagnostics.
+    return page.locator('#about-testimonials[data-personal-testimonials="about"]').evaluateAll(galleries => {
+      const gallery = galleries[0]
+      const cards = gallery ? [...gallery.querySelectorAll('[data-testimonial-video-id]')].slice(0, 11) : []
+      return {
+        galleryCount: Math.min(galleries.length, 2), locale: gallery?.getAttribute('lang') ?? null,
+        playerCount: gallery ? Math.min(gallery.querySelectorAll('.site-video-player').length, 11) : 0,
+        iframeCount: gallery ? Math.min(gallery.querySelectorAll('iframe').length, 1) : 0,
+        watchLinkCount: gallery ? Math.min(gallery.querySelectorAll('.site-video-watch-link').length, 1) : 0,
+        cards: cards.map(card => {
+          const player = card.querySelector('.site-video-player')
+          const play = player?.querySelector('button.site-video-play')
+          return {
+            id: card.getAttribute('data-testimonial-video-id'),
+            playerCount: Math.min(card.querySelectorAll('.site-video-player').length, 2),
+            playerLocale: player?.getAttribute('lang') ?? null,
+            audioLanguage: player?.querySelector('.site-video-caption [lang]')?.getAttribute('lang') ?? null,
+            playCount: player ? Math.min(player.querySelectorAll('button.site-video-play').length, 2) : 0,
+            playDisabled: play ? play.disabled : null,
+            posterSrc: player?.querySelector('.site-video-fallback-poster')?.getAttribute('src') ?? null,
+          }
+        }),
+      }
+    })
+  }
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
-      if (i >= 40) throw new Error('Updated module not observed on production')
+      if (classifyAboutGallery(await readAboutGallery(), origin) === 'match') break
+      if (i >= 40) await withAboutPosterDiagnostic(async () => {
+        throw new Error('Updated module not observed on production')
+      }, recordAboutPosterDiagnostic)
       await pause(5000)
     }
   }
@@ -161,33 +540,56 @@ try {
     }
     pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
 
-    const detailRoutes = [
-      ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-    ]
-    for (const [route, topic, expectedUrl] of detailRoutes) {
-      await navigate(route)
-      if (route.endsWith('/psychohomeopathy')) {
-        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
+    for (const contract of detailVideoCases) {
+      const { alias, route, selector, locale, audioLanguage, provider } = contract
+      let block, phase = 'navigate'
+      console.log(`CHECK: video-detail ${alias}`)
+      try {
+        await navigate(route)
+        assert.equal(new URL(page.url()).pathname, contract.canonicalPath, `Video detail ${alias}: canonical route`)
+        await expect(page.locator('main').first()).toHaveAttribute('lang', locale)
+        phase = 'poster'
+        block = page.locator(selector)
+        await expect(block).toHaveCount(1)
+        await block.scrollIntoViewIfNeeded()
+        await expect(block.locator('.site-video-player')).toHaveAttribute('lang', locale)
+        await expect(block.locator('.site-video-caption [lang]').first()).toHaveAttribute('lang', audioLanguage)
+        await expect(block.locator('.site-video-play')).toBeVisible()
+        assert.equal(await block.locator('iframe').count(), 0, `Video detail ${alias}: eager third-party iframe`)
+        const transcript = block.locator('details.site-video-transcript')
+        if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
+        // Check the independently pinned original identity without printing unknown hrefs.
+        await expect.poll(async () => (await block.locator('.site-video-watch-link').first().getAttribute('href')) === detailVideoWatchUrl(contract),
+          { message: `Video detail ${alias}: original watch identity` }).toBe(true)
+        phase = 'play'
+        await block.locator('.site-video-play').click()
+        await expect(block.locator('iframe')).toHaveCount(1)
+        // Parse exact origin/path and language parameters, not a permissive URL prefix.
+        // Failures report only a fixed category, never an unknown iframe URL/query.
+        await expect.poll(async () => classifyDetailVideoSource(await block.locator('iframe').getAttribute('src'), contract),
+          { timeout: 10000, message: `Video detail ${alias}: approved embed identity` }).toBe('match')
+        await expect.poll(async () => (await block.locator('iframe').getAttribute('data-video-playback')) === provider,
+          { message: `Video detail ${alias}: playback provider` }).toBe(true)
+        assert.equal(await block.locator('.site-video-play').count(), 0, `Video detail ${alias}: poster remained after Play`)
+        console.log(`PASS: video-detail ${alias}`)
+      } catch (error) {
+        let snapshot = { status: 'unavailable' }
+        try {
+          const frames = block ? await block.locator('iframe').evaluateAll(nodes => nodes.slice(0, 2).map(node => ({
+            src: node.getAttribute('src'), provider: node.getAttribute('data-video-playback'),
+          }))) : []
+          snapshot = {
+            status: 'captured', canonicalPathMatches: new URL(page.url()).pathname === contract.canonicalPath,
+            blockCount: block ? Math.min(await block.count(), 2) : 0,
+            frameCount: block ? Math.min(await block.locator('iframe').count(), 2) : 0,
+            frames: frames.map(frame => ({ source: classifyDetailVideoSource(frame.src, contract), providerMatches: frame.provider === provider })),
+          }
+        } catch { /* Diagnostic failure must not replace the original assertion. */ }
+        const failure = { schemaVersion: 1, caseAlias: alias, phase, ...snapshot }
+        writeFileSync(`${evidence}/detail-route-failure.json`, JSON.stringify(failure, null, 2))
+        console.error('FAIL: video-detail', JSON.stringify(failure))
+        throw error
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
-      await expect(block).toHaveCount(1)
-      await block.scrollIntoViewIfNeeded()
-      await expect(block.locator('.site-video-play')).toBeVisible()
-      assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
-      const transcript = block.locator('details.site-video-transcript')
-      if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
-      await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
-      await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
-      assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
@@ -201,9 +603,12 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  await withAboutPosterDiagnostic(async () => {
+    await expect.poll(async () => classifyAboutGallery(await readAboutGallery(), origin),
+      { timeout: 10000, message: 'About EN gallery: exact ten locale-first identities, local posters and opt-in players' }).toBe('match')
+  }, recordAboutPosterDiagnostic)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten exact locale-first testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
@@ -217,7 +622,9 @@ try {
     for (const path of paths) {
       await navigate(path)
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
+      await withAboutOverflowDiagnostic(async () => {
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
+      }, isActive => recordAboutOverflowDiagnostic(path, isActive))
     }
     pass(`${live ? 'Production' : 'Local'}: ${paths.length} routes, HTTP 200 and no overflow at ${width}px`)
   }

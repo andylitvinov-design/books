@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
 import {getServiceEditorIssue,servicePreviewPrice} from '../lib/practitioners/service-editor-steps.mjs'
 import {validateServiceDraft} from '../lib/practitioners/contracts.js'
 import {getHobbyServiceQuota} from '../lib/practitioners/service-quota.js'
@@ -12,6 +13,7 @@ const dashboard=read('components/app/my-services-dashboard.jsx')
 const dashboardCss=read('components/app/my-services-dashboard.module.css')
 const workspace=read('components/app/practice-workspace.jsx')
 const photo=read('components/app/practice-photo-upload.jsx')
+const videoField=read('components/app/practice-video-field.jsx')
 const make=(patch={})=>({
  copy:{en:{title:'Private online session',shortDescription:'A clear, one-to-one introduction.'},ru:{},es:{}},
  areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',
@@ -56,8 +58,54 @@ test('the real photo uploader is used in the first card and blocks save during m
  assert.match(photo,/fetch\('\/api\/app\/practice\/photos'/)
  assert.match(photo,/Public only after approval/)
  assert.match(editor,/data-service-photo-tools/)
- assert.match(editor,/<PracticeVideoField locale=\{locale\} introductions=\{draft\.serviceIntroductions\|\|\[\]\}/)
+ const fields=editor.match(/<PracticeVideoField\b[\s\S]*?\/>/g)||[]
+ assert.equal(fields.length,1)
+ assert.match(fields[0],/introductions=\{draft\.serviceIntroductions\|\|\[\]\}/)
+ assert.match(fields[0],/onIntroductionsChange=\{value=>set\('serviceIntroductions',value\)\}/)
+ assert.match(fields[0],/onBusyChange=\{value=>\{setVideoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
+ assert.match(videoField,/import ServiceIntroductionEditor from '\.\/service-introduction-editor'/)
+ assert.match(videoField,/if\(Array\.isArray\(props\.introductions\)\)\s*return <ServiceIntroductionEditor locale=\{props\.locale\} value=\{props\.introductions\}\s+onChange=\{props\.onIntroductionsChange\} onBusyChange=\{props\.onBusyChange\}\/>/)
  assert.match(editor,/onBusyChange=\{value=>\{setVideoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
+})
+
+test('actual service draft initialization preserves localized introductions and migrates legacy video once',()=>{
+ // Execute only the actual pure declarations before the React component. The
+ // component/provider imports, uploader, hooks and server repository never run.
+ const start=editor.indexOf('const BASE = {')
+ const end=editor.indexOf('export default function ',start)
+ assert.ok(start>=0&&end>start)
+ assert.equal(editor.indexOf('const BASE = {',start+1),-1)
+ const source=editor.slice(start,end)
+ assert.match(source,/function initialDraft\(item,locale,starter=''\)/)
+ assert.doesNotMatch(source,/\b(?:import|require|fetch|process)\b/)
+ const initialize=(item,locale)=>JSON.parse(runInNewContext(
+  source+'\nJSON.stringify(initialDraft(JSON.parse(input),locale))',
+  {input:JSON.stringify(item),locale},{timeout:1000}))
+ const legacy={kind:'external',url:'https://www.youtube.com/watch?v=abcdefghijk'}
+ for(const locale of ['en','ru','es']){
+  const draft=initialize({videoPresentation:legacy,languages:['de',locale]},'en')
+  assert.deepEqual(draft.serviceIntroductions,[{language:locale,type:'video',media:legacy}])
+  assert.equal(draft.videoPresentation,null)
+  const fallback=initialize({draftCopy:{videoPresentation:legacy,languages:['de']}},locale)
+  assert.deepEqual(fallback.serviceIntroductions,[{language:locale,type:'video',media:legacy}])
+  assert.equal(fallback.videoPresentation,null)
+  const fresh=initialize(null,locale)
+  assert.deepEqual(fresh.serviceIntroductions,[])
+  assert.equal(fresh.videoPresentation,null)
+ }
+ const introductions=[{language:'ru',type:'video',media:legacy}]
+ for(const item of [
+  {serviceIntroductions:introductions,videoPresentation:legacy},
+  {draftCopy:{serviceIntroductions:introductions,videoPresentation:legacy}},
+ ]){
+  const draft=initialize(item,'en')
+  assert.deepEqual(draft.serviceIntroductions,introductions)
+  assert.equal(draft.videoPresentation,null)
+ }
+ // An explicitly cleared draft array wins over any stale legacy field.
+ const cleared=initialize({draftCopy:{serviceIntroductions:[],videoPresentation:legacy}},'en')
+ assert.deepEqual(cleared.serviceIntroductions,[])
+ assert.equal(cleared.videoPresentation,null)
 })
 
 test('wizard input validation respects partial drafts, existing one-language submit and constraints',()=>{

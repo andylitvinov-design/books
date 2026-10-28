@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Compass, Headphones, HeartHandshake, Sparkles } from "lucide-react";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { stageRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "@/app/[locale]/holistic-support/holistic-support.module.css";
 
@@ -94,7 +95,14 @@ export function HolisticSupportChoices({ locale }: { locale: PublicLocale }) {
               <ArrowRight className={styles.journeyArrow} size={20} aria-hidden="true" />
             </a>
             <Link className={styles.journeyChoice} href={`/${locale}/services/remote-energy-support`}
-              prefetch={false} data-holistic-choose="energy">
+              prefetch={false} data-holistic-choose="energy" onClick={(event) => {
+                // Only an explicit same-tab Energy choice may stage the current
+                // editable draft. Reading here also covers clear/import changes;
+                // unopened/closed Dao stages empty. No URL, storage or request.
+                if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                const question = daoPanelRef.current?.querySelector<HTMLTextAreaElement>("#ideas-question");
+                stageRemoteSupportLandingIntention(question?.value ?? "");
+              }}>
               <span className={styles.journeyChoicePhoto}>
                 <Image src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt="" fill
                   sizes="(max-width: 650px) 104px, 370px" />

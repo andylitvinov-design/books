@@ -90,6 +90,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 export default function MessagesSimpleInbox({
   locale='en',accountId,requests=[],businessEnquiries=[],telegramUrl='',
   websiteLoading=false,websiteUnavailable=false,onReload,
+  recipientIntent=null,onRecipientConsumed,
 }){
   const t=COPY[locale]||COPY.en
   const [crmState,setCrmState]=useState({loading:true,error:false,threads:[],partial:false})
@@ -114,6 +115,28 @@ export default function MessagesSimpleInbox({
       window.removeEventListener('offline',syncNetwork)
     }
   },[])
+  const recipient=typeof accountId==='string'&&accountId&&recipientIntent?.accountId===accountId&&
+    typeof recipientIntent.slug==='string'&&/^[a-z0-9-]{2,90}$/.test(recipientIntent.slug)
+    ?recipientIntent.slug:''
+  const recipientScope=useRef(null)
+  const consumeRecipient=useCallback(()=>{
+    if(!recipientScope.current)return
+    recipientScope.current=null
+    onRecipientConsumed?.()
+  },[onRecipientConsumed])
+  const closeDetail=useCallback(()=>{
+    consumeRecipient();setSelectedKey(key=>key.startsWith('direct:')?'':key);setOpenDetail(false);setShowCard(false)
+  },[consumeRecipient])
+  const isRecipientCurrent=useCallback((slug,ownerId)=>{
+    const scope=recipientScope.current
+    return Boolean(scope&&scope.slug===slug&&scope.accountId===ownerId&&ownerId===accountId)
+  },[accountId])
+  const onRecipientStarted=useCallback((threadId,slug,ownerId)=>{
+    if(!isRecipientCurrent(slug,ownerId))return false
+    consumeRecipient()
+    setSelectedKey('direct:'+threadId);setOpenDetail(true);setShowCard(false)
+    return true
+  },[isRecipientCurrent,consumeRecipient])
   useEffect(()=>{
     const query=new URLSearchParams(window.location.search)
     setTab(normalizeMessagesTab(query.get('tab')))
@@ -218,13 +241,30 @@ export default function MessagesSimpleInbox({
     }
   },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
+  useEffect(()=>{
+    if(!recipient)return
+    const scope={accountId,slug:recipient}
+    recipientScope.current=scope
+    // An account-bound recipient belongs to Inbox even when arriving from Requests.
+    setTab('chats')
+    const url=new URL(window.location.href)
+    if(url.searchParams.has('tab')){
+      url.searchParams.delete('tab')
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+    }
+    setSelectedKey('');setOpenDetail(true);setShowCard(false)
+    return()=>{if(recipientScope.current===scope)recipientScope.current=null}
+  },[accountId,recipient])
   const select=item=>{
+    consumeRecipient()
     setSelectedKey(item.key)
     setShowCard(false)
     setOpenDetail(true)
   }
   const switchTab=next=>{
     if(next!=='chats'&&next!=='requests')return
+    // Leaving a pending Start invalidates it; selected conversation drafts stay mounted.
+    consumeRecipient()
     setTab(next)
     // Return to the list on phones without disposing an in-flight reply or draft.
     setOpenDetail(false)
@@ -308,17 +348,17 @@ export default function MessagesSimpleInbox({
       </aside>
       <div className={styles.detail} aria-live="polite"
         hidden={Boolean(selected)&&!inMessagesTab(selected,tab)}>
-        {selected&&<header className={styles.personBar}>
-          <button type="button" className={styles.back} onClick={()=>{setOpenDetail(false);setShowCard(false)}}
+        {(selected||recipient)&&<header className={styles.personBar}>
+          <button type="button" className={styles.back} onClick={closeDetail}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>
-          <PrivateAvatar small accountId={accountId} name={selected.name}
-            portrait={selected.kind==='crm'&&portraits[selected.id]?{threadId:selected.id,messageId:portraits[selected.id]}:null}/>
-          <span className={styles.personLabel}><strong>{selected.name}</strong><small>{selected.source}</small></span>
-          {selected.unread>0&&<span className={styles.unread}>{selected.unread}</span>}
-          <button type="button" className={styles.cardButton} aria-label={t.card} aria-pressed={showCard}
-            onClick={()=>setShowCard(value=>!value)}><IdCard size={17} aria-hidden="true"/><span>{t.card}</span></button>
+          {selected&&<PrivateAvatar small accountId={accountId} name={selected.name}
+            portrait={selected.kind==='crm'&&portraits[selected.id]?{threadId:selected.id,messageId:portraits[selected.id]}:null}/>}
+          <span className={styles.personLabel}><strong>{selected?.name||recipient}</strong><small>{selected?.source||t.portal}</small></span>
+          {selected?.unread>0&&<span className={styles.unread}>{selected.unread}</span>}
+          {selected&&<button type="button" className={styles.cardButton} aria-label={t.card} aria-pressed={showCard}
+            onClick={()=>setShowCard(value=>!value)}><IdCard size={17} aria-hidden="true"/><span>{t.card}</span></button>}
         </header>}
-        {!selected&&<div className={styles.placeholder}>
+        {!selected&&!recipient&&<div className={styles.placeholder}>
           <MessageCircle size={34} aria-hidden="true"/>
           <p>{t.choose}</p>
         </div>}
@@ -329,11 +369,12 @@ export default function MessagesSimpleInbox({
             locale={locale} conversationOnly onThreadsLoaded={onCrmThreads} onPortraitFound={onPortraitFound}
             initialThreadId={crmThreadId}/>
         </div>
-        <div className={styles.chatHolder} hidden={showCard||selected?.kind!=='direct'}>
+        <div className={styles.chatHolder} hidden={showCard||(selected?.kind!=='direct'&&!recipient)}>
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
-            simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
+            simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}
+            recipientSlug={recipient} isRecipientCurrent={isRecipientCurrent} onRecipientStarted={onRecipientStarted} onBack={closeDetail}/>
         </div>
-        {!showCard&&selected?.kind==='request'&&<div className={styles.requestPane}>
+        {selected?.kind==='request'&&<div className={styles.requestPane} hidden={showCard}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>

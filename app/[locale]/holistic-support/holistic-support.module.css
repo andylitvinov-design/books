@@ -264,3 +264,20 @@
 .mandalaAction:focus-visible{outline:3px solid #d39e60;outline-offset:3px}
 .mandalaAction span:nth-child(2){flex:0 1 auto}
 @media(max-width:430px){.mandalaAction{margin:10px 0;padding:11px 12px;min-height:52px;font-size:12px;gap:8px}}
+
+/* On short 320px phones the fixed site chrome leaves less than 390px for
+   the entry. Keep every choice and its copy; put the explanatory paragraph
+   after the controls instead of shrinking option labels or clipping a choice.
+   66px photo + 12px padding + 2px border = the existing 80px card minimum. */
+@media(max-width:350px) and (max-height:600px){
+.journeyContent{display:flex;flex-direction:column;padding:6px 8px}
+.journeyEyebrow{margin-bottom:3px}
+.journeyContent h1{font-size:30px}
+.journeyPrompt{margin-bottom:4px}
+.journeyChoices{gap:4px}
+.journeyChoice{grid-template-columns:66px minmax(0,1fr) 16px;min-height:80px;padding:6px}
+.journeyChoicePhoto{width:66px;height:66px}
+.journeyChoiceText{padding:0}
+.journeyChoiceIcon{position:absolute;top:7px;left:7px}
+.journeyLead{order:1;margin:8px 0 0}
+}

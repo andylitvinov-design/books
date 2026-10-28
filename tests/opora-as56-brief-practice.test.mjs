@@ -1,12 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
-import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
+import {oporaAs60VariedDay,oporaAs60VariedJourney} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
+import {OPORA_EXPERIENCE_CHANNELS,OPORA_EXPERIENCE_SCENES} from '../lib/inner-growth/opora-as60-integrated-journey.js'
 
 const words={
   ru:{next:'Продолжить',previous:'Назад',help:'Показать мягкую подсказку',pause:'Пауза',back:'Вернуться',
@@ -137,4 +139,88 @@ test('AS5.7 validates current trilingual content without resurrecting superseded
   assert.match(oporaExperienceGuide(12,'ru'),/мысль, что…/u)
   assert.match(oporaExperienceGuide(12,'en'),/thought that…/u)
   assert.match(oporaExperienceGuide(12,'es'),/pensamiento de que…/u)
+})
+
+test('hosted day-five verifier follows current AS6 copy and all five channels without weakening browser safety',()=>{
+  const source=readFileSync(new URL('../scripts/verify-opora-as56-browser.mjs',import.meta.url),'utf8')
+  for(const fragment of [
+    'daily = oporaAs60VariedDay(5, locale)',
+    'journey = oporaAs60VariedJourney(5, locale), brief = daily.practice',
+    'support = { title: daily.purposeTitle, body: daily.purpose }',
+    'toContainText(daily.result)',
+    'OPORA_EXPERIENCE_SCENES.slice(0, 4)',
+    "await assertChannel('ritualPractice')",
+    'toContainText(journey[channel].text)', 'toContainText(journey[channel].hint)',
+    'toContainText(journey.mental.plan)', 'await expect(card).toHaveCount(1)',
+    'name: journey[channel].title, exact: true',
+    "await summary.locator(':scope > div').count(),1,",
+    "'[data-opora-lesson-recap=\"true\"]' : '[data-opora-daily-homework=\"5\"]'",
+  ]) assert.ok(source.includes(fragment),fragment)
+  assert.doesNotMatch(source,/oporaExperienceSupport\(5|oporaExperienceDepth\(5|brief = oporaExperienceGuide|\.summaryItem/)
+  for(const fragment of [
+    'requireHostedOporaBrowser(process.env)', "['ru', 'en', 'es']", '[320, 360, 390, 430]', '[false, true]',
+    "serviceWorkers: 'block'", "route.abort('blockedbyclient')", 'assert.equal(evidence.cases.length, 24)',
+    'assert.equal(state.saves, 0,', 'assert.equal(state.closes, 1); assert.equal(state.finishes, 0)',
+    'assert.equal(state.finalData, state.initialData', 'assert.deepEqual(unexpectedRequests, []',
+    'assert.deepEqual(errors, []', 'assert.equal(recapSaves,0,',
+    'brief.length <= 140 && brief.split(/\\s+/u).length <= 20',
+    "await page.keyboard.press('Shift+Tab')", "await page.keyboard.press('Tab')", "await page.keyboard.press('Escape')",
+    'bounds.document <= width + 1,', 'bounds.stage.scroll <= bounds.stage.client + 1,',
+    'bounds.panel.scroll <= bounds.panel.client + 2,', 'bounds.stage.scrollHeight <= bounds.stage.clientHeight + 2,',
+    'size.panelScroll <= size.panelClient + 2,', 'size.mainScroll <= size.mainClient + 2,',
+    'size.screenWidth <= width + 1,', "throw error",
+  ]) assert.ok(source.includes(fragment),fragment)
+  assert.doesNotMatch(source,/route\.continue|request\.post|\.request\.fetch|createServer|waitForTimeout|force:\s*true|process\.env\.[A-Z_]*(?:TOKEN|SECRET|PASSWORD)/)
+})
+
+for(const locale of ['ru','en','es']) test(`AS6 ${locale}: hosted day-five sequence keeps exact current content, neutral Back and one-card recaps without saves`,async()=>{
+  const f=fixture(locale),t=words[locale],daily=oporaAs60VariedDay(5,locale),journey=oporaAs60VariedJourney(5,locale)
+  const current=()=>nodes(f.h.tree).find(n=>n.props?.['data-opora-current-screen'])?.props['data-opora-current-screen']
+  const marker=(key,value)=>nodes(f.h.tree).find(n=>n.props?.[key]===value)
+  const assertChannel=scene=>{
+    const key=OPORA_EXPERIENCE_CHANNELS[OPORA_EXPERIENCE_SCENES.indexOf(scene)]
+    assert.equal(current(),scene)
+    const cards=nodes(f.h.tree).filter(n=>n.props?.['data-opora-experience-channel']===key)
+    assert.equal(cards.length,1)
+    assert.ok(textOf(f.h.tree).includes(journey[key].title))
+    assert.ok(textOf(cards[0]).includes(journey[key].text))
+    assert.ok(textOf(cards[0]).includes(journey[key].hint))
+    if(key==='mental')assert.ok(textOf(cards[0]).includes(journey.mental.plan))
+  }
+  try{
+    await f.click(t.next);assert.equal(current(),'support')
+    assert.ok(textOf(marker('data-opora-daily-support',5)).includes(daily.purpose))
+    assert.ok(textOf(f.h.tree).includes(daily.purposeTitle))
+    for(const scene of ['why','story','options','settle']){await f.click(t.next);assert.equal(current(),scene)}
+    await f.click(t.next);assert.equal(current(),'recapPractice')
+    assert.ok(textOf(marker('data-opora-overview-purpose','true')).includes(daily.result))
+    assert.ok(textOf(marker('data-opora-practice-overview',5)).includes(daily.practice))
+    assert.deepEqual(OPORA_EXPERIENCE_CHANNELS,['body','emotion','mental','imagery','ritual'])
+    assert.deepEqual(OPORA_EXPERIENCE_SCENES,['bodyExperience','emotionExperience','mentalExperience','imageryMeditation','ritualPractice'])
+    for(const scene of OPORA_EXPERIENCE_SCENES.slice(0,4)){await f.click(t.next);assertChannel(scene)}
+    await f.click(t.next);assert.equal(current(),'practice')
+    assert.ok(textOf(marker('data-opora-one-daily-practice',5)).includes(daily.practice))
+    assert.ok(daily.practice.length<=140&&daily.practice.split(/\s+/u).length<=20)
+    assert.ok((daily.practice.replace(/…/gu,'').match(/[.!?]/gu)||[]).length<=1)
+    await f.click(t.next);assertChannel('ritualPractice')
+    await f.click(t.previous);assert.equal(current(),'practice')
+    await f.click(t.help);await f.click(t.pause);await f.click(t.neutral);assertNeutral(f,locale)
+    await f.click(t.next);assert.equal(current(),'ritualPractice')
+    await f.click(t.next);assert.equal(current(),'feel')
+    await f.click(t.pause);await f.click(t.neutral)
+    await f.click(t.previous);assert.equal(current(),'ritualPractice');assertNeutral(f,locale)
+    await f.click(t.previous);assert.equal(current(),'practice');assertNeutral(f,locale)
+    assert.ok(!textOf(f.h.tree).includes(daily.practice),'Neutral return cannot reintroduce the current AS6 practice either')
+    await advanceOporaTo(f.h,'recap',t.next)
+    for(const [scene,key,value] of [['recap','data-opora-lesson-recap','true'],['recapNext','data-opora-daily-homework',5]]){
+      assert.equal(current(),scene)
+      const summary=marker(key,value);assert.ok(summary)
+      const children=Array.isArray(summary.props.children)?summary.props.children:[summary.props.children]
+      assert.equal(children.filter(n=>n&&n.type==='div').length,1,'Each summary has exactly one direct idea card')
+      assert.ok(textOf(summary).includes(scene==='recap'?daily.result:daily.transfer))
+      await f.click(t.next)
+    }
+    assert.equal(current(),'recapFeedback')
+    assert.equal(f.saves,0);assert.deepEqual(f.data,f.original)
+  }finally{f.h.unmount()}
 })

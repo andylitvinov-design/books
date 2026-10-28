@@ -1,6 +1,7 @@
-// Isolated public-only geometry QA. No account, playback, clicks or provider sends.
+// Isolated public-only geometry QA. No account, playback, submission or provider sends.
 // Run against the current PR's loopback Next production server, never against live.
 import assert from "node:assert/strict";
+import { installAlchemyDisclosureGuard } from "./helpers/alchemy-disclosure-guard.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 const require = createRequire(import.meta.url);
@@ -20,10 +21,17 @@ const cases = [
 ];
 const report = [];
 const failures = [];
+const disclosureDiagnostics = [];
 const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
-    const page = await browser.newPage({viewport:{width,height}});
+    const context = await browser.newContext({viewport:{width,height}, serviceWorkers:"block"});
+    const page = await context.newPage();
+    const disclosureViolations = [];
+    const caseDiagnostics = [];
+    let disclosurePhase = "unknown";
+    let settleDisclosure = async () => {};
+    page.on("pageerror", error => disclosureViolations.push("page error: " + String(error)));
     const key = locale + "/" + width + "x" + height;
     try {
       const response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"networkidle",timeout:45000});
@@ -107,21 +115,49 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
-      // Read-only interaction: the hero CTA reveals the approved one-field,
-      // opt-in phone capture. Do not submit any contact or open a messenger.
+      // Read-only booking disclosure: no data entry, enquiry, payment or messenger.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');
-        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
+        const booking = hero.locator('[data-contact-channel-chooser][data-session-booking-flow]');
+        assert.equal(await booking.count(), 1, "one hero booking");
+        assert.equal(await booking.getAttribute("data-booking-sku"), "personal-session-60", "hero booking SKU");
+        const trigger = booking.locator('[data-contact-order][data-booking-cta="book"]');
+        assert.equal(await trigger.count(), 1, "one Book disclosure");
         await trigger.waitFor({state:"visible"});
-        await trigger.click();
-        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
-        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
-          issues.push("compact Telegram option missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
-          issues.push("compact opt-in consent missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
-          issues.push("long email capture incorrectly expanded from the hero");
-        await trigger.click();
+        assert.equal(await trigger.getAttribute("aria-expanded"), "false", "initially collapsed");
+        settleDisclosure = await installAlchemyDisclosureGuard(context, page, origin, disclosureViolations, {
+          phase: () => disclosurePhase,
+          emit: record => caseDiagnostics.push(record),
+        }, true); // Isolated synthetic legacy poster; not actual-image acceptance.
+        disclosurePhase = "opening-contact";
+          await trigger.click();
+          assert.equal(await trigger.getAttribute("aria-expanded"), "true", "Book opens contact");
+          const contact = booking.locator('form[data-booking-step="contact"]');
+          assert.equal(await contact.count(), 1, "one contact step");
+          await contact.waitFor({state:"visible"});
+          disclosurePhase = "contact-open";
+          const phone = contact.locator('[data-phone-country-input] input[type="tel"]');
+          const consent = contact.locator('input[type="checkbox"]');
+          const submit = contact.locator('button[type="submit"]');
+          for (const [name, control] of [["phone", phone], ["consent", consent], ["submit", submit]]) {
+            assert.equal(await control.count(), 1, name + " count");
+            await control.waitFor({state:"visible"});
+          }
+          for (const control of [trigger, phone, submit]) {
+            const box = await control.boundingBox();
+            assert.ok(box && box.width >= 44 && box.height >= 44, "booking target at least 44px");
+          }
+          assert.notEqual(await phone.getAttribute("required"), null, "phone required");
+          assert.equal(await phone.inputValue(), "", "no phone entered");
+          assert.notEqual(await consent.getAttribute("required"), null, "consent required");
+          assert.equal(await consent.isChecked(), false, "no implicit consent");
+          assert.equal(await submit.isDisabled(), true, "unpaid empty submit disabled");
+          assert.equal(await booking.locator('[data-booking-step="pending"],[data-booking-step="confirmed"],[data-booking-cta="pay"],[data-booking-payment-options],[data-booking-messenger],a[data-contact-channel]').count(), 0, "no premature receipt, payment or messenger");
+          disclosurePhase = "closing-contact";
+          await trigger.click();
+          assert.equal(await trigger.getAttribute("aria-expanded"), "false", "authored close");
+          await contact.waitFor({state:"hidden"});
+          disclosurePhase = "contact-closed";
       }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
@@ -130,16 +166,27 @@ try {
       } else {
         console.log("PASS Alchemy "+engine+" "+key+" ten chapters and twelve full-width vertical reviews pass with no overflowing controls");
       }
+      disclosurePhase = "sample-navigation";
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
+      disclosurePhase = "sample-ready";
       assert.equal(sampleResponse?.status(),200,key+": sample report");
       assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
     } catch (error) {
       failures.push(key+": "+String(error));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
-    } finally { await page.close(); }
+    } finally {
+      disclosurePhase = "context-disposal";
+      try { await context.close(); } finally { await settleDisclosure(); }
+      if (caseDiagnostics.length || disclosureViolations.length) disclosureDiagnostics.push({locale,width,height,observations:caseDiagnostics});
+      if (disclosureViolations.length) {
+        failures.push(key + ": " + disclosureViolations.join("; "));
+        console.error("ALCHEMY_DISCLOSURE_FAIL " + key + " " + disclosureViolations.join("; "));
+      }
+    }
   }
 } finally { await browser.close(); }
 const destination="artifacts/public-services-production";
 await mkdir(destination,{recursive:true});
-await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures},null,2)+"\n");
+await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures,disclosureDiagnostics},null,2)+"\n");
 assert.deepEqual(failures, [], "Alchemy viewport acceptance: "+failures.join(" | "));
+

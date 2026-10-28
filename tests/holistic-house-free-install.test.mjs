@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {spawnSync} from 'node:child_process'
 
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -112,6 +113,38 @@ test('install CI tests exact real messenger-first manifest, EN/RU/ES server page
   assert.match(workflow,/node scripts\/verify-hh-mobile-head\.mjs/)
   assert.match(checker,/\/es\/install/)
   assert.match(checker,/\/holistic-house-app-es\.webmanifest/)
-  assert.match(workflow,/file \/tmp\/hh-icon\.png/)
+  assert.ok(workflow.includes('check "icon-$size-dimensions" bash -o pipefail -c \'file "$1" | grep -q "PNG image data, $2 x $2"\' _ /tmp/hh-icon.png "$size"'))
   assert.doesNotMatch(workflow,/pull_request_target:/)
+})
+
+// Execute the workflow's exact dimension command with a synthetic file(1)
+// producer, never a server or real image. The pinned command and fixed argv
+// prevent arbitrary workflow shell text from becoming a test subprocess.
+test('real pipefail icon command accepts every PNG size and rejects wrong types, dimensions and file errors',()=>{
+  const workflow=read('.github/workflows/holistic-house-mobile-install.yml')
+  const matches=[...workflow.matchAll(/^\s*check "icon-\$size-dimensions" bash -o pipefail -c '([^'\n]+)' _ \/tmp\/hh-icon\.png "\$size"$/gm)]
+  assert.equal(matches.length,1,'exactly one real parameterized icon dimension command')
+  const command=matches[0][1]
+  assert.equal(command,'file "$1" | grep -q "PNG image data, $2 x $2"')
+  assert.match(workflow,/for size in 180 192 512; do/)
+  assert.ok(workflow.includes('check "icon-$size-content-type" grep -qi \'^content-type: image/png\' /tmp/hh-icon-headers'))
+  const fixture='file() { [[ "$1" == /tmp/hh-icon.png ]] || return 97; printf \'%s\\n\' "$HH_ICON_FIXTURE_OUTPUT"; return "$HH_ICON_FIXTURE_STATUS"; }\n'
+  for(const size of [180,192,512]){
+    const cases=[
+      [`PNG image data, ${size} x ${size}, 8-bit/color RGBA, non-interlaced`,0,true],
+      [`PNG image data, ${size+1} x ${size}, 8-bit/color RGBA, non-interlaced`,0,false],
+      [`PNG image data, ${size} x ${size+1}, 8-bit/color RGBA, non-interlaced`,0,false],
+      [`JPEG image data, ${size} x ${size}`,0,false],
+      [`PNG image data, ${size} x ${size}, 8-bit/color RGBA, non-interlaced`,1,false],
+    ]
+    for(const [output,fileStatus,passes] of cases){
+      const result=spawnSync('/bin/bash',['--noprofile','--norc','-o','pipefail','-c',fixture+command,'_', '/tmp/hh-icon.png',String(size)],{
+        encoding:'utf8',timeout:1000,
+        env:{PATH:'/usr/bin:/bin',LC_ALL:'C',HH_ICON_FIXTURE_OUTPUT:output,HH_ICON_FIXTURE_STATUS:String(fileStatus)},
+      })
+      assert.ifError(result.error)
+      assert.equal(result.signal,null)
+      assert.equal(result.status===0,passes,`${size}px / file status ${fileStatus} / ${output}`)
+    }
+  }
 })

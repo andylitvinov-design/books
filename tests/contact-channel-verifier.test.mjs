@@ -3,134 +3,147 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
-import { openContactChannelChooser, assertPreparedContactChannels } from '../scripts/helpers/contact-channel-verifier.mjs';
+import { assertPreparedContactChannels } from '../scripts/helpers/contact-channel-verifier.mjs';
 import * as enquiries from '../lib/whatsapp-enquiry.js';
-import * as referrals from '../lib/organic-event-referrals.js';
+import {environment, mount, turn, deferred, success, CONTACT_REFERENCE, compileContactModule} from './helpers/contact-channel-verifier-fixture.mjs';
 import * as publicLead from '../lib/public-lead-capture.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
-function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}) {
-  let choice = 'session', externalClicks = 0, cursor = 0, dirty = true, pendingEffects = [];
-  const hooks = [], scrollCalls = [], channelClicks = [];
-  const location = { pathname: '/' + locale + '/services/psychohomeopathy', search: '', ...locationOptions };
-  // Render/commit/effect cycles preserve hook slots and dependencies. A no-op
-  // useEffect shim would silently miss the selected-request reset regression.
-  const react = {
-    useId: () => 'panel',
-    useState(initial) {
-      const index = cursor++;
-      if (!hooks[index]) hooks[index] = { value: initial };
-      return [hooks[index].value, update => {
-        if (fault === 'blocked trigger' && typeof update === 'function') return;
-        const value = typeof update === 'function' ? update(hooks[index].value) : update;
-        if (!Object.is(value, hooks[index].value)) { hooks[index].value = value; dirty = true; }
-      }];
-    },
-    useRef(initial) {
-      const index = cursor++;
-      if (!hooks[index]) hooks[index] = { current: initial };
-      return hooks[index];
-    },
-    useEffect(effect, dependencies) {
-      const index = cursor++, previous = hooks[index];
-      const changed = !previous || dependencies.some((value, i) => !Object.is(value, previous[i]));
-      hooks[index] = dependencies;
-      const skipSelectionReset = fault === 'missing selection reset' && previous && typeof dependencies[0] === 'string' && dependencies[0].startsWith('https://wa.me/');
-      if (changed && !skipSelectionReset) pendingEffects.push(effect);
-    },
-  };
-  const modules = {
-    'react/jsx-runtime': { jsx, jsxs: jsx },
-    react,
-    'next/navigation': { usePathname: () => location.pathname },
-    'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
-    '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
-    '@/lib/whatsapp-enquiry': enquiries,
-    '@/lib/organic-event-referrals': referrals,
-    './contact-channel-chooser.module.css': { default: {} },
-  };
-  const exports = {};
-  const compiled = ts.transpileModule(read('components/contact-channel-chooser.tsx'), { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  runInNewContext(compiled, { exports, URLSearchParams, window: { location, matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
+function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}, sourceOverride) {
+  let choice = 'session', externalClicks = 0;
+  const channelClicks = [];
+  const env = environment(locale, {pathname: '/' + locale + '/services/psychohomeopathy', reducedMotion, ...locationOptions});
+  const draft = () => enquiries.whatsappEnquiryUrl({locale, service: 'Consultation',
+    request: choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50',
+    pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share'});
+  const original = sourceOverride ?? read('components/contact-channel-chooser.tsx');
+  const resetTarget = '    setOpen(false);';
+  if (fault === 'missing selection reset') assert.equal(original.split(resetTarget).length - 1, 1);
+  const f = mount('contact-channel-chooser', 'ContactChannelChooser', {
+    locale, whatsappUrl: draft(), stayAfterSave: true,
+    attributes: {'data-consultation-action': choice}, onChannelClick: channel => channelClicks.push(channel),
+  }, env, {sourceOverride: fault === 'missing selection reset' ? original.replace(resetTarget, '    /* Synthetic missing reset */') : original});
   function nodes() {
-    const message = choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50';
-    let result;
-    for (let pass = 0; ; pass++) {
-      assert.ok(pass < 10, 'Chooser effects must settle');
-      cursor = 0; dirty = false; pendingEffects = []; result = [];
-      const tree = exports.ContactChannelChooser({ locale, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice }, onChannelClick: channel => channelClicks.push(channel) });
-      function visit(node, hidden = false) {
-        if (!node || typeof node !== 'object') return;
-        if (Array.isArray(node)) { node.forEach(child => visit(child, hidden)); return; }
-        const invisible = hidden || Boolean(node.props.hidden);
-        if (node.props.ref) node.props.ref.current = { scrollIntoView: options => scrollCalls.push({ ...options }) };
-        if (!(fault === 'missing telegram' && node.props['data-contact-channel'] === 'telegram')) result.push({ ...node, hidden: invisible });
-        visit(node.props.children, invisible);
-      }
-      visit(tree);
-      pendingEffects.forEach(effect => effect());
-      if (!dirty) break;
-    }
-    if (fault === 'initially open') {
-      result.forEach(node => { node.hidden = false; if (Object.hasOwn(node.props, 'data-contact-order')) node.props['aria-expanded'] = true; });
-    }
+    const result = f.nodes().map(node => node.type === 'acquisition-link'
+      ? {...node, type: 'a', props: {...node.props, ...node.props.attributes}} : {...node, props: {...node.props}});
+    if (fault === 'initially open') result.forEach(node => {node.hidden = false; if (Object.hasOwn(node.props, 'data-contact-order')) node.props['aria-expanded'] = true});
     const wa = result.find(node => node.props['data-contact-channel'] === 'whatsapp');
     const tg = result.find(node => node.props['data-contact-channel'] === 'telegram');
-    if (fault === 'duplicate channel') result.push({ ...wa });
-    if (fault === 'wrong recipient') wa.props.href = wa.props.href.replace('14376066502', '10000000000');
-    if (fault === 'wrong host') tg.props.href = tg.props.href.replace('https://t.me', 'https://evil.example');
-    if (fault === 'extra query') wa.props.href += '&private=secret';
-    if (fault === 'empty message') wa.props.href = 'https://wa.me/14376066502?text=';
-    if (fault === 'changed telegram message') tg.props.href = 'https://t.me/AndyTherapist?text=other';
-    if (fault === 'missing safety rel') wa.props.rel = 'noreferrer';
-    if (fault === 'same tab') tg.props.target = '_self';
-    if (fault === 'hidden after open' && hooks[0].value) tg.hidden = true;
+    if (wa && tg) {
+      if (fault === 'missing telegram') result.splice(result.indexOf(tg), 1);
+      if (fault === 'duplicate channel') result.push({...wa});
+      if (fault === 'wrong recipient') wa.props.href = wa.props.href.replace('14376066502', '10000000000');
+      if (fault === 'wrong host') tg.props.href = tg.props.href.replace('https://t.me', 'https://evil.example');
+      if (fault === 'extra query') wa.props.href += '&private=secret';
+      if (fault === 'empty message') wa.props.href = 'https://wa.me/14376066502?text=';
+      if (fault === 'changed telegram message') tg.props.href = 'https://t.me/AndyTherapist?text=other';
+      if (fault === 'missing safety rel') wa.props.rel = 'noreferrer';
+      if (fault === 'same tab') tg.props.target = '_self';
+      if (fault === 'hidden after open') tg.hidden = true;
+    }
     return result;
   }
   function locator(selector) {
     const match = selector.match(/^(a|button)?\[([\w-]+)(?:="([^"]+)")?\]$/);
     assert.ok(match, selector);
     const selected = () => nodes().filter(node => (!match[1] || node.type === match[1]) && Object.hasOwn(node.props, match[2]) && (match[3] === undefined || node.props[match[2]] === match[3]));
-    return { locator, selected, async getAttribute(name) { const values = selected(); assert.equal(values.length, 1); return values[0].props[name] ?? null; }, async click() {
+    return {locator, selected, async getAttribute(name) {const values = selected(); assert.equal(values.length, 1); return values[0].props[name] ?? null}, async click() {
       const values = selected(); assert.equal(values.length, 1);
-      if (values[0].type === 'a') { externalClicks++; assert.fail('Acceptance must not click external contact links'); }
-      values[0].props.onClick();
-    } };
+      if (values[0].type === 'a') {externalClicks++; assert.fail('Acceptance must not click external contact links')}
+      if (fault !== 'blocked trigger') values[0].props.onClick();
+      f.flush();
+    }};
   }
   const expect = actual => ({
-    async toHaveCount(n) { assert.equal(actual.selected().length, n); },
-    async toBeVisible() { assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, false); },
-    async toBeHidden() { assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, true); },
+    async toHaveCount(n) {assert.equal(actual.selected().length, n)},
+    async toBeVisible() {assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, false)},
+    async toBeHidden() {assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, true)},
     async toHaveAttribute(name, value) {
-      const raw = await actual.getAttribute(name); const actualValue = raw == null ? null : String(raw);
+      const raw = await actual.getAttribute(name), actualValue = raw == null ? null : String(raw);
       if (value instanceof RegExp) assert.match(actualValue, value); else assert.equal(actualValue, value);
     },
   });
-  return { scope: { locator }, expect, choose: value => { choice = value; }, navigate: (pathname, search) => Object.assign(location, { pathname, search }), externalClicks: () => externalClicks, scrollCalls, channelClicks };
+  return {scope: {locator}, expect, env, f,
+    choose(value) {choice = value; f.update({whatsappUrl: draft(), attributes: {'data-consultation-action': choice}})},
+    navigate(pathname, search) {env.navigate(pathname, search); f.update()},
+    async register() {
+      const before = env.requests.length;
+      assert.equal(f.find('form').hidden, false, 'Open the actual form before interacting');
+      f.change('input', props => props.type === 'email', 'contact-contract@example.invalid');
+      assert.equal(f.find('button', props => props.type === 'submit').props.disabled, true);
+      await f.submit(); assert.equal(env.requests.length, before, 'Even direct submit without consent is blocked');
+      assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 0);
+      f.change('input', props => props.type === 'checkbox', true);
+      const acknowledgement = deferred(); env.setRespond(() => acknowledgement.promise);
+      const submit = f.find('form').props.onSubmit;
+      submit({preventDefault() {}}); submit({preventDefault() {}});
+      await turn(f);
+      assert.equal(env.requests.length, before + 1, 'Duplicate same-tick submit registers once');
+      assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 0, 'No messenger links before acknowledgement');
+      assert.equal(f.find('button', props => props.type === 'submit').props.disabled, true);
+      const writesBefore = env.writes.length;
+      acknowledgement.resolve(success()); await turn(f); env.setRespond(success);
+      assert.equal(env.writes.length, writesBefore + 1, 'Only confirmed acknowledgement writes a receipt');
+      const receipt = JSON.parse(env.writes.at(-1)[1]);
+      assert.deepEqual(Object.keys(receipt).sort(), ['createdAt', 'referenceCode']);
+      assert.equal(receipt.referenceCode, CONTACT_REFERENCE);
+      const body = JSON.parse(env.requests.at(-1));
+      assert.equal(body.contactConsent, true); assert.equal(body.sourcePath, env.window.location.pathname);
+      assert.deepEqual(body.contact, {displayName:'',email:'contact-contract@example.invalid',phone:''});
+      assert.equal(body.description, ''); assert.equal(body.serviceTitle, 'Consultation');
+      assert.equal(env.navigations.length, 0, 'Explicit stayAfterSave retains the acknowledged receipt');
+    },
+    externalClicks: () => externalClicks, scrollCalls: env.scrollCalls, channelClicks};
 }
+async function openCurrentChooser(mounted) {
+  const {scope, expect, env, f} = mounted, chooser = scope.locator('[data-contact-channel-chooser]');
+  await expect(chooser).toHaveCount(1);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  const before = env.requests.length;
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  assert.equal(env.requests.length, before, 'Opening is not registration or a messenger handoff');
+  await mounted.register();
+  assert.ok(f.nodes().some(node => node.props.role === 'status' && JSON.stringify(node.props.children).includes(CONTACT_REFERENCE)), 'Only the acknowledged reference is displayed');
+  const channels = await assertPreparedContactChannels(chooser, expect);
+  for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
+    assert.ok(url.searchParams.get('text').endsWith(referenceSuffix(f.find('div', props => Object.hasOwn(props, 'data-contact-channel-chooser')).props.lang || JSON.parse(env.requests.at(-1)).locale)));
+    assert.doesNotMatch(url.searchParams.get('text'), /contact-contract@example\.invalid|private|never-share/);
+  }
+  assert.deepEqual(env.attempts, env.requests.map(() => ({url:'/api/service-enquiries',method:'POST'})));
+  assert.deepEqual(env.popups, []); assert.deepEqual(env.events, []); assert.deepEqual(mounted.channelClicks, []);
+  return chooser;
+}
+const referenceSuffix = locale => '\n\n' + ({en:'Enquiry',ru:'Заявка',es:'Solicitud'}[locale]) + ': ' + CONTACT_REFERENCE;
 
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual chooser opens exactly two safe channels and updates both prepared requests', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual chooser consents and registers before exposing exactly two safe channels and updates both prepared requests', async () => {
   const mounted = mountChooser(locale);
-  const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+  const chooser = await openCurrentChooser(mounted);
   const first = await assertPreparedContactChannels(chooser, mounted.expect);
   assert.match(first.whatsappUrl.searchParams.get('text'), /60 minutes €100/);
   assert.doesNotMatch(first.whatsappUrl.searchParams.get('text'), /private|never-share/);
   mounted.choose('questions');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
+  await openCurrentChooser(mounted);
   const next = await assertPreparedContactChannels(chooser, mounted.expect);
   assert.match(next.whatsappUrl.searchParams.get('text'), /30 minutes €50/);
   assert.notEqual(next.whatsappUrl.href, first.whatsappUrl.href);
   for (const link of [next.whatsapp, next.telegram]) assert.equal(await link.getAttribute('data-consultation-action'), 'questions');
   mounted.choose('session');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
+  await openCurrentChooser(mounted);
   assert.equal((await assertPreparedContactChannels(chooser, mounted.expect)).whatsappUrl.href, first.whatsappUrl.href);
   assert.equal(mounted.externalClicks(), 0);
 });
 for (const fault of ['initially open', 'blocked trigger', 'missing telegram', 'duplicate channel', 'wrong recipient', 'wrong host', 'extra query', 'empty message', 'changed telegram message', 'missing safety rel', 'same tab', 'hidden after open']) {
   test('chooser acceptance rejects ' + fault, async () => {
     const mounted = mountChooser('en', fault);
-    await assert.rejects(openContactChannelChooser(mounted.scope, mounted.expect));
+    await assert.rejects(openCurrentChooser(mounted));
+    assert.equal(mounted.env.requests.length, ['initially open', 'blocked trigger'].includes(fault) ? 0 : 1,
+      'Channel mutation is checked after real synthetic consent and acknowledgement, not a fixture load error');
     assert.equal(mounted.externalClicks(), 0);
   });
 }
@@ -139,28 +152,33 @@ for (const reducedMotion of [false, true]) test('chooser effects reset only chan
   const mounted = mountChooser('en', undefined, reducedMotion);
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
   assert.deepEqual(mounted.scrollCalls, []);
-  const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.deepEqual(mounted.scrollCalls, [{ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' }]);
+  const chooser = await openCurrentChooser(mounted);
+  const behavior = reducedMotion ? 'auto' : 'smooth';
+  assert.deepEqual(mounted.scrollCalls, [{block:'center',behavior,target:'panel'}, {block:'center',behavior,target:'saved-whatsapp'}]);
   mounted.choose('session');
   await assertPreparedContactChannels(chooser, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 1, 'Unchanged request must neither reset nor scroll again');
+  assert.equal(mounted.scrollCalls.length, 2, 'Unchanged request must neither reset nor scroll again');
   mounted.choose('questions');
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
-  for (const channel of ['whatsapp', 'telegram']) await mounted.expect(chooser.locator('a[data-contact-channel="' + channel + '"]')).toBeHidden();
-  assert.equal(mounted.scrollCalls.length, 1, 'Reset must not scroll the hidden panel');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 2);
+  await mounted.expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  assert.equal(mounted.scrollCalls.length, 2, 'Reset must not scroll the hidden panel');
+  await openCurrentChooser(mounted);
+  assert.equal(mounted.scrollCalls.length, 4, 'New request scrolls open form and acknowledged receipt');
+  const count = mounted.env.requests.length;
   await chooser.locator('button[data-contact-order]').click();
-  await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 3, 'Manual dismissal must remain reopenable');
+  await mounted.expect(chooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
+  await chooser.locator('button[data-contact-order]').click();
+  await assertPreparedContactChannels(chooser, mounted.expect);
+  assert.equal(mounted.scrollCalls.length, 5, 'Manual receipt dismissal remains reopenable');
+  assert.equal(mounted.env.requests.length, count, 'Reopening a receipt does not register again');
   assert.equal(mounted.externalClicks(), 0);
 });
 
 test('chooser acceptance rejects stale-open selection when its reset effect is missing', async () => {
   const mounted = mountChooser('en', 'missing selection reset');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
+  await openCurrentChooser(mounted);
   mounted.choose('questions');
-  await assert.rejects(openContactChannelChooser(mounted.scope, mounted.expect));
+  await assert.rejects(openCurrentChooser(mounted));
   assert.equal(mounted.externalClicks(), 0);
 });
 
@@ -171,11 +189,11 @@ function plainRequest(locale, choice = 'session') {
 for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источник мероприятия'], ['es', 'Origen del evento']]) {
   test(locale + ' actual chooser keeps approved referral on both channels, resets selection and refreshes public route attribution', async () => {
     const mounted = mountChooser(locale, undefined, false, { search: '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&utm_content=listing' });
-    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    const chooser = await openCurrentChooser(mounted);
     async function assertDraft(choice, suffix = '') {
       const channels = await assertPreparedContactChannels(chooser, mounted.expect);
       for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
-        assert.equal(url.searchParams.get('text'), plainRequest(locale, choice) + suffix);
+        assert.equal(url.searchParams.get('text'), plainRequest(locale, choice) + suffix + referenceSuffix(locale));
         assert.doesNotMatch(url.searchParams.get('text'), /utm_|listing|private|never-share/);
       }
       for (const link of [channels.whatsapp, channels.telegram]) assert.equal(await link.getAttribute('data-consultation-action'), choice);
@@ -183,15 +201,17 @@ for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источни�
     const firstSuffix = '\n\n' + label + ': Eventbrite · public_event_2026';
     await assertDraft('session', firstSuffix);
     mounted.choose('questions');
-    await openContactChannelChooser(mounted.scope, mounted.expect);
+    await openCurrentChooser(mounted);
     await assertDraft('questions', firstSuffix);
+    const beforeRouteChanges = mounted.env.requests.length;
     mounted.navigate('/' + locale + '/services/free-situation-review', '?utm_source=meetup&utm_medium=organic_event&utm_campaign=next_public_event');
     await assertDraft('questions', '\n\n' + label + ': Meetup · next_public_event');
     mounted.navigate('/' + locale + '/app/tests', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026');
     await assertDraft('questions');
     mounted.navigate('/' + locale + '/services/psychohomeopathy', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&email=must-not-share');
     await assertDraft('questions');
-    assert.equal(mounted.scrollCalls.length, 2, 'Referral refresh must not reopen or scroll the unchanged request');
+    assert.equal(mounted.env.requests.length, beforeRouteChanges, 'Attribution refresh must not register a new enquiry');
+    assert.equal(mounted.scrollCalls.length, 4, 'Only changed request identity resets and scrolls open form and acknowledged receipt');
     assert.equal(mounted.externalClicks(), 0);
     assert.deepEqual(mounted.channelClicks, [], 'Preparing referrals must not invoke a contact action');
   });
@@ -209,9 +229,9 @@ test('actual chooser ignores invalid or personal referral parameters without cha
     valid.replace('public_event_2026', 'private%20answer'),
   ]) {
     const mounted = mountChooser('en', undefined, false, { search });
-    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    const chooser = await openCurrentChooser(mounted);
     const channels = await assertPreparedContactChannels(chooser, mounted.expect);
-    for (const url of [channels.whatsappUrl, channels.telegramUrl]) assert.equal(url.searchParams.get('text'), plainRequest('en'), search);
+    for (const url of [channels.whatsappUrl, channels.telegramUrl]) assert.equal(url.searchParams.get('text'), plainRequest('en') + referenceSuffix('en'), search);
     assert.equal(mounted.externalClicks(), 0);
     assert.deepEqual(mounted.channelClicks, []);
   }
@@ -239,14 +259,14 @@ test('release retains explicit paid selection, free internal action, reset, priv
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {
   const app = read('scripts/verify-app-r1.mjs');
   assert.match(app, /data-sitewide-capture="core-service"/);
-  assert.match(app, /openContactChannelChooser\(capture,expect\)/);
-  assert.match(app, /message.includes\(names\[locale\]\)/);
-  assert.match(app, /openContactChannelChooser\(ready,expect\)/);
+  assert.match(app, /verifyHypnotherapyRequest\(servicePage,expect,\{origin,locale,channel:/);
+  assert.match(read('scripts/helpers/hypnotherapy-request-verifier.mjs'), /assert.equal\(body.serviceTitle, hypnotherapyService\(locale\)\)/);
+  assert.match(app, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
   assert.match(app, /const order=promo.locator\('a\[data-contact-channel="whatsapp"\]'\)/);
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openContactChannelChooser\(capture, expect\)/);
+  assert.match(production, /registerContactChannelRequest\(capture, expect, page\)/);
   assert.match(production, /Prepared request must retain the selected service/);
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
@@ -267,12 +287,17 @@ test('both core-service scripts explicitly open the uniquely scoped chooser with
 
 test('actual core JSX has one footer section with one chooser and the matching service draft', () => {
   const exports = {};
+  const artwork = compileContactModule(read('lib/public-card-artwork.ts'), {
+    '@/data/public-card-artwork-urls.json': {default: JSON.parse(read('data/public-card-artwork-urls.json'))},
+  }, environment('en'));
   let pathname;
   const modules = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     react: { useEffect: () => {}, useState: initial => [initial === null ? pathname : initial, () => {}] },
     'next/navigation': { usePathname: () => pathname },
     '@/lib/public-lead-capture': publicLead,
+    '@/lib/public-card-artwork': artwork,
+    '@/components/compact-lead-capture': {CompactLeadCapture: props => jsx('compact-capture', props)},
     '@/components/consultation-choice-capture': { ConsultationChoiceCapture: () => null },
     '@/components/acquisition-event-link': { AcquisitionEventLink: props => jsx('a', props) },
     'next/image': { default: () => null },
@@ -305,6 +330,11 @@ test('actual core JSX has one footer section with one chooser and the matching s
     for (const chooser of nodes(tree).filter(node => node.type === 'contact-chooser')) assert.equal(chooser.props.whatsappUrl, expected);
     pathname = '/' + locale + '/services/' + slug;
     const fallback = sitewide.SitewideLeadCapture();
+    if (kind === 'dao') {
+      assert.equal(fallback, null, 'Dedicated DAO landing suppresses duplicate global capture');
+      assert.equal(publicLead.classifyPublicLead(pathname), null);
+      continue;
+    }
     if (kind === 'alchemy') {
       assert.equal(fallback, null, 'Dedicated Alchemy form suppresses duplicate global capture');
       assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-alchemy-lead-form="single"/);
@@ -312,42 +342,213 @@ test('actual core JSX has one footer section with one chooser and the matching s
       continue;
     }
     assert.equal(fallback.props['data-core-service-capture'], kind);
-    const fallbackChoosers = nodes(fallback).filter(node => node.type === 'contact-chooser');
-    assert.equal(fallbackChoosers.length, 1);
-    assert.equal(fallbackChoosers[0].props.whatsappUrl, expected, 'Hydrated sitewide draft must exactly match the named core service');
+    const captures = nodes(fallback).filter(node => node.type === 'compact-capture');
+    assert.equal(captures.length, 1);
+    assert.equal(captures[0].props.serviceTitle, detail.title, 'Current compact footer retains the exact named service');
+    assert.equal(captures[0].props.locale, locale);
+    assert.equal(nodes(fallback).filter(node => node.type === 'contact-chooser').length, 0, 'No duplicate legacy footer chooser');
   }
 });
 
-function assertFreeReviewCallerContract(source, compact = false) {
-  assert.match(source, compact ? /openContactChannelChooser\(ready,expect\)/ : /openContactChannelChooser\(ready, expect\)/);
-  assert.match(source, compact ? /assertPreparedContactChannels\(readyChooser,expect\)/ : /assertPreparedContactChannels\(readyChooser, expect\)/);
-  for (const channel of ['whatsapp', 'telegram']) assert.ok(source.includes('!' + channel + 'Text.includes(marker)'), channel + ' must reject private answer markers');
-  assert.match(source, /decodedPageUrl\.includes\(marker\)/);
-  assert.doesNotMatch(source, /ready\.getByRole\('button'\)\.click/);
-  if (compact) {
-    assert.match(source, /name:\s*copy\.copyButton,\s*exact:\s*true/);
-    assert.match(source, /Analytics event metadata never contains answers/);
-    assert.match(source, /Temporary analytics hold must emit no acquisition events/);
+function assertFreeReviewCallerContract(source, compact = false, helper = '') {
+  if (!compact) {
+    assert.match(source, /verifyFreeReviewCurrentFlow\(page, expect, \{/);
+    assert.match(source, /origin, locale, inspectPrivateIntake: width === 390/);
+    const start = helper.indexOf('export async function verifyFreeReviewCurrentFlow(');
+    const end = helper.indexOf('export async function verifyFreeDiagnosisHub(');
+    assert.ok(start >= 0 && end > start);
+    const flow = helper.slice(start, end);
+    assert.ok(flow.includes('/coaching/intake?topic=personal'));
+    assert.match(flow, /intake\.locator\('form,textarea,input\[type="file"\]'\)\)\.toHaveCount\(0\)/);
+    assert.match(flow, /await advanced\.locator\(':scope > summary'\)\.click\(\)/);
+    assert.match(flow, /assert.equal\(guard.submissions.length,0\)/);
+    assert.match(flow, /assert.deepEqual\(guard.blocked,\[\]\)/);
+    return;
   }
+  assert.match(source, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
+  assert.match(source, /assertFreeReviewLanding\(publicPage,expect,locale\)/);
+  assert.match(helper, /assertFreeReviewPreparedUrls\(urls, \[\.\.\.markers, t\.focus\]\)/);
+  assert.match(helper, /!decodeURIComponent\(url\.href\)\.includes\(marker\)/);
+  assert.match(helper, /!decodeURIComponent\(page\.url\(\)\)\.includes\(marker\)/);
+  assert.match(helper, /!JSON\.stringify\(evidence\)\.includes\(marker\)/);
+  assert.match(helper, /assert\.deepEqual\(evidence\.events, \[\], 'The temporary analytics hold emits no acquisition events'\)/);
+  assert.match(helper, /\/coaching\/intake\?topic=personal/);
+  assert.match(helper, /intake\.locator\('form, textarea, input\[type="file"\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(helper, /assert\.equal\(guard\.submissions\.length, 0, 'A phone without explicit consent never submits'\)/);
 }
 
-test('free-review verifier callers open both channels, keep generic drafts and target only Copy answers', () => {
+test('free-review callers preserve current private questionnaire entry, consented synthetic receipt and external-answer privacy', () => {
+  const compactHelper = read('scripts/helpers/free-review-private-handoff-verifier.mjs');
+  const publicHelper = read('scripts/helpers/free-entry-current-verifier.mjs');
   for (const [path, compact] of [['scripts/verify-app-r1.mjs', true], ['scripts/verify-public-services-production.mjs', false]]) {
     const source = read(path);
-    assertFreeReviewCallerContract(source, compact);
-    for (const changed of [
-      source.replace(/openContactChannelChooser\(ready,\s*expect\)/, 'ready'),
-      source.replace('!telegramText.includes(marker)', 'true'),
-      ...(compact ? [source.replace(/name:\s*copy\.copyButton,\s*exact:\s*true/g, '')] : []),
-    ]) assert.throws(() => assertFreeReviewCallerContract(changed, compact), path);
+    const helper = compact ? compactHelper : publicHelper;
+    assertFreeReviewCallerContract(source, compact, helper);
+    const mutations = compact ? [
+      [source.replace('verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,', 'retiredFlow(publicPage,expect,{origin,locale,'), helper],
+      [source.replace('assertFreeReviewLanding(publicPage,expect,locale)', 'retiredLanding(publicPage,expect,locale)'), helper],
+      [source, helper.replace('assertFreeReviewPreparedUrls(urls, [...markers, t.focus])', 'assertFreeReviewPreparedUrls(urls, [])')],
+      [source, helper.replace('!decodeURIComponent(url.href).includes(marker)', 'true')],
+      [source, helper.replace('!JSON.stringify(evidence).includes(marker)', 'true')],
+      [source, helper.replace("assert.deepEqual(evidence.events, [], 'The temporary analytics hold emits no acquisition events')", 'void evidence.events')],
+      [source, helper.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private')],
+      [source, helper.replace("assert.equal(guard.submissions.length, 0, 'A phone without explicit consent never submits')", 'void guard.submissions')],
+    ] : [
+      [source.replace('verifyFreeReviewCurrentFlow(page, expect, {', 'retiredFlow(page, expect, {'), helper],
+      [source, helper.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private')],
+      [source, helper.replace("intake.locator('form,textarea,input[type=\"file\"]')).toHaveCount(0)", "intake.locator('form,textarea,input[type=\"file\"]')).toHaveCount(1)")],
+      [source, helper.replace('assert.equal(guard.submissions.length,0); assert.deepEqual(guard.blocked,[])', 'assert.equal(guard.submissions.length,1); assert.deepEqual(guard.blocked,[])')],
+    ];
+    for (const [changed, changedHelper] of mutations) {
+      assert.ok(changed !== source || changedHelper !== helper, 'Negative control must alter the actual caller/helper');
+      assert.throws(() => assertFreeReviewCallerContract(changed, compact, changedHelper), path);
+    }
   }
   const intake = read('components/free-drawing-intake.tsx');
-  const draft = intake.slice(intake.indexOf('const whatsappUrl ='), intake.indexOf('function changeAnswer'));
-  assert.match(draft, /request: t\.whatsappIntro/);
-  assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
-  assert.doesNotMatch(intake, /fetch\(|localStorage|sessionStorage|sendBeacon|\/api\//);
+  assert.match(intake, /coachingIntakeEntryTopic\(window\.location\.search\)/);
+  assert.match(intake, /\/coaching\/intake\?topic=/);
+  assert.doesNotMatch(intake, /<form|<textarea|<ContactChannelChooser|navigator\.clipboard|fetch\(|localStorage|sessionStorage|sendBeacon|\/api\//);
   const temple = read('components/temple-initiation-chooser.tsx');
   assert.match(temple, /<ContactChannelChooser/);
   assert.doesNotMatch(temple, /<a[^>]*href=\{whatsappUrl\}/);
   assert.match(read('scripts/verify-contact-channel-chooser-browser.mjs'), /verifyChooser\(page,templeChooser/);
+});
+
+// These are real source executions with an in-memory acknowledgement only.
+// Rejected responses cannot grant access to messenger links or persist receipts.
+async function assertRejectedReceipt(kind, sourceOverride) {
+  const mounted = mountChooser('en', undefined, false, {}, sourceOverride);
+  const {f, env, scope, expect} = mounted;
+  await scope.locator('button[data-contact-order]').click();
+  f.change('input', props => props.type === 'email', 'contact-contract@example.invalid');
+  f.change('input', props => props.type === 'checkbox', true);
+  env.setRespond(async () => {
+    if (kind === 'network') throw new Error('SYNTHETIC_TRANSPORT_ERROR');
+    return {ok:kind !== 'http-error', status:kind === 'http-error' ? 503 : 201,
+      json:async () => {
+        if (kind === 'invalid-json') throw new Error('SYNTHETIC_INVALID_JSON');
+        return {saved:kind !== 'saved-false', referenceCode:kind === 'bad-reference' ? 'UNCONFIRMED' : CONTACT_REFERENCE};
+      }};
+  });
+  await f.submit();
+  assert.equal(env.requests.length, 1);
+  assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 0,
+    'An unconfirmed response must expose no messenger links');
+  assert.equal(f.find('p', props => props.role === 'alert').hidden, false);
+  assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, []);
+  assert.deepEqual(env.popups, []); assert.deepEqual(env.events, []);
+  assert.deepEqual(mounted.channelClicks, []); assert.equal(mounted.externalClicks(), 0);
+  const operationId = JSON.parse(env.requests[0]).operationId;
+  env.setRespond(success); await f.submit();
+  assert.equal(env.requests.length, 2);
+  assert.equal(JSON.parse(env.requests[1]).operationId, operationId, 'Unknown/unconfirmed outcome retries the same operation');
+  await assertPreparedContactChannels(scope.locator('[data-contact-channel-chooser]'), expect);
+}
+for (const kind of ['network', 'http-error', 'invalid-json', 'saved-false', 'bad-reference']) {
+  test('ordinary chooser rejects ' + kind + ' until a confirmed receipt', () => assertRejectedReceipt(kind));
+}
+
+function mutateChooser(before, after, count = 1) {
+  const source = read('components/contact-channel-chooser.tsx');
+  assert.equal(source.split(before).length - 1, count, 'Mutation must target the exact current implementation');
+  const changed = source.replaceAll(before, after);
+  assert.notEqual(changed, source);
+  return changed;
+}
+test('consent guard negative control is caught by direct-submit contract', async () => {
+  const changed = mutateChooser('if (!consent) {', 'if (false) {');
+  await assert.rejects(openCurrentChooser(mountChooser('en', undefined, false, {}, changed)),
+    error => error.code === 'ERR_ASSERTION' && /Even direct submit without consent is blocked/.test(error.message));
+});
+test('pre-registration receipt negative control is caught before any submission', async () => {
+  const initialized = mutateChooser('useState<SavedEnquiry | null>(null)',
+    'useState<SavedEnquiry | null>({saved:true, referenceCode:"' + CONTACT_REFERENCE + '"})');
+  assert.equal(initialized.split('setSaved(null);').length - 1, 3, 'All exact reset sites are part of this initial-state mutant');
+  const changed = initialized.replaceAll('setSaved(null);', '/* synthetic lost receipt reset */');
+  const mounted = mountChooser('en', undefined, false, {}, changed);
+  await assert.rejects(openCurrentChooser(mounted), error => error.code === 'ERR_ASSERTION' && error.actual === 2 && error.expected === 0);
+  assert.equal(mounted.env.requests.length, 0);
+});
+test('receipt acknowledgement bypass negative control exposes a detectable invalid state', async () => {
+  const changed = mutateChooser('if (!response.ok || data.saved !== true || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "")) {', 'if (false) {');
+  await assert.rejects(assertRejectedReceipt('saved-false', changed),
+    error => error.code === 'ERR_ASSERTION' && /An unconfirmed response must expose no messenger links/.test(error.message));
+});
+test('wrong recipient source negative control cannot pass the prepared-link contract', async () => {
+  // Canonical booking adds a third explicit WhatsApp anchor; corrupt all three.
+  const changed = mutateChooser('href={preparedWhatsApp}', 'href={preparedWhatsApp.replace("14376066502", "10000000000")}', 3);
+  await assert.rejects(openCurrentChooser(mountChooser('en', undefined, false, {}, changed)),
+    error => error.code === 'ERR_ASSERTION' && error.actual === '/10000000000' && error.expected === '/14376066502');
+});
+test('personal contact leakage source negative control is rejected on both prepared channels', async () => {
+  const changed = mutateChooser('originalMessage + "\\n\\n" + c.reference + ": " + saved.referenceCode,',
+    'originalMessage + "\\n\\n" + email + "\\n\\n" + c.reference + ": " + saved.referenceCode,');
+  await assert.rejects(openCurrentChooser(mountChooser('en', undefined, false, {}, changed)),
+    error => error.code === 'ERR_ASSERTION' && typeof error.actual === 'string' && error.actual.includes('contact-contract@example.invalid'));
+});
+test('unknown dependency negative control remains fail-closed', () => {
+  const source = 'import {unexpected} from "@/unreviewed-provider";\n' + read('components/contact-channel-chooser.tsx') + '\nvoid unexpected;';
+  assert.throws(() => mountChooser('en', undefined, false, {}, source), /Unexpected runtime dependency: @\/unreviewed-provider/);
+});
+
+test('optional name and private note stay in the consented synthetic payload, never either messenger URL or receipt', async () => {
+  const mounted = mountChooser('en');
+  const {f, env, scope, expect} = mounted;
+  await scope.locator('button[data-contact-order]').click();
+  f.change('input', props => props.type === 'email', 'contact-contract@example.invalid');
+  f.change('input', props => props.autoComplete === 'name', 'SYNTHETIC_PRIVATE_NAME');
+  f.change('textarea', () => true, 'SYNTHETIC_PRIVATE_NOTE');
+  f.change('input', props => props.type === 'checkbox', true);
+  await f.submit();
+  const body = JSON.parse(env.requests[0]);
+  assert.equal(body.contact.displayName, 'SYNTHETIC_PRIVATE_NAME');
+  assert.equal(body.description, 'SYNTHETIC_PRIVATE_NOTE');
+  const channels = await assertPreparedContactChannels(scope.locator('[data-contact-channel-chooser]'), expect);
+  for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
+    assert.doesNotMatch(url.searchParams.get('text'), /SYNTHETIC_PRIVATE_|contact-contract@example\.invalid/);
+    assert.ok(url.searchParams.get('text').endsWith(referenceSuffix('en')));
+  }
+  assert.doesNotMatch(JSON.stringify(env.writes), /SYNTHETIC_PRIVATE_|contact-contract@example\.invalid/);
+  assert.deepEqual(env.popups, []); assert.deepEqual(env.events, []); assert.deepEqual(mounted.channelClicks, []);
+});
+
+for (const denied of [false, true]) test('default navigation requires a confirmed receipt; denied storage=' + denied, async () => {
+  const env = environment('en', {denyReceiptStorage:denied});
+  const whatsappUrl = enquiries.whatsappEnquiryUrl({locale:'en', service:'Synthetic consultation', request:'Please explain the next step.', pagePath:env.window.location.pathname});
+  const f = mount('contact-channel-chooser', 'ContactChannelChooser', {locale:'en',whatsappUrl}, env);
+  f.click('button', props => Object.hasOwn(props, 'data-contact-order'));
+  f.change('input', props => props.type === 'email', 'contact-contract@example.invalid');
+  f.change('input', props => props.type === 'checkbox', true);
+  const acknowledgement = deferred(); env.setRespond(() => acknowledgement.promise);
+  await f.submit();
+  assert.deepEqual(env.navigations, []); assert.deepEqual(env.writes, []);
+  assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 0);
+  acknowledgement.resolve(success()); await turn(f);
+  assert.deepEqual(env.navigations, denied ? [] : ['/en/thank-you']);
+  assert.equal(env.writes.length, denied ? 0 : 1);
+  assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 2,
+    'Denied receipt storage preserves the in-place acknowledged fallback');
+  assert.deepEqual(env.popups, []); assert.deepEqual(env.events, []);
+});
+
+
+test('ordinary contact fixture recognizes the real Link import but rejects rendering any booking/provider Link', () => {
+  const source = read('components/contact-channel-chooser.tsx');
+  assert.match(source, /import Link from "next\/link"/);
+  for (const href of ['/en/cart?items=express-consultation-30', 'https://provider.example.invalid/pay']) {
+    const env = environment('en');
+    const extra = '\nexport function FixtureLinkBoundary() { return <Link href=' + JSON.stringify(href) + ' prefetch={false}>Forbidden link</Link>; }';
+    assert.throws(() => mount('contact-channel-chooser', 'FixtureLinkBoundary', {}, env,
+      {sourceOverride: source + extra}), /Booking cart Link is outside the synthetic ordinary contact fixture/);
+    assert.deepEqual(env.attempts, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, []);
+  }
+});
+
+test('ordinary contact fixture still rejects unknown component imports', () => {
+  const source = read('components/contact-channel-chooser.tsx');
+  const extra = '\nimport Unexpected from "unapproved-fixture-module";\nexport function FixtureImportBoundary() { return <Unexpected />; }';
+  const env = environment('en');
+  assert.throws(() => mount('contact-channel-chooser', 'FixtureImportBoundary', {}, env,
+    {sourceOverride: source + extra}), /Unexpected runtime dependency: unapproved-fixture-module/);
+  assert.deepEqual(env.attempts, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, []);
 });

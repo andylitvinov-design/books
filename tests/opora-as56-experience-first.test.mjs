@@ -10,7 +10,7 @@ import {oporaGentleCopy} from '../lib/inner-growth/opora-gentle-journey.js'
 import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {oporaAs58Valid,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
-import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
+import {oporaAs60VariedDay,OPORA_VARIETY_REVISION} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
@@ -117,7 +117,8 @@ test('day one restores five opening screens and all days add untracked support a
     // Only one aphorism/feedback appears. This distinct screen asks for
     // a concrete future action, never another inspirational statement.
     const options=oporaExperienceTransferChoices(day,lang)
-    const daily=oporaAs60Day(day,lang)
+    // New attempts use the versioned variety revision; historical receipts stay separate below.
+    const daily=oporaAs60VariedDay(day,lang)
     const spokenFeeling=lang==='ru'?'Спокойствие':'Calm'
     const transferText=textOf(h.tree)
     assert.ok(transferText.includes(daily.transfer),
@@ -172,6 +173,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.opora54.answers.transferFeeling,undefined)
     assert.equal(f.payload.opora54.answers.transferPlanVersion,'one-v1')
     assert.equal(f.payload.opora54.answers.experienceEdition,'as-6.0-experiments-v1')
+    assert.equal(f.payload.opora54.answers.contentRevision,OPORA_VARIETY_REVISION)
     assert.deepEqual(f.payload.practiceEmotion,day===4?{customText:spokenFeeling}:
       day===11?{choice:'sadness'}:undefined)
     assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
@@ -224,6 +226,29 @@ test('day one restores five opening screens and all days add untracked support a
       '/'+lang+'/services/free-consultation'])
     assert.equal(f.requests,1,'Later screens must not create duplicate save')
     h.unmount()
+  }
+})
+
+test('new and saved variety plans use the same task without rewriting historical AS-6.0 receipts',async()=>{
+  for(const lang of ['en','ru','es'])for(const day of [2,9]){
+    const current=oporaAs60VariedDay(day,lang).transfer
+    const historical=oporaAs60Day(day,lang).transfer
+    assert.notEqual(current,historical,'The revised task must be meaningfully distinct')
+    const lesson=lessonFor('calm_regulation',day,lang,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+    for(const revised of [false,true]){
+      const h=mount('opora-experience-player',{
+        locale:lang,data:{cycle:{id:'00000000-0000-4000-8000-000000001056',day,durationDays:14},
+          programme:{id:'stress'},lesson,currentSession:{signals:{opora54:{answers:{
+            experienceEdition:'as-6.0-experiments-v1',transfer:'planned',transferChoice:'two',
+            transferPlanVersion:'one-v1',...(revised?{contentRevision:OPORA_VARIETY_REVISION}:{}),
+          }}}}},onClose(){},onFinish(){},
+        onSession:async()=>{assert.fail('A saved receipt must not write again')},
+      })
+      try{
+        assert.ok(textOf(h.tree).includes(revised?current:historical),'Receipt retains its original revision')
+        assert.ok(!textOf(h.tree).includes(revised?historical:current),'Other revision must not replace the saved task')
+      }finally{h.unmount()}
+    }
   }
 })
 

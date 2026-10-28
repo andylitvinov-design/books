@@ -17,6 +17,13 @@ on:
       - 'lib/assessments/portrait-ray-labels.js'
       - 'lib/assessments/portrait-sectors.js'
       - 'scripts/verify-portrait-mobile.mjs'
+      - 'scripts/helpers/portrait-frame-readiness.mjs'
+      - 'scripts/helpers/portrait-claim-precompile.mjs'
+      - 'tests/portrait-claim-precompile.test.mjs'
+      - 'tests/portrait-frame-readiness.test.mjs'
+      - 'scripts/helpers/portrait-navigation-diagnostics.mjs'
+      - 'scripts/helpers/isolated-browser-diagnostics.mjs'
+      - 'tests/portrait-navigation-diagnostics.test.mjs'
       - 'tests/portrait-report-actions.test.mjs'
       - '.github/workflows/hh-portrait-mobile-browser.yml'
 permissions:
@@ -63,6 +70,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci --no-audit --no-fund
+      - name: Portrait readiness and diagnostic unit regressions
+        run: node --test tests/portrait-frame-readiness.test.mjs tests/portrait-navigation-diagnostics.test.mjs tests/portrait-claim-precompile.test.mjs
       - name: Isolated Playwright browser
         run: |
           mkdir -p /tmp/hh-portrait-playwright
@@ -81,6 +90,17 @@ jobs:
             sleep 2
           done
           node scripts/verify-portrait-mobile.mjs
+      - name: Preserve sanitized synthetic Next diagnostics on failure
+        if: failure()
+        timeout-minutes: 1
+        run: |
+          node --input-type=module <<'JS'
+          import { preserveIsolatedServiceDiagnostics } from './scripts/helpers/isolated-browser-diagnostics.mjs'
+          await preserveIsolatedServiceDiagnostics({
+            directory: 'artifacts/portrait-mobile/service-diagnostics',
+            sources: [['/tmp/hh-portrait-next.log', 'next']],
+          })
+          JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:

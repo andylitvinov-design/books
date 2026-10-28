@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyHomeInlineAnalysis } from './helpers/home-inline-analysis-verifier.mjs';
 import { createHomeRouteSupervisor } from './home-route-supervisor.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -94,10 +95,15 @@ async function verifyFreeOffers(page, locale, engine, width) {
   for (const [id, suffix] of [['selfTest', '/client/tests'], ['analysis', '/services/free-situation-review'], ['reiki', '/academy/principles-of-energywork/learn']]) {
     const option = capture.locator('button[data-home-free-option="' + id + '"]');
     await expect(option).toBeVisible();
-    await option.click();
-    await expect(option).toHaveAttribute('aria-pressed', 'true');
-    const cta = capture.locator('a[data-home-free-action="' + id + '"]');
-    await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
+    let cta;
+    if (id === 'analysis') {
+      ({ trigger: cta } = await verifyHomeInlineAnalysis(page, expect, locale));
+    } else {
+      await option.click();
+      await expect(option).toHaveAttribute('aria-pressed', 'true');
+      cta = capture.locator('a[data-home-free-action="' + id + '"]');
+      await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
+    }
     await expect(cta).toBeVisible();
     const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
     assert.ok(size.height >= 46 && size.font >= 14, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
@@ -138,8 +144,13 @@ async function exerciseFreeJourneys(page, engine, width) {
       // Let homepage prefetches settle before intentionally replacing its document.
       await page.waitForLoadState('networkidle');
       const chooser = page.locator('[data-home-free-capture]');
-      await chooser.locator('button[data-home-free-option="' + id + '"]').click();
-      const cta = chooser.locator('a[data-home-free-action="' + id + '"]');
+      let cta;
+      if (id === 'analysis') {
+        ({ review: cta } = await verifyHomeInlineAnalysis(page, expect, locale));
+      } else {
+        await chooser.locator('button[data-home-free-option="' + id + '"]').click();
+        cta = chooser.locator('a[data-home-free-action="' + id + '"]');
+      }
       const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps$')) }));
       results.push({ engine, width, locale, entryClickAttempt: id, time: Date.now(), beforeClick });
       await cta.click();
@@ -225,7 +236,12 @@ async function exercise(engine, browserType, width) {
     } else await perform('continue', () => route.continue());
     });
   });
+  const forbiddenEnquiries = [];
   try {
+    await page.route('**/api/service-enquiries**', async route => {
+      forbiddenEnquiries.push({ method: route.request().method() });
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"UNEXPECTED_ENTRY_SUBMISSION"}' });
+    });
     for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
       phase = `${from}-to-${to}`;
       transport.assertHealthy();
@@ -267,11 +283,29 @@ async function exercise(engine, browserType, width) {
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
       phase = 'free-offers';
       await verifyFreeOffers(page, to, engine, width);
+      assert.deepEqual(forbiddenEnquiries, [], "Opening analysis must never register a contact");
       transport.assertHealthy();
     }
     transport.assertHealthy();
     assert.deepEqual(errors, []);
     phase = 'visual';
+    // Both retained first-click proofs above must finish before a fresh document
+    // establishes the idle-player precondition for the visual/poster checks.
+    const completedSwitches = results.filter(result => result.engine === engine && result.width === width && result.firstClickRetained === true);
+    assert.deepEqual(completedSwitches.map(({ from, to, heldRsc }) => [from, to, heldRsc]), [['en', 'ru', true], ['ru', 'en', true]]);
+    assert.equal(delayedLocale, null);
+    await delayedRscGate;
+    await transport.drain();
+    transport.assertHealthy();
+    const retainedEnglishReview = page.locator('[data-personal-testimonials="home"] [data-testimonial-video-id="Dk0LBmOivQo"]');
+    await expect(retainedEnglishReview).toHaveCount(1);
+    await expect(retainedEnglishReview.locator('iframe')).toHaveCount(1);
+    await expect(retainedEnglishReview.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
+    await expect(retainedEnglishReview.locator('.site-video-fallback-poster')).toHaveCount(0);
+    await page.goto(origin + homePath('en'), { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(origin + homePath('en'));
+    await expect(page.locator('main.house-home')).toHaveAttribute('lang', 'en');
+    transport.assertHealthy();
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const stableOffer = page.locator('[data-home-slide]');
     await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');
@@ -299,8 +333,7 @@ async function exercise(engine, browserType, width) {
     const capture = page.locator('[data-home-contact-capture] [data-consultation-capture="home-free"]');
     await expect(capture).toBeVisible();
     await expect(capture.locator('[data-choice-layout="home-free"] button')).toHaveCount(3);
-    await capture.locator('button[data-home-free-option="analysis"]').click();
-    await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    await verifyHomeInlineAnalysis(page, expect, 'en');
     await capture.locator('button[data-home-free-option="reiki"]').click();
     await expect(capture.locator('a[data-home-free-action="reiki"]')).toHaveAttribute('href', '/en/academy/principles-of-energywork/learn');
     await capture.locator('button[data-home-free-option="selfTest"]').click();
@@ -349,6 +382,7 @@ async function exercise(engine, browserType, width) {
 
     phase = 'journeys';
     await exerciseFreeJourneys(page, engine, width);
+    assert.deepEqual(forbiddenEnquiries, [], "Entry choices and navigation never submit an enquiry");
     transport.assertHealthy();
     assert.deepEqual(errors, []);
 

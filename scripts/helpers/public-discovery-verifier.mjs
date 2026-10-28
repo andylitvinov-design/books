@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { withPublicPickerActionDiagnostics } from './public-picker-action-diagnostics.mjs'
 import { PORTRAIT_SECTORS } from '../../lib/assessments/portrait-sectors.js'
 import { availableTestCollections } from '../../lib/assessments/test-collections.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, searchPublicTestEntries, TEST_EXPLORER_AXES } from '../../lib/assessments/test-explorer.js'
@@ -6,9 +7,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic (optional)', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам (необязательно)', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema (opcional)', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -36,7 +37,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
   assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
-  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
+  const collapsedCount = Math.min(2, collections.length)
   await expect(root).toBeVisible()
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
@@ -101,6 +102,25 @@ export function assertPublicCollectionMatches(shown, entries, collection, select
   assert.deepEqual(shown,expected,'The standard list uses the exact collection ranking, not a separate card layout or hard topic subset')
 }
 
+// Search uses the same eligible pool and retained preferences as the normal
+// public recommendations. A collection adds a soft topic boost; it does not
+// replace the visitor's focus or remove explicit kind/time/other filters.
+export function publicCollectionSearchKeys(entries, collection, selectedKeys, query, preferences = {}) {
+  const pool = filterExplorerEntries(entries, {
+    availability: 'available', styles: preferences.styles, kinds: preferences.kinds,
+    lengths: preferences.lengths, areas: preferences.areas, details: preferences.details,
+    axes: preferences.axes, maxMinutes: preferences.maxMinutes,
+    language: preferences.language, tracking: preferences.tracking, freeOnly: preferences.freeOnly,
+  })
+  const ranked = rankPublicTestMatches(pool, {
+    ...preferences, depth: preferences.depth || 'balanced',
+    focus: [...new Set([...(preferences.focus || []), ...collection.focus])],
+    collectionId: collection.id, collectionFocus: collection.focus,
+  })
+  return searchPublicTestEntries(groupViaRecommendations(ranked, new Set(selectedKeys), false).visible, query)
+    .slice(0, 5).map(entry => entry.key)
+}
+
 export async function exercisePublicCollections(page, expect, locale, initialPreferences = {}) {
   const picker = page.locator('[data-prelogin-test-picker]')
   const root = picker.locator('[data-test-topic-collections]')
@@ -159,17 +179,18 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await search.fill(query)
     await search.press('Enter')
     const sleepCollection = collections.find(item=>item.id==='sleep')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: sleepCollection.focus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
-    const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
+    const expectedSearch = publicCollectionSearchKeys(entries, sleepCollection, preserved, query, initialPreferences)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)
     await expect(picker.locator('[data-via-family]')).toHaveCount(0)
     await expect(sleep).toHaveAttribute('aria-pressed', 'true')
     assert.deepEqual(await readSelection(picker), preserved, 'Love search does not auto-select intimate questionnaires')
     await expect(page).toHaveURL(currentUrl)
-    await root.locator('[data-test-collection="sexuality"]').click()
-    await expect(search).toHaveValue('')
-    await expect(root.locator('[data-test-collection="sexuality"]')).toHaveAttribute('aria-pressed', 'true')
+    await withPublicPickerActionDiagnostics(page, root.locator('[data-test-collection="sexuality"]'), { action: 'collection-sexuality', locale }, async () => {
+      await root.locator('[data-test-collection="sexuality"]').click()
+      await expect(search).toHaveValue('')
+      await expect(root.locator('[data-test-collection="sexuality"]')).toHaveAttribute('aria-pressed', 'true')
+    })
     assert.deepEqual(await readSelection(picker), preserved)
     await root.locator('[data-test-collection="sexuality"]').click()
     await more.click()
@@ -187,12 +208,25 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   const sectors = portrait.locator('[data-portrait-sectors]')
   const defaultSector = sectors.locator('[data-portrait-sector-all]')
   const originals = new Map()
-  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(4)
+  const axesTab = portrait.locator('[data-portrait-view="axes"]')
+  const chartTab = portrait.locator('[data-portrait-view="chart"]')
+  // Axis choices are now an explicit tab, not automatically shown by selecting
+  // a life area. Exercise the same user controls and restore Chart afterwards.
+  await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+  // Four measured ray sectors remain separate from the non-ray Goal Profile.
+  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(5)
+  const goal = sectors.locator('[data-portrait-sector="goal"]')
+  await expect(goal).toHaveCount(1)
+  await expect(goal).toHaveAttribute('aria-pressed', 'false')
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
   await sectors.locator('[data-portrait-sector="body"]').click()
+  await expect(inputs).toHaveCount(0)
+  await axesTab.click()
+  await expect(axesTab).toHaveAttribute('aria-selected', 'true')
+  await expect(portrait.locator('[data-testid="portrait-axes-panel"]')).toBeVisible()
   await expect(inputs).toHaveCount(PORTRAIT_SECTORS[0].axes.length)
   let total = 0
   for (const sector of PORTRAIT_SECTORS) {
@@ -213,6 +247,12 @@ export async function exercisePortraitRays(portrait, expect, locale) {
     await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
     await expect(options.locator('input:disabled')).toHaveCount(0)
     await expect(rays).toHaveCount(sector.axes.length)
+    await chartTab.click()
+    await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+    await expect(portrait.locator('[data-radar-mode="detail"]')).toBeVisible()
+    await expect(rays).toHaveCount(sector.axes.length)
+    await axesTab.click()
+    await expect(axesTab).toHaveAttribute('aria-selected', 'true')
     total += sector.axes.length
   }
   assert.equal(total, 17, 'All 17 fine choices remain selectable across four sectors')
@@ -221,6 +261,18 @@ export async function exercisePortraitRays(portrait, expect, locale) {
     await button.click()
     await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
     await inputs.nth(sector.axes.length - 1).uncheck()
+    if (sector.key === 'body') {
+      // Nondefault choices must survive changing views, not only sectors.
+      const unchecked = await inputs.evaluateAll(nodes => nodes.map(node => node.checked))
+      await chartTab.click()
+      await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+      await expect(portrait.locator('[data-radar-mode="detail"]')).toBeVisible()
+      await expect(rays).toHaveCount(unchecked.filter(Boolean).length)
+      await axesTab.click()
+      await expect(axesTab).toHaveAttribute('aria-selected', 'true')
+      await expect(portrait.locator('[data-testid="portrait-axes-panel"]')).toBeVisible()
+      assert.deepEqual(await inputs.evaluateAll(nodes => nodes.map(node => node.checked)), unchecked, 'Chart and Axes preserve every unchecked Body choice')
+    }
     const other = PORTRAIT_SECTORS.find(item => item.key !== sector.key)
     await sectors.locator(`[data-portrait-sector="${other.key}"]`).click()
     await expect(inputs).toHaveCount(other.axes.length)
@@ -236,6 +288,11 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   await defaultSector.click()
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
+  await expect(inputs).toHaveCount(total)
+  await expect(options.locator('input:checked')).toHaveCount(total)
+  await chartTab.click()
+  await expect(chartTab).toHaveAttribute('aria-selected', 'true')
+  await expect(portrait.locator('[data-radar-mode="summary"]')).toBeVisible()
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
 }

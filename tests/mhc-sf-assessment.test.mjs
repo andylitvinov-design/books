@@ -40,6 +40,8 @@ const score = values => scoreAssessment(d, answers(values), syntheticTraumaConte
 const values = result => result.dimensions.map(s=>s.value)
 
 test('adult December 2011 MHC-SF pins all original items, revised item 6, anchors, identity and source version',()=>{
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(MONITORING_CATALOG.find(item=>item.key==='ons-personal-wellbeing-4').startable,false)
   assert.equal(d.id,'fe2feb75-6428-52a1-a9a6-ea45f0e43242')
   assert.equal(d.contentHash,'sha256:c70b5b61ad92d2daad15dbaf4e145d27262abe94cc9f2a64eda275c257b6a853')
   const {contentHash,...body}=d
@@ -113,8 +115,8 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,77)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,149)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,76)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
   // Exclude only the six appended split-v2 IDs from this historical baseline.

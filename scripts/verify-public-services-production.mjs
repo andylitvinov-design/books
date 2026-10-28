@@ -1,5 +1,8 @@
+import { appendPortraitFixtureFailure, createAnonymousPortraitBootstrapFixture, portraitBootstrapPattern, anonymousPortraitCopy } from "./helpers/anonymous-portrait-bootstrap-fixture.mjs";
+import { attachPublicApiReadDiagnostics } from "./helpers/public-api-read-diagnostics.mjs";
+import { verifyFreeReviewCurrentFlow, verifyFreeDiagnosisHub } from './helpers/free-entry-current-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { registerContactChannelRequest } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -16,18 +19,22 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], anonymousPortraitDenials: [], anonymousPortraitFailures: [], pageErrors: [], devIssueOverlay: false };
+const portraitFixtures = new WeakMap(), approvedPortraitConsole = new WeakSet();
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 844 } });
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
+    attachPublicApiReadDiagnostics(page, origin, diagnostics.apiReadObservations);
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
         try { path = new URL(message.location().url).pathname; } catch {}
-        diagnostics.console.push({ type: message.type(), text: message.text(), path });
+        const entry = { type: message.type(), text: message.text(), path };
+        diagnostics.console.push(entry);
+        portraitFixtures.get(page)?.observeConsole(message, entry);
       }
     });
     page.on("pageerror", (error) => diagnostics.pageErrors.push(error.message));
@@ -140,14 +147,14 @@ try {
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
           "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
+          "#method-videos", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      }), true, "Owner studio order: hero, early session choice, 3 free, personal offers, intro, reviews, methods, directory");
       await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
         { timeout: 15000 });
       // Method posters are visible, while third-party players stay opt-in.
@@ -166,14 +173,34 @@ try {
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
       const cabinetBounds = await cabinetEntry.boundingBox();
       assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
+      const portraitFixture = createAnonymousPortraitBootstrapFixture(page, origin, locale);
+      portraitFixtures.set(page, portraitFixture);
+      await page.route(portraitBootstrapPattern, portraitFixture.route);
+      page.on("response", portraitFixture.observeResponse);
+      try {
+      portraitFixture.arm();
       await cabinetEntry.click();
       const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
       await expect(privateSpaceDialog).toHaveAttribute("open", "");
       await visible(privateSpaceDialog.locator("#hh-my-space-title"));
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
+      const anonymousCopy = anonymousPortraitCopy[locale];
+      await expect(privateSpaceDialog.getByText(anonymousCopy.guest, {exact:true})).toBeVisible();
+      await expect(privateSpaceDialog.getByRole("button", {name:anonymousCopy.googleName, exact:true})).toBeVisible();
+      await expect(privateSpaceDialog.getByText(anonymousCopy.unavailable, {exact:true})).toHaveCount(0);
+      await expect(privateSpaceDialog.getByRole("button", {name:anonymousCopy.retry, exact:true})).toHaveCount(0);
+      assert.deepEqual(await privateSpaceDialog.locator("a[data-space-link]").evaluateAll(links=>links.map(link=>link.getAttribute("data-space-link")).sort()), ["plan","profile"]);
+      await expect.poll(()=>portraitFixture.responses).toBe(1);
       await privateSpaceDialog.locator('header button[type="button"]').first().click();
       await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      diagnostics.anonymousPortraitDenials.push(portraitFixture.finish(approvedPortraitConsole));
+      } finally {
+        appendPortraitFixtureFailure(diagnostics.anonymousPortraitFailures, portraitFixture);
+        await page.unroute(portraitBootstrapPattern, portraitFixture.route);
+        page.off("response", portraitFixture.observeResponse);
+        portraitFixtures.delete(page);
+      }
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -345,8 +372,14 @@ try {
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
+    // As in EN/RU, selecting online-only Reiki resets Toronto intentionally.
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
-    await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(page.locator('[data-services-studio-paid]')).toBeHidden();
+    await esShowcase.locator('[data-services-empty] button').click();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
@@ -380,7 +413,10 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      // This journey checks the hero's free alternative, not the hidden
+      // responsive header entry or the repeated closing invitation.
+      const free = main.locator('section[aria-labelledby="personal-service-title"] a[href="/' + locale + '/services/free-situation-review"]');
+      await expect(free).toHaveCount(1);
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
@@ -399,10 +435,12 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
-      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-        "Express rate preserved in approved draft: " + label);
+      const selectedTitle = (await choices.nth(1).innerText()).trim();
+      const {request} = await registerContactChannelRequest(target, expect, page);
+      assert.equal(request.serviceTitle, selectedTitle,
+        "Exact selected public tariff must survive registration: " + label);
+      assert.ok(request.serviceTitle.includes("€50"),
+        "Express rate preserved in the consented request before its thank-you receipt: " + label);
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
@@ -443,10 +481,14 @@ try {
     await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
-    const prepared = await assertPreparedContactChannels(chooser, expect);
-    assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-      "Business express €50 must survive messenger selection: " + label);
+    const expectedBusinessTitle = {
+      en: "Business Strategy & Archetypal Coaching",
+      ru: "Бизнес-консалтинг и архетипический коучинг",
+      es: "Consultoría de negocios y coaching arquetípico",
+    }[locale] + " · 30 min · €50";
+    const {request} = await registerContactChannelRequest(express, expect, page);
+    assert.equal(request.serviceTitle, expectedBusinessTitle,
+      "Business express service, duration and €50 must survive registration: " + label);
     await assertViewport(page, "business/" + label);
     await assertNoDevIssueOverlay(page, label);
     await page.screenshot({path: output + "/business-" + locale + "-express-request-390.png",fullPage:false,animations:"disabled"});
@@ -553,14 +595,14 @@ try {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
-            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            const selectedService = await main.locator('h1').innerText();
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
             assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
             await alternative.locator("summary").click();
             await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
             await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+            const {request} = await registerContactChannelRequest(capture, expect, page);
+            assert.equal(request.serviceTitle, selectedService, 'Prepared request must retain the selected service');
           }
         }
         await page.close();
@@ -569,7 +611,8 @@ try {
   }
 
   // Read-only EN/RU/ES acceptance for the CURRENT three free entry routes.
-  // Never submit a visitor form: a clicked CTA is neither a CRM lead nor a booking.
+  // Free-entry choices stay read-only. The separate hub registers only an exact
+  // synthetic request fulfilled in memory; provider documents never leave its guard.
   for (const locale of ["en", "ru", "es"]) {
     for (const [kind, slug, captureId] of [
       ["tests", "tests", "start-free"],
@@ -605,58 +648,16 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
-          const featured = main.locator("[data-featured-constellations-video]");
-          await visible(featured);
-          assert.equal(await featured.locator("iframe").count(), 0,
-            "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
-
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
-
-          const writtenIntake = main.locator("[data-optional-written-review]");
-          assert.equal(await writtenIntake.evaluate(el => el.open), false);
+          await verifyFreeReviewCurrentFlow(page, expect, {
+            origin, locale, inspectPrivateIntake: width === 390,
+          });
           if (width === 390) {
-            await writtenIntake.locator(":scope > summary").click();
-            const preview = writtenIntake.locator("[data-free-drawing-intake]");
-            await visible(preview);
-            await visible(preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]'));
-            assert.equal(await preview.locator("form,textarea").count(), 0,
-              "The private answers are entered only in the protected questionnaire");
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-              "Expanded information must fit the phone width");
-
-            const hub = await page.context().newPage();
-            await hub.setViewportSize({width, height: 844});
-            await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
-              "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
-            await hub.close();
+            const hub = await createPage(width);
+            try {
+              await verifyFreeDiagnosisHub(hub, expect, {origin, locale});
+              await assertViewport(hub, locale + "/free-consultation/390/after-actions");
+              await assertNoDevIssueOverlay(hub, locale + "/free-consultation/390");
+            } finally { await hub.close(); }
           }
         }
         await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
@@ -670,7 +671,8 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  assert.equal(diagnostics.anonymousPortraitDenials.length, 8, "Every deliberate EN/RU services My Space activation has an explicit anonymous denial");
+  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error" && !approvedPortraitConsole.has(entry)), [], "Unexpected browser console errors");
   await context.close();
 } catch (error) {
   failure = error;

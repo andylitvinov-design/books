@@ -21,7 +21,7 @@ test('Four discovery tabs share one EN/RU/ES public destination model', () => {
   assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
 })
 
-test('Business replaces Events in mobile navigation while Events remains public via the menu', () => {
+test('Seven compact journeys coexist with public Events and Library in the expanded menu', () => {
   const header = read('components/site-navigation.tsx')
   const locale = read('lib/public-locales.ts')
   const page = read('app/[locale]/events/page.tsx')
@@ -33,13 +33,36 @@ test('Business replaces Events in mobile navigation while Events remains public 
     assert.match(page, /alternates/)
   }
   assert.match(header, /getCompactNavigation\(activeLocale\)/)
-  assert.match(header, /item.id === 'library'/)
-  assert.match(header, /className="site-library-entry"/)
-  assert.match(header, /data-nav-item="library"/)
+  assertExpandedDestinations(header)
   assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
-  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'business', 'house'])
-  assert.match(header, /item.id === 'events'/)
+  assert.deepEqual(compactNavigationIds, ['profile', 'courses', 'home', 'analysis', 'alchemy', 'pro', 'temple'])
+})
+
+
+function assertExpandedDestinations(header, navigation = getSiteNavigation) {
+  const selection = header.match(/const extraMenuItems = (getSiteNavigation\(activeLocale\)\.filter\([\s\S]*?\));/)
+  assert.ok(selection, 'expanded menu derives its destinations from the public model')
+  const select = new Function('getSiteNavigation', 'activeLocale', 'return ' + selection[1])
+  for (const language of ['en', 'ru', 'es']) {
+    const items = select(navigation, language)
+    assert.deepEqual(items.map(item => item.id), ['energy', 'love', 'business', 'library', 'events'], 'expanded public destinations')
+    for (const id of ['library', 'events']) assert.equal(items.find(item => item.id === id)?.href, '/' + language + '/' + id, 'localized ' + id + ' route')
+  }
+  const expanded = header.slice(header.indexOf('<div className="site-main-menu-more">'))
+  assert.match(expanded, /extraMenuItems\.map\(item => \([\s\S]*?<Link[\s\S]*?data-nav-item=\{item.id\}[\s\S]*?href=\{item.href\}/, 'selected destinations are actually rendered in the expanded menu')
+}
+
+for (const [name, mutate] of [
+  ['missing Events', value => value.replace("'library', 'events'", "'library'")],
+  ['missing Library', value => value.replace("'library', 'events'", "'events'")],
+  ['unrendered extra destinations', value => value.replace('extraMenuItems.map(item => (', '[].map(item => (')],
+]) test('expanded navigation rejects ' + name, () => {
+  const header = read('components/site-navigation.tsx')
+  assertExpandedDestinations(header)
+  const broken = mutate(header)
+  assert.notEqual(broken, header, 'mutation applies to actual header')
+  assert.throws(() => assertExpandedDestinations(broken), { code: 'ERR_ASSERTION' })
 })
 
 test('Event page never invents upcoming dates or shows private unpublished entries', () => {

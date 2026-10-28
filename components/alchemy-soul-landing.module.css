@@ -635,6 +635,40 @@
  .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }
 
+/* Desktop formats use the available width instead of stacking the portrait
+   above every choice. The original content and expanded forms grow naturally. */
+@media (min-width: 1024px) {
+  .panel.optionsSection {
+    display: grid;
+    grid-template-columns: minmax(220px, 26%) minmax(0, 1fr);
+    column-gap: 24px;
+    row-gap: 0;
+    padding-block: 20px;
+    align-items: start;
+  }
+  .optionsSection > .panelPhoto {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    height: auto;
+    align-self: stretch;
+  }
+  .optionsSection > .sectionHeading {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .optionsSection > :global([data-alchemy-booking-formats]) {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+}
+
+/* RU short-screen request: trim only vertical padding; retain content and targets. */
+@media(max-width:350px) and (max-height:650px){
+ .page[lang="ru"] .requestSection{padding-top:8px;padding-bottom:8px}
+}
+
 
 /* Narrative service feedback is separate from Alchemy video testimonials. Never reuse .reviewSection. */
 .serviceReviewWrap{display:block;box-sizing:border-box;min-width:0;width:100%;max-width:1120px;margin:22px auto;padding:0}

@@ -27,7 +27,7 @@
   }
 }
 
-/* Messages uses the existing seven-destination Cabinet bar, never a separate dock. */
+/* Messages reuses the shared Cabinet mobile dock, never a second bottom bar. */
 
 
 /* Mock-aligned inner Messages: keep real secure conversation and shared single

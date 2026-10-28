@@ -33,7 +33,10 @@ test('eight persistent tool shortcuts include two distinct Materials/Courses ope
  assert.match(workspace,/shortcut=\{materialShortcut\} onTabChange=\{setMaterialTab\}/)
  assert.match(workspace,/onClick=\{closePanel\}/)
  assert.match(workspace,/setPanelRoute\('materials',tab\)/)
- assert.match(materials,/onSaveSitePresentation,quickCreateCourse=false,meditationType='',shortcut=null,onTabChange/)
+ const props=materials.match(/function PracticeMaterials\(\{([^}]+)\}\)/)?.[1]
+ assert.ok(props,'Actual Materials parameter contract is required')
+ for(const prop of ['onSaveSitePresentation','shortcut=null','onTabChange','quickCreateCourse=false',"meditationType=''"])
+  assert.ok(props.split(',').includes(prop),prop)
  assert.match(materials,/\[shortcut\?\.nonce,shortcut\?\.tab,isOwner\]/)
  assert.match(materials,/onTabChange\?\.\(next\)/)
  assert.match(materials,/data-unified-material-nav/)

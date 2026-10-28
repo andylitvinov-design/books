@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { coachingIntakeEntryTopic, COACHING_TOPICS } from "../lib/coaching/intake-model.js";
 
 const root = process.cwd();
 const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
@@ -16,31 +17,32 @@ test("home retains featured offers and testimonials without the retired AI intro
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with five compact photo offers and enquiry, retaining optional free tests", () => {
-  const page = source("app", "[locale]", "services", "page.tsx");
+test("Services keeps free and paid photo offers after the hero and explicit consultation selector", () => {
   const offers = source("data", "core-service-offers.ts");
-  const ui = source("components", "services-solutions.tsx");
-  const hero = source("components", "services-conversion-hero.tsx");
-  const choiceIndex = page.indexOf("<ServicesSolutions");
-  const testimonials = page.indexOf("<PersonalTestimonials");
-  const extra = page.indexOf('id="available-services"');
-  assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
-  assert.match(ui, /allOffers\.filter/);
-  assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
-  assert.doesNotMatch(page, /<FreeInsightsPaths/);
-  assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
-  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"));
-  for(const id of ["situation","dao","alchemy","hypnotherapy"])
+  const ui = source("components", "services-studio-offers.tsx");
+  const assertLayout = page => {
+    const order = ["<ServicesConversionHero", "<PublicConsultationCta", "<ServicesStudioOffers", "<ServicesIntroMedia", "<PersonalTestimonials", "<ServicesDirectoryInvitation"];
+    let previous = -1;
+    for (const marker of order) { const index = page.indexOf(marker); assert.ok(index > previous, marker); previous = index; }
+    assert.match(page, /<ServicesExplorerProvider>/);
+    assert.match(page, /id="consultation" serviceBooking/);
+    assert.doesNotMatch(page, /<FreeInsightsPaths|<ServicesSolutions|<ServicesTestsIntro/);
+  };
+  for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
+    const page = source(path);
+    assertLayout(page);
+    assert.throws(() => assertLayout(page.replace("<ServicesStudioOffers", "<RetiredOffers")));
+    assert.throws(() => assertLayout(page.replace('id="consultation"', 'id="missing"')));
+  }
+  for (const id of ["situation", "dao", "alchemy", "hypnotherapy"])
     assert.ok(offers.includes('id: "' + id + '"'), id);
-  for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
+  for (const route of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(hero, /Get a free written review/);
-  assert.doesNotMatch(hero, /Draw by hand on paper|€100/);
-  const editorialStart = page.indexOf("const editorialOffers =");
-  const renderStart = page.indexOf("  return (");
-  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
-  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices remain in metadata; paid card prices are rendered in ServicesSolutions");
+  assert.match(ui, /href: "\/" \+ locale \+ "\/tests"/);
+  assert.match(ui, /id="free-insights"/);
+  assert.match(ui, /price: "€50 \/ 30 min · €100 \/ 60 min"/);
+  assert.match(ui, /data-services-studio-free/);
+  assert.match(ui, /data-services-studio-paid/);
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -59,29 +61,43 @@ test("three service directions link to real pages, not implied stages", () => {
   assert.doesNotMatch(component, /вылечит|снимает симптомы|cures|guarantees faster|guaranteed results/i);
 });
 
-test("free review and imagery therapy have real EN/RU/ES pages and honest contact journeys", () => {
+function assertPrivateIntake(intake) {
+  assert.match(intake, /setTopic\(coachingIntakeEntryTopic\(window\.location\.search\)\)/);
+  assert.match(intake, /href=\{"\/" \+ locale \+ "\/coaching\/intake\?topic=" \+ topic\}/);
+  assert.match(intake, /Sign in to save an encrypted private draft/);
+  assert.match(intake, /Saving does not send it to a coach or create a booking/);
+  assert.match(intake, /This is not a free live call/);
+  assert.match(intake, /Keep the photo on your device/);
+  assert.match(intake, /Do not send private answers, drawings or test results through WhatsApp, Telegram or email/);
+  assert.doesNotMatch(intake, /navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|sendBeacon|fetch\(|XMLHttpRequest/);
+}
+
+test("free review and imagery therapy have real EN/RU/ES routes and private, non-automatic preparation", () => {
   const free = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
   const imagery = source("app", "[locale]", "services", "imagery-therapy", "page.tsx");
   const form = source("components", "free-situation-review-form.tsx");
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
-    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "topic.cards.map", "deeper.title"]) {
-    assert.ok(free.includes(phrase), phrase);
+  assert.match(free, /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  for (const locale of ["en", "ru", "es"]) {
+    assert.ok(free.includes('{ locale: "' + locale + '" }'), locale);
+    assert.ok(free.includes('/' + locale + '/services/free-situation-review'), locale);
+    assert.ok(imagery.includes('{ locale: "' + locale + '" }'), locale);
+    assert.ok(imagery.includes('/' + locale + '/services/imagery-therapy'), locale);
   }
+  assert.match(free, /generateMetadata/);
+  assert.match(free, /if \(!isPublicLocale\(locale\)\) notFound\(\)/);
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
   assert.match(consultation, /service\?: string/);
   assert.match(consultation, /service \? "service" : "personal"/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
-  assert.match(intake, /new URLSearchParams\(window\.location\.search\)\.get\("topic"\)/);
-  assert.match(intake, /setTopic\(requested as Topic\)/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /const whatsappUrl = whatsappEnquiryUrl\(\{/);
-  assert.match(intake, /request: t\.whatsappIntro/);
-  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
-  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
-  assert.match(intake, /Nothing is sent automatically/);
-  assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
+  assertPrivateIntake(intake);
+  for (const [before, after] of [
+    ['coachingIntakeEntryTopic(window.location.search)', 'window.location.search'],
+    ['/coaching/intake?topic=', '/services/book?topic='],
+    ['Saving does not send it to a coach or create a booking', 'Saving creates a booking'],
+  ]) assert.throws(() => assertPrivateIntake(intake.replace(before, after)), undefined, before);
+  assert.throws(() => assertPrivateIntake(intake + '\nnavigator.clipboard.writeText(answers)'));
 });
 
 test("service links remain tappable, mobile-safe and keyboard accessible", () => {
@@ -95,76 +111,56 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("Services hero separates paid enquiry from free written review without diagnostic steps", () => {
+test("Services hero separates free discovery from optional paid support and confirms terms before booking", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  // Owner #996 (f3b6edefc) deliberately rewrote headings and paid enquiry labels.
-  // Keep the free written path, optional paid support and prior agreement explicit.
-  const approvedCopy = {
-    ru: {
-      heading: "Личная работа с вашим вопросом: отношения, работа и решения",
-      lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
-      paidCta: "Запросить личную сессию · от €50",
-      small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
-    },
-    en: {
-      heading: "Personal guidance for relationships, work and life decisions",
-      lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
-      paidCta: "Ask about a personal session · from €50",
-      small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
-    },
-    es: {
-      heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
-      lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
-      paidCta: "Solicitar sesión personal · desde €50",
-      small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
-    },
+  const approved = {
+    en: ["Personal guidance for relationships, work and life decisions", "Ask about a personal session · from €50", "Session times and conditions are confirmed before booking or payment."],
+    ru: ["Личная работа с вашим вопросом: отношения, работа и решения", "Запросить личную сессию · от €50", "Время встречи и условия подтверждаются до записи и оплаты."],
+    es: ["Acompañamiento personal para relaciones, trabajo y decisiones", "Solicitar sesión personal · desde €50", "La hora y las condiciones se confirman antes de reservar o pagar."],
   };
-  const assertHeroContract = input => {
-    for (const [locale, fields] of Object.entries(approvedCopy)) {
+  const assertHero = input => {
+    for (const [locale, values] of Object.entries(approved)) {
       const block = input.match(new RegExp("\\b" + locale + ": \\{([\\s\\S]*?)\\n  \\}"))?.[1];
-      assert.ok(block, locale + " copy block");
-      for (const [field, value] of Object.entries(fields)) {
-        assert.ok(block.includes(field + ": " + JSON.stringify(value)), locale + "." + field);
-      }
+      assert.ok(block, locale);
+      for (const value of values) assert.ok(block.includes(JSON.stringify(value)), locale + ": " + value);
     }
-    assert.match(input, /<Link className=\{styles\.cta\} href="#consultation" data-service-hero-cta="paid">\s*\{t\.paidCta\}/);
-    assert.match(input, /<Link className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\} data-service-hero-cta="free-written-review">\s*\{t\.cta\}/);
-    assert.ok(input.indexOf('data-service-hero-cta="paid"') < input.indexOf('data-service-hero-cta="free-written-review"'));
-    assert.match(input, /See all three free options/);
-    assert.match(input, /href="#free-insights"/);
-    assert.match(input, /<p className=\{styles\.small\}>\{t\.small\}<\/p>/);
+    assert.match(input, /href="#free-insights" data-service-hero-cta="free" onClick=\{\(\) => \{ setMode\("online"\); setTopic\("free"\); \}\}/);
+    assert.match(input, /href="#consultation" data-service-hero-cta="paid">\s*\{t\.paidCta\}/);
+    assert.match(input, /<p className=\{styles\.reassurance\}>\{t\.reassurance\}<\/p>/);
+    assert.match(input, /slide\.kind !== "free" \? \(\s*<button[^>]*data-services-slide-request/);
+    assert.match(input, /aria-pressed=\{topic === kind\}/);
+    assert.match(input, /role="status" aria-live="polite"/);
+    assert.match(input, /onFocusCapture=\{\(\) => setPaused\(true\)\}/);
+    assert.match(input, /paused \|\| manual \|\| requestOpen \|\| window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches/);
     assert.doesNotMatch(input, /coaching form|ME, GOAL|Draw by hand on paper/);
   };
-  assertHeroContract(hero);
+  assertHero(hero);
   for (const [before, after] of [
-    ["/services/free-situation-review", "/services/alchemy-of-soul"],
-    ['href="#consultation"', 'href="/en/services/free-situation-review"'],
-    ["{t.paidCta}", "{t.cta}"],
-    ["{t.cta}", "{t.paidCta}"],
-    ["Session time and payment are agreed separately.", "Session time is automatically confirmed."],
-    ["Личная запись и оплата только после согласования.", "Запись подтверждается автоматически."],
-    ["Las sesiones se acuerdan por separado.", "La sesión se confirma automáticamente."],
-    ["{t.small}", ""],
-    ['href="#free-insights"', 'href="#solutions"'],
-  ]) {
-    assert.ok(hero.includes(before), before);
-    assert.throws(() => assertHeroContract(hero.replace(before, after)), undefined, before);
-  }
-  assert.match(css, /\.paidLink:focus-visible/);
-  assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
-  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);
-  assert.match(css, /@media\(max-width:760px\)/);
-  assert.match(css, /min-height:60px/);
+    ['href="#free-insights"', 'href="#consultation"'],
+    ['href="#consultation"', 'href="#free-insights"'],
+    ['setTopic("free")', 'setTopic("business")'],
+    ['{t.reassurance}</p>', '</p>'],
+    ['from €50', 'free'],
+    ['Session times and conditions are confirmed before booking or payment.', 'Your booking is automatically confirmed.'],
+    ['aria-pressed={topic === kind}', 'aria-pressed={false}'],
+  ]) { assert.ok(hero.includes(before), before); assert.throws(() => assertHero(hero.replace(before, after)), undefined, before); }
+  assert.match(css, /\.hero :is\(button,a\):focus-visible\s*\{[^}]*outline:3px solid/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)/);
+  assert.match(css, /min-height:\s*44px/);
+  assert.match(css, /prefers-reduced-motion/);
 });
 
-test("wellbeing preselection enters an actual free drawing intake, never a phantom live session", () => {
+test("wellbeing preselection reaches private intake with only an allowlisted public topic", () => {
   const journey = source("components", "personal-work-journey.tsx");
   const intake = source("components", "free-drawing-intake.tsx");
-  const freePage = source("app", "[locale]", "services", "free-situation-review", "page.tsx");
+  const shared = source("components", "free-entry-landing.tsx");
   assert.match(journey, /free-situation-review\?topic=wellbeing/);
-  assert.ok(intake.includes('new URLSearchParams(window.location.search).get("topic")'));
-  assert.ok(intake.includes('setTopic(requested as Topic)'));
-  assert.ok(intake.includes('"wellbeing"'));
-  assert.ok(freePage.indexOf("className={styles.contentGrid}") < freePage.indexOf("className={styles.details}"));
+  assertPrivateIntake(intake);
+  assert.match(shared, /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.equal(coachingIntakeEntryTopic('?topic=wellbeing&email=synthetic%40example.invalid&answers=private'), 'wellbeing');
+  for (const { id } of COACHING_TOPICS) assert.equal(coachingIntakeEntryTopic('?topic=' + id), id);
+  for (const query of ['', '?topic=private%20answer', '?topic=https://example.invalid', '?topic=__proto__', '?topic=synthetic%40example.invalid', '?topic=%2B14165550123']) {
+    assert.equal(coachingIntakeEntryTopic(query), 'personal', query);
+  }
 });

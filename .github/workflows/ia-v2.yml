@@ -42,7 +42,43 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
+      - name: Focused Messages lifetime regression
+        shell: bash
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          env -i PATH="$PATH" HOME="$HOME" node --test --test-reporter=tap tests/messages-hub-deeplink.test.mjs tests/messages-request-card-lifetime.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/practitioner-conversation-state.test.mjs | tee /tmp/ia222-evidence/messages-focused.tap
+      - name: Broad unit tests (fatal)
+        id: unit_tests
+        shell: bash
+        env:
+          HH_TEST_REDIS_CONTAINER: ${{ job.services.redis.id }}
+        run: |
+          set -euo pipefail
+          (umask 077; mkdir -p "$RUNNER_TEMP/ia-unit-local"; : > "$RUNNER_TEMP/ia-unit-local/unit.log")
+          set +e
+          npm run test:unit 2>&1 | tee "$RUNNER_TEMP/ia-unit-local/unit.log"
+          statuses=("${PIPESTATUS[@]}")
+          set -e
+          command_exit="${statuses[0]}"
+          capture_exit="${statuses[1]}"
+          pipeline_exit="$capture_exit"
+          if [ "$capture_exit" -eq 0 ]; then pipeline_exit="$command_exit"; fi
+          printf '%s %s %s\n' "$command_exit" "$capture_exit" "$pipeline_exit" > "$RUNNER_TEMP/ia-unit-local/exit.txt"
+          exit "$pipeline_exit"
+      - name: Summarize bounded unit failure evidence
+        if: always()
+        env:
+          UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
+        run: node scripts/summarize-unit-failures.mjs "$RUNNER_TEMP/ia-unit-local" "$RUNNER_TEMP/ia-unit-summary.json"
+      - name: Upload sanitized unit failure summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ia-v2-unit-failure-summary
+          path: ${{ runner.temp }}/ia-unit-summary.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint

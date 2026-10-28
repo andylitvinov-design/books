@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import vm from 'node:vm'
 import {
  COURSE_RECORD_LIMITS,selectCourseRecordingMime,normalizeCourseRecordingMime,formatCourseRecordingTime,
 } from '../lib/practitioners/course-recorder.js'
@@ -77,6 +78,38 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(builder,/do not send private client videos/i)
  assert.match(materials,/onOpenYoutube=\{isOwner\?onOpenYoutube:null\}/)
  assert.match(practice,/onOpenYoutube=\{\(\)=>openOwner\('youtube'\)\}/)
- assert.match(middleware,/reikiIntroAudioManager\|\|practitionerCourseEditor\) \? ' blob:'/)
+ // The existing coaching owner is another scoped recorder, not a blanket
+ // blob allowance. Execute the actual media directive and course route gates;
+ // independent delivery/report/recorder features are neutral in this fixture.
+ const media=middleware.split('\n').find(line=>line.includes('(tantraReikiPage ? "media-src'))?.trim().replace(/,$/,'')
+ assert.ok(media,'Actual media-src expression is required')
+ const gate=(name,pathname)=>{
+  const expression=middleware.match(new RegExp('const '+name+' = ([^\\n]+)'))?.[1]
+  assert.ok(expression,name)
+  return vm.runInNewContext(expression,{pathname},{timeout:1000})
+ }
+ for(const [pathname,allowed] of [
+  ...['en','ru','es'].flatMap(locale=>[['/'+locale+'/app/practice',true],['/'+locale+'/app/practice/',true],
+   ['/'+locale+'/app/settings',false],['/'+locale+'/app/practice/other',false],
+   ['/'+locale+'/courses/masters/example-course',false],['/'+locale+'/services/remote-energy-support',false]]),
+  ['/admin/materials/courses/reiki-practitioner',true],
+  ['/admin/materials/coaching/egyptian',true],['/admin/materials/coaching/greek',true],
+  ['/admin/materials/coaching/other',false],['/en/app/coaching/egyptian',false],
+  ['/en/client',false],['/api/app/practice/courses',false],
+ ]){
+  // This separate public feature must remain false on every recorder route
+  // vector below; execute its current source gate rather than leave it unbound.
+  const publicMandalaLocalImages=gate('publicMandalaLocalImages',pathname)
+  assert.equal(publicMandalaLocalImages,false,'unrelated public media capability: '+pathname)
+  const value=vm.runInNewContext(media,{
+   publicMandalaLocalImages,
+   tantraReikiPage:false,ownerRecorderPage:false,deliveryOrigin:'',reportNarrationReader:false,
+   reikiIntroAudioManager:gate('reikiIntroAudioManager',pathname),
+   coachingOwnerAudioManager:gate('coachingOwnerAudioManager',pathname),
+   practitionerCourseEditor:gate('practitionerCourseEditor',pathname),
+   reikiIntroAudioOrigin:'',practitionerCourseMediaOrigin:'',
+  },{timeout:1000})
+  assert.equal(value,"media-src 'self'"+(allowed?' blob:':''),pathname)
+ }
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
 })

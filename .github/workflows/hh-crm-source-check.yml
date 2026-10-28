@@ -39,6 +39,10 @@ on:
       - 'app/[locale]/email-preferences/**'
       - 'supabase/migrations/*crm_email*'
       - 'tests/crm-*.test.mjs'
+      - 'tests/crm-express-review-language-channels.integration.mjs'
+      - 'tests/crm-salesbot-internal-runtime.integration.mjs'
+      - 'tests/crm-telegram-inline-buttons.integration.mjs'
+      - 'tests/crm-telegram-preflight.integration.mjs'
       - 'components/app/crm-lead-triage.*'
       - 'app/api/app/crm/leads/**'
       - 'tests/compact-google-lead-entry.test.mjs'
@@ -130,15 +134,15 @@ jobs:
       - name: Lint SalesBot operator-assist contract and UI
         run: npx eslint lib/crm/salesbot-operator.mjs components/app/crm-salesbot-assist.jsx tests/crm-salesbot-operator-assist.test.mjs
       - name: Read-only owner Telegram BotFather identity and webhook preflight
-        run: node --conditions=react-server --test tests/crm-telegram-preflight.test.mjs
+        run: node --conditions=react-server --test tests/crm-telegram-preflight.integration.mjs
       - name: Verify owner-only Telegram pilot link without recipient disclosure
         run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
       - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
         run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs
       - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
-        run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
+        run: node --conditions=react-server --test tests/crm-express-review-language-channels.integration.mjs
       - name: Lint localized express review channel entry and strict WhatsApp marker
-        run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
+        run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.integration.mjs
       - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
         run: node --test tests/crm-telegram-script-preview.test.mjs
       - name: Lint canonical Telegram script viewer and its parity tests
@@ -146,9 +150,9 @@ jobs:
       - name: Lint Telegram V2 pure conversation and CRM private persistence
         run: npx eslint lib/crm/telegram-diagnostic-v2.mjs lib/crm/telegram-diagnostic.mjs lib/crm/messenger-webhook.js lib/crm/messenger-provider.js lib/crm/messenger-store.js components/app/crm-messenger.jsx components/app/crm-telegram-photo.jsx tests/crm-telegram-natural-conversation-v2.test.mjs
       - name: Telegram message-attached inline buttons, callback signature and webhook admission
-        run: node --conditions=react-server --test tests/crm-telegram-inline-buttons.test.mjs
+        run: node --conditions=react-server --test tests/crm-telegram-inline-buttons.integration.mjs
       - name: Lint Telegram inline keyboard and callback handler
-        run: npx eslint lib/crm/telegram-inline-buttons.mjs tests/crm-telegram-inline-buttons.test.mjs
+        run: npx eslint lib/crm/telegram-inline-buttons.mjs tests/crm-telegram-inline-buttons.integration.mjs
       - name: Verify opt-in Telegram diagnostic intake, STOP and private photo privacy contracts
         run: node --test tests/crm-telegram-diagnostic.test.mjs
       - name: Verify signed second-account Telegram pilot invite and privacy gates
@@ -164,9 +168,9 @@ jobs:
       - name: Verify encrypted owner SalesBot drafts, revisions and negative access
         run: node --conditions=react-server --test tests/crm-salesbot-drafts.integration.mjs
       - name: Verify opt-in-only internal SalesBot events, encrypted runs, owner wait/resume and no sending
-        run: node --conditions=react-server --test tests/crm-salesbot-internal-runtime.test.mjs
+        run: node --conditions=react-server --test tests/crm-salesbot-internal-runtime.integration.mjs
       - name: Lint scoped internal SalesBot execution and owner controls
-        run: npx eslint lib/crm/salesbot-internal-runtime.js lib/crm/salesbot-internal-store.js components/app/crm-salesbot-internal-runs.jsx tests/crm-salesbot-internal-runtime.test.mjs
+        run: npx eslint lib/crm/salesbot-internal-runtime.js lib/crm/salesbot-internal-store.js components/app/crm-salesbot-internal-runs.jsx tests/crm-salesbot-internal-runtime.integration.mjs
       - name: Lint SalesBot draft storage, private API and UI
         run: npx eslint lib/crm/salesbot-store.js components/app/crm-salesbot-drafts.jsx app/api/app/crm/salesbot/drafts/route.js tests/crm-salesbot-drafts.integration.mjs
       - name: Business pipeline stage integrity, owner actions and visual contract

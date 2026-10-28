@@ -7,7 +7,11 @@ import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
 
 const code=readFileSync(new URL('../lib/clients/local-narration-redis.js',import.meta.url),'utf8')
-const container='andrey-voice-redis-ci'
+// A workflow service has a generated Docker ID, not the standalone job's name.
+// Accept only its exact ID; never resolve a hostname, URL, or arbitrary name.
+const configuredContainer=process.env.HH_TEST_REDIS_CONTAINER
+if(configuredContainer!==undefined) assert.match(configuredContainer,/^[a-f0-9]{64}$/,'Expected isolated GitHub Redis service container ID')
+const container=configuredContainer??'andrey-voice-redis-ci'
 const ttl='1209600'
 const readyTtl='7776000'
 function lua(name) {

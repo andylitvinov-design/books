@@ -3,16 +3,22 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { assertPublicJourneyRuntime, publicJourneyRequestDecision } from "./helpers/public-journey-verifier.mjs";
+
+import { blockedApiDetails } from "./helpers/contact-request-diagnostics.mjs";
+import { createAnonymousAcademyBootstrapFixture, appendBootstrapFixtureFailure } from "./helpers/anonymous-bootstrap-fixture.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
-const live = process.argv.includes("--live");
-const origin = live ? "https://holistichouse.vercel.app" : (process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100");
-if (!live && !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Only local loopback QA is allowed outside --live");
+if (process.argv.includes("--live")) throw new Error("Synthetic contact acceptance must never run against live production");
+const live = false;
+const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
+assertPublicJourneyRuntime(origin);
 const output = "artifacts/contact-channel-browser";
 await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
+const fixtureFailures = [];
 const questions = {
   en: "Leave your contact to enquire or join",
   ru: "Оставьте контакт, чтобы записаться или узнать подробности",
@@ -157,6 +163,89 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
 }
 
+// PR1950 intentionally replaced five repeated panels with one real select.
+// Exercise every intent and its reset/deep-link contract, not a reduced count.
+async function verifyTantraChoice(page, locale, name, submissions) {
+  const capture=page.locator('[data-tantra-whatsapp-capture]');
+  const select=capture.locator('select#tantra-request-'+locale);
+  const intents=['free','personal','session','answers','feedback'];
+  assert.deepEqual(await select.locator('option').evaluateAll(nodes=>nodes.map(node=>node.value)),intents);
+  assert.equal(await select.evaluate(node=>node.labels?.length),1,'Native intent control retains one associated label');
+  await select.focus();
+  assert.equal(await select.evaluate(node=>document.activeElement===node),true,'Native intent choice remains keyboard-focusable');
+  const choiceBounds=await select.boundingBox();
+  assert.ok(choiceBounds&&choiceBounds.width>=150&&choiceBounds.height>=44,'One accessible full-size intent chooser: '+name);
+  const signatures={
+    en:{free:/free introductory Level 1/,personal:/€50 \/ 30 minutes/,session:/€100 \/ 60 minutes/,answers:/seven answers/,feedback:/whether I was able to tune in/},
+    ru:{free:/бесплатную вводную инициацию/,personal:/€50 \/ 30 минут/,session:/100 € \/ 60 минут/,answers:/7 ответов/,feedback:/удалось ли мне настроиться/},
+    es:{free:/iniciación introductoria gratuita/,personal:/€50 \/ 30 minutos/,session:/100 € \/ 60 minutos/,answers:/siete respuestas/,feedback:/si pude conectar/},
+  };
+  for(const intent of intents){
+    assert.equal(await capture.locator('#apply-'+intent).count(),1,'Preserved deep-link target '+intent);
+    await select.selectOption(intent);
+    assert.equal(await select.inputValue(),intent);
+    const chooser=capture.locator('[data-contact-channel-chooser][data-reiki-phone-enquiry]');
+    assert.equal(await chooser.count(),1,'Exactly one compact chooser for the selected intent');
+    assert.equal(await chooser.locator('[data-contact-order], input[type="email"], textarea').count(),0,
+      'No retired duplicate trigger, extra signup or private answer capture');
+    const phone=chooser.locator('input[type="tel"]');
+    const consent=chooser.locator('input[type="checkbox"][required]');
+    assert.equal(await phone.inputValue(),'','Changing intent clears prior synthetic contact');
+    assert.equal(await consent.isChecked(),false,'Changing intent cannot inherit consent');
+    assert.equal(await chooser.locator('a[data-contact-channel]').count(),0,'No saved/provider receipt before consent');
+    const selectedLabel=(await select.locator('option:checked').innerText()).trim();
+    const before=submissions.length;
+    await phone.fill('4165550123');
+    const submit=chooser.locator('[data-contact-channel-submit="whatsapp"]');
+    for(const channel of ['whatsapp','telegram']){
+      const button=chooser.locator('[data-contact-channel-submit="'+channel+'"]');
+      const box=await button.boundingBox();
+      assert.ok(box&&box.width>=100&&box.height>=44,'Usable compact channel button '+intent+'/'+channel);
+      assert.ok(box.x>=-1&&box.x+box.width<=page.viewportSize().width+1,'Compact button fits screen');
+    }
+    await submit.click();
+    assert.equal(submissions.length,before,'Phone alone never saves a request');
+    assert.equal(await consent.isChecked(),false);
+    await consent.check();
+    await submit.click();
+    const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
+    const tg=chooser.locator('a[data-contact-channel="telegram"]');
+    await wa.waitFor({state:'visible'});
+    assert.equal(submissions.length,before+1,'Exactly one consented synthetic request per explicit intent');
+    const request=submissions.at(-1);
+    assert.equal(request.locale,locale);
+    assert.equal(request.contactConsent,true);
+    assert.deepEqual(request.contact,{displayName:'',email:'',phone:'+14165550123'});
+    assert.equal(request.sourcePath,'/'+locale+'/academy/reiki/tantra-reiki/free-initiation');
+    assert.equal(request.description,request.serviceTitle+' · '+selectedLabel,'Selected public intent, not invented private answers');
+    assert.ok(/^[a-f0-9-]{36}$/i.test(request.operationId));
+    assert.equal(request.website,'');
+    const waText=draft(await wa.getAttribute('href'),'wa.me','/14376066502');
+    assert.equal(draft(await tg.getAttribute('href'),'t.me','/AndyTherapist'),waText);
+    assert.match(waText,signatures[locale][intent],'Prepared request preserves selected intent '+intent);
+    assert.match(waText,/HH-CA5016DE79E4/);
+    assert.doesNotMatch(waText,/4165550123|qa-browser@example\.test|PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/);
+    for(const channel of [wa,tg]){
+      const box=await channel.boundingBox();
+      assert.ok(box&&box.width>=100&&box.height>=44&&box.x>=-1&&box.x+box.width<=page.viewportSize().width+1);
+      await channel.click({trial:true,timeout:8000}); // hit-test only; never follow provider
+    }
+    assert.equal(new URL(page.url()).pathname,request.sourcePath,'stayAfterSave retains the local request card');
+    if(page.viewportSize().width===390&&(intent==='free'||intent==='feedback'))
+      await chooser.screenshot({path:output+'/'+slug(name+'-'+intent)+'.png',animations:'disabled'});
+    results.push({name:name+'-'+intent,locale,viewportWidth:page.viewportSize().width,intent,
+      syntheticOnly:true,contactSubmitted:true,channels:['WhatsApp','Telegram'],matchingDrafts:true});
+  }
+  // Preserve every former #apply-* entry without another submission or API read.
+  for(const intent of intents){
+    await page.evaluate(hash=>{window.location.hash=hash;},'#apply-'+intent);
+    await page.waitForFunction(({locale,intent})=>document.getElementById('tantra-request-'+locale)?.value===intent,{locale,intent});
+    assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(),false);
+    assert.equal(await capture.locator('a[data-contact-channel]').count(),0);
+  }
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'No compact capture horizontal overflow');
+}
+
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
@@ -168,24 +257,68 @@ async function runEngine(name, engine) {
         });
         const page = await context.newPage();
         const submissions=[];
-        await page.route("**/api/service-enquiries",async route=>{
-          if(route.request().method()!=="POST")return route.continue();
-          submissions.push(JSON.parse(route.request().postData()||"{}"));
-          await route.fulfill({status:200,contentType:"application/json",
-            body:JSON.stringify({saved:true,referenceCode:"HH-CA5016DE79E4"})});
+        const blocked=[];
+        let requestPhase = "setup";
+        const bootstrapFixture = createAnonymousAcademyBootstrapFixture(origin, locale);
+        // Fence the whole context, including popups. No request can write to a
+        // backend or navigate to a provider; only this exact synthetic POST exists.
+        await context.route('**/*',async route=>{
+          if (await bootstrapFixture.tryFulfill(route, requestPhase)) return;
+          const request=route.request(),url=new URL(request.url()),method=request.method();
+          if(url.origin===origin&&url.pathname==='/api/service-enquiries'&&!url.search&&method==='POST'){
+            let payload;
+            try{payload=JSON.parse(request.postData()||'{}')}catch{}
+            const contact=payload?.contact;
+            if(payload?.contactConsent!==true||!contact||
+               ![contact.email,contact.phone].some(value=>value==='qa-browser@example.test'||value==='+14165550123')||
+               (contact.email&&contact.email!=='qa-browser@example.test')||
+               (contact.phone&&contact.phone!=='+14165550123')||
+               (contact.displayName&&contact.displayName!=='QA Visitor')){
+              blocked.push({category:'non-synthetic-enquiry'});
+              return route.abort('blockedbyclient');
+            }
+            submissions.push(payload);
+            return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({saved:true,referenceCode:'HH-CA5016DE79E4'})});
+          }
+          if(publicJourneyRequestDecision({url:request.url(),method,body:request.postData()||'',navigation:request.isNavigationRequest()},origin,
+            ['qa-browser@example.test','4165550123','PRIVATE_QA_NOTE_NOT_FOR_MESSENGER'])==='private-text'){
+            blocked.push({category:'private-text'});
+            return route.abort('blockedbyclient');
+          }
+          if(!['GET','HEAD'].includes(method)||url.pathname.startsWith('/api/')||
+             (url.origin!==origin&&request.isNavigationRequest())){
+            blocked.push({method:['GET','HEAD','POST','PUT','PATCH','DELETE'].includes(method)?method:'OTHER',
+              category:url.pathname.startsWith('/api/')?'unexpected-api':request.isNavigationRequest()?'external-navigation':'unexpected-write',
+              ...(url.pathname.startsWith('/api/') ? blockedApiDetails({ url: request.url(), resourceType: request.resourceType(), navigation: request.isNavigationRequest(), frameUrl: () => request.frame().url() }, origin, requestPhase) : {})});
+            return route.abort('blockedbyclient');
+          }
+          if(url.origin!==origin)return route.abort('blockedbyclient');
+          return route.continue();
         });
+        // Compact capture normally opens a provider tab after a saved receipt.
+        // Keep that interface entirely in memory BEFORE the page or handler loads.
+        await context.addInitScript(()=>{window.open=()=>({opener:null,closed:false,
+          location:{replace:()=>{}},close:()=>{}});});
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
-            {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
-            {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",tantra:true,phase:"tantra"},
+            {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1,phase:"yggdrasil"},
+            {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1,phase:"academy"},
           ];
           // EN/RU/ES Dao now share one consented first-party CRM landing.
           // None use a parallel messenger chooser; verify them after the loop.
           for (const item of cases) {
+            requestPhase = item.phase;
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
+            if(item.tantra){
+              // The compact contact form has its own country-code select.
+              // Wait for the labelled five-intent control, not every select.
+              await page.locator('[data-tantra-whatsapp-capture] select#tantra-request-'+locale).waitFor({state:'visible'});
+              await verifyTantraChoice(page,locale,[name,locale,width,'tantra'].join('-'),submissions);
+              continue;
+            }
             const items = page.locator(item.selector);
             await items.first().waitFor({state:"visible",timeout:25000});
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
@@ -211,6 +344,7 @@ async function runEngine(name, engine) {
             }
           }
           {
+            requestPhase = "dao-entry";
             const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
               {waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
@@ -218,28 +352,57 @@ async function runEngine(name, engine) {
             await daoForm.waitFor({state:"visible",timeout:25000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
+            assert.equal(await consent.isChecked(),false,"Dao consent must start unchecked");
+            const submit = daoForm.locator('button[data-compact-channel="whatsapp"]');
+            assert.equal(await daoForm.locator('button[data-compact-channel]').count(),2,
+              "Dao retains both authored contact channels");
+            assert.equal(await submit.getAttribute("type"),"button");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
-            // The network request is intercepted above; synthetic consent
-            // validates the CRM handoff without touching a real lead/account.
+            // CompactLeadCapture validates on the channel click, rather than
+            // disabling a retired submit button. Neither invalid contact nor
+            // missing consent may create a request or saved receipt.
             const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
-            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
-            await consent.check();
+            const contact = daoForm.locator('input[name="contact"]');
+            const saved = page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]');
+            const validation = {
+              en: ["Enter a valid email or an international phone number starting with +.","Please agree to a personal reply before continuing."],
+              ru: ["Укажите email или номер телефона с международным кодом +.","Подтвердите согласие на личный ответ по заявке."],
+              es: ["Introduce un correo válido o un teléfono internacional que empiece por +.","Confirma que aceptas recibir una respuesta personal."],
+            }[locale];
+            await contact.fill("not-a-contact");
             await submit.click();
-            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            const error = daoForm.locator('[role="alert"]');
+            await error.waitFor({state:"visible"});
+            assert.equal(await error.innerText(),validation[0]);
+            assert.equal(submissions.length,previous,"Invalid contact must never save a Dao request");
+            assert.equal(await saved.count(),0,"No receipt before a consented save");
+            await contact.fill("qa-browser@example.test");
+            await submit.click();
+            await error.waitFor({state:"visible"});
+            assert.equal(await error.innerText(),validation[1]);
+            assert.equal(submissions.length,previous,"Contact cannot bypass consent");
+            assert.equal(await consent.isChecked(),false);
+            assert.equal(await saved.count(),0,"No receipt without consent");
+            // The first-party POST is still intercepted by the context fence;
+            // the existing inert popup never visits or sends to a provider.
+            await consent.check();
+            requestPhase = "dao-save";
+            await submit.click();
+            await saved.waitFor({state:"visible",timeout:10000});
+            requestPhase = "dao-receipt";
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
             assert.equal(enquiry.locale,locale);
             assert.equal(enquiry.contactConsent,true);
-            assert.equal(enquiry.contact.email,"qa-browser@example.test");
+            assert.deepEqual(enquiry.contact,{displayName:"",email:"qa-browser@example.test",phone:""});
+            assert.equal(enquiry.description,"Preferred reply channel: WhatsApp");
             assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
+            assert.equal(enquiry.website,"");
             assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
           }
           if (name === "chromium" && width === 390 && locale === "en") {
+            requestPhase = "temple";
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
             const temple = page.locator("[data-temple-initiation-chooser]");
             await temple.locator('[data-temple-step="tradition"] button').first().click();
@@ -250,6 +413,11 @@ async function runEngine(name, engine) {
             await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
             assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
           }
+          try {
+          appendBootstrapFixtureFailure(fixtureFailures,bootstrapFixture,blocked,requestPhase);
+          } catch { /* Diagnostics cannot replace either original final assertion. */ }
+          assert.equal(bootstrapFixture.denials,1,'Exactly one observed anonymous Academy probe receives the explicit auth denial');
+          assert.deepEqual(blocked,[],'No real API/write/provider operation attempted outside the exact synthetic enquiry');
         } finally {
           await page.close();
           await context.close();
@@ -269,7 +437,9 @@ try {
   assert.ok(results.length >= 30,"Insufficient mobile and desktop coverage");
 } catch(e) { failure=e; }
 finally {
-  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,failure:failure?.message||null},null,2));
+  try {
+  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,fixtureFailures,failure:failure?.message||null},null,2));
+  } catch { if (!failure) failure = new Error("CONTACT_DIAGNOSTIC_WRITE_FAILED"); }
 }
 if(failure)throw failure;
-console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+try { console.log("PASS browser messenger handoff on Chromium and WebKit",results.length); } catch { throw new Error("CONTACT_DIAGNOSTIC_LOG_FAILED"); }

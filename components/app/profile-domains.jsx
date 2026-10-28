@@ -185,12 +185,12 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, accountId = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
-  overviewContent = null, reportsContent = null, focusReports = false,
+  overviewContent = null, activityContent = null, reportsContent = null, focusReports = false,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
   const [active, setActive] = useState('psychology')
-  const [expanded, setExpanded] = useState(mode === 'legacy')
+  const [expanded, setExpanded] = useState(true)
   const [interactive, setInteractive] = useState(false)
   const [fetchedReports, setFetchedReports] = useState([])
   const [fetchedDocuments, setFetchedDocuments] = useState([])
@@ -267,66 +267,10 @@ export function ProfileDomains({
     </div>
   )
 
-  return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
-    {external && <header className="hh-domain-hero">
-      <div className="hh-domain-title">
-        <p className="hh-domain-eyebrow">{t.eyebrow}</p>
-        <h1>{t.title}</h1>
-        <p className="hh-domain-hero-subtitle">{t.reports}</p>
-        <div className="hh-domain-hero-actions">
-        <a href="#personal-reports">{t.archiveTitle} <ArrowRight size={16} aria-hidden="true" /></a>
-        {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
-      </div>
-      </div>
-    </header>}
-    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
-      aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
-      {external ? <>{reportsContent}</> : <>
-        <div className="hh-account-report-heading">
-          <span className="hh-account-report-icon" aria-hidden="true"><FileText size={23} /></span>
-          <div className="hh-account-report-heading-copy">
-            <h1 id="hh-account-report-title">{t.archivePanelTitle}</h1>
-            <p>{t.archivePanelIntro}</p>
-          </div>
-          <span className="hh-account-report-private"><LockKeyhole size={12} aria-hidden="true" />{ru ? 'ЛИЧНО' : 'PRIVATE'}</span>
-        </div>
-        {latestSavedReport && <article className="hh-account-report-latest" data-profile-latest-report>
-          <div className="hh-account-report-latest-copy">
-            <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
-            <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
-            {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
-              {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
-            </time>}
-          </div>
-          <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
-            {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
-          </Link>
-        </article>}
-        <div id="hh-account-report-all" className="hh-account-report-full" data-report-archive-always-open>
-          {availableReports.length > 0 && <div className="hh-account-report-count">
-            <span>{t.archiveAll}</span><span className="hh-account-report-number">{availableReports.length}</span>
-          </div>}
-          {reportsContent}
-          <div className="hh-domain-when-empty" data-profile-free-consultation>
-            <Link className="hh-domain-appointment-button" href={'/' + locale + '/services/free-consultation'}
-              prefetch={false} data-consultation-kind="free-options">
-              <CalendarDays size={20} aria-hidden="true" />
-              <span>{t.consultation}</span>
-              <ArrowRight size={20} aria-hidden="true" />
-            </Link>
-            <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
-          </div>
-        </div>
-      </>}
-    </section>}
-    {!external && accountId && <Link className="hh-domain-labs-link" href={'/' + locale + '/app/labs'} prefetch={false} data-health-labs-link>
-      <span><FileText size={23} aria-hidden="true" /><span><strong>{ru ? 'Мои лабораторные анализы' : 'My laboratory results'}</strong><small>{ru ? 'Загрузить показатели · увидеть отклонения · получить план' : 'Add values · see out-of-range indicators · create a plan'}</small></span></span>
-      <ArrowRight size={20} aria-hidden="true" />
-    </Link>}
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
-    {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
+  const profileNavigation = (
+    <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
-        <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
+        <span className="hh-domain-more-summary"><strong>{external ? t.browseTitle : t.title}</strong><small>{external ? t.browseHint : t.intro}</small>
           <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>
         </span>
         <ChevronDown size={20} aria-hidden="true" />
@@ -393,7 +337,69 @@ export function ProfileDomains({
       </details>
     </div>
       </div>
-    </details>}
+    </details>
+  )
+
+  return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
+    {external && <header className="hh-domain-hero">
+      <div className="hh-domain-title">
+        <p className="hh-domain-eyebrow">{t.eyebrow}</p>
+        <h1>{t.title}</h1>
+        <p className="hh-domain-hero-subtitle">{t.reports}</p>
+        <div className="hh-domain-hero-actions">
+        <a href="#personal-reports">{t.archiveTitle} <ArrowRight size={16} aria-hidden="true" /></a>
+        {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
+      </div>
+      </div>
+    </header>}
+    {!external && profileNavigation}
+    {!external && activityContent}
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
+      aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
+      {external ? <>{reportsContent}</> : <>
+        <div className="hh-account-report-heading">
+          <span className="hh-account-report-icon" aria-hidden="true"><FileText size={23} /></span>
+          <div className="hh-account-report-heading-copy">
+            <h1 id="hh-account-report-title">{t.archivePanelTitle}</h1>
+            <p>{t.archivePanelIntro}</p>
+          </div>
+          <span className="hh-account-report-private"><LockKeyhole size={12} aria-hidden="true" />{ru ? 'ЛИЧНО' : 'PRIVATE'}</span>
+        </div>
+        {latestSavedReport && <article className="hh-account-report-latest" data-profile-latest-report>
+          <div className="hh-account-report-latest-copy">
+            <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
+            <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
+            {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
+              {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
+            </time>}
+          </div>
+          <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
+            {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </article>}
+        <div id="hh-account-report-all" className="hh-account-report-full" data-report-archive-always-open>
+          {availableReports.length > 0 && <div className="hh-account-report-count">
+            <span>{t.archiveAll}</span><span className="hh-account-report-number">{availableReports.length}</span>
+          </div>}
+          {reportsContent}
+          <div className="hh-domain-when-empty" data-profile-free-consultation>
+            <Link className="hh-domain-appointment-button" href={'/' + locale + '/services/free-consultation'}
+              prefetch={false} data-consultation-kind="free-options">
+              <CalendarDays size={20} aria-hidden="true" />
+              <span>{t.consultation}</span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </Link>
+            <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
+          </div>
+        </div>
+      </>}
+    </section>}
+    {!external && accountId && <Link className="hh-domain-labs-link" href={'/' + locale + '/app/labs'} prefetch={false} data-health-labs-link>
+      <span><FileText size={23} aria-hidden="true" /><span><strong>{ru ? 'Мои лабораторные анализы' : 'My laboratory results'}</strong><small>{ru ? 'Загрузить показатели · увидеть отклонения · получить план' : 'Add values · see out-of-range indicators · create a plan'}</small></span></span>
+      <ArrowRight size={20} aria-hidden="true" />
+    </Link>}
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
+    {external && profileNavigation}
     {external && <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>}
     {!external && accountId && <FreeExpressMyRequests locale={locale} />}
     {external && footerActions}

@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Hypnotherapy consent, synthetic receipt and provider-zero verifier regressions
+        run: node --test tests/hypnotherapy-request-verifier.test.mjs
       - name: Check-in evidence, scoring and report-priority regressions
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
       - run: npm run test:app tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs tests/full-assessment-library-quality.test.mjs
@@ -35,7 +37,36 @@ jobs:
       - name: Real SDK PKCE and callback cookie regressions
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths
-        run: npm run lint
+        id: repository_lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          evidence="$RUNNER_TEMP/app-r1-lint"
+          mkdir -p "$evidence"
+          git ls-tree -rz --name-only HEAD > "$evidence/tracked-paths"
+          export HH_LINT_CHECKOUT_SHA="$(git rev-parse HEAD)"
+          export HH_LINT_CHECKOUT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          export HH_LINT_CHECKOUT_PARENTS="$(git show -s --format=%P HEAD)"
+          set +e
+          npm run lint -- --format ./scripts/format-eslint-diagnostics.mjs --output-file "$evidence/summary.json" >/dev/null 2>&1
+          lint_exit=$?
+          set -e
+          summary_written=false
+          if [ -s "$evidence/summary.json" ]; then summary_written=true; fi
+          printf '{"exitCode":%s,"summaryWritten":%s,"checkoutSha":"%s","checkoutTree":"%s","checkoutParents":"%s"}\n' "$lint_exit" "$summary_written" "$HH_LINT_CHECKOUT_SHA" "$HH_LINT_CHECKOUT_TREE" "$HH_LINT_CHECKOUT_PARENTS" > "$evidence/exit.json"
+          printf 'ESLint exit code: %s\n' "$lint_exit"
+          exit "$lint_exit"
+      - name: Upload bounded lint metadata only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-r1-lint-diagnostics
+          path: |
+            ${{ runner.temp }}/app-r1-lint/summary.json
+            ${{ runner.temp }}/app-r1-lint/exit.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Production-mode build, app flags absent
         run: npm run build
         env: {NEXT_TELEMETRY_DISABLED: '1'}
@@ -57,11 +88,28 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - name: Isolated synthetic browser tools
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-course-banner-tools
           npm install --prefix /tmp/hh-course-banner-tools --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-course-banner-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Prefer an already-configured Ubuntu archive mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/ci-ubuntu-mirror-preference.test.mjs
+          sudo "$(command -v node)" scripts/prefer-ci-ubuntu-archive.mjs --apply
+      - name: Install browser operating-system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install-deps ${{ matrix.browser }}
+      - name: Install browser binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install ${{ matrix.browser }}
       - name: EN/RU course disclosure, keyboard and narrow-screen acceptance
         run: node tests/course-banner/browser.mjs
       - uses: actions/upload-artifact@v4
@@ -103,6 +151,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Isolated bootstrap safety and dependency-order contracts (no database connection)
+        run: node --test tests/app-db-fixture-policy.test.mjs tests/four-ipip-db-seed.test.mjs
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback

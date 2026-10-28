@@ -486,3 +486,45 @@ test('Tantric reports retain all five source-bound descriptive levels on every r
     }
   }
 })
+
+test('source-aware range rows retain exact localized option codes without losing original labels', () => {
+  for (const locale of ['en', 'ru']) {
+    const cases = [
+      [getAssessmentDefinition('hh-socionics-32', 'v1', locale), [1, 2, 3, 4, 5]],
+      [getAssessmentDefinition('hh-money-pressure', 'v2', locale), [0, 1, 2, 3, 4]],
+    ]
+    for (const [definition, codes] of cases) {
+      const result = scored(definition, 'mixed'), snapshot = accountFixture(result, locale)
+      assertAccountReportSnapshot(snapshot, result, locale)
+      const rows = snapshot.scales[0].publishedBands
+      assert.deepEqual(rows.map(row => row.label), codes.map((code, index) =>
+        (locale === 'ru' ? '≈ вариант ' : '≈ option ') + code + ' · ' + definition.responseAnchors[index]),
+      'Show the actual original answer code, including zero, plus the unmodified source label')
+      for (const mutate of [
+        rows => { rows[0].label = definition.responseAnchors[0] },
+        rows => { rows[0].label = rows[0].label.replace(/^≈ /, '') },
+        rows => { rows[0].label = rows[0].label.replace(String(codes[0]) + ' · ', '99 · ') },
+        rows => { rows[0].label = rows[0].label.replace(locale === 'ru' ? 'вариант' : 'option', locale === 'ru' ? 'option' : 'вариант') },
+        rows => { rows[0].label = rows[0].label.replace(definition.responseAnchors[0], 'Invented answer') },
+        rows => { rows[0].range = '0–999' },
+        rows => { rows[0].current = !rows[0].current },
+        rows => { rows.pop() },
+      ]) {
+        const broken = structuredClone(snapshot)
+        mutate(broken.scales[0].publishedBands)
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale),
+          /Exact source-aware range rows and current selection/)
+      }
+    }
+    const definition = getAssessmentDefinition('phq-9', 'v1', 'en')
+    const result = scored(definition, 'mixed'), snapshot = accountFixture(result, locale)
+    assertAccountReportSnapshot(snapshot, result, locale)
+    assert.ok(snapshot.scales[0].publishedBands.length)
+    assert.ok(snapshot.scales[0].publishedBands.every(row => !row.label.startsWith('≈ ')),
+      'Published screening labels must not acquire an original-answer code')
+    const broken = structuredClone(snapshot)
+    broken.scales[0].publishedBands[0].label = (locale === 'ru' ? '≈ вариант 0 · ' : '≈ option 0 · ') + broken.scales[0].publishedBands[0].label
+    assert.throws(() => assertAccountReportSnapshot(broken, result, locale),
+      /Exact source-aware range rows and current selection/)
+  }
+})

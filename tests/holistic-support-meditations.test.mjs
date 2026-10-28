@@ -18,7 +18,8 @@ test("Holistic Support displays a video-only themed gallery in EN/RU/ES", () => 
     "Negocios", "Amor", "Energía", "Salud",
   ]) assert.ok((page + gallery).includes(label), "missing localized meditation label " + label);
 
-assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
+  const filter = read("components/holistic-support-topic-filter.tsx");
+  assert.match(filter, /id === "meditation" \? \(\s*<Link href="#meditation-practices" prefetch=\{false\}/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\}/);
   assert.match(page, /catalogVideos=\{meditationDiscovery\.videos\}/);
@@ -92,16 +93,16 @@ function evalTypeScript(path, mocks = {}) {
   const compiled = ts.transpileModule(read(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
-  const module = { exports: {} };
+  const compiledModule = { exports: {} };
   vm.runInNewContext(compiled, {
-    module,
-    exports: module.exports,
+    module: compiledModule,
+    exports: compiledModule.exports,
     require: id => {
       if (Object.prototype.hasOwnProperty.call(mocks, id)) return mocks[id];
       throw new Error("Unexpected source dependency: " + id);
     },
   }, { filename: path, timeout: 1000 });
-  return module.exports;
+  return compiledModule.exports;
 }
 
 test("language-aware meditation selector: EN Flight to the Sun, RU only seven original PsiMaster videos", () => {

@@ -41,6 +41,9 @@ on:
       - 'tests/growth-studio-content-radar.test.mjs'
       - 'tests/growth-studio-provider-readiness.test.mjs'
       - 'tests/growth-studio-manual-inbox.test.mjs'
+      - 'tests/growth-studio-build-dependencies.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
 
@@ -79,6 +82,8 @@ jobs:
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
         run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/growth-studio-content-radar.test.mjs tests/growth-studio-provider-readiness.test.mjs tests/practice-marketing-navigation.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs
+      - name: Check production build dependency contract
+        run: node --test tests/growth-studio-build-dependencies.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
@@ -96,6 +101,7 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install exact dependency lock
+        # NODE_ENV remains production, but prebuild tests and Next's compiler need dev tools.
         run: npm ci --include=dev
       - name: Render native composer disclosure with locked React
         run: node --test tests/growth-studio-composer-details-render.test.mjs

@@ -433,8 +433,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
      day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
    currentSession:reviewLesson.session,currentCheckin:null,
  }:data
- const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null);setView('path')}
- const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
+ const returnToCourseMap=()=>{closeLessonPlayer();setView('path')}
+ const finishLessonPlayer=returnToCourseMap
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
    setFocusOpen(false)
@@ -675,18 +676,18 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   {questOpen&&(playerData?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
     (playerData?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
       ?<OporaExperiencePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
-        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer} onBackToMap={returnToCourseMap}
         onFinish={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>
       :<OporaV6SlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
-        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer} onBackToMap={returnToCourseMap}
         onFinish={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
     data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
-    promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer}
+    promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer} onBackToMap={returnToCourseMap}
      onFinish={finishLessonPlayer}
     onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
     onCheckin={body=>reviewLesson?null:submit('checkin',body)}

@@ -34,6 +34,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/holistic-house-install-smoke.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
@@ -71,6 +72,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/holistic-house-install-smoke.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
 permissions:
@@ -90,27 +92,43 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs tests/holistic-house-native-public-downloads.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-install-smoke.test.mjs tests/holistic-house-free-install.test.mjs tests/holistic-house-native-public-downloads.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
+        shell: bash
         run: |
+          check() {
+            local label="$1"
+            shift
+            printf 'CHECK %s\n' "$label"
+            if "$@"; then
+              printf 'PASS %s\n' "$label"
+            else
+              local status=$?
+              printf 'FAIL %s (exit %s)\n' "$label" "$status" >&2
+              return "$status"
+            fi
+          }
+          printf 'CHECK server-start\n'
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
           trap 'kill "$child" 2>/dev/null || true' EXIT
+          ready=false
           for n in $(seq 1 55); do
-            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then ready=true; break; fi
             sleep 1
           done
-          curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
-          grep -q 'Holistic House' /tmp/hh-install-ru.html
-          grep -q 'Установить Holistic House бесплатно' /tmp/hh-install-ru.html
-          curl --fail --silent --show-error http://127.0.0.1:3098/en/install -o /tmp/hh-install-en.html
-          grep -q 'Install Holistic House for free' /tmp/hh-install-en.html
-          curl --fail --silent --show-error http://127.0.0.1:3098/es/install -o /tmp/hh-install-es.html
-          grep -q 'Instala Holistic House gratis' /tmp/hh-install-es.html
+          check en-install-ready test "$ready" = true
+          check ru-install-fetch curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
+          check ru-install-brand grep -q 'Holistic House' /tmp/hh-install-ru.html
+          check ru-install-free-copy grep -q 'Установить Holistic House бесплатно' /tmp/hh-install-ru.html
+          check en-install-fetch curl --fail --silent --show-error http://127.0.0.1:3098/en/install -o /tmp/hh-install-en.html
+          check en-install-free-copy grep -q 'Install Holistic House for free' /tmp/hh-install-en.html
+          check es-install-fetch curl --fail --silent --show-error http://127.0.0.1:3098/es/install -o /tmp/hh-install-es.html
+          check es-install-free-copy grep -q 'Instala Holistic House gratis' /tmp/hh-install-es.html
           # No release-signed APK or App Store app has been approved yet.
           # The server must 404, never send an unsigned/test package or redirect.
           for platform in android ios; do
@@ -119,12 +137,12 @@ jobs:
             grep -q 'native_.*_release_not_published' /tmp/hh-native-"${platform}".json
           done
           for size in 180 192 512; do
-            curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
-            grep -qi '^content-type: image/png' /tmp/hh-icon-headers
-            file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
+            check "icon-$size-fetch" curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
+            check "icon-$size-content-type" grep -qi '^content-type: image/png' /tmp/hh-icon-headers
+            check "icon-$size-dimensions" bash -o pipefail -c 'file "$1" | grep -q "PNG image data, $2 x $2"' _ /tmp/hh-icon.png "$size"
           done
-          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
-          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/ru/app/messages'))process.exit(1)"
-          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
-          node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
-          node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
+          check ru-manifest-fetch curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
+          check ru-manifest-contract node -e "const assert=require('node:assert/strict');const f=require('/tmp/hh-manifest-ru.json');assert.equal(f.start_url,'/ru/app/messages','RU install start URL');assert.equal(f.id,'/en/app','Stable install identity');assert.ok(Array.isArray(f.shortcuts)&&f.shortcuts.some(x=>x?.url==='/ru/app/messages'),'RU Messages shortcut')"
+          check es-manifest-fetch curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
+          check es-manifest-contract node -e "const assert=require('node:assert/strict');const f=require('/tmp/hh-manifest-es.json');assert.equal(f.start_url,'/es/app/messages','ES install start URL');assert.equal(f.id,'/en/app','Stable install identity');assert.ok(Array.isArray(f.shortcuts)&&f.shortcuts.some(x=>x?.url==='/es/app/messages'),'ES Messages shortcut')"
+          check mobile-head node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098

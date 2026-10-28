@@ -5,6 +5,34 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { qaSupportDirectoryResponse } from "./fixtures/holistic-support-directory.mjs";
+import { createSupportDashboardRecorder } from "./helpers/support-dashboard-diagnostics.mjs";
+async function assertSupportToolIdentities(root, label) {
+  const tools = root.locator('[data-support-tool]');
+  assert.equal(await tools.count(), 7, label + " seven distinct support tools");
+  const identities = await tools.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-support-tool")));
+  assert.deepEqual(Array.from(identities).sort(),
+    ["consultation", "healing", "masters", "meditation", "pump", "talisman", "tests"],
+    label + " original six tools plus separate Tests exactly once");
+}
+async function assertSupportTestsLinks(root, locale, label) {
+  await root.locator('[data-support-tool="tests"]').click();
+  const panel = root.locator('[data-support-tests-panel]');
+  await panel.waitFor({ state: "visible" });
+  assert.equal(await panel.count(), 1, label + " one separate Tests panel");
+  assert.equal(await panel.locator('a').count(), 3, label + " exactly three explicit Tests links");
+  for (const [selector, path] of [
+    ["data-support-open-tests", "/client/tests"],
+    ["data-support-tests-personality", "/personality-profiles"],
+    ["data-support-tests-guide", "/tests"],
+  ]) {
+    const link = panel.locator('[' + selector + ']');
+    assert.equal(await link.count(), 1, label + " unique " + selector);
+    assert.equal(await link.getAttribute("href"), "/" + locale + path,
+      label + " locale-only Tests URL without photo, ratings, state, query or fragment transfer");
+  }
+  assert.equal(await root.locator('iframe').count(), 0, label + " Tests selection does not start media");
+}
+const recordSupportDashboardFailure = createSupportDashboardRecorder();
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3118";
@@ -51,6 +79,7 @@ for (const browserType of [chromium, webkit]) {
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
+          await assertSupportToolIdentities(root, label);
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
           assert.equal(await testsAction.getAttribute("aria-controls"),"support-tests-panel",label+" Tests stays in-page");
@@ -122,6 +151,10 @@ for (const browserType of [chromium, webkit]) {
             console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
+          }
+          if (!(geometry.hero[0].y-geometry.a[0].y<285)) {
+            try { await recordSupportDashboardFailure(page, { engine: browserType.name(), locale, width }, geometry); }
+            catch { /* Diagnostics must not replace the original fatal assertion. */ }
           }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
             label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
@@ -481,6 +514,50 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="pump"]').click();
           assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
             label+" Academy course routes still work");
+          if (locale === "ru") {
+            const picker = root.locator('[data-support-mystery-courses]');
+            assert.equal(await picker.locator('[data-support-mystery-course]').count(),3,
+              label+" Maya, Egyptian and Greek curricula always visible in Courses mode");
+            const pickerGeometry = await picker.evaluate(node => ({
+              pageWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+              cards:[...node.querySelectorAll('[data-support-mystery-course]')].map(item => {
+                const box=item.getBoundingClientRect();
+                return {left:box.left,right:box.right,width:box.width};
+              }),
+            }));
+            assert.ok(pickerGeometry.scrollWidth <= pickerGeometry.pageWidth + 3,
+              label+" courses picker does not overflow iPhone: "+JSON.stringify(pickerGeometry));
+            assert.ok(pickerGeometry.cards.every(card => card.width >= 78 &&
+              card.left >= -2 && card.right <= pickerGeometry.pageWidth + 2),
+              label+" all three mystery choices visible without horizontal scrolling");
+
+            const dropdown = root.locator('[data-support-filter="program"] select');
+            for (const programme of ["maya","egypt","greek"]) {
+              await dropdown.selectOption(programme);
+              assert.equal(await picker.locator('[data-support-mystery-course="'+programme+'"][aria-pressed="true"]').count(),1,
+                label+" selecting "+programme+" in the native iPhone dropdown matches the course card");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" original course never autoplays");
+              assert.equal(await root.locator('[data-support-video]').count(),4,
+                label+" four original course lesson previews");
+              const lessonId = await root.locator('[data-support-video]').first().getAttribute("data-support-video");
+              assert.match(lessonId ?? "",/^[a-zA-Z0-9_-]{11}$/,label+" original YouTube chapter");
+              const href=await root.locator('[data-support-active-course-link]').getAttribute("href");
+              assert.ok(href?.startsWith("/ru/academy/mysteries/"), label+" course links to existing native Academy source");
+            }
+            const links=await root.locator('[data-support-courses-panel] a').evaluateAll(entries =>
+              entries.map(entry=>entry.getAttribute("href")||""));
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-demeter"),label+" Demeter originals linked");
+            assert.ok(links.includes("/ru/academy/videos/greek-mysteries-dionysus"),label+" Dionysus originals linked");
+            await picker.locator('[data-support-mystery-course="maya"]').click();
+            assert.equal(await dropdown.inputValue(),"maya",label+" quick card and programme select share state");
+            if (width === 390) await page.screenshot({
+              path:output+"/"+browserType.name()+"-ru-mystery-courses-390.png",fullPage:true,
+            });
+          } else {
+            assert.equal(await root.locator('[data-support-mystery-courses]').count(),0,
+              label+" Russian-only original voice lessons not marketed to EN/ES");
+          }
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
@@ -666,6 +743,30 @@ for (const browserType of [chromium, webkit]) {
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
             label+" secure service request is an explicit navigation, not a silent booking");
+          const accountLocale = locale === "es" ? "en" : locale;
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-intro",
+            label+" the published service ID reaches the existing Google-protected enquiry");
+          assert.equal(await offers.locator('[data-support-consultation-previews] button').count(),2,
+            label+" published photos show a real, selectable strip in the service hero");
+          await offers.locator('[data-support-consultation-photo="1"]').click();
+          assert.equal(await offers.locator('[data-support-consultation-photo="1"]').getAttribute("aria-pressed"),
+            "true",label+" tapping a service photo selects it");
+          await offers.locator('[data-support-master-thumb="qa-session"]').click();
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-session",
+            label+" other service opens its own protected request instead of reusing the first");
+          await offers.locator('button[aria-controls="support-consultation-details"]').click();
+          assert.equal(await offers.locator('#support-consultation-details a[href="/'+locale+'/services"]').count(),
+            1,label+" Details opens the original approved service page");
+          await offers.locator('[data-support-consultation-category="imagery"]').click();
+          assert.equal(await offers.locator('[data-support-master-hero]').count(),0,
+            label+" empty imagery category does not invent a bookable offer");
+          assert.equal(await offers.locator('a[href="/'+locale+'/services/imagery-therapy"]').count(),1,
+            label+" absent published imagery falls back to the real educational service page");
+          await offers.locator('[role="status"] button').first().click();
+          assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
+            label+" reset recovers all published services without losing the catalogue");
           const consultChips=await offers.locator('[data-support-consultation-category]').evaluateAll(elements =>
             elements.map(button => {
               const box=button.getBoundingClientRect(), caption=button.querySelector('span');
@@ -687,6 +788,7 @@ for (const browserType of [chromium, webkit]) {
           const testOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth-document.documentElement.clientWidth);
           assert.ok(testOverflow<=3,label+" Tests panel has no horizontal overflow: "+testOverflow);
+          await assertSupportTestsLinks(root, locale, label);
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});

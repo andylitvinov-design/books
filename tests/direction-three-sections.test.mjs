@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import * as businessReviewContext from '../lib/business-consulting/review-context.js'
 
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const source = read('components/direction-offers.tsx')
@@ -37,6 +38,7 @@ function fixture(direction,locale,suggestions={}){
   let cursor=0
   const modules={
     'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:({children})=>children},
+    '@/lib/business-consulting/review-context':businessReviewContext,
     'next/image':{__esModule:true,default:props=>jsx('img',props)},
     'next/link':{__esModule:true,default:props=>jsx('a',props)},
     '@/components/home-free-diagnosis-banner':{HomeFreeDiagnosisBanner:props=>jsx('aside',props)},

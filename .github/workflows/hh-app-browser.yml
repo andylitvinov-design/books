@@ -55,12 +55,35 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Cabinet entry and PDF readiness regressions
+        if: matrix.suite == 'extended'
+        run: node --test tests/asrs6-cabinet-entry-verifier.test.mjs tests/mhc-profile-pdf-readiness.test.mjs
+      - name: Public service browser contract regressions
+        if: matrix.suite == 'core'
+        run: node --test tests/alchemy-panel-contract.test.mjs tests/dao-free-entry-verifier.test.mjs tests/alchemy-compact-cta-verifier.test.mjs tests/opora-public-route-precompile.test.mjs
       - name: Isolated test tools
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-app-browser-tools
           npm install --prefix /tmp/hh-app-browser-tools --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-app-browser-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Prefer an already-configured Ubuntu archive mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/ci-ubuntu-mirror-preference.test.mjs
+          sudo "$(command -v node)" scripts/prefer-ci-ubuntu-archive.mjs --apply
+      - name: Install browser operating-system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install-deps ${{ matrix.browser }}
+      - name: Install browser binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/hh-app-browser-tools/node_modules/.bin/playwright install ${{ matrix.browser }}
       - name: Offline assessment React lifecycle and source disclosure
         if: matrix.suite == 'extended'
         run: node scripts/verify-assessment-primary-browser.mjs

@@ -62,7 +62,7 @@ test("both changed TSX components parse without diagnostics", () => {
 test("350–430px consultation labels fit; Goals→Tests opens one consistent tab", () => {
   for(const label of ['consultation: "Session"','consultation: "Сессия"',
     'consultation: "Sesión"']) assert.ok(mobile.includes('optionsCompact: {') && mobile.includes(label));
-  assert.match(mobile, /<button type="button" data-support-goal-action="tests" aria-pressed=\{choice === "tests"\}/);
+  assert.match(mobile, /<button type="button"\s+data-support-goal-action="tests" aria-pressed=\{choice === "tests"\}/);
   assert.match(mobile, /aria-controls="support-tests-panel" onClick=\{\(\) => changeChoice\("tests"\)\}/);
   assert.doesNotMatch(mobile, /<Link[^\n]*data-support-goal-action="tests"/);
   assert.ok(mobile.includes('data-support-open-tests'));

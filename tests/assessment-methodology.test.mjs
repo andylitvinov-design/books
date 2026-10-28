@@ -16,11 +16,14 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  // New source-cleared scales are additive; coverage must not freeze at the
-  // previous 145-source snapshot or silently omit the five new 2026 forms.
-  assert.ok(active.length>=150)
+  // ONS remains in the inventory and keeps its immutable report coverage, but cannot start.
+  const heldOns=MONITORING_CATALOG.find(item=>item.key==='ons-personal-wellbeing-4')
+  assert.equal(active.length,149)
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(heldOns.startable,false)
+  assert.equal(heldOns.registrationRequired,true)
   for(const locale of ['en','ru']){
-    for(const item of active){
+    for(const item of [...active,heldOns]){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
       const before=def.contentHash
       const about=assessmentExplanation({key:item.key,catalog:item,definition:def,research:registry.get(item.key),locale})

@@ -11,10 +11,11 @@ test('signed-in Profile always shows saved reports and one local free-consultati
   const reportRenderer = profile.indexOf('{reportsContent}', archive)
   const offer = profile.indexOf('data-profile-free-consultation')
   const archiveEnd = profile.indexOf('</section>}', archive)
-  const categories = profile.indexOf('className="hh-domain-more"', archive)
+  const profileSwitch = profile.indexOf('{!external && profileNavigation}')
+  const categories = profile.indexOf('className="hh-domain-more"')
 
-  assert.ok(archive >= 0 && reportRenderer > archive && offer > reportRenderer &&
-    offer < archiveEnd && categories > archiveEnd)
+  assert.ok(categories >= 0 && profileSwitch > categories && archive > profileSwitch)
+  assert.ok(reportRenderer > archive && offer > reportRenderer && offer < archiveEnd)
   assert.match(profile, /data-report-archive-always-open/)
   assert.match(profile, /latestReceivedReport\(savedReports\)/)
   assert.match(profile, /data-profile-mode=\{mode\}/)
@@ -28,7 +29,7 @@ test('signed-in Profile always shows saved reports and one local free-consultati
   assert.doesNotMatch(profile, /freeIntroConsultationHref/)
   assert.ok(profile.includes("href={'/' + locale + '/services/free-situation-review#request-free-review'}"))
   assert.ok(profile.includes("href={'/' + locale + '/services'}"))
-  assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data\.account\.id\}/)
+  assert.match(workspace, /reportsContent=\{<><PersonalAnalysisPanel key=\{data\.account\.id\} locale=\{locale\} reports=\{reportTimeline\(data\.savedReports\)\} savedSessions=\{data\.savedSessions \|\| \[\]\} embedded \/><ClientExpressReports locale=\{locale\} accountId=\{data\.account\.id\}\/><\/>\}/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.doesNotMatch(profile, /localStorage|sessionStorage|Math\.random\(/)
 })

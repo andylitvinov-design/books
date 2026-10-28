@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as programs from '../lib/inner-growth/course-programs.js'
-import { mount, findPart, findButton, nodes, deferred, account, courseA, courseView } from './helpers/course-ui-harness.mjs'
+import { mount, findPart, findButton, nodes, textOf, deferred, account, courseA, courseView } from './helpers/course-ui-harness.mjs'
 
 const scales = ['load','tension','functioning'].map(key => ({id:'hh-weekly-pulse::weekly.'+key,label:key}))
 const part = name => ({ default: Object.assign(() => null, { testName: name }) })
@@ -73,9 +73,10 @@ for (const locale of ['en','ru','es']) test('actual '+locale+' welcome renders d
   }))}
   const h=mount('antistress-module-finder',{props:{locale,profile,onStart:selection=>writes.push(selection)}})
   await h.settle()
-  const label=({en:'Let’s go',ru:'Поехали!',es:'¡Vamos!'})[locale]
-  const start=findButton(h.tree,label)
-  assert.ok(start)
+  const label=({en:'Start my first lesson',ru:'Начать первый урок',es:'Empezar mi primera lección'})[locale]
+  const start=nodes(h.tree).find(node=>node.type==='button'&&Object.hasOwn(node.props,'data-course-consent-module'))
+  assert.ok(start,'actual explicit course start control')
+  assert.equal(textOf(start).trim(),label)
   assert.equal(start.props.disabled,false)
   const details=nodes(h.tree).find(node=>node.type==='details')
   assert.ok(details)
@@ -106,4 +107,26 @@ test('course owner/session-bound launch is guarded by the parent',async()=>{
   finder.props.onStart(selection);await child.settle()
   assert.equal(parent.calls.filter(c=>c.body).length,before)
   child.unmount();parent.unmount()
+})
+
+for (const invalid of ['missing','expired','future','mixed-results','busy','missing-handler']) test('welcome cannot launch with '+invalid+' eligibility',async()=>{
+  const writes=[]
+  const now=Date.now()
+  const profile={scales:['load','tension','functioning'].map(key=>({
+    id:'hh-weekly-pulse::weekly.'+key,testKey:'hh-weekly-pulse',score:4,min:0,max:10,recent:true,
+    measuredAt:new Date(now-1000).toISOString(),resultId:'synthetic-weekly',
+  }))}
+  if(invalid==='missing')profile.scales.pop()
+  if(invalid==='expired')profile.scales[0].measuredAt=new Date(now-8*86400000).toISOString()
+  if(invalid==='future')profile.scales[0].measuredAt=new Date(now+86400000).toISOString()
+  if(invalid==='mixed-results')profile.scales[0].resultId='different-synthetic-result'
+  const h=mount('antistress-module-finder',{props:{locale:'en',profile,busy:invalid==='busy',
+    onStart:invalid==='missing-handler'?undefined:selection=>writes.push(selection)}})
+  await h.settle()
+  const start=nodes(h.tree).find(node=>node.type==='button'&&Object.hasOwn(node.props,'data-course-consent-module'))
+  assert.ok(start)
+  assert.equal(start.props.disabled,true)
+  start.props.onClick()
+  assert.equal(writes.length,0,'disabled callback must remain guarded when directly retained/invoked')
+  h.unmount()
 })

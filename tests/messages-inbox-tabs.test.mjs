@@ -50,3 +50,29 @@ test('owner tabs are linked, accessible and URL-backed without unmounting chat s
   assert.match(css,/\.shell\[data-detail-open="true"\] \.tabs\{display:none\}/)
   assert.match(css,/\.tabs button\[aria-selected="true"\]/)
 })
+
+
+test('owner folder tabs retain at least 44px touch targets at mobile and desktop sizes',()=>{
+  const css=read('components/app/messages-simple-inbox.module.css')
+  const rules=[...css.matchAll(/\.tabs button\{([^}]+)\}/g)]
+  assert.ok(rules.length>=2,'desktop and mobile tab sizing are explicit')
+  // A narrower font-size-only rule inherits the established touch target.
+  // Every explicit height override must preserve it; omitted heights are not zero.
+  const heights=[]
+  for(const [,body] of rules){
+    assert.doesNotMatch(body,/(?:^|;)\s*all\s*:/,'tab sizing must not be reset by all')
+    assert.ok([...body.matchAll(/(?:^|;)\s*min-height:/g)].length<=1,'tab height has one unambiguous declaration')
+    const height=body.match(/(?:^|;)\s*min-height:([^;]+)/)
+    if(height){heights.push(height);continue}
+    // Only the known font-size-only narrow-screen adjustment may inherit.
+    // Reset/shorthand/height rules can invalidate that assumption and must fail.
+    const declarations=body.split(';').map(value=>value.trim()).filter(Boolean)
+    assert.ok(declarations.length>0&&declarations.every(value=>/^font-size:\s*\d+(?:\.\d+)?px$/.test(value)),
+      'a rule without min-height may only adjust font size')
+  }
+  assert.ok(heights.length>=2,'desktop and mobile minimum heights remain explicit')
+  for(const height of heights){
+    const pixels=height[1].trim().match(/^(\d+)px$/)
+    assert.ok(pixels&&Number(pixels[1])>=44,'folder tab must retain a 44px target')
+  }
+})

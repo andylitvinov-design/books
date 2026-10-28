@@ -477,7 +477,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={()=>startService()}>
           <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
           <span className="hh-practice-first-action-copy"><strong>{serviceQuota.canAdd||needsOnboarding?creationCopy.service:creationCopy.limit}</strong>
-            <small>{creationCopy.serviceDetail}</small></span>
+            <small>{creationCopy.serviceDetail}</small>
+            <small data-practice-service-quota>{marketplaceCopy.hobby+' · '+serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</small></span>
           <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
         </button>
         <button type="button" className="hh-practice-first-action is-reiki" data-create-practice-reiki

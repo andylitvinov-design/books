@@ -63,7 +63,15 @@ if(!process.execArgv.includes('--conditions=react-server')){
     }
     assert.throws(()=>checkReviewInput({...base,serviceId:'fake'}),/INVALID_ID/)
     assert.throws(()=>checkReviewInput({...base,body:'bad'}),/INVALID_REVIEW/)
-    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
+    // Privacy fixtures must first satisfy the independent 50-codepoint minimum.
+    for(const body of [
+      'Email me at test@example.com for the detailed session results, please.',
+      'Please call +1 (202) 555-0100 to discuss the detailed session results.',
+      base.body+'\u0000',
+    ]){
+      assert.ok(Array.from(body).length>=50)
+      assert.throws(()=>checkReviewInput({...base,body}),/REVIEW_PERSONAL_DATA/)
+    }
   })
 }
 

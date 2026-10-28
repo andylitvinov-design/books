@@ -31,19 +31,21 @@ async function assertSpanishNavigation(page, path) {
   // Keep the three visible visitor needs and free written review in the header.
   const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
-  if (path !== '/es') first.push('/en/app');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  if (path === '/es') {
-    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-    await expect(cabinet).toHaveAccessibleName('Mi espacio');
-  } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  // RootLayout supplies My Space context on every public route. Its dialog
+  // and provider-backed loading are not exercised by this public verifier.
+  await expect(cabinet).toBeVisible();
+  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+  await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+  await expect(cabinet).toHaveAttribute('aria-expanded', 'false');
+  await expect(cabinet).toHaveAccessibleName('Mi espacio');
   const destinations = [
-    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
-    '/es/explore/business', '/es/books', '/es/pro',
-    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
-    '/es/services', '/es/academy', '/es/about',
+    '/es/services/free-situation-review', '/en/app/portrait', '/es/academy', '/es',
+    '/es/services/free-situation-review', '/es/services/alchemy-of-soul', '/es/pro', '/es/holistic-support',
+    '/es/shop', '/es/cart', '/es/install', '/es/explore/energy', '/es/explore/love',
+    '/es/explore/business', '/es/library', '/es/events', '/es/temple-insights', '/es/services', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -57,9 +59,25 @@ async function assertSpanishNavigation(page, path) {
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
   for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(links.nth(2)).toHaveAccessibleName('Energía');
-  await expect(links.nth(3)).toHaveAccessibleName('Amor');
-  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
+  const primary = menu.locator('.site-main-menu-grid > a');
+  await expect(primary).toHaveCount(7);
+  for (const [id, href, name] of [
+    ['profile', '/en/app/portrait', 'Mi perfil'], ['courses', '/es/academy', 'Cursos'],
+    ['home', '/es', 'Inicio'], ['analysis', '/es/services/free-situation-review', 'Análisis gratis'],
+    ['alchemy', '/es/services/alchemy-of-soul', 'Alquimia del Alma'], ['pro', '/es/pro', 'Pro'],
+    ['temple', '/es/holistic-support', 'Apoyo holístico'],
+  ]) {
+    const item = menu.locator(`.site-main-menu-grid > a[data-nav-item="${id}"]`);
+    await expect(item).toHaveCount(1);
+    await expect(item).toHaveAttribute('href', href);
+    await expect(item).toHaveAccessibleName(name);
+  }
+  const activeId = path === '/es' ? 'home' : ['/es/academy', '/es/courses', '/es/academy/free-ai-courses'].includes(path) ? 'courses' : path === '/es/client' ? 'profile' : null;
+  await expect(menu.locator('.site-main-menu-grid > a[aria-current="page"]')).toHaveCount(activeId ? 1 : 0);
+  if (activeId) await expect(menu.locator(`.site-main-menu-grid > a[data-nav-item="${activeId}"]`)).toHaveAttribute('aria-current', 'page');
+  for (const [id, name] of [['energy', 'Cuerpo y energía'], ['love', 'Estrés y relaciones'], ['business', 'Dinero y negocios']]) {
+    await expect(menu.locator(`.site-main-menu-more [data-nav-item="${id}"]`)).toHaveAccessibleName(name);
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -78,7 +96,7 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog).toHaveCount(1);
   await expect(catalog).toHaveAttribute('lang', 'es');
   await expect(catalog.getByRole('heading', { level: 1, name: 'Cursos de IA gratuitos', exact: true })).toBeVisible();
-  // The header's free-start action and the course hero intentionally share a label.
+  // Keep the free-review header action separate from the course enrollment hero.
   // Scope each contract; the direct header action is hidden at compact widths.
   const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
   await expect(freeStart).toHaveCount(1);
@@ -104,7 +122,14 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
+  const bottom = page.locator('.mobile-bottom-navigation');
+  await expect(bottom).toHaveCount(1);
+  await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1);
+  const courses = bottom.locator('[data-nav-item="courses"]');
+  await expect(courses).toHaveCount(1);
+  await expect(courses).toHaveAttribute('aria-current', 'page');
+  await expect(courses).toHaveAttribute('href', '/es/academy');
+  await expect(courses).toHaveAccessibleName('Cursos');
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
@@ -240,12 +265,18 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // On public client pages the Cabinet is a direct link; on Home
-        // the separate My Space control opens a dialog instead.
-        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
+        // My Space is a global dialog trigger. Use the separate menu Profile
+        // link without opening that provider-backed dialog or Google sign-in.
+        const accountMenu = page.locator('.site-navigation details.site-main-menu');
+        await expect(accountMenu).toHaveCount(1);
+        await expect(accountMenu).toHaveJSProperty('open', false);
+        await click(page.locator('.site-main-menu-trigger'));
+        await expect(accountMenu).toHaveJSProperty('open', true);
+        const accountLink = accountMenu.locator('.site-main-menu-grid > a[data-nav-item="profile"]');
         await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Mi perfil');
         await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
+        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();

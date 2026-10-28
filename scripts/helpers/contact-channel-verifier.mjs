@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { observeCompactConsentCheck } from './compact-consent-diagnostics.mjs';
 
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
@@ -54,7 +55,7 @@ export async function openContactChannelChooser(scope, expect) {
  * Mock only the POST response to avoid writing fake contacts into Supabase.
  * A messenger link cannot exist until an explicitly consented enquiry is saved.
  */
-export async function openRegisteredContactChannelChooser(scope, expect, page) {
+async function submitRegisteredContactChannelRequest(scope, expect, page) {
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -62,9 +63,11 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded','false');
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  const sourceUrl = new URL(page.url());
   const submissions = [];
   await page.route('**/api/service-enquiries', async route => {
-    if (route.request().method() !== 'POST') return route.continue();
+    if (route.request().method() !== 'POST' || route.request().url() !== sourceUrl.origin + '/api/service-enquiries')
+      return route.abort('blockedbyclient');
     submissions.push(route.request().postDataJSON());
     await route.fulfill({ status:201, contentType:'application/json',
       body:JSON.stringify({saved:true,referenceCode:'HH-ABCD1234EF56'}) });
@@ -75,12 +78,19 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
+  // The authored optional name is inside a closed native disclosure.
+  // Open it normally; never fill a hidden field or force a pointer action.
+  const nameDetails = form.locator('details:has(input[autocomplete="name"])');
+  await expect(nameDetails).toHaveCount(1);
+  await expect(form.locator('input[autocomplete="name"]')).toBeHidden();
+  await nameDetails.locator('summary').click();
+  await expect(nameDetails).toHaveAttribute('open', '');
   await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
   await form.locator('input[type="checkbox"]').check();
   await submit.click();
-  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
+  await expect.poll(() => submissions.length).toBe(1);
   assert.equal(submissions.length,1,'Exactly one explicitly consented synthetic registration');
   const data=submissions[0];
   assert.equal(data.contact.displayName,'Public QA Visitor');
@@ -90,11 +100,41 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   assert.ok(data.serviceTitle && typeof data.serviceTitle==='string');
   assert.ok(data.operationId && /^[a-f0-9-]{36}$/i.test(data.operationId));
   assert.equal(data.website,'');
+  assert.equal(data.sourcePath, sourceUrl.pathname);
+  assert.equal(data.locale, sourceUrl.pathname.split('/')[1]);
+  return {chooser, request:data, sourceUrl};
+}
+
+// Legacy in-place messenger assertion retained for callers whose original
+// tariff-preservation contract has not yet been reconciled with the source.
+export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  const {chooser} = await submitRegisteredContactChannelRequest(scope, expect, page);
   const prepared = await assertPreparedContactChannels(chooser,expect);
   assert.doesNotMatch(prepared.whatsappUrl.searchParams.get('text')||'',
     /Public QA Visitor|enquiry-qa@example\.test/,'No synthetic contact data in a messenger URL');
   assert.match(prepared.whatsappUrl.searchParams.get('text')||'',/HH-ABCD1234EF56/);
   return chooser;
+}
+
+
+/** Default authored registration navigates to a same-tab opaque receipt. */
+export async function registerContactChannelRequest(scope, expect, page) {
+  const {request, sourceUrl} = await submitRegisteredContactChannelRequest(scope, expect, page);
+  const destination = sourceUrl.origin + '/' + request.locale + '/thank-you';
+  await expect(page).toHaveURL(destination);
+  const receipt = page.locator('[data-service-thank-you]');
+  await expect(receipt).toHaveCount(1);
+  await expect(receipt).toBeVisible();
+  await expect(receipt.locator(':scope > section:first-child strong')).toHaveText('HH-ABCD1234EF56');
+  const stored = JSON.parse(await page.evaluate(() =>
+    window.sessionStorage.getItem('hh-service-enquiry-receipt:v1')));
+  assert.deepEqual(Object.keys(stored).sort(), ['createdAt','referenceCode']);
+  assert.equal(stored.referenceCode, 'HH-ABCD1234EF56');
+  assert.ok(Number.isSafeInteger(stored.createdAt) && stored.createdAt <= Date.now());
+  await expect(receipt).not.toContainText(/Public QA Visitor|enquiry-qa@example\.test/);
+  await expect(receipt.locator('a[href^="https://wa.me"], a[href^="https://t.me"]')).toHaveCount(0);
+  assert.equal(new URL(page.url()).search, '', 'Receipt URL never contains the synthetic contact');
+  return {request, receipt};
 }
 
 
@@ -134,7 +174,7 @@ export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   await expect(form.locator('input[type="email"]')).toHaveCount(0);
   await form.locator('[data-phone-country-input] input[type="tel"]').fill('4165550123');
-  await form.locator('input[type="checkbox"]').check();
+  await observeCompactConsentCheck(form, () => form.locator('input[type="checkbox"]').check());
   await form.locator('button[data-contact-channel-submit="whatsapp"]').click();
 
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);

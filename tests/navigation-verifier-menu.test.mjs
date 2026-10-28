@@ -28,9 +28,22 @@ function loadComponent(path, modules) {
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: link },
-  'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles'].map(name => [name, () => null])),
+  'lucide-react': Object.fromEntries(['Download', 'Smartphone', 'BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles', 'ChevronLeft', 'ChevronRight', 'ShieldCheck', 'Target', 'BriefcaseBusiness', 'ClipboardList', 'Heart', 'LockKeyhole', 'MessageCircle', 'UserRound', 'Users', 'X'].map(name => [name, () => null])),
 };
 let pathname = '/';
+const rootLayout = read('app/layout.tsx');
+assert.match(rootLayout, /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/, 'RootLayout provides My Space on every public surface');
+let personalSpace = { open: false, openPanel() {} };
+const { HomePersonalSpaceNavEntry } = loadComponent('components/home-personal-space.tsx', {
+  ...common,
+  'next/image': { default: props => jsx('img', props) },
+  'next/navigation': { usePathname: () => pathname },
+  react: { createContext: value => ({ value }), useContext: () => personalSpace, useCallback: fn => fn, useEffect() {}, useRef: value => ({ current: value }), useState: value => [value, () => {}] },
+  '@/lib/app/client-fetch': { appFetch() { throw new Error('No account request in navigation render'); } },
+  '@/lib/native/client': { isNativeHolisticHouse: () => false },
+  '@/lib/home-personal-space.mjs': { homeSpaceSummary() { throw new Error('No private summary in navigation render'); } },
+  './home-personal-space.module.css': { default: {} },
+});
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   ...common,
   react: { useEffect() {}, useRef: () => ({ current: null }) },
@@ -42,12 +55,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/components/site-search': { SiteSearch: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
-  './home-personal-space': { HomePersonalSpaceNavEntry: ({locale}) => jsx('button', {
-    className:'site-cabinet-entry','data-nav-item':'cabinet',
-    'aria-haspopup':'dialog','aria-controls':'home-personal-space-dialog',
-    'aria-expanded':false,'aria-label':{en:'My Space',ru:'Моё пространство',es:'Mi espacio'}[locale],
-    children:locale==='ru'?'Моё':{en:'My Space',es:'Mi espacio'}[locale],
-  }) },
+  './home-personal-space': { HomePersonalSpaceNavEntry },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
 const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
@@ -62,8 +70,36 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
   './services-solutions.module.css': { default: {} },
 });
+// Render the actual composed homepage sections; no-effect hooks model their
+// initial render without dropping the routes the contracts inspect.
+const initialHooks = { useEffect() {}, useRef: value => ({ current: value }), useState: value => [typeof value === 'function' ? value() : value, () => {}] };
+const { HomeSectionCarousel } = loadComponent('components/home-section-carousel.tsx', {
+  ...common, react: initialHooks,
+  'next/image': { default: props => jsx('img', props) },
+  '@/components/static-portrait': { StaticPortrait: props => jsx('img', props) },
+  './services-conversion-hero.module.css': { default: {} },
+});
+const { HomeMoreDisclosure } = loadComponent('components/home-more-disclosure.tsx', {
+  ...common, react: initialHooks, 'next/dynamic': { default: () => () => null },
+  './home-more-disclosure.module.css': { default: {} },
+});
+let expandedHomeOffer = null;
+const workspaceHooks = { ...initialHooks, useState: initial => [expandedHomeOffer ?? initial, next => { expandedHomeOffer = typeof next === 'function' ? next(expandedHomeOffer) : next; }] };
+const { HomeFeaturedWorkspace } = loadComponent('components/home-featured-workspace.tsx', {
+  ...common, react: workspaceHooks,
+  'next/image': { default: props => jsx('img', props) },
+  '@/components/home-personal-space': { useHomePersonalSpace: () => null },
+  './home-featured-workspace.module.css': { default: {} },
+});
+const { FreeMobileAppBanner } = loadComponent('components/free-mobile-app-banner.tsx', {
+  ...common, './free-mobile-app-banner.module.css': { default: {} },
+});
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
   ...common, '@/data/local-acquisition': acquisition,
+  '@/components/free-mobile-app-banner': { FreeMobileAppBanner },
+  '@/components/home-section-carousel': { HomeSectionCarousel },
+  '@/components/home-more-disclosure': { HomeMoreDisclosure },
+  '@/components/home-featured-workspace': { HomeFeaturedWorkspace },
   '@/components/site-navigation': { SiteNavigation },
   '@/components/home-personal-space': { HomePersonalSpaceProvider: ({children}) => children, HomePersonalSpaceCard: () => null },
   '@/components/services-solutions': { ServicesSolutions },
@@ -90,25 +126,76 @@ test('CSP history clicks the unique body About CTA despite the real header dupli
   assert.match(release, /assert\.deepEqual\(cspErrors, \[\]/);
 });
 
-const homeLabels = {
-  en: ['Get a free written review', 'Take free self-checks', 'Ask about a session · from €50'],
-  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Запросить личную сессию · от €50'],
+// Owner's Oct24 seven-stage/Details-action revision supersedes the old hero
+// trio and repeated home photo grid. Keep the original routes and paid/free
+// distinctions; ServicesSolutions still has its own unchanged photo-card test.
+const homeStages = ['courses', 'personality', 'situation', 'coaching', 'alchemy', 'energy', 'master'];
+const homeOffers = {
+  courses: ['reiki', 'opora', 'academy'], personality: ['profile'],
+  situation: ['review', 'businessConstellations', 'constellations'],
+  coaching: ['aiCoaching', 'therapist'], alchemy: ['alchemy'], energy: ['energy'], master: ['pro', 'service', 'course'],
 };
 function assertHomeRoutes(tree, locale) {
   const nodes = treeNodes(tree);
-  const actions = nodes.filter(node => node.type === 'a' && node.props['data-hero-cta']);
-  assert.deepEqual(actions.map(node => [node.props['data-hero-cta'], node.props.href, node.props.children[0]]), [
-    ['paid-sessions', '/' + locale + '/services#consultation', homeLabels[locale][2]],
-    ['free-written-review', '/' + locale + '/services/free-situation-review', homeLabels[locale][0]],
-    ['free-tests', '/' + locale + '/client/tests', homeLabels[locale][1]],
-  ]);
-  assert.deepEqual(actions.map(node => node.props.className), ['service-home-button service-home-button--primary', 'service-home-button service-home-button--secondary', 'service-home-selfcheck-link']);
-  const freeStart = nodes.filter(node => node.props.id === 'free-start');
-  assert.equal(freeStart.length, 1, 'Start free resolves to the actual photo service heading');
-  const services = nodes.filter(node => node.props['data-core-service-offers'] === 'home');
-  assert.equal(services.length, 1, 'Only the existing photographic services section is rendered');
-  assertPhotoServices(services[0], locale);
-  assert.ok(nodes.indexOf(actions[2]) < nodes.indexOf(services[0]));
+  const workspaces = nodes.filter(node => node.props['data-home-featured-workspace'] === true);
+  assert.equal(workspaces.length, 1, 'one seven-stage workspace');
+  assert.equal(nodes.filter(node => node.props['data-core-service-offers'] !== undefined).length, 0, 'superseded service grids must not duplicate the seven-stage homepage');
+  assert.equal(nodes.filter(node => node.props['data-hero-cta'] !== undefined).length, 0, 'superseded hero CTA trio must not duplicate the approved homepage actions');
+  const workspace = workspaces[0];
+  assert.equal(workspace.props['data-home-journey-count'], 7);
+  const modules = treeNodes(workspace).filter(node => node.props['data-home-module']);
+  assert.deepEqual(modules.map(node => node.props['data-home-module']), homeStages, 'owner-approved seven stages in order');
+  const steps = treeNodes(workspace).filter(node => node.type === 'a' && node.props.href?.startsWith('#home-immersion-'));
+  assert.deepEqual(steps.map(node => node.props.href), homeStages.map(id => '#home-immersion-' + id));
+  for (const [index, module] of modules.entries()) {
+    assert.equal(module.props.id, 'home-immersion-' + homeStages[index], 'each step resolves to its real section');
+    assert.deepEqual(treeNodes(module).filter(node => node.props['data-home-offer-card']).map(node => node.props['data-home-offer-card']), homeOffers[homeStages[index]], 'each stage retains its requested offers');
+  }
+  const account = '/' + (locale === 'es' ? 'en' : locale) + '/app';
+  const routes = {
+    reiki: '/' + locale + '/academy/principles-of-energywork/learn', opora: '/' + locale + '/courses/antistress', academy: '/' + locale + '/academy',
+    profile: '/' + locale + '/personality-profiles', review: '/' + locale + '/services/free-situation-review',
+    businessConstellations: '/' + locale + '/services/business-consulting', constellations: '/' + locale + '/services/systemic-constellations',
+    aiCoaching: '/' + locale + '/coaching', therapist: '/' + locale + '/services#consultation',
+    alchemy: '/' + locale + '/services/alchemy-of-soul', energy: '/' + locale + '/services/remote-energy-support',
+    pro: '/' + locale + '/pro', service: account + '/practice?panel=services', course: account + '/practice?panel=materials&materialTab=courses',
+  };
+  const free = new Set(['reiki', 'opora', 'profile', 'review', 'aiCoaching']);
+  for (const card of treeNodes(workspace).filter(node => node.props['data-home-offer-card'])) {
+    const id = card.props['data-home-offer-card'], children = treeNodes(card);
+    assert.equal(card.props['data-home-offer-free'], free.has(id) ? 'true' : undefined, id + ': only genuinely free offers are marked free');
+    const actions = children.filter(node => node.props['data-home-offer-primary'] === id);
+    assert.equal(actions.length, 1, id + ': one primary action');
+    assert.equal(actions[0].type, 'a'); assert.equal(actions[0].props.href, routes[id], id + ': intended destination');
+    assert.ok(actions[0].props['aria-label']?.trim(), id + ': accessible action name');
+    if (free.has(id)) assert.match(actions[0].props['aria-label'], /free|бесплат|gratis/i, id + ': free action is labeled accurately');
+    else assert.doesNotMatch(actions[0].props['aria-label'], /free|бесплат|gratis/i, id + ': paid or mixed-price offer is not labeled free');
+    assert.equal(actions[0].props.onClick, undefined, id + ': primary link does not invoke an automatic booking or provider action');
+    const buttons = children.filter(node => node.props['data-home-offer-details'] === id);
+    assert.equal(buttons.length, 1); assert.equal(buttons[0].type, 'button'); assert.equal(buttons[0].props.type, 'button');
+    assert.equal(buttons[0].props['aria-label'], {en:'Details',ru:'Детали',es:'Detalles'}[locale]);
+    assert.equal(buttons[0].props['aria-expanded'], false); assert.equal(typeof buttons[0].props.onClick, 'function');
+    const panels = children.filter(node => node.props.id === buttons[0].props['aria-controls']);
+    assert.equal(panels.length, 1, id + ': Details controls its actual panel'); assert.equal(panels[0].props.hidden, true);
+    const full = treeNodes(panels[0]).filter(node => node.type === 'a');
+    assert.equal(full.length, 1); assert.equal(full[0].props.href, routes[id], id + ': Details and primary action agree');
+    const images = children.filter(node => node.type === 'img'); assert.equal(images.length, 1, id + ': photographic offer retained');
+    assert.match(images[0].props.src, /^\/(?:images\/holistic-house|academy\/)/);
+    if (id === 'therapist') {
+      assert.match(actions[0].props['aria-label'], /(?:€50|50 €)/, 'paid session retains its €50 starting price');
+      const details = treeNodes(panels[0]).filter(node => node.type === 'p').map(node => node.props.children).join(' ');
+      assert.match(details, /€50[^.]*30/); assert.match(details, /€100[^.]*60/);
+    }
+  }
+  const paid = nodes.filter(node => node.props['data-home-first-screen-cta'] === 'paid');
+  assert.equal(paid.length, 1); assert.equal(paid[0].type, 'a'); assert.equal(paid[0].props.href, '/' + locale + '/services#consultation');
+  assert.match(paid[0].props.children[0], /€50/, 'first-screen paid request is not relabeled free');
+  assert.doesNotMatch(paid[0].props.children[0], /free|бесплат/i);
+  const tests = nodes.filter(node => node.props['data-home-nav-section'] === 'tests');
+  assert.equal(tests.length, 1); assert.equal(tests[0].type, 'a'); assert.equal(tests[0].props.href, '/' + locale + '/client/tests');
+  assert.equal(tests[0].props.children, {en:'Tests',ru:'Тесты'}[locale]);
+  const filters = nodes.filter(node => node.props['data-home-topic-filter']);
+  assert.deepEqual(filters.map(node => node.props['data-home-topic-filter']), ['energy','love','business','temple','services','courses'], 'lower repeated offers are compact topic/catalogue filters');
 }
 function assertPhotoServices(section, locale) {
   const cards = treeNodes(section).filter(node => node.props['data-core-service-id']);
@@ -126,32 +213,85 @@ function assertPhotoServices(section, locale) {
   });
 }
 for (const locale of ['en', 'ru']) {
-  test(locale + ' homepage renders exact personal-session, free-review and self-check routes in owner-approved order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
+  test(locale + ' homepage preserves the owner-approved seven stages, actionable offers and free/paid routes', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
 }
 for (const locale of ['en', 'ru']) {
   test(locale + ' existing photo cards keep both free services and two personal-work options', () => assertPhotoServices(ServicesSolutions({ locale, variant: 'home' }), locale));
 }
-for (const action of ['free-written-review', 'free-tests', 'paid-sessions']) {
-  test('homepage route contract rejects wrong ' + action + ' destination', () => {
-    const tree = HolisticHouseHome({ locale: 'en' });
-    treeNodes(tree).find(node => node.props['data-hero-cta'] === action).props.href = '/wrong';
-    assert.throws(() => assertHomeRoutes(tree, 'en'));
+for (const locale of ['en', 'ru']) {
+  test(locale + ': composed homepage rejects the real superseded lower ServicesSolutions grid', () => {
+    const tree = HolisticHouseHome({ locale });
+    assertHomeRoutes(tree, locale);
+    const grid = ServicesSolutions({ locale, variant: 'home' });
+    assertPhotoServices(grid, locale); // Actual retained component, not a marker-only fake.
+    const children = Array.from(tree.props.children);
+    const index = children.findIndex(node => node?.props['data-home-featured-workspace'] === true);
+    assert.ok(index >= 0);
+    children.splice(index + 1, 0, grid);
+    tree.props.children = children;
+    assert.throws(() => assertHomeRoutes(tree, locale), { code: 'ERR_ASSERTION', message: /superseded service grids/ });
+  });
+  test(locale + ': composed homepage rejects the superseded hero CTA trio', () => {
+    const tree = HolisticHouseHome({ locale });
+    assertHomeRoutes(tree, locale);
+    const oldActions = [
+      ['paid-sessions', '/' + locale + '/services#consultation'],
+      ['free-written-review', '/' + locale + '/services/free-situation-review'],
+      ['free-tests', '/' + locale + '/client/tests'],
+    ].map(([id, href]) => link({ 'data-hero-cta': id, href, children: id }));
+    tree.props.children = [...Array.from(tree.props.children), jsx('section', { children: oldActions })];
+    assert.throws(() => assertHomeRoutes(tree, locale), { code: 'ERR_ASSERTION', message: /superseded hero CTA trio/ });
   });
 }
-for (const fault of ['wrong paid label', 'missing primary consultation class', 'missing free target', 'wrong Wu Xing route']) {
+
+for (const [action, selector] of [
+  ['free-written-review', node => node.props['data-home-offer-primary'] === 'review'],
+  ['free-tests', node => node.props['data-home-nav-section'] === 'tests'],
+  ['paid-sessions', node => node.props['data-home-first-screen-cta'] === 'paid'],
+]) test('homepage route contract rejects wrong ' + action + ' destination', () => {
+  const tree = HolisticHouseHome({ locale: 'en' });
+  assertHomeRoutes(tree, 'en');
+  treeNodes(tree).find(selector).props.href = '/wrong';
+  assert.throws(() => assertHomeRoutes(tree, 'en'), { code: 'ERR_ASSERTION' });
+});
+for (const fault of ['wrong paid price', 'missing first-screen paid action', 'missing seventh stage', 'wrong business constellation route', 'paid session marked free', 'missing Details action', 'wrong Details destination', 'missing stage anchor']) {
   test('homepage contract rejects ' + fault, () => {
     const tree = HolisticHouseHome({ locale: 'en' });
+    assertHomeRoutes(tree, 'en');
     const nodes = treeNodes(tree);
-    if (fault === 'wrong paid label') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.children[0] = 'Free call';
-    if (fault === 'missing primary consultation class') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.className = 'service-home-paid-link';
-    if (fault === 'missing free target') nodes.find(node => node.props.id === 'free-start').props.id = 'missing';
-    if (fault === 'wrong Wu Xing route') {
-      const dao = nodes.find(node => node.props['data-core-service-id'] === 'dao');
-      treeNodes(dao).find(node => node.type === 'a' && node.props.href === '/en/services/dao-health-profile').props.href = '/wrong';
-    }
-    assert.throws(() => assertHomeRoutes(tree, 'en'));
+    if (fault === 'wrong paid price') nodes.find(node => node.props['data-home-first-screen-cta'] === 'paid').props.children[0] = 'Free call';
+    if (fault === 'missing first-screen paid action') delete nodes.find(node => node.props['data-home-first-screen-cta'] === 'paid').props['data-home-first-screen-cta'];
+    if (fault === 'missing seventh stage') delete nodes.find(node => node.props['data-home-module'] === 'master').props['data-home-module'];
+    if (fault === 'wrong business constellation route') nodes.find(node => node.props['data-home-offer-primary'] === 'businessConstellations').props.href = '/wrong';
+    if (fault === 'paid session marked free') nodes.find(node => node.props['data-home-offer-card'] === 'therapist').props['data-home-offer-free'] = 'true';
+    if (fault === 'missing Details action') delete nodes.find(node => node.props['data-home-offer-details'] === 'review').props['data-home-offer-details'];
+    if (fault === 'wrong Details destination') treeNodes(nodes.find(node => node.props.id === 'home-offer-info-review')).find(node => node.type === 'a').props.href = '/wrong';
+    if (fault === 'missing stage anchor') nodes.find(node => node.props.id === 'home-immersion-situation').props.id = 'missing';
+    assert.throws(() => assertHomeRoutes(tree, 'en'), { code: 'ERR_ASSERTION' });
   });
 }
+
+for (const locale of ['en', 'ru']) test(locale + ': real Details actions open, switch and close without changing the primary routes', () => {
+  try {
+    expandedHomeOffer = null;
+    assertHomeRoutes(HolisticHouseHome({ locale }), locale);
+    let nodes = treeNodes(HomeFeaturedWorkspace({ locale }));
+    const read = id => ({ button: nodes.find(node => node.props['data-home-offer-details'] === id), panel: nodes.find(node => node.props.id === 'home-offer-info-' + id) });
+    read('review').button.props.onClick();
+    nodes = treeNodes(HomeFeaturedWorkspace({ locale }));
+    assert.equal(read('review').button.props['aria-expanded'], true); assert.equal(read('review').panel.props.hidden, false);
+    assert.equal(read('review').button.props['aria-label'], {en:'Hide details',ru:'Скрыть детали'}[locale]);
+    assert.equal(nodes.find(node => node.props['data-home-offer-primary'] === 'review').props.href, '/' + locale + '/services/free-situation-review');
+    read('therapist').button.props.onClick();
+    nodes = treeNodes(HomeFeaturedWorkspace({ locale }));
+    assert.equal(read('review').button.props['aria-expanded'], false); assert.equal(read('review').panel.props.hidden, true);
+    assert.equal(read('therapist').button.props['aria-expanded'], true); assert.equal(read('therapist').panel.props.hidden, false);
+    read('therapist').button.props.onClick();
+    nodes = treeNodes(HomeFeaturedWorkspace({ locale }));
+    assert.equal(read('therapist').button.props['aria-expanded'], false); assert.equal(read('therapist').panel.props.hidden, true);
+    assertHomeRoutes(HolisticHouseHome({ locale }), locale);
+  } finally { expandedHomeOffer = null; }
+});
 
 test('header matrix preserves all widths and tests direct links against the actual CSS breakpoint', () => {
   assert.match(ia, /\[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/);
@@ -203,7 +343,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -212,6 +352,11 @@ async function menuScenario(locale, surface, fault) {
   if (fault === 'wrong destination') actualHrefs[0] = '/wrong';
   if (fault === 'missing catalog destination') actualHrefs.splice(2, 1);
   if (fault === 'extra catalog destination') actualHrefs.push('/extra');
+  const installIndex = actualHrefs.indexOf('/' + locale + '/install');
+  if (fault === 'missing install') actualHrefs.splice(installIndex, 1);
+  if (fault === 'wrong install') actualHrefs[installIndex] = '/' + locale + '/wrong-install';
+  if (fault === 'cross-locale install') actualHrefs[installIndex] = '/' + (locale === 'en' ? 'ru' : 'en') + '/install';
+  if (fault === 'duplicate install') actualHrefs.splice(installIndex, 0, actualHrefs[installIndex]);
   const current = nodes.filter(node => node.props['aria-current'] === 'page');
   if (fault === 'missing active state') current.length = 0;
   if (fault === 'duplicate active state') current.push(nodes[0]);
@@ -254,7 +399,7 @@ async function menuScenario(locale, surface, fault) {
     async toBeFocused() { assert.equal(focused, actual); },
     async toHaveURL(expected) { assert.equal(actual, page); assert.equal(url, fault === 'wrong navigation' ? origin + '/wrong' : expected); },
   });
-  const verify = new Function('assert', 'expect', 'origin', helper + ';return verifySiteMenu;')(assert, expect, origin);
+  const verify = new Function('assert', 'expect', 'origin', 'getSiteNavigation', helper + ';return verifySiteMenu;')(assert, expect, origin, navigationModel.getSiteNavigation);
   const bounded = [];
   await verify(page, header, { locale, surface, label: 'synthetic', expectedMenu, inViewport: async control => {
     assert.notEqual(fault, 'out of bounds'); bounded.push(control);
@@ -266,7 +411,10 @@ for (const locale of ['en', 'ru', 'es']) {
   for (const surface of ['home', 'energy', 'love', 'business', 'library', 'academy']) test(`${locale}/${surface} verifier uses actual JSX menu destinations and navigates`, () => menuScenario(locale, surface));
 }
 for (const fault of ['wrong destination', 'missing catalog destination', 'extra catalog destination', 'missing active state', 'duplicate active state', 'wrong active surface', 'duplicate destination', 'missing menu', 'cannot open', 'keyboard order', 'escape', 'focus return', 'overflow', 'out of bounds', 'route close', 'wrong navigation']) {
-  test('site-menu verifier rejects ' + fault, () => assert.rejects(menuScenario('en', 'home', fault)));
+  test('site-menu verifier rejects ' + fault, async () => {
+    await menuScenario('en', 'home');
+    await assert.rejects(menuScenario('en', 'home', fault), { code: 'ERR_ASSERTION' });
+  });
 }
 
 async function directScenario(locale, surface, fault) {
@@ -277,7 +425,7 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
   if (fault === 'wrong energy route') direct[1].props.href = '/wrong';
   if (fault === 'wrong About route') direct[4].props.href = '/wrong';
-  if (fault === 'wrong cabinet route') direct[5].props.href = '/' + locale + '/library';
+  if (fault === 'wrong cabinet route') controls.find(node => node.props['data-nav-item'] === 'cabinet').props.href = '/' + locale + '/library';
   if (fault === 'missing direct link') direct.splice(4, 1);
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/' + locale + '/library' } });
   if (fault === 'missing data id') delete direct[1].props['data-nav-item'];
@@ -306,14 +454,145 @@ for (const locale of ['en', 'ru', 'es']) {
   for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
 for (const fault of ['wrong free review route', 'wrong energy route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
-  test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
+  test('direct header verifier rejects ' + fault, async () => {
+    const surface = fault === 'spurious library active state' ? 'library' : 'energy';
+    await directScenario('en', surface);
+    await assert.rejects(directScenario('en', surface, fault), { code: 'ERR_ASSERTION' });
+  });
 }
 
 test('library audit checks the menu active link while preserving exact seven-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
-  assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
+  assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/library'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(7\)/);
   assert.match(ia, /const cabinetEntry = header\.locator\('\.site-cabinet-entry'\)/);
-  assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
+  assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(0\)/);
 });
+
+test('the actual My Space entry preserves its provider-free Cabinet fallback', () => {
+  const previous = personalSpace;
+  try {
+    for (const locale of ['en', 'ru', 'es']) {
+      const href = '/' + (locale === 'es' ? 'en' : locale) + '/app';
+      personalSpace = previous;
+      const trigger = HomePersonalSpaceNavEntry({ locale, href });
+      assert.equal(trigger.type, 'button');
+      assert.equal(trigger.props['aria-controls'], 'home-personal-space-dialog');
+      assert.equal(trigger.props.href, undefined);
+      personalSpace = null;
+      const fallback = HomePersonalSpaceNavEntry({ locale, href });
+      assert.equal(fallback.type, 'a');
+      assert.equal(fallback.props.href, href);
+    }
+  } finally { personalSpace = previous; }
+});
+
+// This tests verifier semantics against real entry JSX, not CSS visibility.
+// Native responsive visibility remains a hosted-browser acceptance assertion.
+async function mySpaceMatrixScenario(locale, width, fault) {
+  const tree = HomePersonalSpaceNavEntry({ locale, href: '/' + (locale === 'es' ? 'en' : locale) + '/app' });
+  const selectedClass = width <= 1023 ? 'site-cabinet-entry__compact' : 'site-cabinet-entry__full';
+  const selected = treeNodes(tree).find(node => node.props.className === selectedClass);
+  assert.ok(selected, 'real entry supplies its responsive label');
+  if (fault === 'missing dialog semantics') delete tree.props['aria-haspopup'];
+  if (fault === 'wrong dialog target') tree.props['aria-controls'] = 'wrong-dialog';
+  if (fault === 'wrong initial expanded state') tree.props['aria-expanded'] = true;
+  if (fault === 'wrong accessible name') tree.props['aria-label'] = 'Cabinet';
+  if (fault === 'wrong localized label') selected.props.children = 'Cabinet';
+  if (fault === 'missing responsive label') selected.props.className = 'wrong-label';
+  const cabinetEntry = { node: tree, locator(selector) {
+    const node = treeNodes(tree).find(item => '.' + item.props.className === selector);
+    assert.ok(node, 'selected label exists in real JSX'); return { node, visible: selector === '.' + selectedClass };
+  } };
+  const expect = item => ({
+    toHaveAttribute: async (name, value) => assert.equal(String(item.node.props[name]), value),
+    toHaveAccessibleName: async value => assert.equal(item.node.props['aria-label'], value),
+    toBeVisible: async () => assert.equal(item.visible, true),
+    toHaveText: async value => assert.equal(item.node.props.children, value),
+  });
+  const start = ia.indexOf('        // RootLayout provides the same consent-safe My Space dialog');
+  const end = ia.indexOf('        if (width <= 767)', start);
+  assert.ok(start >= 0 && end > start, 'extract the actual all-public-surfaces My Space assertions');
+  const verify = new (Object.getPrototypeOf(async function () {}).constructor)('expect', 'cabinetEntry', 'locale', 'width', ia.slice(start, end));
+  await verify(expect, cabinetEntry, locale, width);
+}
+for (const locale of ['en', 'ru', 'es']) for (const width of [390, 1280]) {
+  test(`My Space matrix checks the real ${locale}/${width} dialog entry`, () => mySpaceMatrixScenario(locale, width));
+}
+for (const fault of ['missing dialog semantics', 'wrong dialog target', 'wrong initial expanded state', 'wrong accessible name', 'wrong localized label', 'missing responsive label']) {
+  test('My Space matrix rejects ' + fault, async () => {
+    await mySpaceMatrixScenario('ru', 390);
+    await assert.rejects(mySpaceMatrixScenario('ru', 390, fault), { code: 'ERR_ASSERTION' });
+  });
+}
+
+for (const [locale, label] of [['en', 'Install for free'], ['ru', 'Установить бесплатно'], ['es', 'Instalar gratis']]) {
+  test(locale + ' actual free-app banner keeps its explicit localized install route', () => {
+    const tree = FreeMobileAppBanner({ locale });
+    assert.equal(tree.type, 'aside');
+    assert.equal(Object.hasOwn(tree.props, 'data-hh-free-app-banner'), true);
+    const links = treeNodes(tree).filter(node => node.type === 'a');
+    assert.equal(links.length, 1);
+    assert.equal(links[0].props.href, '/' + locale + '/install');
+    assert.equal(links[0].props.prefetch, false);
+    assert.equal(Object.hasOwn(links[0].props, 'data-hh-free-app-link'), true);
+    assert.ok(treeNodes(tree).some(node => node.type === 'h2'));
+    assert.ok(JSON.stringify(links[0]).includes(label));
+  });
+}
+for (const locale of ['en', 'ru']) test(locale + ' actual Home renders one real install banner, not a noop boundary', () => {
+  const tree = HolisticHouseHome({ locale });
+  const banners = treeNodes(tree).filter(node => Object.hasOwn(node.props || {}, 'data-hh-free-app-banner'));
+  assert.equal(banners.length, 1);
+  assert.equal(treeNodes(banners[0]).filter(node => node.type === 'a' && node.props.href === '/' + locale + '/install').length, 1);
+});
+
+for (const locale of ['en', 'ru', 'es']) for (const fault of ['missing install', 'wrong install', 'cross-locale install', 'duplicate install']) test(locale + ' menu rejects ' + fault, async () => {
+  await menuScenario(locale, 'home');
+  await assert.rejects(menuScenario(locale, 'home', fault), { code: 'ERR_ASSERTION' });
+});
+
+// Evaluate only the authored pure expectedMenu expression, never the browser matrix.
+function nativeExpectedMenu(locale, transform = value => value) {
+  const matrixStart = ia.indexOf('async function verifyPublicHeaderMatrix(');
+  assert.ok(matrixStart >= 0, 'actual native matrix must exist');
+  const matches = [...ia.slice(matrixStart).matchAll(/^        const expectedMenu = (.+)$/gm)];
+  assert.equal(matches.length, 1, 'exactly one native matrix menu expression');
+  const expression = transform(matches[0][1]);
+  return new Function('locale', 'getCompactNavigation', 'expected', 'return (' + expression + ');')(
+    locale, navigationModel.getCompactNavigation, navigationModel.getSiteNavigation(locale));
+}
+function assertNativeMenuParity(locale, transform) {
+  const independent = [
+    '/' + locale + '/services/free-situation-review',
+    ...navigationModel.getCompactNavigation(locale).map(item => item.href),
+    '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install',
+    ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href),
+    '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about',
+  ];
+  const native = nativeExpectedMenu(locale, transform);
+  assert.deepEqual(native, independent, 'native matrix expression preserves independently specified exact order');
+  pathname = locale === 'en' ? '/' : '/' + locale;
+  const rendered = SiteNavigation({ locale });
+  const menu = treeNodes(rendered).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
+  assert.deepEqual(native, treeNodes(menu).filter(node => node.type === 'a').map(node => node.props.href), 'native matrix expression matches actual pinned menu JSX');
+}
+const installTerm = "'/' + locale + '/install', ";
+const nativeMenuMutants = {
+  omitted: value => value.replace(installTerm, ''),
+  wrong: value => value.replace(installTerm, "'/' + locale + '/wrong-install', "),
+  duplicate: value => value.replace(installTerm, installTerm + installTerm),
+  'cross-locale': value => value.replace(installTerm, "'/' + (locale === 'en' ? 'ru' : 'en') + '/install', "),
+};
+for (const locale of ['en', 'ru', 'es']) {
+  test(locale + ' native matrix expectedMenu matches independent order and real JSX', () => assertNativeMenuParity(locale));
+  for (const [fault, mutate] of Object.entries(nativeMenuMutants)) test(locale + ' native matrix expectedMenu rejects ' + fault + ' install', () => {
+    assertNativeMenuParity(locale);
+    assert.throws(() => assertNativeMenuParity(locale, expression => {
+      const mutated = mutate(expression);
+      assert.notEqual(mutated, expression, 'native expression mutation must apply');
+      return mutated;
+    }), error => error.code === 'ERR_ASSERTION' && error.message.includes('native matrix expression preserves independently specified exact order'));
+  });
+}

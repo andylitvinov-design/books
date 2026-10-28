@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   PERSONAL_PAYPAL_ME_BASE, PERSONAL_PAYPAL_PAYEE,
-  personalPayPalEnabled, buildPersonalPayPalServiceUrl,
+  personalPayPalEnabled, buildPersonalPayPalServiceUrl, buildPersonalPayPalCartUrl,
 } from '../lib/commerce/paypal-personal.js'
 
 const file = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -48,6 +48,31 @@ test('Alchemy booking hides personal PayPal links until the confirmed session en
   assert.match(chooser, /paidReady && paymentExpanded/)
   assert.match(chooser, /data-booking-cart-link/)
   assert.match(cart, /<PersonalCart/)
+})
+
+
+test('existing consultation cart keeps its fixed catalog boundary and personal PayPal kill switch', () => {
+  const cta = file('components/public-consultation-cta.tsx')
+  const entry = file('components/commerce/consultation-cart-entry.tsx')
+  const cartPage = file('app/[locale]/cart/page.tsx')
+  const cart = file('components/commerce/personal-cart.tsx')
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationCartEntry locale=\{locale\} id=\{id\}/)
+  assert.match(entry, /publicServiceCatalog\(locale\)/)
+  assert.match(entry, /onClick=\{\(\) => toggle\(product\.id\)\}/)
+  assert.match(entry, /Adding to cart does not charge or reserve a time/)
+  assert.doesNotMatch(entry, /paypal\.me|\/api\/payments\/|fetch\(/)
+  assert.match(cartPage, /paypalEnabled=\{personalPayPalEnabled\(\)\}/)
+  assert.match(cart, /const paypalUrl = paypalEnabled \? buildPersonalPayPalCartUrl\(chosen\.map\(product => product\.id\)\) : null/)
+  assert.match(cart, /\{paypalUrl \? <a[^>]+href=\{paypalUrl\}[^>]+data-cart-paypal-personal/)
+})
+
+test('cart personal PayPal totals stay fixed and disabled or malformed selections cannot pay', () => {
+  const products = ['express-consultation-30', 'personal-session-60']
+  assert.equal(buildPersonalPayPalCartUrl(products, {}), 'https://paypal.me/psitrends/150EUR')
+  assert.equal(buildPersonalPayPalCartUrl(products, { HH_PAYPAL_PERSONAL_DISABLED: 'true' }), null)
+  for (const products of [[], ['free'], ['personal-session-60', 'personal-session-60'],
+    [{ id: 'express-consultation-30', amountMinor: 1 }]])
+    assert.equal(buildPersonalPayPalCartUrl(products, {}), null)
 })
 
 test('payment page transparently requires Goods & Services and manual verification', () => {

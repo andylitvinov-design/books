@@ -99,7 +99,7 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null}){
+export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null,recipientSlug,isRecipientCurrent,onRecipientStarted,onBack}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
@@ -107,8 +107,15 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
   const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const lifetime=useRef(0),startPending=useRef(false)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
+  useEffect(()=>{
+    const life=lifetime,reads=readGeneration
+    const generation=++life.current
+    setDraft('');setFile(null);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null
+    return()=>{if(life.current===generation)life.current++;reads.current++}
+  },[expectedAccountId])
   const [audioPreview,setAudioPreview]=useState('')
   useEffect(()=>{
     if(!file||!AUDIO_MIMES.has(directMediaMime(file))){setAudioPreview('');return}
@@ -117,9 +124,16 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     return()=>globalThis.URL.revokeObjectURL(url)
   },[file])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
-  const getThreads=useCallback(async()=>{
+  const getThreads=useCallback(async(isCurrent=()=>true)=>{
+    const generation=lifetime.current
     const data=await jsonGet()
-    if(expectedAccountId&&data.accountId!==expectedAccountId)throw new Error('ACCOUNT_CHANGED')
+    if(generation!==lifetime.current||!isCurrent())return null
+    if(expectedAccountId&&data.accountId!==expectedAccountId){
+      readGeneration.current++;setAccountId('');setCurrent(null);setActiveId('');setThreads([])
+      setDraft('');setFile(null);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null
+      onThreadsLoaded?.([])
+      throw new Error('ACCOUNT_CHANGED')
+    }
     setAccountId(data.accountId)
     setSignedOut(false)
     setThreads(data.threads||[])
@@ -128,9 +142,14 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   },[onThreadsLoaded,expectedAccountId])
   useEffect(()=>{
     const parameters=new URLSearchParams(window.location.search)
-    const slug=parameters.get('to')||''
+    // Owners supply a consumed/bound intent; members retain the URL contract.
+    const slug=recipientSlug===undefined?parameters.get('to')||'':recipientSlug
     setDestination(/^[a-z0-9-]{2,90}$/.test(slug)?slug:'')
-    getThreads().catch(e=>{setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)})
+  },[recipientSlug])
+  useEffect(()=>{
+    let active=true
+    getThreads().catch(e=>{if(active){setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)}})
+    return()=>{active=false}
   },[getThreads])
   async function post(body){
     if(!accountId)throw new Error('SIGN_IN_REQUIRED')
@@ -163,6 +182,14 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   openThreadRef.current=openThread
   useEffect(()=>{
+    const reads=readGeneration
+    if(simpleDetail){
+      // Temporary pane navigation cancels reads, not drafts or Send retries.
+      reads.current++;setCurrent(null);setActiveId('')
+    }
+    return()=>{reads.current++}
+  },[simpleDetail,initialThreadId,recipientSlug,expectedAccountId])
+  useEffect(()=>{
     if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
       void openThreadRef.current?.(initialThreadId)
   },[simpleDetail,accountId,initialThreadId,activeId])
@@ -194,14 +221,29 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     finally{setBusy(false)}
   }
   async function start(){
+    if(busy||startPending.current||!destination||!accountId)return
+    const slug=destination,ownerId=accountId,generation=lifetime.current
+    const controlled=recipientSlug!==undefined
+    const isCurrent=()=>generation===lifetime.current&&(!controlled||
+      (expectedAccountId===ownerId&&isRecipientCurrent?.(slug,ownerId)===true))
+    if(!isCurrent())return
+    startPending.current=true
     setBusy(true);setError('')
     try {
-      const {threadId}=await post({action:'start',slug:destination})
-      setDestination('')
-      await getThreads()
-      await openThread(threadId)
-    }catch(e){setError(e.message)}
-    finally{setBusy(false)}
+      const {threadId}=await post({action:'start',slug})
+      if(!isCurrent())return
+      const data=await getThreads(isCurrent)
+      if(!data||!isCurrent())return
+      if(controlled){
+        if(!threadId||!data.threads?.some(item=>item.id===threadId))throw new Error('INBOX_UNAVAILABLE')
+        // The parent selects a real authorized row; it owns detail navigation.
+        onRecipientStarted?.(threadId,slug,ownerId)
+      }else{
+        setDestination('')
+        await openThread(threadId)
+      }
+    }catch(e){if(isCurrent())setError(e.message)}
+    finally{startPending.current=false;if(generation===lifetime.current)setBusy(false)}
   }
   async function send(event){
     event.preventDefault()
@@ -319,7 +361,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
         {!current?<div className={styles.placeholder}><Headphones size={28} aria-hidden="true"/>
           <p>{t.choose}</p></div>:<>
           <div className={styles.chatHeader}>
-            <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('')}}><ArrowLeft size={16}/>{t.back}</button>
+            <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('');onBack?.()}}><ArrowLeft size={16}/>{t.back}</button>
             <strong>{current.peerName}</strong>
             {current.isRecipient&&<button type="button" disabled={busy}
               onClick={()=>action({action:current.blocked?'unblock':'block',threadId:current.threadId})}>

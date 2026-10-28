@@ -244,7 +244,7 @@ function oporaLearningReceipt(answers,authored,lang,ease){
 }
 const versionTag='as-5.4-live-v6'
 
-export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
+export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onBackToMap=onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
   const lang=locale==='ru'?'ru':'en',t=DICTIONARY[lang],lesson=data?.lesson||{},cycle=data?.cycle||{}
   const authored=lesson.opora54
   const slides=useMemo(()=>buildCourseSlides(lesson),[lesson])
@@ -599,7 +599,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       </main>
       <footer className={styles.footer}>
         <button type="button" className={styles.back}
-          onClick={afterSave?()=>setStep(slides.length-1):step===0?onClose:back} disabled={locked}>
+          onClick={afterSave?()=>setStep(slides.length-1):step===0?onBackToMap:back} disabled={locked}>
           <ArrowLeft size={17}/>{t.back}</button>
         <button type="button" className={styles.primary} onClick={afterSave?(onFinish||onClose):step===slides.length-1?submit:next}
           disabled={locked}>

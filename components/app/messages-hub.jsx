@@ -1,5 +1,5 @@
 'use client'
-import {useCallback,useEffect,useState} from 'react'
+import {useCallback,useEffect,useRef,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
@@ -45,13 +45,21 @@ export default function MessagesHub({locale='en'}){
   const [directOpen,setDirectOpen]=useState(false)
   const [telegramUrl,setTelegramUrl]=useState('')
   const [telegramCopied,setTelegramCopied]=useState(false)
-  const [directDestination,setDirectDestination]=useState('')
+  const [recipientIntent,setRecipientIntent]=useState(null)
+  // Keep the one-shot owner handoff above child remounts during Refresh.
+  const recipientOwner=useRef('')
+  const consumeRecipient=useCallback(()=>{
+    setRecipientIntent(null)
+    const url=new URL(window.location.href)
+    url.searchParams.delete('to')
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+  },[])
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    const to=params.get('to')||''
-    setDirectDestination(/^[a-z0-9-]{2,90}$/.test(to)?to:'')
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
+    const slug=params.get('to')||''
+    if(/^[a-z0-9-]{2,90}$/.test(slug))setRecipientIntent({slug,accountId:''})
   },[searchParams])
   useEffect(()=>{
     const controller=new AbortController()
@@ -97,6 +105,19 @@ export default function MessagesHub({locale='en'}){
   const ownerAccountId=sameAccount
     ?ownerInfo?.ownerMessenger?ownerInfo.accountId:data?.ownerMessenger?data.accountId:null
     :null
+  useEffect(()=>{
+    if(!recipientIntent)return
+    const previousOwner=recipientOwner.current
+    if(!sameAccount||(previousOwner&&(unauthenticated||bootstrapSignInRequired||
+      [ownerInfo?.accountId,data?.accountId].some(id=>id&&id!==previousOwner)))){
+      consumeRecipient();return
+    }
+    if(!ownerAccountId)return
+    if(previousOwner&&previousOwner!==ownerAccountId){consumeRecipient();return}
+    recipientOwner.current=ownerAccountId
+    if(recipientIntent.accountId!==ownerAccountId)
+      setRecipientIntent({...recipientIntent,accountId:ownerAccountId})
+  },[recipientIntent,ownerAccountId,ownerInfo,data,sameAccount,unauthenticated,bootstrapSignInRequired,consumeRecipient])
   // Slow/failed website requests must not prevent reading existing owner Telegram threads.
   const requestData=usableData||(ownerAccountId?{
     accountId:ownerAccountId,ownerMessenger:true,ownerAuthorized:true,
@@ -135,19 +156,20 @@ export default function MessagesHub({locale='en'}){
   }
   // Owner-only one-window inbox. Preserve the existing authenticated provider
   // link check and member two-tab UI; no duplicate CRM or public send action.
-  // A verified owner may also order from another practitioner. Keep this
-  // private voice chat in the existing direct-messages store, not owner CRM.
-  if(ownerAccountId&&directDestination)return <div className={styles.hub} data-private-direct-order-chat>
-    <a href={'/'+locale+'/app/messages?section=clients'}>{locale==='ru'?'← К клиентам':locale==='es'?'← Clientes':'← Clients'}</a>
-    <DirectMessageInbox key={ownerAccountId+':'+directDestination} locale={locale} embedded
-      ownerCrmAvailable expectedAccountId={ownerAccountId}/>
-  </div>
-  if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
+  if(ownerAccountId)return <div className={styles.hub}
+    data-private-direct-order-chat={recipientIntent?.accountId===ownerAccountId||undefined}>
+    {<a href={'/'+locale+'/app/messages?section=clients'}>
+      {locale==='ru'?'← К клиентам':locale==='es'?'← Clientes':'← Clients'}
+    </a>}
+    <MessagesSimpleInbox key={ownerAccountId} locale={locale}
     accountId={ownerAccountId} requests={requestData?.requests||[]}
     businessEnquiries={requestData?.businessEnquiries||[]}
     telegramUrl={telegramUrl}
+    recipientIntent={recipientIntent?.accountId===ownerAccountId?recipientIntent:null}
+    onRecipientConsumed={consumeRecipient}
     websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
     onReload={()=>setRefreshKey(n=>n+1)}/>
+  </div>
   if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
@@ -213,6 +235,7 @@ export default function MessagesHub({locale='en'}){
         <section hidden={Boolean(ownerAccountId)&&source!=='direct'}
           className={styles.direct} aria-label={t.direct}>
           <DirectMessageInbox locale={locale} embedded compact onOpenChange={setDirectOpen}
+            recipientSlug={recipientOwner.current||!sameAccount?'':undefined}
             ownerCrmAvailable={Boolean(ownerAccountId)}/>
         </section>
       </div>

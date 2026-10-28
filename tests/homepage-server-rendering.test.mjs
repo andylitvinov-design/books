@@ -11,10 +11,18 @@ test("homepage stays server-rendered, with client behavior in leaf boundaries on
   assert.match(home, /<SiteNavigation locale=\{locale\}/);
   assert.doesNotMatch(home, /HomeFreePaths/);
   const deferred = read("components/home-more-disclosure.tsx");
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
-  assert.match(deferred, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(deferred, /ssr: false/);
-  assert.doesNotMatch(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  // The approved seven-stage homepage replaces the repeated lower service grid.
+  // Only optional conversation guidance is deferred, and only after explicit disclosure.
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/);
+  assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
+  for (const source of [home, deferred]) {
+    assert.doesNotMatch(source, /ServicesSolutions|HomeExploreSections|TestSelectionCourseBanner/);
+  }
+  assert.match(deferred, /const HomeConversationGuide = dynamic\([\s\S]*?import\("\.\/home-conversation-guide"\)[\s\S]*?ssr: false/);
+  assert.match(deferred, /const \[expanded, setExpanded\] = useState\(false\)/);
+  assert.match(deferred, /<details[\s\S]*?onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
+  assert.match(deferred, /<summary>/);
+  assert.match(deferred, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
   assert.match(read("app/page.tsx"), /<HolisticHouseHome/);
   assert.match(read("app\/\[locale\]\/page.tsx"), /<HolisticHouseHome/);
   assert.match(read("components/site-navigation.tsx"), /^["']use client["']/m);

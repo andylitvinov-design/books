@@ -27,6 +27,10 @@ on:
       - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
+      - 'scripts/helpers/home-inline-analysis-verifier.mjs'
+      - 'tests/home-inline-analysis-verifier.test.mjs'
+      - 'components/homepage-free-capture.tsx'
+      - 'components/contact-channel-chooser.tsx'
       - '.github/workflows/home-locale-switch.yml'
   push:
     branches: ['codex/public-book-library']
@@ -56,6 +60,10 @@ on:
       - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
+      - 'scripts/helpers/home-inline-analysis-verifier.mjs'
+      - 'tests/home-inline-analysis-verifier.test.mjs'
+      - 'components/homepage-free-capture.tsx'
+      - 'components/contact-channel-chooser.tsx'
       - '.github/workflows/home-locale-switch.yml'
 permissions:
   contents: read
@@ -99,7 +107,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Navigation, types and affected-component lint
         run: |
-          node --test tests/home-locale-menu-state.test.mjs tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
+          node --test tests/home-inline-analysis-verifier.test.mjs tests/home-locale-canonical-navigation.test.mjs tests/home-locale-menu-state.test.mjs tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
           npx eslint components/site-navigation.tsx components/holistic-house-home.tsx components/home-core-methods.tsx app/es/page.tsx
           npx tsc --noEmit
       - name: Build the real application

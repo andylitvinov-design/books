@@ -62,8 +62,12 @@ test('homepage uses shared client-only My Space and avoids a duplicate footer ca
   const stage = readFileSync(new URL('../components/home-featured-workspace.tsx', import.meta.url),'utf8');
   for (const source of [home,es]) {
     assert.doesNotMatch(source, /HomePersonalSpaceProvider|<HomePersonalSpaceCard/);
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMoreDisclosure"));
+    // The topic picker moved directly below the photo hero; keep a single workspace.
+    for (const name of ["HomeSectionCarousel", "HomeMoreDisclosure", "HomeFeaturedWorkspace"]) {
+      assert.equal((source.match(new RegExp("<" + name + "\\b", "g")) || []).length, 1, name);
+    }
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"));
+    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"));
   }
   assert.match(stage, /data-home-reports-cta/);
   assert.match(layout, /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/);

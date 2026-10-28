@@ -1,10 +1,21 @@
+import { createCoreStageEvidence } from './helpers/core-stage-evidence.mjs'
+import { assertCabinetGuestSignin } from './helpers/cabinet-guest-signin-verifier.mjs'
+import { precompileOporaPublicRoutes } from './helpers/opora-public-route-precompile.mjs'
+import { withPublicServiceNavigationDiagnostics } from './helpers/public-service-navigation-diagnostics.mjs'
+import { verifyOporaPublicEntry } from './helpers/opora-public-entry-verifier.mjs'
+import { withPublicPickerActionDiagnostics } from './helpers/public-picker-action-diagnostics.mjs'
+import { classifyDiagnosticError } from './helpers/isolated-browser-diagnostics.mjs'
+import { assertFreeReviewLanding, verifyFreeReviewPrivateHandoff } from './helpers/free-review-private-handoff-verifier.mjs'
+import { assertNativeCompactChannelGestures } from './helpers/native-compact-channel-gestures.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
+import { assertAlchemyPanelGeometry, collectAlchemyReviewGeometry, assertAlchemyReviewFeed } from './helpers/alchemy-panel-contract.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { verifyHypnotherapyRequest } from './helpers/hypnotherapy-request-verifier.mjs'
+import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -18,6 +29,9 @@ import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN||'http://127.0.0.1:3100'
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error('Only isolated loopback browser verification is permitted')
+// Prepared dev-server acceptance; cold compilation/HMR overlap remains unresolved.
+// No browser/HMR client exists yet; the unchanged anonymous OPORA journey runs first.
+await precompileOporaPublicRoutes({origin})
 const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
@@ -43,10 +57,12 @@ await context.addInitScript(() => {
   window.addEventListener('popstate', () => console.log('HH_HOME_PROBE '+JSON.stringify({kind:'early-popstate',path:location.pathname,pendingPath:window.__hhCspHardDestination ? new URL(window.__hhCspHardDestination).pathname : null})), {capture:true,passive:true})
 })
 let page=await context.newPage()
+let guestPickerFailurePage=null
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
 page.on('pageerror',capturePageError)
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
+const coreStageEvidence=createCoreStageEvidence()
 let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false, historyNavigationDiagnostics=null
 function passed(name){checks.push(name);console.log('PASS '+name)}
 /**
@@ -276,10 +292,24 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
 // PR784 moved measured scales and profile tools into Insights, not out of the journey.
 async function openInsightsProfileTools(target=page,locale='en'){
  const path='/'+locale+'/app/portfolio'
- const link=target.locator('nav a[href="'+path+'"]:visible').first()
- await expect(link).toHaveText(locale==='ru'?'Отчёты':'Reports')
- await expect(link).toHaveAttribute('href',path)
- await link.click()
+ const profilePath='/'+locale+'/app/portrait'
+ // The removed Reports bottom tab is now the four-area My Profile.
+ // Navigate via the existing private profile's measured-results link,
+ // preserving the old /portfolio route without reviving a duplicate nav item.
+ if(!target.url().startsWith(origin+path)){
+  const profile=target.locator('nav a[href="'+profilePath+'"]:visible').first()
+  await expect(profile).toHaveText(locale==='ru'?'Мой профиль':'My Profile')
+  await expect(profile).toHaveAttribute('href',profilePath)
+  await profile.click()
+  await expect(target).toHaveURL(origin+profilePath)
+  const area=target.locator('.hh-profile-domains[data-profile-mode="account"] details.hh-domain-more')
+  await expect(area).toHaveAttribute('open','')
+  const history=target.locator('.hh-profile-domains[data-profile-mode="account"] a[href="'+path+'?tab=dynamics"]')
+  await expect(history).toBeVisible()
+  await history.click()
+ }
+ await expect(target.locator('#hh-results-tab-values')).toBeVisible()
+ await target.locator('#hh-results-tab-values').click()
  await expect(target).toHaveURL(origin+path)
  const portrait=target.locator('[data-testid="insights-psychological-portrait"]')
  await expect(portrait).toBeVisible()
@@ -400,7 +430,7 @@ async function assertPublicViewportFits(target,label){
   // Failure-only evidence from this loopback public-service fixture. Never
   // inspect account state, field values, storage, or private routes here.
   const pathname=new URL(target.url()).pathname
-  assert.match(pathname,/^\/(en|ru)\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)$/)
+  assert.match(pathname,/^\/(en|ru)\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course|free-situation-review)$/)
   const diagnostic=await target.evaluate(()=>({
    viewport:innerWidth,document:document.documentElement.scrollWidth,
    nodes:Array.from(document.querySelectorAll('header,nav,main,section,article,h1,h2,h3,p,li,a,button,details,summary,figure')).flatMap(el=>{
@@ -423,7 +453,7 @@ async function assertPublicViewportFits(target,label){
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
 async function verifyPublicServiceConversionJourneys(){
- const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicContext=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  const publicErrors=[]
  const services=[
   ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
@@ -431,13 +461,19 @@ async function verifyPublicServiceConversionJourneys(){
   ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
  ]
  for(const locale of ['en','ru']){
-  for(const [slug,kind,names] of services){
+  for(const [slug,kind] of services){
    const servicePage=await publicContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await withPublicServiceNavigationDiagnostics(servicePage,{origin,locale,slug,width},
+     ()=>servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'}))
+    if(kind==='dao'){
+      const dao=servicePage.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao).toHaveCount(1)
+      await expect(dao).toHaveAttribute('lang',locale)
+      await expect(dao.getByRole('heading',{level:1,name:locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.',exact:true})).toBeVisible({timeout:30000})
+     }else await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -449,9 +485,9 @@ async function verifyPublicServiceConversionJourneys(){
       'Payment methods are absent until the practitioner confirms the session')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assertAlchemyPanelGeometry(measurements)
+     const reviewMeasurements=await servicePage.locator('[data-alchemy-panel="reviews"]').evaluate(collectAlchemyReviewGeometry)
+     assertAlchemyReviewFeed(reviewMeasurements,{locale,width})
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -464,24 +500,43 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
+    if(kind==='hypnotherapy'&&(width===390||width===1280)){
+     await verifyHypnotherapyRequest(servicePage,expect,{origin,locale,channel:width===390?'whatsapp':'telegram'})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+     // The authored free-review alternative belongs to CoreServiceDetail,
+     // not the separate CompactLeadCapture appended by SitewideLeadCapture.
+     const alternative=servicePage.locator('main[data-core-service-detail="hypnotherapy"] > section:last-child > details')
+     await expect(alternative).toHaveCount(1)
+     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+     await alternative.locator('summary').click()
+     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    }
     if(width!==390)continue
-    if(kind==='alchemy'){
+    if(kind==='dao'){
+     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale,
+      failureScreenshotPath:output+'/dao-consent-'+locale+'-form.png'})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+    }else if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     // Only the two service options belong to this contract. The nested
+     // compact request also mounts a legitimate country-calling-code select.
+     await expect(form.locator(':scope > label > select')).toHaveCount(2)
+     const sessionFormat=form.getByRole('combobox',{name:locale==='ru'?'Формат':'Session format',exact:true})
+     const sessionTopic=form.getByRole('combobox',{name:locale==='ru'?'Тема':'Topic',exact:true})
+     for(const option of [sessionFormat,sessionTopic]){
+      await expect(option).toHaveCount(1)
+      await expect(option).toBeVisible()
+     }
+     await expect(form.getByLabel(locale==='ru'?'Код страны':'Country calling code',{exact:true})).toHaveCount(1)
+     await expect(form.locator('[data-phone-country-input] input[type="tel"]')).toHaveAttribute('required','')
+     await expect(form.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveAttribute('required','')
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
-     const stack=servicePage.locator('[data-alchemy-review-stack]')
-     const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
-       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,12,'All twelve source-backed videos are visible')
-     assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
-       'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
-     assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
-       'Vertical testimonial stack cannot overflow horizontally')
+     await expect(form.locator('[data-contact-order]')).toHaveAttribute('aria-expanded','false')
+     await sessionFormat.selectOption('30')
+     await sessionTopic.selectOption('business')
+     await expect(sessionFormat).toHaveValue('30')
+     await expect(sessionTopic).toHaveValue('business')
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
@@ -491,19 +546,6 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
      await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
-    }else{
-     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-     await capture.scrollIntoViewIfNeeded()
-     await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
-     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
-     await alternative.locator('summary').click()
-     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
     }
    }
    await servicePage.close()
@@ -512,73 +554,18 @@ async function verifyPublicServiceConversionJourneys(){
  for(const locale of ['en','ru']){
   const publicPage=await publicContext.newPage()
   publicPage.on('pageerror',error=>publicErrors.push(error.message))
-  const copy=locale==='ru'
-   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copyButton:'Скопировать ответы',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
-   : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
    await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-   const quick=publicPage.locator('[data-free-quick-request]').first()
-   await expect(quick).toBeVisible({timeout:30000})
-   const intake=publicPage.locator('[data-free-drawing-intake]')
-   await expect(intake).toBeHidden()
-   const advanced=publicPage.locator('details').filter({has:intake})
-   assert.equal(await advanced.evaluate(element=>element.open),false,'Detailed drawing form must start collapsed')
+   await assertFreeReviewLanding(publicPage,expect,locale)
    await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
   await publicPage.setViewportSize({width:390,height:844})
   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-  await publicPage.evaluate(()=>{
-   document.documentElement.dataset.analyticsConsent='granted'
-   window.__publicAcquisition=[]
-   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
-  })
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
-  const quick=publicPage.locator('[data-free-quick-request]').first()
-  await expect(quick).toBeVisible()
-  const intake=publicPage.locator('[data-free-drawing-intake]')
-  const advanced=publicPage.locator('details').filter({has:intake})
-  await expect(intake).toBeHidden()
-  await advanced.locator(':scope > summary').click()
-  await expect(intake).toBeVisible()
-  const uniqueProblem='Synthetic public form value — '+locale
-  const uniqueGoal='Synthetic public goal value — '+locale
-  await intake.locator('textarea').nth(0).fill(uniqueProblem)
-  await intake.locator('textarea').nth(1).fill(uniqueGoal)
-  await intake.locator('form button[type="submit"]').click()
-  const ready=intake.locator('[role="region"]')
-  await expect(ready).toBeVisible()
-  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
-  assert.equal(await ready.getAttribute('aria-live'),'polite')
-  await expect(ready).toBeFocused({timeout:15000})
-  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
-  const readyChooser=await openContactChannelChooser(ready,expect)
-  const {whatsappUrl,telegramUrl}=await assertPreparedContactChannels(readyChooser,expect)
-  const whatsappText=whatsappUrl.searchParams.get('text')||''
-  const telegramText=telegramUrl.searchParams.get('text')||''
-  const decodedPageUrl=decodeURIComponent(publicPage.url())
-  for(const marker of [uniqueProblem,uniqueGoal]){
-   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
-   assert.ok(!telegramText.includes(marker),'Answers never enter decoded Telegram text')
-   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
-  }
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
-  // The temporary SDK safety hold also suppresses the public event emitter,
-  // including when this fixture forces a stale granted dataset. Restore the
-  // positive analytics contract only with the fully verified transport repair.
-  assert.deepEqual(events,[], 'Temporary analytics hold must emit no acquisition events')
-  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
-  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
-  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,
+   screenshotPath:output+'/free-review-'+locale+'-prepared-390.png'})
+  await assertPublicViewportFits(publicPage,locale+'/free-review/390/synthetic-receipt')
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
@@ -587,10 +574,27 @@ async function verifyPublicServiceConversionJourneys(){
 }
 
 try {
+ coreStageEvidence.mark('gestures')
+ await assertNativeCompactChannelGestures(browser,expect,{origin})
+ passed('native compact channel mouse/touch gestures and navigation restoration without network')
+ // Preserve the anonymous OPORA deep link, explicit consent boundary, and
+ // all seven-skill/14-day checks through its real full-programme link.
+ coreStageEvidence.mark('opora')
+ await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output,diagnosticSink:coreStageEvidence.opora})
+ coreStageEvidence.mark('opora-viewport-reset')
+ await page.setViewportSize({width:390,height:844})
+ passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
+
+ coreStageEvidence.mark('services')
  await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
+ coreStageEvidence.mark('picker-en')
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
  const guestPickerPage=await guestPickerContext.newPage()
+ guestPickerFailurePage=guestPickerPage
+ // Record only fixed categories from this otherwise unobserved public page.
+ // Deduplication bounds output and feeds the existing uncaught-error gate.
+ guestPickerPage.on('pageerror',error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;const category=classifyDiagnosticError(error);const key='guest-picker:'+category;if(!errors.includes(key)){errors.push(key);console.log('SYNTHETIC_GUEST_PICKER_PAGE_ERROR',JSON.stringify({page:'guest-picker',category}))}})
  await guestPickerPage.goto(origin+'/en/client')
  const picker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await expect(picker).toBeVisible({timeout:30000})
@@ -691,10 +695,14 @@ try {
  await expect(recommendationPriority).toHaveCount(1)
  const shorterPriority=recommendationPriority.getByRole('button',{name:'Shorter tests. Prioritize shorter questionnaires',exact:true})
  await expect(shorterPriority).toHaveCount(1)
- await shorterPriority.click()
- await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
+ coreStageEvidence.mark('picker-depth')
+ await withPublicPickerActionDiagnostics(guestPickerPage,shorterPriority,{action:'depth-shorter',locale:'en'},async()=>{
+  await shorterPriority.click()
+  await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
+ },{diagnosticSink:coreStageEvidence.picker})
  await optional.locator('summary').click()
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
+ coreStageEvidence.mark('picker-catalog')
  await picker.getByRole('button',{name:'Browse full database'}).click()
  await expect(guestPickerPage.getByRole('heading',{name:'Find the tests that fit you'})).toBeVisible()
  const fullTypeFilters=guestPickerPage.locator('[data-test-kind-filter]').first()
@@ -713,6 +721,7 @@ try {
  assert.match(guestPickerPage.url(),/\/en\/client$/)
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'en')
  await exercisePublicCollections(guestPickerPage,expect,'en',{focus:['stress'],depth:'quick'})
+ coreStageEvidence.mark('picker-ru')
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await assertPublicPickerEntrance(guestPickerPage,'ru')
@@ -735,6 +744,7 @@ try {
  await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'})).toBeVisible()
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'ru')
  await exercisePublicCollections(guestPickerPage,expect,'ru',{focus:['stress'],depth:'balanced'})
+ coreStageEvidence.mark('picker-es')
  await guestPickerPage.goto(origin+'/es/client/tests')
  await expect(guestPickerPage).toHaveURL(origin+'/es/client/tests')
  await expect(guestPickerPage.locator('main[lang="es"]')).toBeVisible()
@@ -742,47 +752,25 @@ try {
  await assertPublicPickerEntrance(guestPickerPage,'es')
  await assertPublicDiscoveryChrome(guestPickerPage,expect,'es')
  await exercisePublicCollections(guestPickerPage,expect,'es')
+ coreStageEvidence.mark('picker-close')
  await guestPickerContext.close()
+ guestPickerFailurePage=null
  passed('pre-login test picker, optional filters, recommendations and full database')
 
- // The new public course presentation is a real mobile-first landing,
- // with seven expandable skills and all 14 days accessible before consent.
- for (const [language, title] of [
-   ['en',/Stress Relief/],
-   ['ru',/Антистресс/],
- ]) {
-   await page.goto(origin+'/'+language+'/app/course?program=stress')
-   const landing=page.locator('[data-opora-guest-landing]')
-   await expect(landing).toBeVisible({timeout:20000})
-   await expect(landing.getByRole('heading',{name:title,level:1})).toBeVisible()
-   await expect(landing.locator('[data-antistress-start-tests]')).toBeVisible()
-   const overview=landing.locator('[data-course-before-signup="guest"]')
-   await expect(overview).toBeVisible()
-   await expect(overview.locator('[data-course-phase]')).toHaveCount(7)
-   await expect(overview.locator('[data-course-skill-accordion]')).toHaveCount(7)
-   const firstStage=overview.locator('[data-course-skill-accordion]').first()
-   await firstStage.locator('summary').click()
-   await expect(firstStage).toHaveAttribute('open','')
-   const detailed=overview.locator('[data-course-14-day-list]')
-   await detailed.locator('summary').first().click()
-   await expect(detailed.locator('[data-course-day]')).toHaveCount(14)
-   for (const width of [320,390]) {
-     await page.setViewportSize({width,height:844})
-     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
-       language+' redesigned OPORA landing must fit the mobile viewport')
-   }
-   await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
- }
- await page.setViewportSize({width:390,height:844})
- passed('anonymous EN/RU OPORA landing exposes seven skills and all 14 days without account access')
-
+ coreStageEvidence.mark('cabinet-entry')
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
- await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
+ coreStageEvidence.mark('cabinet-signin')
+ await (await assertCabinetGuestSignin(page,expect,{origin})).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
+ coreStageEvidence.mark('cabinet-consents')
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
+ coreStageEvidence.mark('cabinet-create')
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();
+ coreStageEvidence.mark('cabinet-portrait')
  await assertCabinetPortrait(page,expect,{origin});
  await expect(page.locator('[data-profile-report-archive]')).toBeVisible();
+ coreStageEvidence.mark('cabinet-my-tests')
  await openCabinetMyTests(page,expect,{origin});
+ coreStageEvidence.mark('cabinet-dashboard')
  await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
  const firstPicker=await assertAccountPickerDisclosure(page,expect,{expanded:false});
@@ -790,20 +778,32 @@ try {
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
- await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile'})).toBeVisible();
+ coreStageEvidence.mark('cabinet-screenshot')
  await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});
+ coreStageEvidence.mark('cabinet-compact-picker')
  await assertCompactAccountPicker(await openAccountTestPicker(page,expect),expect);
+ coreStageEvidence.mark('cabinet-picker-toggle')
  await firstPicker.toggle.click();
+ coreStageEvidence.mark('cabinet-picker-disclosure')
  await assertAccountPickerDisclosure(page,expect,{expanded:false});
+ coreStageEvidence.mark('cabinet-insights-open')
  await openInsightsProfileTools();
+ coreStageEvidence.mark('cabinet-insights-heading')
  await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
+ coreStageEvidence.mark('cabinet-insights-expand')
  await page.locator('[data-profile-extra-tools] > summary').click();
+ coreStageEvidence.mark('cabinet-insights-state')
  await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();
+ coreStageEvidence.mark('cabinet-insights-link')
  await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();
- await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile',exact:true}).click();
+ coreStageEvidence.mark('cabinet-profile-click')
+ await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile',exact:true}).click();
+ coreStageEvidence.mark('cabinet-profile-assert')
  await assertCabinetPortrait(page,expect,{origin});
  passed('supported SDK PKCE callback opens private reports, then real My tests and detailed Insights navigation')
 
+ coreStageEvidence.mark('after-cabinet-navigation')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -878,7 +878,7 @@ try {
   const primaryNav=page.getByRole('navigation',{name:'Quick navigation'})
   await expect(primaryNav.locator(':scope > a')).toHaveCount(6)
   await expect(primaryNav.getByRole('link',{name:'Analysis'})).toHaveCount(0)
-  await expect(primaryNav.getByRole('link',{name:'Profile'})).toHaveAttribute('aria-current','page')
+  await expect(primaryNav.getByRole('link',{name:'My Profile'})).toHaveAttribute('aria-current','page')
   for(const width of [320,390,768,1280]){
     await page.setViewportSize({width,height:900})
     await assertCabinetPrimaryNavigation(page,expect,{current:'portrait'})
@@ -1249,7 +1249,7 @@ try {
  await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}])
  const otherPage=await other.newPage()
  await otherPage.goto(origin+'/en/app')
- await otherPage.getByRole('button',{name:'Continue with Google'}).click()
+ await (await assertCabinetGuestSignin(otherPage,expect,{origin})).click()
  await expect(otherPage).toHaveURL(/\/en\/app\/portrait$/,{timeout:30000})
  await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:30000})
  // These old readiness signals are already true before consent is submitted.
@@ -1367,7 +1367,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await assertCabinetGuestSignin(page,expect,{origin});await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
@@ -1447,7 +1447,7 @@ try {
  await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition)
  // Sign in explicitly, then append through the actual account picker.
  await page.goto(origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await (await assertCabinetGuestSignin(page,expect,{origin})).click()
  await assertCabinetPortrait(page,expect,{origin})
  assert.deepEqual((await api('bootstrap')).data.activeTestPlan,savedBeforeSignout,'guest selection and Google sign-in leave the saved battery unchanged')
  const appendExplorer=await chooseSingleAccountTest(page,newPublicTest.title)
@@ -1489,7 +1489,7 @@ try {
  await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})
  passed('first-screen test removal updates current plan while preserving private results and drafts')
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,coreStageEvidence:coreStageEvidence.snapshot(),realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
  } catch(error){
  primaryFailure=true
@@ -1499,8 +1499,8 @@ try {
   error, stage:historyDiagnosticStage,
   elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
   log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
-  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
-  screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
+  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,coreStageEvidence:coreStageEvidence.snapshot(),historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
+  screenshot:()=>screenshotEvidence(guestPickerFailurePage||page,{path:output+'/failure-synthetic-only.png',fullPage:true,...(guestPickerFailurePage?{mask:[guestPickerFailurePage.locator('input,textarea,[contenteditable]')]}:{})}),
  }) } finally { throw error }
 } finally {
  const outcome=await boundedBestEffort(()=>browser.close())

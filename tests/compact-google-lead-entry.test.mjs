@@ -48,6 +48,7 @@ test('Google entry uses existing PKCE and prefill, never silently submits a CRM 
   // Only legacy compact-phone enquiries are phone-only; cart and fixed Alchemy
   // booking may use the actual verified Google email with explicit consent.
   assert.match(src, /const usePhone = \(compactPhone && !bookingSku\) \|\| method === "phone"/)
+  assert.match(src, /if \(\(compactPhone && !bookingSku\) \|\| url\.searchParams\.get\("hh_enquiry"\) !== "google"\) return/)
   assert.match(src, /email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : ""/)
   assert.match(src, /if \(busy \|\| saved\) return;/)
   assert.match(src,/contactConsent: consent/)

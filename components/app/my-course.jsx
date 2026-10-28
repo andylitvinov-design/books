@@ -15,6 +15,7 @@ import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
 import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
 import CourseEntrySelector from './course-entry-selector'
+import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import Course14DayOverview from './course-14-day-overview'
 import OporaFirstWeekInvite from './opora-first-week-invite'
 import CourseR3Steps from './course-r3-steps'
@@ -502,7 +503,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const fastAntistressEntry = !state?.course?.presetId && view !== 'switch' && (Boolean(requestedProgram) ||
     (showCourse && [1,2].includes(stage) && courseProgramFromTopics(state?.course?.focusTags||[])?.id===ACTIVE_COURSE_PROGRAM_ID && searchParams.get('entry')!=='personal'))
   const personalEntry = stage === 0 && !personalEntryDismissed && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
-  if (!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry) return <CourseEntrySelector
+  if ((!showCourse || (coursesIndexEntry && courses.length === 0)) && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry) return <CourseEntrySelector
     key={accountId + ':' + (state.course?.id || '')}
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
@@ -526,6 +527,7 @@ export function MyCourse({ data, locale = 'en' }) {
   async function confirmFastStart() {
     const intent={accountId,courseId:selectedCourse.current,epoch:viewGeneration,programId:requestedProgram?.id||ACTIVE_COURSE_PROGRAM_ID}
     if (!fastAntistressEntry || stage!==0 || busy || actionLock.current || atLimit ||
+        renderedStartSerial !== acceptedStartSerial.current ||
         (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled) ||
         intent.accountId!==currentAccount.current || !isSelected(intent.courseId,intent.epoch)) return
     await act('start',{consent:true,programId:intent.programId})
@@ -556,6 +558,14 @@ export function MyCourse({ data, locale = 'en' }) {
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
+    {showDashboard && <section className={styles.browseCourses} data-my-courses-catalogue aria-label={ru ? 'Выбор курсов' : 'Explore courses'}>
+      <h2>{ru ? 'Выбрать курс' : 'Explore Courses'}</h2>
+      <p>{ru ? 'Бесплатные программы и другие направления обучения.' : 'Free programmes and more learning directions.'}</p>
+      <CabinetFreeCourseBanners locale={locale} />
+      <Link className={styles.browseCourseLink} href={'/' + locale + '/academy'} prefetch={false}>
+        {ru ? 'Посмотреть все курсы' : 'Browse all courses'} <ArrowRight size={18} aria-hidden="true"/>
+      </Link>
+    </section>}
     {showDashboard && <CourseHomeScreenHabit locale={locale} />}
     {compactBaselineNav && <nav className={styles.compactBaselineNav} aria-label={ru ? 'Навигация курса' : locale === 'es' ? 'Navegación del curso' : 'Course navigation'} data-opora-baseline-compact-nav>
       <button type="button" disabled={busy} onClick={() => changeView('list')}>

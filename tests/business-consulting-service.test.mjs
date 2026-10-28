@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { assertSpanishBusinessServiceIndex } from "./helpers/spanish-business-service-index.mjs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+
 
 test("business consulting has a localized standalone page and booking enquiry", () => {
   const page = read("app/[locale]/services/business-consulting/page.tsx");
@@ -15,10 +17,10 @@ test("business consulting has a localized standalone page and booking enquiry", 
   assert.match(copy, /Activar la meta/);
   assert.match(form, /PersonalConsultationForm/);
 });
-test("all service indexes and locale changes can find the new offer", () => {
+test("all service indexes and locale changes can find the new offer", async () => {
   assert.match(read("data/core-service-offers.ts"), /route: "business-consulting"/);
   assert.match(read("components/services-solutions.tsx"), /offer\.id === "business"/);
-  assert.match(read("app/es/services/page.tsx"), /\/es\/services\/business-consulting/);
+  await assertSpanishBusinessServiceIndex(read);
   assert.match(read("app/sitemap.ts"), /services\/business-consulting/);
   assert.match(read("lib/public-locales.ts"), /business-consulting/);
 });

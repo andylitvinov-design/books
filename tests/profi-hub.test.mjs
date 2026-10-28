@@ -154,7 +154,7 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
-  const expected=['home','analysis','courses','profile','coaching','pro','temple']
+  const expected=['profile','courses','home','analysis','alchemy','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
@@ -315,10 +315,41 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
   assert.doesNotMatch(hub,/localStorage|sessionStorage|fetch\(|createClient\(|navigator\.share/)
 })
 
+function assertProStarterContract(source) {
+  const tree=ts.createSourceFile('practice-workspace.jsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  const calls=[]
+  const visit=node=>{
+    if(ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='setProStarter'){
+      const value=node.arguments[0]
+      if(value&&ts.isConditionalExpression(value)&&ts.isCallExpression(value.condition)&&
+        ts.isPropertyAccessExpression(value.condition.expression)&&
+        ts.isArrayLiteralExpression(value.condition.expression.expression))calls.push(node)
+    }
+    ts.forEachChild(node,visit)
+  }
+  visit(tree)
+  assert.equal(calls.length,1,'One explicit URL starter allowlist')
+  const call=calls[0],value=call.arguments[0],condition=value.condition
+  assert.equal(call.arguments.length,1)
+  assert.equal(condition.expression.name.text,'includes')
+  assert.equal(condition.arguments.length,1)
+  assert.ok(ts.isIdentifier(condition.arguments[0])&&condition.arguments[0].text==='starter')
+  const allowed=condition.expression.expression.elements
+  assert.ok(allowed.every(item=>ts.isStringLiteral(item)))
+  const expected=['session','intro','workshop','diagnostic','energy','personal','reiki']
+  assert.deepEqual(allowed.map(item=>item.text),expected)
+  assert.ok(ts.isIdentifier(value.whenTrue)&&value.whenTrue.text==='starter')
+  assert.ok(ts.isStringLiteral(value.whenFalse)&&value.whenFalse.text==='')
+  for(const starter of [...expected,'unknown','__proto__','constructor','toString','reiki-extra',null,undefined,{},[]]){
+    const actual=runInNewContext(value.getText(tree),{starter},{timeout:1000})
+    assert.equal(actual,expected.includes(starter)?starter:'','URL starter allowlist and empty fallback')
+  }
+}
+
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
+  assertProStarterContract(practice)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
   for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
@@ -374,11 +405,80 @@ test('Pro includes the same consented express-written-review CTA as other direct
   }
 })
 
-test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
+test('Pro starts with three localized, accessible paths, including real mentor discovery',async()=>{
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
-  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
-  assert.match(switcher,/initialView \?\? \(hasArticles \|\| hasServices \? "articles" : "mentors"\)/)
+  // Exercise existing merged PR1933 behavior, not an assumed owner default.
+  // Repositories are finite synthetic boundaries; no real DB modules are loaded.
+  const element = (type, props) => ({type, props: props || {}})
+  const compile = (source, fileName, modules) => {
+    const exports = {}
+    const denied = () => { throw new Error('Unexpected external call in mentor view regression') }
+    runInNewContext(ts.transpileModule(source, {fileName,
+      compilerOptions: {jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
+    }).outputText, {exports, require:name=>{
+      assert.ok(Object.hasOwn(modules,name),'known mocked dependency: '+name)
+      return modules[name]
+    }, fetch:denied, window:new Proxy({}, {get:denied}), document:new Proxy({}, {get:denied})}, {timeout:1000})
+    return exports
+  }
+  const jsxRuntime = {jsx:element,jsxs:element,Fragment:'fragment'}
+  let reviewRepositoryCalls = 0
+  const modules = {
+    'react/jsx-runtime':jsxRuntime,
+    'next/navigation':{notFound:()=>{throw new Error('Unexpected locale')}},
+    '@/components/public-site-header':{PublicSiteHeader:'header'},
+    '@/data/academy/catalog':{isPublicLocale:locale=>['en','ru','es'].includes(locale)},
+    '@/data/site-metadata':{metadataBaseFor:()=>{throw new Error('Metadata outside regression')}},
+    '@/lib/app/config':{getAppConfig:()=>Object.freeze({synthetic:true})},
+    '@/lib/practitioners/repository':{createPractitionerRepository:()=>({listPublicPractitioners:async()=>[]})},
+    '@/lib/practitioners/reviews':{createServiceReviewRepository:()=>{reviewRepositoryCalls++;throw new Error('Review repository outside empty-directory regression')}},
+    '@/lib/practitioners/article-repository':{createArticleRepository:()=>({publicList:async()=>[]})},
+    '@/lib/practitioners/course-repository':{createPractitionerCourseRepository:()=>({catalog:async()=>[]})},
+    '@/components/master-network-explorer':{MarketplaceMasterFinder:'finder'},
+    '@/components/practitioner-article-directory':{ArticleDirectory:'article-directory'},
+    '@/components/mentor-community-switch':{MentorCommunitySwitch:'community-switch'},
+    '@/components/community-service-highlights':{CommunityServiceHighlights:'service-highlights'},
+  }
+  const route = compile(masters,'masters-page.tsx',modules).default
+  const renderSwitch = props => {
+    const component = compile(switcher,'mentor-community-switch.tsx',{
+      'react/jsx-runtime':jsxRuntime,
+      react:{useState:initial=>[initial,()=>{throw new Error('No interaction expected')}],useRef:()=>({current:null}),useEffect:()=>{}},
+      'next/link':{__esModule:true,default:'a'},
+      './mentor-community-switch.module.css':{__esModule:true,default:new Proxy({}, {get:(_,key)=>String(key)})},
+    }).MentorCommunitySwitch
+    return component(props)
+  }
+  for (const locale of ['en','ru','es']) {
+    for (const requested of [undefined,'mentors','articles','invalid',['articles']]) {
+      const tree = await route({params:Promise.resolve({locale}),searchParams:Promise.resolve({view:requested})})
+      assert.equal(reviewRepositoryCalls,0,'Empty-directory regression must not invoke the review repository')
+      const props = nodes(tree).find(node=>node.type==='community-switch').props
+      const expected = requested === 'articles' ? 'articles' : 'mentors'
+      assert.equal(props.initialView,expected,locale+': route view '+String(requested))
+      for (const populated of [false,true]) {
+        const rendered = renderSwitch({...props,hasArticles:populated,hasServices:populated})
+        const tabs = nodes(rendered).filter(node=>node.props?.role==='tab')
+        assert.equal(tabs.length,2)
+        for (const tab of tabs) {
+          const active = tab.props.id === 'mentor-community-tab-'+expected
+          assert.equal(tab.props['aria-selected'],active)
+          assert.equal(tab.props.tabIndex,active?0:-1)
+          const panel = nodes(rendered).find(node=>node.props?.id===tab.props['aria-controls'])
+          assert.equal(panel.props.hidden,!active)
+          assert.equal(panel.props['aria-labelledby'],tab.props.id)
+        }
+      }
+    }
+    // Direct component consumers without initialView retain the merged default,
+    // including when published content exists; explicit articles remains usable.
+    for (const populated of [false,true]) {
+      const rendered = renderSwitch({locale,mentors:'synthetic mentors',articles:'synthetic articles',hasArticles:populated,hasServices:populated})
+      assert.equal(nodes(rendered).find(node=>node.props?.id==='mentor-community-tab-mentors').props['aria-selected'],true)
+      assert.equal(nodes(rendered).find(node=>node.props?.id==='mentor-community-panel-articles').props.hidden,true)
+    }
+  }
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){

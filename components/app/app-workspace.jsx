@@ -559,10 +559,9 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Shared private navigation for desktop, mobile and the Account dropdown.
 // Reports reuses the existing Insights/portfolio screen; Practice is the master cabinet.
   const nav = [
-    { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
-    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
-    { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'portrait', label: locale === 'ru' ? 'Мой профиль' : 'My Profile', href: root + '/portrait', icon: UserRound },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
+    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
@@ -575,9 +574,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
   ]
   const navIsActive = (id) => page === id ||
-    (id === 'portrait' && page === 'labs') ||
-    (id === 'course' && ['business','coaching'].includes(page)) ||
-    (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
+    (id === 'portrait' && ['labs', 'portfolio', 'reports', 'history', 'monitoring', 'results'].includes(page)) ||
+    (id === 'course' && ['business','coaching'].includes(page))
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
     page === 'reports'
@@ -646,9 +644,11 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
-              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+                activityContent={<>
+                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
+                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                </>}
                 reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
             </>
           )}

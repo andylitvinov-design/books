@@ -267,7 +267,14 @@ export function ContactChannelChooser({
     let active = true;
     fetch("/api/service-enquiries/booking-status", {
       credentials: "same-origin", cache: "no-store",
-    }).then(response => response.ok ? response.json() : null)
+    }).then(response => {
+      if (response.ok) return response.json();
+      // Release our unused error body; no-store responses need not be buffered
+      // by the browser. Never parse it or wait before keeping payment locked.
+      try { void response.body?.cancel().catch(() => { /* Keep the non-OK result. */ }); }
+      catch { /* Body cleanup must not change the failed status handling. */ }
+      return null;
+    })
       .then(status => {
         if (!active || !status || status.bookingSku !== bookingSku ||
             !/^HH-[A-F0-9]{12}$/.test(status.referenceCode || "")) return;

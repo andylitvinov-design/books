@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { openHomeConversation, verifyCurrentReviewFault } from "../scripts/helpers/home-conversation-current-verifier.mjs";
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
@@ -19,7 +20,7 @@ const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "star
 for (const stream of [server.stdout, server.stderr]) {
   stream.on("data", part => { logs = (logs + part.toString()).slice(-25000); });
 }
-const evidence = { browser: engineName, cases: [] };
+const evidence = { browser: engineName, cases: [], formFaults: [] };
 mkdirSync("artifacts/home-conversation", { recursive: true });
 
 async function waitForServer() {
@@ -61,7 +62,7 @@ try {
       });
       try {
         await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
-        const guide = page.locator("[data-home-conversation-guide]");
+        const guide = await openHomeConversation(page, expect);
         await expect(guide).toHaveCount(1);
         await expect(guide).toBeVisible();
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
@@ -69,148 +70,30 @@ try {
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
-        const diagnosis = page.locator("[data-home-free-diagnosis-banner]");
-        await expect(diagnosis).toHaveCount(1);
-        const positions = await page.evaluate(() => {
-          const slider = document.querySelector("[data-home-section-carousel]");
-          const banner = document.querySelector("[data-home-free-diagnosis-banner]");
-          const dialogue = document.querySelector("[data-home-conversation-guide]");
-          return [slider, banner, dialogue].map(node => node?.getBoundingClientRect().top ?? -1);
-        });
-        assert.ok(positions[0] >= 0 && positions[0] < positions[1] && positions[1] < positions[2],
-          "Homepage must show slider, free service, then question: " + JSON.stringify(positions));
-        const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
-        await requestButton.click();
-        await expect(requestButton).toHaveAttribute("aria-expanded", "true");
-        const requestPanel = diagnosis.locator("[data-home-diagnosis-request]");
-        await expect(requestPanel).toBeVisible();
-        await expect(requestPanel.locator('input[type="text"]')).toBeVisible();
-        await expect(requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]')).toBeVisible();
-        await expect(requestPanel.locator('button[data-home-diagnosis-channel="telegram"]')).toBeVisible();
-        assert.equal(await requestPanel.evaluate(node => node.parentElement?.getAttribute("class")?.includes("panel")),
-          true, "Messenger selection must remain inside the same banner card");
-        if (width === 390 && scenario.locale === "en" && scenario.text === scenarios[0].text) {
-          // Browser-real save/failure behaviour, but strictly synthetic API and
-          // fake popup: never submit a production lead or open external providers.
-          const registrations = [];
-          let failOnce = true;
-          await page.route("**/api/service-enquiries", async route => {
-            const payload = JSON.parse(route.request().postData() || "{}");
-            registrations.push(payload);
-            if (failOnce) {
-              failOnce = false;
-              return route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"CRM_UNAVAILABLE"}' });
-            }
-            return route.fulfill({ status: 201, contentType: "application/json",
-              body: '{"saved":true,"referenceCode":"HH-AABBCCDDEEFF"}' });
-          });
-          await page.evaluate(() => {
-            const qa = { opened: 0, closed: 0, destination: "" };
-            window.__homeMessengerQA = qa;
-            window.open = () => {
-              qa.opened++;
-              const popup = { opener: null, closed: false, location: {
-                replace: destination => { qa.destination = destination; },
-              }, close() { qa.closed++; popup.closed = true; } };
-              return popup;
-            };
-          });
-          await requestPanel.locator('input[type="text"]').fill("qa.home@example.test");
-          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
-          await expect(requestPanel.locator('[role="alert"]')).toContainText("Please agree");
-          assert.equal(registrations.length, 0, "No CRM request before explicit reply consent");
-          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
-          await expect(consentBox).not.toBeChecked();
-          // Real visitor taps the consent text; the independent label forwards
-          // exactly one click to its named input, on touch and mouse.
-          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
-          await expect(consentBox).toBeChecked();
-          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
-          await expect(requestPanel.locator('[role="alert"]')).toBeVisible();
-          assert.equal(await requestPanel.locator("[data-lead-saved]").count(), 0,
-            "500 must never be a CRM success");
-          const failed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
-          assert.deepEqual(failed, { opened: 1, closed: 1, destination: "" },
-            "Failed save closes popup without connecting to a messenger");
-          await requestPanel.locator('button[data-home-diagnosis-channel="telegram"]').click();
-          await expect(requestPanel.locator("[data-lead-saved]")).toContainText("HH-AABBCCDDEEFF");
-          assert.equal(registrations.length, 2);
-          assert.deepEqual(registrations[0], registrations[1],
-            "Transport retry keeps the same idempotent contact request");
-          assert.equal(registrations[1].contact.email, "qa.home@example.test");
-          assert.equal(registrations[1].contactConsent, true);
-          assert.equal(registrations[1].sourcePath, "/en/services/free-situation-review");
-          const confirmed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
-          assert.equal(confirmed.opened, 2);
-          assert.equal(confirmed.closed, 1);
-          const link = new URL(confirmed.destination);
-          assert.equal(link.hostname, "t.me");
-          assert.equal(link.pathname, "/AndyTherapist");
-          assert.match(link.searchParams.get("text") || "", /HH-AABBCCDDEEFF/);
-          assert.doesNotMatch(confirmed.destination, /qa\.home@example\.test/,
-            "Contact must never go into WhatsApp/Telegram URL");
-          const whatsapp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
-          const telegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
-          await expect(whatsapp).toBeVisible();
-          await expect(telegram).toBeVisible();
-          const waMessage = new URL(await whatsapp.getAttribute("href")).searchParams.get("text");
-          assert.equal(waMessage, link.searchParams.get("text"), "Both providers get identical safe draft");
-          for (const button of [whatsapp, telegram]) {
-            await button.click({ trial: true, timeout: 8000 });
-            const rect = await button.boundingBox();
-            assert.ok(rect && rect.width >= 100 && rect.height >= 44, "Mobile messenger link must be tappable");
-            assert.ok(rect.x >= -1 && rect.x + rect.width <= width + 1, "Messenger fits 390px iPhone");
-          }
-          await diagnosis.screenshot({
-            path: "artifacts/home-conversation/" + engineName + "-inline-messenger-390.png",
-            animations: "disabled",
-          });
+        // The owner removed the duplicated homepage banner, not its privacy
+        // guarantees. Exercise those faults on the existing review entry page.
+        if ((width === 390 && scenario.locale === "en" && scenario.text === scenarios[0].text)
+          || (width === 430 && scenario.locale === "ru" && scenario.text === scenarios[1].text)) {
+          const reviewPage = await context.newPage();
+          const kind = scenario.locale === "en" ? "retry" : "handoff-failure";
+          // The helper owns teardown and retains the fence through its final
+          // drain; a second close here could mask its original scenario error.
+          evidence.formFaults.push(await verifyCurrentReviewFault(reviewPage, expect, {
+            origin: host, locale: scenario.locale, kind,
+            screenshotPath: "artifacts/home-conversation/" + engineName + "-current-review-" + kind + ".png",
+          }));
         }
-        if (width === 430 && scenario.locale === "ru" && scenario.text === scenarios[1].text) {
-          // A provider handoff error after the server ACK must not retract an
-          // already committed CRM lead. No live contact or external send.
-          const payloads = [];
-          await page.route("**/api/service-enquiries", async route => {
-            payloads.push(JSON.parse(route.request().postData() || "{}"));
-            return route.fulfill({ status: 201, contentType: "application/json",
-              body: '{"saved":true,"referenceCode":"HH-FFEEDDCCBBAA"}' });
-          });
-          await page.evaluate(() => {
-            const qa = { opened: 0, closed: 0, attempted: 0 };
-            window.__homeHandoffFailureQA = qa;
-            window.open = () => {
-              qa.opened++;
-              const popup = {
-                opener: null, closed: false,
-                location: { replace() { qa.attempted++; throw new Error("SIMULATED_SAFARI_HANDOFF_BLOCK"); } },
-                close() { qa.closed++; popup.closed = true; },
-              };
-              return popup;
-            };
-          });
-          await requestPanel.locator('input[type="text"]').fill("qa-failed-handoff@example.test");
-          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
-          await expect(consentBox).not.toBeChecked();
-          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
-          await expect(consentBox).toBeChecked();
-          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
-          await expect(requestPanel.locator('[data-lead-saved]')).toContainText("HH-FFEEDDCCBBAA");
-          await expect(requestPanel.locator('[role="alert"]')).toContainText(
-            "Заявка сохранена, но мессенджер не открылся");
-          assert.equal(payloads.length, 1, "A failed handoff cannot reinsert a saved lead");
-          assert.equal(payloads[0].contact.email, "qa-failed-handoff@example.test");
-          assert.deepEqual(await page.evaluate(() => ({ ...window.__homeHandoffFailureQA })),
-            { opened: 1, closed: 1, attempted: 1 });
-          const safeWhatsApp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
-          const safeTelegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
-          await expect(safeWhatsApp).toBeVisible();
-          await expect(safeTelegram).toBeVisible();
-          assert.match(await safeWhatsApp.getAttribute("href") || "", /HH-FFEEDDCCBBAA/);
-          assert.doesNotMatch(await safeTelegram.getAttribute("href") || "", /qa-failed-handoff/);
-        }
-        await requestButton.click();
-        await expect(requestButton).toHaveAttribute("aria-expanded", "false");
-        await expect(requestPanel).toBeHidden();
+        const topics = page.locator('[data-home-topic-filters]');
+        const workspace = page.locator('[data-home-featured-workspace]');
+        await expect(topics).toHaveCount(1);
+        await expect(workspace).toHaveCount(1);
+        await expect(page.locator('[data-home-free-diagnosis-banner]')).toHaveCount(0);
+        assert.deepEqual(await workspace.locator('[data-home-module]').evaluateAll(nodes => nodes.map(node => node.dataset.homeModule)),
+          ['courses', 'personality', 'situation', 'coaching', 'alchemy', 'energy', 'master']);
+        const positions = await page.evaluate(() => ['[data-home-section-carousel]', '[data-home-topic-filters]', '[data-home-featured-workspace]']
+          .map(selector => document.querySelector(selector)?.getBoundingClientRect().top ?? null));
+        assert.ok(positions.every(value => value !== null) && positions[0] < positions[1] && positions[1] < positions[2],
+          'Preserve the published carousel, topic picker and seven-stage workspace order: ' + JSON.stringify(positions));
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
           return { left: rect.left, right: rect.right, viewport: window.innerWidth };
@@ -322,7 +205,18 @@ try {
           await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
-          await dialog.getByRole("button", { name: scenario.reset }).click();
+          // This fixed English question changes the chat language, not the page locale.
+          await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
+          await expect(dialog.getByRole("log")).toContainText("A website guide can't provide emergency help.");
+          await expect(dialog.getByRole("button", { name: "Get guidance", exact: true })).toBeVisible();
+          const crisisReset = dialog.getByRole("button", { name: "Start over", exact: true });
+          await expect(crisisReset).toHaveCount(1);
+          await crisisReset.click();
+          await expect(guide).toHaveAttribute("data-guide-phase", "ready");
+          await expect(question).toHaveValue("");
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
+          await expect(dialog.getByRole("button", { name: scenario.send, exact: true })).toBeVisible();
         }
         if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
           // Natural two-question route and real local reply, including WebKit.
@@ -396,12 +290,40 @@ try {
         assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
+      } catch (error) {
+        // Failure-only observation: retain no question text, DOM dump, URL, or provider data.
+        // Do not insert waits, retries, or synthetic input into the real interaction sequence.
+        let state = null;
+        try {
+          state = await page.evaluate(expected => {
+            const guide = document.querySelector("[data-home-conversation-guide]");
+            const dialog = guide?.querySelector("[data-home-guide-dialog]");
+            const input = dialog?.querySelector("textarea");
+            const send = dialog?.querySelector('button[type="submit"]');
+            const active = document.activeElement;
+            return {
+              dialogPresent: Boolean(dialog),
+              phase: ["ready", "conversation"].includes(guide?.getAttribute("data-guide-phase"))
+                ? guide.getAttribute("data-guide-phase") : "other",
+              inputPresent: Boolean(input),
+              inputLength: input ? input.value.length : null,
+              expectedLength: expected.length,
+              matchesExpected: input ? input.value === expected : false,
+              sendDisabled: send ? send.disabled : null,
+              active: input && active === input ? "textarea" : send && active === send ? "send"
+                : dialog && active === dialog ? "dialog" : dialog?.contains(active) ? "dialog-child" : "outside",
+            };
+          }, scenario.text);
+        } catch { /* Preserve the original browser failure even if the page is unavailable. */ }
+        evidence.failure = { scenarioIndex: scenarios.indexOf(scenario), locale: scenario.locale,
+          width, pageErrorCount: errors.length, state };
+        throw error;
       } finally {
         await context.close();
       }
     }
   }
-  // Regression for the iPhone report: the public six-item bar must stay
+  // Regression for the iPhone report: the public seven-item bar must stay
   // attached to the VISIBLE viewport, including after scroll restoration.
   // The 280px CSS displacement reproduces the detached-layer geometry and
   // proves the correction also resets when the browser viewport recovers.
@@ -441,7 +363,15 @@ try {
         window.dispatchEvent(new Event("resize"));
       });
       await expectDocked("restored");
-      await expect(bottom.locator("a")).toHaveCount(6);
+      await expect(bottom.locator("a")).toHaveCount(7);
+      const locale = scenario.locale;
+      const accountLocale = locale === "es" ? "en" : locale;
+      assert.deepEqual(await bottom.locator('a').evaluateAll(nodes => nodes.map(node => [node.dataset.navItem, node.getAttribute('href')])), [
+        ['profile', '/' + accountLocale + '/app/portrait'], ['courses', '/' + locale + '/academy'],
+        ['home', locale === 'en' ? '/' : '/' + locale], ['analysis', '/' + locale + '/services/free-situation-review'],
+        ['alchemy', '/' + locale + '/services/alchemy-of-soul'], ['pro', '/' + locale + '/pro'],
+        ['temple', '/' + locale + '/holistic-support'],
+      ]);
       assert.deepEqual(errors, [], "Bottom bar re-anchoring must not throw");
       if (scenario.locale === "ru") {
         await page.screenshot({ path: `artifacts/home-conversation/${engineName}-ru-bottom-nav-docked.png` });
@@ -474,7 +404,7 @@ try {
     });
     try {
       await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
-      const guide = page.locator("[data-home-conversation-guide]");
+      const guide = await openHomeConversation(page, expect);
       const microphone = guide.locator("[data-home-guide-launcher-mic]");
       const microphoneLabel = { en: "Dictate a question with microphone", ru: "Продиктовать вопрос", es: "Dictar una pregunta" }[scenario.locale];
       const cancel = { en: "Cancel recording", ru: "Отменить запись", es: "Cancelar grabación" }[scenario.locale];
@@ -543,7 +473,7 @@ try {
     try {
       if (sample.kind === "start-hang" || sample.kind === "stop-hang") await page.clock.install();
       await page.goto(host + sample.path, { waitUntil: "domcontentloaded", timeout: 30000 });
-      const guide = page.locator("[data-home-conversation-guide]");
+      const guide = await openHomeConversation(page, expect);
       await guide.locator("[data-home-guide-launcher-mic]").click();
       await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
       if (sample.kind === "unsupported") {
@@ -596,6 +526,11 @@ try {
       await context.close();
     }
   }
+  assert.equal(evidence.cases.filter(item => item.route).length, 36, "All nine dialogue scenarios at four widths");
+  assert.equal(evidence.cases.filter(item => item.viewportDocked).length, 3);
+  assert.equal(evidence.cases.filter(item => item.voiceMock).length, 3);
+  assert.equal(evidence.cases.filter(item => item.recovered).length, 5);
+  assert.deepEqual(evidence.formFaults.map(item => [item.locale, item.kind]), [['en', 'retry'], ['ru', 'handoff-failure']]);
   console.log(JSON.stringify(evidence, null, 2));
 } finally {
   writeFileSync("artifacts/home-conversation/" + engineName + ".json", JSON.stringify({ ...evidence, serverLogs: logs.slice(-3000) }, null, 2));

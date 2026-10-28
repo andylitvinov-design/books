@@ -53,6 +53,7 @@ function mount(mode, locale) {
       profileServiceOffer: () => { throw new Error('Service rendering is outside this state regression') },
     },
     './profile-domains.css': {}, './profile-refresh.css': {},
+    './free-express-my-requests': { default: () => 'private-express-requests' },
   }
   const runtime = { exports: {}, require: key => {
     assert.ok(Object.hasOwn(modules, key), 'Unexpected import: ' + key)
@@ -87,17 +88,28 @@ function mount(mode, locale) {
 }
 
 for (const locale of ['en', 'ru']) {
-  test(locale + ' account Profile omits obsolete lower panels and does not fetch their records', async () => {
+  test(locale + ' authenticated My Profile reveals four areas and reads only its account-scoped archive', async () => {
     const h = mount('account', locale)
     await h.settle()
-    assert.equal(h.disclosure(), undefined, 'area disclosure remains on legacy cabinets only')
-    assert.equal(h.calls.length, 0, 'removed panels trigger no account report/document reads')
+    assert.ok(h.disclosure(), 'the four-area selector is available in the signed-in cabinet')
+    assert.equal(h.disclosure().props.open, true)
+    for (const area of ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy']) {
+      assert.ok(h.tab(area), 'missing profile area: ' + area)
+    }
+    assert.equal(h.calls.length, 2, 'saved report and document are read once')
+    assert.ok(h.calls.every(call => /^\/api\/app\/(?:reports|documents)\//.test(call.path)))
+    assert.ok(h.calls.every(call => call.options.credentials === 'same-origin' && call.options.cache === 'no-store'))
+    h.tab('wu_xing').props.onClick()
+    await h.settle()
+    h.toggle(false)
+    h.render()
+    await h.settle()
+    assert.equal(h.disclosure().props.open, false)
+    assert.equal(h.calls.length, 2, 'switching or closing a profile does not refetch private data')
     assert.equal(h.elements().some(node =>
       typeof node.props?.className === 'string' &&
-      /hh-domain-(more|footer-actions|private)/.test(node.props.className)
-    ), false, 'account Profile has no legacy lower actions or repeated privacy line')
-    h.render(); await h.settle()
-    assert.equal(h.calls.length, 0, 'rerender must not reintroduce hidden data reads')
+      /hh-domain-(footer-actions|private)/.test(node.props.className)
+    ), false, 'account Profile omits redundant public CTAs and private-link-only notices')
   })
 
   test(locale + ' legacy area disclosure starts open and remains user-toggleable without account requests', async () => {

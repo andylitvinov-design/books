@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import type { BusinessLocale } from "@/data/business-consulting-copy";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { parseBusinessReplyContact } from "@/lib/business-consulting/intake-policy";
+import { readBusinessReviewContext } from "@/lib/business-consulting/review-context";
 import styles from "./business-website-enquiry.module.css";
 
 type Format = "free" | "express" | "full" | "mentoring";
@@ -15,6 +16,8 @@ const translations = {
   en: {
     eyebrow:"DIRECT TO ANDREY", title:"Request a consultation",
     lead:"Choose a format and leave a contact. Andrey replies personally. No payment or confirmed booking here.",
+    reviewContext:"Selected website topic — please review:",
+    reviewContextNote:"This is navigation context, not your personal answer. We have not filled in your question.",
     format:"Consultation",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
     name:"Your name",namePlaceholder:"How should I address you?",
     contact:"How should Andrey reply?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com or +1 416 555 1234",
@@ -31,6 +34,8 @@ const translations = {
   ru: {
     eyebrow:"НАПРЯМУЮ АНДРЕЮ",title:"Запросить консультацию",
     lead:"Выберите формат и оставьте контакт. Андрей ответит лично. Это не запись и не оплата.",
+    reviewContext:"Выбранная тема сайта — проверьте:",
+    reviewContextNote:"Это контекст перехода, а не ваш личный ответ. Вопрос не заполняется автоматически.",
     format:"Формат",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
     name:"Ваше имя",namePlaceholder:"Как к вам обращаться?",
     contact:"Как вам ответить?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com или +1 416 555 1234",
@@ -47,6 +52,8 @@ const translations = {
   es: {
     eyebrow:"DIRECTO A ANDREY",title:"Solicitar una consulta",
     lead:"Elige una modalidad y deja un contacto. Andrey responderá personalmente. Sin pago ni reserva confirmada.",
+    reviewContext:"Tema del sitio seleccionado — revísalo:",
+    reviewContextNote:"Es contexto de navegación, no una respuesta personal. No hemos rellenado tu pregunta.",
     format:"Modalidad",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",
     contact:"¿Cómo deseas recibir respuesta?",email:"Correo",whatsapp:"WhatsApp",contactPlaceholder:"nombre@ejemplo.com o +1 416 555 1234",
@@ -70,6 +77,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
   const [replyMode,setReplyMode]=useState<"whatsapp"|"email">("whatsapp");
   const [showQuestion,setShowQuestion]=useState(false);
   const [question,setQuestion]=useState("");
+  const [reviewContext,setReviewContext]=useState<ReturnType<typeof readBusinessReviewContext>>(null);
   const [consent,setConsent]=useState(false);
   const [website,setWebsite]=useState("");
   const [busy,setBusy]=useState(false);
@@ -80,6 +88,11 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     const chosen=new URLSearchParams(window.location.search).get("businessFormat");
     if(chosen==="free"||chosen==="express"||chosen==="full"||chosen==="mentoring") setFormat(chosen);
   },[]);
+  useEffect(()=>{
+    // An allowlisted editorial topic is visible for review, never inserted into
+    // a personal answer or the existing submission payload and never consent.
+    setReviewContext(readBusinessReviewContext(window.location.search,locale));
+  },[locale]);
   useEffect(()=>{
     const choose=(event:MouseEvent)=>{
       if(!(event.target instanceof Element))return;
@@ -137,6 +150,10 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     <p className={styles.eyebrow}>{t.eyebrow}</p>
     <h2 id="business-website-title">{t.title}</h2>
     <p className={styles.lead}>{t.lead}</p>
+    {reviewContext ? <p className={styles.lead} role="note" data-business-review-context={reviewContext.id}>
+      <strong>{t.reviewContext}</strong> <span>{reviewContext.title}</span><br/>
+      <small>{t.reviewContextNote}</small>
+    </p> : null}
     {success?
       <div role="status" aria-live="polite" className={styles.success}>
         <CheckCircle2 size={24} aria-hidden="true"/>

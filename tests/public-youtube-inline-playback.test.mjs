@@ -15,7 +15,10 @@ test("public site video poster mounts exactly sourced YouTube iframe only after 
   assert.doesNotMatch(source, /<a className="site-video-play"/);
   assert.match(source, /disabled=\{!interactive\}/);
   assert.match(source, /referrerPolicy="strict-origin-when-cross-origin"/);
-  assert.match(source, /const mirrorLink = mirrorId \?/);
+  assert.match(source, /const \[playing, setPlaying\] = useState\(false\)/);
+  assert.match(source, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(source, /const externalLink = internalOnly \? null : <a className="site-video-watch-link"/);
+  assert.match(source, /const mirrorLink = mirrorId && !internalOnly \? <a className="site-video-watch-link"/);
 });
 
 test("Academy lesson thumbnails start inline YouTube, external watch stays secondary", () => {
@@ -38,7 +41,7 @@ test("public practitioner videos stay on-site and do not iframe before click", (
   const gallery = read("components/practitioner-video-gallery.tsx");
   const presentation = read("components/practitioner-presentation-video.tsx");
   assert.match(gallery, /\{active\s*\?<iframe/);
-  assert.match(gallery, /onClick=\{\(\) => setPlaying\(id\)\}/);
+  assert.match(gallery, /onClick=\{\(\)\s*=>\s*setPlaying\(id\)\}/);
   assert.match(gallery, /youtube-nocookie\.com\/embed/);
   assert.match(gallery, /autoplay=1&playsinline=1&rel=0/);
   assert.doesNotMatch(gallery, /directYouTube|<a className=\{styles\.poster\}/);

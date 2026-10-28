@@ -72,6 +72,41 @@ test('staged iOS app does not reuse PsiAlchemy bundle ID or stale developer Coco
     assert.equal(f.read('ios/App/App/AppDelegate.swift').split('.capacitorDidFailToRegisterForRemoteNotifications,').length-1,1)
   })
 })
+test('Messages launch retains exact native identity, HTTPS and navigation guards',()=>{
+  const cases=[
+    ['app ID',config=>{config.appId='com.example.other'}],
+    ['app name',config=>{config.appName='Other'}],
+    ['origin',config=>{config.server.url='https://attacker.example/en/app/messages'}],
+    ['HTTPS',config=>{config.server.url='http://holistichouse.vercel.app/en/app/messages'}],
+    ['launch path',config=>{config.server.url='https://holistichouse.vercel.app/en/app/portrait'}],
+    ['cleartext',config=>{config.server.cleartext=true}],
+    ['navigation host',config=>{config.server.allowNavigation=['attacker.example']}],
+    ['extra navigation host',config=>{config.server.allowNavigation.push('attacker.example')}],
+  ]
+  for(const [name,mutate] of cases)fixture(f=>{
+    const config=JSON.parse(f.read('capacitor.holistic-house.config.json'))
+    mutate(config)
+    writeFileSync(join(f.root,'capacitor.holistic-house.config.json'),JSON.stringify(config))
+    const child=spawnSync(process.execPath,[stage.pathname,'before-sync'],{cwd:f.root,encoding:'utf8',timeout:10000})
+    assert.equal(child.status,1,name+' must be rejected')
+    assert.match(child.stderr,/Native identity\/origin must match reviewed config/,name)
+    assert.equal(JSON.parse(f.read('package.json')).dependencies['@capacitor/push-notifications'],undefined)
+  })
+})
+test('both staged platform bundles reject stale launch URLs and foreign app IDs',()=>{
+  for(const platform of ['android','ios'])for(const field of ['url','appId'])fixture(f=>{
+    f.invoke('before-sync')
+    const config=JSON.parse(f.read('capacitor.config.json'))
+    if(field==='url')config.server.url='https://holistichouse.vercel.app/en/app/portrait'
+    else config.appId='com.example.other'
+    const path=platform==='android'?'android/app/src/main/assets/capacitor.config.json':'ios/App/App/capacitor.config.json'
+    mkdirSync(dirname(join(f.root,path)),{recursive:true})
+    writeFileSync(join(f.root,path),JSON.stringify(config))
+    const child=spawnSync(process.execPath,[stage.pathname,'after-'+platform+'-sync'],{cwd:f.root,encoding:'utf8',timeout:10000})
+    assert.equal(child.status,1,platform+' '+field+' must be rejected')
+    assert.match(child.stderr,/Wrong bundled app origin/)
+  })
+})
 test('no native build claims signing, TestFlight, store release or verified association',()=>{
   const flow=source('.github/workflows/holistic-house-native.yml')
   assert.match(flow,/assembleDebug/)

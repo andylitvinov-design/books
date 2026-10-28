@@ -4,6 +4,7 @@ import { assertAccountScaleJumpLayout } from './helpers/scale-jump-layout-verifi
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { collectReportOverflowDiagnostics } from './helpers/report-overflow-diagnostics.mjs'
+import { observePersonalityPdfNavigation, preservePersonalityPdfNavigation } from './helpers/personality-pdf-navigation-diagnostics.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -111,7 +112,9 @@ try{
  page=await account.newPage()
  observePage(page,'account')
  await navigate(page,origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ const cabinetEntry=page.locator('[data-cabinet-guest-overview="true"]')
+ await expect(cabinetEntry).toBeVisible()
+ await cabinetEntry.getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
@@ -173,9 +176,18 @@ try{
  passed('all four original instruments appear in bilingual Insights; compatible repeat appears in history')
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
+  let navigationDiagnostics
+  try{navigationDiagnostics=observePersonalityPdfNavigation(page,{origin,locale})}
+  catch{try{console.log('TYPOLOGY_PDF_NAVIGATION_DIAGNOSTIC_UNAVAILABLE')}catch{}}
+  let navigationCompleted=false
+  try{
   await navigate(page,origin+'/'+locale+'/app')
   await assertCabinetPortrait(page, expect, { origin, locale })
   await openCabinetMyTests(page, expect, { origin, locale })
+  navigationCompleted=true
+  }finally{
+   await preservePersonalityPdfNavigation(navigationDiagnostics,{directory:output,completed:navigationCompleted})
+  }
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
