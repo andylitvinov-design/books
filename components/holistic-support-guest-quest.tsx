@@ -28,6 +28,10 @@ export function useSupportGuestQuest() {
     try {
       const raw = window.localStorage.getItem(QUEST_STORAGE_KEY);
       if (raw && raw.length < 1200) next = normalizeQuest(JSON.parse(raw));
+      // Browser storage is not an account entitlement or completion receipt.
+      // Never show a remembered test checkmark until the currently verified
+      // member/guest session confirms a completed result.
+      next = normalizeQuest({ ...next, completed: { ...next.completed, test: false } });
     } catch {
       // Storage can be unavailable in a private browser; the journey still works in memory.
     }
