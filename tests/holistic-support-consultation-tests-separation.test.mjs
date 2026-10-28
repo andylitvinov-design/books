@@ -37,15 +37,18 @@ test("compact scrolling service category chips retain names and filtering", () =
   assert.ok(gallery.includes("matchesConsultationCategory(offer, consultCategory)"));
   assert.ok(galleryCss.includes("overflow-wrap:normal; white-space:nowrap"));
   assert.ok(galleryCss.includes("min-height:44px"));
-  assert.ok(mobileCss.includes(".toolShortcuts .testsShortcut"));
+  assert.ok(mobileCss.includes(".toolShortcuts .mandalaShortcut"));
+  assert.ok(mobileCss.includes(".profile > .testsShortcut"));
   assert.ok(mobileCss.includes("grid-column:1/-1"));
 });
-test("Tests shortcut is at least 44px tall across desktop and phone breakpoints", () => {
-  const overrides = [...mobileCss.matchAll(/\.toolShortcuts \.testsShortcut\s*\{([^}]*)\}/g)]
+test("Mandala full-width shortcut and central Tests chip each preserve 44px touch targets", () => {
+  const overrides = [...mobileCss.matchAll(/\.toolShortcuts \.mandalaShortcut\s*\{([^}]*)\}/g)]
     .map(([, styles]) => styles);
   assert.equal(overrides.length, 3, "base, mobile and 320px CSS each set a touch target");
   for(const styles of overrides) assert.match(styles, /(?:^|;)\s*min-height:\s*44px\b/,
-    "Tests button must not shrink below the 44px touch target");
+    "Mandala button must not shrink below the 44px touch target");
+  assert.match(mobileCss, /\.testsShortcut \{[\s\S]*?min-height: 44px;/);
+  assert.match(mobileCss, /\.profile > \.testsShortcut \{[\s\S]*?min-height: 44px;/);
 });
 test("both changed TSX components parse without diagnostics", () => {
   for(const [name,source] of [["mobile",mobile],["gallery",gallery]]) {

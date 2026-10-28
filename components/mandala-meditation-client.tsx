@@ -316,7 +316,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
-        <Link href={"/" + locale + "/holistic-support#meditation-practices"} className={styles.back} prefetch={false}>
+        <Link href={"/" + locale + "/holistic-support/mobile?view=meditation#support-mobile-experience"} className={styles.back} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}

@@ -111,7 +111,7 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
   assert.match(studio,/disabled=\{!canGenerate\}/);
-  assert.match(studio,/const source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl/);
+  assert.match(studio,/const source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
   assert.doesNotMatch(studio+audio,/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
@@ -127,8 +127,10 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
     assert.ok(studio.includes(key));
   assert.match(studio,/setScores\(prev=>\(\{\.\.\.prev,\[key\]:Number/);
   assert.match(studio,/selectCategory\(lowestTheme\)/);
-  assert.match(studio,/href=\{"\/"\+locale\+"\/talismans"\}/);
-  assert.match(studio,/href=\{"\/"\+locale\+"\/masters"\}/);
+  for(const view of ["tests","meditation","consultation","talisman","healing","pump","masters"]) {
+    assert.ok(studio.includes("/holistic-support/mobile?view="+view), "new design category: "+view);
+  }
+  assert.doesNotMatch(studio,/href=\{"\/"\+locale\+"\/(?:tests|talismans|masters|academy)"\}/);
   assert.match(studio,/href="#video-templates"/);
   assert.match(studio,/data-mandala-money-preview/);
   assert.match(studio,/data-mandala-cinematic-canvas/);
@@ -158,4 +160,54 @@ test("mobile theme is a compact accessible menu, and hero returns to live select
   assert.match(browser,/data-video-theme-toggle/);
   assert.match(browser,/data-hero-promo/);
   assert.doesNotMatch(studio,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/i);
+});
+
+
+// Render the actual TSX with inert JSX records: no browser, React effects or I/O.
+async function renderMandalaDock(source, locale) {
+  const ts = await import("typescript");
+  const input = source.replace(/^import .*;\n/gm, "");
+  const { outputText, diagnostics = [] } = ts.transpileModule(input, {
+    fileName: "holistic-support-mandala-dock.tsx", reportDiagnostics: true,
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.React, jsxFactory: "h", jsxFragmentFactory: "Fragment" },
+  });
+  assert.equal(diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
+  const h = (type, props, ...children) => ({ type, props: props || {}, children: children.flat(Infinity) });
+  const exports = {};
+  const styles = new Proxy({}, { get: (_, key) => key });
+  new Function("exports", "h", "Fragment", "useState", "Link", "styles",
+    "ArrowLeft", "BarChart3", "Compass", "Home", "MessageCircle", "Settings2", outputText)(
+    exports, h, "fragment", () => [false, () => {}], "a", styles,
+    "icon", "icon", "icon", "icon", "icon", "icon");
+  return exports.HolisticSupportMandalaDock({ locale });
+}
+
+function assertMandalaHeaderName(tree, expected) {
+  const header = tree.children.find(node => node?.type === "header");
+  assert.ok(header, "actual header exists");
+  const button = header.children.find(node => node?.type === "button");
+  assert.ok(button, "actual header settings control exists");
+  assert.equal(button.props["aria-label"], expected, "header settings has localized accessible name");
+  assert.equal(button.props["aria-controls"], "mandala-support-settings");
+  assert.equal(button.props["aria-expanded"], false);
+  const nav = tree.children.find(node => node?.type === "nav");
+  assert.equal(nav.children.length, 5, "current five-item dock preserved");
+}
+
+test("mandala header settings actual JSX has an accessible name in all three locales", async () => {
+  const source = read("components/holistic-support-mandala-dock.tsx");
+  for (const [locale, expected] of [["en", "Settings"], ["ru", "Настройки"], ["es", "Ajustes"]]) {
+    assertMandalaHeaderName(await renderMandalaDock(source, locale), expected);
+  }
+});
+
+test("mandala header settings oracle rejects missing-label regression", async () => {
+  const source = read("components/holistic-support-mandala-dock.tsx");
+  assert.equal((source.slice(source.indexOf("<header"), source.indexOf("</header>")).match(/aria-label=\{t.settings\}/g) || []).length, 1);
+  const mutant = source.replace(' aria-label={t.settings}', '');
+  for (const [locale, expected] of [["en", "Settings"], ["ru", "Настройки"], ["es", "Ajustes"]]) {
+    const tree = await renderMandalaDock(mutant, locale);
+    assert.throws(() => assertMandalaHeaderName(tree, expected), /localized accessible name/);
+  }
 });

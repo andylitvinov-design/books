@@ -4,7 +4,12 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation";
-export type AmbientSession = { track: MediaStreamTrack; close: () => void; fadeOut: () => void };
+export type AmbientSession = {
+  track: MediaStreamTrack;
+  close: () => void;
+  fadeOut: () => void;
+  setVolume: (value: number) => void;
+};
 const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number,number]> = {
   harmony:[174.61,261.63,349.23,523.25],
   prosperity:[196.00,246.94,392.00,493.88],
@@ -13,19 +18,52 @@ const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number
   meditation:[130.81,196.00,261.63,392.00],
 };
 
+// On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
+// default, even when an HTML video would be audible. iOS 17+ exposes the
+// audioSession API. Change it only for a user-initiated preview or export.
+function acquirePlaybackSession(): () => void {
+  if (typeof navigator === "undefined") return () => {};
+  const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (!session) return () => {};
+  const previous = session.type;
+  try {
+    session.type = "playback";
+  } catch {
+    return () => {};
+  }
+  return () => {
+    try {
+      if (previous !== "playback" && session.type === "playback") session.type = previous;
+    } catch { /* Device audio routing is controlled by iOS. */ }
+  };
+}
+
+function outputGain(volume: number): number {
+  const normalized = Number.isFinite(volume) ? Math.min(100, Math.max(0, volume)) : 30;
+  // The former 30%-setting was almost inaudible (~-38 dB RMS).
+  // Keep a bounded mix even with four oscillators at 100%.
+  return 0.5 * normalized / 100;
+}
+
 export async function startAmbientMusic(
   preset: AmbientMusic, volume = 30, audible = false,
 ): Promise<AmbientSession | null> {
   if (preset === "none" || typeof window === "undefined") return null;
-  const AudioCtor = window.AudioContext;
+  const AudioCtor = window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtor) return null;
-  const context = new AudioCtor();
+  const restoreSession = acquirePlaybackSession();
+  let context: AudioContext;
+  try {
+    context = new AudioCtor();
+  } catch {
+    restoreSession();
+    return null;
+  }
   try {
     const destination = context.createMediaStreamDestination();
     const master = context.createGain();
-    // 30% reproduces the original quiet mix. Never blast headphones.
-    const normalized = Number.isFinite(volume) ? Math.min(100,Math.max(0,volume)) : 30;
-    const level = Math.min(.11, .045 * (normalized / 30));
+    const level = outputGain(volume);
     master.gain.setValueAtTime(0, context.currentTime);
     master.gain.linearRampToValueAtTime(level, context.currentTime + .5);
     master.connect(destination);
@@ -48,11 +86,18 @@ export async function startAmbientMusic(
       tone.start();lfo.start();voices.push(tone,lfo);
     }
     await context.resume();
+    if (context.state !== "running") throw new Error("AudioContext is suspended");
     const track=destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No browser audio track");
     let closed=false, faded=false;
     return {
       track,
+      setVolume: (value: number) => {
+        if (closed || faded) return;
+        const at = context.currentTime;
+        master.gain.cancelScheduledValues(at);
+        master.gain.setTargetAtTime(outputGain(value), at, .035);
+      },
       fadeOut: () => {
         if (closed || faded) return;
         faded = true;
@@ -68,10 +113,12 @@ export async function startAmbientMusic(
         master.disconnect();
         track.stop();
         void context.close().catch(()=>{});
+        restoreSession();
       }
     };
   } catch {
     void context.close().catch(()=>{});
+    restoreSession();
     return null;
   }
 }

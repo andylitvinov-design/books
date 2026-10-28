@@ -281,7 +281,9 @@
   .settings .pills button{font-size:9px;padding:4px 2px}
 }
 
-
+/* Approved iPhone mandala hierarchy: theme chips above, clear player below. */
+@media(max-width:759px){.hero{margin-top:60px;overflow:visible;border-radius:20px;min-height:365px}.heroCanvas,.heroShade,.heroOverlay{border-radius:inherit;overflow:hidden}.heroOverlay{min-height:365px;padding:11px 12px 12px}.heroThemes{position:absolute;left:0;right:0;top:-52px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;z-index:3}.heroThemes button{min-height:44px;border-radius:12px;background:#eaf4eb;color:#165944;border:1px solid #bbd8c8;font-size:clamp(9px,2.6vw,11px);font-weight:800}.heroThemes button[aria-pressed="true"]{background:#069e76;color:#fff}.heroTabs{display:flex;gap:5px}.heroTabs>*{flex:1;min-height:36px;font-size:clamp(9px,2.6vw,11px)}.heroTabs>a:last-child{display:none}.heroBody{padding:12px 2px 0}.heroBody h2{font-size:clamp(24px,6.2vw,30px);max-width:95%}.heroBody p{max-width:94%}.heroShade{background:linear-gradient(0deg,rgba(7,29,23,.92),rgba(8,30,25,.55) 40%,transparent 76%)}.heroCreate{width:100%;min-height:48px;border-radius:12px}.templates{border:1px solid #e2e7dc;border-radius:19px;margin-top:12px}}
+@media(max-width:350px){.hero{margin-top:67px}.heroThemes{top:-59px}.heroThemes button{min-height:51px;font-size:8.5px;flex-direction:column}}
 
 /* 28 Oct design parity: the user's approved Support reference keeps the
    three-part header very compact and gives the cinematic background space. */

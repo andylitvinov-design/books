@@ -1,9 +1,10 @@
 /**
  * Public/guest mandala E2E: real Chromium and WebKit at iPhone widths.
  * No login, account writes, provider render, billing or uploaded personal data.
- * Uses a synthetic 1px file and only tests YouTube iframe mounting, not sound.
+ * Uses a synthetic 1px photo and verifies the encoded locally generated sound.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
@@ -213,9 +214,32 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           assert.equal(videoDownload.suggestedFilename(), filename);
           const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
-          assert.ok(videoBytes.length > 10000, "generated silent video has a real encoded payload");
+          assert.ok(videoBytes.length > 10000, "generated video has a real encoded payload");
           if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
           else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
+          // A selected ambient track must survive the actual MediaRecorder
+          // and contain audible PCM energy, not just a silent MP4/WebM header.
+          const info = spawnSync("ffprobe", [
+            "-v", "error", "-show_entries", "stream=codec_type,codec_name", "-of", "json", "-",
+          ], { input: videoBytes, encoding: "utf8" });
+          assert.equal(info.status, 0, "ffprobe reads the real downloadable video: "+info.stderr);
+          const streams = JSON.parse(info.stdout).streams || [];
+          assert.ok(streams.some(stream => stream.codec_type === "video"), "recording has a video track");
+          assert.ok(streams.some(stream => stream.codec_type === "audio"), "recording has a real audio track");
+
+          const decoded = spawnSync("ffmpeg", [
+            "-hide_banner", "-loglevel", "error", "-i", "pipe:0", "-map", "0:a:0",
+            "-t", "2", "-ar", "8000", "-ac", "1", "-f", "s16le", "pipe:1",
+          ], { input: videoBytes, maxBuffer: 1024 * 1024 });
+          assert.equal(decoded.status, 0, "recorded audio decodes to PCM: "+decoded.stderr);
+          const samples = Math.floor(decoded.stdout.length / 2);
+          assert.ok(samples > 4000, "at least half a second of encoded audio");
+          let energy = 0;
+          for (let sample = 0; sample < samples; sample++) {
+            const value = decoded.stdout.readInt16LE(sample * 2) / 32768;
+            energy += value * value;
+          }
+          assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
         }
 

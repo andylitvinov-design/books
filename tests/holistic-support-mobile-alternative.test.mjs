@@ -73,11 +73,34 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);
-  assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(css, /font-size: 17px/);
   assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
+});
+
+test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES", () => {
+  const page = read("app/[locale]/app/messages/page.tsx");
+  const orders = read("components/app/messages-orders-clients.jsx");
+  const inbox = read("components/app/messages-hub.jsx");
+  assert.match(client, /data-support-mobile-bottom-nav/);
+  assert.match(client, /data-support-mobile-messages/);
+  assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
+  for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
+    assert.ok(client.includes(pair), pair);
+  // The tab query is critical: without it the existing route initially shows
+  // Orders, not the already-approved person-by-person conversations.
+  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(inbox, /<MessagesSimpleInbox/);
+  assert.match(inbox, /<DirectMessageInbox/);
+  assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
+  const dock = css.slice(css.indexOf(".bottomNav {"), css.indexOf(".bottomNav >"));
+  assert.match(dock, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.bottomNav > :is\(a,button\)/);
+  assert.match(css, /safe-area-inset-bottom/);
 });
 
 test("new TSX and route transpile without TypeScript parser diagnostics", () => {
@@ -129,9 +152,11 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Courses", healing: "Reiki support"/);
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
-  assert.match(client, /data-support-courses-panel/);
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
-  assert.match(client, /\/academy\/reiki\/tantra-reiki\/discover/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(read("app/[locale]/services/remote-energy-support/page.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /data-support-tool="masters"/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /"\/masters"/);
@@ -275,46 +300,56 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries are visible in Courses mode as 3 iPhone cards and selectable native program dropdown entries", () => {
-  for (const word of ["Мистерии Майя", "Мистерии Египта", "Мистерии Греции"]) {
-    assert.ok(client.includes(word), word);
-  }
-  assert.match(client, /data-support-mystery-courses/);
-  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
-  assert.match(client, /aria-pressed=\{activeMystery\?\.id === course\.id\}/);
-  assert.match(client, /setProgram\(course\.id\)/);
-  assert.match(client, /setMaster\("all"\); setTheme\("all"\); setPlaying\(false\)/);
+test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+  const courseProfiles = read("components/holistic-support-course-profiles.tsx");
+  const courseCss = read("components/holistic-support-course-profiles.module.css");
+  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
+  assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
+  assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
+  assert.match(courseProfiles, /src=\{course\.poster\}/);
+  assert.match(courseProfiles, /\/academy\`/);
+  assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
+  // The original route/manifests remain covered separately above. The new
+  // profile screen links to those originals rather than pretending its old,
+  // now-unreachable inline course picker is still a visible UI.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
-  assert.match(client, /data-support-active-course-link/);
-  assert.match(client, /activeMystery\?\.videoGroups\.map\(group =>/);
   assert.match(client, /data-support-filter="program"/);
   assert.match(client, /\{activeProgramValues\.map\(key =>/);
-  assert.match(client, /choice === "pump" \? t\.watchLesson : t\.play/);
-  assert.match(css, /\.mysteryPickerGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.mysteryPickerCard\[aria-pressed="true"\]/);
-  assert.match(css, /\.mysteryPickerCard:focus-visible/);
-  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.mysteryPickerCard/);
+  assert.match(courseCss, /\.originals \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(courseCss, /\.originals a:focus-visible/);
+  assert.match(courseCss, /@media \(max-width:640px\)[\s\S]*?\.originals \{ grid-template-columns:1fr/);
+  assert.match(courseCss, /@media \(max-width:350px\)/);
   assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
 });
 
-test("central photo links to existing private Video Mandala studio in EN/RU/ES", () => {
+test("central Tests and right-hand Video Mandala are swapped without returning to the old UI", () => {
   const mandalaPage = read("app/[locale]/holistic-support/mandala/page.tsx");
   const mandalaClient = read("components/mandala-meditation-client.tsx");
   const profile = client.split('<section className={styles.profile}')[1].split('</section>')[0];
-  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-video-mandala'),
-    "mandala button follows the photo");
-  assert.match(profile, /data-support-video-mandala/);
-  assert.match(profile, /"\/holistic-support\/mandala"/);
+  const tools = client.split('<section className={styles.tools}')[1].split('</section>')[0];
+  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-tool="tests"'),
+    "Tests now appears directly beneath the photo");
+  assert.match(profile, /className=\{styles\.testsShortcut\}/);
+  assert.match(profile, /onClick=\{\(\) => changeChoice\("tests"\)\}/);
+  assert.doesNotMatch(profile, /data-support-video-mandala/);
+  assert.match(tools, /className=\{styles\.mandalaShortcut\}/);
+  assert.match(tools, /data-support-video-mandala/);
+  assert.match(tools, /"\/holistic-support\/mandala"/);
   for (const label of ["Video mandala", "Видео-мандала", "Vídeo mandala"]) {
     assert.ok(client.includes(label), "localized action: " + label);
   }
   assert.match(mandalaPage, /MandalaMeditationClient/);
+  assert.match(mandalaPage, /HolisticSupportMandalaDock/);
   assert.match(mandalaClient, /MandalaFreeVideoStudio|data-mandala/);
-  assert.match(css, /\.videoMandalaShortcut/);
-  assert.match(css, /\.profile > \.videoMandalaShortcut/);
+  assert.match(css, /\.testsShortcut/);
+  assert.match(css, /\.profile > \.testsShortcut/);
+  assert.match(css, /\.toolShortcuts \.mandalaShortcut/);
   assert.doesNotMatch(profile, /fetch\(|sessionStorage|localStorage/);
 });
 

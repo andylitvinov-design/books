@@ -83,3 +83,41 @@ test("quick three-way Reiki type switch shares the real session/initiations/prog
   assert.match(css,/\.viewer \.reikiQuickFormat button\[aria-pressed="true"\]/);
   assert.match(css,/min-height:44px/);
 });
+
+test("Reiki support is a service marketplace with one concise picker and genuine booking paths", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const galleryCss=read("components/holistic-support-master-gallery.module.css");
+  const shelf=read("components/holistic-reiki-offer-shelf.tsx");
+  const shelfCss=read("components/holistic-reiki-offer-shelf.module.css");
+  const browse=parent.indexOf('data-support-reiki-marketplace');
+  const formats=parent.indexOf('data-support-reiki-quick-format');
+  const foci=parent.indexOf('data-support-reiki-filters');
+  const hero=parent.indexOf('data-support-reiki-sales-hero');
+  const offers=parent.indexOf('kind === "healing" ? <HolisticReikiOfferShelf');
+  assert.ok(browse !== -1 && browse < formats && formats < foci && foci < offers);
+  assert.ok(hero > 0 && hero < browse, "hero definition is reused, not duplicated");
+  assert.match(parent,/data-support-reiki-find aria-expanded=\{reikiTab === "filter"\}/);
+  assert.match(parent,/aria-controls="reiki-active-panel" onClick=\{\(\) => setReikiTab\("filter"\)\}/);
+  for(const value of ["session","initiation","course"]) {
+    assert.ok(parent.includes('data-support-reiki-quick-kind={value}'));
+    assert.ok(parent.includes('value === "'+value+'"') || value==="course");
+  }
+  assert.match(parent,/reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(parent,/chooseReikiFormat\(value, true\)/);
+  assert.match(parent,/filterPublicReikiAcademyOffers\(locale/);
+  assert.match(parent,/matchingReikiOptions\(master\)/);
+  assert.match(parent,/data-support-reiki-request/);
+  assert.match(parent,/setOrderOpen\(true\)/);
+  assert.match(parent,/<RemoteEnergySupportBooking/);
+  assert.match(galleryCss,/\.reikiBrowseHeading/);
+  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 2/);
+  assert.match(galleryCss,/@media\(max-width:640px\)/);
+  assert.match(galleryCss,/@media\(max-width:350px\)/);
+  assert.match(shelfCss,/grid-template-columns:116px minmax\(0,1fr\)/);
+  assert.match(shelf,/data-reiki-service-card=\{master\.serviceId\}/);
+  assert.match(shelf,/data-reiki-academy-offer=\{offer\.id\}/);
+  assert.match(shelf,/master\.serviceHref/);
+  assert.match(shelf,/option\.amountEur === null \? t\.unknownPrice/);
+  assert.doesNotMatch(shelf,/createPayment|autoSubmit|fake(?:Track|Price)|hardcoded(?:Booking|Slot)/);
+  assert.doesNotMatch(parent,/Треки поддержки|Поддержка за 21 день/);
+});
