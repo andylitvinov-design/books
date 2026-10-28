@@ -2634,3 +2634,27 @@
   .curatedCardText strong{font-size:.72rem;letter-spacing:-.015em}
   .curatedCardBottom{padding:3px 4px}
 }
+
+/* Four-profile test discovery: one direction, then any number of its real scales. */
+.lifeProfileGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.lifeProfileCard{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:85px;text-align:left;border:1px solid #dcdad0;border-radius:15px;background:#fffdf9;color:#3f3934;padding:13px 15px}
+.lifeProfileCard>span:first-child{display:grid;gap:4px;min-width:0}
+.lifeProfileCard strong{font-size:.95rem;line-height:1.28}
+.lifeProfileCard small{font-size:.76rem;line-height:1.35;color:#7a7066}
+.lifeProfileCheck{display:grid;place-items:center;flex:0 0 25px;height:25px;border-radius:50%;border:1px solid #c7d0c5;color:#fff}
+.lifeProfileCard[aria-pressed=true]{border-color:#388574;background:#eaf4ee;box-shadow:inset 0 0 0 1px #388574}
+.lifeProfileCard[aria-pressed=true] .lifeProfileCheck{background:#2a7466;border-color:#2a7466}
+.lifeScaleGrid{display:flex;flex-wrap:wrap;gap:8px}
+.lifeScaleChip{display:inline-flex;align-items:center;gap:7px;min-height:44px;max-width:100%;text-align:left;padding:9px 13px;border:1px solid #d8d7cb;border-radius:999px;background:#fffdf9;color:#4d463c;font-size:.86rem}
+.lifeScaleChip span{font-weight:750;color:#3b786a}
+.lifeScaleChip[aria-pressed=true]{background:#2a7466;border-color:#2a7466;color:white}
+.lifeScaleChip[aria-pressed=true] span{color:white}
+.lifeScaleActions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px}
+.lifeScaleActions span{margin-right:auto;color:#766b61;font-size:.77rem}
+.lifeScaleActions button{border:0;background:none;padding:8px 3px;color:#246d5f;text-decoration:underline;text-underline-offset:3px;font-size:.8rem}
+.lifeExtraTopics{margin:7px 0 10px;border:1px solid #e5e0d5;border-radius:14px;background:#fffefa}
+.lifeExtraTopics>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none;padding:11px 15px;color:#59746b;font-size:.8rem;cursor:pointer}
+.lifeExtraTopics>summary::-webkit-details-marker{display:none}
+.lifeExtraTopics[open]>summary svg{transform:rotate(180deg)}
+.lifeExtraTopics>.section{margin:0;border:0;box-shadow:none}
+@media(max-width:560px){.lifeProfileGrid{grid-template-columns:1fr}.lifeProfileCard{min-height:67px;padding:11px 12px}.lifeScaleGrid{gap:6px}.lifeScaleChip{min-height:44px;padding:8px 11px;font-size:.82rem}.lifeScaleActions{justify-content:flex-start}}

@@ -1419,3 +1419,17 @@
     width:min(100%,clamp(230px,42svh,275px));
   }
 }
+
+/* Full catalog: life profile first, multi-select only its actual measured axes. */
+.lifeProfileFilter{display:grid;gap:9px;padding:12px 0}
+.lifeProfileFilter>strong{color:#375e53;font-size:.88rem}
+.lifeProfileOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lifeProfileOptions button{display:grid;gap:4px;min-width:0;min-height:68px;padding:11px 12px;border:1px solid #d9d2c3;border-radius:13px;background:#fffdf8;color:#413b34;text-align:left}
+.lifeProfileOptions button strong{font-size:.82rem;line-height:1.3}
+.lifeProfileOptions button small{font-size:.73rem;color:#71685f;line-height:1.3}
+.lifeProfileOptions button[aria-pressed=true]{background:#edf5ef;border-color:#37786a;box-shadow:inset 0 0 0 1px #37786a}
+.scaleFirst[data-profile-scale-filter] .scaleRail button{min-height:44px}
+.lifeScaleActions{display:flex;gap:11px;align-items:center;margin-top:8px}
+.lifeScaleActions button{border:0;background:none;color:#37786a;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:.77rem}
+.lifeScaleActions span{margin-left:auto;color:#655c52;font-size:.77rem}
+@media(max-width:560px){.lifeProfileOptions{grid-template-columns:1fr}.lifeProfileOptions button{min-height:58px}.lifeScaleActions{flex-wrap:wrap}.lifeScaleActions span{margin-left:0}}

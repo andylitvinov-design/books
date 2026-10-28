@@ -15,6 +15,7 @@ import { TestExplorerVisual } from './test-explorer-visual'
 import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
 import { SimpleTestPicker } from './simple-test-picker'
+import { LIFE_TEST_PROFILES, findLifeTestProfile, profileAxisSelection, selectedLifeProfileAxes } from '@/lib/profile/life-test-profiles'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
 import { ResearchDirectory } from './research-directory'
@@ -212,6 +213,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recognizer.start()
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
+  const [profile, setProfile] = useState(() => findLifeTestProfile(initialPreferences?.profile)?.key || null)
   const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
   const [activeCollectionId, setActiveCollectionId] = useState(null)
   const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId) || null
@@ -237,6 +239,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
   const [axes, setAxes] = useState(() => simpleMode && !preserveScaleFilters ? [] : (initialPreferences?.axes ?? []))
+  const activeProfile = findLifeTestProfile(profile)
+  const profileScales = useMemo(() => activeProfile ? selectedLifeProfileAxes(profile, axes) : axes, [profile, axes])
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -258,6 +262,21 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [activeFilterGroup, setActiveFilterGroup] = useState(initialFilterGroup)
   const [showAll, setShowAll] = useState(false)
   const [showStandaloneVia, setShowStandaloneVia] = useState(false)
+  // Change only this unsaved chooser: existing account tests/results are untouched.
+  const selectProfile = (key) => {
+    const next = findLifeTestProfile(key)
+    if (!next || next.key === profile) return
+    setProfile(next.key); setAxes([]); setFocus([...next.focus]); setProblems([])
+    setDetails([]); setAreas([]); setActiveCollectionId(null); setSelectedKeys([])
+    setSimpleSelectionChanged(false); setAxisFilter(null); setAvailability('available')
+    setActionError(null)
+  }
+  const toggleProfileScale = (key) => {
+    if (activeProfile && !activeProfile.axes.includes(key)) return
+    setAxes((current) => toggle(activeProfile ? profileAxisSelection(profile, current) : current, key))
+    // Adding another scale must keep tests explicitly checked for earlier scales.
+    setAxisFilter(null)
+  }
   const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
   // Keep the Spanish UI metadata; English remains the safe fallback for source questionnaires.
@@ -299,8 +318,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   }, [entries])
   const facets = { availability, focus, problems, styles: stylesFilter, kinds,
     evidenceGroups:evidenceGroup==='all'?[]:[evidenceGroup],
-    lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+    lengths, areas, details, axes: profileScales, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, profileScales, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
   const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
@@ -311,7 +330,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.measurementAxes?.includes(key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
-  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
+  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, profileScales, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
   const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.measurementAxes?.includes(axisFilter)).sort((a, b) => {
@@ -341,18 +360,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // A collection is a soft ranking preference, never a replacement for choices.
   const simpleRecommendationPool = useMemo(() => filterExplorerEntries(entries, {
     availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,
-    axes, maxMinutes, language, tracking, freeOnly,
+    axes: profileScales, maxMinutes, language, tracking, freeOnly,
   }).filter((entry) => entry.selectable), [
-    entries, stylesFilter, kinds, lengths, areas, details, axes,
+    entries, stylesFilter, kinds, lengths, areas, details, profileScales,
     maxMinutes, language, tracking, freeOnly,
   ])
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
     simpleRecommendationPool,
     { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
-      details, axes, depth, styles: stylesFilter, lengths, kinds },
+      details, axes: profileScales, depth, styles: stylesFilter, lengths, kinds },
   ), [simpleRecommendationPool, selectionFocus, problems, activeCollectionId,
-      activeCollection, details, axes, depth, stylesFilter, lengths, kinds])
+      activeCollection, details, profileScales, depth, stylesFilter, lengths, kinds])
   // Text searches use the same pool and relevance order as the visible cards.
   // Typing a query does not silently discard any earlier preference.
   const searchRecommendations = simpleRecommendations
@@ -362,15 +381,15 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // Use only existing, rights-cleared, startable questionnaires.
   const autoBattery = useMemo(() => buildStarterBattery(
     matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)),
-    { focus, details, axes, depth, styles: stylesFilter, lengths },
-  ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
+    { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths },
+  ), [matching, axisFilter, focus, details, profileScales, depth, stylesFilter, lengths])
   const activeBattery = explicitSelectionOnly
     ? selected // A course visitor must explicitly select tests; never fall back to an automatic set.
     : simpleMode
       ? (simpleSelectionChanged ? selected : simpleAuto)
       : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
-  const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
+  const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes: profileScales }), [entries, focus, details, profileScales])
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)).length
@@ -393,9 +412,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       setSimpleSelectionChanged(true)
       return
     }
-    setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
+    setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setProfile(null); setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -424,7 +443,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
-      focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+      focus: selectionFocus, problems, details, axes: profileScales, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
@@ -433,7 +452,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setStarting(true); setActionError(null)
     try {
       const preferences = {
-        focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+        focus: selectionFocus, problems, details, axes: profileScales, areas, styles: stylesFilter, kinds, lengths,
         depth, maxMinutes, language, tracking, freeOnly,
       }
       if (audience === 'account' && onStartSingle) {
@@ -448,6 +467,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
+      profile={profile} onSelectProfile={selectProfile} selectedScales={axes} onToggleScale={toggleProfileScale} onSetScales={(next) => setAxes(profileAxisSelection(profile, next))}
       initialMode={initialMode}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
@@ -492,7 +512,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onBrowsePdf={() => {
         setBrowseFull(true); setAvailability('pdf')
         setQuery(''); setMaxMinutes(0); setFreeOnly(false); setLanguage('any'); setTracking('any')
-        setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([])
+        setProfile(null); setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([])
         setKinds([]); setStylesFilter([]); setLengths([]); setAxisFilter(null)
       }}
       onBrowseFull={() => {
@@ -536,23 +556,38 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <strong>{locale === 'ru' ? 'Что вас интересует?' : locale === 'es' ? '¿Qué te interesa?' : 'What would you like to explore?'}</strong>
           <span role="status" aria-live="polite"><b>{matchCount}</b> {c.matching}</span>
         </div>
-        <div className={styles.scaleFirst} data-scale-first-selection>
-          <strong>{locale === 'ru' ? 'Какие показатели хотите наблюдать или поддерживать?' : 'Which indicators would you like to track or support?'}</strong>
-          <p>{locale === 'ru' ? 'Выберите шкалы: первыми появятся тесты, которые их действительно измеряют. Это не диагноз.' : 'Choose scales: tests that actually measure them appear first. This is not a diagnosis.'}</p>
-          <div className={styles.scaleRail} role="group" aria-label={locale === 'ru' ? 'Шкалы для подбора тестов' : 'Scales for selecting tests'}>
-            {TEST_EXPLORER_AXES.map((key) => <button key={key} type="button" aria-pressed={axes.includes(key)} onClick={() => setAxes((value) => toggle(value,key))}>
-              {axes.includes(key) ? '✓ ' : ''}{TEST_EXPLORER_AXIS_LABELS[key]?.[locale === 'ru' ? 'ru' : 'en'] || key}
+        <div className={styles.lifeProfileFilter} data-test-profile-filter>
+          <strong>{locale === 'ru' ? '1. Выберите профиль' : locale === 'es' ? '1. Elige tu perfil' : '1. Choose your profile'}</strong>
+          <div className={styles.lifeProfileOptions} role="group" aria-label={locale === 'ru' ? 'Один профиль для подбора' : locale === 'es' ? 'Un perfil para elegir pruebas' : 'Choose one test profile'}>
+            {LIFE_TEST_PROFILES.map((item) => <button type="button" key={item.key} data-test-profile={item.key}
+              aria-pressed={profile === item.key} onClick={() => selectProfile(item.key)}>
+              <strong>{profile === item.key ? '✓ ' : ''}{item.label[locale] || item.label.en}</strong>
+              <small>{item.detail[locale] || item.detail.en}</small>
             </button>)}
           </div>
         </div>
-        <div className={styles.quickFilterChips} role="group" aria-label={c.themes}>
+        {activeProfile && <div className={styles.scaleFirst} data-profile-scale-filter>
+          <strong>{locale === 'ru' ? '2. Шкалы профиля' : locale === 'es' ? '2. Escalas del perfil' : '2. Profile scales'}</strong>
+          <p>{locale === 'ru' ? 'Отметьте любое количество шкал. Если не отмечена ни одна — покажем все тесты выбранного профиля.' : locale === 'es' ? 'Elige tantas escalas como quieras. Sin selección, se muestran todas las del perfil.' : 'Choose as many scales as you like. With none checked, all profile scales apply.'}</p>
+          <div className={styles.scaleRail} role="group" aria-label={locale === 'ru' ? 'Шкалы выбранного профиля' : locale === 'es' ? 'Escalas del perfil elegido' : 'Scales in the selected profile'}>
+            {activeProfile.axes.map((key) => <button key={key} type="button" aria-pressed={axes.includes(key)} onClick={() => toggleProfileScale(key)}>
+              {axes.includes(key) ? '✓ ' : ''}{TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key}
+            </button>)}
+          </div>
+          <div className={styles.lifeScaleActions}>
+            <button type="button" onClick={() => { setAxes([...activeProfile.axes]) }}>{locale === 'ru' ? 'Выбрать все' : locale === 'es' ? 'Seleccionar todas' : 'Select all'}</button>
+            <button type="button" onClick={() => { setAxes([]) }}>{locale === 'ru' ? 'Снять все' : locale === 'es' ? 'Quitar todas' : 'Clear all'}</button>
+            <span>{axes.length} / {activeProfile.axes.length}</span>
+          </div>
+        </div>}
+        {!activeProfile && <div className={styles.quickFilterChips} role="group" aria-label={c.themes}>
           {QUICK_FOCUS.map((key) => {
             const item = TEST_RECOMMENDATION_FOCUS.find((topic) => topic.key === key)
             if (!item) return null
             const checked = focus.includes(key)
             return <button key={key} type="button" aria-label={`${locale === 'ru' ? 'Быстрый фильтр' : locale === 'es' ? 'Filtro rápido' : 'Quick filter'}: ${item.label[locale] || item.label.en}`} aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
           })}
-        </div>
+        </div>}
         <div className={styles.quickFilterExtras}>
           <button type="button" aria-pressed={maxMinutes === 5} onClick={() => setMaxMinutes((current) => current === 5 ? 0 : 5)}>{locale === 'ru' ? 'До 5 минут' : locale === 'es' ? 'Hasta 5 min' : 'Under 5 min'}</button>
           {(focus.length > 0 || appliedFilters > 0) && <button className={styles.quickFilterReset} type="button" onClick={resetFilters}>{locale === 'ru' ? 'Сбросить всё ×' : locale === 'es' ? 'Borrar todo ×' : 'Clear all ×'}</button>}
@@ -594,7 +629,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
               {activeFilterGroup === 'topics' && <Filter label={c.themes} items={TEST_RECOMMENDATION_FOCUS} selected={focus} onToggle={(key) => setFocus((current) => toggle(current, key))} locale={locale} />}
               {activeFilterGroup === 'concerns' && <Filter label={advanced.detail} items={TEST_EXPLORER_DETAIL_TOPICS.map((item) => ({ ...item, label: { ...item.label, [locale]: `${item.label[locale] || item.label.en} · ${detailCounts[item.key] || 0}` } }))} selected={details} onToggle={(key) => setDetails((value) => toggle(value, key))} locale={locale} />}
               {activeFilterGroup === 'areas' && <Filter label={c.area} items={MONITOR_AREAS.map((area) => ({ key: area.key, label: { en: `${area.en} · ${areaCounts[area.key] || 0}`, ru: `${area.ru} · ${areaCounts[area.key] || 0}`, es: `${area.en} · ${areaCounts[area.key] || 0}` } }))} selected={areas} onToggle={(key) => setAreas((value) => toggle(value, key))} locale={locale} />}
-              {activeFilterGroup === 'scales' && <Filter label={advanced.scales} items={TEST_EXPLORER_AXES.map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={(key) => setAxes((value) => toggle(value, key))} locale={locale} />}
+              {activeFilterGroup === 'scales' && <Filter label={advanced.scales} items={(activeProfile?.axes || TEST_EXPLORER_AXES).map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={toggleProfileScale} locale={locale} />}
               {activeFilterGroup === 'timing' && <div className={styles.guidedOptionStack}>
                 <Filter label={advanced.time} items={[{ key: '0', label: { en: advanced.any } }, { key: '2', label: { en: advanced.two } }, { key: '5', label: { en: advanced.five } }, { key: '10', label: { en: advanced.ten } }]} selected={[String(maxMinutes)]} onToggle={(key) => setMaxMinutes(Number(key))} locale={locale} single />
                 <Filter label={c.length} items={TEST_LENGTH_FILTERS} selected={lengths} onToggle={(key) => setLengths((value) => toggle(value, key))} locale={locale} />
@@ -649,7 +684,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <h2>{locale === 'ru' ? 'Выберите подходящие тесты' : locale === 'es' ? 'Elige tus pruebas' : 'Find the tests that fit you'}</h2>
           <p>{locale === 'ru' ? 'Отмечайте тесты в каталоге. Счётчик, подборка и зоны на портрете обновятся автоматически.' : locale === 'es' ? 'Selecciona pruebas. El contador y las áreas destacadas se actualizan automáticamente.' : 'Browse and tick the tests you want. Your selected set and highlighted focus areas update immediately.'}</p>
         </div>
-    <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'core'} onClick={() => setAvailability('core')}>{c.core100}</button><button type="button" role="tab" aria-selected={availability === 'pdf'} onClick={() => { setAvailability('pdf'); setMaxMinutes(0); setFreeOnly(false); setLanguage('any'); setTracking('any'); setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([]); setKinds([]); setStylesFilter([]); setLengths([]); setAxisFilter(null); setQuery('') }}>{locale === 'ru' ? 'PDF: шкалы' : locale === 'es' ? 'PDF: escalas' : 'PDF scale guides'} ({pdfResourceCount})</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
+    <div className={styles.availability} role="tablist" aria-label={c.title}><button type="button" role="tab" aria-selected={availability === 'available'} onClick={() => setAvailability('available')}>{c.available}</button><button type="button" role="tab" aria-selected={availability === 'core'} onClick={() => setAvailability('core')}>{c.core100}</button><button type="button" role="tab" aria-selected={availability === 'pdf'} onClick={() => { setProfile(null); setAvailability('pdf'); setMaxMinutes(0); setFreeOnly(false); setLanguage('any'); setTracking('any'); setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([]); setKinds([]); setStylesFilter([]); setLengths([]); setAxisFilter(null); setQuery('') }}>{locale === 'ru' ? 'PDF: шкалы' : locale === 'es' ? 'PDF: escalas' : 'PDF scale guides'} ({pdfResourceCount})</button><button type="button" role="tab" aria-selected={availability === 'full'} onClick={() => setAvailability('full')}>{c.full}</button></div>
       </div>
       {availability === 'core' && <p className={styles.quickPrivacy}>{c.coreNote}</p>}
       {availability === 'pdf' && <p className={styles.quickPrivacy}>{locale === 'ru' ? 'Профессиональные шкалы: скачать PDF-справку можно бесплатно. Это не оригинальный опросник: защищённые вопросы, ответы и нормы в PDF не воспроизводятся.' : locale === 'es' ? 'Guías de escalas profesionales en PDF. No son cuestionarios originales: no incluyen preguntas, claves ni baremos protegidos.' : 'Professional scales: download an educational PDF guide. It is not the original questionnaire and contains no restricted questions, scoring keys or proprietary norms.'}</p>}
@@ -685,7 +720,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.pdfResource ? 'PDF' : entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}{entry.validity && <p className={styles.methodology} data-psychometric-evidence={entry.validity.status} data-psychometric-group={entry.validity.group} data-test-evidence-key={entry.validity.key}><strong>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).label}: </strong>{entry.validity.grade ? (VALIDITY_COPY[locale] || VALIDITY_COPY.en).graded + ' ' + entry.validity.grade : (VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.validity.status]} · {ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.[locale] || ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.en || entry.validity.group} · {(VALIDITY_COPY[locale] || VALIDITY_COPY.en).locale}: {entry.validity.respondentLocale}</p>}
-        <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />
+        <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={profileScales} onSelectAxis={toggleProfileScale} />
         {!entry.selectable && entry.pdfResource && <div className={styles.pdfResource} data-professional-pdf={entry.key}>
           <div className={styles.pdfResourceActions}>
             <a className={styles.pdfResourcePrimary} href={`/api/assessments/scale-guide/${encodeURIComponent(entry.key)}`} download={`${entry.key}-scale-guide.pdf`}><FileDown size={17} aria-hidden="true" />{locale === 'ru' ? 'Скачать описание шкал (PDF)' : locale === 'es' ? 'Descargar guía de escalas (PDF)' : 'Download scale guide (PDF)'}</a>
