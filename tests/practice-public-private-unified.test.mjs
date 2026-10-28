@@ -17,6 +17,7 @@ const masterEntry=read('components/home-master-path.tsx')
 const pro=read('components/profi-hub.tsx')
 const proCss=read('components/profi-hub.module.css')
 const middleware=read('middleware.ts')
+const promo=read('components/sitewide-antistress-banner.tsx')
 
 test('first practitioner screen is public in EN/RU/ES, never a Google gate',()=>{
  assert.match(publicPage,/SUPPORTED_LOCALES = \['en', 'ru', 'es'\]/)
@@ -82,6 +83,7 @@ test('private panels shed old Account chrome and retain actual protected compone
  assert.match(editor,/<PracticeMaterials key=\{p\?\.id\|\|'materials'\}/)
  assert.match(editor,/onStatus=\{\(item,status,extra=\{\}\)=>act/)
  assert.match(chrome,/body:has\(\.hh-app--practice-inner\)/)
+ assert.ok(promo.includes(String.raw`app\/practice`),'private practice banner hidden')
  assert.match(chrome,/\.hh-app\.hh-app--practice-inner/)
  assert.match(chrome,/display:none!important; \/\* Don't cover the service wizard Save\/Continue/)
  assert.match(innerNav,/const PANELS=new Set\(\['requests','clients','materials','profile','analytics','services'/)
