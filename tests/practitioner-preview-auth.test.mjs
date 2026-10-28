@@ -55,8 +55,11 @@ test('OAuth allowlist returns to exactly the same language-specific public page'
 test('creation shortcuts use existing protected editors, including meditation type', () => {
   assert.match(showcase, /panel=services&create=1&starter=session/)
   assert.match(showcase, /panel=services&create=1&starter=energy/)
-  assert.match(showcase, /panel=materials&materialTab=courses&create=1&meditation=audio/)
+  assert.match(showcase, /panel=meditations&meditation=audio/)
   assert.match(showcase, /panel=materials&materialTab=courses&create=1/)
+  assert.match(editor, /setActivePanel\('meditations'\)/)
+  assert.match(editor, /<PractitionerMeditationStudio/)
+  assert.match(editor, /params\.get\('panel'\)==='materials'&&\['audio','video'\]/)
   assert.match(editor, /const meditation=params\.get\('meditation'\)/)
   assert.match(editor, /\['audio','video'\]\.includes\(meditation\)/)
   assert.match(editor, /\['profile','requests','analytics','events'\]\.includes/)
