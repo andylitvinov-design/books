@@ -576,6 +576,8 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0\)/)
  assert.match(source,/trim_start_seconds=\$5/)
  assert.match(source,/VIDEO_TRIM_INTERRUPTED/)
+ assert.match(source,/if\(event.updateId<=Number\(row.last_update_id\)\)return \{state:'stale'\}/)
+ assert.match(source,/last_update_id=greatest\(last_update_id,\$3\)/)
  assert.match(source,/const restoring=row.state==='cancelled'/)
  assert.match(source,/state in \('preview','cancelled'\)/)
  assert.match(source,/form.set\('width','1920'\)/)
