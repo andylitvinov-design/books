@@ -49,6 +49,7 @@ export async function loadMeditationDiscovery(locale: PublicLocale): Promise<{
   const publishedSourceIds = [...known.keys()];
   try {
     const config = getAppConfig();
+    if (!config.publishableKey) throw Error("public key unavailable");
     const supabase = createClient(config.supabaseUrl, config.publishableKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
