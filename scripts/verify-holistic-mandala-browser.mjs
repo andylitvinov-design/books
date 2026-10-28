@@ -85,6 +85,25 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.deepEqual(png.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
         assert.ok(png.length > 2000, engine + " PNG must include composed illustration and photo");
 
+        const moneySelector = page.locator("[data-mandala-money-effects]");
+        await moneySelector.waitFor({ state: "visible", timeout: 15000 });
+        assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 4);
+        const firstMoney = moneySelector.locator('[data-mandala-money-option="golden-rain"]');
+        await firstMoney.click();
+        assert.equal(await firstMoney.getAttribute("aria-pressed"), "true");
+        const moneyPreview = page.locator("[data-mandala-money-preview]");
+        await moneyPreview.click();
+        assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true");
+        await moneyPreview.click();
+        assert.equal(await moneyPreview.getAttribute("aria-pressed"), "false");
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          await moneySelector.locator('button[aria-expanded]').click();
+          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
+          const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
+          await infinity.click();
+          assert.equal(await infinity.getAttribute("aria-pressed"), "true");
+        }
+
         // Actual free video render (one synthetic client photo). All other
         // locale/width permutations check the UI without a costly 10s render.
         const studio = page.locator("[data-mandala-free-video]");
