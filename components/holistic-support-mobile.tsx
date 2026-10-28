@@ -79,7 +79,7 @@ const copy = {
     tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
     talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
     energyTitle: "Courses & programmes", energyIntro: "Explore original lessons here or continue to the Academy catalogue.",
-    coursesAll: "Browse all courses", coursesReiki: "Explore Tantra Reiki",
+    coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
     healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
@@ -116,7 +116,7 @@ const copy = {
     tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
     talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
     energyTitle: "Курсы и программы", energyIntro: "Авторские уроки и действующий каталог Академии.",
-    coursesAll: "Все курсы Академии", coursesReiki: "Курс Тантра Рейки",
+    coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
     healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
@@ -153,7 +153,7 @@ const copy = {
     tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
     talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
     energyTitle: "Cursos y programas", energyIntro: "Clases originales y catálogo completo de la Academia.",
-    coursesAll: "Todos los cursos", coursesReiki: "Curso de Tantra Reiki",
+    coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
     healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
@@ -350,8 +350,8 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 onClick={() => changeChoice("pump")}>
                 <BookOpen size={15} aria-hidden="true" />{t.optionsCompact.pump}
               </button>
-              <Link href={"/" + locale + "/masters"} prefetch={false}>
-                <HandHeart size={15} aria-hidden="true" />{t.healingMasters}
+              <Link href={"/" + locale + "/masters"} prefetch={false} aria-label={t.healingMasters}>
+                <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
               </Link>
             </div>
           </section>
