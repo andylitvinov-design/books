@@ -512,10 +512,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <h2 id="support-mobile-progress-heading">{t.progress}</h2>
           <div className={styles.progressGrid}>
-            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
-              <strong>{progressCount}/{progressTotal}</strong>
+            <div className={styles.progressStarted}>
+              <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
+                <strong>{progressCount}/{progressTotal}</strong>
+              </div>
+              <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             <div className={styles.progressFocus}><FocusIcon size={25} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
             <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
