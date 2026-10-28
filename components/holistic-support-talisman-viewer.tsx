@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Coins, Flower2, Gem, Heart, Leaf, ShoppingBag, Sparkles, Target, UserRound, Waves, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import { readBrowserTalismanCart, saveBrowserTalismanCart } from "@/lib/practitioners/taoist-talisman-cart";
+import { readBrowserTalismanCart, saveBrowserTalismanCart, consumeBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import styles from "./holistic-support-talisman-viewer.module.css";
@@ -41,11 +41,13 @@ const translations = {
     instructions: "Swipe the main image or choose a design below.",
     note: "Illustrative designs, not ready-to-ship products. Price, availability and delivery are confirmed before payment. No promised results.",
     basketError: "Cannot save this choice on your device. Enable temporary site storage to continue.",
-    orderTitle: "Review your talisman request", close: "Close request",
+    orderTitle: "Talisman checkout", close: "Close request",
     categoriesTitle: "Talismans", categoryLead: "Choose your intention", categoryAll: "All categories",
     nextCategory: "More categories", filtersLabel: "Talisman filters",
     categoryNames: { energy: "Strength talismans", money: "Money talismans", relationships: "Love talismans",
       goals: "Goal talismans", balance: "Balance talismans", calm: "Calm talismans" },
+    categoryShortNames: { energy: "Strength", money: "Money", relationships: "Love",
+      goals: "Goals", balance: "Balance", calm: "Calm" },
     allTraditions: "All traditions", descriptionFilter: "Description", allProperties: "All themes",
     properties: { "fu-prosperity": "Prosperity", "fu-harmony": "Harmony", "fu-balance": "Balance" },
     masterNote: "No verified maker is assigned to these illustrative designs yet. The master and final details are confirmed when replying to your request.",
@@ -62,11 +64,13 @@ const translations = {
     instructions: "Листайте изображение или выберите символ ниже.",
     note: "Иллюстрации символов, не готовые изделия. Цена, наличие и доставка подтверждаются до оплаты. Без обещания результата.",
     basketError: "Не удалось сохранить выбор. Разрешите временное хранение данных сайта.",
-    orderTitle: "Проверьте заявку на талисман", close: "Закрыть заявку",
+    orderTitle: "Оформление талисманов", close: "Закрыть заявку",
     categoriesTitle: "Талисманы", categoryLead: "Выбери направление энергии", categoryAll: "Все категории",
     nextCategory: "Другие категории", filtersLabel: "Фильтры талисманов",
     categoryNames: { energy: "Талисманы силы", money: "Талисманы денег", relationships: "Талисманы любви",
       goals: "Талисманы цели", balance: "Талисманы баланса", calm: "Талисманы спокойствия" },
+    categoryShortNames: { energy: "Сила", money: "Деньги", relationships: "Любовь",
+      goals: "Цель", balance: "Баланс", calm: "Покой" },
     allTraditions: "Все традиции", descriptionFilter: "Описание", allProperties: "Все свойства",
     properties: { "fu-prosperity": "Достаток", "fu-harmony": "Гармония", "fu-balance": "Равновесие" },
     masterNote: "Автор конкретного эскиза пока не подтверждён. Мастер и условия изготовления уточняются в ответе на заявку.",
@@ -83,11 +87,13 @@ const translations = {
     instructions: "Desliza la imagen o elige un diseño de abajo.",
     note: "Diseños ilustrativos, no productos listos para envío. Precio y entrega se confirman antes de pagar. Sin promesas de resultados.",
     basketError: "No se pudo guardar el diseño. Permite el almacenamiento temporal.",
-    orderTitle: "Revisa tu solicitud", close: "Cerrar solicitud",
+    orderTitle: "Finalizar compra del talismán", close: "Cerrar solicitud",
     categoriesTitle: "Talismanes", categoryLead: "Elige tu intención", categoryAll: "Todas las categorías",
     nextCategory: "Más categorías", filtersLabel: "Filtros de talismanes",
     categoryNames: { energy: "Talismanes de fuerza", money: "Talismanes de dinero", relationships: "Talismanes de amor",
       goals: "Talismanes de metas", balance: "Talismanes de equilibrio", calm: "Talismanes de calma" },
+    categoryShortNames: { energy: "Fuerza", money: "Dinero", relationships: "Amor",
+      goals: "Metas", balance: "Balance", calm: "Calma" },
     allTraditions: "Todas las tradiciones", descriptionFilter: "Descripción", allProperties: "Todas las cualidades",
     properties: { "fu-prosperity": "Prosperidad", "fu-harmony": "Armonía", "fu-balance": "Equilibrio" },
     masterNote: "Todavía no se ha verificado un creador para estos diseños ilustrativos. El maestro y los detalles se confirman al responder a la solicitud.",
@@ -120,6 +126,12 @@ export function HolisticSupportTalismanViewer({
   const categoryRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
+
+  // Only a one-use, public catalog token is restored after existing Google
+  // OAuth; the viewer stays free of private scores or browser storage calls.
+  useEffect(() => {
+    if (consumeBrowserTalismanGoogleReturn()) setOrderOpen(true);
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -199,8 +211,9 @@ export function HolisticSupportTalismanViewer({
             {categoryOptions.map(({ id, Icon }) => (
               <button key={id} type="button" className={styles.categoryCard}
                 data-support-talisman-category={id} data-category={id}
-                aria-pressed={goal === id} onClick={() => chooseCategory(id)}>
-                <Icon size={27} aria-hidden="true" /><span>{t.categoryNames[id]}</span>
+                aria-pressed={goal === id} aria-label={t.categoryNames[id]}
+                title={t.categoryNames[id]} onClick={() => chooseCategory(id)}>
+                <Icon size={27} aria-hidden="true" /><span aria-hidden="true">{t.categoryShortNames[id]}</span>
               </button>
             ))}
           </div>

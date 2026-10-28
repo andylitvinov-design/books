@@ -249,8 +249,8 @@ export function ServicesSmartDiscovery({
   const locale: Locale = givenLocale === "ru" || givenLocale === "es" ? givenLocale : "en";
   const t = COPY[locale];
   const remoteOfferingId = services.find(service=>service.slug==="remote-energy-support")?.id;
-  const editorialRatingKey = (id:string) => id==="remote-energy-support"
-    ? remoteOfferingId ?? null : "editorial:" + id;
+  const editorialRatingKey = useCallback((id:string) => id==="remote-energy-support"
+    ? remoteOfferingId ?? null : "editorial:" + id,[remoteOfferingId]);
   const stars = useCatalogRatings("service", [
     ...services.map(item => item.id),
     ...editorialOffers.map(item=>editorialRatingKey(item.id)).filter((key):key is string=>Boolean(key)),
@@ -303,7 +303,7 @@ export function ServicesSmartDiscovery({
         stars.ratings[editorialRatingKey(item.id) ?? ""],minimumStars));
     return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:budget==="free"?10:suggestions.length?2:4});
   },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget,
-    stars.loading,stars.unavailable,stars.ratings,minimumStars,remoteOfferingId]);
+    stars.loading,stars.unavailable,stars.ratings,minimumStars,editorialRatingKey]);
 
   const suggestedByStars = (sortRated
     ? sortByStars(suggestions, entry => entry.service.id, stars.ratings) : suggestions)
