@@ -58,22 +58,61 @@ test('six exact owner-authored RU messages are sent in order; photo and drawing 
   assert.equal(steps.some(x=>x.keyboard.flat().some(k=>k.startsWith('/'))),false)
   assert.equal(steps.some(x=>x.reply?.includes('/agree')||x.reply?.includes('/stop')),false)
 })
-test('only explicit natural Yes or retained legacy /agree creates consent record',()=>{
+test('typed yes/да/sí and clear affirmative variants go directly to step 2 without a button',()=>{
+  for(const [locale,answers] of [
+    ['ru',['Да','ДА!','да, начинаем','Ага','Конечно, давайте','Согласен','Я согласна',
+      'Хорошо','ОК','Да, хочу поработать с отношениями','Хочу начать']],
+    ['en',['yes','YES!','Yes, let’s begin','yes please','yep','sure','okay',
+      'I agree',"Let's begin",'Yes, I want to discuss work']],
+    ['es',['sí','SI!','Sí, empezamos','claro','de acuerdo','vale',
+      'Sí, quiero hablar de relaciones']],
+  ]){
+    const intro=transitionTelegramDiagnostic(null,msg('/start hhreview_'+locale,{locale}))
+    for(const answer of answers){
+      const next=transitionTelegramDiagnostic(state(intro,false),msg(answer,{locale}))
+      assert.equal(next.stage,'focus',locale+': '+answer)
+      assert.equal(next.consent,true,locale+': '+answer)
+      assert.match(next.body,/consent/,locale+': '+answer)
+      assert.notEqual(next.reply,intro.reply,'never repeat the greeting: '+answer)
+      assert.equal(next.reply,transitionTelegramDiagnostic(state(intro,false),
+        msg('/agree',{locale})).reply,'same unchanged second message: '+answer)
+      assert.equal(next.keyboard.length,2,locale+': '+answer)
+      assert.equal(next.topic,null,'topic is selected only in the NEXT step')
+    }
+  }
+})
+test('only a clear first-step affirmative grants consent; declines, ambiguity and unsolicited yes do not',()=>{
   const first=transitionTelegramDiagnostic(null,msg('/start'))
-  const declined=transitionTelegramDiagnostic(state(first,false),msg('Не сейчас'))
-  assert.equal(declined.stage,'consent')
-  assert.equal(declined.body,null)
-  assert.deepEqual(declined.keyboard,[])
-  const unclear=transitionTelegramDiagnostic(state(first,false),msg('Да'))
-  assert.equal(unclear.consent,false)
-  const accepted=transitionTelegramDiagnostic(state(first,false),msg('Да, начинаем'))
+  for(const reply of ['Не сейчас','Нет','no','Not now','Ahora no','later']){
+    const declined=transitionTelegramDiagnostic(state(first,false),msg(reply))
+    assert.equal(declined.stage,'consent',reply)
+    assert.equal(declined.consent,false,reply)
+    assert.equal(declined.body,null,reply)
+    assert.deepEqual(declined.keyboard,[],reply)
+  }
+  for(const reply of ['Да, но не сейчас','yes but not now','sí, pero no','maybe yes',
+    'сначала объясните','Хочу уточнить','отношения','money','hello','no, yes','что это?',
+    'yes'.repeat(100)]){
+    const unclear=transitionTelegramDiagnostic(state(first,false),msg(reply))
+    assert.equal(unclear.stage,'consent',reply)
+    assert.equal(unclear.consent,false,reply)
+    assert.equal(unclear.body,null,reply)
+  }
+  const unsolicited=transitionTelegramDiagnostic(null,msg('yes'))
+  assert.equal(unsolicited.stage,'consent')
+  assert.equal(unsolicited.consent,false,'no state means no consented lead')
+  assert.equal(unsolicited.body,null)
+  const accepted=transitionTelegramDiagnostic(state(first,false),msg('/agree'))
   assert.equal(accepted.stage,'focus')
   assert.equal(accepted.consent,true)
-  assert.match(accepted.body,/consent/)
   assert.deepEqual(accepted.keyboard,[
     ['деньги/ работа','энергия/ здоровье'],['отношения','другое'],
   ])
   assert.equal(accepted.keyboard.flat().some(x=>x.startsWith('/')),false)
+  const stageTwo=transitionTelegramDiagnostic(state(accepted),msg('yes'))
+  assert.equal(stageTwo.stage,'focus','yes at topic step does not skip topic')
+  assert.equal(stageTwo.consent,false,'no duplicated consent write')
+  assert.notEqual(stageTwo.reply,first.reply,'topic prompt never replays greeting')
 })
 test('six-step journey captures the portrait, three-part goal and drawing separately in same CRM flow',()=>{
   let flow=transitionTelegramDiagnostic(null,msg('/start hhreview_ru'))
@@ -166,6 +205,25 @@ test('English and Spanish are equal flows and coaching links only allow canonica
   assert.equal(TELEGRAM_DIAGNOSTIC_V2_BUTTONS.some(x=>x.startsWith('/')),false)
   assert.equal(new Set(TELEGRAM_DIAGNOSTIC_V2_BUTTONS).size,TELEGRAM_DIAGNOSTIC_V2_BUTTONS.length)
 })
+test('existing V1 consent sessions also accept natural text without a button; no auto-consent for unknown chats',()=>{
+  for(const [locale,reply] of [['ru','Да'],['en','yes'],['es','Sí'],['ru','согласна']]){
+    const old={stage:'consent',locale,consentAt:null,flowVersion:1}
+    const next=transitionTelegramDiagnostic(old,msg(reply,{locale}))
+    assert.equal(next.stage,'focus',reply)
+    assert.equal(next.consent,true,reply)
+    assert.match(next.body,/consent/,reply)
+    assert.notEqual(next.reply,null,'the legacy second prompt is shown')
+    assert.equal(next.flowVersion,undefined,'in-progress V1 does not silently migrate')
+  }
+  const old={stage:'consent',locale:'ru',consentAt:null,flowVersion:1}
+  for(const reply of ['нет','yes but not now','Да, но не сейчас','отношения']){
+    const next=transitionTelegramDiagnostic(old,msg(reply))
+    assert.equal(next.stage,'consent',reply)
+    assert.equal(next.consent,false,reply)
+    assert.equal(next.body,null,reply)
+  }
+})
+
 test('legacy V1 in-progress question remains intact until an explicit new /start',()=>{
   const prior={stage:'question',locale:'ru',consentAt:'2026-10-26T12:00:00Z',flowVersion:1}
   const text=transitionTelegramDiagnostic(prior,msg('Старый ответ по существующей заявке'))
