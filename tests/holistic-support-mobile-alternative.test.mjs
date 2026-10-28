@@ -113,3 +113,29 @@ test("personal recommendations rank verified recordings and existing talismans, 
   assert.match(css, /\.recommendationPanel/);
   assert.match(css, /\.detailedAnalysisLink/);
 });
+
+test("personal result is a readable next-step journey, not two equal product tiles", () => {
+  assert.match(client, /t\.recThemes\[recommendation\.focus\]/);
+  assert.match(client, /t\.recLevels\[recommendation\.scores\[recommendation\.focus\]/);
+  assert.match(client, /recommendation\.scores\[recommendation\.focus\]\}\/10/);
+  assert.match(client, /styles\.recPrimary/);
+  assert.match(client, /styles\.recSymbol/);
+  assert.match(client, /styles\.recDeeper/);
+  assert.match(client, /data-support-other-video/);
+  assert.match(client, /setRecommendationIndex\(index => \(index \+ 1\)/);
+  assert.match(client, /recommended\.videos\.length > 1/);
+  assert.match(client, /!recommendationMatched/);
+  assert.match(client, /recommendationVideo\.author === "psimaster"/);
+  assert.match(client, /recommendationVideo\.sourceLanguage === "ru"/);
+  assert.match(client, /recommendationVideo\.id\) \+ "\/hqdefault\.jpg"/);
+  assert.match(client, /recSymbolIntro:/);
+  assert.match(client, /recLevels:\s*\{\s*low:/);
+  assert.match(client, /recThemes:\s*\{\s*energy:/);
+  assert.match(css, /\.recPrimary \{/);
+  assert.match(css, /\.recPoster \{/);
+  assert.match(css, /\.recSymbol \{/);
+  assert.match(css, /\.recCatalogLink \{/);
+  assert.match(css, /@media \(max-width: 375px\)/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams/);
+  assert.doesNotMatch(client, /<audio|<video/); // Keep playback behind the existing explicit lazy embed.
+});

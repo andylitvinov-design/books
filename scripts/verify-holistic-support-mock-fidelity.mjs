@@ -102,7 +102,7 @@ for (const browserType of [chromium, webkit]) {
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
             await root.locator('[data-support-photo] img').waitFor({state:"attached",timeout:5000});
             // Returning to video is a deliberate user action, no iframe until Play.
-            await root.locator('[data-support-recommended-video] button').click();
+            await root.locator('[data-support-recommended-video] button').first().click();
             assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
             await root.locator('[data-support-play]').click();
             const src = await root.locator('[data-support-player] iframe').getAttribute("src");
