@@ -294,8 +294,8 @@
 .heroPromo{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
   background-image:linear-gradient(105deg,rgba(16,37,27,.20),rgba(38,27,14,.08)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg');
   background-size:cover;background-position:center;transition:opacity .22s ease}
-.heroPromo::after{content:"";position:absolute;right:-3%;top:0;bottom:0;width:65%;background:url('/images/holistic-house/support-mock-hero.webp') center 35% / cover no-repeat;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 28%,#000 90%);mask-image:linear-gradient(90deg,transparent 0%,#000 28%,#000 90%);
+.heroPromo::after{content:"";position:absolute;right:-3%;top:0;bottom:0;width:65%;background:url('/images/holistic-house/mandala-gold-reference.webp') 27% 45% / cover no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);
   filter:sepia(.34) saturate(1.35) brightness(1.11)}
 .hero[data-hero-promo="true"] .heroPromo{opacity:1}
 .hero[data-hero-promo="true"] .heroCanvas{opacity:0}

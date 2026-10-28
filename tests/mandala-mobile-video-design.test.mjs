@@ -47,6 +47,7 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(ui,/\.heroThemes\[hidden\]\{display:none!important\}/);
   assert.match(ui,/\.heroPromo\{position:absolute/);
   assert.match(ui,/money-films-v1\/golden-rain\.jpg/);
+  assert.match(ui,/mandala-gold-reference\.webp/);
   assert.match(ui,/\.toolCompact\{display:none\}/);
   assert.match(ui,/\.referencePortrait\{display:block!important/);
   assert.match(ui,/@media\(max-width:430px\)/);
