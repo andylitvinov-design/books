@@ -44,7 +44,7 @@ for (const engine of [chromium, webkit]) {
         }, null, { timeout: 30000 });
 
         assert.equal(await root.locator("[data-support-mobile-bottom-nav]").count(), 1, name + " original dock");
-        assert.equal(await root.locator("[data-support-scale]").count(), 4, name + " original ratings");
+        assert.equal(await root.locator("[data-support-scale]").count(), 5, name + " current five ratings, including Meaning");
         assert.equal(await root.locator("[data-support-tool]").count(), 7, name + " original tools");
         const guide = root.locator("[data-support-goal-results]");
         assert.equal(await guide.count(), 1, name + " exactly one recommendations card");
