@@ -107,6 +107,7 @@ const studioCopy = {
   en: {
     title:"Video editor",renderMode:"Video output",withPortrait:"With my photo",backgroundOnly:"Animated background only",backgroundHint:"Reuse this moving background underneath your own footage.",sub:"Create your personal video",back:"Back to support",
     myVideos:"My video",stepPhoto:"1. Add a photo",stepTheme:"2. Choose a theme",
+    videoUnavailable:"The cinematic MP4 is unavailable. Please refresh this page.",
     stepTemplate:"3. Choose a template",stepSettings:"4. Customize your video",
     themes:{money:"Money",relationships:"Relationships",energy:"Energy",goals:"Goals & meaning"},
     replace:"Replace photo",addPhoto:"Add photo",noPhoto:"Your photo here",photoPrivate:"Only on your device",
@@ -132,6 +133,7 @@ const studioCopy = {
   ru: {
     title:"Видеоредактор",renderMode:"Вариант ролика",withPortrait:"С моим фото",backgroundOnly:"Только видеофон",backgroundHint:"Фон без портрета, который можно добавить в свой видеомонтаж.",sub:"Создай своё персональное видео",back:"К поддержке",
     myVideos:"Мои видео",stepPhoto:"1. Загрузите фото",stepTheme:"2. Выберите тему",
+    videoUnavailable:"Не удалось загрузить HD-видеоролик. Обновите страницу.",
     stepTemplate:"3. Выберите шаблон",stepSettings:"4. Настройте видео",
     themes:{money:"Деньги",relationships:"Отношения",energy:"Энергия",goals:"Цели и смыслы"},
     replace:"Заменить фото",addPhoto:"Загрузить фото",noPhoto:"Ваше фото",photoPrivate:"Только на устройстве",
@@ -157,6 +159,7 @@ const studioCopy = {
   es: {
     title:"Editor de vídeo",renderMode:"Tipo de vídeo",withPortrait:"Con mi foto",backgroundOnly:"Solo fondo animado",backgroundHint:"Fondo animado para usar debajo de otro vídeo.",sub:"Crea tu vídeo personal",back:"Volver a apoyo",
     myVideos:"Mi vídeo",stepPhoto:"1. Sube una foto",stepTheme:"2. Elige un tema",
+    videoUnavailable:"No se pudo cargar el vídeo HD. Actualiza la página.",
     stepTemplate:"3. Elige una plantilla",stepSettings:"4. Personaliza el vídeo",
     themes:{money:"Dinero",relationships:"Relaciones",energy:"Energía",goals:"Metas y sentido"},
     replace:"Cambiar foto",addPhoto:"Subir foto",noPhoto:"Tu foto",photoPrivate:"Solo en tu dispositivo",
@@ -432,6 +435,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const premiumVideoRef = useRef<HTMLVideoElement>(null);
+  const [premiumReady, setPremiumReady] = useState(false);
+  const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
@@ -446,7 +452,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     effect,aspect,duration,quality,speed,brightness,music,caption]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
-  const canGenerate = Boolean(source) && (backgroundOnly || !photoUrl || photoConsent) && !preparing && !recording;
+  const canGenerate = Boolean(source) && (theme!=="money" || premiumReady) && (backgroundOnly || !photoUrl || photoConsent) && !preparing && !recording;
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
@@ -500,6 +506,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, [aspect]);
 
   // Invalidate the result when the client photo, composition or preset changes.
+  // The selected, SAME-ORIGIN MP4 is the sole footage source for preview
+  // and final recording. A muted video may play on iPhone without audio
+  // gesture; play is only attempted following a visitor's preview/render.
+  useEffect(()=>{
+    setPremiumReady(false);
+  },[activeMoneyFilm?.src]);
+  useEffect(()=>{
+    const video=premiumVideoRef.current;
+    if(!video)return;
+    if(!activeMoneyFilm || (!previewPlaying && !recording && !preparing)){
+      video.pause();
+      return;
+    }
+    video.muted=true;
+    video.loop=true;
+    void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
+  },[activeMoneyFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
+
   // Never leave a previous client's exported video visible after replacement.
   useEffect(() => {
     const job=jobRef.current;
@@ -525,13 +549,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.width=width;canvas.height=height;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness);
+      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness);
+          paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           lastFrame = now;
         }
         animation = window.requestAnimationFrame(draw);
@@ -555,6 +579,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(music !== "none" && !musicSession) setMusicWarning(ui.musicFallback);
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
+      if(theme==="money") {
+        const master=premiumVideoRef.current;
+        if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
+        await master.play();
+      }
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
       if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
@@ -566,7 +595,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.height = outputHeight;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness);
+      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       const framesPerSecond = quality === "fullhd" ? 12 : 15;
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
@@ -627,7 +656,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const animate = (now: number) => {
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / framesPerSecond) {
-          paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness);
+          paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
@@ -674,6 +703,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
+      {activeMoneyFilm ? <video
+        key={activeMoneyFilm.src} ref={premiumVideoRef}
+        src={activeMoneyFilm.src} poster={activeMoneyFilm.poster}
+        muted playsInline loop preload="auto"
+        data-mandala-master-mp4={activeMoneyFilm.src}
+        onCanPlay={()=>setPremiumReady(true)}
+        onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
+        aria-hidden="true"
+        style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
+      /> : null}
       <div className={videoStyles.studioTop}>
         <Link className={videoStyles.back} href={"/"+locale+"/holistic-support/mobile"}
           aria-label={ui.back} prefetch={false}><ArrowLeft aria-hidden="true" size={24}/></Link>
