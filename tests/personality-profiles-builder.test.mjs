@@ -187,6 +187,7 @@ test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overf
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
   const route = read('app/[locale]/personality-profiles/page.tsx')
+  const catalogue = read('lib/profile/guest-profile-tests.ts')
   const slide = builder.slice(builder.indexOf('profile-inline-stage-3'), builder.indexOf('profile-inline-stage-4'))
   const primary = slide.indexOf('data-profile-recommended-tests')
   const fiveMore = slide.indexOf('data-profile-five-more-tests')
