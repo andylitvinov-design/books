@@ -971,3 +971,34 @@
   .page .assessment .scaleLabel { font-size: 10.3px; }
   .page .assessment .scaleRow input { height: 17px; }
 }
+
+/* Restore the original broad, short iPhone dashboard proportions after the
+   independent fifth Meaning rating was added. Keep all five linked check-ins. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr);
+  }
+}
+@media (max-width: 640px) {
+  .page .assessment { padding-top: 7px; padding-bottom: 6px; }
+  .page .assessment .scaleList { gap: 1px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 12px 15px; min-height: 28px;
+  }
+  .page .assessment .scaleIcon { width: 18px; height: 17px; }
+  .page .assessment .scaleIcon svg { width: 14px; height: 14px; }
+  .page .assessment .scaleRow input { height: 17px; }
+  .page .assessment .scaleValue { height: 18px; font-size: 11.5px; }
+  .page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }
+}
+@media (max-width: 350px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr);
+  }
+  .page .assessment .scaleRow {
+    grid-template-rows: 12px 15px; min-height: 27px;
+  }
+  .page .assessment .scaleIcon { height: 16px; }
+  .page .assessment .scaleRow input { height: 16px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; }
+}
