@@ -257,7 +257,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
-  const sharedThumbnailPhoto = thumbnailPhoto?.url === photoUrl ? thumbnailPhoto.image : null;
+  const sharedThumbnailPhoto = thumbnailPhoto && thumbnailPhoto.url === photoUrl ? thumbnailPhoto.image : null;
   useEffect(() => {
     let disposed = false;
     if (!photoUrl) return;
