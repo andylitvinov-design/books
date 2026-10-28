@@ -64,7 +64,8 @@ const copy = {
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Energy Healing" },
-    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Healing" },
+    optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Energy" },
+    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
@@ -72,13 +73,13 @@ const copy = {
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers. Only original verified recordings are played.",
+    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
     tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
     talismansTitle: "Choose a symbolic talisman", talismansIntro: "Explore the existing illustrated catalogue; the practitioner confirms any custom order and price.",
     energyTitle: "Courses & programmes", energyIntro: "Explore original lessons here or continue to the Academy catalogue.",
-    coursesAll: "Browse all courses", coursesReiki: "Explore Tantra Reiki",
+    coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
     healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
@@ -100,7 +101,8 @@ const copy = {
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Энергетическая поддержка" },
-    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Мастера" },
+    optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Энергия" },
+    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
@@ -108,13 +110,13 @@ const copy = {
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Воспроизводятся оригинальные авторские записи.",
+    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
     tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
     talismansTitle: "Выбери символический талисман", talismansIntro: "Используем существующий каталог. Изготовление и цену мастер подтверждает отдельно.",
     energyTitle: "Курсы и программы", energyIntro: "Авторские уроки и действующий каталог Академии.",
-    coursesAll: "Все курсы Академии", coursesReiki: "Курс Тантра Рейки",
+    coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
     healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
@@ -136,7 +138,8 @@ const copy = {
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Sanación energética" },
-    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo" },
+    optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Energía" },
+    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
@@ -144,13 +147,13 @@ const copy = {
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas. Solo se reproducen grabaciones originales verificadas.",
+    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
     tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
     talismansTitle: "Elige un talismán simbólico", talismansIntro: "Catálogo ilustrado existente; el profesional confirma disponibilidad y precio.",
     energyTitle: "Cursos y programas", energyIntro: "Clases originales y catálogo completo de la Academia.",
-    coursesAll: "Todos los cursos", coursesReiki: "Curso de Tantra Reiki",
+    coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
     healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
@@ -256,6 +259,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
+  const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
@@ -294,13 +298,19 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </div>
 
 
+                      <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
-                  <UserRound size={43} strokeWidth={1.45} aria-hidden="true" data-support-photo-placeholder />
+                  <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={176} height={176} unoptimized className={styles.photoReference} />
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
@@ -325,20 +335,24 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
             <h2 id="mobile-tools-title" aria-label={t.toolsTitle}><span className={styles.headingLong}>{t.toolsTitle}</span><span className={styles.headingCompact}>{t.toolsShort}</span></h2>
             <div className={styles.toolGrid}>
-              {choices.map(({ id, Icon }) => (
+              {choices.filter(item => item.id !== "pump").map(({ id, Icon }) => (
                 <button key={id} type="button" data-support-tool={id}
                   className={styles.toolButton} aria-pressed={choice === id}
                   onClick={() => changeChoice(id)} aria-label={t.options[id]}>
                   <Icon size={30} strokeWidth={1.65} aria-hidden="true" />
-                  <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span>
+                  <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span><span className={styles.toolMicro}>{t.optionsMicro[id as keyof typeof t.optionsMicro]}</span>
                 </button>
               ))}
-            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+
+            </div>
+            <div className={styles.toolShortcuts} aria-label={t.coursesAll}>
+              <button type="button" data-support-tool="pump" aria-pressed={choice === "pump"}
+                onClick={() => changeChoice("pump")}>
+                <BookOpen size={15} aria-hidden="true" />{t.optionsCompact.pump}
+              </button>
+              <Link href={"/" + locale + "/masters"} prefetch={false} aria-label={t.healingMasters}>
+                <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
+              </Link>
             </div>
           </section>
         </div>
@@ -509,11 +523,14 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <h2 id="support-mobile-progress-heading">{t.progress}</h2>
           <div className={styles.progressGrid}>
-            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
-              <strong>{progressCount}/{progressTotal}</strong>
+            <div className={styles.progressStarted}>
+              <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
+                <strong>{progressCount}/{progressTotal}</strong>
+              </div>
+              <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div><strong>{t.started}</strong><span>{t.private}</span></div>
-            <div className={styles.progressFocus}><FocusIcon size={27} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressFocus}><FocusIcon size={25} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>

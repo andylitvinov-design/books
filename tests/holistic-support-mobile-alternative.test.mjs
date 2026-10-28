@@ -115,15 +115,18 @@ test("personal recommendations rank verified recordings and existing talismans, 
 });
 
 
-test("recommendations sit under selected focus; five modes and tests form six mobile actions", () => {
+test("personal recommendation under focus, four main options, Courses/Masters shortcuts and detailed test links", () => {
   const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
   const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
   const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
+  assert.match(assessment, /data-support-detailed-analysis/);
   assert.doesNotMatch(assessment, /data-support-recommendations/);
-  assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
   assert.match(profile, /data-support-recommendations/);
-  assert.match(tools, /data-support-detailed-analysis/);
-  assert.match(tools, /choices\.map/);
+  assert.doesNotMatch(profile, /data-support-detailed-analysis/);
+  assert.doesNotMatch(tools, /data-support-detailed-analysis/);
+  assert.match(tools, /choices\.filter\(item => item\.id !== "pump"\)/);
+  assert.match(tools, /data-support-tool="pump"/);
+  assert.match(tools, /className=\{styles\.toolShortcuts\}/);
   assert.match(client, /id: "healing", Icon: HandHeart/);
   assert.match(client, /pump: "Courses", healing: "Energy Healing"/);
   assert.match(client, /pump: "Курсы", healing: "Энергетическая поддержка"/);
@@ -134,9 +137,10 @@ test("recommendations sit under selected focus; five modes and tests form six mo
   assert.match(client, /\/services\/remote-energy-support/);
   assert.match(client, /\/masters/);
   assert.match(client, /<HolisticInlineSupportOrder/);
-  assert.match(css, /grid-template-areas: "assessment profile" "tools tools"/);
-  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.detailedCompact \{ display: block; \}/);
+  assert.match(css, /grid-template-areas: "assessment profile tools"/);
+  assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.toolShortcuts \{ display: grid;/);
+  assert.match(css, /\.toolMicro \{ display: block;/);
 });
 
 test("same-window talisman viewer reuses real images, local basket, and protected quote form in all locales", () => {
