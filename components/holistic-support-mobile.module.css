@@ -339,7 +339,9 @@
   .toolShortcuts a,.toolShortcuts button { min-width: 0; min-height: 25px; padding: 2px 0;
     gap: 3px; border-radius: 8px; font-size: clamp(9.4px,2.66vw,11px);
     white-space: nowrap; background: #eef7ee; }
-  .toolShortcuts svg { width: 12px; height: 12px; flex: none; }
+  .toolShortcuts svg { display: none; }
+  .toolShortcuts a,.toolShortcuts button { overflow: hidden; text-overflow: clip;
+    white-space: nowrap; letter-spacing: -.02em; }
   .experience { border-radius: 18px; margin-top: 0; }
   .hero { min-height: 288px; border-radius: 17px; padding: 10px 10px 15px;
     background: #16382f; }
