@@ -698,3 +698,18 @@
 @media (max-width: 640px) {
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
 }
+
+/* Focused mobile Reiki filter: do not float global navigation over the report and
+   certificate controls. After closing the filter, normal docked nav resumes. */
+@media (max-width: 640px) {
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
+    padding-bottom: 10px;
+  }
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    border-radius: 18px 18px 0 0;
+    box-shadow: none;
+  }
+}
