@@ -365,7 +365,7 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
             </li>;
           })}
         </ul>
-        <div className={styles.total} aria-live="polite"><strong>{t.total}</strong>
+        <div className={styles.total} data-talisman-total aria-live="polite"><strong>{t.total}</strong>
           <span>{pricing?.available && pricing.amountMinor !== undefined
             ? format(pricing.amountMinor,"EUR") : t.totalPending}</span>
         </div>
