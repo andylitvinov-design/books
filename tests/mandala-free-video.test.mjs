@@ -105,7 +105,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
   assert.match(renderer, /ctx\.drawImage\(src,-pw\/2,-ph\*\.55,pw,ph\)/);
-  assert.match(renderer, /ctx\.fillText\("\$", 70\.5, 72\)/);
+  assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
   assert.match(css, /\.freeVideoPreview\{max-height:500px/);
