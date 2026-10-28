@@ -32,7 +32,8 @@ export async function POST(request) {
     if (!['en','ru','es'].includes(locale) ||
         !['paypal','square'].includes(input.method) ||
         sourcePath !== '/' + locale + '/holistic-support' &&
-          sourcePath !== '/' + locale + '/holistic-support/mobile' ||
+          sourcePath !== '/' + locale + '/holistic-support/mobile' &&
+          sourcePath !== '/' + locale + '/talismans/cart' ||
         input.replyConsent !== true) throw new AppError('INVALID_CHECKOUT',400)
     const basket = configuredTalismanBasket(input.items, locale)
     const method = basket?.methods?.[input.method]
