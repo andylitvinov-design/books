@@ -44,7 +44,9 @@ for (const engine of [chromium, webkit]) {
         }, null, { timeout: 30000 });
 
         assert.equal(await root.locator("[data-support-mobile-bottom-nav]").count(), 1, name + " original dock");
-        assert.equal(await root.locator("[data-support-scale]").count(), 4, name + " original ratings");
+        assert.equal(await root.locator("[data-support-scale]").count(), 5, name + " five linked ratings");
+        assert.equal(await root.locator('[data-support-scale="meaning"] input[type="range"]').count(), 1,
+          name + " separate Meaning rating stays visible");
         assert.equal(await root.locator("[data-support-tool]").count(), 7, name + " original tools");
         const guide = root.locator("[data-support-goal-results]");
         assert.equal(await guide.count(), 1, name + " exactly one recommendations card");
@@ -65,6 +67,39 @@ for (const engine of [chromium, webkit]) {
               return { selector, left: r.left, right: r.right, width: r.width, height: r.height, y: r.top };
             })).flat() };
         });
+        // Regression: a fifth rating must not make the original left header a tall,
+        // skinny column or push its CTA beyond the matched three-column band.
+        const header = await page.evaluate(() => {
+          const rect = selector => {
+            const el = document.querySelector(selector);
+            const r = el?.getBoundingClientRect();
+            return r && {left:r.left, right:r.right, top:r.top, bottom:r.bottom,
+              width:r.width, height:r.height};
+          };
+          const labelFits = [...document.querySelectorAll(
+            '[data-support-scale] [class*="scaleLabel"]'
+          )].every(el => el.scrollWidth <= el.clientWidth + 2);
+          return { left:rect('[aria-labelledby="mobile-assessment-title"]'),
+            profile:rect('[data-support-photo]'), right:rect('#support-tools'),
+            cta:rect('[data-support-goal-filter-trigger]'), labelFits };
+        });
+        assert.ok(header.left && header.right && header.cta && header.profile,
+          name + " all original header panels remain");
+        assert.ok(header.left.width >= width * .34,
+          name + " left check-in remains wide enough: " + JSON.stringify(header));
+        const maxRatio = width <= 350 ? 2.26 : width <= 390 ? 2.02 : 1.86;
+        assert.ok(header.left.height / header.left.width <= maxRatio,
+          name + " left card remains compact, not a narrow tower: " + JSON.stringify(header));
+        assert.ok(header.labelFits,
+          name + " all five labels fit without cropping");
+        assert.ok(header.cta.bottom <= header.left.bottom + 2,
+          name + " goal-filter button stays inside left card");
+        assert.ok(header.left.right <= header.profile.left + 4 &&
+          header.profile.right <= header.right.left + 4,
+          name + " original three-column order remains");
+        console.log("Header geometry " + name + ": " +
+          Math.round(header.left.width) + "×" + Math.round(header.left.height) +
+          " (ratio " + (header.left.height / header.left.width).toFixed(2) + ")");
         assert.ok(metrics.scrollWidth <= metrics.clientWidth + 3,
           name + " no horizontal overflow: " + JSON.stringify(metrics));
         assert.ok(metrics.rects.every(rect => rect.left >= -3 && rect.right <= width + 3),
