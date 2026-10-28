@@ -391,3 +391,144 @@
 @media (prefers-reduced-motion: reduce) {
   .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
 }
+
+/* Focus-first recommendation journey. A recorded practice is primary;
+   symbolic Fu illustrations remain smaller, clearly optional. */
+.recommendationPanel {
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 15px;
+  border: 1px solid #d7dfd1;
+  border-radius: 22px;
+  background: #fcfbf5;
+  box-shadow: 0 8px 26px rgb(23 66 48 / 9%);
+  scroll-margin-top: 12px;
+}
+.recOverview { display: grid; gap: 8px; padding: 9px 11px 5px; }
+.recEyebrow {
+  display: inline-flex; align-items: center; gap: 7px; width: fit-content;
+  color: #207a57; font-size: 12px; font-weight: 850; letter-spacing: .065em;
+}
+.recOverview h2 {
+  margin: 0; color: #173e32; font-size: clamp(25px, 3.4vw, 37px);
+  font-weight: 850; line-height: 1.14; letter-spacing: -.025em;
+}
+.recOverview p { margin: 0; max-width: 67ch; color: #4e6255; font-size: 16px; line-height: 1.45; }
+.recEvidence { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.recEvidence span {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px;
+  border: 1px solid #d2e3d6; border-radius: 999px;
+  background: #edf5eb; color: #285b47; font-size: 13px; font-weight: 700;
+}
+.recEvidence span:nth-child(2) { background: #fffaf0; border-color: #eae2d0; color: #766650; }
+.recPrimary {
+  display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  min-width: 0; overflow: hidden; border: 1px solid #e2e2d7;
+  border-radius: 19px; background: #fffefa;
+}
+.recPoster {
+  position: relative; min-width: 0; min-height: 236px; overflow: hidden;
+  background: #2c5548;
+}
+.recPoster img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.recPoster::after {
+  position: absolute; inset: 34% 0 0; content: "";
+  background: linear-gradient(0deg, rgb(9 37 30 / 62%), transparent);
+  pointer-events: none;
+}
+.recPosterLabel {
+  position: absolute; z-index: 1; bottom: 13px; left: 12px; right: 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  color: white; font-size: 12px; font-weight: 850; line-height: 1.25;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 50%);
+}
+.recPosterLabel svg { flex: none; }
+.recPrimaryBody { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; min-width: 0; padding: 20px; }
+.recAuthor { font-size: 13px; line-height: 1.4; color: #326b52; font-weight: 800; }
+.recPrimaryBody h3 {
+  margin: 0; color: #1d362c; font-size: clamp(23px, 2.7vw, 30px);
+  line-height: 1.2; font-weight: 850; letter-spacing: -.015em; overflow-wrap: anywhere;
+}
+.recReason { margin: 0; color: #58635b; font-size: 15px; line-height: 1.45; }
+.recReason strong { color: #2d5943; }
+.recFallback {
+  margin: 0; padding: 8px 10px; border-radius: 10px; background: #f6f0df;
+  color: #645238; font-size: 13px; line-height: 1.4;
+}
+.recPrimaryActions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; margin-top: auto; }
+.recPlay, .recOther {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; border-radius: 13px; padding: 10px 14px; font-size: 16px;
+  font-weight: 800; text-align: center; line-height: 1.2;
+}
+.recPlay { border: 1px solid #077b58; background: #0b8563; color: white; }
+.recPlay:hover { background: #056848; }
+.recOther { border: 1px solid #cbdcd0; background: #f5f9f4; color: #246f52; }
+.recOther:hover { background: #e7f3e8; }
+.recSymbol {
+  display: flex; align-items: center; gap: 15px; min-width: 0;
+  padding: 12px 14px; border: 1px solid #eadfcf; border-radius: 16px;
+  background: #faf5eb;
+}
+.recSymbolImage {
+  display: block; flex: 0 0 85px; width: 85px; height: 102px;
+  border-radius: 10px; object-fit: cover; border: 1px solid #d5c4a7;
+}
+.recSymbolBody { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; flex: 1; min-width: 0; }
+.recSymbolLabel { color: #8b623a; font-size: 12px; font-weight: 850; letter-spacing: .025em; line-height: 1.3; }
+.recSymbolBody h3 { margin: 0; color: #3d3428; font-size: 19px; line-height: 1.2; font-weight: 850; }
+.recSymbolBody p { margin: 0; color: #6b5d4d; font-size: 14px; line-height: 1.35; }
+.recCatalogLink {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  padding: 7px 2px; border: 0; background: transparent;
+  color: #6b5635; text-decoration: underline; text-underline-offset: 3px;
+  font-size: 14px; font-weight: 800;
+}
+.recCatalogLink:hover { color: #3c301c; }
+.recDeeper {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  border-top: 1px solid #e5e5dc; padding: 12px 6px 2px;
+}
+.recDeeper p { margin: 0; max-width: 55ch; color: #526459; font-size: 14px; line-height: 1.4; }
+.recDeeper .detailedAnalysisLink {
+  width: auto; max-width: 100%; min-height: 44px; margin: 0; flex: none;
+  white-space: nowrap; border-color: #d4ded5; background: #eff5ed;
+  font-size: 14px;
+}
+@media (max-width: 800px) {
+  .recPrimary { grid-template-columns: 1fr; }
+  .recPoster { min-height: 0; aspect-ratio: 16 / 8; }
+  .recPrimaryBody { padding: 15px; }
+  .recDeeper { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 640px) {
+  .recommendationPanel { padding: 10px; gap: 9px; border-radius: 17px; margin-bottom: 10px; }
+  .recOverview { gap: 5px; padding: 7px 6px 5px; }
+  .recEyebrow { font-size: 11px; }
+  .recOverview h2 { font-size: clamp(22px, 6.2vw, 27px); line-height: 1.15; }
+  .recOverview p { font-size: 14px; line-height: 1.38; }
+  .recEvidence span { padding: 5px 8px; font-size: 12px; }
+  .recPrimary { border-radius: 14px; }
+  .recPoster { aspect-ratio: 16 / 7.5; }
+  .recPosterLabel { bottom: 10px; left: 10px; right: 10px; font-size: 11px; }
+  .recPrimaryBody { padding: 12px; gap: 8px; }
+  .recAuthor { font-size: 12px; }
+  .recPrimaryBody h3 { font-size: clamp(20px, 5.5vw, 24px); }
+  .recReason { font-size: 14px; line-height: 1.38; }
+  .recPrimaryActions { gap: 7px; }
+  .recPlay, .recOther { min-height: 47px; font-size: 14px; padding: 8px 12px; }
+  .recSymbol { gap: 10px; padding: 9px; border-radius: 13px; }
+  .recSymbolImage { flex-basis: 65px; width: 65px; height: 84px; }
+  .recSymbolLabel { font-size: 10px; }
+  .recSymbolBody h3 { font-size: 16px; }
+  .recSymbolBody p { font-size: 13px; }
+  .recCatalogLink { font-size: 13px; }
+  .recDeeper { gap: 9px; padding: 11px 4px 2px; }
+  .recDeeper p { font-size: 13px; }
+  .recDeeper .detailedAnalysisLink { white-space: normal; font-size: 13px; }
+}
+@media (max-width: 375px) {
+  .recPlay, .recOther { font-size: 13px; padding: 8px 9px; }
+  .recPrimaryBody h3 { font-size: 20px; }
+  .recSymbolImage { flex-basis: 56px; width: 56px; height: 78px; }
+}
