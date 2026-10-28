@@ -869,7 +869,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                     {meditationCategoryOptions.map(({ id, Icon }) => (
                       <button type="button" key={id} className={styles.meditationCategoryCard}
                         data-support-meditation-category={id} data-category={id}
-                        aria-pressed={meditationCategory === id} aria-label={t.meditationCategoryNames[id]}
+                        aria-pressed={meditationCategory === id}
+                        aria-label={t.meditationCategoryShortNames[id] === t.meditationCategoryNames[id]
+                          ? t.meditationCategoryNames[id]
+                          : t.meditationCategoryShortNames[id] + " — " + t.meditationCategoryNames[id]}
                         title={t.meditationCategoryNames[id]} onClick={() => chooseMeditationCategory(id)}>
                         <Icon size={27} aria-hidden="true" />
                         <span aria-hidden="true">{t.meditationCategoryShortNames[id]}</span>
