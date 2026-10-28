@@ -51,7 +51,7 @@ export type SupportMobileCourse = {
 type Focus = "energy" | "money" | "relationships" | "goals";
 // Meaning is a separate fifth check-in; the published video topic engine
 // continues to use the original four-focus ranking.
-type CheckinArea = Focus | "meaning";
+type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
@@ -59,12 +59,17 @@ type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
-const checkinOrder: CheckinArea[] = [...focusOrder, "meaning"];
+const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"];
 // Existing public Test Explorer recognizes these non-sensitive editorial journey IDs.
 const journeyCategory: Record<Focus, string> = {
   energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
 };
-const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target, meaning: Flower2 };
+const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Flower2, meaning: Flower2 };
+// The historical recommendation engine calls the fourth focus "goals".
+// It receives the single Meaning score, never a second or synthetic Goals slider.
+const asFocusScores = (values: Record<CheckinArea, number>): Record<Focus, number> => ({
+  energy: values.energy, money: values.money, relationships: values.relationships, goals: values.meaning,
+});
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
   { id: "consultation", Icon: MessageCircle },
@@ -97,7 +102,7 @@ const copy = {
         "energy": "Energy & wellbeing tests",
         "money": "Work & money reflection tests",
         "relationships": "Relationship tests",
-        "goals": "Focus & motivation tests"
+        "goals": "Meaning, focus & motivation tests"
       },
       "testHint": "Browse actual free questionnaires",
       "videoHint": "Published original recording",
@@ -134,15 +139,15 @@ const copy = {
     },
     goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
     goalExternalOnly: "Use the selected links above to explore these published formats.",
-    goalSector: { energy: "Energy", money: "Money", love: "Love", goals: "Goals", meaning: "Meaning" },
-    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", goals: "Take the next step", meaning: "Find your inner direction" },
+    goalSector: { energy: "Energy", money: "Money", love: "Love", meaning: "Meaning" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore meaning and direction" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
     goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Meaning" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
@@ -151,7 +156,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
-    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
+    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
     youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
@@ -196,7 +201,7 @@ const copy = {
         "energy": "Тесты: энергия и самочувствие",
         "money": "Тесты: работа и деньги",
         "relationships": "Тесты: отношения",
-        "goals": "Тесты: фокус и мотивация"
+        "goals": "Тесты: смыслы, фокус и мотивация"
       },
       "testHint": "Реальные бесплатные опросники",
       "videoHint": "Опубликованная авторская запись",
@@ -233,15 +238,15 @@ const copy = {
     },
     goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
     goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
-    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", goals: "Цели", meaning: "Смыслы" },
-    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", goals: "Двигайся к своей цели", meaning: "Найди внутренний смысл" },
+    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", meaning: "Смыслы" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Найди смыслы и направление" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
     goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Смыслы" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
@@ -250,7 +255,7 @@ const copy = {
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
-    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
+    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
     youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
@@ -295,7 +300,7 @@ const copy = {
         "energy": "Pruebas de energía y bienestar",
         "money": "Pruebas de trabajo y dinero",
         "relationships": "Pruebas de relaciones",
-        "goals": "Pruebas de atención y motivación"
+        "goals": "Pruebas de sentido, atención y motivación"
       },
       "testHint": "Cuestionarios gratuitos disponibles",
       "videoHint": "Grabación original publicada",
@@ -332,15 +337,15 @@ const copy = {
     },
     goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
     goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
-    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", goals: "Metas", meaning: "Sentido" },
-    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", goals: "Da el siguiente paso", meaning: "Encuentra tu dirección interior" },
+    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", meaning: "Sentido" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Encuentra sentido y dirección" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
     goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Sentido" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
@@ -349,7 +354,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
-    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
+    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
     youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
@@ -395,7 +400,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const t = copy[locale];
   // Single owner for the five synchronized check-ins in both UI locations.
   const [scores, setScores] = useState<Record<CheckinArea, number>>({
-    energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5,
+    energy: 5, money: 5, relationships: 5, meaning: 5,
   });
   const [choice, setChoice] = useState<Choice>(initialChoice);
   // The visitor explicitly requests a local ranking snapshot; editing a rating
@@ -445,8 +450,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
 
   // Quick matching follows the lowest self-ratings. An explicitly applied goal
   // overrides the browsing focus without changing the existing scoring engine.
+  const focusScores = asFocusScores(scores);
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
-    scores[domain] < scores[lowest] ? domain : lowest, focusOrder[0]);
+    focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
@@ -503,19 +509,19 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   };
   const onRecommendations = () => {
     // Keep the user's chosen focus and formats; recommend only verified content.
-    setRecommendation({ ...scores });
+    setRecommendation(asFocusScores(scores));
     setGoalFilterOpen(false);
     scrollToSupport("support-goal-results");
   };
   const openGoalFilter = () => {
     setProfileSector(goalSelection?.sector ?? ({ energy: "energy", money: "money",
-      relationships: "love", goals: "goals" } as Record<Focus, GoalSector>)[focus]);
+      relationships: "love", goals: "meaning" } as Record<Focus, GoalSector>)[focus]);
     setPlaying(false); setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const openCourseProfileFilter = (sector: GoalSector) => {
-    if (sector !== "goals") setActiveCourseProfile(sector);
+    setActiveCourseProfile(sector);
     setProfileSector(sector);
     setPlaying(false);
     setGoalFilterOpen(true);
@@ -538,8 +544,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       formats.includes(id) && inlineChoice[id]);
     // Three "Now → Want" measures remain independent. Applying them must
     // never overwrite the dedicated check-in, which syncs on every drag.
-    setRecommendation({ energy: scores.energy, money: scores.money,
-      relationships: scores.relationships, goals: scores.goals });
+    setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
@@ -554,7 +559,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     if (!saved || saved.checkin !== scores[goalSectorCheckinKey[sector]]) {
       openCourseProfileFilter(sector); return;
     }
-    if (sector !== "goals") setActiveCourseProfile(sector);
+    setActiveCourseProfile(sector);
     setProfileSector(sector);
     applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
       recommendationFormats: goalRecommendationFormats });
@@ -596,7 +601,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
   // Single recommendation guide: only already published videos and existing routes.
   // Scores/photo never leave this page; no automatic enrollments or bookings.
-  const quickRanked = useMemo(() => recommendSupportByLowestScores({ scores, videos, locale }),
+  const quickRanked = useMemo(() => recommendSupportByLowestScores({ scores: asFocusScores(scores), videos, locale }),
     [scores, videos, locale]);
   const journeyVideo = goalMatch?.videos[0] ?? quickRanked.videos[0] ?? null;
   const journeyVideoAllowed = !goalSelection || activeGoalFormats.includes("meditation");
@@ -759,7 +764,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </div>
             <div className={styles.journeyFocus} data-support-journey-focus>
               <ActiveFocusIcon size={16} aria-hidden="true" />{t.journey.focus}: <strong>{activeFocusLabel}</strong>
-              {!goalSelection || goalSelection.sector !== "meaning" ? <span>{scores[focus]}/10</span> : null}
+              <span>{goalSelection ? scores[goalSectorCheckinKey[goalSelection.sector]] : focusScores[focus]}/10</span>
             </div>
             <div className={styles.journeyRows} aria-label={t.goalResultsTitle}>
               <div className={styles.journeyRow} data-support-journey-step="1">
