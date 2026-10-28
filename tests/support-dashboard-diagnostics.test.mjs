@@ -121,7 +121,7 @@ test('monotonic expiry before timer callback also prevents emission', async () =
   await e.record({ evaluate: async () => { e.advance(1001); return raw() } }, metadata, initial())
   assert.equal(e.writes.length, 0); assert.equal(e.messages.length, 0)
 })
-const insertedBlock = `          if (!(geometry.hero[0].y-geometry.a[0].y<285)) {
+const insertedBlock = `          if (!(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285 && geometry.guide[0].bottom<=geometry.hero[0].y+2)) {
             try { await recordSupportDashboardFailure(page, { engine: browserType.name(), locale, width }, geometry); }
             catch { /* Diagnostics must not replace the original fatal assertion. */ }
           }
@@ -200,7 +200,7 @@ function supportDiagnosticContract(text) {
   const arm = guardedTry.parent, conditional = arm.parent
   assert.ok(ts.isBlock(arm) && arm.statements.length === 1 && arm.statements[0] === guardedTry)
   assert.ok(ts.isIfStatement(conditional) && conditional.thenStatement === arm && !conditional.elseStatement)
-  same(conditional.expression, '!(geometry.hero[0].y - geometry.a[0].y < 285)')
+  same(conditional.expression, '!(geometry.guide.length === 1 && geometry.guide[0].y - geometry.a[0].y < 285 && geometry.guide[0].bottom <= geometry.hero[0].y + 2)')
   const block = conditional.parent
   assert.ok(ts.isBlock(block), 'diagnostic is directly in measured case block')
   const index = block.statements.indexOf(conditional)
@@ -209,20 +209,25 @@ function supportDiagnosticContract(text) {
   const fatalCall = assertCall(fatal)
   assert.ok(fatalCall && fatalCall.arguments.length === 2, 'fatal assertion immediately follows observer arm')
   same(fatalCall.expression, 'assert.ok')
-  same(fatalCall.arguments[0], 'geometry.hero[0].y - geometry.a[0].y < 285')
+  same(fatalCall.arguments[0], 'geometry.guide.length === 1 && geometry.guide[0].y - geometry.a[0].y < 285')
+  const fatal2 = block.statements[index + 2], fatalCall2 = assertCall(fatal2)
+  assert.ok(fatalCall2 && fatalCall2.arguments.length === 2, 'second canonical fatal assertion immediately follows first')
+  same(fatalCall2.expression, 'assert.ok')
+  same(fatalCall2.arguments[0], 'geometry.guide[0].bottom <= geometry.hero[0].y + 2')
   const noSwallowingCatch = node => {
     for (let child = node, parent = node.parent; parent; child = parent, parent = parent.parent) {
       assert.ok(!(ts.isTryStatement(parent) && parent.tryBlock === child && parent.catchClause), 'fatal assertion cannot be swallowed by ancestor catch')
     }
   }
   noSwallowingCatch(fatal)
+  noSwallowingCatch(fatal2)
   const gate = (callee, predicate) => block.statements.map((node, at) => ({node, at, call:assertCall(node)})).filter(item => {
     if (!item.call || !item.call.arguments.length) return false
     try { same(item.call.expression, callee); same(item.call.arguments[0], predicate); return true } catch { return false }
   })
   const heights = gate('assert.ok', 'geometry.hero[0].height >= 268')
   assert.equal(heights.length, 1, 'one unweakened hero-height gate')
-  assert.ok(heights[0].at > index + 1); noSwallowingCatch(heights[0].node)
+  assert.ok(heights[0].at > index + 2); noSwallowingCatch(heights[0].node)
   const errors = gate('assert.deepEqual', 'errors')
   assert.equal(errors.length, 1, 'one fatal browser-errors gate')
   assert.equal(errors[0].call.arguments.length, 3); same(errors[0].call.arguments[1], '[]')
@@ -267,22 +272,22 @@ function supportDiagnosticContract(text) {
   const measurement = measurements[0]
   assert.ok((measurement.parent.flags & ts.NodeFlags.Const) && measurement.initializer && ts.isAwaitExpression(measurement.initializer))
   assert.ok(ts.isCallExpression(measurement.initializer.expression)); same(measurement.initializer.expression.expression, 'page.evaluate')
-  return { arm:conditional.getText(file), fatal:fatal.getText(file), source:file }
+  return { arm:conditional.getText(file), fatal:fatal.getText(file)+'\n          '+fatal2.getText(file), source:file }
 }
 
 test('verifier retains scoped diagnostic singleton, failure-only call and fatal gates', () => {
   supportDiagnosticContract(verifier)
 })
 test('actual verifier block never runs on pass and preserves original assertion after throwing observer', async () => {
-  const assertion = '          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,\n            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");'
+  const assertion = '          assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285,\n            label+" screenshot-like three-zone dashboard exposes recommendations under header");\n          assert.ok(geometry.guide[0].bottom<=geometry.hero[0].y+2,\n            label+" recommendation card precedes original scenic player");'
   assert.ok(verifier.includes(insertedBlock + assertion))
   let calls = 0
   const run = (gap, record) => vm.runInNewContext('(async()=>{' + insertedBlock + assertion + '\n})()', {
-    geometry: { hero: [{ y: gap }], a: [{ y: 0 }] }, page: {}, browserType: { name: () => 'chromium' }, locale: 'ru', width: 430,
+    geometry: { guide: [{ y: gap, bottom: gap + 100 }], hero: [{ y: 600 }], a: [{ y: 0 }] }, page: {}, browserType: { name: () => 'chromium' }, locale: 'ru', width: 430,
     label: 'case', recordSupportDashboardFailure: record, assert,
   })
   await run(284.999, async () => { calls++ }); assert.equal(calls, 0)
-  await assert.rejects(run(285, async () => { calls++; throw Error('SECRET_OBSERVER') }), error => error.code === 'ERR_ASSERTION' && /by 285px/.test(error.message))
+  await assert.rejects(run(285, async () => { calls++; throw Error('SECRET_OBSERVER') }), error => error.code === 'ERR_ASSERTION' && /recommendations under header/.test(error.message))
   assert.equal(calls, 1)
 })
 
@@ -327,7 +332,7 @@ test('actual AST-selected diagnostic preserves the boundary and fatal observer i
   const selected = supportDiagnosticContract(verifier)
   let calls = 0
   const run = (gap, record) => vm.runInNewContext('(async()=>{'+selected.arm+'\n'+selected.fatal+'})()', {
-    geometry:{hero:[{y:gap}],a:[{y:0}]},page:{},browserType:{name:()=> 'chromium'},locale:'ru',width:430,
+    geometry:{guide:[{y:gap,bottom:gap+100}],hero:[{y:600}],a:[{y:0}]},page:{},browserType:{name:()=> 'chromium'},locale:'ru',width:430,
     label:'case',recordSupportDashboardFailure:record,assert,
   })
   await run(284.999, async()=>{calls++});assert.equal(calls,0)
@@ -352,10 +357,10 @@ const scopedMutations = [
   ['wrong metadata','{ engine: browserType.name(), locale, width }, geometry','{ engine: browserType.name(), locale, width, extra: 1 }, geometry'],
   ['spread metadata','{ engine: browserType.name(), locale, width }, geometry','{ engine: browserType.name(), ...metadata }, geometry'],
   ['wrong measurement','locale, width }, geometry','locale, width }, {}'],
-  ['passing path observation','if (!(geometry.hero[0].y-geometry.a[0].y<285))','if (geometry.hero[0].y-geometry.a[0].y<285)'],
+  ['passing path observation','if (!(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285 && geometry.guide[0].bottom<=geometry.hero[0].y+2))','if (geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285 && geometry.guide[0].bottom<=geometry.hero[0].y+2)'],
   ['weakened dashboard','y<285','y<286'],
   ['inclusive dashboard','y<285','y<=285'],
-  ['optional fatal assertion','assert.ok(geometry.hero[0].y-geometry.a[0].y<285','assert.ok?.(geometry.hero[0].y-geometry.a[0].y<285'],
+  ['optional fatal assertion','assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285','assert.ok?.(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285'],
   ['weakened hero','height>=268','height>=267'],
   ['return from diagnostic','catch { /* Diagnostics must not replace the original fatal assertion. */ }','catch { return; }'],
   ['finally in diagnostic','catch { /* Diagnostics must not replace the original fatal assertion. */ }','catch {} finally { return; }'],
@@ -534,4 +539,91 @@ for (const [name, from, to] of [
 ]) test('actual Tests producer rejects ' + name, () => {
   assert.equal(supportMobileSource.split(from).length, 2)
   assert.throws(() => actualSupportTestsSource(supportMobileSource.replace(from, to), 'ru'))
+})
+
+
+test('optional canonical guide keeps exact existing output schema and original measurements', () => {
+  const before = canonicalSupportDashboard(initial(), raw(), metadata)
+  const withGuide = { ...initial(), guide: [rect(100, 150)] }
+  const after = canonicalSupportDashboard(withGuide, raw(), metadata)
+  assert.equal(after.original.status, 'captured')
+  assert.deepEqual(after, before)
+  assert.equal(Object.hasOwn(after.original, 'guide'), false)
+  assert.equal(JSON.stringify(after).includes('guide'), false)
+})
+test('optional guide rejects malformed shape lengths values extras and symbols without retention', () => {
+  const extraArray = [rect()]; extraArray.secret = 'GUIDE_PRIVATE'
+  const symbolRect = { ...rect(), [Symbol('GUIDE_PRIVATE')]: 1 }
+  for (const guide of [null, {}, [], [rect(), rect()], new Array(1), extraArray,
+    [null], [{ ...rect(), secret: 'GUIDE_PRIVATE' }], [symbolRect],
+    [{ ...rect(), y: NaN }], [{ ...rect(), bottom: Infinity }],
+    [{ ...rect(), width: 100001 }], [{ ...rect(), shown: 'yes' }],
+    [{ ...rect(), right: 'GUIDE_PRIVATE' }]]) {
+    const result = canonicalSupportDashboard({ ...initial(), guide }, raw(), metadata)
+    assert.equal(result.original.status, 'unavailable')
+    assert.equal(result.observation.status, 'captured')
+    assert.doesNotMatch(JSON.stringify(result), /GUIDE_PRIVATE|guide/)
+  }
+})
+test('optional guide rejects nested proxies and accessors without touching traps', () => {
+  let calls = 0
+  const trap = () => { calls++; throw Error('GUIDE_PRIVATE') }
+  const inputs = []
+  const outer = initial(); Object.defineProperty(outer, 'guide', { get: trap }); inputs.push(outer)
+  inputs.push({ ...initial(), guide: new Proxy([rect()], { ownKeys: trap, get: trap }) })
+  inputs.push({ ...initial(), guide: [new Proxy(rect(), { ownKeys: trap, get: trap })] })
+  const indexed = [rect()]; Object.defineProperty(indexed, '0', { get: trap }); inputs.push({ ...initial(), guide: indexed })
+  const nested = rect(); Object.defineProperty(nested, 'y', { get: trap }); inputs.push({ ...initial(), guide: [nested] })
+  for (const value of inputs) {
+    const result = canonicalSupportDashboard(value, raw(), metadata)
+    assert.equal(result.original.status, 'unavailable')
+    assert.equal(result.observation.status, 'captured')
+    assert.doesNotMatch(JSON.stringify(result), /GUIDE_PRIVATE/)
+  }
+  assert.equal(calls, 0)
+})
+test('recorder accepts guide without adding retained fields or increasing attempts', async () => {
+  const e = recorderEnvironment(); let evaluations = 0
+  const page = { evaluate: async () => { evaluations++; return raw() } }
+  await e.record(page, metadata, { ...initial(), guide: [rect(100, 150)] })
+  await e.record(page, metadata, { ...initial(), guide: [rect(300, 150)] })
+  assert.equal(evaluations, 1); assert.equal(e.writes.length, 1); assert.equal(e.messages.length, 1)
+  assert.deepEqual(JSON.parse(e.writes[0].content), canonicalSupportDashboard(initial(), raw(), metadata))
+  assert.equal(e.timers.size, 0)
+})
+test('both canonical geometry failures capture once and remain fatal after observer rejection', async () => {
+  const selected = supportDiagnosticContract(verifier)
+  const run = (geometry, record) => vm.runInNewContext('(async()=>{'+selected.arm+'\n'+selected.fatal+'})()', {
+    geometry, page:{}, browserType:{name:()=> 'chromium'}, locale:'ru', width:320,
+    label:'case', recordSupportDashboardFailure:record, assert,
+  })
+  let calls = 0
+  const measure = (y, bottom, hero = 400) => ({guide:[{y,bottom}],hero:[{y:hero}],a:[{y:0}]})
+  await run(measure(284.999, 402), async()=>{calls++}); assert.equal(calls, 0)
+  for (const [geometry, message] of [
+    [measure(285, 300), /recommendations under header/],
+    [measure(100, 402.001), /precedes original scenic player/],
+    [{guide:[],hero:[{y:400}],a:[{y:0}]}, /recommendations under header/],
+    [{guide:[{y:100,bottom:200},{y:100,bottom:200}],hero:[{y:400}],a:[{y:0}]}, /recommendations under header/],
+  ]) {
+    const before = calls
+    await assert.rejects(run(geometry, async()=>{calls++; throw Error('GUIDE_PRIVATE')}),
+      error=>error.code==='ERR_ASSERTION' && message.test(error.message) && !error.message.includes('GUIDE_PRIVATE'))
+    assert.equal(calls, before + 1)
+  }
+})
+test('scoped diagnostic rejects dropped or weakened second canonical geometry gate', () => {
+  const selected = supportDiagnosticContract(verifier)
+  const second = selected.fatal.slice(selected.fatal.indexOf('          assert.ok(geometry.guide[0].bottom'))
+  assert.ok(second)
+  for (const changed of [
+    verifier.replace(second, '          assert.ok(true);'),
+    verifier.replace('geometry.guide[0].bottom<=geometry.hero[0].y+2', 'geometry.guide[0].bottom<=geometry.hero[0].y+3'),
+    verifier.replace(' && geometry.guide[0].bottom<=geometry.hero[0].y+2))', '))'),
+  ]) { assert.notEqual(changed, verifier); assert.throws(()=>supportDiagnosticContract(changed)) }
+})
+test('missing guide reaches cardinality gate rather than crashing the320px diagnostic log', () => {
+  const match = verifier.match(/const headHeight=(Math\.round\(geometry\.guide\[0\]\?\.y-geometry\.a\[0\]\.y\));/)
+  assert.ok(match, 'safe diagnostic-only measurement')
+  assert.ok(Number.isNaN(vm.runInNewContext(match[1], {geometry:{guide:[],a:[{y:0}]}})))
 })

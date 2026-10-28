@@ -59,8 +59,11 @@ export function canonicalSupportDashboard(initial, raw, metadata) {
   } catch { return null }
   let original = { status: 'unavailable' }
   try {
-    object(initial, ['client', 'scroll', 'a', 'photo', 'tools', 'toolsSection', 'readableTools', 'readableScores', 'hero', 'tabs', 'videos', 'footer', 'gallery'],
+    object(initial, ['client', 'scroll', 'a', 'photo', 'tools', 'toolsSection', 'readableTools', 'readableScores', 'hero', 'tabs', 'videos', 'footer', 'gallery', 'guide'],
       ['client', 'scroll', 'a', 'photo', 'toolsSection', 'hero'])
+    // Canonical guide geometry is accepted only as one exact numeric rectangle.
+    // It is compatibility input, never a new retained field or output alias.
+    if (Object.hasOwn(initial, 'guide')) originalRect(array(own(initial, 'guide'), 1, true)[0])
     const targets = [['a', 'assessment'], ['photo', 'photo'], ['toolsSection', 'tools'], ['hero', 'hero']]
       .map(([key, alias]) => ({ alias, rect: originalRect(array(own(initial, key), 1, true)[0]) }))
     const a = targets[0].rect, hero = targets[3].rect
