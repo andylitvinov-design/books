@@ -291,12 +291,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               })}
             </div>
 
-            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
@@ -336,8 +331,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span>
                 </button>
               ))}
+            <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
+              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
+              <BarChart3 size={18} aria-hidden="true" />
+              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
             </div>
-
           </section>
         </div>
 
