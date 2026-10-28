@@ -70,7 +70,7 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
  * No draft, paused service, credentials claim or unapproved price is leaked.
  */
 export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promise<EnergySupportMaster[]> {
-  const [legacy, records] = await Promise.all([
+  const [legacy, records]: [EnergySupportMaster[], PublicPractitioner[]] = await Promise.all([
     listRemoteEnergySupportMasters(locale),
     createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale),
   ]);
