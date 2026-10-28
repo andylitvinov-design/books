@@ -66,6 +66,33 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             id,{timeout:10000});
           assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
         }
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          // Real Full HD MP4s in ALL three new/expanded categories; no
+          // pretence that these are static posters or animated SVGs.
+          for (const [category, id] of [
+            ["energy","solar-surge"],["life","wildflower-dance"],["health","calm-sea"],
+          ]) {
+            await page.locator('[data-video-theme="'+category+'"]').click();
+            if (category === "health") {
+              await page.locator("[data-video-health-disclaimer]").waitFor({state:"visible"});
+            }
+            const tile=page.locator('[data-video-template="'+id+'"]');
+            await tile.click();
+            const film=tile.locator('video[data-real-mp4]');
+            await film.waitFor({state:"visible"});
+            assert.equal(await film.evaluate(el=>el.tagName),"VIDEO");
+            assert.match(await film.getAttribute("data-real-mp4")||"",
+              /^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.mp4$/);
+            await page.waitForFunction(sceneId=>{
+              const el=document.querySelector('[data-mandala-scene-preview="'+sceneId+'"]');
+              return el && el.readyState>=2 && el.videoWidth>=900 && el.currentTime>.15;
+            },id,{timeout:30000});
+            const before=await film.evaluate(v=>v.currentTime);
+            await page.waitForTimeout(470);
+            const after=await film.evaluate(v=>v.currentTime);
+            assert.ok(after>before+.10,category+" native H264 must advance real frames");
+          }
+        }
         await page.locator('[data-video-theme="money"]').click();
         await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');
