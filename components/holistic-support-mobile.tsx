@@ -12,7 +12,7 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import { recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
+import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
 import type { SupportRequestKind } from "@/components/remote-energy-support-booking";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
@@ -43,9 +43,6 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "pump", Icon: RotateCcw },
   { id: "healing", Icon: HandHeart },
 ];
-const focusTopics: Record<Focus, MeditationTopic> = {
-  energy: "energy", money: "business", relationships: "love", goals: "business",
-};
 const focusRequest: Record<Focus, string> = {
   energy: "Inner balance and calm", money: "Work and money",
   relationships: "Connection and relationships", goals: "Work and money",
@@ -73,7 +70,7 @@ const copy = {
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating",
+    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose a self-check or send a personal enquiry through the existing secure flows.",
     tests: "Open free tests", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
@@ -83,8 +80,9 @@ const copy = {
     healingTitle: "Energy Healing & Support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Energy support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
-    freeVideo: "Create a free video with my photo + voice", freeVideoHint: "Choose a focus, mandala and effects · save MP4/WebM on your device.",
-    progress: "Your progress", started: "Videos opened here", focusStatus: "Selected focus",
+    freeVideo: "Create a personal video for free", freeVideoHint: "Choose a topic, moving scene and photo · save the real video on your device.",
+    freeVoice: "Free video with my photo and voice",
+    progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
@@ -111,7 +109,7 @@ const copy = {
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка",
+    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Пройди бесплатный тест или запроси консультацию через действующий кабинет.",
     tests: "Пройти тесты", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
@@ -121,8 +119,9 @@ const copy = {
     healingTitle: "Энергетическая поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги энергоподдержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
-    freeVideo: "Создать бесплатное видео с фото и голосом", freeVideoHint: "Выбери цель, мандалу и эффекты · сохрани MP4/WebM на устройство.",
-    progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Текущий фокус",
+    freeVideo: "Создать своё видео бесплатно", freeVideoHint: "4 темы, анимационные шаблоны и ваше фото · видео сохраняется на телефон.",
+    freeVoice: "Бесплатное видео с моим фото и голосом",
+    progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
@@ -149,7 +148,7 @@ const copy = {
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación",
+    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Haz un test gratuito o solicita una consulta mediante las opciones existentes.",
     tests: "Abrir tests", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
@@ -159,8 +158,9 @@ const copy = {
     healingTitle: "Sanación y apoyo energético", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo energético",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
-    freeVideo: "Crear vídeo gratis con mi foto y voz", freeVideoHint: "Elige intención, mandala y efectos · guarda MP4/WebM en tu móvil.",
-    progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Enfoque actual",
+    freeVideo: "Crea tu vídeo personal gratis", freeVideoHint: "Elige tema, escenas animadas y foto · guarda un vídeo real en tu móvil.",
+    freeVoice: "Vídeo gratis con mi foto y voz",
+    progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
@@ -184,10 +184,10 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
 export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale; videos: SupportMobileVideo[] }) {
   const t = copy[locale];
   const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
-  const [focus, setFocus] = useState<Focus>("energy");
   const [choice, setChoice] = useState<Choice>("meditation");
-  // Explicit button click freezes a private, local-only recommendation snapshot.
-  const [recommendation, setRecommendation] = useState<{ focus: Focus; scores: Record<Focus, number> } | null>(null);
+  // The visitor explicitly requests a local ranking snapshot; editing a rating
+  // clears it. Ties are matched jointly and never become a hidden focus choice.
+  const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
@@ -215,38 +215,43 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     event.target.value = "";
   };
 
+  // Internal lowest domain is used only for contextual headings and the existing
+  // symbolic catalogue, never selected through a separate UI control.
+  const focus: Focus = focusOrder.reduce((lowest, domain) =>
+    scores[domain] < scores[lowest] ? domain : lowest, focusOrder[0]);
+  const suggested = useMemo(() => recommendation
+    ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
+    : null, [recommendation, videos, locale]);
   const recommended = useMemo(() => recommendation
-    ? recommendSupportContent({ focus: recommendation.focus, scores: recommendation.scores,
-      videos, talismans: TAOIST_TALISMANS, locale }) : null, [recommendation, videos, locale]);
+    ? recommendSupportContent({ focus, scores: recommendation, videos,
+      talismans: TAOIST_TALISMANS, locale })
+    : null, [focus, recommendation, videos, locale]);
   const recommendedTalisman = TAOIST_TALISMANS.find(item => item.id === recommended?.talismans[0]?.id) ?? null;
 
   const relevantVideos = useMemo(() => {
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
-    const themed = filtered.filter(video => video.topics.includes(wanted));
-    // The explicit theme selector filters strictly. Focus alone is a ranking
-    // hint so four verified videos can still be explored without false claims.
-    if (choice === "pump" || theme !== "all") return themed.slice(0, 4);
-    if (recommended) {
-      const positions = new Map(recommended.videos.map((video, index) => [video.id, index]));
-      return filtered.slice().sort((a, b) =>
-        (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+    const eligible = choice === "pump" ? filtered.filter(video => video.topics.includes("energy"))
+      : theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
+    if (suggested && choice === "meditation") {
+      const order = new Map(suggested.videos.map((video, index) => [video.id, index]));
+      return eligible.slice().sort((a, b) =>
+        (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
-    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4);
-  }, [videos, master, program, theme, focus, choice, recommended]);
+    return eligible.slice(0, 4);
+  }, [videos, master, program, theme, choice, suggested]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
-  const chooseFocus = (value: Focus) => { setFocus(value); setRecommendation(null); setSelectedId(null); setPlaying(false); };
   const onRecommendations = () => {
-    setRecommendation({ focus, scores: { ...scores } });
+    // Show the matches ONLY in the existing original-meditations gallery.
+    setRecommendation({ ...scores });
     setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
-    // Scroll to the newly rendered choices, not past them to the video player.
-    window.requestAnimationFrame(() => document.getElementById("support-personal-recommendations")
+    window.requestAnimationFrame(() => document.getElementById("support-meditation-gallery")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const startVideo = () => {
@@ -301,15 +306,16 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             </div>
 
 
-                      <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-              className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
-              <ArrowRight size={17} aria-hidden="true" />
-            </Link>
+            <button type="button" className={styles.recommendButton}
+              data-support-recommendations aria-label={t.recommend} aria-controls="support-meditation-gallery"
+              onClick={onRecommendations}>
+              <Sparkles size={19} aria-hidden="true" />
+              <span className={styles.recommendLong}>{t.recommend}</span>
+              <span className={styles.recommendShort}>{t.recommendCompact}</span>
+            </button>
           </section>
 
-          <section className={styles.profile} aria-label={t.focusLabel}>
+          <section className={styles.profile} aria-label={t.upload}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
@@ -321,18 +327,6 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
-            <label className={styles.focusSelector}>
-              <span className={styles.focusCaption}><span className={styles.focusCaptionLong}>{t.focusLabel}</span><span className={styles.focusCaptionShort}>{t.focusLabelShort}</span></span>
-              <span className={styles.focusValue}><FocusIcon size={22} aria-hidden="true" />
-                <select value={focus} onChange={event => chooseFocus(event.target.value as Focus)}
-                  aria-label={t.focusLabel}>
-                  {focusOrder.map(id => <option key={id} value={id}>{t.foci[id]}</option>)}
-                </select><ChevronDown size={18} aria-hidden="true" />
-              </span>
-            </label>
-            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
-              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
-            </button>
           </section>
 
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
@@ -360,52 +354,44 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
           </section>
         </div>
 
-        {recommendation ? <section id="support-personal-recommendations" className={styles.recommendationPanel} data-support-personal-recommendations
-          aria-label={t.recommendationTitle} aria-live="polite">
-          <div className={styles.recommendationLead}>
-            <h2><Sparkles size={21} aria-hidden="true" />{t.recommendationTitle}</h2>
-            <p>{t.foci[recommendation.focus]}: {recommendation.scores[recommendation.focus]}/10. {t.recommendationWhy}</p>
-          </div>
-          <div className={styles.recommendationGrid}>
-            {recommended?.videos[0] ? <article className={styles.recommendationCard} data-support-recommended-video={recommended.videos[0].id}>
-              <div className={styles.recommendationVideoPreview}>
-                <Image alt="" src={"https://i.ytimg.com/vi/" + encodeURIComponent(recommended.videos[0].id) + "/mqdefault.jpg"}
-                  width={144} height={81} loading="lazy" unoptimized />
-              </div>
-              <div className={styles.recommendationCopy}>
-                <strong>{t.recommendationVideo}</strong>
-                <span>{recommended.videos[0].title}</span>
-                {!recommended.matchedVideo ? <small>{t.recommendationFallback}</small> : null}
-                <button type="button" onClick={() => {
-                  setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
-                  pickVideo(recommended.videos[0].id);
-                  document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
-                }}>{t.seeVideo}<ArrowRight size={16} aria-hidden="true" /></button>
-              </div>
-            </article> : null}
-            {recommendedTalisman ? <article className={styles.recommendationCard} data-support-recommended-talisman={recommendedTalisman.id}>
-              <Image className={styles.recommendationTalismanImage} src={recommendedTalisman.image}
-                alt={recommendedTalisman[locale].title} width={92} height={112} />
-              <div className={styles.recommendationCopy}>
-                <strong>{t.recommendationTalisman}</strong>
-                <span>{recommendedTalisman[locale].title}</span>
-                <small>{t.symbolicNote}</small>
-                <button type="button" onClick={() => {
-                  changeChoice("talisman");
-                  document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
-                }}>{t.seeTalisman}<ArrowRight size={16} aria-hidden="true" /></button>
-              </div>
-            </article> : null}
-          </div>
-          <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
-            className={styles.detailedAnalysisLink} data-support-recommended-detailed-analysis>
-            <BarChart3 size={18} aria-hidden="true" />{t.detailed}<ArrowRight size={17} aria-hidden="true" />
-          </Link>
-        </section> : null}
-
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {scene ? (
             <>
+              <Link className={styles.freeVideoEntry} data-support-voice-video-entry
+                href={"/"+locale+"/video-studio"} prefetch={false}>
+                <span aria-hidden="true">♫</span><span><strong>{t.freeVoice}</strong><small>{t.freeVideoHint}</small></span>
+                <ArrowRight size={20} aria-hidden="true"/>
+              </Link>
+              <Link className={styles.freeVideoEntry} data-support-free-personal-video
+                href={"/"+locale+"/holistic-support/mandala"} prefetch={false}>
+                <span aria-hidden="true">✧</span><span><strong>{t.freeVideo}</strong><small>{t.freeVideoHint}</small></span>
+                <ArrowRight size={20} aria-hidden="true"/>
+              </Link>
+              <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
+                <div className={styles.videoHeading}>
+                  <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>
+                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
+                </div>
+                {suggested && choice === "meditation" ? <p className={styles.gallerySelection}
+                  data-support-meditation-basis role="status">
+                  {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}
+                </p> : null}
+                {relevantVideos.length > 0 ? (
+                  <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
+                    {relevantVideos.map(video => <button type="button" key={video.id}
+                      className={styles.videoCard} aria-pressed={selected?.id === video.id}
+                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
+                      <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
+                        alt="" width={320} height={180} unoptimized loading="lazy" />
+                      <span className={styles.videoDark} aria-hidden="true" />
+                      <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
+                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
+                    </button>)}
+                  </div>
+                ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+                <p className={styles.videoHint}>{t.galleryHint}</p>
+
+              </div>
               <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -450,31 +436,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </div>
                 )}
               </div>
-              <Link href={"/" + locale + "/video-studio"} prefetch={false}
-                className={styles.freeVideoEntry} data-support-free-personal-video>
-                <span aria-hidden="true">✧</span>
-                <span><strong>{t.freeVideo}</strong><small>{t.freeVideoHint}</small></span>
-                <ArrowRight size={20} aria-hidden="true" />
-              </Link>
-              <div className={styles.videoSection}>
-                <div className={styles.videoHeading}>
-                  <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {t.foci[focus]}</span></h3>
-                  <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
-                </div>
-                {relevantVideos.length > 0 ? (
-                  <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
-                    {relevantVideos.map(video => <button type="button" key={video.id}
-                      className={styles.videoCard} aria-pressed={selected?.id === video.id}
-                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
-                      <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
-                        alt="" width={320} height={180} unoptimized loading="lazy" />
-                      <span className={styles.videoDark} aria-hidden="true" />
-                      <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
-                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
-                    </button>)}
-                  </div>
-                ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
-                <p className={styles.videoHint}>{t.galleryHint}</p>
+              <div className={styles.videoSourceRow} data-support-video-source>
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
               </div>

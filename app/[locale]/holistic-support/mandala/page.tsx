@@ -12,16 +12,16 @@ type Props = { params: Promise<{ locale: string }> };
 
 const meta = {
   en: {
-    title: "Free Personal Video & Mandala",
-    description: "Create a real free animated video from your own photo, choose intention, mandala, 8 visual effects, 1:1/9:16/16:9, duration and download privately.",
+    title: "Free Personal Video Editor",
+    description: "Choose one of four themes, animated video templates, your own photo, format, music and caption. Create and download a real video locally for free.",
   },
   ru: {
-    title: "Бесплатное личное видео и мандала",
-    description: "Создайте бесплатно видео из фото: выберите цель, мандалу, 8 эффектов, формат, длительность и сохраните готовый MP4/WebM. Фото остаётся в браузере.",
+    title: "Бесплатный редактор личного видео",
+    description: "Четыре темы, анимированные видеошаблоны, ваше фото, формат, звуковой фон и подпись. Создайте и скачайте настоящее видео бесплатно.",
   },
   es: {
-    title: "Vídeo personal gratis y mandala",
-    description: "Crea gratis un vídeo animado con tu foto y mandala: elige intención, 8 efectos, formato, duración y guarda MP4/WebM en tu dispositivo.",
+    title: "Editor de vídeo personal gratis",
+    description: "Cuatro temas, plantillas animadas, tu foto, formatos, audio y subtítulos. Crea y guarda tu vídeo gratis y sin subir la foto.",
   },
 } as const;
 

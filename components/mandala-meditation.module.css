@@ -130,7 +130,7 @@
 .freeVideoPanel h2{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0;color:#4b4836;font:400 23px/1.22 Georgia,serif}
 .freeVideoBadge{margin-left:auto;padding:5px 9px;border-radius:999px;background:#d8ead7;color:#275942;font:800 13px/1 Arial,Helvetica,sans-serif}
 .freeVideoIntro{margin:7px 0 12px;color:#635c4e;font:13px/1.45 Arial,Helvetica,sans-serif}
-.freeVideoPreview{display:flex;justify-content:center;align-items:center;overflow:hidden;height:260px;min-height:260px;max-height:260px;padding:7px;border-radius:14px;background:#21352e}
+.freeVideoPreview{display:flex;justify-content:center;align-items:center;overflow:hidden;min-height:100px;max-height:260px;padding:7px;border-radius:14px;background:#21352e}
 .freeVideoPreview canvas,.freeVideoPreview video{display:block;width:auto;max-width:100%;height:auto;max-height:246px;margin:auto;border-radius:8px;object-fit:contain}
 .freeVideoFieldset{min-width:0;margin:12px 0 0;padding:0;border:0}
 .freeVideoFieldset legend{font:800 12px/1.4 Arial,Helvetica,sans-serif;color:#5f513f;padding:0 0 7px}
@@ -172,31 +172,43 @@
 @media(max-width:350px){.moneyFlowSection{padding:9px}.moneyFlowGrid{gap:5px}.moneyFlowGrid button{font-size:10.5px;gap:5px;padding:5px}.moneyFlowIcon{width:34px;height:38px}.moneyFlowIcon>span{font-size:22px}.moneyFlowToolbar{display:grid;grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.moneyFlowGrid *, .moneyFlowPreviewButton{animation:none!important;transition:none!important}}
 
-/* Client-selected video composition: the same first-party mandala/photo editor. */
-.headerVideoCta{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;margin-top:15px;padding:10px 16px;border-radius:12px;background:#36604b;color:#fff;text-decoration:none;font:800 14px/1.25 Arial,Helvetica,sans-serif}
-.headerVideoCta:hover{background:#234734}
-.headerVideoCta:focus-visible{outline:3px solid #ab7b36;outline-offset:3px}
-.freeVideoPanel{scroll-margin-top:16px}
-.freeVideoPurposeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.freeVideoPurposeGrid button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:46px;padding:10px 8px;border:1px solid #d8cab4;border-radius:11px;background:#fff;color:#4b473c;cursor:pointer;text-align:center;font:750 12.5px/1.3 Arial,Helvetica,sans-serif}
-.freeVideoPurposeGrid button[aria-pressed="true"]{background:#355d49;border-color:#355d49;color:#fff}
-.freeVideoPurposeGrid button:disabled{opacity:.62}
-.freeVideoSectionLabel{margin:15px 0 -5px;color:#63503f;font:800 12px/1.4 Arial,Helvetica,sans-serif}
-.freeVideoPreview{margin-top:14px}
-.freeVideoPreviewToggle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;margin-top:7px;padding:8px 12px;background:#f0eadc;border:1px solid #d2bea1;border-radius:10px;color:#355846;cursor:pointer;font:800 12px/1.2 Arial,Helvetica,sans-serif}
-.freeVideoPreviewToggle[aria-pressed="true"]{background:#d9e9d9}
-.freeVideoPreviewToggle:disabled{opacity:.52;cursor:not-allowed}
-.freeVideoCaptionLabel{display:flex;flex-direction:column;gap:5px;margin-top:10px;font:750 12px/1.3 Arial,Helvetica,sans-serif;color:#594a3a}
-.freeVideoCaptionLabel input{width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid #cbbba3;border-radius:10px;background:#fff;color:#2f332d;font:13px/1.4 Arial,Helvetica,sans-serif}
-.freeVideoConsent{display:flex;align-items:flex-start;gap:10px;min-height:48px;padding:11px;margin-top:13px;border:1px solid #d8cdb8;border-radius:10px;background:#f9f5ea;color:#4d4a3e;font:700 12px/1.4 Arial,Helvetica,sans-serif;cursor:pointer}
-.freeVideoConsent input{width:19px;height:19px;flex:none;margin:1px 0 0;accent-color:#306d4b}
-.freeVideoProgress{height:7px;width:100%;margin-top:12px;border-radius:999px;background:#d8ddd5;overflow:hidden}
-.freeVideoProgress>div{height:100%;background:#397654;transition:width .25s linear}
-.freeVideoDownloadGroup{display:grid;grid-template-columns:1fr;gap:8px;margin-top:9px}
-.freeVideoDownloadGroup .freeVideoDownload{margin:0}
-.freeVideoShare{display:flex;align-items:center;justify-content:center;gap:8px;min-height:45px;padding:9px 12px;border:1px solid #397754;border-radius:12px;background:#f4fbf4;color:#315c43;cursor:pointer;font:800 12px/1.35 Arial,Helvetica,sans-serif}
-.freeVideoShare:hover{background:#e3f1e6}
-@media(max-width:720px){.headerVideoCta{font-size:13px}.freeVideoPurposeGrid button{font-size:12px}.freeVideoOptions button{min-height:44px}.freeVideoSettings{grid-template-columns:1fr}.freeVideoPurposeGrid{gap:6px}}
-@media(max-width:350px){.freeVideoPurposeGrid{grid-template-columns:1fr 1fr}.freeVideoPurposeGrid button{font-size:11px;padding:8px 5px}.headerVideoCta{font-size:12px}}
-.freeVideoPhotoLink{display:inline-flex;align-items:center;min-height:40px;margin:0 0 6px;color:#37624e;text-decoration:underline;font:800 12px/1.35 Arial,Helvetica,sans-serif}
-.freeVideoPhotoLink:focus-visible{outline:3px solid #ab7b36;outline-offset:3px}
+
+/* Cinematic storyboard: stills generated by the exact same local video
+   renderer. No misleading image-generation posters or borrowed faces. */
+.freeVideoPreview{max-height:500px;min-height:170px;background:radial-gradient(circle at 50% 45%,#a86c2a,#142a2d 70%);border:1px solid #d0ae72}
+.freeVideoPreview canvas,.freeVideoPreview video{max-height:480px;max-width:100%;box-shadow:0 8px 28px rgba(0,0,0,.35);border-radius:9px}
+.moneyFlowSection{padding:13px;background:linear-gradient(155deg,#fff9ef,#e9d3aa);border-color:#bd985c}
+.moneyFlowGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.moneyFlowGrid button{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:5px;padding:5px 5px 8px;min-height:0;border-radius:12px;background:#fffbf1;border:2px solid #d2bd96;box-shadow:0 3px 8px rgba(85,51,22,.07);overflow:hidden}
+.moneyFlowGrid button[aria-pressed="true"]{border-color:#a96f22;background:#fff6e2;box-shadow:0 0 0 1px #b78d43,0 5px 14px rgba(141,90,23,.17)}
+.moneyFlowThumb{display:block;flex:none;width:100%;height:auto;aspect-ratio:5/3;border-radius:8px;object-fit:cover;background:radial-gradient(circle,#bc8b38,#16232d)}
+.moneyFlowText{display:flex;flex-direction:column;min-width:0;gap:4px;padding:3px 5px;text-align:left}
+.moneyFlowText strong{display:block;color:#3c3227;font:750 12px/1.25 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.moneyFlowText small{color:#9f7238;letter-spacing:.075em;font:800 9px/1 Arial,Helvetica,sans-serif}
+.moneyFlowGrid button[aria-pressed="true"] .moneyFlowText strong{color:#714414}
+.freeVideoSettings .freeVideoOptions{flex-wrap:wrap}
+.freeVideoSettings .freeVideoOptions button{flex:1 0 70px}
+@media(max-width:720px){.freeVideoPreview{max-height:430px}.freeVideoPreview canvas,.freeVideoPreview video{max-height:410px}}
+@media(max-width:350px){.moneyFlowSection{padding:8px}.moneyFlowGrid{gap:6px}.moneyFlowGrid button{padding:4px 4px 7px}.moneyFlowText strong{font-size:11px}.freeVideoPreview{max-height:390px}.freeVideoPreview canvas,.freeVideoPreview video{max-height:370px}}
+
+
+/* Video-first mobile editor: original Mandala/meditation source retained in
+   one accessible advanced disclosure, never recreated or uploaded. */
+.workshop{width:min(980px,calc(100% - 22px));padding:10px 0 44px}
+.page{background:radial-gradient(circle at 52% 0%,#e7f2e8,#f7f8ef 45%,#faf7ed 100%)}
+.advancedWorkbench{margin:15px 0 5px;min-width:0;border:1px solid #dfeadd;background:rgba(255,253,247,.95);border-radius:17px;padding:8px 12px}
+.advancedWorkbench>summary{cursor:pointer;display:flex;align-items:center;min-height:47px;color:#285b47;font:800 13px/1.35 Arial,Helvetica,sans-serif}
+.advancedWorkbench[open]>summary{margin-bottom:10px;border-bottom:1px solid #e4ede0}
+.advancedWorkbench .header{margin-bottom:15px}
+.advancedWorkbench .workspace{min-width:0}
+.hiddenPhotoInput{position:absolute;left:0;top:0;clip-path:inset(50%);width:1px;height:1px;opacity:0;pointer-events:none}
+.focus .advancedWorkbench{border:0;padding:0;background:transparent}
+.focus .advancedWorkbench>summary{display:none}
+.focus :global([data-mandala-free-video]){display:none}
+@media(max-width:759px){
+  .workshop{width:calc(100% - 20px);padding:10px 0 56px}
+  .mandalaStandardHeader{display:none}
+  .advancedWorkbench{padding:7px 11px}
+  .advancedWorkbench .workspace{grid-template-columns:1fr}
+}
+@media(max-width:350px){.workshop{width:calc(100% - 12px)}}

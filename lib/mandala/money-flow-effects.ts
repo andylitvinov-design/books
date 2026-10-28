@@ -5,13 +5,13 @@
  */
 export const moneyScenes = [
   { id: "golden-rain", symbol: "✦", label: { en: "Golden rain", ru: "Золотой дождь", es: "Lluvia dorada" } },
+  { id: "cosmic-flow", symbol: "✧", label: { en: "Cosmic flow", ru: "Поток из Вселенной", es: "Flujo del universo" } },
   { id: "abundance-tree", symbol: "♧", label: { en: "Abundance tree", ru: "Древо изобилия", es: "Árbol de abundancia" } },
-  { id: "money-magnet", symbol: "◎", label: { en: "Money magnet", ru: "Магнит денег", es: "Imán de prosperidad" } },
-  { id: "infinite-flow", symbol: "∞", label: { en: "Infinite flow", ru: "Бесконечный поток", es: "Flujo infinito" } },
-  { id: "cosmic-flow", symbol: "✧", label: { en: "Cosmic flow", ru: "Поток Вселенной", es: "Flujo del universo" } },
   { id: "opportunity-falls", symbol: "≋", label: { en: "Opportunity falls", ru: "Водопад возможностей", es: "Cascada de oportunidades" } },
+  { id: "money-magnet", symbol: "◎", label: { en: "Money magnet", ru: "Магнит денег", es: "Imán de prosperidad" } },
   { id: "path-to-goals", symbol: "⌁", label: { en: "Path to goals", ru: "Путь к целям", es: "Camino a tus metas" } },
   { id: "partners", symbol: "✳", label: { en: "People & opportunities", ru: "Партнёрство и клиенты", es: "Personas y oportunidades" } },
+  { id: "infinite-flow", symbol: "∞", label: { en: "Infinite flow", ru: "Бесконечный поток", es: "Flujo infinito" } },
   { id: "golden-shield", symbol: "◇", label: { en: "Golden shield", ru: "Денежная защита", es: "Escudo dorado" } },
   { id: "abundance-circle", symbol: "◉", label: { en: "Circle of abundance", ru: "Круг изобилия", es: "Círculo de abundancia" } },
   { id: "life-gifts", symbol: "✻", label: { en: "Life's gifts", ru: "Подарки жизни", es: "Regalos de la vida" } },

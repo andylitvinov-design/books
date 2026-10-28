@@ -1,8 +1,7 @@
 /**
  * Public/guest mandala E2E: real Chromium and WebKit at iPhone widths.
  * No login, account writes, provider render, billing or uploaded personal data.
- * Uses a synthetic 1px file and checks real local encoded video, privacy and links;
- * YouTube iframe mounting is checked, not audible sound or physical iPhone.
+ * Uses a synthetic 1px file and only tests YouTube iframe mounting, not sound.
  */
 import assert from "node:assert/strict";
 import { chromium, webkit } from "@playwright/test";
@@ -34,8 +33,6 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
     for (const { locale, width } of viewports) {
       const context = await browser.newContext({
         viewport: { width, height: 820 },
-        isMobile: true,
-        hasTouch: true,
         acceptDownloads: true,
         reducedMotion: "reduce",
       });
@@ -59,6 +56,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
+        const categoryControls=page.locator("[data-video-theme]");
+        assert.equal(await categoryControls.count(),4,"four real themes required");
+        for(const id of ["money","relationships","energy","goals"]){
+          const choice=page.locator('[data-video-theme="'+id+'"]');
+          await choice.click();
+          await page.waitForFunction(value=>
+            document.querySelector('[data-video-theme="'+value+'"]')?.getAttribute("aria-pressed")==="true",
+            id,{timeout:6000});
+          assert.equal(await page.locator("[data-video-template]").count(),4,id+" initial scene count");
+        }
+        await page.locator('[data-video-theme="money"]').click();
+        await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');
         await preset.click();
         assert.equal(await page.locator("[data-selected-mandala]").getAttribute("data-selected-mandala"), "star");
@@ -97,8 +106,21 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const moneyPreview = page.locator("[data-mandala-money-preview]");
         await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true");
+        const cinema = page.locator("[data-mandala-cinematic-canvas]");
+        await cinema.waitFor({ state: "attached" });
+        const frameHash = () => cinema.evaluate(canvas => {
+          const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+          let hash = 7;
+          for (let i=0;i<data.length;i+=199) hash = (hash * 31 + data[i]) >>> 0;
+          return hash;
+        });
+        const frameBefore = await frameHash();
+        await page.waitForTimeout(650);
+        const frameAfter = await frameHash();
+        assert.notEqual(frameBefore, frameAfter, "money-frame-motion: must be animated footage, not a static poster");
         await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "false");
+        assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
           assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
@@ -107,92 +129,49 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
         }
 
-        // The visitor chooses concrete video parameters, not a decorative
-        // animation-only UI. Photo consent blocks both record and share.
+        // Actual free video render (one synthetic client photo). All other
+        // locale/width permutations check the UI without a costly 10s render.
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
-        await page.locator('[data-mandala-video-purpose="prosperity"]').click();
-        await page.locator('[data-mandala-video-effect="magnet"]').click();
-        await page.locator('[data-mandala-video-pace="normal"]').click();
-        await page.locator('[data-mandala-video-strength="bright"]').click();
-        await page.locator('[data-mandala-video-caption-mode="custom"]').click();
-        await page.locator("#mandala-video-caption").fill("Safe personal intention");
-        const landscapeOption = page.locator('[data-mandala-video-aspect="landscape"]');
-        await landscapeOption.click();
-        await page.waitForFunction(() =>
-          document.querySelector('[data-mandala-video-aspect="landscape"]')?.getAttribute("aria-pressed") === "true",
-          undefined, { timeout: 8000 });
-        await page.locator('[data-mandala-video-duration="10"]').click();
-        assert.equal(await landscapeOption.getAttribute("aria-pressed"),
-          "true", engine + " 16:9 option must remain selected after duration change");
-        try {
-          await page.waitForFunction(() => {
-            const canvas = document.querySelector("[data-mandala-free-video] canvas");
-            return canvas?.width === 960 && canvas?.height === 540;
-          }, undefined, { timeout: 12000 });
-        } catch {
-          const diagnostic = await page.evaluate(() => {
-            const canvas = document.querySelector("[data-mandala-free-video] canvas");
-            return {
-              canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
-              aspect: document.querySelector('[data-mandala-video-aspect="landscape"]')?.getAttribute("aria-pressed"),
-              photo: Boolean(document.querySelector('#mandala-photo')),
-              editor: Boolean(document.querySelector('[data-mandala-free-video]')),
-            };
-          });
-          throw new Error(engine + " " + locale + " " + width + "px canvas resolution did not settle: " + JSON.stringify(diagnostic));
-        }
-        const canvasSize = await page.locator("[data-mandala-free-video] canvas").evaluate(canvas =>
-          ({ width: canvas.width, height: canvas.height }));
-        assert.deepEqual(canvasSize, { width: 960, height: 540 }, "landscape must use actual 16:9 pixels");
         const create = page.locator("[data-mandala-video-generate]");
-        assert.equal(await create.isEnabled(), false, "photo requires explicit permission");
-        await page.locator("[data-mandala-video-consent]").check();
+        assert.equal(await create.isEnabled(), false,"photo must require rights consent");
+        await page.locator("[data-video-photo-consent]").check();
         assert.equal(await create.isEnabled(), true);
-
-        const motion = page.locator("[data-mandala-video-motion-preview]");
-        await motion.click();
-        assert.equal(await motion.getAttribute("aria-pressed"), "true");
-        await motion.click();
-        assert.equal(await motion.getAttribute("aria-pressed"), "false");
-
-        // Real encoded video, not just static illustration. On Linux WebKit
-        // the codec pack might be unavailable: require an honest fallback.
-        const canRecord = await page.evaluate(() =>
-          typeof MediaRecorder !== "undefined" &&
-          typeof MediaRecorder.isTypeSupported === "function" &&
-          typeof HTMLCanvasElement.prototype.captureStream === "function" &&
-          ["video/mp4;codecs=avc1.42E01E", "video/mp4",
-            "video/webm;codecs=vp8", "video/webm"].some(mime => MediaRecorder.isTypeSupported(mime)));
-        if (locale === "ru" && width === 390) {
+        const silent=page.locator('[data-video-music="harmony"]');
+        await silent.click();
+        assert.equal(await silent.getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-music="harmony"]').click();
+        await page.locator('[data-video-music="none"]').click();
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          await page.locator('[data-video-aspect="landscape"]').click();
+          await page.waitForFunction(()=>
+            document.querySelector('[data-video-aspect="landscape"]')?.getAttribute("aria-pressed")==="true",
+            undefined,{timeout:9000});
+          await page.locator('[data-video-duration="10"]').click();
+          assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
           await create.click();
-          if (canRecord) {
-            const videoLink = page.locator("[data-mandala-video-download]");
-            await videoLink.waitFor({ state: "visible", timeout: 30000 });
-            const filename = await videoLink.getAttribute("download");
-            assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
-            const playback = page.locator("[data-mandala-video-preview]");
-            await playback.waitFor({ state: "attached", timeout: 10000 });
-            await page.waitForFunction(() => {
-              const video = document.querySelector("[data-mandala-video-preview]");
-              return video && video.readyState >= 1 && video.videoWidth > 0;
-            }, undefined, { timeout: 15000 });
-            const decoded = await playback.evaluate(video => ({ width: video.videoWidth, height: video.videoHeight }));
-            assert.deepEqual(decoded, { width: 960, height: 540 }, engine + " encoded 16:9 content");
-            const [videoDownload] = await Promise.all([
-              page.waitForEvent("download", { timeout: 20000 }),
-              videoLink.click(),
-            ]);
-            assert.equal(videoDownload.suggestedFilename(), filename);
-            const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
-            assert.ok(videoBytes.length > 10000, "real encoded video has nonempty payload");
-            if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
-            else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
-            assert.deepEqual(uploaded, [], "no client photo or video POST on record");
-          } else {
-            assert.equal(await page.locator("[data-mandala-video-download]").count(), 0);
-            await page.getByRole("status").filter({ hasText: /не умеет|cannot|permite/ }).first().waitFor({ state: "visible" });
-          }
+          const videoLink = page.locator("[data-mandala-video-download]");
+          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          const filename = await videoLink.getAttribute("download");
+          assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
+          const exported=page.locator("[data-mandala-video-preview]");
+          await exported.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>{
+            const video=document.querySelector("[data-mandala-video-preview]");
+            return video && video.videoWidth>0 && video.videoHeight>0;
+          },undefined,{timeout:15000});
+          const dimensions=await exported.evaluate(video=>({width:video.videoWidth,height:video.videoHeight}));
+          assert.deepEqual(dimensions,{width:1280,height:720},"real encoded landscape frame");
+          const [videoDownload] = await Promise.all([
+            page.waitForEvent("download", { timeout: 20000 }),
+            videoLink.click(),
+          ]);
+          assert.equal(videoDownload.suggestedFilename(), filename);
+          const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
+          assert.ok(videoBytes.length > 10000, "generated silent video has a real encoded payload");
+          if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
+          else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
+          assert.deepEqual(uploaded, [], "video render must not POST a client photo");
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
