@@ -853,15 +853,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
         <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div> : !selected ? <div className={styles.status} role="status">
-        <p>{kind === "healing" && reikiPrice !== "all" ? r.learningNone :
-          kind === "healing" ? t.reikiUnavailable : t.empty}</p>
-        {kind === "healing" && <p className={styles.unavailableMethod} data-support-reiki-unavailable>
-          {t.reikiOptions[reikiFocus].label} · {t.reikiOptions[reikiFocus].method}
-        </p>}
+        <p>{t.empty}</p>
         <button type="button" onClick={() => {
           setMethod(""); setPriceFilter("all"); setSelectedId(null);
-          if (kind === "healing") { setReikiFocus("love"); resetReikiFilters(); }
-        }}>{kind === "healing" ? t.reikiSeeAvailable : t.reset}</button>
+        }}>{t.reset}</button>
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
         {kind !== "healing" && <section className={styles.hero} data-support-master-hero={id(selected)}
@@ -951,7 +946,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             </Link>
           </div>
           <div className={consultations ? styles.consultRail : styles.rail} role="group" data-support-master-rail
-            data-single={kind === "healing" && entries.length === 1 ? "true" : "false"}>
+            data-single="false">
             {entries.map(entry => {
               const master = !consultations ? entry as EnergySupportMaster : null;
               const offer = consultations ? entry as PublishedConsultation : null;
