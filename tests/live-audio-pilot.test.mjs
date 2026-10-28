@@ -105,3 +105,13 @@ test('live audio audio-only CSP/microphone scope, localized UI and cabinet entry
   assert.match(css,/:focus-visible/)
   assert.match(css,/prefers-reduced-motion/)
 })
+
+test('Live audio status saves function and provider calls while tabs are hidden', () => {
+  const client = read('components/live-audio-room.jsx')
+  assert.match(client, /document\.visibilityState === 'hidden'/)
+  assert.match(client, /setInterval\(\(\) => \{ void refresh\(\) \}, 60000\)/)
+  assert.match(client, /document\.addEventListener\('visibilitychange', onVisibility\)/)
+  assert.match(client, /document\.removeEventListener\('visibilitychange', onVisibility\)/)
+  assert.match(client, /if \(cancelled\)/)
+  assert.doesNotMatch(client, /setInterval\(refresh, 15000\)/)
+})
