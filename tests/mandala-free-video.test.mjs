@@ -45,3 +45,39 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
   assert.match(css, /@media\(max-width:350px\)\{\.freeVideoSettings\{grid-template-columns:1fr\}/);
   assert.match(css, /\.freeVideoDownload/);
 });
+
+
+test("client money-flow studio offers exactly 12 symbolic looks and starts with four favourites", async () => {
+  const ts = await import("typescript");
+  const studio = read("components/mandala-free-video-studio.tsx");
+  const effects = read("lib/mandala/money-flow-effects.ts");
+  const css = read("components/mandala-meditation.module.css");
+  const browser = read("scripts/verify-holistic-mandala-browser.mjs");
+
+  const ids = [
+    "golden-rain", "abundance-tree", "money-magnet", "infinite-flow",
+    "cosmic-flow", "opportunity-falls", "path-to-goals", "partners",
+    "golden-shield", "abundance-circle", "life-gifts", "dreams",
+  ];
+  for (const id of ids) assert.match(effects, new RegExp('id: "' + id + '"'));
+  assert.equal((effects.match(/ id: "/g) || []).length, 12, "exactly twelve client-safe concepts");
+  for (const locale of ["en", "ru", "es"]) assert.match(effects, new RegExp(locale + ': "'));
+  assert.match(studio, /moneyScenes\.slice\(0, showAllMoney \? moneyScenes\.length : 4\)/);
+  assert.match(studio, /data-mandala-money-option/);
+  assert.match(studio, /data-mandala-money-preview/);
+  assert.match(studio, /setMoneyScene\(null\)/);
+  assert.match(studio, /if \(moneyScene\) paintMoneyScene\(ctx, moneyScene, time\)/);
+  assert.match(studio, /window\.requestAnimationFrame\(draw\)/);
+  assert.match(studio, /!document\.hidden/);
+  assert.match(effects, /ctx\.clip\("evenodd"\)/);
+  assert.match(css, /@media\(max-width:350px\)\{\.moneyFlowSection/);
+  assert.match(browser, /data-mandala-money-option/);
+  assert.doesNotMatch(studio + effects, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
+
+  const diagnostic = ts.transpileModule(effects, {
+    fileName: "lib/mandala/money-flow-effects.ts",
+    reportDiagnostics: true,
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  }).diagnostics || [];
+  assert.equal(diagnostic.filter(error => error.category === ts.DiagnosticCategory.Error).length, 0);
+});
