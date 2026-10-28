@@ -19,6 +19,9 @@
 .assessment, .tools { min-width: 0; padding: 20px 19px; border: 1px solid #e4dfd5; border-radius: 24px; background: rgb(255 253 249 / 90%); box-shadow: 0 8px 20px rgb(54 63 51 / 6%); }
 .assessment h1, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
 .subText { margin: 0 0 12px; color: #5e645a; font-size: 16px; line-height: 1.4; }
+.scaleGroup { min-width: 0; margin: 0; padding: 0; border: 0; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; border: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.allFocus { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 4px 9px; border: 1px solid #c1d9c9; border-radius: 11px; background: #edf6ee; color: #21664e; font-size: 13px; font-weight: 800; cursor: pointer; }
 .scaleList { display: grid; gap: 11px; margin-top: 10px; }
 .scaleRow { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 61px; }
 .scaleIcon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 50%; background: #dfebd3; color: #3c912c; }
@@ -26,11 +29,17 @@
 .scaleIcon[data-tone="relationships"] { color: #ed4952; background: #fae0df; }
 .scaleIcon[data-tone="goals"] { color: #9855d4; background: #eee0f8; }
 .scaleDetail { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
-.scaleLabel { font-size: 17px; font-weight: 750; }
-.scaleRow input { display: block; width: 100%; height: 25px; margin: 0; accent-color: #0f9c73; cursor: pointer; }
-.scaleRow[data-support-scale="money"] input { accent-color: #e4a11a; }
-.scaleRow[data-support-scale="relationships"] input { accent-color: #e7505b; }
-.scaleRow[data-support-scale="goals"] input { accent-color: #9f63d5; }
+.scaleHeading { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; }
+.scaleLabel { flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 750; }
+.focusOption { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: none; min-height: 34px; padding: 1px 5px; border-radius: 9px; color: #586f61; font-size: 12px; font-weight: 750; cursor: pointer; }
+.focusOption:has(input:checked), .allFocus:has(input:checked) { background: #d8f1df; color: #096347; }
+.focusOption input[type="radio"], .allFocus input[type="radio"] { display: grid; place-items: center; flex: 0 0 19px; width: 19px; height: 19px; margin: 0; appearance: none; border: 2px solid #7ca18b; border-radius: 5px; background: #fffdfa; cursor: pointer; }
+.focusOption input[type="radio"]:checked, .allFocus input[type="radio"]:checked { border-color: #087856; background: #07855e; }
+.focusOption input[type="radio"]:checked::after, .allFocus input[type="radio"]:checked::after { content: ""; width: 6px; height: 10px; margin-top: -2px; border-right: 2px solid white; border-bottom: 2px solid white; transform: rotate(45deg); }
+.scaleRow input[type="range"] { display: block; width: 100%; height: 25px; margin: 0; accent-color: #0f9c73; cursor: pointer; }
+.scaleRow[data-support-scale="money"] input[type="range"] { accent-color: #e4a11a; }
+.scaleRow[data-support-scale="relationships"] input[type="range"] { accent-color: #e7505b; }
+.scaleRow[data-support-scale="goals"] input[type="range"] { accent-color: #9f63d5; }
 .scaleValue { display: grid; flex: 0 0 38px; place-items: center; height: 42px; border-radius: 12px; background: #e2eddf; color: #29382d; font-size: 22px; font-weight: 800; }
 .scaleValue[data-tone="money"] { background: #faecd0; }
 .scaleValue[data-tone="relationships"] { background: #fae3e0; }
@@ -45,11 +54,6 @@
 .fileInput { position: absolute; width: 1px; height: 1px; opacity: 0; bottom: 24px; right: 24px; }
 .photo:focus-within { outline: 3px solid #dc9c37; outline-offset: 6px; }
 .photoError { margin: 0; color: #a12d32; font-size: 13px; }
-.focusSelector { display: grid; gap: 3px; width: 100%; max-width: 252px; padding: 10px 14px; border: 1px solid #e6e3d7; border-radius: 19px; background: #fffdf8; text-align: left; box-shadow: 0 3px 12px #15261b0d; }
-.focusCaption { color: #666b60; font-size: 12px; }
-.focusValue { display: flex; align-items: center; gap: 7px; color: #279957; }
-.focusValue select { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; outline-offset: 1px; color: #182b20; background: transparent; font-size: 19px; font-weight: 800; }
-.focusValue > svg:last-child { color: #263b34; pointer-events: none; }
 .recommendButton { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; max-width: 252px; min-height: 55px; padding: 10px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #007c5b, #1eaa78); color: white; font-size: 16px; font-weight: 800; line-height: 1.18; box-shadow: 0 7px 17px #0a85542a; }
 .recommendButton:hover { background: #006d52; }
 /* The personal recommendation stays compact: one real recording + one optional symbol. */
@@ -207,8 +211,6 @@
   color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
 .photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
 .camera { z-index: 2; }
-.focusCaptionLong { display: inline; }
-.focusCaptionShort { display: none; }
 
 @media (max-width: 640px) {
   .page { background: linear-gradient(150deg,#dce9e2 0%,#f5f1e7 52%,#fcf7ed 100%); }
@@ -230,15 +232,21 @@
     font-weight: 850; letter-spacing: -.03em; text-wrap: balance;
   }
   .subText { display: none; }
-  .scaleList { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+  .allFocus { display: flex; justify-content: center; gap: 5px; min-height: 29px; padding: 3px 2px; font-size: clamp(9px,2.6vw,11px); line-height: 1.1; text-align: center; }
+  .allFocus input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
+  .scaleList { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
   .scaleRow { display: grid; grid-template-columns: 23px minmax(0,1fr) 25px;
     align-items: center; gap: 3px; min-height: 42px; }
   .scaleIcon { width: 23px; height: 28px; flex: none; border-radius: 10px; }
   .scaleIcon svg { width: 17px; height: 17px; }
   .scaleDetail { display: grid; gap: 0; min-width: 0; }
+  .scaleHeading { gap: 2px; }
+  .focusOption { min-width: 28px; min-height: 32px; padding: 0; gap: 0; }
+  .focusOption span { display: none; }
+  .focusOption input[type="radio"] { flex-basis: 17px; width: 17px; height: 17px; }
   .scaleLabel { font-size: clamp(11px,3vw,13px); font-weight: 800;
     letter-spacing: -.02em; line-height: 1.15; white-space: normal; overflow-wrap: break-word; }
-  .scaleRow input { display: block; width: 100%; min-width: 0; height: 22px; margin: 0; }
+  .scaleRow input[type="range"] { display: block; width: 100%; min-width: 0; height: 22px; margin: 0; }
   .scaleValue { width: 25px; height: 30px; flex: none; min-width: 0;
     font-size: 14px; border-radius: 9px; }
   .detailedAnalysisLink { display: flex; min-height: 32px; margin: 5px 0 0;
@@ -274,16 +282,6 @@
   .camera { width: 28px; height: 28px; right: 0; bottom: 1px; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
   .photoError { font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; }
-  .focusSelector { width: 100%; max-width: none; min-width: 0;
-    padding: 7px 3px; gap: 4px; text-align: center;
-    border-radius: 13px; background: #fffdf7; }
-  .focusCaption { font-size: 12px; line-height: 1.15; }
-  .focusCaptionLong { display: none; }
-  .focusCaptionShort { display: inline; }
-  .focusValue { gap: 3px; justify-content: center; }
-  .focusValue svg { width: 16px; height: 16px; flex: none; }
-  .focusValue select { font-size: clamp(13px,3.5vw,16px);
-    text-align: center; flex: 1; min-width: 0; }
   .recommendButton { display: flex; flex-direction: column; gap: 3px;
     justify-content: center; align-items: center; width: 100%; max-width: none;
     min-height: 59px; border-radius: 13px; padding: 7px 3px;
@@ -421,10 +419,8 @@
   .profile { gap: 7px; }
   .photo { width: min(100%,82px); }
   .photoPlaceholder strong { font-size: 9px; }
-  .focusSelector { padding: 6px 2px; }
-  .focusCaption { font-size: 10px; }
-  .focusValue select { font-size: 12px; }
-  .focusValue svg { width: 13px; height: 13px; }
+  .focusOption { min-width: 24px; min-height: 30px; }
+  .focusOption input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
   .recommendButton { min-height: 55px; font-size: 11px; }
   .hero { min-height: 366px; padding: 10px; }
   .heroMode,.heroFilter { min-height: 47px; gap: 2px; padding: 4px 2px; font-size: 10px; }
