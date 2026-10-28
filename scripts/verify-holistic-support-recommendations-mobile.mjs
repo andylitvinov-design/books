@@ -81,14 +81,16 @@ for (const engine of [chromium, webkit]) {
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
-          assert.equal(await launch.count(), 1, label + " one left-side picker");
+          const launch = root.locator('section:has([data-support-photo]) [data-support-recommendations]');
+          assert.equal(await launch.count(), 1, label + " one recommendation action alongside photo");
+          assert.equal(await assessment.locator("[data-support-goal-filter-trigger]").count(), 1,
+            label + " separate goal filter remains below the self-score scales");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four editable self-scores");
-          assert.equal(await root.locator(".focusSelector").count(), 0,
-            label + " no old focus control");
+          assert.equal(await root.locator("[data-support-active-focus]").count(), 1,
+            label + " one non-editable focus summary; no duplicate focus picker");
           assert.equal(await root.locator('[data-support-detailed-analysis]').count(), 0,
             label + " old left Tests CTA replaced");
           assert.equal(await gallery.locator("[data-support-video]").count(), 4,
