@@ -5,6 +5,10 @@ on:
     paths:
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-native.mjs'
+      - 'scripts/prepare-holistic-house-play-release.mjs'
+      - '.github/workflows/holistic-house-play-aab.yml'
+      - 'tests/holistic-house-play-release.test.mjs'
+      - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
       - '.github/workflows/holistic-house-native.yml'
       - 'tests/holistic-house-native-build.test.mjs'
@@ -57,7 +61,7 @@ jobs:
       - name: Stage exact Capacitor 7 native push plugin (HH-only)
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
-        run: node --test tests/holistic-house-native-build.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
       - name: Verify native push privacy, consent and transport
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Prepare separate Holistic House Capacitor config
@@ -102,6 +106,33 @@ jobs:
             hh-cap-sync-android.log
             hh-gradle-android.log
 
+      - name: Play-format API 36 AAB dry-run with disposable CI key (NOT a customer release)
+        env:
+          HH_PLAY_VERSION_CODE: '2'
+          HH_PLAY_VERSION_NAME: '0.0.0-ci'
+          HH_ANDROID_KEYSTORE_PASSWORD: 'ci-only-not-a-production-credential'
+          HH_ANDROID_KEY_ALIAS: 'ci-hh-test'
+          HH_ANDROID_KEY_PASSWORD: 'ci-only-not-a-production-credential'
+        run: |
+          # This key never signs a customer update and is NEVER uploaded.
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
+          export HH_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/hh-ci-disposable.jks"
+          trap 'rm -f "$HH_ANDROID_KEYSTORE_PATH" android/app/hh-play-signing.gradle' EXIT
+          keytool -genkeypair -noprompt -keystore "$HH_ANDROID_KEYSTORE_PATH" \
+            -storepass "$HH_ANDROID_KEYSTORE_PASSWORD" -keypass "$HH_ANDROID_KEY_PASSWORD" \
+            -alias "$HH_ANDROID_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=CI Only, O=Holistic House Test, C=CA"
+          node scripts/prepare-holistic-house-play-release.mjs
+          (cd android && ./gradlew --no-daemon bundleRelease assembleRelease)
+          bundle=android/app/build/outputs/bundle/release/app-release.aab
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$bundle"
+          test -s "$apk"
+          jarsigner -verify "$bundle"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='com.holistichouse.app'"
+          echo "API36 Play AAB + website APK CI dry run PASSED; disposable signature, NO store upload or artifact"
+
   ios-simulator:
     name: Holistic House iOS unsigned simulator app
     runs-on: macos-14
@@ -116,7 +147,7 @@ jobs:
       - name: Stage exact Capacitor 7 native push plugin (HH-only)
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
-        run: node --test tests/holistic-house-native-build.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
       - name: Verify native push privacy, consent and transport
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Prepare separate Holistic House Capacitor config
