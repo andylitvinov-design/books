@@ -57,3 +57,37 @@ test('account history + result page both expose discussion; no additional data t
   assert.match(ui,/data-test-result-offers/)
   assert.doesNotMatch(ui,/fetch\(|appFetch\(|localStorage|sessionStorage/)
 })
+
+
+test('all offer cards stop when the source recommends professional review',()=>{
+  const offers=testDiscussionOffers({topic:'energy',locale:'ru',needsProfessional:true})
+  assert.deepEqual(offers,[])
+  const ui=readFileSync(new URL('../components/app/test-result-discussion.jsx',import.meta.url),'utf8')
+  assert.match(ui,/model\.verified&&!model\.needsProfessional&&phase==='offers'/)
+  assert.match(ui,/phase!=='safety'&&<button type="button" className=\{styles\.restart\}/)
+})
+
+test('missing numeric values cannot become verified personal interpretation',()=>{
+  const missing={...report,sections:[{
+    ...report.sections[0],value:99,max:10,
+  }]}
+  const model=buildTestResultDiscussion({result,report:missing,locale:'en'})
+  assert.equal(model.verified,false)
+  assert.deepEqual(model.highlights,[])
+})
+
+test('completion CTA and guest Google handoff preserve exact saved-result consent',()=>{
+  const finish=readFileSync(new URL('../components/app/test-finish-actions.jsx',import.meta.url),'utf8')
+  const workspace=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+  const guest=readFileSync(new URL('../components/app/cabinet-landing.jsx',import.meta.url),'utf8')
+  assert.match(finish,/data-finish-discuss-test/)
+  assert.match(finish,/typeof onDiscuss === 'function'/)
+  assert.match(workspace,/onDiscuss=\{!courseMode \? \(\) => finish\('discuss'\)/)
+  assert.match(workspace,/savedGuestDiscussionTarget/)
+  assert.match(workspace,/sessionStorage\.getItem\(TEST_DISCUSSION_INTENT_KEY\)/)
+  assert.match(workspace,/discuss=1#hh-test-result-discussion/)
+  assert.match(guest,/data-guest-discuss-test/)
+  assert.match(guest,/saveToCabinet\(guestResult, true\)/)
+  assert.match(guest,/sessionStorage\.setItem\(TEST_DISCUSSION_INTENT_KEY, intent\.id\)/)
+  assert.doesNotMatch(guest,/sessionStorage\.setItem\(.*(score|answer|health)/i)
+})
