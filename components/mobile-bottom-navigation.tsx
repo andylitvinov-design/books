@@ -23,7 +23,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
   // The public practitioner showcase owns a compact five-item bottom bar.
   const hidden = /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
-    || /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname)
+    || /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname)
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));
