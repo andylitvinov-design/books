@@ -748,10 +748,105 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         </div>
       </section>}
       {reikiStage}
-      {kind === "healing" && reikiFormat !== "session" && ready && !selectedMaster ? <section className={styles.reikiLearning} data-support-reiki-learning>
-        <h3>{reikiLearningLabel}</h3>
-        <p>{reikiLearningMatches ? reikiLearningIntro : r.learningNone}</p>
-        {reikiLearningMatches && <Link href={reikiLearningPath} prefetch={false}>{r.learn}<ArrowRight size={18}/></Link>}
+      {kind === "healing" ? <section className={styles.reikiOfferSection} data-support-reiki-offers
+        data-reiki-results-format={reikiFormat} aria-live="polite">
+        <div className={styles.reikiOfferHeading}>
+          <div>
+            <h3>{reikiFormat === "session" ? r.offersSession :
+              reikiFormat === "initiation" ? r.offersInitiation : r.offersCourse}</h3>
+            <small>{reikiCount} {r.offersCount} · {t.reikiOptions[reikiFocus].method}</small>
+          </div>
+          <button type="button" className={styles.reikiOfferAdjust} onClick={() => setReikiTab("filter")}>
+            <Filter size={16} aria-hidden="true"/>{r.tabs.filter}
+          </button>
+        </div>
+        {reikiFormat === "session" && !ready ? <div className={styles.reikiOfferEmpty} role={failed ? "alert" : "status"}>
+          <p>{failed ? t.unavailable : r.waiting}</p>
+          {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
+        </div> : reikiCount === 0 ? <div className={styles.reikiOfferEmpty} role="status"
+          data-support-reiki-unavailable>
+          <p>{reikiCertificate ? r.noCertificate : r.learningNone}</p>
+          <button type="button" onClick={() => { setReikiPrice("all"); setReikiCertificate(false);
+            setReikiTime("any"); setReikiRole("any"); setReikiReport("brief"); }}>
+            {r.viewAll}
+          </button>
+        </div> : <div className={styles.reikiOfferGrid} data-support-master-rail
+          data-single={reikiCount === 1 ? "true" : "false"}>
+          {visibleMasters.map(master => {
+            const variants = matchingMasterPrice(master);
+            const verifiedReport = Boolean(master.reikiOffer);
+            const chosen = selectedMaster?.serviceId === master.serviceId;
+            const serviceTitle = master.serviceTitle ||
+              (r.sessionTitle + " · " + (master.methods.find(offersMethod) || t.healing));
+            return <article className={styles.reikiOfferCard} key={master.serviceId}
+              data-support-reiki-offer="service" data-reiki-offer-format={reikiFormat}>
+              <button type="button" className={styles.reikiOfferPick}
+                aria-label={serviceTitle} aria-pressed={chosen} data-support-master-thumb={master.serviceId}
+                onClick={() => select(master.serviceId)}>
+                <span className={styles.reikiOfferPhoto}>
+                  {master.photo ? <Image src={master.photo} alt="" fill unoptimized sizes="(max-width:640px) 100px, 180px"/> :
+                    <UserRound size={30} aria-hidden="true"/>}
+                </span>
+                <span className={styles.reikiOfferText}>
+                  <small className={styles.reikiOfferType}>{r.offerPublished} · {r.formats[reikiFormat]}</small>
+                  <strong>{serviceTitle}</strong>
+                  <span>{master.name} · {master.methods.join(" / ")}</span>
+                  <span>{master.description || master.bio || t.description}</span>
+                </span>
+              </button>
+              <div className={styles.reikiOfferMeta}>
+                <strong>{variants.length ? variants.map(v =>
+                  (v.price === 0 ? t.freeOnly : publishedPrice(v.price, v.currency, locale) || r.askPrice) +
+                  (v.duration ? " / " + v.duration + " " + r.minutes : "")).join(" · ") : r.askPrice}</strong>
+                <span>{r.metaTiming}: {master.reikiOffer && reikiTime !== "any" ? r.times[reikiTime] : desiredTiming}</span>
+                <span>{r.metaReport}: {verifiedReport ? r.reports[reikiReport] : r.unconfirmed}</span>
+                {reikiFormat !== "session" && <span>{r.metaCertificate}: {master.reikiOffer
+                  ? (matchingReikiOptions(master).some(v => v.certificate) ? r.certificate : r.unconfirmed)
+                  : r.unconfirmed}</span>}
+              </div>
+              {master.serviceHref && master.reikiOffer ?
+                <Link className={styles.reikiOfferAction} href={master.serviceHref} prefetch={false}
+                  data-support-reiki-card-action={master.serviceId}>
+                  {reikiFormat === "session" ? r.sessionCta :
+                    reikiFormat === "initiation" ? r.initiationCta : r.courseCta}<ArrowRight size={17}/>
+                </Link> : reikiFormat === "session" && variants.length ?
+                <button type="button" className={styles.reikiOfferAction}
+                  data-support-reiki-card-action={master.serviceId}
+                  onClick={() => { setSelectedId(master.serviceId); setOrderOpen(true); }}>
+                  {r.sessionCta}<ArrowRight size={17}/>
+                </button> : <Link className={styles.reikiOfferAction}
+                  href={"/" + locale + "/masters/" + master.slug} prefetch={false}>{t.details}<ArrowRight size={17}/></Link>}
+            </article>;
+          })}
+          {academyReikiOffers.map(offer =>
+            <article className={styles.reikiOfferCard} key={offer.id}
+              data-support-reiki-offer={offer.id} data-reiki-offer-format={offer.format}>
+              <div className={styles.reikiOfferPick}>
+                <span className={styles.reikiOfferPhoto}>
+                  <Image src={offer.photo} alt="" fill unoptimized sizes="(max-width:640px) 100px, 180px"/>
+                  <Image className={styles.reikiOfferAvatar} src={offer.practitionerPhoto}
+                    alt="" width={37} height={37} unoptimized/>
+                </span>
+                <span className={styles.reikiOfferText}>
+                  <small className={styles.reikiOfferType}>{r.formats[offer.format]} · {offer.method}</small>
+                  <strong>{offer.title}</strong>
+                  <span>{r.author}: {offer.practitioner}</span>
+                  <span>{offer.description}</span>
+                </span>
+              </div>
+              <div className={styles.reikiOfferMeta}>
+                <strong>{academyPrice(offer)}</strong>
+                <span>{r.metaTiming}: {desiredTiming}</span>
+                <span>{r.metaReport}: {r.unconfirmed}</span>
+                <span>{r.metaCertificate}: {r.unconfirmed}</span>
+              </div>
+              <Link className={styles.reikiOfferAction} href={offer.href} prefetch={false}
+                data-support-reiki-card-action={offer.id}>
+                {offer.format === "initiation" ? r.initiationCta : r.courseCta}<ArrowRight size={17}/>
+              </Link>
+              <small className={styles.reikiOfferNotice}>{r.cardSource}</small>
+            </article>)}
+        </div>}
       </section> : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
