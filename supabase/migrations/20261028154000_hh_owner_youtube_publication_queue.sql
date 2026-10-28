@@ -61,7 +61,7 @@ create policy hh_youtube_owner_consented_presentation
    exists(
      select 1 from app_private.youtube_owner_publication_requests r
      where r.source_type='practitioner_presentation'
-       and r.source_id=id
+       and r.source_id=practitioner_presentation_uploads.id
        and r.source_owner_auth_user_id=owner_auth_user_id
        and r.state in ('requested','approved','publishing','uncertain','uploaded')
    )
