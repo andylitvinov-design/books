@@ -3,17 +3,17 @@ import {useCallback,useEffect,useState} from 'react'
 const labels={
  ru:{heading:'Видео из Telegram',intro:'Только готовые MP4 · исходные фото и аудио не сохраняются по отдельности.',
    refresh:'Обновить',empty:'Пока нет готовых видео.',loading:'Загружаем…',
-   error:'Приватная библиотека недоступна.',watch:'Смотреть',hide:'Скрыть',private:'Приватно · не опубликовано'},
+   error:'Приватная библиотека недоступна.',watch:'Смотреть',hide:'Скрыть',private:'Приватно · не опубликовано',selected:'✂️ Обрезанная версия',download:'Скачать MP4',studio:'Открыть YouTube Studio'},
  en:{heading:'Telegram videos',intro:'Finished MP4s only · no separate source photos or audio in My Materials.',
    refresh:'Refresh',empty:'No finished videos yet.',loading:'Loading…',
-   error:'Private video library is unavailable.',watch:'Watch',hide:'Hide',private:'Private · not published'},
+   error:'Private video library is unavailable.',watch:'Watch',hide:'Hide',private:'Private · not published',selected:'✂️ Trimmed version',download:'Download MP4',studio:'Open YouTube Studio'},
  es:{heading:'Vídeos de Telegram',intro:'Solo MP4 terminados · sin guardar fotos o audios originales por separado.',
    refresh:'Actualizar',empty:'Todavía no hay vídeos terminados.',loading:'Cargando…',
-   error:'Biblioteca privada no disponible.',watch:'Ver',hide:'Ocultar',private:'Privado · sin publicar'}
+   error:'Biblioteca privada no disponible.',watch:'Ver',hide:'Ocultar',private:'Privado · sin publicar',selected:'✂️ Versión recortada',download:'Descargar MP4',studio:'Abrir YouTube Studio'}
 }
 export default function AdminTelegramVideos({locale='en'}){
  const t=labels[locale]||labels.en
- const [files,setFiles]=useState([]),[busy,setBusy]=useState(true)
+ const [files,setFiles]=useState([]),[selected,setSelected]=useState(null),[busy,setBusy]=useState(true)
  const [error,setError]=useState(''),[active,setActive]=useState('')
  const load=useCallback(async()=>{
    setBusy(true);setError('')
@@ -24,6 +24,7 @@ export default function AdminTelegramVideos({locale='en'}){
      const json=await res.json()
      if(!Array.isArray(json.files))throw Error('INVALID')
      setFiles(json.files)
+     setSelected(json.selected?.previewUrl&&Number.isInteger(json.selected.trimStartSeconds)?json.selected:null)
    }catch{setError(t.error)}finally{setBusy(false)}
  },[t.error])
  useEffect(()=>{void load()},[load])
