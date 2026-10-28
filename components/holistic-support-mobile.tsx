@@ -946,7 +946,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </label>
                   <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
-                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); if (choice === "pump") { quest.mark("course"); setMaster("all"); setTheme("all"); } }}>
+                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); if (choice === "pump") { if (event.target.value !== "all") quest.mark("course"); setMaster("all"); setTheme("all"); } }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
