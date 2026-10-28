@@ -64,7 +64,7 @@ try{
  await writeFile(cutFile,cutBytes)
  const cutInfo=spawnSync(binary,['-hide_banner','-i',cutFile,'-f','null','-'],{
    timeout:30000,encoding:'utf8',maxBuffer:128000})
- const cutDuration=cutInfo.stderr.match(/Duration:\\s*(\\d+):(\\d+):(\\d+(?:\\.\\d+)?)/)
+ const cutDuration=cutInfo.stderr.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/)
  const seconds=cutDuration?
    Number(cutDuration[1])*3600+Number(cutDuration[2])*60+Number(cutDuration[3]):0
  if(cutInfo.status!==0||!/Video: h264/.test(cutInfo.stderr)||
