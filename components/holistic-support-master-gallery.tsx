@@ -480,12 +480,32 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
-  const reikiLearningMatches = (reikiPrice === "all" || reikiPrice === "free") && !reikiCertificate;
-  const reikiCount = visibleMasters.length;
-  const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
-    : "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#initiation-choices";
+  // Source-backed Academy discovery supplements, but does not create, published
+  // practitioner service records. It stays visible even if the directory is down.
+  const academyReikiOffers = kind === "healing" && reikiFormat !== "session"
+    ? matchReikiPublicOffers(listReikiPublicOffers(locale), {
+      format: reikiFormat, focus: reikiFocus, price: reikiPrice,
+      certificateRequested: reikiCertificate,
+    }) : [];
+  const reikiLearningMatches = academyReikiOffers.length > 0;
+  const reikiCount = visibleMasters.length + academyReikiOffers.length;
+  const reikiLearningPath = academyReikiOffers[0]?.href || "/" + locale + "/academy/reiki";
   const reikiLearningLabel = reikiFormat === "course" ? r.course : r.initiation;
   const reikiLearningIntro = reikiFormat === "course" ? r.courseNote : r.initiationNote;
+  const academyPrice = (offer: ReikiPublicOffer) =>
+    offer.priceStatus === "free" ? t.freeOnly
+      : offer.priceEur !== null ? "€" + offer.priceEur +
+        (offer.durationMinutes ? " / " + offer.durationMinutes + " " + r.minutes : "")
+        : r.askPrice;
+  const desiredTiming = reikiTime === "any" ? r.unconfirmed : r.times[reikiTime] + " (" + r.unconfirmed + ")";
+  const matchingMasterPrice = (master: EnergySupportMaster) =>
+    master.reikiOffer ? matchReikiVariants(master.reikiOffer, {
+      kind: reikiFormat, price: reikiPrice, time: reikiTime,
+      report: reikiReport, role: reikiRole, certificate: reikiCertificate,
+    }).map(v => ({ price: v.price, duration: v.duration, currency: master.reikiOffer?.currency || master.currency }))
+      : master.priceOptions.filter(v => Number.isFinite(v.price) && v.price > 0 &&
+        matchesReikiEuroPrice(master, reikiPrice, v.price))
+        .map(v => ({ price: v.price, duration: v.duration, currency: master.currency }));
   const filteredRequest = [
     r.report + ": " + r.reports[reikiReport],
     ...(reikiTime === "any" ? [] : [r.time + ": " + r.times[reikiTime]]),
@@ -656,7 +676,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   return (
     <div className={styles.viewer} data-support-master-viewer data-support-directory-kind={kind}>
-      {kind === "healing" && reikiFormat === "session" && <div className={styles.reikiFocusBar} role="group"
+      {kind === "healing" && <div className={styles.reikiFocusBar} role="group"
         aria-label={t.reikiFocus} data-support-reiki-filters>
         {REIKI_FOCI.map(value => {
           const option = t.reikiOptions[value];
