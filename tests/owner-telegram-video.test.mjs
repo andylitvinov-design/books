@@ -698,3 +698,25 @@ test('manual YouTube handoff reads current exact private cut, not an unsigned pu
  assert.match(ui,/studio\.youtube\.com/)
  assert.doesNotMatch(ui,/metricool\.com\/api/)
 })
+
+
+test('private MP4 playback streams byte slices without 4.5MB buffered response', async()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const start=service.indexOf('export async function getOwnerTelegramVideoDraftFile')
+ const end=service.indexOf('const oauthConfig=',start)
+ const block=service.slice(start,end)
+ assert.ok(start>0&&end>start)
+ assert.ok(block.includes('return new Response(part.stream(),{status:range.status,headers})'))
+ assert.ok(block.includes('const part=data.slice(range.start,range.end+1'))
+ assert.ok(!block.includes('await data.arrayBuffer()'))
+ assert.ok(block.includes("'Cache-Control':'private, no-store"))
+ assert.ok(block.includes("if(request.method==='HEAD')"))
+ const blob=new Blob([Buffer.alloc(5000000,97)],{type:'video/mp4'})
+ const range=ownerVideoByteRange('bytes=4000000-4500000',blob.size)
+ assert.equal(range.status,206)
+ const response=new Response(blob.slice(range.start,range.end+1).stream(),{
+   status:range.status,headers:{'Content-Type':'video/mp4','Content-Length':String(range.end-range.start+1)}
+ })
+ assert.equal(response.status,206)
+ assert.equal((await response.arrayBuffer()).byteLength,500001)
+})
