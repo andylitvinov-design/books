@@ -58,7 +58,7 @@ export async function createFreeWealthClip(
     ctx.fillStyle = halo; ctx.fillRect(0, 0, width, height);
 
     // Preserve full portrait aspect ratio (contain, not stretch or face crop).
-    const boxX = 57, boxY = 168, boxW = 426, boxH = 467;
+    const boxY = 168, boxW = 426, boxH = 467;
     const naturalRatio = photo.naturalWidth / photo.naturalHeight;
     const fittedW = Math.min(boxW, boxH * naturalRatio);
     const fittedH = fittedW / naturalRatio;
