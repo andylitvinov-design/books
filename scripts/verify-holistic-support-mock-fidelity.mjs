@@ -76,9 +76,9 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           // Same six colorful categories as Talismans, positioned above the
           // original video, with actual client-side filtering (no page change).
-          const categories = root.locator('[data-support-meditation-categories]');
-          assert.equal(await categories.count(), 1, label + " category switcher");
-          assert.equal(await categories.locator('[data-support-meditation-category]').count(), 6,
+          const meditationCategories = root.locator('[data-support-meditation-categories]');
+          assert.equal(await meditationCategories.count(), 1, label + " category switcher");
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category]').count(), 6,
             label + " six original-video categories");
           const categoryGeometry = await page.evaluate(() => {
             const row = document.querySelector('[data-support-meditation-category-switcher]');
@@ -93,7 +93,7 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(categoryGeometry.scrollWidth <= categoryGeometry.pageWidth + 3,
             label + " category menu does not add page overflow");
           for (const category of ["money", "meaning", "energy"]) {
-            const button = categories.locator('[data-support-meditation-category="' + category + '"]');
+            const button = meditationCategories.locator('[data-support-meditation-category="' + category + '"]');
             await button.click();
             assert.equal(await button.getAttribute("aria-pressed"), "true",
               label + " category selection " + category);
