@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { buildTestResultDiscussion,discussionTopicForTags,
   interpretTestDiscussionQuestion,testDiscussionOffers } from '../lib/assessments/test-result-discussion.mjs'
 
@@ -33,6 +37,21 @@ test('professional-review flags preserve source guidance and suppress paid upsel
   assert.match(m.reviewNote,/qualified professional/)
   assert.ok(!testDiscussionOffers({needsProfessional:m.needsProfessional}).some(x=>x.id==='session'))
 })
+test('ASRS-6 real source-verified screening is discussable without made-up severity grades',()=>{
+  const def=getAssessmentDefinition('asrs-6','v1','en')
+  const answers=Object.fromEntries(Array.from({length:6},(_,i)=>['asrs6.'+String(i+1).padStart(2,'0'),0]))
+  const result={...scoreAssessment(def,answers,syntheticTraumaContext(def)),id:'owned-asrs-test-result'}
+  const original=buildAssessmentResultReport(result,'en')
+  assert.equal(original.verified,undefined)
+  assert.equal(original.sections[0].bandBasis,'screening')
+  const discussion=buildTestResultDiscussion({result,report:original,locale:'en'})
+  assert.equal(discussion.verified,true)
+  assert.equal(discussion.highlights.length,1)
+  assert.equal(discussion.highlights[0].score,'0 / 0–6')
+  assert.match(discussion.highlights[0].summary,/screening threshold/i)
+  assert.doesNotMatch(JSON.stringify(discussion),/0% healthy|severity grade/i)
+})
+
 test('visitor question can change theme; urgent language cannot become a sales recommendation',()=>{
   assert.deepEqual(interpretTestDiscussionQuestion('Хочу улучшить отношения','energy'),{urgent:false,topic:'relationships'})
   assert.deepEqual(interpretTestDiscussionQuestion('I want to kill myself','energy'),{urgent:true,topic:null})
@@ -52,6 +71,8 @@ test('account history + result page both expose discussion; no additional data t
   const battery=readFileSync(new URL('../components/app/account-test-battery.jsx',import.meta.url),'utf8')
   const ui=readFileSync(new URL('../components/app/test-result-discussion.jsx',import.meta.url),'utf8')
   assert.match(workspace,/<TestResultDiscussion /)
+  assert.match(workspace,/discussionLoadedId === result.id/)
+  assert.match(workspace,/setDiscussionLoadedId\(r\?\.id === id \? id : null\)/)
   assert.ok(workspace.indexOf('<TestResultDiscussion key={result.id}') < workspace.indexOf('<PersonalResultReport result={result}'), 'Discussion action must appear before the long report')
   assert.match(battery,/discuss=1#hh-test-result-discussion/)
   assert.match(ui,/data-test-result-offers/)
