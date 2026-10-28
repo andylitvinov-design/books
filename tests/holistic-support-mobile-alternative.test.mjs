@@ -136,7 +136,7 @@ test("same-window talisman viewer reuses real images, local basket, and protecte
   assert.match(viewer, /saveBrowserTalismanCart/);
   assert.match(viewer, /<dialog ref=\{dialogRef\}/);
   assert.match(viewer, /<TaoistTalismanCart locale=\{locale\} inline/);
-  assert.match(cart, /sourcePath: "\/" \+ locale \+ \(inline \?/);
+  assert.match(cart, /sourcePath: "\/" \+ locale \+ "\/holistic-support"/);
   assert.match(cart, /data-inline=\{inline \? "true"/);
   assert.match(cart, /data\?\.saved !== true \|\| data\?\.contactPending !== false/);
   assert.match(cartCss, /\.shell\[data-inline="true"\]/);
