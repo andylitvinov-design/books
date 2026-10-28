@@ -62,7 +62,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await supportTop.locator('input[type="range"]').count(),4);
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
-        assert.equal(await hero.locator('nav a').count(),4);
+        assert.equal(await hero.locator('nav a, nav button').count(),4);
+        assert.equal(await hero.getAttribute("data-hero-promo"),"true",
+          "golden illustrative hero is visible until actual preview starts");
+        assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
+        assert.equal(await page.locator("#video-hero-themes").isVisible(),false);
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         await page.locator("[data-video-recommend-focus]").click();
@@ -73,13 +77,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const categoryControls=page.locator("[data-video-theme]");
         assert.equal(await categoryControls.count(),4,"exactly four actual themes");
         for(const id of ["money","energy","relationships","goals"]){
+          await page.locator("[data-video-theme-toggle]").click();
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"true");
           const select=page.locator('[data-video-theme="'+id+'"]');
           await select.click();
           await page.waitForFunction(key=>
             document.querySelector('[data-video-theme="'+key+'"]')?.getAttribute("aria-pressed")==="true",
             id,{timeout:10000});
           assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
         }
+        await page.locator("[data-video-theme-toggle]").click();
         await page.locator('[data-video-theme="money"]').click();
         await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');

@@ -38,6 +38,18 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(ui,/\.templateArt\{/);
   assert.match(ui,/\.download\{/);
   assert.match(ui,/\.heroTabs\{display:grid/);
+  // The extra filter row is folded into the Theme tab, as in the base
+  // Support mock. The default gold poster is artwork only until preview.
+  assert.match(studio,/data-video-theme-toggle/);
+  assert.match(studio,/hidden=\{!themeMenuOpen\}/);
+  assert.match(studio,/data-hero-promo=/);
+  assert.match(studio,/support-reference-avatar\.webp/);
+  assert.match(ui,/\.heroThemes\[hidden\]\{display:none!important\}/);
+  assert.match(ui,/\.heroPromo\{position:absolute/);
+  assert.match(ui,/money-films-v1\/golden-rain\.jpg/);
+  assert.match(ui,/\.toolCompact\{display:none\}/);
+  assert.match(ui,/\.referencePortrait\{display:block!important/);
+  assert.match(ui,/@media\(max-width:430px\)/);
   assert.match(ui,/\.heroThemes\{display:flex/);
   assert.match(ui,/@media\(max-width:380px\)/);
 });
@@ -128,4 +140,21 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(css,/\.supportTop\{display:grid/);
   assert.match(css,/@media\(max-width:390px\)/);
   assert.match(browser,/data-video-hero-create/);
+});
+
+
+test("mobile theme is a compact accessible menu, and hero returns to live selected video on preview", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio,/setThemeMenuOpen\(open=>!open\)/);
+  assert.match(studio,/setThemeMenuOpen\(false\)/);
+  assert.match(studio,/aria-expanded=\{themeMenuOpen\}/);
+  assert.match(studio,/aria-controls="video-hero-themes"/);
+  assert.match(studio,/theme==="money"&&!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording/);
+  assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
+  assert.match(css,/\.heroPromo::after/);
+  assert.match(browser,/data-video-theme-toggle/);
+  assert.match(browser,/data-hero-promo/);
+  assert.doesNotMatch(studio,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/i);
 });

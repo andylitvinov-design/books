@@ -280,3 +280,101 @@
   .settingCard .pills{gap:3px}
   .settings .pills button{font-size:9px;padding:4px 2px}
 }
+
+
+
+/* 28 Oct design parity: the user's approved Support reference keeps the
+   three-part header very compact and gives the cinematic background space. */
+.centerProfile .photoEmpty{position:absolute;inset:0;display:block;overflow:hidden;border-radius:50%}
+.centerProfile .referencePortrait{display:block!important;width:100%;height:100%;border-radius:50%;object-fit:cover;opacity:.96}
+.referencePhotoLabel{position:absolute;left:10%;right:10%;bottom:8px;display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 2px;border-radius:8px;background:rgba(13,68,53,.85);color:#fff;font-size:9px;line-height:1.1;font-weight:800}
+.referencePhotoLabel svg{width:12px;height:12px}
+.toolCompact{display:none}
+.hero{background:#1d2b27}
+.heroPromo{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background-image:linear-gradient(105deg,rgba(16,37,27,.20),rgba(38,27,14,.08)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg');
+  background-size:cover;background-position:center;transition:opacity .22s ease}
+.heroPromo::after{content:"";position:absolute;right:-3%;top:0;bottom:0;width:65%;background:url('/images/holistic-house/support-mock-hero.webp') center 35% / cover no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 28%,#000 90%);mask-image:linear-gradient(90deg,transparent 0%,#000 28%,#000 90%);
+  filter:sepia(.34) saturate(1.35) brightness(1.11)}
+.hero[data-hero-promo="true"] .heroPromo{opacity:1}
+.hero[data-hero-promo="true"] .heroCanvas{opacity:0}
+.heroCanvas{transition:opacity .22s ease}
+.heroShade{z-index:2;background:linear-gradient(90deg,rgba(9,30,24,.91) 0%,rgba(14,38,31,.77) 41%,rgba(13,37,27,.13) 86%),linear-gradient(0deg,rgba(6,28,22,.42),transparent 73%)}
+.heroOverlay{z-index:3}
+.heroTabs{position:relative;z-index:4}
+.heroTabs button{font:inherit;cursor:pointer}
+.heroThemes[hidden]{display:none!important}
+.heroThemes:not([hidden]){position:absolute;top:70px;left:11px;right:11px;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+  padding:8px;border:1px solid rgba(234,245,223,.58);border-radius:15px;background:rgba(14,44,36,.93);box-shadow:0 7px 25px rgba(0,0,0,.3);backdrop-filter:blur(12px)}
+.heroThemes:not([hidden]) button{min-width:0;min-height:37px;padding:4px 3px;font-size:10px}
+.heroBody h2{max-width:76%;text-wrap:balance}
+.heroBody p{max-width:73%}
+.heroCreate{width:min(77%,440px)}
+@media(max-width:760px){
+  .assessmentCard,.supportTools{padding:9px 7px}
+  .assessmentCard>p{margin:4px 0}
+  .assessmentScales{gap:3px;margin:3px 0 6px}
+  .assessmentScale{gap:0}
+  .supportToolGrid a{min-height:60px}
+  .centerProfile .photoPortrait{width:min(95%,106px)}
+  .videoMandalaChoice{min-height:33px}
+  .profileFocus{min-height:33px}
+  .recommendButton{min-height:35px}
+  .supportShortcuts{margin-top:5px}
+  .supportShortcuts a{min-height:29px}
+  .heroBody{padding-top:9px;gap:6px}
+  .heroBody h2{font-size:30px}
+  .heroBody p{font-size:12px}
+  .heroTabs>*{min-height:41px}
+}
+@media(max-width:430px){
+  .supportTop{grid-template-columns:minmax(0,1fr) minmax(0,.83fr) minmax(0,1fr);gap:5px}
+  .assessmentCard,.supportTools{padding:7px 6px}
+  .assessmentCard h2,.supportTools h2{font-size:11px;line-height:1.12}
+  .assessmentCard>p{margin:4px 0 5px;font-size:9px}
+  .assessmentScales{gap:3px;margin:0 0 6px}
+  .assessmentScale{font-size:9px}
+  .scaleControls{gap:3px}
+  .scaleControls output{min-width:21px;height:19px;font-size:10px}
+  .supportTestLink{min-height:30px;font-size:10px}
+  .centerProfile{gap:5px}
+  .centerProfile .photoPortrait{width:min(97%,96px)}
+  .videoMandalaChoice{min-height:33px;font-size:10px}
+  .profileFocus{min-height:32px}
+  .profileFocus small{font-size:9px}
+  .profileFocus strong{font-size:10px}
+  .recommendButton{min-height:34px;font-size:10px}
+  .supportTools h2{margin-bottom:6px}
+  .supportToolGrid{gap:4px}
+  .supportToolGrid a{min-height:58px;padding:4px 2px;gap:3px;font-size:9px;overflow-wrap:normal;word-break:normal}
+  .supportToolGrid a svg{height:21px;width:21px}
+  .toolFull{display:none}
+  .toolCompact{display:block}
+  .supportShortcuts{margin-top:5px;gap:4px}
+  .supportShortcuts a{min-height:25px;font-size:9px}
+  .hero{border-radius:19px;min-height:325px}
+  .heroOverlay{min-height:325px;padding:10px 9px 12px}
+  .heroTabs{gap:5px;margin-bottom:0}
+  .heroTabs>*{min-height:41px;font-size:9.5px;padding:4px 2px}
+  .heroTabs button{font-size:9.5px}
+  .heroThemes:not([hidden]){top:61px;left:8px;right:8px}
+  .heroThemes:not([hidden]) button{font-size:9px}
+  .heroBody{padding-top:18px;gap:7px}
+  .heroBody h2{font-size:clamp(25px,7.8vw,30px);max-width:82%}
+  .heroBody p{font-size:11px;max-width:73%;line-height:1.23}
+  .heroCreate{width:min(79%,450px);font-size:12.5px;min-height:46px}
+}
+@media(max-width:350px){
+  .supportTop{gap:4px}
+  .assessmentCard,.supportTools{padding:6px 4px}
+  .assessmentScale{font-size:8.5px}
+  .scaleControls svg{width:12px;height:12px}
+  .centerProfile .photoPortrait{width:min(100%,82px)}
+  .videoMandalaChoice,.profileFocus,.recommendButton{min-height:30px;font-size:9px}
+  .supportToolGrid a{min-height:52px;font-size:8.5px}
+  .supportToolGrid a svg{height:18px;width:18px}
+  .heroTabs>*{font-size:9px}
+  .heroBody h2{max-width:82%}
+}
+@media(prefers-reduced-motion:reduce){.heroPromo,.heroCanvas{transition:none}}
