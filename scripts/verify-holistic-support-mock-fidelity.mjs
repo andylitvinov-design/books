@@ -167,20 +167,61 @@ for (const browserType of [chromium, webkit]) {
           await filter.waitFor({state:"visible",timeout:8000});
           assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
           await filter.locator('[data-goal-sector="money"]').click();
-          await filter.locator('[data-goal-concern="income"] input').check();
-          await filter.locator('[data-goal-task="stableIncome"] input').check();
-          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),6,label+" now/want sliders");
+          for (const concern of ["income","moneyStress","workStuck","decisions"]) {
+            await filter.locator('[data-goal-concern="'+concern+'"] input').check();
+          }
+          for (const goal of ["stableIncome","moneyConfidence","growth","clearPlan"]) {
+            await filter.locator('[data-goal-task="'+goal+'"] input').check();
+          }
+          assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
+            label+" more than three problems can be selected");
+          assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
+            label+" more than three goals can be selected");
+          assert.equal(await filter.locator('[data-goal-axis]').count(),4,label+" four money indicators");
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),4,
+            label+" two subjective indicators have now and want sliders");
+          assert.equal(await filter.locator('[data-goal-metric]').count(),4,
+            label+" income and reserve have real-unit now and want controls");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" no fabricated default income");
+          await filter.locator('[data-goal-currency]').selectOption("EUR");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').fill("2000");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
+          if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
+          const filterOverflow=await page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          assert.ok(filterOverflow<=3,label+" goal filter must not overflow horizontally: "+filterOverflow);
           await filter.locator('[data-support-goal-apply]').click();
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
+          const results=root.locator('[data-support-goal-results]');
+          await results.waitFor({state:"visible",timeout:8000});
+          assert.equal(await results.locator('[data-support-goal-action]').count(),5,
+            label+" five real recommendation categories");
+          assert.match(await results.locator('[data-support-goal-action="tests"]').getAttribute("href")??"",/\/tests$/,
+            label+" existing tests route");
+          assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
+            label+" real business learning route");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
-            label+" real published recordings preserved");
+            label+" only source-backed recordings");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-action="talismans"]').click();
+          await root.locator('[data-support-talisman-viewer]').waitFor({state:"visible",timeout:8000});
+          await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-goal-filter-trigger]').click();
-          await root.locator('[data-support-goal-reset]').click();
+          assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
+            label+" chosen currency preserved when editing");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
+            label+" factual income draft survives editing");
+          await filter.locator('[data-support-goal-reset]').click();
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
+          assert.equal(await root.locator('[data-goal-axis]').count(),4,
+            label+" energy also has four distinct measures");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
+          assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
