@@ -91,14 +91,13 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
-          if(width===320) {
-            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
-            console.log("Support readable dashboard "+label+": "+headHeight+"px, assessment "+
-              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
+          const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
+          console.log("Support readable dashboard "+label+": "+headHeight+"px, assessment "+
+            Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
+          if(width===320)
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
-          }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<350,
-            label+" two-row readable phone dashboard must expose practice within 350px");
+            label+" dashboard must expose practice within 350px (measured "+headHeight+"px)");
           assert.ok(geometry.readableTools.every(t =>
             t.textFits && t.left>=t.buttonLeft-2 && t.right<=t.buttonRight+2 &&
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
