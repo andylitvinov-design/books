@@ -128,3 +128,25 @@ test('server readback never repeats an upload, uses existing authorized cron',()
  assert.match(service,/Content-Range/)
  assert.match(service,/Cache-Control':'private, no-store/)
 })
+
+test('Dot exposes consented video queue without auto-publishing master media',async()=>{
+ const {parseOwnerVideoUpdate,ownerVideoPreviewButtons}=await import(
+   '../lib/practitioners/owner-telegram-video-model.mjs')
+ const message={update_id:115,message:{
+   message_id:11,date:Date.now()/1000|0,
+   chat:{id:123456,type:'private'},from:{id:123456,is_bot:false},
+   text:'/video_queue'
+ }}
+ const parsed=parseOwnerVideoUpdate(message,{now:Date.now(),botUsername:'Andydotbot'})
+ assert.equal(parsed?.action,'queue')
+ assert.equal(parseOwnerVideoUpdate({...message,message:{
+   ...message.message,chat:{id:123456,type:'group'}
+ }},{now:Date.now(),botUsername:'Andydotbot'}),null)
+ const menu=ownerVideoPreviewButtons('b6e8526e-c251-4dd5-a9ca-2886c430f912',64)
+ assert.ok(menu.inline_keyboard.flat().some(x=>x.url==='https://holistichouse.vercel.app/admin/youtube-upload'))
+ const service=code('lib/practitioners/owner-telegram-video-service.js')
+ assert.match(service,/if\(event.action==='queue'\)/)
+ assert.match(service,/listOwnerYoutubeCandidates\(config\)/)
+ const handoff=service.slice(service.indexOf("if(event.action==='queue')"),service.indexOf("if(event.action==='status')"))
+ assert.doesNotMatch(handoff,/uploadUnlistedRu|uploadOwnerApprovedPublication|reservePublish/)
+})
