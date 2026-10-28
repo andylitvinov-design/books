@@ -64,6 +64,7 @@ const copy = {
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     options: { meditation: "Meditation", consultation: "Test or consultation", talisman: "Talisman", pump: "Courses", healing: "Energy Healing" },
     optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Energy" },
+    optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Energy" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
@@ -100,6 +101,7 @@ const copy = {
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Тест или консультация", talisman: "Талисман", pump: "Курсы", healing: "Энергетическая поддержка" },
     optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Энергия" },
+    optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Энергия" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
@@ -136,6 +138,7 @@ const copy = {
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     options: { meditation: "Meditación", consultation: "Test o consulta", talisman: "Talismán", pump: "Cursos", healing: "Sanación energética" },
     optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Energía" },
+    optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Energía" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
@@ -328,7 +331,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   className={styles.toolButton} aria-pressed={choice === id}
                   onClick={() => changeChoice(id)} aria-label={t.options[id]}>
                   <Icon size={30} strokeWidth={1.65} aria-hidden="true" />
-                  <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span>
+                  <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span><span className={styles.toolMicro}>{t.optionsMicro[id as keyof typeof t.optionsMicro]}</span>
                 </button>
               ))}
             </div>
