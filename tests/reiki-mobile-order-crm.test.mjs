@@ -71,7 +71,8 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   assert.match(jsx, /readRemoteSupportDraft\(window\.sessionStorage, selected\.serviceId\)/);
   assert.match(jsx, /pending\?\.service !== remoteSupportPublicServiceTitle\(draft\)/);
   assert.match(jsx, /remoteSupportPublicRequestSummary\(contactDraft, locale\)/);
-  assert.match(mobile, /pending\.service\.startsWith\("Reiki support · "\) setChoice\("healing"\)/);
+  assert.match(mobile, /window\.location\.search\.includes\("hh_enquiry=google"\)/);
+  assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon/);
   assert.match(gallery, /setSelectedId\(master\.serviceId\);\s*setOrderOpen\(true\)/);
   assert.match(css, /\.publicContact\{display:grid/);
   assert.match(css, /@media\(max-width:650px\)/);
