@@ -149,3 +149,5 @@
 .healthNote{margin:0 0 11px;padding:10px 12px;border:1px solid #bedbd6;border-radius:12px;background:#edf9f5;color:#406a61;font:600 11.5px/1.4 Arial,sans-serif}
 @media(min-width:760px){.themeGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.themeButton{min-height:84px;font-size:12px}}
 @media(max-width:380px){.themeButton{min-height:67px;padding:6px 2px;gap:4px}.themeButton svg{width:21px;height:21px}}
+
+.filmBadge{position:absolute;top:7px;left:7px;z-index:2;border:1px solid rgba(255,248,215,.68);border-radius:7px;background:rgba(17,43,39,.82);color:#fff7db;padding:4px 6px;font:800 9px/1 Arial,sans-serif;letter-spacing:.07em;pointer-events:none}
