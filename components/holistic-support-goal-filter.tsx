@@ -327,6 +327,9 @@ export function HolisticSupportGoalFilter({
               onClick={() => changeSector(id)}>
               <Icon size={23} strokeWidth={1.85} aria-hidden="true" />
               <span>{t.labels[id]}</span>
+              {isAccepted(id) ? <span className={styles.accepted} data-goal-accepted={id}>
+                <Check size={13} aria-hidden="true" />{t.accepted}
+              </span> : null}
             </button>
           ))}
         </nav>
@@ -360,65 +363,74 @@ export function HolisticSupportGoalFilter({
             </div>
           </section>
 
+          <section className={styles.metricsGroup} aria-labelledby="goal-ratings" data-support-goal-axes>
+            <div className={styles.metricsHeading}>
+              <div><h3 id="goal-ratings">{t.rating}</h3><p>{t.ratingHelp}</p></div>
+              {sector === "money" ? <label className={styles.currencyLabel}>
+                {t.currency}
+                <select data-goal-currency value={currency}
+                  onChange={event => {
+                    // No exchange-rate conversion: changing currency clears only cash amounts.
+                    setCurrency(event.target.value as GoalCurrency);
+                    setAmounts(previous => ({ ...previous, monthlyIncome: { current: null, desired: null } }));
+                    markDirty();
+                  }}>
+                  {(["CAD", "EUR", "USD", "GBP"] as GoalCurrency[]).map(id =>
+                    <option key={id} value={id}>{id}</option>)}
+                </select>
+              </label> : null}
+            </div>
+            <div className={styles.ratings}>
+              {selected.axes.map((item, index) => (
+                <div className={styles.axis} key={item.id} data-goal-axis={item.id} data-unit={item.unit}>
+                  <strong>{item[locale]}</strong>
+                  <div className={styles.sliders}>
+                    {(["current", "desired"] as const).map(field => (
+                      <label className={styles.slider} key={field}>
+                        <span>{field === "current" ? t.now : t.want}
+                          {item.unit === "score" ? <output>{getRating(item.id, index)[field]}</output> : null}
+                        </span>
+                        {item.unit === "score" ? <input type="range" min="1" max="10" step="1"
+                          value={getRating(item.id, index)[field]}
+                          aria-label={item[locale] + ": " + (field === "current" ? t.now : t.want)}
+                          aria-valuetext={getRating(item.id, index)[field] + " / 10"}
+                          onChange={event => updateRating(item.id, index, field, Number(event.target.value))} /> :
+                          <div className={styles.amountField}>
+                            <input type="number" min="0" max={item.unit === "months" ? 120 : 100000000}
+                              step={item.unit === "months" ? "1" : "any"} inputMode="decimal"
+                              data-goal-metric={item.id} data-metric-field={field}
+                              value={amounts[item.id]?.[field] ?? ""} placeholder="—"
+                              aria-label={item[locale] + " " + (field === "current" ? t.now : t.want) +
+                                " (" + (item.unit === "months" ? t.reserveUnit : currency + " " + t.perMonth) + ")"}
+                              onChange={event => updateAmount(item.id, field, event.target.value,
+                                item.unit === "months" ? 120 : 100000000)} />
+                            <small>{item.unit === "months" ? (locale === "ru" ? "мес." : "mo.") : currency}</small>
+                          </div>}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {sector === "money" ? <p className={styles.amountHint}>{t.optional}</p> : null}
+          </section>
         </div>
       </div>
-      <section className={styles.metricsGroup} aria-labelledby="goal-ratings" data-support-goal-axes>
-        <div className={styles.metricsHeading}>
-          <div><h3 id="goal-ratings">{t.rating}</h3><p>{t.ratingHelp}</p></div>
-          {sector === "money" ? <label className={styles.currencyLabel}>
-            {t.currency}
-            <select data-goal-currency value={currency}
-              onChange={event => {
-                // No exchange-rate conversion: changing currency clears only cash amounts.
-                setCurrency(event.target.value as GoalCurrency);
-                setAmounts(previous => ({ ...previous, monthlyIncome: { current: null, desired: null } }));
-              }}>
-              {(["CAD", "EUR", "USD", "GBP"] as GoalCurrency[]).map(id =>
-                <option key={id} value={id}>{id}</option>)}
-            </select>
-          </label> : null}
-        </div>
-        <div className={styles.ratings}>
-          {selected.axes.map((item, index) => (
-            <div className={styles.axis} key={item.id} data-goal-axis={item.id} data-unit={item.unit}>
-              <strong>{item[locale]}</strong>
-              <div className={styles.sliders}>
-                {(["current", "desired"] as const).map(field => (
-                  <label className={styles.slider} key={field}>
-                    <span>{field === "current" ? t.now : t.want}
-                      {item.unit === "score" ? <output>{getRating(item.id, index)[field]}</output> : null}
-                    </span>
-                    {item.unit === "score" ? <input type="range" min="1" max="10" step="1"
-                      value={getRating(item.id, index)[field]}
-                      aria-label={item[locale] + ": " + (field === "current" ? t.now : t.want)}
-                      aria-valuetext={getRating(item.id, index)[field] + " / 10"}
-                      onChange={event => updateRating(item.id, index, field, Number(event.target.value))} /> :
-                      <div className={styles.amountField}>
-                        <input type="number" min="0" max={item.unit === "months" ? 120 : 100000000}
-                          step={item.unit === "months" ? "1" : "any"} inputMode="decimal"
-                          data-goal-metric={item.id} data-metric-field={field}
-                          value={amounts[item.id]?.[field] ?? ""} placeholder="—"
-                          aria-label={item[locale] + " " + (field === "current" ? t.now : t.want) +
-                            " (" + (item.unit === "months" ? t.reserveUnit : currency + " " + t.perMonth) + ")"}
-                          onChange={event => updateAmount(item.id, field, event.target.value,
-                            item.unit === "months" ? 120 : 100000000)} />
-                        <small>{item.unit === "months" ? (locale === "ru" ? "мес." : "mo.") : currency}</small>
-                      </div>}
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        {sector === "money" ? <p className={styles.amountHint}>{t.optional}</p> : null}
-      </section>
       <footer className={styles.actions} data-support-goal-actions>
+        <div className={styles.categoryActions}>
+          <button type="button" className={styles.save} data-support-goal-save
+            onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
+          <button type="button" className={styles.next} data-support-goal-next
+            onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
+        </div>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
         </button>
         <button type="button" className={styles.reset} data-support-goal-reset onClick={reset}>
           <RotateCcw size={18} aria-hidden="true" />{t.clear}
         </button>
+        {Object.values(accepted).some(Boolean) ? <p className={styles.savedNote}
+          role="status">{t.savedNote}</p> : null}
       </footer>
     </form>
   );
