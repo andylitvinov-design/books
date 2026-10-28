@@ -53,9 +53,22 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   assert.match(enquiry, /<ContactChannelChooser key=\{focus\}/);
   assert.match(enquiry, /compactPhone stayAfterSave resetKey=\{focus\}/);
   assert.match(enquiry, /"situation" \| "energy"/);
-  for (const localized of ["Request my free review", "Заказать бесплатную диагностику", "Solicitar mi revisión gratuita"]) {
-    assert.ok(enquiry.includes(localized), localized);
-  }
+  // Messenger cards now carry the request CTA; the inline form stays available
+  // as a smaller, accessible alternative rather than a duplicate primary button.
+  for (const localized of [
+    "Use the secure website form instead",
+    "Заполнить защищённую форму на сайте",
+    "Usar el formulario seguro de esta web",
+  ]) assert.ok(enquiry.includes(localized), localized);
+  const messenger = source("components/telegram-diagnostic-entry.tsx");
+  for (const localized of [
+    "Request my free review via Telegram", "Request my free review via WhatsApp",
+    "Запросить бесплатный разбор через Telegram", "Запросить бесплатный разбор через WhatsApp",
+    "Solicitar mi revisión gratis por Telegram", "Solicitar mi revisión gratis por WhatsApp",
+  ]) assert.ok(messenger.includes(localized), localized);
+  assert.ok(enquiry.indexOf("<TelegramDiagnosticEntry locale={locale} />") <
+    enquiry.indexOf("<button ref={revealRef}"), "messenger actions appear before the optional website form");
+  assert.doesNotMatch(enquiry, /reveal: "Request my free review"/);
   assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(enquiryCss, /animation:expressUnfold/);
   assert.match(enquiryCss, /@media\(max-width:720px\)/);
