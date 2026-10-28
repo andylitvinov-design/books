@@ -47,3 +47,22 @@ create policy hh_youtube_owner_request_backend
  for all to hh_app_backend
  using(current_setting('hh.youtube_publication_manager',true)='1')
  with check(current_setting('hh.youtube_publication_manager',true)='1');
+
+-- The existing practitioner-presentation table is owner-only. Allow a narrowly
+-- scoped moderator read of a creator-consented asset, never a bulk listing.
+-- Direct anon/authenticated access and existing owner-only policy stay unchanged.
+drop policy if exists hh_youtube_owner_consented_presentation
+ on app_private.practitioner_presentation_uploads;
+create policy hh_youtube_owner_consented_presentation
+ on app_private.practitioner_presentation_uploads
+ for select to hh_app_backend
+ using(
+   current_setting('hh.youtube_publication_manager',true)='1' and
+   exists(
+     select 1 from app_private.youtube_owner_publication_requests r
+     where r.source_type='practitioner_presentation'
+       and r.source_id=id
+       and r.source_owner_auth_user_id=owner_auth_user_id
+       and r.state in ('requested','approved','publishing','uncertain','uploaded')
+   )
+ );
