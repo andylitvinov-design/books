@@ -213,7 +213,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
     void checkSession(controller.signal)
     const params = new URLSearchParams(window.location.search)
     const start = params.get('start')
-    if (['diagnostic','energy','personal','meditation'].includes(start)) setPendingAction(start)
+    if (['diagnostic','energy','personal','meditation','profile'].includes(start)) setPendingAction(start)
     if (params.get('auth') === 'cancelled' || params.get('auth') === 'failed')
       setNotice(t.authCancelled)
     return () => controller.abort()
@@ -225,7 +225,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   useEffect(() => {
     if (!signedIn) return
     const start = new URLSearchParams(window.location.search).get('start')
-    if (!['diagnostic','energy','personal','meditation'].includes(start)) return
+    if (!['diagnostic','energy','personal','meditation','profile'].includes(start)) return
     setPendingAction('')
     router.replace(destination(locale, start))
   }, [signedIn, locale, router])
