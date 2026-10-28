@@ -7,6 +7,7 @@ import { englishGuidedMeditations } from "@/data/academy/english-guided-meditati
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
 
@@ -164,7 +165,10 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         masterProfile: andreyMasterProfile(locale),
       }));
 
+  // Public, verified catalogue metadata only; no user test results in this prop.
+  const guideTests = buildSupportGuideTestShortlists({ locale });
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
+      initialChoice={initialChoice} guideTests={guideTests} />
   );
 }
