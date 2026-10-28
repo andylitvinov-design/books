@@ -92,8 +92,22 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await firstMoney.click();
         assert.equal(await firstMoney.getAttribute("aria-pressed"), "true");
         const moneyPreview = page.locator("[data-mandala-money-preview]");
-        await moneyPreview.click();
-        assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true");
+        assert.equal(await moneyPreview.getAttribute("aria-pressed"), "true", "selecting a clip must play real motion");
+        const selectedClip = firstMoney.locator('[data-mandala-scene-preview="golden-rain"]');
+        await selectedClip.waitFor({ state: "visible", timeout: 20000 });
+        await page.waitForFunction(() =>
+          document.querySelector('[data-mandala-scene-preview="golden-rain"]')?.getAttribute("data-scene-playing") === "true",
+          undefined, { timeout: 12000 });
+        const clipHash = () => selectedClip.evaluate(canvas => {
+          const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+          let hash = 11;
+          for (let i = 0; i < data.length; i += 83) hash = (hash * 31 + data[i]) >>> 0;
+          return hash;
+        });
+        const clipFrameOne = await clipHash();
+        await page.waitForTimeout(730);
+        const clipFrameTwo = await clipHash();
+        assert.notEqual(clipFrameOne, clipFrameTwo, "preview cards must show real moving footage, not frozen icons");
         const cinema = page.locator("[data-mandala-cinematic-canvas]");
         await cinema.waitFor({ state: "attached" });
         const frameHash = () => cinema.evaluate(canvas => {
@@ -108,6 +122,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.notEqual(frameBefore, frameAfter, "money-frame-motion: must be animated footage, not a static poster");
         await moneyPreview.click();
         assert.equal(await moneyPreview.getAttribute("aria-pressed"), "false");
+        assert.equal(await selectedClip.getAttribute("data-scene-playing"), "false");
         assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
