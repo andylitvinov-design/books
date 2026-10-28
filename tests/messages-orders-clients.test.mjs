@@ -43,7 +43,7 @@ test('My Orders / Clients shell uses real cards, order-specific existing private
   assert.match(hub,/const r=order\.remoteBooking/)
   assert.doesNotMatch(hub,/providerPaid:true|paymentStatus:'paid'/u)
 })
-test('voice recorder is user-triggered and stays in existing signed private direct-message upload',()=>{
+test('voice recorder is user-triggered and uses existing private direct-message assets',()=>{
   const rec=read('components/app/direct-voice-recorder.jsx')
   const inbox=read('components/app/direct-message-inbox.jsx')
   const wrapper=read('components/app/messages-hub.jsx')
@@ -52,7 +52,10 @@ test('voice recorder is user-triggered and stays in existing signed private dire
   assert.match(rec,/directMediaSpec\(kind,audio\.size\)/)
   assert.match(rec,/session\.timer=setTimeout\(\(\)=>finish\(false\),120000\)/)
   assert.match(rec,/stopTracks\(session\.stream\)/)
-  assert.match(inbox,/<DirectVoiceRecorder locale=\{locale\} disabled=\{busy\} onRecorded=\{changeFile\}\/>/)
+  assert.match(inbox,/<DirectVoiceRecorder key=\{current\.threadId\} locale=\{locale\} disabled=\{busy\}/)
+  assert.match(inbox,/onRecordingChange=\{setRecording\}/)
+  assert.match(inbox,/disabled=\{busy\|\|recording\|\|\(!draft\.trim\(\)&&!file\)\}/)
+  assert.match(inbox,/DIRECT_MEDIA_PROXY_MAX_BYTES/)
   assert.match(inbox,/uploadToSignedUrl/)
   assert.match(inbox,/allowPublicReuse:allowPublicReuse&&AUDIO_MIMES\.has/)
   assert.match(wrapper,/ownerAccountId&&directDestination/)
