@@ -1,7 +1,8 @@
-name: Personal Video Cloud — owner privacy and delivery checks
-on:
+name: HH Personal Video Privacy
+'on':
   pull_request:
-    branches: ['codex/public-book-library']
+    branches:
+      - codex/public-book-library
     paths:
       - 'app/api/app/personal-videos/**'
       - 'app/[locale]/app/[[...path]]/page.jsx'
@@ -9,28 +10,33 @@ on:
       - 'components/app/my-personal-videos.jsx'
       - 'lib/app/personal-videos.js'
       - 'supabase/migrations/*personal_videos*'
+      - 'supabase/migrations/*personal_video_consent*'
       - 'tests/personal-video-cloud.test.mjs'
       - '.github/workflows/hh-personal-videos.yml'
+  workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: hh-personal-videos-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 jobs:
-  owner-only-save:
+  owner-vault:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-        with: {persist-credentials: false}
-      - uses: actions/setup-node@v4
-        with: {node-version: '22',cache: npm}
-      - run: npm ci --no-audit --no-fund
-      - name: My Videos privacy and storage contracts
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Owner consent, quota and storage safety contracts
         run: node --test tests/personal-video-cloud.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint components/app/my-personal-videos.jsx lib/app/personal-videos.js 'app/api/app/personal-videos/**/*.js' tests/personal-video-cloud.test.mjs
+        run: npx --no-install eslint lib/app/personal-videos.js app/api/app/personal-videos/route.js 'app/api/app/personal-videos/[id]/route.js' tests/personal-video-cloud.test.mjs
       - name: TypeScript
         run: npx --no-install tsc --noEmit
-      - name: Next production build
+      - name: Production build
         run: npm run build
