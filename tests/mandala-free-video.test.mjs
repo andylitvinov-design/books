@@ -143,7 +143,7 @@ test("background-only reusable clip preserved from live without photo or payment
   assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
-  assert.match(studio,/theme==="money" && backgroundOnly \? BACKGROUND_CLIP/);
+  assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
   assert.match(studio,/backgroundOnly\?"money-background":"personal-mandala"/);
