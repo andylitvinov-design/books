@@ -173,6 +173,17 @@ const ui = {
   },
 } as const;
 
+
+/** Human-readable chosen goals. This is displayed locally, never serialized in a URL. */
+export function summarizeGoalSelection(locale: PublicLocale, selection: GoalSelection): string {
+  const available = sectors[selection.sector];
+  const selected = selection.tasks.length ? selection.tasks : selection.concerns;
+  const options = selection.tasks.length ? available.tasks : available.concerns;
+  return selected.slice(0, 2)
+    .map(id => options.find(item => item.id === id)?.[locale])
+    .filter((item): item is string => Boolean(item)).join(" · ");
+}
+
 type Props = {
   locale: PublicLocale;
   scores: Record<"energy" | "money" | "relationships" | "goals", number>;
