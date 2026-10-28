@@ -223,8 +223,8 @@ export default function PracticeShowcase({ locale = 'en' }) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-    // Home is public navigation, not entry to the private personal Cabinet.
-    if (key === 'home') {
+    // Public exploration and the approved showcase never demand a Google session.
+    if (['home','masters','community'].includes(key)) {
       router.push(destination(locale, key))
       return
     }
@@ -255,7 +255,9 @@ export default function PracticeShowcase({ locale = 'en' }) {
         }
       }
       // Allowlisted continuation: the callback returns to this same public UI.
-      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview' })
+      // Only a fixed action code crosses Google OAuth. The callback resolves
+      // it to a pre-approved protected page; no drafts or client data in state.
+      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview', profi:key })
       if (!result?.redirectUrl || !result.redirectUrl.startsWith('https://'))
         throw new Error('INVALID_OAUTH_REDIRECT')
       window.location.assign(result.redirectUrl)
