@@ -109,7 +109,9 @@ for (const browserType of [chromium, webkit]) {
           await page.waitForFunction(() => document.querySelector('[data-support-scale="relationships"] output')?.textContent?.trim() === "2",
             null,{timeout:8000});
 
-          await root.locator('select[aria-label]').first().selectOption("relationships");
+          await root.locator('[data-support-focus="relationships"]').check();
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(),1,
+            label+" one and only one selected focus");
           await root.locator('[data-support-recommendations]').click();
           const panel = root.locator('[data-support-personal-recommendations]');
           await panel.waitFor({state:"visible",timeout:8000});
