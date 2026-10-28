@@ -83,6 +83,8 @@ export type PublicPractitioner = {
   profile: PractitionerPublicProfile
   credentials: PractitionerCredentialPublic[]
   services: PublicService[]
+  /** Published service-review aggregate only; no reviewer identities or unpublished text. */
+  reviewSummary?: { count: number; average: number }
 }
 
 export type PublicServiceDetail = {
