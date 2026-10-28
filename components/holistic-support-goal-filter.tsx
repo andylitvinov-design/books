@@ -7,19 +7,26 @@ import styles from "./holistic-support-goal-filter.module.css";
 
 export type GoalSector = "energy" | "money" | "love" | "goals" | "meaning";
 export type GoalRating = { current: number; desired: number };
+export type GoalAmount = { current: number | null; desired: number | null };
+export type GoalCurrency = "CAD" | "EUR" | "USD" | "GBP";
 export type GoalSelection = {
   sector: GoalSector;
   concerns: string[];
   tasks: string[];
   ratings: Record<string, GoalRating>;
+  amounts?: Record<string, GoalAmount>;
+  currency?: GoalCurrency;
 };
 type Item = { id: string; en: string; ru: string; es: string };
-type Items = { concerns: Item[]; tasks: Item[]; axes: Item[] };
+type Axis = Item & { unit: "score" | "currency" | "months" };
+type Items = { concerns: Item[]; tasks: Item[]; axes: Axis[] };
 
 export const goalSectorFocus: Record<GoalSector, "energy" | "money" | "relationships" | "goals"> = {
   energy: "energy", money: "money", love: "relationships", goals: "goals", meaning: "goals",
 };
 const make = (id: string, en: string, ru: string, es: string): Item => ({ id, en, ru, es });
+const axis = (id: string, en: string, ru: string, es: string, unit: Axis["unit"] = "score"): Axis =>
+  ({ ...make(id, en, ru, es), unit });
 const sectorOrder: { id: GoalSector; Icon: LucideIcon }[] = [
   { id: "energy", Icon: Zap },
   { id: "money", Icon: Coins },
@@ -48,9 +55,10 @@ const sectors: Record<GoalSector, Items> = {
       make("endurance", "Build stamina", "Больше выносливости", "Más resistencia"),
     ],
     axes: [
-      make("vitality", "Energy", "Энергия", "Energía"),
-      make("rest", "Rest", "Отдых", "Descanso"),
-      make("calm", "Calm", "Спокойствие", "Calma"),
+      axis("vitality", "Energy", "Энергия", "Energía"),
+      axis("sleepQuality", "Sleep quality", "Качество сна", "Calidad del sueño"),
+      axis("bodyComfort", "Body comfort", "Комфорт в теле", "Bienestar corporal"),
+      axis("calm", "Inner calm", "Спокойствие", "Calma interior"),
     ],
   },
   money: {
@@ -71,9 +79,10 @@ const sectors: Record<GoalSector, Items> = {
       make("newProject", "Start a project", "Начать проект", "Iniciar un proyecto"),
     ],
     axes: [
-      make("stability", "Stability", "Стабильность", "Estabilidad"),
-      make("workClarity", "Work clarity", "Ясность в деле", "Claridad laboral"),
-      make("confidence", "Confidence", "Уверенность", "Confianza"),
+      axis("monthlyIncome", "Monthly income", "Доход в месяц", "Ingreso mensual", "currency"),
+      axis("incomeStability", "Income stability", "Стабильность дохода", "Estabilidad de ingresos"),
+      axis("reserveMonths", "Reserve in months", "Финансовый резерв", "Meses de reserva", "months"),
+      axis("moneyConfidence", "Financial confidence", "Финансовая уверенность", "Confianza financiera"),
     ],
   },
   love: {
@@ -94,9 +103,10 @@ const sectors: Record<GoalSector, Items> = {
       make("selfRespect", "Self-respect", "Уважать себя", "Respetarme"),
     ],
     axes: [
-      make("connection", "Connection", "Близость", "Cercanía"),
-      make("safety", "Trust", "Доверие", "Confianza"),
-      make("warmth", "Warmth", "Тепло", "Calidez"),
+      axis("connection", "Closeness", "Близость", "Cercanía"),
+      axis("trust", "Trust", "Доверие", "Confianza"),
+      axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
+      axis("support", "Emotional support", "Поддержка", "Apoyo emocional"),
     ],
   },
   goals: {
@@ -117,9 +127,10 @@ const sectors: Record<GoalSector, Items> = {
       make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
     ],
     axes: [
-      make("directionAxis", "Direction", "Направление", "Dirección"),
-      make("momentum", "Momentum", "Движение", "Impulso"),
-      make("clarity", "Clarity", "Ясность", "Claridad"),
+      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
+      axis("motivation", "Motivation", "Мотивация", "Motivación"),
+      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
+      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
     ],
   },
   meaning: {
@@ -140,34 +151,38 @@ const sectors: Record<GoalSector, Items> = {
       make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
     ],
     axes: [
-      make("meaningAxis", "Meaning", "Смысл", "Sentido"),
-      make("selfContact", "Inner connection", "Контакт с собой", "Conexión interior"),
-      make("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
+      axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
+      axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
+      axis("values", "Living my values", "Соответствие ценностям", "Vivir mis valores"),
+      axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
     ],
   },
 };
 const ui = {
   en: {
     title: "Goal & task filter", sector: "Life area", current: "1. What matters right now?",
-    desired: "2. What would you like?", select: "Select up to 3", rating: "3. Now and desired",
-    ratingHelp: "Your own ratings from 1 to 10, not a medical assessment.",
-    now: "Now", want: "Want", show: "Show matching meditations", original: "Only published original recordings",
+    desired: "2. What would you like?", select: "Select any that fit", rating: "3. Now → Want",
+    ratingHelp: "Four indicators for this area. Self-ratings 1–10; money fields use actual amounts.",
+    now: "Now", want: "Want", show: "Show recommendations", original: "Meditations, tests, courses, talismans & masters",
+    currency: "Currency", perMonth: "per month", reserveUnit: "months of expenses", optional: "Optional; leave blank if unknown",
     clear: "Reset filter", close: "Close filter",
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", goals: "Goals & direction", meaning: "Meaning & values" },
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
-    desired: "2. Какая твоя задача?", select: "Выбери до 3 пунктов", rating: "3. Сейчас и хочу",
-    ratingHelp: "Твоя оценка от 1 до 10, не медицинский тест.",
-    now: "Сейчас", want: "Хочу", show: "Показать подходящие медитации", original: "Только опубликованные оригинальные записи",
+    desired: "2. Какая твоя задача?", select: "Выбери любые подходящие пункты", rating: "3. Сейчас → Хочу",
+    ratingHelp: "Четыре показателя. Оценки 1–10; доход и резерв — в реальных единицах.",
+    now: "Сейчас", want: "Хочу", show: "Показать рекомендации", original: "Медитации, тесты, курсы, талисманы и мастера",
+    currency: "Валюта", perMonth: "в месяц", reserveUnit: "месяцев расходов", optional: "Необязательно; можно оставить пустым",
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", goals: "Цели", meaning: "Смыслы" },
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
-    desired: "2. ¿Qué te gustaría?", select: "Elige hasta 3", rating: "3. Ahora y deseado",
-    ratingHelp: "Tu autoevaluación de 1 a 10, no una prueba médica.",
-    now: "Ahora", want: "Quiero", show: "Mostrar meditaciones afines", original: "Solo grabaciones originales publicadas",
+    desired: "2. ¿Qué te gustaría?", select: "Elige todos los que correspondan", rating: "3. Ahora → Quiero",
+    ratingHelp: "Cuatro indicadores. Escalas 1–10; ingresos y reserva con unidades reales.",
+    now: "Ahora", want: "Quiero", show: "Mostrar recomendaciones", original: "Meditaciones, pruebas, cursos, talismanes y guías",
+    currency: "Moneda", perMonth: "por mes", reserveUnit: "meses de gastos", optional: "Opcional; déjalo vacío si no sabes",
     clear: "Restablecer filtro", close: "Cerrar filtro",
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", goals: "Metas", meaning: "Sentido y valores" },
   },
@@ -199,18 +214,20 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
   const [concerns, setConcerns] = useState<string[]>(initial?.concerns ?? []);
   const [tasks, setTasks] = useState<string[]>(initial?.tasks ?? []);
   const [ratings, setRatings] = useState<Record<string, GoalRating>>(initial?.ratings ?? {});
+  const [amounts, setAmounts] = useState<Record<string, GoalAmount>>(initial?.amounts ?? {});
+  const [currency, setCurrency] = useState<GoalCurrency>(initial?.currency ?? "CAD");
   const selected = sectors[sector];
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
-    setSector(value); setConcerns([]); setTasks([]); setRatings({});
+    setSector(value); setConcerns([]); setTasks([]); setRatings({}); setAmounts({});
   }
   function toggle(id: string, values: string[], update: (next: string[]) => void) {
-    update(values.includes(id) ? values.filter(item => item !== id) :
-      values.length < 3 ? [...values, id] : values);
+    update(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
   }
   function getRating(id: string, index: number): GoalRating {
-    const current = index === 0 ? scores[goalSectorFocus[sector]] : 5;
+    const current = sector === "money" && id === "incomeStability" ? scores.money
+      : index === 0 && sector !== "meaning" && sector !== "money" ? scores[goalSectorFocus[sector]] : 5;
     return ratings[id] ?? { current, desired: Math.max(current, 8) };
   }
   function updateRating(id: string, index: number, field: keyof GoalRating, value: number) {
@@ -218,14 +235,27 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
       ...previous, [id]: { ...getRating(id, index), ...previous[id], [field]: value },
     }));
   }
+  // Blank money values remain blank; no fabricated income or target is stored.
+  function updateAmount(id: string, field: keyof GoalAmount, raw: string, max: number) {
+    const numeric = raw === "" ? null : Number(raw);
+    if (numeric !== null && (!Number.isFinite(numeric) || numeric < 0 || numeric > max)) return;
+    setAmounts(previous => ({
+      ...previous, [id]: { current: null, desired: null, ...previous[id], [field]: numeric },
+    }));
+  }
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values: Record<string, GoalRating> = {};
-    selected.axes.forEach((axis, index) => { values[axis.id] = getRating(axis.id, index); });
-    onApply({ sector, concerns, tasks, ratings: values });
+    const entered: Record<string, GoalAmount> = {};
+    selected.axes.forEach((item, index) => {
+      if (item.unit === "score") values[item.id] = getRating(item.id, index);
+      else if (amounts[item.id]) entered[item.id] = amounts[item.id];
+    });
+    onApply({ sector, concerns, tasks, ratings: values,
+      ...(sector === "money" ? { amounts: entered, currency } : {}) });
   }
   function reset() {
-    setSector("energy"); setConcerns([]); setTasks([]); setRatings({});
+    setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     onReset();
   }
   return (
@@ -277,31 +307,55 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
               ))}
             </div>
           </section>
-          <section className={styles.fieldGroup} aria-labelledby="goal-ratings">
-            <h3 id="goal-ratings">{t.rating}</h3>
-            <p>{t.ratingHelp}</p>
-            <div className={styles.ratings}>
-              {selected.axes.map((axis, index) => {
-                const value = getRating(axis.id, index);
-                return <div className={styles.axis} key={axis.id} data-goal-axis={axis.id}>
-                  <strong>{axis[locale]}</strong>
-                  <div className={styles.sliders}>
-                    {(["current", "desired"] as const).map(field => (
-                      <label className={styles.slider} key={field}>
-                        <span>{field === "current" ? t.now : t.want} <output>{value[field]}</output></span>
-                        <input type="range" min="1" max="10" step="1"
-                          value={value[field]} aria-label={axis[locale] + ": " + (field === "current" ? t.now : t.want)}
-                          aria-valuetext={value[field] + " / 10"}
-                          onChange={event => updateRating(axis.id, index, field, Number(event.target.value))} />
-                      </label>
-                    ))}
-                  </div>
-                </div>;
-              })}
-            </div>
-          </section>
+
         </div>
       </div>
+      <section className={styles.metricsGroup} aria-labelledby="goal-ratings" data-support-goal-axes>
+        <div className={styles.metricsHeading}>
+          <div><h3 id="goal-ratings">{t.rating}</h3><p>{t.ratingHelp}</p></div>
+          {sector === "money" ? <label className={styles.currencyLabel}>
+            {t.currency}
+            <select data-goal-currency value={currency}
+              onChange={event => setCurrency(event.target.value as GoalCurrency)}>
+              {(["CAD", "EUR", "USD", "GBP"] as GoalCurrency[]).map(id =>
+                <option key={id} value={id}>{id}</option>)}
+            </select>
+          </label> : null}
+        </div>
+        <div className={styles.ratings}>
+          {selected.axes.map((item, index) => (
+            <div className={styles.axis} key={item.id} data-goal-axis={item.id} data-unit={item.unit}>
+              <strong>{item[locale]}</strong>
+              <div className={styles.sliders}>
+                {(["current", "desired"] as const).map(field => (
+                  <label className={styles.slider} key={field}>
+                    <span>{field === "current" ? t.now : t.want}
+                      {item.unit === "score" ? <output>{getRating(item.id, index)[field]}</output> : null}
+                    </span>
+                    {item.unit === "score" ? <input type="range" min="1" max="10" step="1"
+                      value={getRating(item.id, index)[field]}
+                      aria-label={item[locale] + ": " + (field === "current" ? t.now : t.want)}
+                      aria-valuetext={getRating(item.id, index)[field] + " / 10"}
+                      onChange={event => updateRating(item.id, index, field, Number(event.target.value))} /> :
+                      <div className={styles.amountField}>
+                        <input type="number" min="0" max={item.unit === "months" ? 120 : 100000000}
+                          step={item.unit === "months" ? "1" : "any"} inputMode="decimal"
+                          data-goal-metric={item.id} data-metric-field={field}
+                          value={amounts[item.id]?.[field] ?? ""} placeholder="—"
+                          aria-label={item[locale] + " " + (field === "current" ? t.now : t.want) +
+                            " (" + (item.unit === "months" ? t.reserveUnit : currency + " " + t.perMonth) + ")"}
+                          onChange={event => updateAmount(item.id, field, event.target.value,
+                            item.unit === "months" ? 120 : 100000000)} />
+                        <small>{item.unit === "months" ? (locale === "ru" ? "мес." : "mo.") : currency}</small>
+                      </div>}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {sector === "money" ? <p className={styles.amountHint}>{t.optional}</p> : null}
+      </section>
       <footer className={styles.actions}>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
