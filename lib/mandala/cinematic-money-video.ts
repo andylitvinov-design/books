@@ -473,3 +473,46 @@ export function paintCinematicMoneyFrame(
   }
   ctx.restore();
 }
+
+
+/**
+ * Compose an ACTUAL first-party MP4 video frame into the personalized movie.
+ * This replaces, rather than imitates, the old procedural background. The
+ * background element has a same-origin source so Canvas is not tainted and the
+ * client's real photograph never leaves their browser.
+ */
+export function paintRealMoneyVideoFrame(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement | null,
+  scene: MoneySceneId,
+  seconds: number,
+  aspect: CinematicAspect,
+  title: string,
+  video: HTMLVideoElement,
+): void {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh || video.readyState < 2) {
+    ctx.restore();
+    paintCinematicMoneyFrame(ctx, image, scene, seconds, aspect, title);
+    return;
+  }
+  const cover = Math.max(w / vw, h / vh);
+  const dw = vw * cover, dh = vh * cover;
+  ctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+
+  // A localized dark halo makes the actual photograph legible without
+  // converting the underlying video to a static screenshot.
+  const halo = ctx.createRadialGradient(w / 2, h * .52, 20, w / 2, h * .52, w * .74);
+  halo.addColorStop(0, "rgba(9,17,19,.06)");
+  halo.addColorStop(.72, "rgba(9,17,19,.12)");
+  halo.addColorStop(1, "rgba(9,17,19,.36)");
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, w, h);
+  portrait(ctx, image, w, h, seconds);
+  movingCoins(ctx, scene, seconds, w, h, true);
+  lastLight(ctx, scene, seconds, w, h, title);
+  ctx.restore();
+}

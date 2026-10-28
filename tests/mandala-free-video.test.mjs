@@ -132,9 +132,9 @@ test("existing 12 money scenes retain tap-triggered animated thumbnails", () => 
   assert.match(studio,/playing=\{moneyScene===money\.id&&previewPlaying&&!recording\}/);
   assert.match(studio,/setPreviewPlaying\(true\)/);
   assert.match(studio,/CinematicSceneThumbnail scene=\{money\.id\}/);
-  assert.match(studio,/width=\{176\} height=\{228\}/);
-  assert.match(browser,/clipFrameOne/);
-  assert.match(browser,/preview cards must show real moving footage/);
+  assert.match(studio,/data-real-mp4=\{film\.src\}/);
+  assert.match(browser,/actual H\.264 video must advance in time/);
+  assert.match(browser,/actual H\.264 video must advance in time/);
 });
 
 test("background-only reusable clip preserved from live without photo or payment", () => {
