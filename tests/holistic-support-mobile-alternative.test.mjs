@@ -24,17 +24,19 @@ test("alternate support screen is separate, linked and localized without replaci
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
-test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
+test("personal scores stay local and photos save privately only by explicit opt-in; no fake payment", () => {
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /URL\.createObjectURL\(file\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(client, /URL\.createObjectURL\(blob\)/);
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
-  assert.match(client, /8 \* 1024 \* 1024/);
+  assert.match(read("lib/mandala/prepare-browser-photo.ts"), /25_000_000/);
+  assert.match(client, /data-support-photo-save/);
+  assert.match(client, /\/api\/app\/support-photo/);
   assert.match(client, /data-support-recommendations/);
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
