@@ -124,6 +124,11 @@
 .videoTitle { position: relative; z-index: 1; font-size: 16px; font-weight: 850; line-height: 1.27; overflow-wrap: anywhere; }
 .videoCard[aria-pressed="true"] { border-color: #9de4bc; box-shadow: 0 0 0 2px #0ba476, 0 8px 20px #0d8b5355; }
 .videoHint { margin: 13px 2px 4px; color: #6a6e64; font-size: 13px; line-height: 1.45; }
+.lessonNavigation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 13px 0 5px; }
+.lessonNavigation button { flex: 1 1 110px; min-height: 44px; padding: 7px 10px; border: 1px solid #c8ded2; border-radius: 11px; background: #eaf5ed; color: #135d47; font-size: 12px; font-weight: 800; cursor: pointer; }
+.lessonNavigation button:disabled { opacity: .5; cursor: not-allowed; }
+.lessonNavigation button:focus-visible { outline: 3px solid #167f5e; outline-offset: 2px; }
+.lessonNavigation span { flex: 0 0 auto; color: #405c4e; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .emptyMessage { margin: 0; padding: 14px; border-radius: 11px; background: #f5eee3; color: #4e5049; font-size: 16px; }
 .youtubeLink { display: inline-flex; align-items: center; gap: 7px; min-height: 45px; margin-top: 4px; color: #126f53; font-size: 15px; font-weight: 750; text-decoration: underline; }
 .supportEnquiry { display: grid; gap: 9px; padding: 13px 22px 22px; border-top: 1px solid #ebdfcf; }
