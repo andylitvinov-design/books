@@ -50,7 +50,7 @@ for (const browserType of [chromium, webkit]) {
           }, null, {timeout:30000});
 
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
-          assert.equal(await root.locator('[data-support-tool]').count(), 6, label + " four modes plus Courses/Masters");
+          assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const mandalaAction=root.locator('[data-support-video-mandala]');
           assert.equal(await mandalaAction.count(),1,label+" one central Video Mandala shortcut");
           assert.equal(await mandalaAction.getAttribute("href"),
@@ -199,13 +199,25 @@ for (const browserType of [chromium, webkit]) {
           await results.waitFor({state:"visible",timeout:8000});
           assert.equal(await results.locator('[data-support-goal-action]').count(),5,
             label+" five real recommendation categories");
-          assert.match(await results.locator('[data-support-goal-action="tests"]').getAttribute("href")??"",/\/tests$/,
-            label+" existing tests route");
+          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"false",
+            label+" the Tests recommendation switches the same-page Tests tab");
           assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
             label+" real business learning route");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
             label+" only source-backed recordings");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-action="tests"]').click();
+          const testsFromGoals=root.locator('[data-support-tests-panel]');
+          await testsFromGoals.waitFor({state:"visible",timeout:8000});
+          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"true",
+            label+" Goals→Tests stays on this page");
+          assert.equal(await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href'),
+            '/'+locale+'/client/tests',label+" existing free Test Explorer");
+          assert.equal(await testsFromGoals.locator('[data-support-tests-personality]').getAttribute('href'),
+            '/'+locale+'/personality-profiles',label+" existing Profile Builder");
+          assert.equal(await testsFromGoals.locator('[data-support-tests-guide]').getAttribute('href'),
+            '/'+locale+'/tests',label+" real free-tests explanation");
+          await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-goal-action="talismans"]').click();
           const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
@@ -525,6 +537,27 @@ for (const browserType of [chromium, webkit]) {
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
             label+" secure service request is an explicit navigation, not a silent booking");
+          const consultChips=await offers.locator('[data-support-consultation-category]').evaluateAll(elements =>
+            elements.map(button => {
+              const box=button.getBoundingClientRect(), caption=button.querySelector('span');
+              return {height:box.height,aria:button.getAttribute('aria-label'),caption:caption?.textContent,
+                fits:Boolean(caption && caption.scrollWidth<=caption.clientWidth+2)};
+            }));
+          assert.equal(consultChips.length,5,label+" published consultation categories");
+          assert.ok(consultChips.every(item=>item.height>=44 && item.height<=52 && item.fits && item.aria),
+            label+" compact, non-broken, accessible 44px service chips "+JSON.stringify(consultChips));
+          await root.locator('[data-support-tool="tests"]').click();
+          const testsPanel=root.locator('[data-support-tests-panel]');
+          await testsPanel.waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
+            label+" Tests do not mix with a consultation/CRM booking");
+          assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
+            '/'+locale+'/client/tests',label+" actual free Test Explorer");
+          if(width===390) await page.screenshot({
+            path:output+"/"+browserType.name()+"-"+locale+"-tests-390.png",fullPage:true});
+          const testOverflow=await page.evaluate(() =>
+            document.documentElement.scrollWidth-document.documentElement.clientWidth);
+          assert.ok(testOverflow<=3,label+" Tests panel has no horizontal overflow: "+testOverflow);
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});

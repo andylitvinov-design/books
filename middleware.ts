@@ -79,6 +79,16 @@ export async function middleware(request: NextRequest) {
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = pathname === '/admin/videos'
   const materialLibraryPage = pathname === '/admin/materials'
+  const liveAudioPage = /^\/(en|ru|es)\/live(?:\/host)?\/?$/.test(pathname)
+  const liveAudioOrigin = (() => {
+    if (!liveAudioPage || process.env.HH_LIVE_AUDIO_ENABLED !== 'true') return ''
+    try {
+      const origin = new URL(process.env.LIVEKIT_URL || '')
+      return origin.protocol === 'wss:' && origin.pathname === '/' &&
+        !origin.username && !origin.password && !origin.search && !origin.hash
+        ? ' ' + origin.origin + ' ' + origin.origin.replace(/^wss:/, 'https:') : ''
+    } catch { return '' }
+  })()
   const youtubePhoneUploader = pathname === '/admin/youtube-upload'
   const youtubePracticeUploader = /^\/(en|ru|es)\/app\/practice\/?$/.test(pathname)
   const youtubeOAuthUploadAllowed = youtubePhoneUploader || youtubePracticeUploader
@@ -206,7 +216,8 @@ export async function middleware(request: NextRequest) {
       return ' https://'+process.env.HH_CLIENT_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com'
     return ''
   })()
-  const cspClass = youtubePhoneUploader ? 'youtube-uploader'
+  const cspClass = liveAudioPage ? 'live-audio'
+    : youtubePhoneUploader ? 'youtube-uploader'
     : youtubePracticeUploader ? 'practitioner-youtube'
     : videoManager ? 'video-manager'
     : privateDocument ? 'private'
@@ -217,8 +228,8 @@ export async function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubeOAuthUploadAllowed ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin,
     youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader ? ' https://player.vimeo.com' : '') : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + directMessageStorageOrigin,
-    "font-src 'self'", "connect-src 'self'" + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + directMessageStorageOrigin,
+    "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)

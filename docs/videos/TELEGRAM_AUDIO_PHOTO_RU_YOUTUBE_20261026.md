@@ -96,3 +96,15 @@ Google's unverified OAuth warning cannot be bypassed by a server, and existing V
 Free fallback: in normal Safari, the verified owner opens https://holistichouse.vercel.app/admin/materials. The **current trimmed MP4** appears with a private player and **Download MP4** button, distinct from the preserved original file. The server validates that the immutable selected cut UUID belongs to the current preview job and rechecks the owner session on GET, HEAD and Range. A later changed selection invalidates the earlier link. It never exposes public or signed Storage URLs.
 
 Review the complete sound and photos, download the selected MP4 locally, then open YouTube Studio and manually upload it to the actual Russian channel as **Unlisted**. Verify real provider processing and playback. This does not publish automatically or write a fake uploaded state. Never send clients' private materials or health information to YouTube. Native automatic Dot upload still requires the owner's one-time genuine Google channel consent.
+
+## Owner YouTube publication queue for master cabinets (2026-10-28)
+
+The RU server Google OAuth grant is shared with the existing Dot publisher, not copied into browsers. No other Google OAuth client or paid provider is required.
+
+Workflow: an activated master uploads a video presentation through My Practice and explicitly confirms copyright/publication rights plus no client or health information. Master submission is per-ready-asset and never directly uploads. The owner sees a consented review item in /admin/youtube-upload, previews the exact asset and separately checks rights and confidentiality; only then is an Unlisted provider upload queued. In Dot, /video_queue links to this authenticated review page without exposing other masters' private files or media in Telegram.
+
+Owner-ready educational material videos are also eligible for the same queue, but any practitioner_materials entry which reuses a client_delivery_assets object_key is deliberately excluded. Client-session recordings remain private. Creator-approved master presentations are accessed only through a narrowly scoped backend RLS policy for their exact request ID/asset; direct anonymous and standard authenticated users have no ledger SELECT grants.
+
+Server CAS lifecycle: requested -> approved -> publishing -> uncertain/known provider ID -> uploaded only after real RU channel, Unlisted and processed provider readback. Unique(source_type,source_id), no new upload if state already publishing/uncertain/uploaded. Existing CRON_SECRET housekeeping retries up to three *read-only* checks of known IDs; no new media POST/PUT. A request with an unknown provider outcome and no ID requires manual provider reconciliation before any new upload.
+
+Current support: own library materials (Supabase private or configured R2/S3), other masters' own ready MP4/MOV/WebM presentations <=25MB, all source-validated and owner-reviewed. No bulk auto-publication. The operation is not considered E2E verified without actual YouTube processed, channel, visibility, playback, and creator/owner consent receipts.

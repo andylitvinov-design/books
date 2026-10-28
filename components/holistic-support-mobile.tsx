@@ -81,7 +81,7 @@ const copy = {
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
     foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
-    optionsCompact: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
+    optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     masterProfile: "Open master profile", videoMaster: "Meditation guide",
@@ -130,7 +130,7 @@ const copy = {
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
     foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
-    optionsCompact: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
+    optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     masterProfile: "Открыть страницу мастера", videoMaster: "Мастер медитаций",
@@ -179,7 +179,7 @@ const copy = {
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
     foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
-    optionsCompact: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
+    optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     masterProfile: "Abrir perfil del guía", videoMaster: "Guía de meditación",
@@ -496,10 +496,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                 <Play size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
               </button>
-              <Link href={"/" + locale + "/tests"} prefetch={false} data-support-goal-action="tests">
+              <button type="button" data-support-goal-action="tests" aria-pressed={choice === "tests"}
+                aria-controls="support-tests-panel" onClick={() => changeChoice("tests")}>
                 <TestTubeDiagonal size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
-              </Link>
+              </button>
               <Link href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
                 : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
                 <BookOpen size={21} aria-hidden="true" />
