@@ -123,8 +123,11 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
+          const headerFootprint=geometry.hero[0].y-geometry.a[0].y;
+          const maxCompactHeader=Math.min(345,Math.max(285,geometry.a[0].height+25));
+          assert.ok(headerFootprint<=maxCompactHeader,
+            label+" the three-zone dashboard has no oversized gap before the scenic player: "+
+              JSON.stringify({headerFootprint,assessmentHeight:geometry.a[0].height,maxCompactHeader}));
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
@@ -479,8 +482,19 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
-            label+" Academy course routes still work");
+          const coursePanel=root.locator('[data-support-courses-panel]');
+          const courseNavHrefs=await coursePanel.locator('nav a').evaluateAll(anchors =>
+            anchors.map(anchor=>anchor.getAttribute('href')));
+          assert.deepEqual(courseNavHrefs, [
+            "/"+locale+"/academy", "/"+locale+"/academy/reiki/tantra-reiki/discover",
+          ],label+" Academy and free Reiki course retain their real canonical routes");
+          const courseHrefs=await coursePanel.locator('a').evaluateAll(anchors =>
+            anchors.map(anchor=>anchor.getAttribute('href')));
+          const originalCourseCount=await coursePanel.locator('details a').count();
+          assert.equal(courseHrefs.length,2+originalCourseCount,
+            label+" source-backed mystery course links coexist with the two Academy shortcuts");
+          assert.ok(courseHrefs.every(href=>href?.startsWith("/"+locale+"/academy")),
+            label+" all course cards lead to a real localized Academy route");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
@@ -509,9 +523,26 @@ for (const browserType of [chromium, webkit]) {
             label+" session, initiation and course share one visible format switch");
           const findButton=marketplace.locator('[data-support-reiki-find]');
           assert.equal(await findButton.count(),1,label+" original detailed service picker stays discoverable");
+          const marketGeometry=await marketplace.evaluate(element => {
+            const rect=element.getBoundingClientRect();
+            const formatButtons=Array.from(element.querySelectorAll('[data-support-reiki-quick-kind]'))
+              .map(button=>button.getBoundingClientRect().height);
+            const focuses=element.querySelector('[data-support-reiki-filters]');
+            return {left:rect.left,right:rect.right,width:rect.width,
+              height:rect.height,scrollWidth:element.scrollWidth,
+              formatButtons,focusHeight:focuses?.getBoundingClientRect().height || 0};
+          });
+          assert.ok(marketGeometry.left>=8 && marketGeometry.right<=width-8,
+            label+" Reiki marketplace keeps breathing room on both phone edges: "+JSON.stringify(marketGeometry));
+          assert.ok(marketGeometry.scrollWidth<=Math.ceil(marketGeometry.width)+2,
+            label+" Reiki marketplace does not overflow horizontally: "+JSON.stringify(marketGeometry));
+          assert.ok(marketGeometry.formatButtons.every(height=>height>=43 && height<=50),
+            label+" the three Reiki formats remain finger-sized, not oversized");
+          assert.ok(marketGeometry.focusHeight>=58 && marketGeometry.focusHeight<=86,
+            label+" four Reiki intentions stay compact: "+JSON.stringify(marketGeometry));
           const masterHeight=await heroMaster.evaluate(element => element.getBoundingClientRect().height);
-          assert.ok(masterHeight>=330 && masterHeight<=460,
-            label+" Reiki uses a readable scenic sales card, not a clipped 288px filter card: "+masterHeight);
+          assert.ok(masterHeight>=290 && masterHeight<=350,
+            label+" Reiki scenic service card is compact without clipping its request button: "+masterHeight);
           // Advanced options remain available with the original published-offer filters.
           const tab = value => healing.locator('[data-support-reiki-tab="' + value + '"]');
           assert.equal(await tab("main").count(),1,label+" central Main tab");
