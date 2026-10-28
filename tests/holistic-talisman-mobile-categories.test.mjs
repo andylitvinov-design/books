@@ -25,6 +25,39 @@ test("Talisman categories are a horizontal, six-direction carousel on the existi
   assert.match(styles, /@media \(max-width:350px\)/);
   assert.match(styles, /height: 288px; min-height: 288px/);
   assert.match(styles, /height: 282px; min-height: 282px/);
+  const mainCss = read("components/holistic-support-mobile.module.css");
+  assert.match(mainCss, /\.toolButton\[data-support-tool="talisman"\]\[aria-pressed="true"\]/);
+  assert.match(mainCss, /#9551da,#6934b3/);
+  assert.match(viewer, /data-support-talisman-artwork/);
+  assert.match(viewer, /className=\{styles\.artworkRing\}/);
+  assert.match(styles, /\.artworkRing \{[^}]*border: 6px solid/);
+  assert.match(styles, /\.artworkLabel \{/);
+  assert.match(viewer, /heroTitle = selected\[locale\]\.title\.replace/);
+  assert.match(viewer, /aria-expanded=\{allCategoriesOpen\}/);
+  assert.match(viewer, /data-expanded=\{allCategoriesOpen \? "true" : "false"\}/);
+  assert.match(styles, /\.categoryFrame\[data-expanded="true"\] \.categoryRail/);
+});
+
+test("Owner mock: all six categories have short visible labels, full screen-reader names and four-up iPhone sizing", () => {
+  for (const [locale, firstFour] of [
+    ["en", ["Strength", "Money", "Love", "Goals"]],
+    ["ru", ["Сила", "Деньги", "Любовь", "Цель"]],
+    ["es", ["Fuerza", "Dinero", "Amor", "Metas"]],
+  ]) {
+    const section = viewer.split("  " + locale + ": {")[1]?.split("\n  },")[0] ?? "";
+    assert.ok(section.includes("categoryShortNames:"), locale + " concise visual labels");
+    for (const value of firstFour) assert.ok(section.includes('"' + value + '"'), locale + " " + value);
+  }
+  assert.match(viewer, /aria-label=\{t\.categoryNames\[id\]\}/);
+  assert.match(viewer, /title=\{t\.categoryNames\[id\]\}/);
+  assert.match(viewer, /<span aria-hidden="true">\{t\.categoryShortNames\[id\]\}<\/span>/);
+  assert.match(styles, /\.categoryCard > span \{[^}]*white-space: nowrap/);
+  assert.match(styles, /\.categoryCard > span \{[^}]*text-overflow: ellipsis/);
+  assert.match(styles, /\.categoryCard \{ flex-basis: calc\(\(100% - 18px\) \/ 4\)/);
+  assert.match(styles, /\.categoryRail \{ gap: 6px; padding: 1px 48px 5px 1px/);
+  assert.doesNotMatch(styles, /@media \(max-width:350px\)[\s\S]*?\.categoryCard \{ flex-basis: 68px/);
+  assert.match(viewer, /aria-pressed=\{goal === id\}/);
+  assert.match(viewer, /data-support-talisman-categories-next onClick=\{scrollCategories\}/);
 });
 
 test("Master, tradition and description controls are operable and honest about published data", () => {

@@ -693,3 +693,30 @@
   .goalResultGrid > :is(button,a) small { font-size: 10px; }
   .goalResultGrid > :last-child { grid-column: 1 / -1; }
 }
+
+/* Keep the last Reiki filter action accessible above the fixed mobile navigation. */
+@media (max-width: 640px) {
+  .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
+}
+
+/* Focused mobile Reiki filter: do not float global navigation over the report and
+   certificate controls. After closing the filter, normal docked nav resumes. */
+@media (max-width: 640px) {
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
+    padding-bottom: 10px;
+  }
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    border-radius: 18px 18px 0 0;
+    box-shadow: none;
+  }
+}
+
+/* Owner-approved purple Talisman entry, while Courses and Reiki keep green. */
+.page .toolButton[data-support-tool="talisman"][aria-pressed="true"] {
+  border-color: #c6a2fa; background: linear-gradient(145deg,#9551da,#6934b3);
+  box-shadow: 0 7px 18px #7143b35c; color: #fff;
+}
+.page .toolButton[data-support-tool="talisman"][aria-pressed="true"] svg { color: #fff; }

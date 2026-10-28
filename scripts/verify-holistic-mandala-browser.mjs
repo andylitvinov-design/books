@@ -110,16 +110,22 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.waitForFunction(() =>
           document.querySelector('[data-mandala-scene-preview="golden-rain"]')?.getAttribute("data-scene-playing") === "true",
           undefined, { timeout: 12000 });
-        const clipHash = () => selectedClip.evaluate(canvas => {
-          const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-          let hash = 11;
-          for (let i = 0; i < data.length; i += 83) hash = (hash * 31 + data[i]) >>> 0;
-          return hash;
-        });
-        const clipFrameOne = await clipHash();
-        await page.waitForTimeout(730);
-        const clipFrameTwo = await clipHash();
-        assert.notEqual(clipFrameOne, clipFrameTwo, "preview cards must show real moving footage, not frozen icons");
+        // The chosen template must be an ACTUAL first-party MP4 stream, not
+        // a canvas or CSS loop imitating footage.
+        const realSrc = await selectedClip.getAttribute("data-real-mp4");
+        assert.match(realSrc || "", /^\/videos\/holistic-house\/money-films-v1\/golden-rain\.mp4$/);
+        assert.equal(await selectedClip.evaluate(el => el.tagName), "VIDEO");
+        await page.waitForFunction(() => {
+          const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
+          return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
+        }, undefined, {timeout: 30000});
+        const firstTime = await selectedClip.evaluate(video => video.currentTime);
+        await page.waitForTimeout(760);
+        const secondTime = await selectedClip.evaluate(video => video.currentTime);
+        assert.ok(secondTime > firstTime + .17, "actual H.264 video must advance in time");
+        const master = page.locator('[data-mandala-master-mp4]');
+        await master.waitFor({state:"attached",timeout:20000});
+        assert.match(await master.getAttribute("src") || "", /money-films-v1\/golden-rain\.mp4$/);
         const cinema = page.locator("[data-mandala-cinematic-canvas]");
         await cinema.waitFor({ state: "attached" });
         const frameHash = () => cinema.evaluate(canvas => {
