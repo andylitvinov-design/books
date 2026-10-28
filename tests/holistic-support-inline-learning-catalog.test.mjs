@@ -35,8 +35,10 @@ test("filter controls preserve free, confirmed paid, price not listed and archiv
   assert.match(catalog, /onClick=\{\(\) => toggleExpanded\(item\.id\)\}/);
   assert.match(catalog, /href=\{item\.href\}/);
   assert.match(catalog, /\{filtered\.slice\(0, limit\)\.map/);
+  assert.match(model, /listPublicReikiAcademyOffers\(locale\)/);
+  assert.match(model, /personal\.amountEur/);
+  assert.match(model, /cost: "priced", price: \{ amount: personal\.amountEur, currency: "EUR" \}/);
   assert.doesNotMatch(model, /price:\s*\{\s*amount:\s*\d/);
-  assert.doesNotMatch(model, /cost:\s*"priced"/);
   assert.match(model, /status === "needs_review"/);
   assert.match(model, /const seen = new Set<string>\(\)/);
 });
