@@ -540,7 +540,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
           style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
       </div>
-      <p className={styles.freeVideoPrivacy}>{t.photoNote}</p>
+      {!backgroundOnly ? <p className={styles.freeVideoPrivacy}>{t.photoNote}</p> : null}
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
         <div className={styles.freeVideoOptions}>
