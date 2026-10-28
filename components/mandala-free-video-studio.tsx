@@ -4,7 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
-import { paintCinematicMoneyFrame } from "@/lib/mandala/cinematic-money-video";
+import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
+import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { otherVideoScenes, paintThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { startAmbientMusic } from "@/lib/mandala/local-video-music";
@@ -218,37 +219,34 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
 function CinematicSceneThumbnail({ scene, photo, title, playing }: {
   scene: MoneySceneId; photo: HTMLImageElement | null; title: string; playing: boolean;
 }) {
-  const ref=useRef<HTMLCanvasElement>(null);
+  const ref=useRef<HTMLVideoElement>(null);
   const [visible,setVisible]=useState(false);
+  const film=getRealMoneyFilm(scene);
   useEffect(()=>{
-    const canvas=ref.current;
-    if(!canvas)return;
+    const el=ref.current;
+    if(!el)return;
     if(typeof IntersectionObserver==="undefined"){setVisible(true);return;}
     const observer=new IntersectionObserver(([entry])=>setVisible(Boolean(entry?.isIntersecting)),
       {threshold:.05,rootMargin:"100px"});
-    observer.observe(canvas);
+    observer.observe(el);
     return ()=>observer.disconnect();
   },[]);
   useEffect(()=>{
-    const ctx=ref.current?.getContext("2d",{alpha:false});
-    if(!ctx)return;
-    paintCinematicMoneyFrame(ctx,photo,scene,3.2,"portrait",title);
-    if(!visible||!playing)return;
-    let stopped=false,raf=0,started=0,last=0;
-    const draw=(now:number)=>{
-      if(stopped)return;
-      if(!started)started=now;
-      if(!document.hidden&&now-last>=140){
-        paintCinematicMoneyFrame(ctx,photo,scene,3.2+((now-started)/1000)%6,"portrait",title);
-        last=now;
-      }
-      raf=window.requestAnimationFrame(draw);
-    };
-    raf=window.requestAnimationFrame(draw);
-    return ()=>{stopped=true;window.cancelAnimationFrame(raf);};
-  },[scene,photo,title,playing,visible]);
-  return <canvas className={styles.moneyFlowThumb} ref={ref} width={176} height={228}
-    data-mandala-scene-preview={scene} data-scene-playing={playing&&visible?"true":"false"} aria-hidden="true"/>;
+    const video=ref.current;
+    if(!video)return;
+    if(!playing||!visible){video.pause();return;}
+    // Genuine H.264 frames from first-party MP4: never start playback on
+    // page load, never render a fake canvas loop as a video thumbnail.
+    video.muted=true;
+    void video.play().catch(()=>{/* iPhone may need another direct tap. */});
+    return ()=>video.pause();
+  },[playing,visible,scene]);
+  return <video ref={ref} muted playsInline loop preload="none"
+    src={film.src} poster={film.poster}
+    aria-label={title} data-mandala-scene-preview={scene}
+    data-real-mp4={film.src} data-photo-overlay-available={photo?"true":"false"}
+    data-scene-playing={playing&&visible?"true":"false"}
+    className={styles.moneyFlowThumb}/>;
 }
 
 function ThemedSceneThumbnail({ theme, scene, photo, title }: {
@@ -291,6 +289,7 @@ function paint(
   effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null, title: string,
   theme: VideoTheme = "money", otherScene: LocalSceneId = "sun-flight",
   speed: Speed = "slow", brightness: Brightness = "soft",
+  realVideo: HTMLVideoElement | null = null,
 ) {
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
@@ -303,7 +302,11 @@ function paint(
     return;
   }
   if (moneyScene) {
-    paintCinematicMoneyFrame(ctx, art, moneyScene, adjustedTime, aspect, title);
+    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0) {
+      paintRealMoneyVideoFrame(ctx, art, moneyScene, adjustedTime, aspect, title, realVideo);
+    } else {
+      paintCinematicMoneyFrame(ctx, art, moneyScene, adjustedTime, aspect, title);
+    }
     if(brightness === "bright"){
       ctx.fillStyle="rgba(255,241,197,.06)";ctx.fillRect(0,0,width,height);
     }
