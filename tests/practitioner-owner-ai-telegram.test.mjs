@@ -39,7 +39,7 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_edit','materials','track'])
   assert.deepEqual(ownerScopedTelegramCommands({mode:'shared_practice',ownerVideoEnabled:true})
     .map(x=>x.command),['audio','combine','done','video','materials','track'])
   assert.deepEqual(ownerScopedTelegramCommands({mode:'dedicated',ownerAiEnabled:true,ownerVideoEnabled:true}),[])
