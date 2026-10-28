@@ -459,7 +459,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
   const reikiLearningMatches = (reikiPrice === "all" || reikiPrice === "free") && !reikiCertificate;
-  const reikiAcademyOffers = kind === "healing" && reikiFormat !== "session"
+  // Academy pages do not promise certificates. Only verified structured service
+  // variants qualify when the visitor explicitly requests one.
+  const reikiAcademyOffers = kind === "healing" && reikiFormat !== "session" && !reikiCertificate
     ? filterPublicReikiAcademyOffers(locale, { kind: reikiFormat, price: reikiPrice }) : [];
   const reikiCount = visibleMasters.length + reikiAcademyOffers.length;
   const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
