@@ -66,12 +66,16 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/id="personal-video-result"/);
 });
 
-test("sound preview is user-clicked, volume-controlled, and fades during final export",()=>{
+test("native audio preview is user-clicked, media-controlled, and the selected audio fades during export",()=>{
   const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const audio=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(ui,/data-video-music-preview/);
   assert.match(ui,/data-video-music-volume/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume,true\)/);
+  assert.match(ui,/createAmbientPreviewWav\(music\)/);
+  assert.match(ui,/data-video-audio-player/);
+  assert.match(ui,/audioPreviewRef\.current/);
+  assert.match(ui,/data-video-audio-upload/);
+  assert.match(ui,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
   assert.match(ui,/startAmbientMusic\(music,soundVolume\)/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);
