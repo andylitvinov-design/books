@@ -19,7 +19,7 @@ export async function prepareBrowserPhoto(file: File): Promise<Blob> {
     await image.decode();
     const width = image.naturalWidth;
     const height = image.naturalHeight;
-    if (!width || !height || width * height > 36_000_000) throw new Error("PHOTO_FILE_INVALID");
+    if (!width || !height || width * height > 64_000_000) throw new Error("PHOTO_FILE_INVALID");
     const scale = Math.min(1, 1536 / Math.max(width, height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(width * scale));
