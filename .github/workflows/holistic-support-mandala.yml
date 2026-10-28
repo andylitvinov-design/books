@@ -65,6 +65,14 @@ jobs:
           fi
           command -v ffprobe
           command -v ffmpeg
+      - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffprobe -version | head -n 1
+          ffmpeg -version | head -n 1
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
