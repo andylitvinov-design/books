@@ -1,5 +1,13 @@
 name: Holistic Support original mobile mock — browser parity
 on:
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-mobile.module.css'
+      - 'scripts/verify-holistic-support-mock-fidelity.mjs'
+      - 'tests/holistic-support-mobile-mock-parity.test.mjs'
+      - '.github/workflows/hh-support-mobile-mock-browser.yml'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
