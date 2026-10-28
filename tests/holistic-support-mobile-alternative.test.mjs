@@ -331,7 +331,7 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /kind === "healing" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(gallery, /data-support-reiki-unavailable/);
