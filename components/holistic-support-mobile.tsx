@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
@@ -57,6 +57,21 @@ type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
+type MeditationCategory = "energy" | "money" | "relationships" | "meaning" | "health" | "all";
+
+const meditationCategoryOptions = [
+  { id: "energy", Icon: Zap },
+  { id: "money", Icon: Coins },
+  { id: "relationships", Icon: Heart },
+  { id: "meaning", Icon: Flower2 },
+  { id: "health", Icon: HandHeart },
+  { id: "all", Icon: Compass },
+] as const;
+// Reuse the verified recording facets; Meaning has no dedicated recorded tag,
+// so only the general Sun originals appear, explicitly labelled as related.
+const meditationCategoryTopics: Partial<Record<MeditationCategory, MeditationTopic>> = {
+  energy: "energy", money: "business", relationships: "love", health: "health",
+};
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
 const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"];
@@ -156,6 +171,16 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
+    meditationCategoriesTitle: "Meditations", meditationCategoryLead: "Choose a direction",
+    meditationCategoryAll: "All categories", meditationCategoryMore: "More categories",
+    meditationCategoryNames: { energy: "Energy meditations", money: "Money & business meditations",
+      relationships: "Relationships & love", meaning: "Meaning & purpose", health: "Wellbeing", all: "All recordings" },
+    meditationCategoryShortNames: { energy: "Energy", money: "Money", relationships: "Love",
+      meaning: "Meaning", health: "Wellbeing", all: "All" },
+    meditationCategoryHero: { energy: "Restore your energy", money: "Explore money & work",
+      relationships: "Reconnect with love", meaning: "Explore your meaning",
+      health: "Take care of yourself", all: "Choose a meditation" },
+    meditationCategoryRelated: "Related original Sun practices; no recording is specifically tagged with Meaning.",
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
@@ -255,6 +280,16 @@ const copy = {
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
+    meditationCategoriesTitle: "Медитации", meditationCategoryLead: "Выбери направление",
+    meditationCategoryAll: "Все категории", meditationCategoryMore: "Другие категории",
+    meditationCategoryNames: { energy: "Медитации для энергии", money: "Деньги и дело",
+      relationships: "Отношения и любовь", meaning: "Смыслы и предназначение", health: "Самочувствие", all: "Все записи" },
+    meditationCategoryShortNames: { energy: "Энергия", money: "Деньги", relationships: "Любовь",
+      meaning: "Смыслы", health: "Здоровье", all: "Все" },
+    meditationCategoryHero: { energy: "Восстанови свою энергию", money: "Исследуй деньги и дело",
+      relationships: "Верни близость и тепло", meaning: "Исследуй свои смыслы",
+      health: "Позаботься о себе", all: "Выбери медитацию" },
+    meditationCategoryRelated: "Близкие оригинальные практики Солнца: отдельной записи с темой «Смыслы» пока нет.",
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
@@ -354,6 +389,16 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
+    meditationCategoriesTitle: "Meditaciones", meditationCategoryLead: "Elige una dirección",
+    meditationCategoryAll: "Todas las categorías", meditationCategoryMore: "Más categorías",
+    meditationCategoryNames: { energy: "Meditaciones de energía", money: "Dinero y trabajo",
+      relationships: "Amor y relaciones", meaning: "Sentido y propósito", health: "Bienestar", all: "Todas las grabaciones" },
+    meditationCategoryShortNames: { energy: "Energía", money: "Dinero", relationships: "Amor",
+      meaning: "Sentido", health: "Bienestar", all: "Todas" },
+    meditationCategoryHero: { energy: "Recupera tu energía", money: "Explora el trabajo y el dinero",
+      relationships: "Conecta con el amor", meaning: "Explora tu propósito",
+      health: "Cuida de ti", all: "Elige una meditación" },
+    meditationCategoryRelated: "Prácticas originales del Sol relacionadas; aún no hay una grabación etiquetada específicamente como Sentido.",
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
@@ -420,6 +465,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
   const [theme, setTheme] = useState<Theme>("all");
+  const [meditationCategory, setMeditationCategory] = useState<MeditationCategory>("energy");
+  const [allMeditationCategoriesOpen, setAllMeditationCategoriesOpen] = useState(false);
+  const meditationCategoryRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
@@ -474,7 +522,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const relevantVideos = useMemo(() => {
     const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const eligible = theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
+    // This category rail changes the same source-backed hero and four thumbnails.
+    // No YouTube ID is duplicated and historical courses remain separate.
+    const categoryFiltered = choice !== "meditation" || meditationCategory === "all" ? filtered
+      : meditationCategory === "meaning" ? filtered.filter(video => video.program === "sun")
+      : filtered.filter(video => video.topics.includes(meditationCategoryTopics[meditationCategory]!));
+    const eligible = theme !== "all" ? categoryFiltered.filter(video => video.topics.includes(theme)) : categoryFiltered;
     if (goalMatch && choice === "meditation") {
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
@@ -488,7 +541,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
     return eligible.slice(0, 4);
-  }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
+  }, [browseVideos, master, program, theme, meditationCategory, choice, suggested, goalMatch]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
@@ -547,7 +600,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
-    setTheme("all"); setProgram("all"); setMaster("all");
+    setTheme("all"); setProgram("all"); setMaster("all"); setMeditationCategory("all");
     setSelectedId(null); setPlaying(false);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
@@ -572,6 +625,19 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     if (!selected) return;
     setPlaying(true);
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
+  };
+  const chooseMeditationCategory = (value: MeditationCategory) => {
+    setMeditationCategory(value);
+    setTheme("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
+  };
+  const scrollMeditationCategories = () => {
+    const rail = meditationCategoryRef.current;
+    if (!rail) return;
+    const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8;
+    rail.scrollTo({
+      left: atEnd ? 0 : Math.min(rail.scrollWidth, rail.scrollLeft + rail.clientWidth * 0.8),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
   };
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
@@ -921,6 +987,34 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
+              <section className={styles.meditationCategorySection} data-support-meditation-category-switcher aria-label={t.meditationCategoriesTitle}>
+                <div className={styles.meditationCategoryHeader}>
+                  <div><h2>{t.meditationCategoriesTitle}</h2><p>{t.meditationCategoryLead}</p></div>
+                  <button type="button" onClick={() => setAllMeditationCategoriesOpen(open => !open)}
+                    aria-expanded={allMeditationCategoriesOpen} aria-controls="meditation-category-options">
+                    {t.meditationCategoryAll}<ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className={styles.meditationCategoryFrame} data-expanded={allMeditationCategoriesOpen ? "true" : "false"}>
+                  <div ref={meditationCategoryRef} id="meditation-category-options"
+                    className={styles.meditationCategoryRail} role="group" aria-label={t.meditationCategoriesTitle}
+                    data-support-meditation-categories>
+                    {meditationCategoryOptions.map(({ id, Icon }) => (
+                      <button type="button" key={id} className={styles.meditationCategoryCard}
+                        data-support-meditation-category={id} data-category={id}
+                        aria-pressed={meditationCategory === id} aria-label={t.meditationCategoryNames[id]}
+                        title={t.meditationCategoryNames[id]} onClick={() => chooseMeditationCategory(id)}>
+                        <Icon size={27} aria-hidden="true" />
+                        <span aria-hidden="true">{t.meditationCategoryShortNames[id]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" className={styles.meditationCategoryNext} aria-label={t.meditationCategoryMore}
+                    data-support-meditation-categories-next onClick={scrollMeditationCategories}>
+                    <ChevronRight size={22} aria-hidden="true" />
+                  </button>
+                </div>
+              </section>
               <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -970,7 +1064,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
+                    <h2>{goalSelection ? t.goalHero[goalSelection.sector] : meditationCategory === "all" ? t.heroTitle[focus] : t.meditationCategoryHero[meditationCategory]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
                       data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
@@ -990,6 +1084,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <p className={styles.gallerySelection} data-support-goal-basis role="status">
                     {t.goalSector[goalSelection.sector]}. {goalMatch.matchedVideo ? t.goalMatch : t.goalRelated}
                   </p> : null}
+                {meditationCategory === "meaning" && !goalSelection ? <p className={styles.gallerySelection}
+                  data-support-meditation-category-related role="status">{t.meditationCategoryRelated}</p> : null}
                 {!goalSelection && suggested && choice === "meditation" ? <p className={styles.gallerySelection}
                   data-support-meditation-basis role="status">
                   {t.lowestHint} {suggested.priorities.map(domain => t.foci[domain] + " " + suggested.scores[domain] + "/10").join(" · ")}. {t.lowestNote}
