@@ -73,11 +73,34 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);
-  assert.match(css, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(css, /font-size: 17px/);
   assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
+});
+
+test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES", () => {
+  const page = read("app/[locale]/app/messages/page.tsx");
+  const orders = read("components/app/messages-orders-clients.jsx");
+  const inbox = read("components/app/messages-hub.jsx");
+  assert.match(client, /data-support-mobile-bottom-nav/);
+  assert.match(client, /data-support-mobile-messages/);
+  assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
+  for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
+    assert.ok(client.includes(pair), pair);
+  // The tab query is critical: without it the existing route initially shows
+  // Orders, not the already-approved person-by-person conversations.
+  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(inbox, /<MessagesSimpleInbox/);
+  assert.match(inbox, /<DirectMessageInbox/);
+  assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
+  const dock = css.slice(css.indexOf(".bottomNav {"), css.indexOf(".bottomNav >"));
+  assert.match(dock, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.bottomNav > :is\(a,button\)/);
+  assert.match(css, /safe-area-inset-bottom/);
 });
 
 test("new TSX and route transpile without TypeScript parser diagnostics", () => {

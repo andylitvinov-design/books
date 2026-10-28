@@ -158,7 +158,7 @@
 .disclaimer { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin: 17px 7px; color: #67685f; font-size: 13px; line-height: 1.4; }
 .disclaimer p { margin: 0; }
 .disclaimer a { display: inline-flex; align-items: center; gap: 5px; flex: none; min-height: 44px; color: #087e5a; font-size: 14px; font-weight: 800; }
-.bottomNav { position: fixed; z-index: 58; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 70px; padding: 8px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-top: 1px solid #dfe4dc; border-radius: 23px 23px 0 0; background: #fffdf8f7; box-shadow: 0 -7px 24px #27433720; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.bottomNav { position: fixed; z-index: 58; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 70px; padding: 8px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-top: 1px solid #dfe4dc; border-radius: 23px 23px 0 0; background: #fffdf8f7; box-shadow: 0 -7px 24px #27433720; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .bottomNav > :is(a,button) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 50px; min-width: 0; padding: 3px 2px; border: 0; background: transparent; color: #69716e; font-size: 13px; line-height: 1.15; text-align: center; text-decoration: none; }
 .bottomNav > :is(a,button):hover { color: #078362; }
 .bottomNav > :is(a,button):first-child { color: #078362; font-weight: 800; }
@@ -828,4 +828,13 @@
   .page:has([data-support-goal-filter]) .experience {
     scroll-margin-top: max(72px, calc(env(safe-area-inset-top) + 14px));
   }
+}
+
+/* The approved one-screen mobile support dock has five destinations, including
+   the EXISTING authenticated Messages page. Keep every target usable at 320px. */
+.bottomNav > :is(a,button) span { display: block; max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 350px) {
+  .bottomNav { grid-template-columns: repeat(5, minmax(0, 1fr)); padding-right: max(4px, env(safe-area-inset-right)); padding-left: max(4px, env(safe-area-inset-left)); }
+  .bottomNav > :is(a,button) { font-size: 10px; line-height: 1.12; min-height: 50px; padding-inline: 1px; }
+  .bottomNav > :is(a,button) svg { width: 21px; height: 21px; }
 }
