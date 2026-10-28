@@ -36,9 +36,10 @@ export type MeditationMatch = {
   video: MeditationCatalogRecord;
   playback: "embedded" | "youtube_only" | "preview";
   score: number;
-  matchType: "exact" | "related" | "unspecified";
+  matchType: "exact" | "partial" | "topic" | "related" | "unspecified";
   reasons: Array<{facet: "goal" | "situation" | "outcome" | "technique"; value: string}>;
   durationVerified: boolean;
+  durationEstimated: boolean;
 };
 export type MeditationRequest = {
   language: "en" | "ru" | "es";
@@ -46,6 +47,11 @@ export type MeditationRequest = {
   situations?: string[];
   desiredStates?: string[];
   techniques?: string[];
+  exactOnly?: boolean;
+  experienceLevel?: "any" | "unspecified" | "beginner" | "intermediate" | "advanced";
+  intensity?: "any" | "unknown" | "gentle" | "moderate" | "intense";
+  musicStyle?: "any" | "unknown" | "voice_only" | "music_under_voice" | "ambient_only";
+  avoidBinaural?: boolean;
   sourceKind?: "all" | "original" | "external";
   maxDurationMinutes?: number;
   allowUnverifiedDuration?: boolean;

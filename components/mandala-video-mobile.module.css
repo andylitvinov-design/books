@@ -119,3 +119,21 @@
 .backgroundChoices button{display:flex;flex:1 1 150px;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:9px;border:1px solid #cde1d1;border-radius:11px;background:#f3f8f1;color:#275745;font-weight:750;font-size:12px}
 .backgroundChoices button[aria-pressed="true"]{border-color:#139c74;background:#0a9e77;color:white}
 .backgroundMode small{display:block;margin-top:6px;color:#67796e;font-size:11px}
+
+/* Local wishes: existing editor, no client upload. */
+.wishPanel{display:grid;gap:8px;margin:0 0 12px;padding:13px;border:1px solid #cce8d9;border-radius:16px;background:#f2faf4;color:#194b3d}
+.wishPanel>label{font-size:14px;font-weight:800}
+.wishPanel textarea{display:block;min-width:0;width:100%;min-height:70px;padding:11px;border:1px solid #c9dacc;border-radius:11px;background:white;color:#1b493b;font:500 14px/1.45 Arial,sans-serif}
+.wishPanel>p{font-size:11.5px;line-height:1.4;color:#5b7767}
+.wishActions{display:flex;flex-wrap:wrap;gap:7px}
+.wishActions button{display:flex;flex:1 1 180px;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px;border:1px solid #bbd8c7;border-radius:11px;background:#fffefa;color:#0b7656;font-size:12px;font-weight:800}
+.wishActions button:first-child{background:#078d69;color:white}
+.wishActions button:disabled{opacity:.55;cursor:not-allowed}
+.wishPanel p.wishResult{color:#12664d;font-weight:800}
+
+.musicTools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 7px}
+.musicTools button{min-height:44px;padding:7px 11px;border:1px solid #c9d8c9;border-radius:10px;background:#f4faf3;color:#176548;font-size:12px;font-weight:800}
+.musicTools button[aria-pressed="true"]{background:#0d946e;color:white}
+.musicTools button:disabled{opacity:.5;cursor:not-allowed}
+.musicTools label{display:flex;flex:1 1 150px;flex-direction:column;gap:3px;color:#456c5b;font-size:12px;font-weight:700}
+.musicTools input{accent-color:#07976e;width:100%;min-height:24px}
