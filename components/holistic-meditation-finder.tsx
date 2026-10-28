@@ -125,7 +125,7 @@ type Props = {
   publishedSourceIds: string[];
   onBack: () => void;
 };
-const facet = (type: string) => facetsData.facets.filter(item => item.facet_type === type && item.active !== false);
+const facet = (type: string) => facetsData.facets.filter(item => item.facet_type === type);
 const titleOf = (item: { label_en: string; label_ru: string; label_es: string }, locale: PublicLocale) =>
   locale === "ru" ? item.label_ru : locale === "es" ? item.label_es : item.label_en;
 
