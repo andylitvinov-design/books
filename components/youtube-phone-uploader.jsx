@@ -442,24 +442,26 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         cache:'no-store',signal:AbortSignal.timeout(15000)})
       if(!metadataResponse.ok)throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
       const meta=await metadataResponse.json()
-      if(meta.id!==approvedMeditation.id||meta.language!==target||meta.mime!=='video/mp4'||
+      if(meta.id!==approvedMeditation.id||meta.language!==target||!['video/mp4','video/webm'].includes(meta.mime)||
         !Number.isSafeInteger(meta.bytes)||meta.bytes<128||meta.bytes>45000000)
         throw Error('MEDITATION_HANDOFF_MISMATCH')
       const response=await fetch(base+'?download=1',{credentials:'same-origin',redirect:'error',
         cache:'no-store',signal:AbortSignal.timeout(120000)})
-      if(!response.ok||(response.headers.get('content-type')||'').split(';')[0]!=='video/mp4')
+      if(!response.ok||(response.headers.get('content-type')||'').split(';')[0]!==meta.mime)
         throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
       const size=Number(response.headers.get('content-length'))
       if(size!==meta.bytes)throw Error('MEDITATION_HANDOFF_MISMATCH')
       const bytes=new Uint8Array(await response.arrayBuffer())
       if(bytes.byteLength!==meta.bytes||
-        String.fromCharCode(...bytes.subarray(4,8))!=='ftyp')throw Error('MEDITATION_HANDOFF_MISMATCH')
+        (meta.mime==='video/mp4'?String.fromCharCode(...bytes.subarray(4,8))!=='ftyp':
+          !(bytes[0]===0x1a&&bytes[1]===0x45&&bytes[2]===0xdf&&bytes[3]===0xa3)))
+        throw Error('MEDITATION_HANDOFF_MISMATCH')
       if(targetRef.current!==meta.language||connected?.id!==channelsRef.current[meta.language]?.id||
         entriesRef.current.some(item=>item.state!=='done'))
         throw Error('MEDITATION_HANDOFF_CHANGED')
       const filename=String(meta.title||'Meditation')
         .replace(/[^\p{L}\p{N}\s_-]/gu,'').trim().slice(0,75)||'Meditation'
-      queueFiles([new File([bytes],filename+'.mp4',{type:'video/mp4'})],false,null,meta.id)
+      queueFiles([new File([bytes],filename+(meta.mime==='video/webm'?'.webm':'.mp4'),{type:meta.mime})],false,null,meta.id)
       setMessage(locale==='ru'
         ?'Одобренная медитация импортирована. Проверьте язык, канал, видео и нажмите «Загрузить на YouTube».'
         :'Approved meditation imported. Check channel and playback, then press Upload to YouTube.')
