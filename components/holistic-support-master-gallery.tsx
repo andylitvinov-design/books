@@ -9,6 +9,16 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-master-gallery.module.css";
 
 type Kind = "masters" | "healing" | "consultation";
+type ReikiFocus = "strength" | "love" | "purpose" | "balance";
+const REIKI_FOCI: ReikiFocus[] = ["strength", "love", "purpose", "balance"];
+// Only public methods returned by the existing practitioner directory are bookable.
+// Unpublished practice tabs show an honest empty state, never a synthetic offer.
+const REIKI_METHODS: Record<ReikiFocus, readonly string[]> = {
+  strength: ["Kundalini Reiki"],
+  love: ["Tantra Reiki"],
+  purpose: ["Runic Reiki", "Rune Reiki", "Reiki Runes", "Tarot"],
+  balance: ["Reiki Yggdrasil"],
+};
 type PublishedConsultation = {
   serviceId: string;
   title: string;
@@ -23,11 +33,20 @@ type PublishedConsultation = {
 type DirectoryResponse = { masters?: EnergySupportMaster[]; consultations?: PublishedConsultation[] };
 const words = {
   en: {
-    masters: "Masters", healing: "Energy support", consultation: "Test / session",
+    masters: "Masters", healing: "Reiki support", consultation: "Test / session",
     verified: "Published practitioner", publicOffer: "Published service", online: "Online",
     method: "Method", allMethods: "All practices", price: "Price", allPrices: "All offers",
     freeOnly: "Free", paidOnly: "With a published price",
     galleryMasters: "Choose a master", galleryOffers: "Other consultations",
+    reikiFocus: "Reiki support intention",
+    reikiOptions: {
+      strength: { label: "Strength support", method: "Kundalini Reiki" },
+      love: { label: "Love support", method: "Tantra Reiki" },
+      purpose: { label: "Purpose support", method: "Runic Reiki / Tarot" },
+      balance: { label: "Balance support", method: "Reiki Yggdrasil" },
+    },
+    reikiUnavailable: "No published practitioner offer for this Reiki method yet. No session can be booked for it here.",
+    reikiSeeAvailable: "See available Reiki methods",
     request: "Request this master", openOffer: "View service & request", details: "Profile",
     from: "Published options", quote: "Details confirmed before booking",
     exploreMasters: "All masters", exploreServices: "All services", tests: "Free self-tests",
@@ -38,11 +57,20 @@ const words = {
     prev: "Previous", next: "Next", close: "Close request", requestTitle: "Request support",
   },
   ru: {
-    masters: "Мастера", healing: "Энергоподдержка", consultation: "Тест / сессия",
+    masters: "Мастера", healing: "Рейки поддержка", consultation: "Тест / сессия",
     verified: "Опубликованный мастер", publicOffer: "Опубликованная услуга", online: "Онлайн",
     method: "Метод", allMethods: "Все практики", price: "Цена", allPrices: "Все предложения",
     freeOnly: "Бесплатно", paidOnly: "С опубликованной ценой",
     galleryMasters: "Выбери мастера", galleryOffers: "Другие консультации",
+    reikiFocus: "Цель Рейки поддержки",
+    reikiOptions: {
+      strength: { label: "Поддержка силы", method: "Кундалини Рейки" },
+      love: { label: "Поддержка любви", method: "Тантра Рейки" },
+      purpose: { label: "Поддержка цели", method: "Рейки рун / Таро" },
+      balance: { label: "Поддержка баланса", method: "Рейки Иггдрасиль" },
+    },
+    reikiUnavailable: "Для выбранной практики пока нет опубликованного предложения. Запись и цена не подтверждены.",
+    reikiSeeAvailable: "Доступные практики Рейки",
     request: "Запросить сессию", openOffer: "Подробнее и запросить", details: "Профиль",
     from: "Опубликованные варианты", quote: "Запись подтверждается отдельно",
     exploreMasters: "Все мастера", exploreServices: "Все услуги", tests: "Бесплатные тесты",
@@ -53,11 +81,20 @@ const words = {
     prev: "Назад", next: "Вперёд", close: "Закрыть заявку", requestTitle: "Запросить поддержку",
   },
   es: {
-    masters: "Maestros", healing: "Apoyo energético", consultation: "Test / sesión",
+    masters: "Maestros", healing: "Apoyo Reiki", consultation: "Test / sesión",
     verified: "Profesional publicado", publicOffer: "Servicio publicado", online: "En línea",
     method: "Método", allMethods: "Todas las prácticas", price: "Precio", allPrices: "Todas",
     freeOnly: "Gratis", paidOnly: "Con precio publicado",
     galleryMasters: "Elige un profesional", galleryOffers: "Otras consultas",
+    reikiFocus: "Objetivo del apoyo Reiki",
+    reikiOptions: {
+      strength: { label: "Apoyo a la fuerza", method: "Kundalini Reiki" },
+      love: { label: "Apoyo al amor", method: "Tantra Reiki" },
+      purpose: { label: "Apoyo a las metas", method: "Reiki rúnico / Tarot" },
+      balance: { label: "Apoyo al equilibrio", method: "Reiki Yggdrasil" },
+    },
+    reikiUnavailable: "Todavía no hay una oferta publicada para esta práctica. No se puede reservar aquí.",
+    reikiSeeAvailable: "Ver prácticas Reiki disponibles",
     request: "Solicitar una sesión", openOffer: "Ver servicio y solicitar", details: "Perfil",
     from: "Ofertas publicadas", quote: "La reserva se confirma aparte",
     exploreMasters: "Todos los profesionales", exploreServices: "Todos los servicios", tests: "Tests gratuitos",
@@ -102,6 +139,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const [attempt, setAttempt] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [method, setMethod] = useState("");
+  const [reikiFocus, setReikiFocus] = useState<ReikiFocus>("love");
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "published">("all");
   const [orderOpen, setOrderOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -135,8 +173,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     if (!orderOpen && dialog.open) dialog.close();
   }, [orderOpen]);
 
-  const methods = [...new Set((masters || []).flatMap(master => master.methods || []).filter(Boolean))];
-  const visibleMasters = (masters || []).filter(master => !method || master.methods.includes(method));
+  const supportedMethods = kind === "healing" ? REIKI_METHODS[reikiFocus] : null;
+  const offersMethod = (value: string) => !supportedMethods ||
+    supportedMethods.some(name => name.toLowerCase() === value.toLowerCase());
+  const methods = [...new Set((masters || []).flatMap(master => master.methods || [])
+    .filter((value): value is string => Boolean(value) && offersMethod(value)))];
+  const visibleMasters = (masters || []).filter(master =>
+    (!method || master.methods.includes(method)) && master.methods.some(offersMethod));
   const visibleOffers = (offers || []).filter(offer => {
     if (priceFilter === "free") return offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact");
     if (priceFilter === "published") return offer.pricingMode !== "contact" && offer.price !== null && Number.isFinite(offer.price);
@@ -177,13 +220,31 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   return (
     <div className={styles.viewer} data-support-master-viewer data-support-directory-kind={kind}>
+      {kind === "healing" && <div className={styles.reikiFocusBar} role="group"
+        aria-label={t.reikiFocus} data-support-reiki-filters>
+        {REIKI_FOCI.map(value => {
+          const option = t.reikiOptions[value];
+          return <button type="button" key={value} className={styles.reikiFocusButton}
+            data-support-reiki-focus={value} aria-pressed={reikiFocus === value}
+            aria-label={option.label + " · " + option.method}
+            onClick={() => { setReikiFocus(value); setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
+            <strong>{option.label}</strong><small>{option.method}</small>
+          </button>;
+        })}
+      </div>}
       {!ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
         <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div> : !selected ? <div className={styles.status} role="status">
-        <p>{t.empty}</p>
-        <button type="button" onClick={() => { setMethod(""); setPriceFilter("all"); }}>{t.reset}</button>
+        <p>{kind === "healing" ? t.reikiUnavailable : t.empty}</p>
+        {kind === "healing" && <p className={styles.unavailableMethod} data-support-reiki-unavailable>
+          {t.reikiOptions[reikiFocus].label} · {t.reikiOptions[reikiFocus].method}
+        </p>}
+        <button type="button" onClick={() => {
+          setMethod(""); setPriceFilter("all"); setSelectedId(null);
+          if (kind === "healing") setReikiFocus("love");
+        }}>{kind === "healing" ? t.reikiSeeAvailable : t.reset}</button>
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
         <section className={styles.hero} data-support-master-hero={id(selected)}
