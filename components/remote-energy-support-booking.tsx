@@ -5,7 +5,7 @@ import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft, remoteSupportPublicServiceTitle, remoteSupportPublicRequestSummary, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
+import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, readRemoteSupportPublicDraft, remoteSupportPublicServiceTitle, remoteSupportPublicRequestSummary, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import { matchesHolisticEuroBudget } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./remote-energy-support-booking.module.css";
 import { talismanFromCatalog } from "@/lib/practitioners/taoist-talismans";
@@ -313,7 +313,7 @@ export function RemoteEnergySupportBooking({
   const [minimumDay, setMinimumDay] = useState("");
   const [timezone, setTimezone] = useState("America/Toronto");
   const [error, setError] = useState("");
-  const [contactDraft, setContactDraft] = useState<ReturnType<typeof readRemoteSupportDraft>>(null);
+  const [contactDraft, setContactDraft] = useState<ReturnType<typeof readRemoteSupportPublicDraft>>(null);
 
   const selected = useMemo(
     () => masters.find((master) => master.serviceId === selectedServiceId) || null,
@@ -352,7 +352,7 @@ export function RemoteEnergySupportBooking({
     if (mode !== "inline" || !selected?.serviceId) return;
     try {
       const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
-      const draft = readRemoteSupportDraft(window.sessionStorage, selected.serviceId);
+      const draft = readRemoteSupportPublicDraft(window.sessionStorage, selected.serviceId);
       if (!draft) return;
       if (pending?.path !== window.location.pathname ||
           pending?.service !== remoteSupportPublicServiceTitle(draft)) return;
@@ -426,9 +426,14 @@ export function RemoteEnergySupportBooking({
       document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
       return;
     }
-    if (!selected || (requestKind === "energy" && (!currentPrice || !method || !day || !time ||
-      (minimumDay && day < minimumDay)))) {
+    if (!selected || (requestKind === "energy" && (!currentPrice || !method ||
+      (mode !== "inline" && (!day || !time)) ||
+      (minimumDay && day && day < minimumDay)))) {
       setError("missing");
+      return;
+    }
+    if (requestKind === "energy" && mode === "inline" && Boolean(day) !== Boolean(time)) {
+      setError("partial");
       return;
     }
     try {
@@ -447,6 +452,26 @@ export function RemoteEnergySupportBooking({
           encodeURIComponent(selected.serviceId) + "&source=talisman-enquiry");
         return;
       }
+      // A distance-support enquiry may be requested before agreeing a slot.
+      // Never assign a fabricated appointment to an unscheduled enquiry.
+      if (mode === "inline") {
+        if (day && time) {
+          const preferred = new Date(day + "T" + time + ":00");
+          if (!Number.isFinite(preferred.getTime()) || preferred.getTime() <= Date.now() + 5 * 60 * 1000) {
+            setError("past");
+            return;
+          }
+        }
+        const publicDraft = {
+          version: 1, serviceId: selected.serviceId, practitioner: selected.name,
+          goal: topic, method, format, duration, date: day, time, timezone,
+          expectedPrice: currentPrice!.price, expectedCurrency: selected.currency,
+          savedAt: Date.now(),
+        };
+        window.sessionStorage.setItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY, JSON.stringify(publicDraft));
+        setContactDraft(publicDraft);
+        return;
+      }
       const startsAt = new Date(day + "T" + time + ":00");
       if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() <= Date.now() + 5 * 60 * 1000) {
         setError("past");
@@ -460,13 +485,6 @@ export function RemoteEnergySupportBooking({
         expectedCurrency: selected.currency, savedAt: Date.now(),
       };
       window.sessionStorage.setItem(REMOTE_SUPPORT_DRAFT_KEY, JSON.stringify(draft));
-      if (mode === "inline") {
-        // The gallery's large "Continue to request" must not navigate into a
-        // full private Cabinet bundle and crash Safari. Instead open the existing
-        // consented phone / Google lead form here, then record a real CRM request.
-        setContactDraft(draft);
-        return;
-      }
       stageRemoteSupportPrivateIntention(selected.serviceId, intention);
       // Use same-tab Next navigation to keep the intention in ephemeral memory.
       // If a login redirect reloads the page, the secure form remains editable.
@@ -675,16 +693,20 @@ export function RemoteEnergySupportBooking({
                       <div className={styles.timeGroup}>
                         <p className={styles.timeTitle}>
                           {t.schedule} <small>· {t.timeZone}: {timezone}</small>
+                          {mode === "inline" && <small className={styles.optionalTime}>· {locale === "ru"
+                            ? "Можно без даты — время согласуем"
+                            : locale === "es" ? "Opcional: acuerda el horario después"
+                            : "Optional · agree a time later"}</small>}
                         </p>
                         <div className={styles.timeFields}>
                           <div className={styles.field}>
                             <label htmlFor="remote-date">{t.date}</label>
-                            <input id="remote-date" type="date" required min={minimumDay || undefined}
+                            <input id="remote-date" type="date" required={mode !== "inline"} min={minimumDay || undefined}
                               value={day} onChange={(event) => setDay(event.target.value)}/>
                           </div>
                           <div className={styles.field}>
                             <label htmlFor="remote-time">{t.time}</label>
-                            <input id="remote-time" type="time" required value={time}
+                            <input id="remote-time" type="time" required={mode !== "inline"} value={time}
                               onChange={(event) => setTime(event.target.value)}/>
                           </div>
                         </div>
@@ -706,11 +728,16 @@ export function RemoteEnergySupportBooking({
                          <p>{t.noSlots} {t.price}</p>
                        </details>
                       <button className={styles.submit} type="submit" disabled={!currentPrice}>
-                        {t.send} <span aria-hidden="true">→</span>
+                        {mode === "inline"
+                          ? locale === "ru" ? "Заказать" : locale === "es" ? "Solicitar" : "Place request"
+                          : t.send} <span aria-hidden="true">→</span>
                       </button>
                       {error && error !== "focus" && (
                         <p className={styles.error} role="alert">
                           {error === "past" ? t.pastTime
+                            : error === "partial" ? (locale === "ru" ? "Выберите и дату, и время или оставьте оба поля пустыми." :
+                              locale === "es" ? "Elige fecha y hora, o deja ambos campos vacíos." :
+                              "Select both date and time, or leave both empty.")
                             : error === "missing" ? t.missingChoice : t.needsStorage}
                         </p>
                       )}
@@ -732,11 +759,11 @@ export function RemoteEnergySupportBooking({
                           })}
                           publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
                           publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}
-                          resetKey={contactDraft.serviceId + ":" + contactDraft.startsAt + ":" + contactDraft.method}
+                          resetKey={contactDraft.serviceId + ":" + contactDraft.date + ":" + contactDraft.time + ":" + contactDraft.method}
                           onSaved={() => {
                             try {
-                              if (readRemoteSupportDraft(window.sessionStorage, contactDraft.serviceId))
-                                window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY);
+                              if (readRemoteSupportPublicDraft(window.sessionStorage, contactDraft.serviceId))
+                                window.sessionStorage.removeItem(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY);
                             } catch { /* The CRM write, not browser storage, confirms receipt. */ }
                           }}
                         />
