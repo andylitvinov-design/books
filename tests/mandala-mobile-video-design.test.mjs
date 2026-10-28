@@ -23,6 +23,8 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(ui,/\.firstSteps\{display:grid/);
   assert.match(ui,/\.themeGrid\{display:grid/);
   assert.match(ui,/\.templateRail\{display:grid/);
+  assert.match(ui,/\.templateArt\{/);
+  assert.match(ui,/\.download\{/);
   assert.match(ui,/\.bottomNav\{position:sticky/);
   assert.match(ui,/@media\(max-width:380px\)/);
 });

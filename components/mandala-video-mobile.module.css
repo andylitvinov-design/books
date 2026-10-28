@@ -107,3 +107,7 @@
 @media(min-width:760px){.studio{padding:5px 0 15px}.bottomNav{display:none}.firstSteps{gap:16px}.photoCard,.themeCard{padding:20px;min-height:250px}.themeButton{min-height:98px;font-size:15px}.photoPortrait{width:155px}.templateRail{grid-auto-columns:clamp(160px,23%,210px)}.templateTile{aspect-ratio:.82}.settingsGrid{gap:12px}.settingCard{padding:16px}.pills button{min-height:45px;font-size:13px}.generate{font-size:19px}}
 @media(max-width:380px){.studio{padding:1px 0 66px}.studioTop{gap:6px}.brandTitle h2{font-size:19px}.brandTitle p{font-size:11px}.myVideos{padding:0 7px;font-size:10px}.photoCard,.themeCard{padding:9px 8px;min-height:211px}.photoPortrait{width:102px;margin:12px auto 8px}.themeGrid{gap:5px;margin-top:10px}.themeButton{min-height:78px;font-size:10px;gap:5px}.themeButton svg{width:23px;height:23px}.templateRail{grid-auto-columns:128px;gap:7px}.settingsGrid{gap:7px}.settingCard{padding:9px 7px}.pills{gap:3px}.pills button{font-size:9.7px;min-height:39px}.captionLayout{grid-template-columns:1fr}.musicRail button{flex-basis:82px}.generate{font-size:16px;min-height:58px}}
 @media(prefers-reduced-motion:reduce){.studio *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Explicit CSS module exports used by template canvases and save link. */
+.templateArt{display:block;width:100%;height:100%;object-fit:cover}
+.download{display:inline-flex;align-items:center;justify-content:center}
