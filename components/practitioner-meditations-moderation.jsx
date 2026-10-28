@@ -91,7 +91,7 @@ export default function PractitionerMeditationsModeration(){
                <><p style={{margin:0}}>Owner-verified OAuth delivery is pending. Download the approved MP4 and use the existing uploader only if you accept a manual handoff; do not re-upload if provider status is uncertain.</p>
                  <div className="practitioner-cabinet-actions">
                    <a href={videoUrl} target="_blank" rel="noreferrer noopener">Open approved video</a>
-                   <a href="/admin/youtube-upload">Verify {item.language.toUpperCase()} YouTube channel</a>
+                   <a href={'/admin/youtube-upload?meditation='+encodeURIComponent(item.id)}>Import into verified {item.language.toUpperCase()} YouTube uploader</a>
                  </div></>:
                <p style={{margin:0}}>YouTube upload blocked: first produce a final MP4 from the approved voice/video and verify the target channel. No duplicate upload.</p>}
            </div>}
