@@ -123,11 +123,15 @@ jobs:
             -alias "$HH_ANDROID_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
             -dname "CN=CI Only, O=Holistic House Test, C=CA"
           node scripts/prepare-holistic-house-play-release.mjs
-          (cd android && ./gradlew --no-daemon bundleRelease)
+          (cd android && ./gradlew --no-daemon bundleRelease assembleRelease)
           bundle=android/app/build/outputs/bundle/release/app-release.aab
+          apk=android/app/build/outputs/apk/release/app-release.apk
           test -s "$bundle"
+          test -s "$apk"
           jarsigner -verify "$bundle"
-          echo "API36 Play-format CI dry run PASSED; disposable signature, NO store upload or artifact"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='com.holistichouse.app'"
+          echo "API36 Play AAB + website APK CI dry run PASSED; disposable signature, NO store upload or artifact"
 
   ios-simulator:
     name: Holistic House iOS unsigned simulator app
