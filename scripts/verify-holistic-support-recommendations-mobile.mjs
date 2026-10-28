@@ -98,8 +98,8 @@ for (const engine of [chromium, webkit]) {
           assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
-          assert.ok((await root.locator(".videoSourceRow").count()) <= 1,
-            label + " one source URL location");
+          assert.equal(await root.locator("[data-support-video-source] a[href^='https://www.youtube.com/watch']").count(),
+            1, label + " one verified source URL below the hero");
 
           // Editing scores invalidates the previous snapshot. A second explicit
           // click takes a new minimum and refreshes the same four thumbnails.
@@ -145,7 +145,7 @@ for (const engine of [chromium, webkit]) {
               name:"synthetic.png", mimeType:"image/png",
               buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==","base64"),
             });
-            await photo.locator("img").first().waitFor({ state:"visible" });
+            await photo.locator('img[class*="photoPreview"]').waitFor({ state:"visible" });
             await page.screenshot({ path: output + "/" + engine.name() + "-" + locale + "-390.png" });
           }
           assert.deepEqual(errors, [], label + " no JS exceptions");
