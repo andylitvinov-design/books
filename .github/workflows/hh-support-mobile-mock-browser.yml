@@ -1,0 +1,62 @@
+name: Holistic Support original mobile mock — browser parity
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-mobile.module.css'
+      - 'scripts/verify-holistic-support-mock-fidelity.mjs'
+      - 'tests/holistic-support-mobile-mock-parity.test.mjs'
+      - '.github/workflows/hh-support-mobile-mock-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-support-mobile-mock
+  cancel-in-progress: true
+jobs:
+  mobile-visual-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3118
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-support-mock-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install audited project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test source contracts and TSX
+        run: |
+          node --test tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs
+          npx eslint components/holistic-support-mobile.tsx scripts/verify-holistic-support-mock-fidelity.mjs
+          npx tsc --noEmit --pretty false
+      - name: Install Chromium and WebKit
+        run: |
+          mkdir -p /tmp/hh-support-mock-tools
+          npm install --prefix /tmp/hh-support-mock-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-support-mock-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Check 320 / 390 / 430 in Chromium and WebKit
+        run: |
+          mkdir -p artifacts/holistic-support-mock-fidelity
+          npx next dev --hostname 127.0.0.1 --port 3118 > /tmp/hh-support-mock-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            sleep 2
+          done
+          node scripts/verify-holistic-support-mock-fidelity.mjs
+      - name: Keep only public synthetic geometry and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-support-mock-browser
+          path: artifacts/holistic-support-mock-fidelity/
+          retention-days: 3
+          if-no-files-found: warn
