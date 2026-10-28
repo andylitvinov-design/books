@@ -687,8 +687,14 @@ export function HolisticSupportInlineGuide({
         )}
         {phase !== "safety" && phase !== "recommendations" ? (
           <form className={styles.customForm} data-support-guide-compose
-            onSubmit={event => { event.preventDefault(); submitText(draft); }}>
-            <input aria-label={talk.inputLabel} placeholder={talk.askAnything}
+            onSubmit={event => {
+              event.preventDefault();
+              // Safari can dispatch Submit before React's controlled input
+              // state finishes batching. Read the actual submitted field.
+              const field = event.currentTarget.elements.namedItem("guide-message");
+              submitText(field instanceof HTMLInputElement ? field.value : draft);
+            }}>
+            <input name="guide-message" aria-label={talk.inputLabel} placeholder={talk.askAnything}
               maxLength={240} value={draft} onChange={event => setDraft(event.target.value)} />
             <button type="submit" disabled={!draft.trim()}>{talk.textSend}<ArrowRight size={15} aria-hidden="true" /></button>
           </form>
