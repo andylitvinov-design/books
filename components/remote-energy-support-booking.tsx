@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
+import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft, remoteSupportPublicServiceTitle, remoteSupportPublicRequestSummary, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import { matchesHolisticEuroBudget } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./remote-energy-support-booking.module.css";
 import { talismanFromCatalog } from "@/lib/practitioners/taoist-talismans";
@@ -311,6 +313,7 @@ export function RemoteEnergySupportBooking({
   const [minimumDay, setMinimumDay] = useState("");
   const [timezone, setTimezone] = useState("America/Toronto");
   const [error, setError] = useState("");
+  const [contactDraft, setContactDraft] = useState<ReturnType<typeof readRemoteSupportDraft>>(null);
 
   const selected = useMemo(
     () => masters.find((master) => master.serviceId === selectedServiceId) || null,
@@ -342,6 +345,33 @@ export function RemoteEnergySupportBooking({
       return currency + " " + price;
     }
   };
+
+  // After optional Google OAuth, restore only the controlled service/time draft.
+  // The client's free-text intention is never persisted or sent to public CRM.
+  useEffect(() => {
+    if (mode !== "inline" || !selected?.serviceId) return;
+    try {
+      const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+      const draft = readRemoteSupportDraft(window.sessionStorage, selected.serviceId);
+      if (pending?.path !== window.location.pathname ||
+          pending?.service !== remoteSupportPublicServiceTitle(draft)) return;
+      setContactDraft(draft);
+      setGoal(draft.goal);
+      setMethod(draft.method);
+      setFormat(draft.format);
+      setDuration(draft.duration);
+      setDay(draft.date);
+      setTime(draft.time);
+      setTimezone(draft.timezone);
+    } catch { /* An unavailable store never creates an order or payment. */ }
+  }, [mode, selected?.serviceId]);
+  useEffect(() => {
+    if (mode !== "inline" || !contactDraft) return;
+    window.requestAnimationFrame(() =>
+      document.getElementById("remote-public-contact")?.scrollIntoView({
+        block: "nearest", behavior: "auto",
+      }));
+  }, [mode, contactDraft]);
 
   useEffect(() => {
     setMinimumDay(localDateToday());
@@ -429,6 +459,13 @@ export function RemoteEnergySupportBooking({
         expectedCurrency: selected.currency, savedAt: Date.now(),
       };
       window.sessionStorage.setItem(REMOTE_SUPPORT_DRAFT_KEY, JSON.stringify(draft));
+      if (mode === "inline") {
+        // The gallery's large "Continue to request" must not navigate into a
+        // full private Cabinet bundle and crash Safari. Instead open the existing
+        // consented phone / Google lead form here, then record a real CRM request.
+        setContactDraft(draft);
+        return;
+      }
       stageRemoteSupportPrivateIntention(selected.serviceId, intention);
       // Use same-tab Next navigation to keep the intention in ephemeral memory.
       // If a login redirect reloads the page, the secure form remains editable.
@@ -593,6 +630,7 @@ export function RemoteEnergySupportBooking({
                       </p>}
                     </form>
                   ) : (
+                    <>
                     <form id={"remote-request-" + master.serviceId} className={styles.bookingForm} onSubmit={submit}>
                       <h4>{t.optionTitle}</h4>
                       <p className={styles.bookingIntro}>{t.optionHint}</p>
@@ -676,6 +714,34 @@ export function RemoteEnergySupportBooking({
                         </p>
                       )}
                     </form>
+                    {mode === "inline" && contactDraft?.serviceId === master.serviceId && (
+                      <section id="remote-public-contact" className={styles.publicContact}
+                        data-remote-public-order-contact aria-label={t.send}>
+                        <h4>{locale === "ru" ? "Оформление заявки" : locale === "es" ? "Enviar solicitud" : "Request contact"}</h4>
+                        <p>{locale === "ru"
+                          ? "Укажите телефон или войдите через Google. После отправки с вашим согласием заявка появится в CRM. Время и оплата ещё не подтверждены."
+                          : locale === "es"
+                            ? "Indica tu teléfono o usa Google. La solicitud se guarda solo con tu consentimiento; todavía no hay reserva ni pago."
+                            : "Enter your phone or use Google. Your consented request is saved to CRM; no booking or payment is confirmed."}</p>
+                        <ContactChannelChooser
+                          locale={locale} quick cartContact stayAfterSave
+                          whatsappUrl={whatsappEnquiryUrl({
+                            locale, service: remoteSupportPublicServiceTitle(contactDraft),
+                            request: "Please confirm the Reiki support enquiry", pagePath: "/" + locale + "/holistic-support/mobile",
+                          })}
+                          publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
+                          publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}
+                          resetKey={contactDraft.serviceId + ":" + contactDraft.startsAt + ":" + contactDraft.method}
+                          onSaved={() => {
+                            try {
+                              if (readRemoteSupportDraft(window.sessionStorage, contactDraft.serviceId))
+                                window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY);
+                            } catch { /* The CRM write, not browser storage, confirms receipt. */ }
+                          }}
+                        />
+                      </section>
+                    )}
+                    </>
                   ))}
                 </article>
               );
