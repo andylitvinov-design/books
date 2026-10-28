@@ -42,10 +42,10 @@ const clips=[
 ];
 function svg(scene,background){
  const id=scene[0],dark=scene[3],gold=scene[4];
- if(background)return '<svg xmlns="http://www.w3.org/2000/svg" width="540" height="960"><defs><radialGradient id="g"><stop stop-color="'+dark+'"/><stop offset="1" stop-color="#070d16"/></radialGradient></defs><rect width="540" height="960" fill="url(#g)"/></svg>';
+ if(background)return '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 540 960"><defs><radialGradient id="g"><stop stop-color="'+dark+'"/><stop offset="1" stop-color="#070d16"/></radialGradient></defs><rect width="720" height="1280" viewBox="0 0 540 960" fill="url(#g)"/></svg>';
  const rings=Array.from({length:5},(_,i)=>'<ellipse cx="270" cy="453" rx="'+(144+i*33)+'" ry="'+(186+i*38)+'" fill="none" stroke="'+gold+'" stroke-width="1.3" opacity="'+(.21-i*.025)+'"/>').join('');
  const stars=Array.from({length:36},(_,i)=>'<circle cx="'+Math.round(40+460*Math.abs(Math.sin(i*11.23)))+'" cy="'+Math.round(115+715*Math.abs(Math.sin(i*19.13)))+'" r="'+(i%4===0?2.8:1.2)+'" fill="'+gold+'" opacity="'+(.3+i%4*.08)+'"/>').join('');
- return '<svg xmlns="http://www.w3.org/2000/svg" width="540" height="960"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#060c13" stop-opacity=".7"/><stop offset=".20" stop-color="#060c13" stop-opacity="0"/><stop offset=".74" stop-color="#060c13" stop-opacity="0"/><stop offset="1" stop-color="#060c13" stop-opacity=".8"/></linearGradient></defs><rect width="540" height="960" fill="url(#f)"/>'+rings+stars+'<path d="M28 182V60H139 M403 60H512V182 M28 770V900H139 M403 900H512V770" stroke="'+gold+'" opacity=".6" stroke-width="2.0" fill="none"/><text x="270" y="94" text-anchor="middle" font-family="Georgia,serif" font-size="29" letter-spacing="6" fill="'+gold+'">HOLISTIC HOUSE</text><path d="M115 112H425 M143 842H397" stroke="'+gold+'" stroke-width="1.6" opacity=".56"/></svg>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 540 960"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#060c13" stop-opacity=".7"/><stop offset=".20" stop-color="#060c13" stop-opacity="0"/><stop offset=".74" stop-color="#060c13" stop-opacity="0"/><stop offset="1" stop-color="#060c13" stop-opacity=".8"/></linearGradient></defs><rect width="720" height="1280" viewBox="0 0 540 960" fill="url(#f)"/>'+rings+stars+'<path d="M28 182V60H139 M403 60H512V182 M28 770V900H139 M403 900H512V770" stroke="'+gold+'" opacity=".6" stroke-width="2.0" fill="none"/><text x="270" y="94" text-anchor="middle" font-family="Georgia,serif" font-size="29" letter-spacing="6" fill="'+gold+'">HOLISTIC HOUSE</text><path d="M115 112H425 M143 842H397" stroke="'+gold+'" stroke-width="1.6" opacity=".56"/></svg>';
 }
 async function download(url,target,key){
  const controller=new AbortController();
@@ -90,32 +90,32 @@ async function main(){
    await sharp(Buffer.from(svg(scene,false))).png().toFile(art);
    const out=join(OUTPUT,scene[0]+".mp4");
    const graph=[
-    "[0:v]fps=16,format=yuv420p[bg]",
-    "[1:v]fps=16,scale=540:960:force_original_aspect_ratio=increase,crop=540:960,setsar=1,format=yuv420p[main]",
+    "[0:v]fps=20,format=yuv420p[bg]",
+    "[1:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=yuv420p[main]",
     "[bg][main]blend=all_mode=screen:all_opacity=0.93[lit]",
-    "[2:v]fps=16,scale=540:960:force_original_aspect_ratio=increase,crop=540:960,setsar=1,format=yuv420p[fx]",
+    "[2:v]fps=20,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,format=yuv420p[fx]",
     "[lit][fx]blend=all_mode=screen:all_opacity=0.57[mix]",
     "[3:v]format=rgba[brand]",
     "[mix][brand]overlay=0:0:format=auto,format=yuv420p[v]"
    ].join(";");
    run([
-    "-loop","1","-framerate","16","-i",base,
+    "-loop","1","-framerate","20","-i",base,
     "-stream_loop","-1","-i",cache.get(scene[1]),
     "-stream_loop","-1","-i",cache.get(scene[2]),
-    "-loop","1","-framerate","16","-i",art,
-    "-filter_complex",graph,"-map","[v]","-an","-t","5","-r","16",
-    "-c:v","libx264","-preset","veryfast","-crf","24","-maxrate","1800k",
-    "-bufsize","3600k","-pix_fmt","yuv420p","-movflags","+faststart",
+    "-loop","1","-framerate","20","-i",art,
+    "-filter_complex",graph,"-map","[v]","-an","-t","5","-r","20",
+    "-c:v","libx264","-preset","veryfast","-crf","21","-maxrate","2800k",
+    "-bufsize","5600k","-pix_fmt","yuv420p","-movflags","+faststart",
     "-threads","2","-filter_complex_threads","2",out
    ],scene[0]);
    const poster=join(OUTPUT,scene[0]+".jpg");
-   run(["-ss","1.3","-i",out,"-frames:v","1","-vf","scale=270:480","-q:v","5",poster],scene[0]+" poster",45000);
+   run(["-ss","1.3","-i",out,"-frames:v","1","-vf","scale=360:640","-q:v","5",poster],scene[0]+" poster",45000);
    const bytes=(await stat(out)).size;
    if(bytes<18000||bytes>6000000)throw Error(scene[0]+" suspicious video size "+bytes);
    run(["-i",out,"-frames:v","2","-f","null","-"],scene[0]+" decode",40000);
    results.push({id:scene[0],video:"/videos/holistic-house/money-films-v1/"+scene[0]+".mp4",
     poster:"/videos/holistic-house/money-films-v1/"+scene[0]+".jpg",
-    bytes,durationSeconds:5,width:540,height:960});
+    bytes,durationSeconds:5,width:720,height:1280});
    process.stdout.write("VIDEO "+scene[0]+" "+Math.round(bytes/1024)+" KiB\n");
   }
   await writeFile(join(OUTPUT,"manifest.json"),JSON.stringify({
