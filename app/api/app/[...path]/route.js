@@ -340,6 +340,11 @@ async function handle(request, { params }) {
         NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
       )
     }
+    // Minimal public-page session check. Never return identity, profile, test or subscription data.
+    if (joined === 'auth/status' && method === 'GET') {
+      await auth.verified()
+      return json({ signedIn: true })
+    }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
       // marketing consent or expose access tokens in the public contact form.
