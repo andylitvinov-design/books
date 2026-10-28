@@ -624,7 +624,7 @@ function ServiceCard({
         <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
         {!profileView && (
           <Link className={styles.secondary} href={detailsHref + "#reviews"}>
-            {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+            {locale === "ru" ? "Оставить отзыв" : locale === "es" ? "Dejar opinión" : "Leave a review"} ★
           </Link>
         )}
         <TrackedServiceLink serviceId={service.id} event="order"
@@ -632,6 +632,12 @@ function ServiceCard({
           aria-label={requestText + ": " + service.copy.title}>
           {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
+        {profileView && (
+          <Link className={styles.profileReviewLink} href={detailsHref + "#reviews"}>
+            ★ {locale === "ru" ? "Оставить отзыв мастеру" : locale === "es" ?
+              "Dejar una opinión al profesional" : "Leave a review for this practitioner"} →
+          </Link>
+        )}
       </div>
     </article>
   );
@@ -780,6 +786,14 @@ export function MarketplaceMasterFinder({
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
               </div>
               <p className={styles.description}>{profile.shortBio || ""}</p>
+              <Link className={styles.masterRating} href={"/" + locale + "/masters/" + master.slug + "#practitioner-reviews"}>
+                {master.reviewSummary?.count
+                  ? <><strong>★ {master.reviewSummary.average.toFixed(1)} / 5</strong>
+                      <span>· {master.reviewSummary.count} {locale === "ru" ? "отзывов" : locale === "es" ? "opiniones" : "reviews"}</span></>
+                  : <span>☆ {master.reviewSummary
+                    ? locale === "ru" ? "Пока без отзывов" : locale === "es" ? "Sin opiniones todavía" : "No reviews yet"
+                    : locale === "ru" ? "Отзывы мастера" : locale === "es" ? "Opiniones del profesional" : "Practitioner reviews"}</span>}
+              </Link>
               <div className={styles.meta}>
                 {(profile.languages || []).length ? <span>{profile.languages?.map((lang) => lang.toUpperCase()).join(" · ")}</span> : null}
                 {certified ? <span>{t.credentials}</span> : null}
