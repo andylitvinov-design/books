@@ -323,21 +323,28 @@ test("original Russian mysteries are visible in Courses mode as 3 iPhone cards a
   assert.doesNotMatch(client, /<iframe[^>]+autoPlay/);
 });
 
-test("central photo links to existing private Video Mandala studio in EN/RU/ES", () => {
+test("central Tests and right-hand Video Mandala are swapped without returning to the old UI", () => {
   const mandalaPage = read("app/[locale]/holistic-support/mandala/page.tsx");
   const mandalaClient = read("components/mandala-meditation-client.tsx");
   const profile = client.split('<section className={styles.profile}')[1].split('</section>')[0];
-  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-video-mandala'),
-    "mandala button follows the photo");
-  assert.match(profile, /data-support-video-mandala/);
-  assert.match(profile, /"\/holistic-support\/mandala"/);
+  const tools = client.split('<section className={styles.tools}')[1].split('</section>')[0];
+  assert.ok(profile.indexOf('data-support-photo') < profile.indexOf('data-support-tool="tests"'),
+    "Tests now appears directly beneath the photo");
+  assert.match(profile, /className=\{styles\.testsShortcut\}/);
+  assert.match(profile, /onClick=\{\(\) => changeChoice\("tests"\)\}/);
+  assert.doesNotMatch(profile, /data-support-video-mandala/);
+  assert.match(tools, /className=\{styles\.mandalaShortcut\}/);
+  assert.match(tools, /data-support-video-mandala/);
+  assert.match(tools, /"\/holistic-support\/mandala"/);
   for (const label of ["Video mandala", "Видео-мандала", "Vídeo mandala"]) {
     assert.ok(client.includes(label), "localized action: " + label);
   }
   assert.match(mandalaPage, /MandalaMeditationClient/);
+  assert.match(mandalaPage, /HolisticSupportMandalaDock/);
   assert.match(mandalaClient, /MandalaFreeVideoStudio|data-mandala/);
-  assert.match(css, /\.videoMandalaShortcut/);
-  assert.match(css, /\.profile > \.videoMandalaShortcut/);
+  assert.match(css, /\.testsShortcut/);
+  assert.match(css, /\.profile > \.testsShortcut/);
+  assert.match(css, /\.toolShortcuts \.mandalaShortcut/);
   assert.doesNotMatch(profile, /fetch\(|sessionStorage|localStorage/);
 });
 
