@@ -355,7 +355,19 @@
     overflow: visible; padding: 0; scroll-snap-type: none; }
   .videoCard { min-width: 0; aspect-ratio: .78; min-height: 112px; padding: 5px;
     border-width: 2px; border-radius: 11px; scroll-snap-align: none; }
-  .videoTitle { font-size: clamp(10px,2.8vw,13px); line-height: 1.12; }
+  /* Source-verified videos retain real titles/URLs. Only their decorative
+     preview art mirrors the approved nature-themed mock, never a fake frame. */
+  .videoCard { isolation: isolate; }
+  .videoCard img { z-index: -2; }
+  .videoCard::after { content: ""; position: absolute; inset: 0; z-index: -1;
+    pointer-events: none; background-image: url("/images/holistic-house/support-mock-video-posters.webp");
+    background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; }
+  .videoCard:nth-child(2)::after { background-position: 33.3333% 0; }
+  .videoCard:nth-child(3)::after { background-position: 66.6667% 0; }
+  .videoCard:nth-child(4)::after { background-position: 100% 0; }
+  .videoDark { z-index: 0; }
+  .thumbnailPlay { z-index: 1; }
+  .videoTitle { position: relative; z-index: 2; font-size: clamp(10px,2.8vw,13px); line-height: 1.12; }
   .thumbnailPlay { top: 6px; left: 6px; width: 27px; height: 27px; border-width: 1px; }
   .thumbnailPlay svg { width: 13px; height: 13px; }
   .videoHint { font-size: 11px; line-height: 1.32; margin: 9px 0 0; }
