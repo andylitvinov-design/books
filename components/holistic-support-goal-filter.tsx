@@ -208,27 +208,47 @@ type Props = {
   locale: PublicLocale;
   scores: Record<"energy" | "money" | "relationships" | "goals", number>;
   initial: GoalSelection | null;
+  savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+  onSave: (sector: GoalSector, value: GoalSectorSnapshot) => void;
   onApply: (value: GoalSelection) => void;
   onReset: () => void;
   onClose: () => void;
 };
 
-export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, onReset, onClose }: Props) {
+export function HolisticSupportGoalFilter({
+  locale, scores, initial, savedSectors, onSave, onApply, onReset, onClose,
+}: Props) {
   const t = ui[locale];
-  const [sector, setSector] = useState<GoalSector>(initial?.sector ?? "energy");
-  const [concerns, setConcerns] = useState<string[]>(initial?.concerns ?? []);
-  const [tasks, setTasks] = useState<string[]>(initial?.tasks ?? []);
-  const [ratings, setRatings] = useState<Record<string, GoalRating>>(initial?.ratings ?? {});
-  const [amounts, setAmounts] = useState<Record<string, GoalAmount>>(initial?.amounts ?? {});
-  const [currency, setCurrency] = useState<GoalCurrency>(initial?.currency ?? "CAD");
+  const initialSector = initial?.sector ?? "energy";
+  const initialDraft = initial ?? savedSectors[initialSector];
+  const [sector, setSector] = useState<GoalSector>(initialSector);
+  const [concerns, setConcerns] = useState<string[]>(initialDraft?.concerns ?? []);
+  const [tasks, setTasks] = useState<string[]>(initialDraft?.tasks ?? []);
+  const [ratings, setRatings] = useState<Record<string, GoalRating>>(initialDraft?.ratings ?? {});
+  const [amounts, setAmounts] = useState<Record<string, GoalAmount>>(initialDraft?.amounts ?? {});
+  const [currency, setCurrency] = useState<GoalCurrency>(initialDraft?.currency ?? "CAD");
+  const [drafts, setDrafts] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(
+    () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
+  const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
+  const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
   const selected = sectors[sector];
+  const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
+  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id]);
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
-    setSector(value); setConcerns([]); setTasks([]); setRatings({}); setAmounts({});
+    setDrafts(previous => ({ ...previous, [sector]: snapshotCurrent() }));
+    const next = drafts[value] ?? accepted[value];
+    setSector(value);
+    setConcerns(next?.concerns ?? []);
+    setTasks(next?.tasks ?? []);
+    setRatings(next?.ratings ?? {});
+    setAmounts(next?.amounts ?? {});
+    setCurrency(next?.currency ?? "CAD");
   }
   function toggle(id: string, values: string[], update: (next: string[]) => void) {
     update(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
+    markDirty();
   }
   function getRating(id: string, index: number): GoalRating {
     const current = sector === "money" && id === "incomeStability" ? scores.money
@@ -239,6 +259,7 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
     setRatings(previous => ({
       ...previous, [id]: { ...getRating(id, index), ...previous[id], [field]: value },
     }));
+    markDirty();
   }
   // Blank money values remain blank; no fabricated income or target is stored.
   function updateAmount(id: string, field: keyof GoalAmount, raw: string, max: number) {
@@ -251,20 +272,42 @@ export function HolisticSupportGoalFilter({ locale, scores, initial, onApply, on
         desired: field === "desired" ? numeric : (previous[id]?.desired ?? null),
       },
     }));
+    markDirty();
   }
-  function apply(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function snapshotCurrent(): GoalSectorSnapshot {
     const values: Record<string, GoalRating> = {};
     const entered: Record<string, GoalAmount> = {};
     selected.axes.forEach((item, index) => {
       if (item.unit === "score") values[item.id] = getRating(item.id, index);
       else if (amounts[item.id]) entered[item.id] = amounts[item.id];
     });
-    onApply({ sector, concerns, tasks, ratings: values,
-      ...(sector === "money" ? { amounts: entered, currency } : {}) });
+    return { concerns: [...concerns], tasks: [...tasks], ratings: values,
+      ...(sector === "money" ? { amounts: entered, currency } : {}) };
+  }
+  function saveCurrent() {
+    const snapshot = snapshotCurrent();
+    setDrafts(previous => ({ ...previous, [sector]: snapshot }));
+    setAccepted(previous => ({ ...previous, [sector]: snapshot }));
+    setDirty(previous => ({ ...previous, [sector]: false }));
+    onSave(sector, snapshot); // no API, session storage, or analytics
+  }
+  function nextSector() {
+    const index = sectorOrder.findIndex(item => item.id === sector);
+    changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
+    window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
+      ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto" : "smooth", block: "start" }));
+  }
+  function apply(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const snapshot = snapshotCurrent();
+    const all = { ...accepted, [sector]: snapshot };
+    onSave(sector, snapshot);
+    onApply({ ...snapshot, sector, savedSectors: all });
   }
   function reset() {
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
+    setDrafts({}); setAccepted({}); setDirty({});
     onReset();
   }
   return (
