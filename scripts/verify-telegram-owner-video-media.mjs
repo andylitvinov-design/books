@@ -21,7 +21,7 @@ try{
  const photos=[join(dir,'blue.jpg'),join(dir,'yellow.jpg'),join(dir,'red.jpg')]
  const sounds=[join(dir,'one.mp3'),join(dir,'two.mp3')]
  for(const [i,color] of ['blue','yellow','red'].entries())
-   run(['-f','lavfi','-i','color=c='+color+':s=640x360:d=1',
+   run(['-f','lavfi','-i','color=c='+color+':s='+(i===0?'640x800':'640x360')+':d=1',
      '-frames:v','1','-update','1',photos[i]])
  for(const [i,frequency] of [550,770].entries())
    run(['-f','lavfi','-i','sine=frequency='+frequency+':duration=2',
@@ -44,19 +44,23 @@ try{
   timeout:30000,encoding:'utf8',maxBuffer:128000})
  if(decoded.status!==0||!/Video: h264/.test(decoded.stderr)||
    !/Audio: aac/.test(decoded.stderr))throw Error('UNEXPECTED_VIDEO_OR_AUDIO_CODEC')
- function pixelAt(seconds){
-  const result=spawnSync(binary,['-hide_banner','-loglevel','error','-ss',String(seconds),
-    '-i',target,'-frames:v','1','-vf','scale=1:1:flags=neighbor,format=rgb24',
-    '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:4096})
-  if(result.status!==0||result.stdout?.length!==3)throw Error('VIDEO_FRAME_READ_FAILED')
-  return [...result.stdout]
+ // Decode the actual stream, not three arbitrary seek points: 2 fps rounds
+ // fractional photograph slices, so a fixed timestamp can hit a boundary.
+ const frames=spawnSync(binary,['-hide_banner','-loglevel','error','-i',target,
+   '-vf','scale=1:1:flags=neighbor,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:8192})
+ if(frames.status!==0||!frames.stdout?.length||frames.stdout.length%3)
+   throw Error('VIDEO_FRAME_READ_FAILED')
+ const seen=[]
+ for(let i=0;i<frames.stdout.length;i+=3){
+   const [r,g,b]=frames.stdout.subarray(i,i+3)
+   const color=b>r+60&&b>g+60?'blue':
+     r>b+60&&g>b+60?'yellow':
+     r>g+60&&r>b+60?'red':null
+   if(color&&seen.at(-1)!==color)seen.push(color)
  }
- const blue=pixelAt(1),yellow=pixelAt(2.5),red=pixelAt(3.5)
- if(!(blue[2]>blue[0]+60&&blue[2]>blue[1]+60&&
-      yellow[0]>yellow[2]+60&&yellow[1]>yellow[2]+60&&
-      red[0]>red[1]+60&&red[0]>red[2]+60))
-   throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED')
-
+ if(seen.join(',')!=='blue,yellow,red')
+   throw Error('VIDEO_PHOTO_CHRONOLOGY_FAILED colors='+seen.join(','))
  // Full-capacity integration: interleave 15 photos and 15 audio pieces using
  // only synthetic samples. Assert the actual 1080p FFmpeg output is decodable.
  const imageBytes=await Promise.all(photos.map(file=>readFile(file)))
@@ -84,6 +88,41 @@ try{
    timeout:60000,encoding:'utf8',maxBuffer:128000})
  if(fullDecoded.status!==0||!/Video: h264/.test(fullDecoded.stderr)||
    !/Audio: aac/.test(fullDecoded.stderr))throw Error('VIDEO_15X15_CODEC_FAILED')
+ // Regression: a real 640x800 portrait still must occupy exactly 864
+ // center pixels inside the 1920x1080 video; verify encoded pixel rows.
+ const portrait=join(dir,'portrait-blue.jpg')
+ run(['-f','lavfi','-i','color=c=blue:s=640x800:d=1',
+   '-frames:v','1','-update','1',portrait])
+ const portraitBytes=await readFile(portrait)
+ const portraitParts=[
+   {kind:'photo',mime:'image/jpeg',ext:'jpg',
+     fileId:'CI_PORTRAIT_IMAGE',uniqueId:'CI_PORTRAIT_UNIQUE',
+     bytes:portraitBytes.length,duration:0,updateId:950},
+   {kind:'audio',mime:'audio/mpeg',ext:'mp3',
+     fileId:'CI_PORTRAIT_AUDIO',uniqueId:'CI_PORTRAIT_AUDIO_UNIQUE',
+     bytes:soundBytes[0].length,duration:2,updateId:951}
+ ]
+ const portraitMp4=await renderOwnerTelegramVideo(portraitParts,{
+   executable,fetchPart:p=>p.kind==='photo'?portraitBytes:soundBytes[0]})
+ const portraitTarget=join(dir,'portrait-output.mp4')
+ await writeFile(portraitTarget,portraitMp4)
+ const portraitInfo=spawnSync(binary,['-hide_banner','-i',portraitTarget,'-f','null','-'],{
+   timeout:30000,encoding:'utf8',maxBuffer:128000})
+ if(portraitInfo.status!==0||!/1920x1080 \[SAR 1:1 DAR 16:9\]/.test(portraitInfo.stderr))
+   throw Error('VIDEO_PORTRAIT_GEOMETRY_METADATA_FAILED')
+ const strip=spawnSync(binary,['-hide_banner','-loglevel','error','-i',portraitTarget,
+   '-frames:v','1','-vf','crop=1920:2:0:540,format=rgb24',
+   '-f','rawvideo','pipe:1'],{timeout:20000,maxBuffer:16384})
+ if(strip.status!==0||strip.stdout?.length!==1920*2*3)
+   throw Error('VIDEO_ASPECT_FRAME_READ_FAILED')
+ let blueWidth=0
+ for(let i=0;i<1920*3;i+=3){
+   const [r,g,b]=strip.stdout.subarray(i,i+3)
+   if(b>r+60&&b>g+60)blueWidth++
+ }
+ if(Math.abs(blueWidth-864)>8)
+   throw Error('VIDEO_ASPECT_RATIO_SQUEEZED width='+blueWidth)
+ console.log('MEDIA_PORTRAIT_ASPECT_PASSED input=640x800 active='+blueWidth+'x1080 frame=1920x1080')
  // Regression for actual owner incident: 11 successive audio tracks and
  // only then 3 photographs. Combined duration exceeds the removed 120s cap.
  // Use synthetic files only; no Telegram or private owner material.
@@ -135,8 +174,8 @@ try{
  const audioSeconds=last?Number(last[1])*3600+Number(last[2])*60+Number(last[3]):0
  if(audible.status!==0||audioSeconds<131.5||audioSeconds>132.5)
    throw Error('VIDEO_11_AUDIO_3_PHOTO_SOUND_TRUNCATED')
- // The three images were sent after the audio, but must all appear over
- // the whole 132-second timeline rather than only at its end.
+ // The three images were sent after the audio. Place each before its
+ // corresponding preceding audio near the end (not as an outro).
  function ownerPixelAt(seconds){
    const result=spawnSync(binary,['-hide_banner','-loglevel','error','-ss',String(seconds),
      '-i',ownerTarget,'-frames:v','1',
@@ -145,11 +184,11 @@ try{
    if(result.status!==0||result.stdout?.length!==3)throw Error('VIDEO_OWNER_FRAME_READ_FAILED')
    return [...result.stdout]
  }
- const first=ownerPixelAt(10),middle=ownerPixelAt(60),lastFrame=ownerPixelAt(100)
+ const first=ownerPixelAt(10),middle=ownerPixelAt(114),lastFrame=ownerPixelAt(126)
  if(!(first[2]>first[0]+60&&first[2]>first[1]+60&&
      middle[0]>middle[2]+60&&middle[1]>middle[2]+60&&
      lastFrame[0]>lastFrame[1]+60&&lastFrame[0]>lastFrame[2]+60))
-   throw Error('VIDEO_OWNER_LATE_PHOTOS_NOT_SPREAD')
+   throw Error('VIDEO_OWNER_LATE_PHOTOS_NOT_PAIRED')
  console.log('MEDIA_11_AUDIO_3_PHOTO_FULL_SMOKE_PASSED audio_seconds='+audioSeconds+
    ' container_seconds='+containerSeconds+' MP4 bytes='+ownerMp4.length)
  console.log('MEDIA_15X15_SMOKE_PASSED 15 photos + 15 audio H264/AAC bytes='+fullMp4.length)
