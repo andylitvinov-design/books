@@ -99,7 +99,7 @@ export function paintThemedVideoFrame(
   theme:OtherTheme,scene:LocalSceneId,time:number,title:string,
 ) {
   const w=c.canvas.width,h=c.canvas.height,t=Math.max(0,time);
-  const [dark,mid,light,ink]=PALETTE[theme];
+  const [dark,mid,,ink]=PALETTE[theme];
   c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
   const sky=c.createLinearGradient(0,0,w,h);sky.addColorStop(0,dark);sky.addColorStop(.6,mid);sky.addColorStop(1,dark);
   c.fillStyle=sky;c.fillRect(0,0,w,h);
