@@ -56,7 +56,27 @@ for (const engine of [chromium, webkit]) {
           const symbolCard = recommendations.locator("[data-support-recommended-talisman]");
           assert.equal(await symbolCard.getAttribute("data-support-recommended-talisman"), "fu-harmony",
             label + ": relationships maps to published harmony talisman");
-          await videoCard.locator("button").click();
+          assert.equal(await recommendations.locator("h2").count(), 1,
+            label + ": single actionable headline");
+          assert.equal(await recommendations.locator("[class*='recPrimary']").count(), 1,
+            label + ": one main practice with poster and reason");
+          assert.equal(await recommendations.locator("[class*='recSymbol']").count(), 1,
+            label + ": one optional symbolic companion");
+          assert.ok((await recommendations.innerText()).includes("2/10"),
+            label + ": score is a self-rating, not a fabricated health percent");
+          if (width === 390) {
+            await page.screenshot({ path: output + "/" + engine.name() + "-" + locale + "-result-390.png" });
+          }
+          const alternate = recommendations.locator("[data-support-other-video]");
+          if (await alternate.count()) {
+            await alternate.click();
+            const nextVideoId = await videoCard.getAttribute("data-support-recommended-video");
+            assert.notEqual(nextVideoId, videoId, label + ": alternative is another published recording");
+            assert.match(nextVideoId, /^[A-Za-z0-9_-]{11}$/, label + ": alternative has published source ID");
+            assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+              label + ": alternative never auto-starts playback");
+          }
+          await videoCard.locator("button").first().click();
           assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
             label + ": no unintended autoplay before explicit Play");
           await symbolCard.locator("button").click();
