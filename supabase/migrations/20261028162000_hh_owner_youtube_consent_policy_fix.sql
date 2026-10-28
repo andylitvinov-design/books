@@ -8,6 +8,7 @@ create policy hh_youtube_owner_consented_presentation
  for select to hh_app_backend
  using(
    current_setting('hh.youtube_publication_manager',true)='1' and
+   current_setting('hh.moderator',true)='1' and
    exists(
      select 1 from app_private.youtube_owner_publication_requests r
      where r.source_type='practitioner_presentation'
