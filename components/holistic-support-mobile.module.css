@@ -1018,3 +1018,81 @@
     gap: 3px;
   }
 }
+
+
+/* Same compact, warm category rail as Talismans, placed ABOVE the original
+   meditation video stage. The hero and its three existing filters stay intact. */
+.meditationCategorySection { min-width: 0; padding: 12px 16px 5px; background: #fffaf1; }
+.meditationCategoryHeader { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 9px; }
+.meditationCategoryHeader > div { display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 10px; min-width: 0; }
+.meditationCategoryHeader h2 { margin: 0; color: #203a2f; font-size: clamp(20px,2.5vw,25px);
+  font-weight: 850; letter-spacing: -.035em; }
+.meditationCategoryHeader p { margin: 0; color: #76786d; font-size: 13px; line-height: 1.2; }
+.meditationCategoryHeader > button { display: inline-flex; justify-content: flex-end; align-items: center;
+  gap: 5px; flex: none; min-height: 44px; padding: 4px 0; border: 0; background: transparent;
+  color: #087e5b; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.meditationCategoryHeader > button svg { flex: none; transition: transform .15s ease; }
+.meditationCategoryHeader > button[aria-expanded="true"] svg { transform: rotate(90deg); }
+.meditationCategoryFrame { position: relative; min-width: 0; }
+.meditationCategoryRail { display: flex; align-items: stretch; gap: 7px; max-width: 100%;
+  overflow-x: auto; padding: 2px 43px 7px 2px; scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.meditationCategoryRail::-webkit-scrollbar { display: none; }
+.meditationCategorySection .meditationCategoryCard { display: flex; flex: 0 0 clamp(82px,22%,125px);
+  flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  min-width: 0; min-height: 94px; padding: 8px 5px;
+  border: 1px solid #d8e5d9; border-radius: 15px; background: #f4f9f3;
+  color: #16765a; text-align: center; line-height: 1.18; font-size: clamp(11px,1.4vw,13px);
+  font-weight: 800; scroll-snap-align: start; }
+.meditationCategoryCard svg { flex: none; }
+.meditationCategoryCard > span { display: block; max-width: 100%; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; }
+.meditationCategoryCard:hover { filter: brightness(.97); }
+.meditationCategoryCard[data-category="energy"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
+.meditationCategoryCard[data-category="money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
+.meditationCategoryCard[data-category="relationships"] { background: #fff3f5; color: #d94d73; border-color: #f3c0cc; }
+.meditationCategoryCard[data-category="meaning"] { background: #f7f0ff; color: #9857d4; border-color: #e6d1f8; }
+.meditationCategoryCard[data-category="health"] { background: #f1faf3; color: #198466; border-color: #cfe6d4; }
+.meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #3b8199; border-color: #cde2e7; }
+.meditationCategoryCard[aria-pressed="true"] { border: 2px solid #8950d1;
+  box-shadow: 0 0 0 2px #dac7f3, 0 4px 12px #6c42b22c; }
+.meditationCategoryNext { position: absolute; z-index: 5; top: 50%; right: -4px;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  transform: translateY(-50%); border: 0; background: transparent; color: #1b5042; }
+.meditationCategoryNext::before { content: ""; position: absolute; z-index: -1; inset: 5px;
+  border: 1px solid #e5e8df; border-radius: 50%; background: #fffdfa;
+  box-shadow: 0 3px 10px #152c2338; }
+.meditationCategoryNext:hover::before { background: #e2f3e8; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryRail { display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr)); padding-right: 2px;
+  overflow: visible; scroll-snap-type: none; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 88px; width: 100%; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryNext { display: none; }
+@media(max-width:640px) {
+  .meditationCategorySection { padding: 9px 9px 3px; }
+  .meditationCategoryHeader { gap: 7px; margin-bottom: 6px; }
+  .meditationCategoryHeader > div { gap: 3px 7px; align-items: baseline; }
+  .meditationCategoryHeader h2 { font-size: clamp(19px,5.35vw,23px); }
+  .meditationCategoryHeader p { font-size: clamp(9px,2.5vw,11px); }
+  .meditationCategoryHeader > button { min-height: 44px; gap: 3px; font-size: clamp(10px,2.7vw,12px); }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryRail {
+    height: 84px; min-height: 0; align-items: center; gap: 6px;
+    padding: 1px 48px 5px 1px; overflow-y: hidden; }
+  /* Higher specificity than .page button { font: inherit }, avoiding tiny labels on iPhone. */
+  .meditationCategorySection .meditationCategoryCard { flex-basis: calc((100% - 18px) / 4);
+    box-sizing: border-box; min-height: 76px; padding: 6px 2px; gap: 5px;
+    border-radius: 13px; font-size: clamp(11px,2.85vw,13px); font-weight: 800; }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryCard {
+    height: 76px; min-height: 0; max-height: 76px; overflow: hidden; }
+  .meditationCategoryCard svg { width: 22px; height: 22px; }
+  .meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 76px; }
+}
+@media(max-width:350px) {
+  .meditationCategoryHeader p { font-size: 9px; }
+  .meditationCategorySection .meditationCategoryCard { font-size: 11px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .meditationCategoryCard,.meditationCategoryHeader > button svg { transition: none; }
+}
