@@ -122,18 +122,6 @@ for (const browserType of [chromium, webkit]) {
               poster && description && poster.getBoundingClientRect().right < description.getBoundingClientRect().left;
           }));
           assert.ok(feedFits, label + " every video keeps image left and description right at " + width + "px");
-          const feedLast = feedItems.last();
-          const feedLastId = await feedLast.getAttribute('data-support-meditation-feed-item');
-          await feedLast.click();
-          await page.waitForFunction(videoId =>
-            document.querySelector('[data-support-player]')?.getAttribute('data-selected-video') === videoId,
-          feedLastId, {timeout: 8000});
-          assert.equal(await feedLast.getAttribute('aria-pressed'), "true",
-            label + " selecting a feed recording updates the original hero");
-          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
-            label + " feed selection does not autoplay a provider iframe");
-          assert.equal(await root.locator('[data-support-video]').count(), 4,
-            label + " the original four featured thumbnails remain unchanged");
 
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
           // These two locally bundled original-mock visuals must actually load.
@@ -216,6 +204,21 @@ for (const browserType of [chromium, webkit]) {
             assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
+
+          // Verify the full-feed selection only AFTER capturing the original
+          // hero and four-card screenshot, so visual QA stays representative.
+          const feedLast = feedItems.last();
+          const feedLastId = await feedLast.getAttribute('data-support-meditation-feed-item');
+          await feedLast.click();
+          await page.waitForFunction(videoId =>
+            document.querySelector('[data-support-player]')?.getAttribute('data-selected-video') === videoId,
+          feedLastId, {timeout: 8000});
+          assert.equal(await feedLast.getAttribute('aria-pressed'), "true",
+            label + " selecting a feed recording updates the original hero");
+          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+            label + " feed selection does not autoplay a provider iframe");
+          assert.equal(await root.locator('[data-support-video]').count(), 4,
+            label + " the original four featured thumbnails remain unchanged");
 
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
