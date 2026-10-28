@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {randomBytes} from 'node:crypto'
 import {createDirectMessages} from '../lib/practitioners/direct-messages.js'
-import {DIRECT_MEDIA_PROXY_MAX_BYTES,directMediaSpec,directMediaMime} from '../lib/practitioners/direct-message-policy.mjs'
+import {DIRECT_MEDIA_PROXY_MAX_BYTES,DIRECT_MEDIA_TYPES,directMediaSpec,directMediaMime} from '../lib/practitioners/direct-message-policy.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const IDs={
@@ -54,6 +54,28 @@ test('private photo/voice file contracts keep binary limit strictly below Vercel
  assert.throws(()=>directMediaSpec('application/pdf',512),/MEDIA_TYPE_NOT_ALLOWED/)
  const policy=read('lib/practitioners/direct-message-policy.mjs')
  assert.doesNotMatch(policy,/video\/mp4.*kind:'video'/)
+})
+test('media MIME allowlist rejects prototype properties and non-string keys',()=>{
+ for(const mime of ['constructor','__proto__','toString','valueOf','hasOwnProperty',
+   '__defineGetter__',null,undefined,{},['image/jpeg'],512,Symbol('image/jpeg')])
+   assert.throws(()=>directMediaSpec(mime,512),/MEDIA_TYPE_NOT_ALLOWED/)
+ for(const [mime,spec] of Object.entries(DIRECT_MEDIA_TYPES)){
+   assert.equal(directMediaSpec(mime,128),spec)
+   assert.equal(directMediaSpec(mime,spec.max),spec)
+   assert.throws(()=>directMediaSpec(mime,spec.max+1),/MEDIA_SIZE_NOT_ALLOWED/)
+ }
+})
+test('unknown audio extensions preserve the MIME string instead of inherited properties',()=>{
+ for(const type of ['', 'application/octet-stream'])
+   for(const name of ['voice.constructor','voice.__proto__','voice.toString','voice.unknown']){
+     const mime=directMediaMime({name,type})
+     assert.equal(mime,type)
+     assert.equal(typeof mime,'string')
+     assert.throws(()=>directMediaSpec(mime,512),/MEDIA_TYPE_NOT_ALLOWED/)
+   }
+ assert.equal(directMediaMime(null),'')
+ assert.equal(directMediaMime({name:'voice.constructor',type:'audio/mp4'}),'audio/mp4')
+ assert.equal(directMediaMime({name:'voice.M4A',type:''}),'audio/mp4')
 })
 test('iPhone Voice Memos with missing MIME normalize before server signature checks',()=>{
  for(const [name,type,expected] of [
