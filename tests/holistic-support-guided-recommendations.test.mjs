@@ -66,7 +66,10 @@ test("assistant adapts questions to answers; at any step user can type, ask or c
   assert.match(guide, /talk\.detailAck/);
   assert.match(guide, /interpretSupportUtterance\(value, locale\)/);
   assert.match(guide, /maxLength=\{240\}/);
-  assert.match(guide, /onSubmit=\{event => \{ event\.preventDefault\(\); submitText\(draft\); \}\}/);
+  assert.match(guide, /onSubmit=\{event => \{/);
+  assert.match(guide, /event\.currentTarget\.elements\.namedItem\("guide-message"\)/);
+  assert.match(guide, /submitText\(field instanceof HTMLInputElement \? field\.value : draft\)/);
+  assert.match(guide, /name="guide-message"/);
   assert.match(guide, /onClick=\{changeTopic\}/);
   assert.match(guide, /phase !== "safety"/);
   assert.equal(interpretSupportUtterance("Почему именно эта тема?", "ru").question, "why");

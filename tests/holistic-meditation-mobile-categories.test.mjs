@@ -97,3 +97,12 @@ test("Feed summaries come from existing source titles, with Spanish copy and ori
   assert.match(mobile, /video\.sourceLanguage === "ru" \? t\.feedAudioRu : t\.feedAudioEn/);
   assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon|autoplay=\{true\}/);
 });
+
+test("category labels retain visible text in the accessible name in EN/RU/ES", () => {
+  assert.match(mobile, /aria-label=\{t\.meditationCategoryShortNames\[id\] === t\.meditationCategoryNames\[id\]/);
+  assert.match(mobile, /t\.meditationCategoryShortNames\[id\] \+ " — " \+ t\.meditationCategoryNames\[id\]/);
+  // Some full descriptions intentionally differ from visible labels:
+  // in Russian Здоровье is displayed while the expanded category is Самочувствие.
+  for (const label of ["Love", "Relationships & love", "Здоровье", "Самочувствие",
+    "Amor", "Amor y relaciones"]) assert.ok(mobile.includes(label), label);
+});
