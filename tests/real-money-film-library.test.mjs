@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {createHash} from "node:crypto";
+import sharp from "sharp";
 import {readFileSync,statSync} from "node:fs";
 import {join} from "node:path";
 
@@ -51,4 +52,18 @@ test("public money gallery uses first-party MP4 decoder for selected personal vi
  assert.match(browser,/actual H\.264 video must advance in time/);
  assert.match(browser,/readyState >= 2/);
  assert.doesNotMatch(comp,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage/);
+});
+
+test("golden-rain keeps a warm GOLD cinematic palette, not the rejected magenta output",async()=>{
+ const poster=read(folder+"golden-rain.jpg");
+ const {data,info}=await sharp(poster).raw().toBuffer({resolveWithObject:true});
+ let warm=0,magenta=0;
+ for(let p=0;p<info.width*info.height;p++){
+   const at=p*info.channels;
+   const r=data[at],g=data[at+1],b=data[at+2];
+   if(r>85&&g>55&&r>g*1.08&&g>b*1.27)warm++;
+   if(r>105&&b>95&&r>g*1.35&&b>g*1.28)magenta++;
+ }
+ assert.ok(warm>info.width*info.height*.035,"Must display an actual gold palette");
+ assert.ok(magenta<warm*.25,"Reject the former pink/magenta master");
 });
