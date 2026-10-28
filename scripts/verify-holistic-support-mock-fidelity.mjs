@@ -30,7 +30,7 @@ for (const browserType of [chromium, webkit]) {
         page.on("response", res => { if (watched(res.url()))
           directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
-        await page.route(/\\/api\\/public\\/remote-energy-support-masters(?:\\?.*)?$/, async route => {
+        await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
           directoryEvents.push("MOCK " + (kind || "masters"));
           await route.fulfill({ status: 200, contentType: "application/json",
