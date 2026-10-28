@@ -574,6 +574,65 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>;
         })}
       </div>}
+      {consultations && <section className={styles.consultBrowse} aria-label={c.heading}
+        data-support-consultation-categories>
+        <div className={styles.consultHeading}>
+          <h2>{c.heading}</h2><p>{c.subtitle}</p>
+          <Link href={"/" + locale + "/services"} prefetch={false}>{c.all}<ArrowRight size={17} aria-hidden="true"/></Link>
+        </div>
+        <div className={styles.consultCategoryWrap}>
+          <div ref={categoryRailRef} className={styles.consultCategoryRail} role="group"
+            aria-label={c.heading}>
+            {CONSULTATION_CATEGORIES.map(({ id: category, Icon }) =>
+              <button type="button" key={category} className={styles.consultCategory}
+                data-support-consultation-category={category}
+                aria-pressed={consultCategory === category}
+                onClick={() => { setConsultCategory(category); setSelectedId(null);
+                  setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
+                <Icon size={25} aria-hidden="true"/>
+                <span>{c.categories[category]}</span>
+              </button>)}
+          </div>
+          <button type="button" className={styles.consultCategoryNext} aria-label={c.showNext}
+            onClick={() => categoryRailRef.current?.scrollBy({ left: 250, behavior: "smooth" })}>
+            <ChevronRight size={22} aria-hidden="true"/>
+          </button>
+        </div>
+        <div className={styles.consultFilters} data-support-consultation-filters>
+          <label className={styles.consultField} data-support-consultation-master>
+            <span><UserRound size={15} aria-hidden="true"/>{c.master}</span>
+            <select value={consultMaster} aria-label={c.master}
+              onChange={event => { setConsultMaster(event.target.value); setSelectedId(null); }}>
+              <option value="">{c.allMasters}</option>
+              {consultationMasters.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+          <label className={styles.consultField} data-support-consultation-format>
+            <span><PlayCircle size={15} aria-hidden="true"/>{c.format}</span>
+            <select value={consultFormat} aria-label={c.format}
+              onChange={event => { setConsultFormat(event.target.value); setSelectedId(null); }}>
+              <option value="">{c.allFormats}</option>
+              {consultationFormats.map(value => <option key={value} value={value}>
+                {consultationFormatName(value, locale)}
+              </option>)}
+            </select>
+          </label>
+          <label className={styles.consultField} data-support-offer-price-filter>
+            <span><ShoppingCart size={15} aria-hidden="true"/>{c.price}</span>
+            <select value={priceFilter} aria-label={c.price}
+              onChange={event => { setPriceFilter(event.target.value as typeof priceFilter); setSelectedId(null); }}>
+              <option value="all">{t.allPrices}</option>
+              <option value="free">{t.freeOnly}</option>
+              <option value="published">{t.paidOnly}</option>
+            </select>
+          </label>
+          <button type="button" className={styles.consultReset} aria-label={c.reset} title={c.reset}
+            onClick={() => { setConsultCategory("all"); setConsultMaster(""); setConsultFormat("");
+              setPriceFilter("all"); setSelectedId(null); setConsultPhotoIndex(0); setConsultDetailsOpen(false); }}>
+            <SlidersHorizontal size={22} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>}
       {reikiStage}
       {kind === "healing" && reikiFormat !== "session" ? <section className={styles.reikiLearning} data-support-reiki-learning>
         <h3>{reikiLearningLabel}</h3>
@@ -596,61 +655,84 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
         {kind !== "healing" && <section className={styles.hero} data-support-master-hero={id(selected)}
+          data-support-consultation-hero={consultations ? "true" : undefined}
+          id={consultations ? "support-consultation-featured" : undefined}
           aria-label={selectedMaster?.name || selectedOffer?.title}
           onTouchStart={event => { const touch=event.touches[0]; if(touch) touchStart.current={x:touch.clientX,y:touch.clientY}; }}
           onTouchEnd={endSwipe}>
+          {selectedOffer && <Image src={currentConsultPhoto} alt="" fill unoptimized
+            className={styles.consultPhoto} sizes="(max-width: 640px) 100vw, 900px"/>}
           {selectedMaster?.photo && <div className={styles.photoStage} aria-hidden="true">
             <Image src={selectedMaster.photo} alt="" fill unoptimized
               sizes="(max-width: 640px) 65vw, 480px" className={styles.photo}/>
           </div>}
           <div className={styles.shade} aria-hidden="true"/>
-          {!selectedMaster && <div className={styles.symbolArt} aria-hidden="true">
+          {!selectedMaster && !consultations && <div className={styles.symbolArt} aria-hidden="true">
             {consultations ? <TestTube2 size={125} strokeWidth={0.9}/> : <UserRound size={120} strokeWidth={0.9}/>}
           </div>}
-          <div className={styles.filters} role="group" aria-label={label}>
+          {!consultations && <div className={styles.filters} role="group" aria-label={label}>
             <span className={styles.mode} data-support-master-mode>
-              {consultations ? <TestTube2 size={17} aria-hidden="true"/> : <HandHeart size={17} aria-hidden="true"/>}{label}
+              <HandHeart size={17} aria-hidden="true"/>{label}
             </span>
-            {consultations ? <label className={styles.filter} data-support-offer-price-filter>
-              <strong>{t.price}</strong>
-              <small>{priceFilter === "free" ? t.freeOnly : priceFilter === "published" ? t.paidOnly : t.allPrices}</small>
-              <select value={priceFilter} aria-label={t.price} onChange={e => { setPriceFilter(e.target.value as typeof priceFilter); setSelectedId(null); }}>
-                <option value="all">{t.allPrices}</option>
-                <option value="free">{t.freeOnly}</option>
-                <option value="published">{t.paidOnly}</option>
-              </select><ChevronDown size={14} aria-hidden="true"/>
-            </label> : <label className={styles.filter} data-support-master-method-filter>
+            <label className={styles.filter} data-support-master-method-filter>
               <strong>{t.method}</strong>
               <small>{method || t.allMethods}</small>
               <select value={method} aria-label={t.method} onChange={e => { setMethod(e.target.value); setSelectedId(null); }}>
                 <option value="">{t.allMethods}</option>
                 {methods.map(value => <option key={value} value={value}>{value}</option>)}
               </select><ChevronDown size={14} aria-hidden="true"/>
-            </label>}
-            <span className={styles.staticFilter}><strong>{consultations ? t.verified : t.online}</strong>
-              <small>{selectedOffer?.practitionerName || selectedMaster?.title || t.online}</small></span>
-          </div>
+            </label>
+            <span className={styles.staticFilter}><strong>{t.online}</strong>
+              <small>{selectedMaster?.title || t.online}</small></span>
+          </div>}
           <div className={styles.copy}>
             <span className={styles.eyebrow}><ShieldCheck size={16} aria-hidden="true"/>
-              {consultations ? t.publicOffer : t.verified}</span>
+              {consultations ? c.published : t.verified}</span>
             <h2>{selectedOffer?.title || selectedMaster?.name}</h2>
             <p>{selectedOffer?.description || selectedMaster?.description || selectedMaster?.bio || t.description}</p>
             <span className={styles.price}>{displayPrice}</span>
+            {selectedOffer && <span className={styles.consultProvider}>{selectedOffer.practitionerName}
+              {" · "}{consultationFormatName(selectedOffer.deliveryFormat, locale)}</span>}
           </div>
+          {selectedOffer && !!selectedOffer.presentations?.length &&
+            <a className={styles.consultMedia} href={selectedOffer.presentations[0].url}
+              target="_blank" rel="noopener noreferrer" aria-label={c.media}>
+              <PlayCircle size={25} aria-hidden="true"/>
+            </a>}
+          {selectedOffer && selectedOffer.photos?.length > 1 && <div className={styles.consultPreviews}
+            role="group" aria-label={c.photos}>
+            {selectedOffer.photos.slice(0,4).map((photo, photoIndex) =>
+              <button key={photo} type="button" aria-pressed={photoIndex === consultPhotoIndex}
+                onClick={() => setConsultPhotoIndex(photoIndex)}>
+                <Image src={photo} alt="" fill unoptimized sizes="70px"/>
+                <span className="sr-only">{photoIndex+1}</span>
+              </button>)}
+          </div>}
           {entries.length > 1 && <div className={styles.arrows} role="group" aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
             <button type="button" onClick={() => step(-1)} aria-label={t.prev} data-support-master-prev><ChevronLeft size={22}/></button>
             <button type="button" onClick={() => step(1)} aria-label={t.next} data-support-master-next><ChevronRight size={22}/></button>
           </div>}
           <div className={styles.actions}>
-            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} data-support-offer-request>
-              <BookOpen size={21} aria-hidden="true"/>{t.openOffer}<ArrowRight size={21} aria-hidden="true"/>
+            {selectedOffer ? <Link className={styles.primary} href={selectedOffer.href} prefetch={false}
+              data-support-offer-request>
+              <ShoppingCart size={21} aria-hidden="true"/>{c.order}<ArrowRight size={21} aria-hidden="true"/>
             </Link> : selectedMaster && cheapest ? <button type="button" className={styles.primary}
               data-support-master-request onClick={() => setOrderOpen(true)}>
               <HandHeart size={21} aria-hidden="true"/>{t.request}<ArrowRight size={21} aria-hidden="true"/>
             </button> : <Link href={profileLink} className={styles.primary}>{t.details}<ArrowRight size={21}/></Link>}
+            {selectedOffer && <button type="button" className={styles.secondary}
+              aria-controls="support-consultation-details" aria-expanded={consultDetailsOpen}
+              onClick={() => setConsultDetailsOpen(open => !open)}>{c.details}</button>}
             {selectedMaster && <Link className={styles.secondary} href={profileLink}>{t.details}</Link>}
           </div>
         </section>}
+        {selectedOffer && consultDetailsOpen && <div id="support-consultation-details"
+          className={styles.consultDetails} data-support-consultation-details>
+          <strong>{selectedOffer.title}</strong>
+          <p>{selectedOffer.description || t.consultNote}</p>
+          <p>{selectedOffer.practitionerName} · {consultationFormatName(selectedOffer.deliveryFormat, locale)}</p>
+          <small>{c.notice}</small>
+        </div>}
         <section className={styles.more} aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
           <div className={styles.heading}>
             <h3>{consultations ? t.galleryOffers : t.galleryMasters}</h3>
