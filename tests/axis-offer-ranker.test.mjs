@@ -138,3 +138,19 @@ test('crosswalk lists exactly 34 proposals across 10 topics and four areas',()=>
   assert.ok(rows.filter(x=>x[2]==='traits').every(x=>x[4]==='descriptive_only'));
   assert.ok(rows.filter(x=>x[2]==='goal').every(x=>x[4]==='supporting_only_not_goal_score'));
 });
+
+
+test('sensitive intimacy-related axis requires explicit independent consent',()=>{
+ const sensitive=item('sensitive','connection::intimacy',{
+  targets:[{facetRef:'connection::intimacy',effect:'explore',weight:2}]});
+ const fac=[...knownFacetRefs,'connection::intimacy'];
+ const baseline={client:{language:'ru',selectedFacets:['connection::intimacy']},
+  knownFacetRefs:fac,now,items:[sensitive]};
+ assert.deepEqual(rankOffersByClientAxes(baseline),[]);
+ const consented=rankOffersByClientAxes({...baseline,
+  client:{...baseline.client,allowSensitiveContent:true}});
+ assert.equal(consented.length,1);
+ assert.equal(consented[0].matchedAxes[0].facetRef,'connection::intimacy');
+ const explicitlySensitive=item('marked','connection::boundaries',{sensitive:true});
+ assert.deepEqual(rank({selectedFacets:['connection::boundaries']},[explicitlySensitive]),[]);
+});
