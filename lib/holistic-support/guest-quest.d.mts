@@ -3,6 +3,7 @@ export type QuestStepId =
   | "secondVideo" | "test" | "course";
 export type QuestState = {
   starts: number;
+  videoQuestionAnswered: boolean;
   completed: Record<QuestStepId, boolean>;
 };
 export declare const QUEST_STORAGE_KEY: string;
@@ -14,3 +15,4 @@ export declare function nextQuestLaunch(input: unknown, signedIn?: boolean): Que
 export declare function markQuestStep(input: unknown, step: QuestStepId): QuestState;
 export declare function questCompletedCount(input: unknown): number;
 export declare function remainingGuestLaunches(input: unknown): number;
+export declare function answerQuestVideoQuestion(input: unknown): QuestState;
