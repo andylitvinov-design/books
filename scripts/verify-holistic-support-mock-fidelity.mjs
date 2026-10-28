@@ -123,8 +123,8 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes scenic player by 285px");
+          assert.ok(geometry.toolsSection[0].bottom-geometry.a[0].y<285,
+            label+" compact three-zone dashboard fits within 285px before the optional mystery-course shelf");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
