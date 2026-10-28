@@ -7,6 +7,7 @@ import { HolisticSupportChoices } from "@/components/holistic-support-choices";
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticMeditationGallery } from "@/components/holistic-meditation-gallery";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
+import { loadMeditationDiscovery } from "@/lib/holistic-support/meditation-discovery-server";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
 import { TaoistKoanBoard } from "@/components/taoist-koan-board";
@@ -59,7 +60,7 @@ const copy = {
     talismanSectionLead: "Browse Fu-style symbolic talismans, explore their intentions and request a personal piece. The master confirms price and availability.",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditations · Videos",
-    meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
+    meditationSectionLead: "Explore guided recordings and choose a personal practice by goal, situation, method, language and duration.",
     meditationMandalaAction: "Create a free personal video · photo and animated templates",
     meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
     meditationVideoTitle: "Flight to the Sun · Original English video",
@@ -169,7 +170,7 @@ const copy = {
     talismanSectionLead: "Explora talismanes de estilo Fu y solicita una pieza personal. El profesional confirma el precio y la disponibilidad.",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditaciones · Vídeos",
-    meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
+    meditationSectionLead: "Elige por meta, situación, método e idioma; incluye grabaciones originales y enlaces a otros autores.",
     meditationMandalaAction: "Crear un vídeo gratis · mi foto y plantillas animadas",
     meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
     meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
@@ -210,6 +211,7 @@ export default async function HolisticSupportPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
+  const meditationDiscovery = await loadMeditationDiscovery(locale);
   return (
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -237,7 +239,8 @@ export default async function HolisticSupportPage({ params }: Props) {
           </Link>
           <div className={styles.meditationContents}>
             {freeMeditationVideos(locale).length > 0 ? (
-              <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)} />
+              <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)}
+                catalogVideos={meditationDiscovery.videos} publishedSourceIds={meditationDiscovery.publishedSourceIds} />
             ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
             <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
               {locale !== "ru" ? (
