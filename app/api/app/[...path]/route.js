@@ -38,7 +38,7 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate } from '@/lib/app/database'
+import { consumeRate, transaction } from '@/lib/app/database'
 import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
@@ -344,6 +344,39 @@ async function handle(request, { params }) {
     if (joined === 'auth/status' && method === 'GET') {
       await auth.verified()
       return json({ signedIn: true })
+    }
+    if (joined === 'support-journey/test-status' && method === 'GET') {
+      // Only an owned, server-confirmed completed assessment counts. No answers,
+      // scale values, result IDs, account data or health details leave this API.
+      let actor = null
+      try {
+        actor = await auth.verified()
+      } catch (error) {
+        if (error?.code !== 'SIGN_IN_REQUIRED') throw error
+      }
+      let completed = false
+      if (actor) {
+        completed = await transaction(config, actor, async db => {
+          const result = await db.query(
+            "select exists(select 1 from app.assessment_runs where account_id=$1 and status='completed') as completed",
+            [actor.id],
+          )
+          return result.rows[0]?.completed === true
+        })
+      }
+      if (!completed && config.guestEnabled) {
+        const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
+        if (credential) {
+          try {
+            const guest = await createGuestRepository(config).bootstrap(credential)
+            completed = Array.isArray(guest.results) && guest.results.length > 0
+          } catch (error) {
+            // Expired/revoked guest sessions do not confer activity badges.
+            if (error?.status !== 401 && error?.status !== 404) throw error
+          }
+        }
+      }
+      return json({ completed })
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
