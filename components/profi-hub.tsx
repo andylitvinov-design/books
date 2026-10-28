@@ -248,14 +248,14 @@ export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
   const [lessonIndex, setLessonIndex] = useState(0);
   const [expandedOffer, setExpandedOffer] = useState<OfferKey | null>(null);
   const appLocale = locale === "es" ? "en" : locale;
-  const practiceRoot = "/" + appLocale + "/app/practice";
+  // Professional entry always shows the approved, publicly browseable dashboard.
+  // The safe start code opens Google only after the person chooses a tool.
+  const practiceRoot = "/" + locale + "/practice";
   const publicRoot = "/" + locale;
   const mastersHref = publicRoot + "/masters?view=mentors";
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
-  const profileHref = practiceRoot + "?panel=profile";
-  const editorHref = (key: OfferKey) => key === "meditation"
-    ? practiceRoot + "?panel=materials&materialTab=courses&create=1"
-    : practiceRoot + "?panel=services&create=1&starter=" + key;
+  const profileHref = practiceRoot + "?start=profile";
+  const editorHref = (key: OfferKey) => practiceRoot + "?start=" + key;
 
   return (
     <main className={"house-home house-home--services " + styles.page} lang={locale} data-profi-page={locale}>
