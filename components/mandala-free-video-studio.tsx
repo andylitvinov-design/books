@@ -102,22 +102,14 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
 
 // Genuine still frames from the identical cinematic renderer used for video.
 // No fake play icons or misleading pictures of actors.
-function CinematicSceneThumbnail({ scene, photoUrl, title }: {
-  scene: MoneySceneId; photoUrl: string | null; title: string;
+function CinematicSceneThumbnail({ scene, photo, title }: {
+  scene: MoneySceneId; photo: HTMLImageElement | null; title: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    let cancelled = false;
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d", { alpha: false });
-    if (!ctx) return;
-    paintCinematicMoneyFrame(ctx, null, scene, 3.2, "landscape", title);
-    if (!photoUrl) return;
-    void loadLocalImage(photoUrl).then(image => {
-      if (!cancelled) paintCinematicMoneyFrame(ctx, image, scene, 3.2, "landscape", title);
-    }).catch(() => { /* Keep scenic thumbnail if a local file is replaced. */ });
-    return () => { cancelled = true; };
-  }, [scene, photoUrl, title]);
+    const ctx = canvasRef.current?.getContext("2d", { alpha: false });
+    if (ctx) paintCinematicMoneyFrame(ctx, photo, scene, 3.2, "landscape", title);
+  }, [scene, photo, title]);
   return <canvas className={styles.moneyFlowThumb} width={220} height={132} aria-hidden="true" ref={canvasRef} />;
 }
 
@@ -262,6 +254,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
   const signature = JSON.stringify([source, frameUrl, photoUrl, moneyScene, effect, aspect, duration, quality]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
+  // Decode a user's photo once for all 12 preview cards. This avoids 12
+  // duplicate high-resolution photo decodes and private portrait copies on iOS.
+  const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
+  const sharedThumbnailPhoto = thumbnailPhoto?.url === photoUrl ? thumbnailPhoto.image : null;
+  useEffect(() => {
+    let disposed = false;
+    if (!photoUrl) return;
+    void loadLocalImage(photoUrl).then(image => {
+      if (!disposed) setThumbnailPhoto({ url: photoUrl, image });
+    }).catch(() => {
+      if (!disposed) setThumbnailPhoto(null);
+    });
+    return () => { disposed = true; };
+  }, [photoUrl]);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -427,7 +433,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
             <button type="button" key={scene.id} data-mandala-money-option={scene.id}
               disabled={recording} aria-pressed={moneyScene === scene.id}
               onClick={() => { setMoneyScene(scene.id); setPreviewPlaying(false); }}>
-              <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]} photoUrl={photoUrl || null} />
+              <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]} photo={sharedThumbnailPhoto} />
               <span className={styles.moneyFlowText}><strong>{scene.label[locale]}</strong><small>{String(index + 1).padStart(2, "0")} · VIDEO</small></span>
             </button>
           ))}
