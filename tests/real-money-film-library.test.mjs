@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {createHash} from "node:crypto";
 import {readFileSync,statSync} from "node:fs";
 import {join} from "node:path";
 
@@ -17,6 +18,7 @@ test("real video library delivers twelve decoded H264 MP4 files and true posters
  assert.equal(metadata.scenes.length,12);
  assert.equal(metadata.format,"h264-mp4");
  assert.match(metadata.sourceLicense,/supareels.com\/stock-footage-licence/);
+ const fingerprints = new Set();
  for(const id of ids){
   const meta=metadata.scenes.find(item=>item.id===id);
   assert.ok(meta,"Missing "+id);
@@ -29,10 +31,12 @@ test("real video library delivers twelve decoded H264 MP4 files and true posters
   assert.equal(mp4.subarray(4,8).toString("utf8"),"ftyp",id+" requires real video container");
   assert.ok(mp4.includes(Buffer.from("moov")),id+" needs seekable metadata");
   assert.ok(mp4.includes(Buffer.from("mdat")),id+" needs actual encoded frames");
+  fingerprints.add(createHash("sha256").update(mp4).digest("hex"));
   assert.equal(mp4.length,statSync(new URL(folder+id+".mp4",root)).size);
   const poster=read(folder+id+".jpg");
   assert.deepEqual([...poster.subarray(0,3)],[0xff,0xd8,0xff],id+" poster JPEG must derive from MP4");
  }
+ assert.equal(fingerprints.size,12,"all twelve templates must contain distinct encoded moving films");
 });
 test("public money gallery uses first-party MP4 decoder for selected personal video",()=>{
  const library=read("lib/mandala/real-money-film-library.ts").toString();
