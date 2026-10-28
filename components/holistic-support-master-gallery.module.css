@@ -191,9 +191,15 @@
   min-width: 0; min-height: 442px; padding: 13px; overflow: hidden; border-radius: 19px;
   color: #fff; background: #154138;
 }
+.reikiStageArt {
+  position: absolute; inset: 0; z-index: -3; overflow: hidden; pointer-events: none;
+}
 .reikiStageBackdrop {
-  position: absolute; inset: 0; z-index: -3; width: 100%; height: 100%;
+  position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: 66% 48%; filter: saturate(1.12) brightness(1.11);
+}
+.reikiStage[data-active-tab="filter"] .reikiStageArt {
+  bottom: auto; height: 220px;
 }
 .reikiStageShade {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -382,6 +388,9 @@
   .reikiStage { min-height: 288px; padding: 9px; gap: 7px; border-radius: 17px; }
   .reikiStage:not([data-active-tab="filter"]) { height: 288px; min-height: 288px; max-height: 288px; }
   .reikiStageBackdrop { object-position: 72% 48%; }
+  .reikiStage[data-active-tab="filter"] .reikiStageArt {
+    height: 190px;
+  }
   .reikiStageShade {
     background: linear-gradient(90deg,rgba(4,39,34,.94),rgba(5,45,34,.62) 54%,rgba(7,42,29,.08) 98%),
       linear-gradient(0deg,rgba(4,33,27,.68),transparent 67%);
