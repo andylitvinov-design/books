@@ -479,8 +479,19 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
-            label+" Academy course routes still work");
+          const coursePanel=root.locator('[data-support-courses-panel]');
+          const courseNavHrefs=await coursePanel.locator('nav a').evaluateAll(anchors =>
+            anchors.map(anchor=>anchor.getAttribute('href')));
+          assert.deepEqual(courseNavHrefs, [
+            "/"+locale+"/academy", "/"+locale+"/academy/reiki/tantra-reiki/discover",
+          ],label+" Academy and free Reiki course retain their real canonical routes");
+          const courseHrefs=await coursePanel.locator('a').evaluateAll(anchors =>
+            anchors.map(anchor=>anchor.getAttribute('href')));
+          const originalCourseCount=await coursePanel.locator('details a').count();
+          assert.equal(courseHrefs.length,2+originalCourseCount,
+            label+" source-backed mystery course links coexist with the two Academy shortcuts");
+          assert.ok(courseHrefs.every(href=>href?.startsWith("/"+locale+"/academy")),
+            label+" all course cards lead to a real localized Academy route");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
