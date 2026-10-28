@@ -27,7 +27,7 @@ test('guest preview loads no private practitioner data on the server', () => {
 })
 
 test('every practitioner action is gated by server-verified Google session', () => {
-  assert.match(showcase, /if \(signedIn\) \{\s*router.push\(target\)/)
+  assert.match(showcase, /if \(signedIn\) \{\s*router.push\(destination\(locale, key\)\)/)
   assert.match(showcase, /await appFetch\('bootstrap'\)/)
   assert.match(showcase, /if \(error\?\.status !== 401\) throw error/)
   assert.match(showcase, /appFetch\('auth\/start', \{ locale, continueTo:'practice-preview' \}\)/)
