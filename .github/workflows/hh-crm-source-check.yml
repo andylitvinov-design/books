@@ -5,6 +5,10 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'lib/crm/**'
+      - 'components/dao-telegram-handoff.*'
+      - 'components/free-entry-landing.tsx'
+      - 'app/api/public/telegram-diagnostic/**'
+      - 'tests/dao-wisdom-instagram-funnel.test.mjs'
       - 'lib/business-consulting/**'
       - 'components/app/business-enquiry-other-reply.jsx'
       - 'tests/business-enquiry-reply-handoffs.test.mjs'
@@ -135,6 +139,10 @@ jobs:
         run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
       - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
         run: node --test tests/crm-telegram-script-preview.test.mjs
+      - name: DAO Wisdom Instagram handoff — strict links, identical CRM flow, consent and STOP
+        run: node --test tests/dao-wisdom-instagram-funnel.test.mjs
+      - name: Lint DAO handoff, public readiness, localized lead page and focused tests
+        run: npx eslint components/dao-telegram-handoff.tsx components/free-entry-landing.tsx lib/crm/telegram-diagnostic.mjs lib/crm/telegram-diagnostic-v2.mjs app/api/public/telegram-diagnostic/route.js tests/dao-wisdom-instagram-funnel.test.mjs
       - name: Lint canonical Telegram script viewer and its parity tests
         run: npx eslint components/app/crm-telegram-diagnostic-script.jsx lib/crm/telegram-diagnostic-v2.mjs tests/crm-telegram-script-preview.test.mjs
       - name: Lint Telegram V2 pure conversation and CRM private persistence

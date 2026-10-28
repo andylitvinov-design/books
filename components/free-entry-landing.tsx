@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "luci
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { DaoTelegramHandoff } from "@/components/dao-telegram-handoff";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
@@ -513,7 +514,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : kind === "dao" ? "#dao-free-start" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
               <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
@@ -523,6 +524,18 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
           </figure>
         </section>
+
+        {kind === "dao" ? <div id="dao-free-start" data-dao-instagram-entry>
+          <DaoTelegramHandoff locale={locale} />
+          <CompactLeadCapture
+            locale={locale}
+            id={captureId}
+            serviceTitle={serviceTitles.dao}
+            title={final.title}
+            lead={final.lead}
+            disclaimer={common.limitations}
+          />
+        </div> : null}
 
         {situationVideo ? (
           <section className={styles.reviewIntro} id="meet-andrey" aria-labelledby="free-review-intro-title" data-free-review-video-story>
@@ -681,10 +694,10 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </section>
         ) : null}
 
-        {kind !== "situation" ? <CompactLeadCapture
+        {kind === "tests" ? <CompactLeadCapture
           locale={locale}
           id={captureId}
-          serviceTitle={serviceTitles[kind]}
+          serviceTitle={serviceTitles.tests}
           title={final.title}
           lead={final.lead}
           disclaimer={common.limitations}

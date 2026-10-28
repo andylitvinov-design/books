@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { channelTransportReady } from '@/lib/crm/messenger-policy'
-import { telegramDiagnosticPublicUrl } from '@/lib/crm/telegram-diagnostic.mjs'
+import { telegramDiagnosticPublicUrl, telegramDaoPublicUrl } from '@/lib/crm/telegram-diagnostic.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -14,8 +14,11 @@ export async function GET(){
   const available=channelTransportReady('telegram',env)
   const urls=available ? Object.fromEntries(['en','ru','es'].map(locale=>
     [locale,telegramDiagnosticPublicUrl(locale,env)])) : null
-  return NextResponse.json(available&&urls?.en&&urls?.ru&&urls?.es
-    ? {available:true,url:urls.en.split('?')[0],urls}
+  const daoUrls=available ? Object.fromEntries(['en','ru','es'].map(locale=>
+    [locale,telegramDaoPublicUrl(locale,env)])) : null
+  return NextResponse.json(available&&urls?.en&&urls?.ru&&urls?.es&&
+      daoUrls?.en&&daoUrls?.ru&&daoUrls?.es
+    ? {available:true,url:urls.en.split('?')[0],urls,daoUrls}
     : {available:false},
   {headers:{'Cache-Control':'no-store, max-age=0','Referrer-Policy':'no-referrer'}})
 }
