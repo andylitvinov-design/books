@@ -972,7 +972,7 @@ function Requests({items,services=[],t,locale,busy,onStatus,onSaveContact,onCrea
     <div className="hh-inner-request-tabs" role="group" aria-label={ru?'Фильтр заявок':es?'Filtrar solicitudes':'Filter requests'}>
       {[['all',ru?'Все':es?'Todas':'All'],
         ['requested',ru?'Новые':es?'Nuevas':'New'],
-        ['open',ru?'Ждут ответа':es?'Pendientes':'Awaiting reply'],
+        ['open',ru?'Активные':es?'Activas':'Active'],
         ['completed',ru?'Завершены':es?'Finalizadas':'Completed']].map(([value,label])=>
          <button key={value} type="button" aria-pressed={status===value} onClick={()=>setStatus(value)}>
           {label}{value==='requested'?' · '+newCount:''}
