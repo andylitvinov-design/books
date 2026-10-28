@@ -3022,14 +3022,21 @@ function ResultPage({ id, locale, data }) {
   const focusScaleKey = searchParams?.get('scale') || null
   const [retaking, setRetaking] = useState(false)
   const [retakeError, setRetakeError] = useState(null)
+  // Discussion must use the fresh, owner-scoped GET response, not an earlier
+  // bootstrap snapshot that may omit score provenance or belong to a prior route.
+  const [discussionLoadedId, setDiscussionLoadedId] = useState(null)
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
     [error, setError] = useState(null)
   useEffect(() => {
     let live = true
+    setDiscussionLoadedId(null)
     appFetch('results/' + id)
       .then((r) => {
-        if (live) setResult(r)
+        if (live) {
+          setResult(r)
+          setDiscussionLoadedId(r?.id === id ? id : null)
+        }
       })
       .catch((e) => {
         if (live) setError(e)
@@ -3089,8 +3096,8 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
-      <TestResultDiscussion key={result.id} result={result} locale={locale}
-        autoOpen={searchParams?.get('discuss') === '1'} />
+      {discussionLoadedId === result.id && <TestResultDiscussion key={result.id} result={result} locale={locale}
+        autoOpen={searchParams?.get('discuss') === '1'} />}
       <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
       <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
