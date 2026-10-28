@@ -11,7 +11,7 @@ import {
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
-import { HolisticSupportCourseProfiles } from "@/components/holistic-support-course-profiles";
+import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -278,6 +278,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
   const [profileSector, setProfileSector] = useState<GoalSector>("energy");
+  const [activeCourseProfile, setActiveCourseProfile] = useState<CourseProfileSector>("energy");
   const [goalSelection, setGoalSelection] = useState<GoalSelection | null>(null);
   // Local-only accepted diagnostic sectors, maintained when the filter closes.
   const [goalSavedSectors, setGoalSavedSectors] =
@@ -379,6 +380,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const openCourseProfileFilter = (sector: GoalSector) => {
+    if (sector !== "goals") setActiveCourseProfile(sector);
     setProfileSector(sector);
     setPlaying(false);
     setGoalFilterOpen(true);
@@ -422,6 +424,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
     // Do not claim a tailored report before the visitor accepts the
     // relevant self-rating. Reuse the existing consent-free local editor.
     if (!saved) { openCourseProfileFilter(sector); return; }
+    if (sector !== "goals") setActiveCourseProfile(sector);
     setProfileSector(sector);
     applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
       recommendationFormats: goalRecommendationFormats });
@@ -643,7 +646,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
             </div>
           ) : choice === "pump" ? (
             <HolisticSupportCourseProfiles locale={locale} courses={courses}
-              savedSectors={goalSavedSectors}
+              savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
               onTests={() => changeChoice("tests")}
               onFillProfile={openCourseProfileFilter}
               onRecommendations={showCourseProfileRecommendations} />
