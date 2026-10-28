@@ -606,7 +606,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setRecommendation({ ...scores }); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
-    scrollToSupport("support-meditation-gallery");
+    scrollToSupport("support-meditation-player");
   };
   const openJourneySupport = () => {
     const inline: Partial<Record<GoalRecommendationFormat, Choice>> = {
@@ -901,7 +901,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
-              <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
+              <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
