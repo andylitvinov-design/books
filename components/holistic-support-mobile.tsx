@@ -462,6 +462,12 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   </div>
                 )}
               </div>
+              <Link className={styles.voiceVideoEntry} data-support-voice-video-entry
+                href={"/"+locale+"/video-studio"} prefetch={false}>
+                <span aria-hidden="true">♫</span>
+                <strong>{locale==="ru"?"Моё видео: фото и голос":locale==="es"?"Mi vídeo: foto y voz":"My video: photo + voice"}</strong>
+                <ArrowRight size={18} aria-hidden="true"/>
+              </Link>
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
                   <h3>{choice === "pump" ? t.energyTitle : t.gallery}</h3>

@@ -4,15 +4,24 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'app/[locale]/holistic-support/**'
+      - 'app/[locale]/video-studio/**'
       - 'components/mandala-meditation*'
       - 'components/mandala-free-video-studio.tsx'
+      - 'components/personal-video-studio*'
+      - 'components/mandala-video-mobile.module.css'
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/verify-personal-video-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
       - 'tests/holistic-mandala-meditation.test.mjs'
       - 'tests/mandala-export.test.mjs'
       - 'tests/mandala-free-video.test.mjs'
+      - 'tests/personal-video-studio.test.mjs'
+      - 'middleware.ts'
+      - 'tests/mandala-mobile-video-design.test.mjs'
       - '.github/workflows/holistic-support-mandala.yml'
 permissions:
   contents: read
@@ -35,9 +44,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Mandala and mobile support contracts
-        run: node --test tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
+        run: node --test tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/personal-video-studio.test.mjs
       - name: Targeted lint
-        run: npx --no-install eslint lib/mandala/cinematic-money-video.ts lib/mandala/money-flow-effects.ts components/mandala-free-video-studio.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/local-video-music.ts lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' 'app/[locale]/video-studio/page.tsx' components/personal-video-studio.tsx middleware.ts lib/public-locales.ts
       - name: Typecheck
         run: npx --no-install tsc --noEmit
       - name: Build
@@ -63,4 +72,5 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
           node scripts/verify-holistic-mandala-browser.mjs
+          node scripts/verify-personal-video-browser.mjs
 
