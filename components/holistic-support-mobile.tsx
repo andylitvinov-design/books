@@ -615,7 +615,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const selectedChoice = journeySupportFormat && inline[journeySupportFormat];
     if (!selectedChoice) { openGoalFilter(); return; }
     changeChoice(selectedChoice);
-    scrollToSupport("support-mobile-experience");
+    // Jump to the requested service, not to the top of the recommendation card.
+    scrollToSupport(selectedChoice === "talisman" ? "support-talisman-panel"
+      : selectedChoice === "consultation" ? "support-consultation-panel"
+        : "support-healing-panel");
   };
   const supportCardBody = <>
     <span className={styles.journeyThumb}><JourneySupportIcon size={23} aria-hidden="true" /></span>
@@ -1021,7 +1024,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               <p className={styles.testsNotice}><ShieldCheck size={17} aria-hidden="true" />{t.testsPrivacy}</p>
             </section>
           ) : choice === "talisman" ? (
-            <div data-support-talisman-experience>
+            <div id="support-talisman-panel" data-support-talisman-experience>
               <HolisticSupportTalismanViewer key={focus} locale={locale} focus={focus}
                 rankedIds={recommended?.talismans.map(item => item.id)}
                 catalogOpen={talismanCatalogOpen} onToggleCatalog={() => setTalismanCatalogOpen(open => !open)} />
@@ -1032,11 +1035,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </div>
 
           ) : choice === "healing" || choice === "masters" ? (
-            <div data-support-healing-panel>
+            <div id="support-healing-panel" data-support-healing-panel>
               <HolisticSupportMasterGallery locale={locale} kind={choice} />
             </div>
           ) : (
-            <div data-support-consultation-panel>
+            <div id="support-consultation-panel" data-support-consultation-panel>
               <HolisticSupportMasterGallery locale={locale} kind="consultation" />
             </div>
           )}
