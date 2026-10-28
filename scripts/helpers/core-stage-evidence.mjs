@@ -15,9 +15,41 @@ const categories = ['socket_hang_up','connection_reset','connection_refused','re
 const outcomes = ['completed','rejected','timed_out','unknown']
 const oporaStages = ['owned-page','invitation-entry','programme-link','programme-content','enrollment-backlink','unknown']
 const cleanupStages = ['not-started','close-owned','drain','fence-removal','post-removal','final-clean-check','detach','failed','complete']
+const blockedEndpoints = ['none','public_page_stat','development_stack_frames','unclassified','unavailable']
+const blockedMethods = ['none','GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS','other','unavailable']
+const blockedOrigins = ['none','same-origin','cross-origin','unavailable']
+const blockedAliases = value => Object.freeze({ firstBlockedEndpoint: value, firstBlockedMethod: value, firstBlockedOrigin: value })
+const noBlocked = blockedAliases('none'), unavailableBlocked = blockedAliases('unavailable')
+
+// Read only existing first-record scalars. Never classify a URL, inspect a
+// thrown value, coerce a method, or enumerate later blocked request records.
+export function summarizeFirstOporaBlocked(blocked) {
+ try {
+  if (!blocked || types.isProxy(blocked) || !Array.isArray(blocked) || Object.getPrototypeOf(blocked) !== Array.prototype) return unavailableBlocked
+  const length = Object.getOwnPropertyDescriptor(blocked,'length')
+  if (!length || !Object.hasOwn(length,'value') || !Number.isInteger(length.value) || length.value < 0) return unavailableBlocked
+  if (length.value === 0) return noBlocked
+  const first = Object.getOwnPropertyDescriptor(blocked,'0')
+  if (!first || !Object.hasOwn(first,'value')) return unavailableBlocked
+  const record = first.value
+  if (!record || typeof record !== 'object' || types.isProxy(record)) return unavailableBlocked
+  const proto = Object.getPrototypeOf(record)
+  if (proto !== Object.prototype && proto !== null) return unavailableBlocked
+  const descriptors = Object.getOwnPropertyDescriptors(record), keys = Reflect.ownKeys(descriptors)
+  if (keys.length !== 3 || keys.some(key => typeof key !== 'string' || !['sameOrigin','method','endpoint'].includes(key))) return unavailableBlocked
+  for (const key of keys) if (!Object.hasOwn(descriptors[key],'value')) return unavailableBlocked
+  const sameOrigin = descriptors.sameOrigin.value, method = descriptors.method.value, endpoint = descriptors.endpoint.value
+  if (typeof sameOrigin !== 'boolean' || typeof method !== 'string' || !['public_page_stat','development_stack_frames','unclassified'].includes(endpoint)) return unavailableBlocked
+  return Object.freeze({ firstBlockedEndpoint: endpoint,
+   firstBlockedMethod: ['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'].includes(method) ? method : 'other',
+   firstBlockedOrigin: sameOrigin ? 'same-origin' : 'cross-origin' })
+ } catch { return unavailableBlocked }
+}
+
 const schemas = {
  opora: {
   phase: ['primary','cleanup','complete'], stage: oporaStages, locale: ['en','ru','unknown'],
+  firstBlockedEndpoint: blockedEndpoints, firstBlockedMethod: blockedMethods, firstBlockedOrigin: blockedOrigins,
   category: categories, cleanupStage: cleanupStages,
   blockedCount: 'count', pageErrorCount: 'count', cleanupErrorCount: 'count', ownedCount: 'count',
   routeInstalled: 'boolean', primaryFailed: 'boolean',
@@ -68,7 +100,7 @@ export function createCoreStageEvidence({ now = () => performance.now() } = {}) 
   picker(record) { const safe = sanitizeCoreSummary('picker',record); if (safe && picker.length < 4) picker.push(safe) },
   snapshot() {
    const elapsed = now() - started
-   return { schema: 1, stage, elapsedMs: Number.isFinite(elapsed) && elapsed >= 0 ? Math.min(86400000,Math.round(elapsed)) : null,
+   return { schema: 2, stage, elapsedMs: Number.isFinite(elapsed) && elapsed >= 0 ? Math.min(86400000,Math.round(elapsed)) : null,
     opora: opora.slice(), picker: picker.slice() }
   },
  }

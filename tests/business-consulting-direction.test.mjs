@@ -26,7 +26,9 @@ test("business strategy and founder coaching has a dedicated EN/RU/ES landing", 
   assert.match(landing, /service_request_start/);
   assert.match(landing, /free-situation-review\?topic=business/);
   assert.match(landing, /Andy|Andrey/);
-  assert.doesNotMatch(landing, /ServiceVideoShowcase/);
+  // Owner explicitly retained Business Constellations on 2026-10-28.
+  // The network-free composition test also pins its identity and click-to-load policy.
+  assert.match(landing, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\} id="business-constellation-video" \/>/);
 });
 
 test("business offer is discoverable without altering the four-card homepage contract", async () => {

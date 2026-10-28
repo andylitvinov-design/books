@@ -157,7 +157,7 @@ test('unsupported Promise constructor/species/proxy/thenable returns are never i
 test('actual wired collectors are synchronous and serialize only strict bounded records',()=>{
  const core=createCoreStageEvidence({now:()=>10})
  assert.equal(core.picker(pickerRecord()),undefined)
- const record={phase:'complete',stage:'owned-page',locale:'unknown',category:'none',cleanupStage:'complete',blockedCount:0,pageErrorCount:0,cleanupErrorCount:0,ownedCount:0,routeInstalled:false,primaryFailed:false}
+ const record={phase:'complete',firstBlockedEndpoint:'none',firstBlockedMethod:'none',firstBlockedOrigin:'none',stage:'owned-page',locale:'unknown',category:'none',cleanupStage:'complete',blockedCount:0,pageErrorCount:0,cleanupErrorCount:0,ownedCount:0,routeInstalled:false,primaryFailed:false}
  assert.equal(core.opora(record),undefined)
  const evidence=JSON.parse(JSON.stringify(core.snapshot()))
  assert.deepEqual(evidence.picker,[pickerRecord()]);assert.deepEqual(evidence.opora,[record])
@@ -176,7 +176,7 @@ test('optional OPORA summary never inspects primary or cleanup thrown values',as
  }
 })
 test('numeric limits reject nonfinite and noninteger counts; unknown enum/kind never coerced',()=>{
- const record={phase:'cleanup',stage:'owned-page',locale:'unknown',category:'timeout',cleanupStage:'close-owned',blockedCount:0,pageErrorCount:0,cleanupErrorCount:1,ownedCount:2,routeInstalled:true,primaryFailed:false}
+ const record={phase:'cleanup',firstBlockedEndpoint:'none',firstBlockedMethod:'none',firstBlockedOrigin:'none',stage:'owned-page',locale:'unknown',category:'timeout',cleanupStage:'close-owned',blockedCount:0,pageErrorCount:0,cleanupErrorCount:1,ownedCount:2,routeInstalled:true,primaryFailed:false}
  for(const value of [NaN,Infinity,-1,0.5,'2'])assert.equal(sanitizeCoreSummary('opora',{...record,blockedCount:value}),null)
  assert.equal(sanitizeCoreSummary('opora',{...record,blockedCount:1e12}).blockedCount,1000000)
  assert.equal(sanitizeCoreSummary('opora',{...record,stage:'secret-url'}),null)
@@ -247,5 +247,15 @@ test('picker successful and failed operation emit only strict scalar evidence',a
   if(fail)await assert.rejects(work,e=>e===error);else await work
   assert.equal(records.length,1);assert.equal(records[0].result,fail?'failed':'passed')
   assert.equal(JSON.stringify(records).includes('secret'),false)
+ }
+})
+
+test('OPORA existing blocked request aliases survive primary and cleanup summaries without weakening the fence',async()=>{
+ for(const [path,endpoint] of [['/api/analytics/public-page','public_page_stat'],['/__nextjs_original-stack-frames','development_stack_frames'],['/unknown','unclassified']]){
+  const records=[],h=lifecycleFixture({onExplore:async({context})=>context.dispatch('http://127.0.0.1:3100'+path+'?PRIVATE_QUERY=discarded','POST'),diagnosticSink:r=>records.push(r)})
+  await assert.rejects(h.run(),{code:'ERR_ASSERTION'})
+  assert.deepEqual(records.map(r=>r.phase),['primary','cleanup'])
+  for(const evidence of records){assert.equal(evidence.blockedCount,1);assert.equal(evidence.firstBlockedEndpoint,endpoint);assert.equal(evidence.firstBlockedMethod,'POST');assert.equal(evidence.firstBlockedOrigin,'same-origin');assert.equal(evidence.primaryFailed,true)}
+  assert.equal(JSON.stringify(records).includes('PRIVATE_QUERY'),false)
  }
 })

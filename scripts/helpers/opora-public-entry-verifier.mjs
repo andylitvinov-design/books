@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { emitCoreSummary } from './core-stage-evidence.mjs'
+import { emitCoreSummary, summarizeFirstOporaBlocked } from './core-stage-evidence.mjs'
 import { observePortraitNavigation } from './portrait-navigation-diagnostics.mjs'
 
 // Independent expectations for the approved seven-day invitation, not values
@@ -169,6 +169,7 @@ export async function verifyOporaPublicEntry(callerPage, expect, { origin, scree
   if (!diagnosticSink) return
   try { emitCoreSummary(diagnosticSink, 'opora', { phase, stage: diagnosticStage, locale: diagnosticLocale || 'unknown',
    category: phase === 'complete' ? 'none' : 'unclassified_error', cleanupStage,
+   ...summarizeFirstOporaBlocked(guard.blocked),
    blockedCount: guard.blocked.length, pageErrorCount: pageErrors.length, cleanupErrorCount: cleanupErrors.length,
    ownedCount: owned.size, routeInstalled, primaryFailed }) } catch { /* Preserve original errors. */ }
  }

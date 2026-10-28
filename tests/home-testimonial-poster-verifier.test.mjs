@@ -115,18 +115,43 @@ test('source fixture retains six catalogue IDs per locale, four Services videos 
   }
 });
 
-test('remaining free-entry targets still match actual homepage links and destination markup', () => {
-  const capture = read('components/homepage-free-capture.tsx');
-  for (const suffix of ['/client/tests', '/services/free-situation-review', '/academy/principles-of-energywork/learn']) {
+function assertHomeFreeEntrySources(capture, source, inline) {
+  for (const suffix of ['/client/tests', '/academy/principles-of-energywork/learn']) {
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
-    assert.ok(verifier.includes("'" + suffix + "'"));
+    assert.ok(source.includes("'" + suffix + "'"));
   }
+  // Analysis opens the consent-gated inline action. Its separate review card
+  // still owns the localized route journey, rather than the capture trigger.
+  assert.match(capture, /\{selected === "analysis" \? \(\s*<ContactChannelChooser/);
+  assert.match(capture, /compactPhone compactTrigger stayAfterSave/);
+  assert.match(capture, /attributes=\{\{ "data-home-free-action": "analysis" \}\}/);
+  assert.ok(source.includes("import { verifyHomeInlineAnalysis } from './helpers/home-inline-analysis-verifier.mjs'"));
+  for (const required of [
+    '({ trigger: cta } = await verifyHomeInlineAnalysis(page, expect, locale))',
+    '({ review: cta } = await verifyHomeInlineAnalysis(page, expect, locale))',
+    "await verifyHomeInlineAnalysis(page, expect, 'en')",
+    "await page.route('**/api/service-enquiries**'",
+    'assert.deepEqual(forbiddenEnquiries, [], "Opening analysis must never register a contact")',
+    'assert.deepEqual(forbiddenEnquiries, [], "Entry choices and navigation never submit an enquiry")',
+  ]) assert.ok(source.includes(required), required);
+  for (const required of [
+    "await expect(phone).toHaveValue('')", 'await expect(consent).not.toBeChecked()',
+    "await expect(chooser.getByRole('status')).toHaveCount(0)",
+    "await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)",
+    'await expect(page).toHaveURL(before)',
+    "await expect(review).toHaveAttribute('href', '/' + locale + '/services/free-situation-review')",
+  ]) assert.ok(inline.includes(required), required);
+}
+
+test('remaining free-entry targets still match actual homepage links and destination markup', () => {
+  assertHomeFreeEntrySources(read('components/homepage-free-capture.tsx'), verifier, read('scripts/helpers/home-inline-analysis-verifier.mjs'));
   assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(read('components/free-entry-landing.tsx'), /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
-  assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /const kind = "dao" as const/);
-  const dao = read('components/core-service-detail.tsx');
-  assert.match(dao, /data-core-service-detail=\{kind\}/);
-  assert.match(dao, /<h1>\{t\.title\}<\/h1>/);
+  assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="dao" \/>/);
+  const dao = read('components/free-entry-landing.tsx');
+  assert.match(dao, /const t = copy\[locale\]\[kind\]/);
+  assert.match(dao, /data-free-entry-landing=\{kind\}/);
+  assert.match(dao, /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
   const cabinet = read('components/app/cabinet-landing.jsx');
   assert.match(cabinet, /useState\('catalog'\)/);
   assert.match(cabinet, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded/);
@@ -136,7 +161,7 @@ test('remaining free-entry targets still match actual homepage links and destina
   assert.match(read('components/app/simple-test-picker.jsx'), /data-prelogin-test-picker/);
 });
 
-test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
+function assertPosterReconciliationGates(source = verifier) {
   for (const required of [
     "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
@@ -144,11 +169,82 @@ test('poster reconciliation preserves held-RSC, readability, first playback, Bac
     "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
     'await page.goBack()', 'await expect(page).toHaveURL(origin + homePath(locale))',
     'assert.deepEqual(unexpectedApiRequests, []', "request.method() === 'GET'", 'APP_UNAVAILABLE',
-    'results.filter(result => result.firstClickRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
+    'results.filter(result => result.firstClickRetained).length, widths.length * 4',
+    'results.filter(result => result.freeJourney).length, widths.length * 12',
     'await exerciseFreeJourneys(page, engine, width)', 'assert.deepEqual(errors, [])',
-  ]) assert.ok(verifier.includes(required), required);
-  assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);
-});
+  ]) assert.ok(source.includes(required), required);
+  const widthArray = source.match(/const widths = (\[[\d,\s]+\]);/)?.[1];
+  assert.ok(widthArray, 'Read the actual coverage matrix');
+  const widths = JSON.parse(widthArray);
+  assert.deepEqual(widths, [320, 375, 390, 430, 1365]);
+  assert.match(source, /await Promise\.all\(\[\['chromium', chromium\], \['webkit', webkit\]\]\.map\(async \(\[name, type\]\) => \{\s*for \(const width of widths\) \{\s*try \{ await exercise\(name, type, width\)/);
+  assert.ok(source.includes("for (const [from, to] of [['en', 'ru'], ['ru', 'en']])"));
+  const journeys = source.slice(source.indexOf('async function exerciseFreeJourneys('), source.indexOf('async function verifyHomeTestimonialPosters('));
+  assert.ok(journeys.includes("for (const locale of ['en', 'ru'])"));
+  assert.deepEqual([...journeys.matchAll(/\['(selfTest|analysis|reiki)', '/g)].map(match => match[1]), ['selfTest', 'analysis', 'reiki']);
+  const countChecks = source.match(/  assert\.equal\(results\.filter\(result => result\.(?:firstClickRetained|freeJourney)\)\.length, widths\.length \* \d+\);/g);
+  assert.equal(countChecks?.length, 2);
+  const checkCounts = new Function('assert', 'results', 'widths', countChecks.join('\n'));
+  // Synthetic source coverage, not measured browser results: two engines and
+  // five widths each require two retained switches and six locale journeys.
+  const results = widths.flatMap(() => ['chromium', 'webkit'].flatMap(() => [
+    ...['en-to-ru', 'ru-to-en'].map(() => ({ firstClickRetained: true })),
+    ...['en', 'ru'].flatMap(() => ['selfTest', 'analysis', 'reiki'].map(freeJourney => ({ freeJourney }))),
+  ]));
+  assert.equal(results.filter(result => result.firstClickRetained).length, 20);
+  assert.equal(results.filter(result => result.freeJourney).length, 60);
+  checkCounts(assert, results, widths);
+  for (const key of ['firstClickRetained', 'freeJourney']) {
+    const omitted = results.findIndex(result => result[key]);
+    assert.throws(() => checkCounts(assert, results.filter((_, index) => index !== omitted), widths), { code: 'ERR_ASSERTION' });
+  }
+  assert.doesNotMatch(source, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);
+}
+test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => assertPosterReconciliationGates());
+
+async function assertAppRouteNoWriteFence(source = verifier) {
+  const owner = source.indexOf('async function exerciseFreeJourneys(');
+  const begin = source.indexOf('  const unexpectedApiRequests = [];', owner);
+  const end = source.indexOf("  for (const locale of ['en', 'ru'])", begin);
+  const ownerEnd = source.indexOf('async function verifyHomeTestimonialPosters(', end);
+  assert.ok(owner >= 0 && begin > owner && end > begin && ownerEnd > end);
+  let handler;
+  const origin = 'https://example.invalid';
+  const page = { async route(pattern, callback) {
+    assert.equal(pattern, origin + '/api/app/**', 'Keep the fence scoped to same-origin app endpoints');
+    assert.equal(handler, undefined, 'Register exactly one app fence');
+    handler = callback;
+  } };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const unexpected = await new AsyncFunction('page', 'origin', source.slice(begin, end) + '\nreturn unexpectedApiRequests;')(page, origin);
+  assert.equal(typeof handler, 'function');
+  const expectedWrites = [];
+  for (const [method, path, status, body] of [
+    ['GET', '/api/app/guest/bootstrap', 200, { expiresAt: null, moodCheckins: [], results: [] }],
+    ['GET', '/api/app/status', 401, { error: 'APP_UNAVAILABLE' }],
+    ['POST', '/api/app/guest/bootstrap', 401, { error: 'APP_UNAVAILABLE' }],
+    ['PUT', '/api/app/status', 401, { error: 'APP_UNAVAILABLE' }],
+    ['DELETE', '/api/app/status', 401, { error: 'APP_UNAVAILABLE' }],
+  ]) {
+    const responses = [];
+    await handler({
+      request: () => ({ method: () => method, url: () => origin + path }),
+      fulfill: async response => { responses.push(response); },
+    });
+    assert.equal(responses.length, 1);
+    assert.equal(responses[0].status, status);
+    assert.equal(responses[0].contentType, 'application/json');
+    assert.deepEqual(JSON.parse(responses[0].body), body);
+    if (method !== 'GET') expectedWrites.push({ method, path });
+    assert.deepEqual(unexpected, expectedWrites, 'Every non-GET must be recorded, not hidden by the read-only status branch');
+  }
+  const gate = source.slice(end, ownerEnd).match(/  assert\.deepEqual\(unexpectedApiRequests, \[\], 'Entry navigation must not submit or request private app data'\);/);
+  assert.ok(gate, 'Keep the actual terminal no-write assertion');
+  const check = new Function('assert', 'unexpectedApiRequests', gate[0]);
+  check(assert, []);
+  assert.throws(() => check(assert, unexpected), { code: 'ERR_ASSERTION' });
+}
+test('actual app-route fence preserves exact read-only responses and records every synthetic write', () => assertAppRouteNoWriteFence());
 
 async function assertHeldResponseOrdering(source) {
   const begin = source.indexOf("  await page.route('**/*', async route => {");
