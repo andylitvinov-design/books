@@ -334,7 +334,7 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
-  assert.match(gallery, /data-support-reiki-unavailable/);
+  assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
   assert.match(gallery, /setReikiFocus\("love"\)/);
   assert.match(gallery, /onClick=\{\(\) => \{ setReikiFocus\(value\); setMethod\(""\);/);
   assert.match(gallery, /<RemoteEnergySupportBooking/);
