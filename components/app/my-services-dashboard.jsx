@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Leaf, Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, BookOpen, BriefcaseBusiness, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Heart, Leaf, Plus, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { filterPracticeServices } from '@/lib/practitioners/filter-owned-services.mjs'
 import styles from './my-services-dashboard.module.css'
 
@@ -18,7 +18,7 @@ const AREAS = {
 }
 const COPY = {
   en: {
-    choose:'Find matching services',hide:'Hide service search',hint:'Topics, prices & formats',collapse:'Tap to collapse search',
+    choose:'Filter services',hide:'Hide filters',hint:'Topic · format · price',collapse:'Tap to close filters',
     kicker:'MY SERVICES · HOLISTIC HOUSE',title:'My services',intro:'Your offers, publication status and next steps.',
     search:'Search my services',placeholder:'Service name, topic or method…',
     area:'Topic',allAreas:'All topics',format:'Format',anyFormat:'Any format',online:'Online',inPerson:'In person',hybrid:'Online or in person',
@@ -26,10 +26,11 @@ const COPY = {
     status:'Status',all:'All services',published:'Published',review:'Under review',draft:'Drafts / paused',draftOne:'Draft',
     total:'Services',clear:'Clear filters',viewAll:'Explore all services',add:'Add service',edit:'Edit service',close:'Back to my services',discard:'Close without saving changes?',
     showing:'Showing',noResults:'No matching services. Change your filters or clear the search.',filters:'active filters',
-    untitled:'Untitled service',changes:'Changes needed',paused:'Paused',suspended:'Suspended',min:'min',
+    untitled:'Untitled service',changes:'Changes needed',paused:'Paused',suspended:'Suspended',min:'min',hybrid:'Online or in person',
+    allShort:'All',publishedShort:'Active',reviewShort:'In review',draftShort:'Drafts',
   },
   ru: {
-    choose:'Подобрать услуги',hide:'Свернуть поиск услуг',hint:'Темы, цены и форматы',collapse:'Нажмите, чтобы закрыть поиск',
+    choose:'Фильтры услуг',hide:'Скрыть фильтры',hint:'Тема · формат · цена',collapse:'Нажмите, чтобы закрыть фильтры',
     kicker:'МОИ УСЛУГИ · HOLISTIC HOUSE',title:'Мои услуги',intro:'Ваши предложения, публикации и дальнейшие шаги.',
     search:'Поиск по моим услугам',placeholder:'Название, тема или метод…',
     area:'Тема',allAreas:'Все темы',format:'Формат',anyFormat:'Любой формат',online:'Онлайн',inPerson:'Лично',hybrid:'Онлайн или лично',
@@ -37,10 +38,11 @@ const COPY = {
     status:'Статус',all:'Все услуги',published:'Опубликованные',review:'На проверке',draft:'Черновики / пауза',draftOne:'Черновик',
     total:'Услуги',clear:'Сбросить фильтры',viewAll:'Все услуги сайта',add:'Добавить услугу',edit:'Редактировать услугу',close:'К моим услугам',discard:'Закрыть редактор без сохранения изменений?',
     showing:'Показано',noResults:'Нет подходящих услуг. Измените фильтры или сбросьте поиск.',filters:'активных фильтров',
-    untitled:'Без названия',changes:'Нужны правки',paused:'На паузе',suspended:'Приостановлено',min:'мин',
+    untitled:'Без названия',changes:'Нужны правки',paused:'На паузе',suspended:'Приостановлено',min:'мин',hybrid:'Онлайн или лично',
+    allShort:'Все',publishedShort:'Активные',reviewShort:'Проверка',draftShort:'Черновики',
   },
   es: {
-    choose:'Buscar servicios',hide:'Ocultar búsqueda',hint:'Temas, precios y formatos',collapse:'Pulsa para cerrar la búsqueda',
+    choose:'Filtrar servicios',hide:'Ocultar filtros',hint:'Tema · formato · precio',collapse:'Cerrar filtros',
     kicker:'MIS SERVICIOS · HOLISTIC HOUSE',title:'Mis servicios',intro:'Tus servicios, publicaciones y próximos pasos.',
     search:'Buscar mis servicios',placeholder:'Nombre, tema o método…',
     area:'Tema',allAreas:'Todos los temas',format:'Formato',anyFormat:'Cualquier formato',online:'En línea',inPerson:'Presencial',hybrid:'En línea o presencial',
@@ -48,7 +50,8 @@ const COPY = {
     status:'Estado',all:'Todos',published:'Publicados',review:'En revisión',draft:'Borradores / pausa',draftOne:'Borrador',
     total:'Servicios',clear:'Restablecer filtros',viewAll:'Explorar todos los servicios',add:'Añadir servicio',edit:'Editar servicio',close:'Volver a mis servicios',discard:'¿Cerrar sin guardar los cambios?',
     showing:'Mostrando',noResults:'No hay coincidencias. Cambia los filtros.',filters:'filtros activos',
-    untitled:'Sin título',changes:'Necesita cambios',paused:'En pausa',suspended:'Suspendido',min:'min',
+    untitled:'Sin título',changes:'Necesita cambios',paused:'En pausa',suspended:'Suspendido',min:'min',hybrid:'En línea o presencial',
+    allShort:'Todos',publishedShort:'Activos',reviewShort:'Revisión',draftShort:'Borradores',
   },
 }
 
@@ -85,11 +88,16 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
     if(creating&&createDirty&&!window.confirm(c.discard))return
     setCreating(value=>!value);setCreateDirty(false)
   }
-  const statusLabel=value=>({published:c.published,submitted:c.review,changes_requested:c.changes,draft:c.draftOne,paused:c.paused,suspended:c.suspended}[value]||value)
+  const statusLabel=value=>({published:c.publishedShort,submitted:c.reviewShort,changes_requested:c.changes,
+    draft:c.draftOne,paused:c.paused,suspended:c.suspended}[value]||value)
+  const serviceKind=item=>item.reikiOffer?'reiki':item.offeringType==='course'?'course':
+    item.areaKey==='relationships'?'relationship':item.areaKey==='business_money'?'business':'service'
+  const serviceIcon={service:Leaf,reiki:Heart,course:BookOpen,relationship:Heart,business:BriefcaseBusiness}
   const priceLabel=item=>item.pricingMode==='free'?c.free:item.pricingMode==='contact'?c.contact:item.confirmedPrice!=null
     ? ((item.pricingMode==='from'?(lang==='ru'?'От ':lang==='es'?'Desde ':'From '):'')+[item.currency,item.confirmedPrice].filter(Boolean).join(' '))
     : c.contact
-  return <section className={styles.dashboard} aria-labelledby={composing?undefined:'hh-my-services-title'} aria-label={composing?c.title:undefined}>
+  return <section className={styles.dashboard} data-practice-services-new-design
+    aria-label={c.title}>
     <div className={styles.inner}>
       {!composing&&<><button type="button" className={styles.finderButton} id="hh-services-picker-toggle"
         onClick={()=>setFinderOpen(value=>!value)}
@@ -131,11 +139,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
         </div>
       </div>
       </>}
-      {!composing&&<header className={styles.header} data-composing={composing}>
-        <p className={styles.kicker}>{c.kicker}</p>
-        <h2 id="hh-my-services-title">{editingItem?c.edit:creating?c.add:c.title}</h2>
-        <p>{composing?(lang==='ru'?'Предложение для клиента — три простых экрана.':lang==='es'?'Una oferta clara en tres pantallas.':'A clear client-facing offer in three screens.'):c.intro}</p>
-      </header>}
+
       {!composing&&<div className={styles.stats} role="group" aria-label={c.title}>
         <div><Leaf size={18} aria-hidden="true"/><strong>{items.length}</strong><span>{c.total}</span></div>
         <div><CheckCircle2 size={18} aria-hidden="true"/><strong>{published}</strong><span>{c.published}</span></div>
@@ -145,16 +149,34 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
         <button type="button" disabled={busy||mediaBusy||(!canAdd&&!composing)} aria-expanded={composing} onClick={toggleComposer}>
           {composing?<ArrowLeft size={17} aria-hidden="true"/>:<Plus size={17} aria-hidden="true"/>}{composing?c.close:c.add}
         </button>
-        <Link href={'/'+locale+'/services'} prefetch={false}>{c.viewAll}<ArrowUpRight size={15} aria-hidden="true"/></Link>
+        {!composing&&<Link href={'/'+locale+'/services'} prefetch={false}>{c.viewAll}<ArrowUpRight size={15} aria-hidden="true"/></Link>}
       </div>
+      {!composing&&<div className={styles.statusTabs} role="group" aria-label={c.status} data-practice-service-status-tabs>
+        {[
+          {key:'all',label:c.allShort,count:items.length},
+          {key:'published',label:c.publishedShort,count:published},
+          {key:'review',label:c.reviewShort,count:reviewing},
+          {key:'draft',label:c.draftShort,count:Math.max(0,items.length-published-reviewing)},
+        ].map(entry=><button key={entry.key} type="button"
+          onClick={()=>setStatus(entry.key)} aria-pressed={status===entry.key}>
+          {entry.label}<span>{entry.count}</span>
+        </button>)}
+      </div>}
       {!composing&&<p className={styles.count} role="status" aria-live="polite">{c.showing} {visible.length} / {items.length}</p>}
       {creating&&canAdd&&<div className={styles.editor} data-service-composer-focus>{renderEditor(null,setCreateDirty,setMediaBusy)}</div>}
       {editingItem&&<div className={styles.editor} data-service-composer-focus data-edit-service={editingItem.id}>{renderEditor(editingItem,setEditDirty,setMediaBusy)}</div>}
       {!composing&&<div className={styles.list}>
-        {visible.map(item=><details key={item.id+':'+item.revision} className={styles.serviceCard}
-          onToggle={event=>{if(event.currentTarget.open){setEditingId(item.id);setEditDirty(false)}}}>
+        {visible.map(item=>{
+          const kind=serviceKind(item)
+          const Icon=serviceIcon[kind]||Sparkles
+          return <details key={item.id+':'+item.revision} className={styles.serviceCard}
+            onToggle={event=>{if(event.currentTarget.open){setEditingId(item.id);setEditDirty(false)}}}>
           <summary>
-            <span className={styles.serviceIcon}>{(item.draftCopy?.photos?.[0]||item.photos?.[0])?<img src={item.draftCopy?.photos?.[0]||item.photos?.[0]} alt="" loading="lazy" />:<Leaf size={21} aria-hidden="true"/>}</span>
+            <span className={styles.serviceIcon} data-service-kind={kind}>
+              {(item.draftCopy?.photos?.[0]||item.photos?.[0])
+                ? <img src={item.draftCopy?.photos?.[0]||item.photos?.[0]} alt="" loading="lazy" />
+                : <Icon size={21} aria-hidden="true"/>}
+            </span>
             <span className={styles.serviceInfo}>
               <strong>{item.localizedCopy?.[lang]?.title||item.copy?.title||item.localizedCopy?.en?.title||c.untitled}</strong>
               <small>{item.deliveryFormat==='in_person'?c.inPerson:item.deliveryFormat==='hybrid'?c.hybrid:c.online}{item.durationMinutes?' · '+item.durationMinutes+' '+c.min:''}</small>
@@ -163,8 +185,8 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
             <span className={styles.status} data-status={item.status}>{statusLabel(item.status)}</span>
             <ChevronRight className={styles.cardChevron} size={16} aria-hidden="true"/>
           </summary>
-        </details>)}
-      </div>}
+        </details>})}
+      </div>
       {items.length===0&&!creating&&canAdd&&<p className={styles.empty}>{lang==='ru'?'Пока нет услуг. Добавьте своё первое предложение.':lang==='es'?'Aún no hay servicios. Añade tu primera oferta.':'No services yet. Add your first offer.'}</p>}
       {!composing&&items.length>0&&!visible.length&&<p className={styles.empty} role="status">{c.noResults}</p>}
     </div>
