@@ -11,8 +11,7 @@ alter table app_private.telegram_owner_video_jobs
     check(youtube_description is null or
       (length(youtube_description)<=3000 and
        octet_length(youtube_description)<=4800 and
-       youtube_description !~ '[<>]' and
-       position(chr(0) in youtube_description)=0)),
+       youtube_description !~ '[<>]')),
   add column if not exists metadata_edit_field text
     check(metadata_edit_field is null or metadata_edit_field in ('title','description')),
   add column if not exists metadata_edit_value text
