@@ -50,8 +50,11 @@ test("score provenance and raw values are validated; no below-average fiction",(
 test("financial dimensions cannot be faked from a generic resource scale",()=>{
  assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resource.self_support",definitionKey:"hh-resource-pulse"})])[0].axisRef,"support::self_support");
  assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.other"})])[0].axisRef,"support::resources");
- assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.financial_wellbeing.cfpb_short"})])[0].axisRef,"money::financial_wellbeing");
- assert.equal(verifiedAxisEvidence([sample({key:"stress",dimensionKey:"state.money_pressure.difficulty"})])[0].axisRef,"money::money_pressure");
+ assert.equal(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.financial_wellbeing.cfpb_short",definitionKey:"cfpb-financial-wellbeing-5"})])[0].axisRef,"money::financial_wellbeing");
+ assert.equal(verifiedAxisEvidence([sample({key:"stress",dimensionKey:"state.money_pressure.difficulty",definitionKey:"hh-money-pressure"})])[0].axisRef,"money::money_pressure");
+ assert.deepEqual(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.financial_wellbeing.cfpb_short"})]),[]);
+ assert.deepEqual(verifiedAxisEvidence([sample({key:"resource",dimensionKey:"resources.financial_wellbeing.cfpb_short",definitionKey:"cfpb-financial-wellbeing-5",definitionVersion:"v0"})]),[]);
+ assert.deepEqual(verifiedAxisEvidence([sample({key:"stress",dimensionKey:"state.money_pressure.difficulty",definitionKey:"hh-weekly-pulse"})]),[]);
 });
 test("explicit chosen axis controls ranking; source values do not imply urgency",()=>{
  const videos=[offer("recovery::energy"),offer("emotions::stress","video:stress")];
