@@ -14,6 +14,7 @@ test("consultation and tests are independent localized actions", () => {
     'consultation: "Consulta"', 'testsShort: "Тесты"']) assert.ok(mobile.includes(label));
   assert.ok(mobile.includes('data-support-tool="tests"'));
   assert.ok(mobile.includes('data-support-tests-panel'));
+  assert.ok(mobile.includes('document.getElementById("support-tests-panel")?.scrollIntoView('));
   assert.ok(mobile.includes('choice === "tests"'));
   assert.ok(mobile.includes('kind="consultation"'));
   assert.ok(gallery.includes('consultation: "Консультация"'));
