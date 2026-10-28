@@ -832,9 +832,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           {selectedOffer && consultPhotoSet.length > 1 && <div className={styles.consultPreviewGroup}>
             <small>{selectedOffer.photos?.length ? c.photos : c.editorialPhotos}</small>
             <div className={styles.consultPreviews}
-              role="group" aria-label={selectedOffer.photos?.length ? c.photos : c.editorialPhotos}>
+              role="group" data-support-consultation-previews aria-label={selectedOffer.photos?.length ? c.photos : c.editorialPhotos}>
             {consultPhotoSet.slice(0,4).map((photo, photoIndex) =>
-              <button key={photo} type="button" aria-pressed={photoIndex === consultPhotoIndex}
+              <button key={photo} type="button" data-support-consultation-photo={photoIndex}
+                aria-pressed={photoIndex === consultPhotoIndex}
                 onClick={() => setConsultPhotoIndex(photoIndex)}>
                 <Image src={photo} alt="" fill unoptimized sizes="70px"/>
                 <span className="sr-only">{photoIndex+1}</span>
