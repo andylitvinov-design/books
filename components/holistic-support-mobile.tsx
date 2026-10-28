@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
-  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
+  ArrowRight, BarChart3, BookOpen, Camera, Check, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
