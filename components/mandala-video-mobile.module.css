@@ -116,3 +116,10 @@
 .templateTile{position:relative}
 .tilePlay{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:45px;height:45px;border:1px solid rgba(255,238,194,.8);border-radius:50%;background:rgba(24,43,38,.8);color:#ffe8b1;box-shadow:0 0 0 4px rgba(255,221,153,.18);pointer-events:none;z-index:2}
 .templateTile[data-video-template-playing="true"] .tilePlay{background:rgba(134,98,37,.9);box-shadow:0 0 0 6px rgba(244,194,101,.24)}
+
+/* Existing public money-background-only export remains available without a user portrait. */
+.backgroundMode{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:11px 13px;margin:12px 0;background:#faf5ea;border:1px solid #d9cab5;border-radius:13px}
+.backgroundMode legend{font:800 12px Arial,sans-serif;color:#63533f;padding:0 4px}
+.backgroundMode button{flex:1 1 130px;min-height:44px;padding:9px 12px;background:#fff;border:1px solid #c8b9a6;border-radius:10px;color:#4b5c4c;font:750 12px/1.3 Arial,sans-serif;cursor:pointer}
+.backgroundMode button[aria-pressed="true"]{background:#dcebdc;border-color:#5c8f70;color:#264632}
+.backgroundMode button:focus-visible{outline:3px solid #a77d4b;outline-offset:2px}
