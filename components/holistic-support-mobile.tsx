@@ -53,7 +53,7 @@ const focusRequest: Record<Focus, string> = {
 
 const copy = {
   en: {
-    assessment: "1. Check in with yourself", scoreGuide: "Rate from 1 to 10",
+    assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
     focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo",
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
@@ -89,7 +89,7 @@ const copy = {
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
-    assessment: "1. Оцени себя сейчас", scoreGuide: "Поставь баллы от 1 до 10",
+    assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
     focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
@@ -125,7 +125,7 @@ const copy = {
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
-    assessment: "1. Evalúa cómo estás", scoreGuide: "Puntúa del 1 al 10",
+    assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
     focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
@@ -275,7 +275,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         </header>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
-            <h1 id="mobile-assessment-title">{t.assessment}</h1>
+            <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
             <p className={styles.subText}>{t.scoreGuide}</p>
             <div className={styles.scaleList}>
               {focusOrder.map(id => {
@@ -292,17 +292,15 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </label>;
               })}
             </div>
-            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
-              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
-            </button>
+
+
           </section>
 
           <section className={styles.profile} aria-label={t.focusLabel}>
             <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
               {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
-                  <Image alt="" src="/images/holistic-house/support-mock-portrait.webp"
-                    width={176} height={176} unoptimized className={styles.photoReference} />
+                  <UserRound size={43} strokeWidth={1.45} aria-hidden="true" data-support-photo-placeholder />
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
@@ -319,10 +317,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </select><ChevronDown size={18} aria-hidden="true" />
               </span>
             </label>
+            <button type="button" className={styles.recommendButton} onClick={onRecommendations} data-support-recommendations aria-label={t.recommend}>
+              <Sparkles size={21} aria-hidden="true" /><span className={styles.recommendLong}>{t.recommend}</span><span className={styles.recommendShort}>{t.recommendCompact}</span>
+            </button>
           </section>
 
           <section className={styles.tools} aria-labelledby="mobile-tools-title" id="support-tools">
-            <h2 id="mobile-tools-title">{t.toolsTitle}</h2>
+            <h2 id="mobile-tools-title" aria-label={t.toolsTitle}><span className={styles.headingLong}>{t.toolsTitle}</span><span className={styles.headingCompact}>{t.toolsShort}</span></h2>
             <div className={styles.toolGrid}>
               {choices.map(({ id, Icon }) => (
                 <button key={id} type="button" data-support-tool={id}
@@ -332,13 +333,13 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                   <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span>
                 </button>
               ))}
-            </div>
             <Link href={"/" + locale + "/personality-profiles"} prefetch={false}
               className={styles.detailedAnalysisLink} data-support-detailed-analysis aria-label={t.detailed}>
               <BarChart3 size={18} aria-hidden="true" />
               <span className={styles.detailedFull}>{t.detailed}</span><span className={styles.detailedCompact}>{t.detailedCompact}</span>
               <ArrowRight size={17} aria-hidden="true" />
             </Link>
+            </div>
           </section>
         </div>
 

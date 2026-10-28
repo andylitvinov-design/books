@@ -12,6 +12,7 @@ on:
       - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
       - 'app/site-video-admin.css'
       - 'tests/kling-video.test.mjs'
+      - 'lib/wealth-video-local.ts'
       - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
   push:
@@ -26,6 +27,7 @@ on:
       - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
       - 'app/site-video-admin.css'
       - 'tests/kling-video.test.mjs'
+      - 'lib/wealth-video-local.ts'
       - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
 
@@ -48,7 +50,7 @@ jobs:
       - name: Contract tests (no paid provider calls)
         run: node --test tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: Scoped ESLint
-        run: npx eslint lib/kling-video.mjs lib/kling-avatar.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js app/api/admin/kling-avatar/route.js components/kling-scene-studio.tsx components/kling-avatar-studio.tsx tests/kling-video.test.mjs tests/kling-avatar.test.mjs
+        run: npx eslint lib/wealth-video-local.ts lib/kling-video.mjs lib/kling-avatar.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js app/api/admin/kling-avatar/route.js components/kling-scene-studio.tsx components/kling-avatar-studio.tsx tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Next.js build
