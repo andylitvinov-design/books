@@ -5,6 +5,8 @@ import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
+import {meditationApprovedHandoff} from '@/lib/practitioners/meditation-studio-service'
+import {getAppConfig} from '@/lib/app/config'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId, resolvePhoneYoutubeClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
@@ -20,7 +22,12 @@ export const metadata = {
 export default async function YoutubeUploadPage({searchParams}) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
-  const importTelegramCut=(await searchParams)?.import==='telegramCut'
+  const query=await searchParams
+  const importTelegramCut=query?.import==='telegramCut'
+  let approvedMeditation=null
+  if(typeof query?.meditation==='string'&&/^[0-9a-f-]{36}$/i.test(query.meditation))try{
+    approvedMeditation=await meditationApprovedHandoff(getAppConfig(),query.meditation)
+  }catch{/* Do not expose unavailable or unapproved private media. */}
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
@@ -101,6 +108,7 @@ export default async function YoutubeUploadPage({searchParams}) {
     </section>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
-      initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
+      initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}
+      approvedMeditation={approvedMeditation}/>
   </main>
 }

@@ -74,9 +74,12 @@ test('iPhone 320–430 mock has inline profile, six horizontal actions and six v
 test('existing protected service, meditation and course editors remain available', () => {
   assert.ok(showcase.includes('panel=services&create=1&starter=session'))
   assert.ok(showcase.includes('panel=services&create=1&starter=energy'))
-  assert.ok(showcase.includes('panel=materials&materialTab=courses&create=1&meditation=audio'))
+  assert.ok(showcase.includes('panel=meditations&meditation=audio'))
   assert.ok(showcase.includes('panel=materials&materialTab=courses&create=1'))
   assert.ok(showcase.includes("practice:'/' + locale + '/practice'"))
+  assert.ok(editor.includes("setActivePanel('meditations')"))
+  assert.ok(editor.includes('<PractitionerMeditationStudio'))
+  assert.ok(editor.includes("params.get('panel')==='materials'&&['audio','video']"))
   assert.ok(editor.includes("const meditation=params.get('meditation')"))
   assert.ok(editor.includes('setMeditationType(meditation)'))
 })

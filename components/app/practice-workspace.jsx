@@ -7,6 +7,7 @@ import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeExpressReports from './practice-express-reports'
 import PracticeMaterials from './practice-materials'
+import PractitionerMeditationStudio from './practitioner-meditation-studio'
 import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
@@ -172,13 +173,21 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    if(params.get('panel')==='materials'){
+    if(params.get('panel')==='materials'&&['audio','video'].includes(params.get('meditation'))){
+      // Legacy bookmarks previously opened the course builder; keep that entry working.
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation'))
+    }else if(params.get('panel')==='materials'){
       setActivePanel('materials')
       if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
         setProCourseStart(true)
         const meditation=params.get('meditation')
         if(['audio','video'].includes(meditation))setMeditationType(meditation)
       }
+    }
+    if(params.get('panel')==='meditations'){
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation')==='video'?'video':'audio')
     }
     if(params.get('panel')==='services'){
       setActivePanel('services')
@@ -358,12 +367,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
       return
     }
-    setProCourseStart(true)
     setMeditationType(kind)
-    setMaterialTab('courses')
-    setActivePanel('materials')
-    setMaterialShortcut(current=>({tab:'courses',nonce:current.nonce+1}))
-    setPanelRoute('materials','courses')
+    setActivePanel('meditations')
+    setPanelRoute('meditations')
     setMeditationPickerOpen(false)
     setError('')
   }
@@ -676,6 +682,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
+        {activePanel==='meditations'&&<PractitionerMeditationStudio key={p?.id||'meditations'} locale={locale} initialKind={meditationType||'audio'}/>}
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} meditationType={meditationType} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
