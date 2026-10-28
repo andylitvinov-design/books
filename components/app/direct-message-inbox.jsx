@@ -6,6 +6,7 @@ import {preparePhoto} from '@/components/session-photo-uploader'
 import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
 import styles from './direct-message-inbox.module.css'
 import PrivateChatPhoto from './private-chat-photo'
+import DirectVoiceRecorder from './direct-voice-recorder'
 import {ClientExpressReportNotices} from './practice-express-reports'
 
 const COPY={
@@ -118,6 +119,13 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
+  const [audioPreview,setAudioPreview]=useState('')
+  useEffect(()=>{
+    if(!file||!AUDIO_MIMES.has(mediaMime(file))){setAudioPreview('');return}
+    const url=URL.createObjectURL(file)
+    setAudioPreview(url)
+    return()=>URL.revokeObjectURL(url)
+  },[file])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
     const data=await jsonGet()
@@ -324,9 +332,11 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
               <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
                   disabled={busy} onChange={e=>changeFile(e.target.files?.[0]||null)}/></label>
+              <DirectVoiceRecorder locale={locale} disabled={busy} onRecorded={changeFile}/>
               <button className={styles.send} type="submit" disabled={busy||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>
             </div>
+            {audioPreview&&<audio controls preload="metadata" src={audioPreview} aria-label={t.audio} className={styles.voicePreview}/>}
             {file&&<p className={styles.fileName}>{file.name} ({Math.ceil(file.size/1024)} KB)
               <button type="button" disabled={busy} onClick={()=>changeFile(null)}>×</button></p>}
             {audioSelected&&<label className={styles.permission}>

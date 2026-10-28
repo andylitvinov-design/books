@@ -138,3 +138,9 @@
   .shell[data-simple-detail="true"] .actions{align-items:center}
   .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
 }
+
+/* Signed-storage voice capture shares the existing private audio upload. */
+.actions{flex-wrap:wrap;justify-content:flex-start}
+.actions .send{margin-left:auto}
+.voicePreview{width:min(100%,430px);height:48px;max-width:100%;}
+@media(max-width:390px){.actions{gap:6px}.filePick{padding:7px 9px}.actions .send{padding:9px 11px}}
