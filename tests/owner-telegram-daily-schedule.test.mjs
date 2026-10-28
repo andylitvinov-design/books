@@ -15,10 +15,11 @@ const content='# Holistic House | 5 идей для роста выручки | 
 const body='<!-- HH-REVENUE-DAILY:'+date+' -->\n'+content+'\n<!-- HH-REVENUE-END -->'
 const good={id:12345,html_url:source,user:{login:'andylitvinov-design'},body}
 
-test('09/12/15 Toronto delivery slots stay constant through daylight saving change',()=>{
+test('09/12/14/15 Toronto delivery slots stay constant through daylight saving change',()=>{
   for(const [slot,summer,winter] of [
     ['revenue','2026-10-27T13:00:00Z','2026-11-02T14:00:00Z'],
     ['strategy','2026-10-27T16:00:00Z','2026-11-02T17:00:00Z'],
+    ['market','2026-10-27T18:00:00Z','2026-11-02T19:00:00Z'],
     ['operations','2026-10-27T19:00:00Z','2026-11-02T20:00:00Z']]){
     assert.equal(torontoReportDue(slot,new Date(summer)),true)
     assert.equal(torontoReportDue(slot,new Date(winter)),true)
@@ -71,11 +72,13 @@ test('all cron paths authenticate and enforce Toronto slot, no anonymous or prev
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
+    {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
   ])
   for(const [route,slot] of [
     ['revenue-ideas-telegram','revenue'],
     ['practice-telegram-digest','operations'],
-    ['council-archive-telegram','strategy']]){
+    ['council-archive-telegram','strategy'],
+    ['market-intel-telegram','market']]){
     const source=readFileSync(new URL('../app/api/internal/'+route+'/route.js',import.meta.url),'utf8')
     assert.match(source,/cronAuthorized\(request,process\.env\)/)
     assert.ok(source.includes("torontoReportDue('"+slot+"')"))
