@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+import { HolisticSupportInlineGuide } from "@/components/holistic-support-inline-guide";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
@@ -61,9 +62,6 @@ type Theme = "all" | MeditationTopic;
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
 const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"];
 // Existing public Test Explorer recognizes these non-sensitive editorial journey IDs.
-const journeyCategory: Record<Focus, string> = {
-  energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
-};
 const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Flower2, meaning: Flower2 };
 // The historical recommendation engine calls the fourth focus "goals".
 // It receives the single Meaning score, never a second or synthetic Goals slider.
@@ -406,6 +404,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
+  const [editedCheckins, setEditedCheckins] = useState<CheckinArea[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideVersion, setGuideVersion] = useState(0);
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
   const [profileSector, setProfileSector] = useState<GoalSector>("energy");
   const [activeCourseProfile, setActiveCourseProfile] = useState<CourseProfileSector>("energy");
@@ -489,7 +490,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     }
     return eligible.slice(0, 4);
   }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
-  const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
+  const selected = relevantVideos.find(video => video.id === selectedId) ??
+    videos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
@@ -503,20 +505,22 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const onCheckinChange = (id: CheckinArea, value: number) => {
     if (!Number.isInteger(value) || value < 1 || value > 10) return;
     setScores(previous => ({ ...previous, [id]: value }));
-    // Invalidate previously applied rankings, never drop accepted category
-    // answers or selected resource formats.
+    setEditedCheckins(previous => previous.includes(id) ? previous : [...previous, id]);
+    // Invalidate previously applied ranking; keep accepted category answers.
+    setGuideOpen(false);
     setRecommendation(null); setGoalSelection(null);
   };
   const onRecommendations = () => {
-    // Keep the user's chosen focus and formats; recommend only verified content.
+    // No unsolicited analysis: launch dialogue from the user's actual inputs.
     setRecommendation(asFocusScores(scores));
     setGoalFilterOpen(false);
+    setGuideVersion(previous => previous + 1); setGuideOpen(true);
     scrollToSupport("support-goal-results");
   };
   const openGoalFilter = () => {
     setProfileSector(goalSelection?.sector ?? ({ energy: "energy", money: "money",
       relationships: "love", goals: "meaning" } as Record<Focus, GoalSector>)[focus]);
-    setPlaying(false); setGoalFilterOpen(true);
+    setPlaying(false); setGuideOpen(false); setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
@@ -546,6 +550,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     // never overwrite the dedicated check-in, which syncs on every drag.
     setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
+    setGuideVersion(previous => previous + 1); setGuideOpen(true);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
@@ -566,7 +571,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   };
   const resetGoalFilter = () => {
     setGoalSavedSectors({}); setGoalRecommendationFormats([...GOAL_RECOMMENDATION_FORMATS]);
-    setGoalSelection(null); setRecommendation(null); setTheme("all");
+    setGoalSelection(null); setRecommendation(null); setTheme("all"); setGuideOpen(false);
   };
   const startVideo = () => {
     if (!selected) return;
@@ -599,51 +604,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
   const goalHasInlineFormat = activeGoalFormats.some(id =>
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
-  // Single recommendation guide: only already published videos and existing routes.
-  // Scores/photo never leave this page; no automatic enrollments or bookings.
-  const quickRanked = useMemo(() => recommendSupportByLowestScores({ scores: asFocusScores(scores), videos, locale }),
-    [scores, videos, locale]);
-  const journeyVideo = goalMatch?.videos[0] ?? quickRanked.videos[0] ?? null;
-  const journeyVideoAllowed = !goalSelection || activeGoalFormats.includes("meditation");
-  const journeySupportFormat = (["healing", "consultation", "courses", "masters",
-    "talismans", "initiations", "mandala"] as GoalRecommendationFormat[])
-    .find(id => activeGoalFormats.includes(id));
-  const journeySupportHref = journeySupportFormat === "courses"
-    ? "/" + locale + (focus === "money" ? "/explore/business" : "/academy")
-    : journeySupportFormat === "initiations"
-      ? "/" + locale + "/academy/reiki/tantra-reiki/discover"
-      : journeySupportFormat === "mandala"
-        ? "/" + locale + "/holistic-support/mandala" : null;
-  const JourneySupportIcon = journeySupportFormat === "courses" ? BookOpen
-    : journeySupportFormat === "consultation" ? MessageCircle : HandHeart;
-  const showJourneyVideo = () => {
-    if (!journeyVideoAllowed) { openGoalFilter(); return; }
+  // Real catalogue and published player reused by the conversation; no paid AI call.
+  const guidePreferredVideo = goalMatch?.videos[0] ?? null;
+  const openGuideVideo = (id: string | null) => {
+    if (goalSelection && !activeGoalFormats.includes("meditation")) { openGoalFilter(); return; }
     setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
-    setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
+    setSelectedId(id); setPlaying(false);
     scrollToSupport("support-meditation-player");
   };
-  const openJourneySupport = () => {
-    const inline: Partial<Record<GoalRecommendationFormat, Choice>> = {
-      healing: "healing", consultation: "consultation", masters: "masters", talismans: "talisman",
-    };
-    const selectedChoice = journeySupportFormat && inline[journeySupportFormat];
-    if (!selectedChoice) { openGoalFilter(); return; }
+  const openGuideChoice = (selectedChoice: "meditation" | "tests" | "pump" | "consultation" | "healing") => {
     changeChoice(selectedChoice);
-    // Jump to the requested service, not to the top of the recommendation card.
-    scrollToSupport(selectedChoice === "talisman" ? "support-talisman-panel"
-      : selectedChoice === "consultation" ? "support-consultation-panel"
-        : "support-healing-panel");
+    scrollToSupport(selectedChoice === "consultation" ? "support-consultation-panel"
+      : selectedChoice === "healing" ? "support-healing-panel" : "support-mobile-experience");
   };
-  const supportCardBody = <>
-    <span className={styles.journeyThumb}><JourneySupportIcon size={23} aria-hidden="true" /></span>
-    <span className={styles.journeyContent}>
-      <strong>{journeySupportFormat ? t.goalResultLabels[journeySupportFormat] : t.journey.supportMissing}</strong>
-      <small>{journeySupportFormat ? t.goalResultHints[journeySupportFormat] : t.goalNoFormats}</small>
-      <em>{t.journey.actions[3]} <ArrowRight size={13} aria-hidden="true" /></em>
-    </span>
-    <ChevronRight size={17} aria-hidden="true" />
-  </>;
   const scene = choice === "meditation";
 
   return (
@@ -751,151 +725,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </div>
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
-          {!goalFilterOpen ? <section className={styles.goalResults}
-            id="support-goal-results" data-support-goal-results aria-labelledby="support-goal-results-title">
-            <div className={styles.journeyHeading}>
-              <div className={styles.goalResultsHeading}>
-                <h2 id="support-goal-results-title"><Sparkles size={21} aria-hidden="true" />{t.goalResultsTitle}</h2>
-                <p>{t.journey.intro} {t.goalResultsNote}</p>
-              </div>
-              <button type="button" className={styles.journeyAdjust} onClick={openGoalFilter}>
-                <Settings2 size={16} aria-hidden="true" />{t.goalAdjust}
-              </button>
-            </div>
-            <div className={styles.journeyFocus} data-support-journey-focus>
-              <ActiveFocusIcon size={16} aria-hidden="true" />{t.journey.focus}: <strong>{activeFocusLabel}</strong>
-              <span>{goalSelection ? scores[goalSectorCheckinKey[goalSelection.sector]] : focusScores[focus]}/10</span>
-            </div>
-            <div className={styles.journeyRows} aria-label={t.goalResultsTitle}>
-              <div className={styles.journeyRow} data-support-journey-step="1">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>1</span>
-                  <MessageCircle size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[0]}</strong></div>
-                <button type="button" className={styles.journeyTarget} onClick={openGoalFilter}
-                  data-support-journey-action="question">
-                  <span className={styles.journeyThumb}><MessageCircle size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.questionTitle}</strong>
-                    <small>{t.journey.questionHint}</small><em>{t.journey.actions[0]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="2">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>2</span>
-                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[1]}</strong></div>
-                <Link className={styles.journeyTarget} prefetch={false}
-                  href={"/" + locale + "/client/tests?journey=" + journeyCategory[focus]}
-                  data-support-journey-action="tests">
-                  <span className={styles.journeyThumb}><TestTubeDiagonal size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.testTitles[focus]}</strong>
-                    <small>{t.journey.testHint}</small><em>{t.journey.actions[1]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </Link>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="3">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>3</span>
-                  <Play size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[2]}</strong></div>
-                <button type="button" className={styles.journeyTarget} onClick={showJourneyVideo}
-                  data-support-journey-action="video" data-support-journey-video={journeyVideoAllowed && journeyVideo ? journeyVideo.id : "none"}>
-                  <span className={styles.journeyThumb}>
-                    {journeyVideo && journeyVideoAllowed ? <Image alt="" loading="lazy" unoptimized
-                      src={"https://i.ytimg.com/vi/" + encodeURIComponent(journeyVideo.id) + "/mqdefault.jpg"}
-                      width={112} height={74} /> : <Play size={23} aria-hidden="true" />}
-                  </span>
-                  <span className={styles.journeyContent}>
-                    <strong>{!journeyVideoAllowed ? t.journey.videoExcluded :
-                      journeyVideo ? shortVideoTitle(journeyVideo.title, locale) : t.journey.videoMissing}</strong>
-                    <small>{goalSelection && goalMatch && !goalMatch.matchedVideo ? t.journey.related : t.journey.videoHint}</small>
-                    <em>{t.journey.actions[2]} <ArrowRight size={13} aria-hidden="true" /></em>
-                  </span><ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="4">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>4</span>
-                  <HandHeart size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[3]}</strong></div>
-                {journeySupportHref ? <Link href={journeySupportHref} prefetch={false}
-                  data-support-journey-action="support" className={styles.journeyTarget}>{supportCardBody}</Link> :
-                  <button type="button" className={styles.journeyTarget}
-                    data-support-journey-action="support" onClick={openJourneySupport}>{supportCardBody}</button>}
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="5">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>5</span>
-                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[4]}</strong></div>
-                <a className={styles.journeyTarget} href="#support-progress" data-support-journey-action="progress">
-                  <span className={styles.journeyThumb}><BarChart3 size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.progressTitle}</strong>
-                    <small>{t.journey.progressHint}</small><em>{t.journey.actions[4]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </a>
-              </div>
-            </div>
-            <button type="button" className={styles.journeyStart} onClick={openGoalFilter}>
-              <Sparkles size={17} aria-hidden="true" />{t.journey.start}<ArrowRight size={17} aria-hidden="true" />
-            </button>
-            {goalSelection && activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
-              role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
-            {goalSelection ? <details className={styles.journeyMore} data-support-journey-other>
-              <summary>{t.journey.other} <ChevronDown size={16} aria-hidden="true" /></summary>
-            <div className={styles.goalResultGrid}>
-              {activeGoalFormats.includes("meditation") ? <button type="button"
-                data-support-goal-action="meditation" aria-pressed={choice === "meditation"}
-                onClick={() => { changeChoice("meditation"); window.requestAnimationFrame(() =>
-                  document.getElementById("support-meditation-gallery")?.scrollIntoView({
-                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-                    block: "start",
-                  })); }}>
-                <Play size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("consultation") ? <button type="button"
-                data-support-goal-action="consultation" aria-pressed={choice === "consultation"}
-                onClick={() => changeChoice("consultation")}>
-                <MessageCircle size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.consultation}</strong><small>{t.goalResultHints.consultation}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("tests") ? <button type="button"
-                data-support-goal-action="tests" aria-pressed={choice === "tests"}
-                aria-controls="support-tests-panel" onClick={() => changeChoice("tests")}>
-                <TestTubeDiagonal size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("courses") ? <Link
-                href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
-                  : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
-                <BookOpen size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.courses}</strong><small>{t.goalResultHints.courses}</small></span>
-              </Link> : null}
-              {activeGoalFormats.includes("talismans") ? <button type="button"
-                data-support-goal-action="talismans" aria-pressed={choice === "talisman"}
-                onClick={() => changeChoice("talisman")}>
-                <Sparkles size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.talismans}</strong><small>{t.goalResultHints.talismans}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("healing") ? <button type="button"
-                data-support-goal-action="healing" aria-pressed={choice === "healing"}
-                onClick={() => changeChoice("healing")}>
-                <HandHeart size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.healing}</strong><small>{t.goalResultHints.healing}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("masters") ? <button type="button"
-                data-support-goal-action="masters" aria-pressed={choice === "masters"}
-                onClick={() => changeChoice("masters")}>
-                <UserRound size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.masters}</strong><small>{t.goalResultHints.masters}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("initiations") ? <Link
-                href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}
-                data-support-goal-action="initiations">
-                <Zap size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.initiations}</strong><small>{t.goalResultHints.initiations}</small></span>
-              </Link> : null}
-              {activeGoalFormats.includes("mandala") ? <Link
-                href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
-                data-support-goal-action="mandala">
-                <Flower2 size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.mandala}</strong><small>{t.goalResultHints.mandala}</small></span>
-              </Link> : null}
-            </div>
-            </details> : null}
-          </section> : null}
+          {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
+            key={guideVersion} locale={locale} scores={scores} editedCheckins={editedCheckins}
+            goalSelection={goalSelection} videos={videos} preferredVideo={guidePreferredVideo}
+            onClose={() => setGuideOpen(false)} onRefine={openGoalFilter}
+            onVideo={openGuideVideo} onChoice={openGuideChoice} /> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}

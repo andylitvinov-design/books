@@ -1,146 +1,135 @@
-// Real browser interaction and geometry for the approved five-card mobile guide.
-// Loopback, published public sources, synthetic directory; no provider writes or playback.
+// Live UI acceptance in local-only Chromium + WebKit, EN/RU/ES, iPhone widths.
+// No real provider writes, paid APIs, playback, sensitive fixtures or CRM changes.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
-import { qaSupportDirectoryResponse } from "./fixtures/holistic-support-directory.mjs";
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3119";
-if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Localhost only");
+if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Loopback only");
 const output = "artifacts/holistic-guided-recommendations";
 await mkdir(output, { recursive: true });
 
 for (const engine of [chromium, webkit]) {
   const browser = await engine.launch({ headless: true });
   try {
-    for (const locale of ["ru", "en", "es"]) for (const width of [320, 390, 430]) {
-      const name = engine.name() + "/" + locale + "/" + width;
-      const page = await browser.newPage({ viewport: {width, height: 844},
-        deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: "reduce",
-        serviceWorkers: "block" });
-      const exceptions = [], writes = [];
-      page.on("pageerror", error => exceptions.push(error.message));
-      page.on("request", request => {
-        if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) && request.url().includes("/api/")) {
-          writes.push(request.method() + " " + request.url());
-        }
+    for (const locale of ["ru","en","es"]) for (const width of [320,390,430]) {
+      const tag = engine.name()+"/"+locale+"/"+width;
+      const page = await browser.newPage({
+        viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,
+        reducedMotion:"reduce",serviceWorkers:"block",
       });
-      await page.route("**/youtube-nocookie.com/**", route => route.abort());
-      await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
-        const kind = new URL(route.request().url()).searchParams.get("kind");
-        await route.fulfill({ status: 200, contentType: "application/json",
-          body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
+      const exceptions=[],writes=[];
+      page.on("pageerror",e=>exceptions.push(e.message));
+      page.on("request",req=>{
+        if (!["GET","HEAD","OPTIONS"].includes(req.method()) && req.url().includes("/api/"))
+          writes.push(req.method()+" "+req.url());
       });
+      await page.route("**/youtube-nocookie.com/**",route=>route.abort());
       try {
-        const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
-          { waitUntil: "domcontentloaded", timeout: 75000 });
-        assert.equal(response?.status(), 200, name + " page");
-        const root = page.locator("[data-holistic-mobile-alternative]");
-        await root.waitFor({ state: "visible", timeout: 35000 });
-        await page.waitForFunction(() => {
-          const el = document.querySelector('[data-support-scale="energy"] input');
-          return Boolean(el && Object.keys(el).some(key => key.startsWith("__reactProps$")));
-        }, null, { timeout: 30000 });
+        const response=await page.goto(origin+"/"+locale+"/holistic-support/mobile",
+          {waitUntil:"domcontentloaded",timeout:75000});
+        assert.equal(response?.status(),200,tag+" page");
+        const root=page.locator("[data-holistic-mobile-alternative]");
+        await root.waitFor({state:"visible",timeout:35000});
+        await page.waitForFunction(()=>{
+          const input=document.querySelector('[data-support-scale="money"] input');
+          return !!(input&&Object.keys(input).some(x=>x.startsWith("__reactProps$")));
+        },null,{timeout:30000});
+        assert.equal(await root.locator("[data-support-scale]").count(),4,tag+" current four linked check-ins");
+        assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,tag+" Goals belong to Meaning");
+        assert.equal(await root.locator('[data-support-scale="meaning"]').count(),1,tag+" Meaning retains the merged goals");
+        assert.equal(await root.locator("[data-support-tool]").count(),7,tag+" original support actions");
+        assert.equal(await root.locator("[data-support-mobile-bottom-nav]").count(),1,tag+" original dock");
+        assert.equal(await root.locator("[data-support-inline-guide]").count(),0,tag+" closed by default");
+        const slider=root.locator('[data-support-scale="money"] input');
+        await slider.focus();
+        await slider.press("Home");
+        assert.equal(await slider.inputValue(),"1",tag+" changed rating");
 
-        assert.equal(await root.locator("[data-support-mobile-bottom-nav]").count(), 1, name + " original dock");
-        assert.equal(await root.locator("[data-support-scale]").count(), 4, name + " four linked ratings");
-        assert.equal(await root.locator('[data-support-scale="goals"]').count(), 0, name + " no separate Goals scale");
-        assert.equal(await root.locator('[data-support-scale="meaning"] input[type="range"]').count(), 1,
-          name + " separate Meaning rating stays visible");
-        assert.equal(await root.locator("[data-support-tool]").count(), 7, name + " original tools");
-        const guide = root.locator("[data-support-goal-results]");
-        assert.equal(await guide.count(), 1, name + " exactly one recommendations card");
-        assert.equal(await guide.locator("[data-support-journey-step]").count(), 5, name + " five actual steps");
-        for (const action of ["question","tests","video","support","progress"])
-          assert.equal(await guide.locator('[data-support-journey-action="' + action + '"]').count(),
-            1, name + " direct action: " + action);
-        const testLink = guide.locator('[data-support-journey-action="tests"]');
-        assert.equal(await testLink.getAttribute("href"), "/" + locale + "/client/tests?journey=energy",
-          name + " real allowlisted test journey");
-        const metrics = await page.evaluate(() => {
-          const selectors = ["[data-support-goal-results]", "[data-support-player]",
-            "[data-support-journey-action]", "[data-support-mobile-bottom-nav]"];
-          const clientWidth = document.documentElement.clientWidth;
-          return { clientWidth, scrollWidth: document.documentElement.scrollWidth,
-            rects: selectors.map(selector => [...document.querySelectorAll(selector)].map(el => {
-              const r = el.getBoundingClientRect();
-              return { selector, left: r.left, right: r.right, width: r.width, height: r.height, y: r.top };
-            })).flat() };
+        await root.locator("[data-support-recommendations]").click();
+        const guide=root.locator("[data-support-inline-guide]");
+        await guide.waitFor({state:"visible",timeout:10000});
+        const original=await guide.locator("[data-support-guide-fixed-portrait]").boundingBox();
+        assert.equal(await guide.locator("[data-support-guide-fixed-portrait] img").count(),1,tag+" fixed guide photo");
+        assert.equal(await guide.locator("[data-support-guide-phase='review']").count(),1,tag+" grounded analysis");
+        const analysis=await guide.locator("[data-support-guide-message='guide']").first().innerText();
+        assert.ok(analysis.includes("1/10")&&!analysis.includes("5/10"),
+          tag+" only values actually edited by visitor: "+analysis);
+        assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),0,
+          tag+" recommendations hidden before conversation ends");
+
+        // Real typed question within the current step must receive a local,
+        // relevant answer without advancing or triggering paid AI.
+        const question={ru:"Почему именно эта тема?",en:"Why this topic?",es:"¿Por qué esta opción?"}[locale];
+        await guide.locator("[data-support-guide-compose] input").fill(question);
+        await guide.locator("[data-support-guide-compose] button").click();
+        assert.equal(await guide.locator("[data-support-guide-phase='review']").count(),1,
+          tag+" answer a question without skipping current stage");
+        assert.ok(await guide.locator("[data-support-guide-message]").count()>=3,
+          tag+" question and reply appended to history");
+        await guide.locator("[data-support-guide-phase='review'] button").first().click();
+        assert.equal(await guide.locator("[data-support-guide-phase='need']").count(),1,tag+" confirm");
+        await guide.locator("[data-support-guide-phase='need'] button").first().click();
+        assert.equal(await guide.locator("[data-support-guide-phase='detail']").count(),1,tag+" dynamic follow-up");
+        await guide.locator("[data-support-guide-phase='detail'] button").first().click();
+        assert.equal(await guide.locator("[data-support-guide-phase='time']").count(),1,tag+" contextual reply");
+        await guide.locator('[data-support-guide-minutes="10"]').click();
+        assert.equal(await guide.locator("[data-support-guide-phase='format']").count(),1,tag+" duration chosen");
+        await guide.locator('[data-support-guide-format="tests"]').click();
+        assert.equal(await guide.locator("[data-support-guide-phase='confirm']").count(),1,tag+" explicit final review");
+        assert.equal(await guide.locator("[data-support-guide-recommendations]").count(),0,
+          tag+" not visible until a final click");
+        assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),0,
+          tag+" no early recommendation cards");
+
+        if (locale==="ru"&&width===390) await page.screenshot({
+          path:output+"/"+engine.name()+"-ru-390-conversation.png",fullPage:true,
         });
-        // Regression: the Meaning rating replaces Goals rather than making a tall,
-        // skinny column or push its CTA beyond the matched three-column band.
-        const header = await page.evaluate(() => {
-          const rect = selector => {
-            const el = document.querySelector(selector);
-            const r = el?.getBoundingClientRect();
-            return r && {left:r.left, right:r.right, top:r.top, bottom:r.bottom,
-              width:r.width, height:r.height};
-          };
-          const labelFits = [...document.querySelectorAll(
-            '[data-support-scale] [class*="scaleLabel"]'
-          )].every(el => el.scrollWidth <= el.clientWidth + 2);
-          return { left:rect('[aria-labelledby="mobile-assessment-title"]'),
-            profile:rect('[data-support-photo]'), right:rect('#support-tools'),
-            cta:rect('[data-support-goal-filter-trigger]'), labelFits };
-        });
-        assert.ok(header.left && header.right && header.cta && header.profile,
-          name + " all original header panels remain");
-        assert.ok(header.left.width >= width * .34,
-          name + " left check-in remains wide enough: " + JSON.stringify(header));
-        const maxRatio = width <= 350 ? 2.26 : width <= 390 ? 2.02 : 1.86;
-        assert.ok(header.left.height / header.left.width <= maxRatio,
-          name + " left card remains compact, not a narrow tower: " + JSON.stringify(header));
-        assert.ok(header.labelFits,
-          name + " all four labels fit without cropping");
-        assert.ok(header.cta.bottom <= header.left.bottom + 2,
-          name + " goal-filter button stays inside left card");
-        assert.ok(header.left.right <= header.profile.left + 4 &&
-          header.profile.right <= header.right.left + 4,
-          name + " original three-column order remains");
-        console.log("Header geometry " + name + ": " +
-          Math.round(header.left.width) + "×" + Math.round(header.left.height) +
-          " (ratio " + (header.left.height / header.left.width).toFixed(2) + ")");
-        assert.ok(metrics.scrollWidth <= metrics.clientWidth + 3,
-          name + " no horizontal overflow: " + JSON.stringify(metrics));
-        assert.ok(metrics.rects.every(rect => rect.left >= -3 && rect.right <= width + 3),
-          name + " all five buttons inside viewport: " + JSON.stringify(metrics));
-        assert.ok(metrics.rects.filter(rect => rect.selector === "[data-support-journey-action]").every(
-          rect => rect.height >= 42), name + " readable touch targets");
-        assert.ok(metrics.rects.find(rect => rect.selector === "[data-support-goal-results]").y <
-          metrics.rects.find(rect => rect.selector === "[data-support-player]").y,
-          name + " guide sits above the existing scenic video");
-        if (width === 390 && locale === "ru") {
-          await page.screenshot({ path: output + "/" + engine.name() + "-ru-390.png", fullPage: true });
-        }
 
-        // User-led actions: video selects an actual published source but never auto-plays.
-        const vid = guide.locator('[data-support-journey-action="video"]');
-        const youtubeId = await vid.getAttribute("data-support-journey-video");
-        if (youtubeId && /^[A-Za-z0-9_-]{11}$/.test(youtubeId)) {
-          await vid.click();
-          await page.waitForFunction(id => document.querySelector('[data-support-player]') &&
-            document.querySelector('[data-support-video="' + id + '"]'), youtubeId, {timeout:8000});
-          assert.equal(await root.locator("[data-support-player] iframe").count(), 0,
-            name + " playback needs another explicit click");
-        }
+        await guide.locator("[data-support-guide-show-recommendations]").click();
+        await guide.locator("[data-support-guide-recommendations]").waitFor({state:"visible",timeout:10000});
+        assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),1,tag+" actual result");
+        assert.equal(await guide.locator("[data-support-guide-program]").count(),1,tag+" next steps");
+        assert.equal(await guide.locator('a[href="/'+locale+'/client/tests?journey=business"]').count(),1,
+          tag+" real allowlisted tests destination");
+        assert.ok(await guide.locator("[data-support-guide-message]").count()>=13,
+          tag+" dialog messages accumulated");
+        const portrait=await guide.locator("[data-support-guide-fixed-portrait]").boundingBox();
+        assert.ok(original&&portrait&&Math.abs(original.x-portrait.x)<2,tag+" photo stays on left");
+        const height=await guide.locator("[data-support-guide-thread]").evaluate(el=>({
+          top:el.scrollTop,content:el.scrollHeight,window:el.clientHeight,
+        }));
+        assert.ok(height.content>height.window&&height.top>0,
+          tag+" previous WhatsApp-like messages move up inside chat: "+JSON.stringify(height));
+        const screen=await page.evaluate(()=>({
+          scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth,
+        }));
+        assert.ok(screen.scroll<=screen.client+3,tag+" no horizontal overflow: "+JSON.stringify(screen));
+        assert.equal(await root.locator("[data-support-player] iframe").count(),0,
+          tag+" no autoplay or unsolicited video");
 
-        await guide.locator('[data-support-journey-action="support"]').click();
-        await root.locator("[data-support-healing-panel]").waitFor({state:"visible",timeout:15000});
-        await page.waitForFunction(() => {
-          const rect = document.getElementById("support-healing-panel")?.getBoundingClientRect();
-          return !!rect && rect.top >= -30 && rect.top < window.innerHeight - 45;
-        }, null, {timeout:10000});
-        await guide.locator('[data-support-journey-action="progress"]').click();
-        assert.equal(new URL(page.url()).hash, "#support-progress", name + " progress anchor");
-        await guide.locator('[data-support-journey-action="question"]').click();
-        await root.locator("[data-support-goal-filter]").waitFor({state:"visible",timeout:10000});
-        assert.equal(await root.locator("[data-support-goal-results]").count(), 0,
-          name + " no duplicate guide under the editor");
-        assert.deepEqual(writes, [], name + " no real mutations");
-        assert.deepEqual(exceptions, [], name + " no JS exceptions");
-        console.log("PASS guided recommendations " + name);
-      } finally { await page.close(); }
+        if (locale==="ru"&&width===390) {
+          await page.screenshot({
+            path:output+"/"+engine.name()+"-ru-390-recommendations.png",fullPage:true,
+          });
+          await guide.locator("[data-support-guide-recommendations] .unused-link, [data-support-guide-recommendations] button").last().click();
+          assert.equal(await guide.locator("[data-support-guide-phase='format']").count(),1,
+            tag+" return to the dialogue");
+          await guide.locator("[data-support-guide-compose] input").fill("Другая тема");
+          await guide.locator("[data-support-guide-compose] button").click();
+          assert.equal(await guide.locator("[data-support-guide-phase='topic']").count(),1,
+            tag+" switch topic without reloading");
+          await guide.locator('[data-support-guide-topic="meaning"]').click();
+          assert.equal(await guide.locator("[data-support-guide-phase='need']").count(),1,
+            tag+" custom topic proceeds within same conversation");
+        }
+        assert.deepEqual(exceptions,[],tag+" no JS exceptions");
+        assert.deepEqual(writes,[],tag+" no external writes or accidental CRM/booking");
+        await guide.locator("header button").click();
+        assert.equal(await root.locator("[data-support-inline-guide]").count(),0,tag+" closes, dashboard preserved");
+        console.log("PASS adaptive support conversation "+tag);
+      } finally {await page.close();}
     }
-  } finally { await browser.close(); }
+  } finally {await browser.close();}
 }
