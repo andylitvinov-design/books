@@ -187,7 +187,7 @@ export function TestResultDiscussion({ result, locale = 'en', autoOpen = false }
       <footer className={styles.footer}>
         <ShieldCheck size={16} aria-hidden="true" /><p>{t.privacy} {model.words.format}</p>
         <div>
-          <button type="button" onClick={restart}><RotateCcw size={14} aria-hidden="true" />{t.reset}</button>
+          {stage !== 'safety' && <button type="button" onClick={restart}><RotateCcw size={14} aria-hidden="true" />{t.reset}</button>}
           <Link href={'#hh-assessment-scales'}>{t.back}</Link>
           <button type="button" onClick={() => setOpened(false)} aria-label={t.close}><X size={16}/></button>
         </div>
