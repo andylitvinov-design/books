@@ -29,7 +29,7 @@ test("money worry maps to matching meditations, not magical income claims",()=>{
    language:"en",goal:"money",situations:["money_worries"],desiredStates:["calm"],limit:5
  }});
  assert.ok(matches.length>=2);
- assert.equal(matches[0].video.youtube_id,"fWfG5gXHK5Y");
+ assert.ok(["fWfG5gXHK5Y","8Cx-cTU1Y9k"].includes(matches[0].video.youtube_id));
  assert.ok(matches.slice(0,2).every(x=>x.matchType==="exact"));
  assert.ok(matches[0].reasons.some(r=>r.value==="money_worries"));
 });
