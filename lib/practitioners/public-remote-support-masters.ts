@@ -32,6 +32,7 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
         title: record.profile.professionalTitle || "",
         photo: record.profile.photoPath || "",
         serviceId: service.id,
+        serviceTitle: service.copy?.title || "",
         methods: service.methods?.length ? service.methods : ["Remote support"],
         bio: record.profile.shortBio || "",
         description: service.copy?.shortDescription || service.copy?.description || "",
