@@ -474,6 +474,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
     <section className={styles.freeVideoPanel} data-mandala-free-video aria-label={t.heading}>
       <h2><Film size={21} aria-hidden="true" />{t.heading}<span className={styles.freeVideoBadge}>$0</span></h2>
       <p className={styles.freeVideoIntro}>{t.description}</p>
+      <fieldset className={styles.freeVideoFieldset} disabled={recording} data-mandala-output-mode>
+        <legend>{t.renderMode}</legend>
+        <div className={styles.freeVideoOptions}>
+          <button type="button" aria-pressed={!backgroundOnly} onClick={() => setBackgroundOnly(false)}>{t.withPortrait}</button>
+          <button type="button" aria-pressed={backgroundOnly}
+            onClick={() => { setBackgroundOnly(true); if (!moneyScene) setMoneyScene("golden-rain"); }}>{t.backgroundOnly}</button>
+        </div>
+        {backgroundOnly ? <p className={styles.freeVideoPrivacy}>{t.backgroundHint}</p> : null}
+      </fieldset>
       <section className={styles.moneyFlowSection} data-mandala-money-effects aria-label={t.moneyHeading}>
         <h3>{t.moneyHeading}</h3>
         <p>{t.moneyIntro}</p>
@@ -531,15 +540,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
           style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1", display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
       </div>
-      <fieldset className={styles.freeVideoFieldset} disabled={recording} data-mandala-output-mode>
-        <legend>{t.renderMode}</legend>
-        <div className={styles.freeVideoOptions}>
-          <button type="button" aria-pressed={!backgroundOnly} onClick={() => setBackgroundOnly(false)}>{t.withPortrait}</button>
-          <button type="button" aria-pressed={backgroundOnly}
-            onClick={() => { setBackgroundOnly(true); if (!moneyScene) setMoneyScene("golden-rain"); }}>{t.backgroundOnly}</button>
-        </div>
-        {backgroundOnly ? <p className={styles.freeVideoPrivacy}>{t.backgroundHint}</p> : null}
-      </fieldset>
       <p className={styles.freeVideoPrivacy}>{t.photoNote}</p>
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
