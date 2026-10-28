@@ -110,3 +110,15 @@ test('Google My Practice callback goes to new screen except for explicit protect
   assert.ok(auth.includes("? `${origin}/${locale}/app/practice${profi === 'course'"))
   assert.ok(showcase.includes("panel=services&create=1&starter=session"))
 })
+
+test('plain legacy Practice URL redirects before the private Account streams HTML', () => {
+  // A Next.js redirect inside a streamed page otherwise returns HTTP 200 and a delayed meta refresh.
+  assert.ok(middleware.includes('const oldPractice = request.nextUrl.pathname.match'))
+  assert.ok(middleware.includes("oldPractice && ['GET', 'HEAD'].includes(request.method)"))
+  assert.ok(middleware.includes("'panel', 'materialTab', 'create', 'starter', 'meditation', 'requestId'"))
+  assert.ok(middleware.includes('request.nextUrl.searchParams.has(key)'))
+  assert.ok(middleware.includes("new URL('/' + oldPractice[1] + '/practice', request.url)"))
+  assert.ok(middleware.includes('status: 307'))
+  assert.ok(middleware.includes("'Cache-Control': 'private, no-store'"))
+  assert.ok(legacyAppRoute.includes("if (!privateEditorIntent) redirect('/' + locale + '/practice')"))
+})

@@ -19,6 +19,19 @@ function privatePath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Plain My Practice entry is the new, public practitioner dashboard. Do this
+  // before streaming the old Account layout: an in-page redirect can return
+  // HTTP 200 + delayed meta refresh and reveal the old personal login on iOS.
+  // Explicit editing URLs stay in the existing server-authorized private app.
+  const oldPractice = request.nextUrl.pathname.match(/^\/(en|ru|es)\/app\/practice\/?$/)
+  if (oldPractice && ['GET', 'HEAD'].includes(request.method) &&
+      !['panel', 'materialTab', 'create', 'starter', 'meditation', 'requestId']
+        .some(key => request.nextUrl.searchParams.has(key))) {
+    return NextResponse.redirect(new URL('/' + oldPractice[1] + '/practice', request.url), {
+      status: 307,
+      headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' },
+    })
+  }
   // Legacy book URLs are 301, preserving the former ?lang= selection.
   // The Maya collection hub is a separate route, not an individual book.
   const oldBook = request.nextUrl.pathname.match(/^\/books\/([a-z0-9-]+)\/?$/)
