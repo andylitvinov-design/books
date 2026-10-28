@@ -57,7 +57,7 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
 test("existing academy links remain available and no storage or fabricated reports are introduced", () => {
   assert.match(profiles, /\/academy\/reiki\/tantra-reiki\/discover/);
   assert.match(profiles, /\/academy\`/);
-  assert.match(profiles, /courses\.map\(course => <Link href=\{course\.href\}/);
+  assert.match(profiles, /courses\.map\(course => <Link href=\{course\.seriesHref \?\? course\.href\}/);
   assert.match(profiles, /solo|only until|до закрытия страницы/i);
   assert.doesNotMatch(profiles, /localStorage|sessionStorage|fetch\(|paid:\s*true|success:\s*true/);
 });
