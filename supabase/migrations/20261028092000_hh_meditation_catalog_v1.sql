@@ -55,6 +55,7 @@ create index if not exists hh_meditation_v1_language_status_idx on public.hh_med
 alter table public.hh_meditation_catalog_v1 enable row level security;
 revoke all on table public.hh_meditation_catalog_v1 from public,anon,authenticated;
 grant select on table public.hh_meditation_catalog_v1 to anon,authenticated;
+drop policy if exists "Only editorially verified meditations are discoverable" on public.hh_meditation_catalog_v1;
 create policy "Only editorially verified meditations are discoverable" on public.hh_meditation_catalog_v1
  for select to anon,authenticated using (
   editorial_status = 'approved' and embed_status = 'confirmed'
@@ -74,5 +75,6 @@ create table if not exists public.hh_meditation_facets_v1 (
 alter table public.hh_meditation_facets_v1 enable row level security;
 revoke all on table public.hh_meditation_facets_v1 from public,anon,authenticated;
 grant select on table public.hh_meditation_facets_v1 to anon,authenticated;
+drop policy if exists "Public taxonomy only" on public.hh_meditation_facets_v1;
 create policy "Public taxonomy only" on public.hh_meditation_facets_v1 for select
  to anon,authenticated using (active);
