@@ -113,3 +113,47 @@ test("personal recommendations rank verified recordings and existing talismans, 
   assert.match(css, /\.recommendationPanel/);
   assert.match(css, /\.detailedAnalysisLink/);
 });
+
+
+test("same-window talisman viewer reuses real images, local basket, and protected quote form in all locales", () => {
+  const viewer = read("components/holistic-support-talisman-viewer.tsx");
+  const viewerCss = read("components/holistic-support-talisman-viewer.module.css");
+  const cart = read("components/taoist-talisman-cart.tsx");
+  const cartCss = read("components/taoist-talisman-cart.module.css");
+  const source = read("lib/practitioners/taoist-talismans.js");
+  const storage = read("lib/practitioners/taoist-talisman-cart.js");
+  assert.match(client, /<HolisticSupportTalismanViewer key=\{focus\}/);
+  assert.match(client, /<TaoistTalismanCatalog/);
+  assert.match(client, /hidden=\{!talismanCatalogOpen\}/);
+  assert.match(viewer, /data-support-talisman-viewer/);
+  assert.match(viewer, /src=\{selected\.image\}/);
+  assert.match(viewer, /onTouchStart=\{touchStart\}/);
+  assert.match(viewer, /onTouchEnd=\{touchEnd\}/);
+  assert.match(viewer, /Math\.abs\(dx\) > 45/);
+  assert.match(viewer, /data-support-talisman-next/);
+  assert.match(viewer, /data-support-talisman-thumb=\{item\.id\}/);
+  assert.match(viewer, /data-support-talisman-filter="goal"/);
+  assert.match(viewer, /saveBrowserTalismanCart/);
+  assert.match(viewer, /<dialog ref=\{dialogRef\}/);
+  assert.match(viewer, /<TaoistTalismanCart locale=\{locale\} inline/);
+  assert.match(cart, /sourcePath: "\/" \+ locale \+ \(inline \?/);
+  assert.match(cart, /data-inline=\{inline \? "true"/);
+  assert.match(cart, /data\.saved !== true \|\| data\?\.contactPending !== false/);
+  assert.match(cartCss, /\.shell\[data-inline="true"\]/);
+  assert.match(storage, /sessionStorage/);
+  assert.match(source, /fu-balance/);
+  assert.match(source, /fu-prosperity/);
+  assert.match(source, /fu-harmony/);
+  assert.match(viewerCss, /scroll-snap-type: x mandatory/);
+  assert.match(viewerCss, /@media\(max-width:350px\)/);
+  for (const text of ["Request talisman", "Заказать талисман", "Solicitar talismán"]) {
+    assert.ok(viewer.includes(text), "localized call to request: " + text);
+  }
+  assert.doesNotMatch(viewer, /fetch\(|localStorage|sessionStorage|navigator\.sendBeacon|autoplay=1/);
+  const parsed = ts.transpileModule(viewer, {
+    fileName: "holistic-support-talisman-viewer.tsx", reportDiagnostics: true,
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  });
+  assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
+    .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
+});
