@@ -88,3 +88,11 @@ Originals stay in the owner-only drafts table and `/admin/materials`; trimmed va
 Migration `20261028003500_hh_owner_video_trim_before_youtube.sql` must be applied to production before deployment. It adds `source_seconds`, `trim_start_seconds`, private `trimming` state, and safe cut path variants to the *existing* FORCE-RLS owner job; no new grants, table, auth or storage bucket. Existing older previews backfill duration from the already saved server title. Validate actual owner Dot → original MP4 → cut preview → consented channel → processed YouTube video with provider readback before marking provider E2E ready.
 
 When a previous owner click selected **Не публиковать**, the original private MP4 is not deleted. A new explicit `/video_cut 0` reopens the stored draft; `/video_cut N` creates a new reviewed cut from the same original. It never silently reuploads canceled content.
+
+## Free owner iPhone handoff while Google OAuth is unverified (28 Oct 2026)
+
+Google's unverified OAuth warning cannot be bypassed by a server, and existing Vercel keys do not grant channel consent. Do not create duplicate OAuth apps or new paid providers. Metricool already shows the correct Russian channel, but its external API needs a paid plan and publicly accessible media. Never expose client MP4 through a permanent public URL.
+
+Free fallback: in normal Safari, the verified owner opens https://holistichouse.vercel.app/admin/materials. The **current trimmed MP4** appears with a private player and **Download MP4** button, distinct from the preserved original file. The server validates that the immutable selected cut UUID belongs to the current preview job and rechecks the owner session on GET, HEAD and Range. A later changed selection invalidates the earlier link. It never exposes public or signed Storage URLs.
+
+Review the complete sound and photos, download the selected MP4 locally, then open YouTube Studio and manually upload it to the actual Russian channel as **Unlisted**. Verify real provider processing and playback. This does not publish automatically or write a fake uploaded state. Never send clients' private materials or health information to YouTube. Native automatic Dot upload still requires the owner's one-time genuine Google channel consent.
