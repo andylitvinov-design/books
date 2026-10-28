@@ -22,6 +22,8 @@ export type EnergySupportMaster = {
   title: string;
   photo: string;
   serviceId: string;
+  /** Existing approved service title, never the practitioner profile name. */
+  serviceTitle?: string;
   methods: string[];
   bio: string;
   description: string;
