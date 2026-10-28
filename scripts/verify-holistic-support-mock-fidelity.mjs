@@ -269,6 +269,12 @@ for (const browserType of [chromium, webkit]) {
           const introHeight=await intro.evaluate(element => element.getBoundingClientRect().height);
           assert.ok(introHeight >= 68 && introHeight <= 160,
             label+" scenic photo remains visible ABOVE the filter, "+introHeight);
+          const art=healing.locator('[data-support-reiki-central] img').first();
+          assert.ok((await art.getAttribute('src')).includes("reiki-approved-sunrise-v3.webp"),
+            label+" approved high-resolution Reiki image, not low-quality mock thumbnail");
+          const artHeight=await art.evaluate(element => element.parentElement.getBoundingClientRect().height);
+          assert.ok(artHeight >= 180 && artHeight <= 230,
+            label+" filter photo is framed in a scenic header, not stretched over the whole sheet: "+artHeight);
           const filterLayout=await reikiFilter.evaluate(element => {
             const buttons=Array.from(element.querySelectorAll(
               '[data-support-reiki-format] button,[data-support-reiki-price] button,'+
