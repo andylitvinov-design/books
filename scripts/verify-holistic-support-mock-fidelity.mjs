@@ -327,9 +327,34 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
+          // Capture synthetic pointer semantics without modifying app behaviour.
+          await page.evaluate(() => {
+            window.__hhSyntheticNextEvents = [];
+            const button = document.querySelector('[data-support-goal-next]');
+            for (const type of ["pointerdown", "pointerup", "click"]) {
+              button?.addEventListener(type, () => window.__hhSyntheticNextEvents.push(type), {once:true});
+            }
+          });
           await filter.locator('[data-support-goal-next]').click();
           // Wait for the actual React state on WebKit, never infer an Accepted mark.
-          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"visible",timeout:8000});
+          try {
+            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"visible",timeout:8000});
+          } catch (error) {
+            const diagnostic = await page.evaluate(() => ({
+              // All fields are fixed synthetic selectors/booleans, never private input values.
+              pointerEvents: window.__hhSyntheticNextEvents ?? [],
+              active: [...document.querySelectorAll('[data-goal-sector][aria-pressed="true"]')]
+                .map(node => node.getAttribute("data-goal-sector")),
+              accepted: [...document.querySelectorAll('[data-goal-accepted]')]
+                .map(node => node.getAttribute("data-goal-accepted")),
+              moneyCheckin: document.querySelector('[data-support-scale="money"] input')?.value,
+              formPresent: Boolean(document.querySelector('[data-support-goal-filter]')),
+            }));
+            console.error("GOAL_NEXT_SYNTHETIC_DIAGNOSTIC", label, JSON.stringify(diagnostic));
+            await page.screenshot({path:output+"/"+label.replaceAll("/","-")+"-goal-next-failure.png",
+              fullPage:true, animations:"disabled"}).catch(()=>{});
+            throw error;
+          }
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
