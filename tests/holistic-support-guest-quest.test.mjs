@@ -104,3 +104,18 @@ test("test completion checkmark belongs to the current verified guest/member, no
   assert.equal(normalizeQuest({ ...currentAccountHasNoTest,
     completed: { ...currentAccountHasNoTest.completed, test: true } }).completed.test, true);
 });
+
+
+test("Guest meditation battery never blocks or counts original free Courses lessons", () => {
+  const mobile = read("components/holistic-support-mobile.tsx");
+  assert.match(mobile, /if \(!selected \|\| \(choice === "meditation" && !quest\.launch\(\)\)\) return;/);
+  assert.match(mobile, /data-support-play disabled=\{choice === "meditation" && !quest\.canPlay\}/);
+  assert.match(mobile, /choice === "pump" \? t\.watchLesson : quest\.ready && !quest\.canPlay/);
+  assert.match(mobile, /\{choice === "meditation" && quest\.ready && !quest\.canPlay \? <Link href="#support-progress"/);
+  assert.match(mobile, /\{choice === "meditation" && playing && selected \? \(/);
+  assert.match(mobile, /const scene = choice === "meditation" \|\| choice === "pump";/);
+  assert.match(mobile, /choice === "pump" && courses\.length > 0/);
+  const exhausted = normalizeQuest({ starts: GUEST_VIDEO_LIMIT });
+  assert.equal(nextQuestLaunch(exhausted), null, "guest meditation preview stops at ten launches");
+  assert.equal(exhausted.starts, GUEST_VIDEO_LIMIT, "course playback never mutates the quest launch counter");
+});
