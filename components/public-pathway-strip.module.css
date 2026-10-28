@@ -1,0 +1,62 @@
+.section {
+  box-sizing: border-box;
+  width: min(1120px, 100%);
+  min-width: 0;
+  margin: 24px auto 28px;
+  padding: clamp(17px, 2.4vw, 28px);
+  border: 1px solid #e0d9c9;
+  border-radius: 24px;
+  background: #fffcf6;
+  color: #24362e;
+  box-shadow: 0 10px 28px rgba(52, 69, 51, .05);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.section * { box-sizing: border-box; }
+.heading { max-width: 700px; margin-bottom: 17px; }
+.eyebrow { margin: 0 0 7px; color: #438169; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.heading h2 { margin: 0; color: #27382f; font-family: Georgia, "Times New Roman", serif; font-size: clamp(22px, 3.4vw, 32px); font-weight: 500; line-height: 1.14; }
+.intro { margin: 8px 0 0; color: #627166; font-size: 13px; line-height: 1.55; }
+.rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.tile {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 84px;
+  padding: 11px 10px;
+  border: 1px solid #e3d9c8;
+  border-radius: 16px;
+  color: #27382f;
+  text-decoration: none;
+  background: #faf4e8;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+.tile:hover { border-color: #8d9b84; background: #fffdf7; }
+.tile:focus-visible { outline: 3px solid #c89133; outline-offset: 3px; }
+.iconWrap { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; }
+.topicLabel { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 750; line-height: 1.3; }
+.arrow { color: #53665a; }
+.money .iconWrap { background: #f6e3bd; color: #87571d; }
+.love .iconWrap { background: #fbe2e3; color: #a04453; }
+.energy .iconWrap { background: #e0efd9; color: #2f784d; }
+.meaning .iconWrap { background: #e8e0f5; color: #7755a0; }
+@media (max-width: 760px) {
+  .section { margin: 15px auto 21px; padding: 16px 14px; border-radius: 19px; }
+  .heading { margin-bottom: 13px; }
+  .heading h2 { font-size: 24px; }
+  .rail {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(154px, 57%);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    padding: 2px 4px 8px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tile { min-height: 73px; scroll-snap-align: start; gap: 7px; padding: 9px; }
+  .topicLabel { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }

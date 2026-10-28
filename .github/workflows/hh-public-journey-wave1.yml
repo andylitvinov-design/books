@@ -1,0 +1,38 @@
+name: HH public journey wave 1
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'components/public-pathway-strip.*'
+      - 'components/public-journey-refresh.module.css'
+      - 'app/**/about/page.tsx'
+      - 'app/[locale]/contact/**'
+      - 'tests/public-pathway-migration.test.mjs'
+      - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
+      - '.github/workflows/hh-public-journey-wave1.yml'
+permissions:
+  contents: read
+jobs:
+  public-wave1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Wave one public contracts
+        run: node --test tests/public-pathway-migration.test.mjs
+      - name: Lint and typecheck
+        run: |
+          npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
+          npx --no-install tsc --noEmit
+      - name: Real production build
+        run: npm run build
