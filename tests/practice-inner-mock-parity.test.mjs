@@ -82,7 +82,7 @@ test('message redesign preserves actual private audio/media send and viewport ke
 
 test('five safe-area practitioner destinations are localized and never create a second CRM',()=>{
  for(const key of ['requests','clients','materials','profile','analytics'])assert.match(nav,new RegExp("panel==='"+key+"'|panel==='"+key+"'"))
- for(const label of ['Главная','Практика','Заявки','Материалы','Профиль','Inicio','Solicitudes','Clients'])
+ for(const label of ['Главная','Практика','Заявки','Материалы','Профиль','Inicio','Solicitudes','Client records'])
   assert.ok(nav.includes(label),label)
  for(const s of ['data-practice-inner-dock','aria-current={selected?', 'onOpenMaterials(\'courses\')']) {
   // The action is owned by existing protected callbacks, not a duplicate service.
