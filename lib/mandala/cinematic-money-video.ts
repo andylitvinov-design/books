@@ -26,6 +26,10 @@ const LOOK: Record<MoneySceneId, Palette> = {
   "abundance-circle": ["#18332b", "#6c5633", "#f6c864", "#faf1c9"],
   "life-gifts": ["#403047", "#b36d69", "#ffcf67", "#fff3da"],
   dreams: ["#254b60", "#c78662", "#f9d57f", "#ebffff"],
+  "wealth-sunrise": ["#2e2f42", "#cc8b4e", "#ffcc76", "#fff4c7"],
+  "golden-harvest": ["#263a28", "#bf9341", "#f8db8a", "#fff7ce"],
+  "radiant-portal": ["#362218", "#bb874c", "#ffd079", "#fff0bf"],
+  "prosperity-coast": ["#16475b", "#c89f60", "#f9d981", "#fef1c9"],
 };
 
 const TAU = Math.PI * 2;
