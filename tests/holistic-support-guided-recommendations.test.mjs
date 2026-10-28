@@ -72,6 +72,13 @@ test("five rows fit the existing compact responsive card without a new app shell
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
+test("right action tiles no longer stretch four-score left card to 291px", () => {
+  assert.ok(css.indexOf("The real iPhone three-column row") > css.indexOf("Restore the original broad"),
+    "right-hand action heights override older tall dashboard rules");
+  assert.match(css, /\.page \.tools \.toolGrid \{ grid-template-rows: repeat\(2, minmax\(0, 68px\)\); \}/);
+  assert.match(css, /\.page \.tools \.toolButton:last-child \{[\s\S]*?min-height: 68px;/);
+});
+
 test("mobile JSX parses without TypeScript syntax diagnostics", () => {
   const result = ts.transpileModule(client, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
