@@ -662,6 +662,38 @@
   .profile > .videoMandalaShortcut svg { width: 12px; height: 12px; }
 }
 
+
+/* Real, source-backed cross-category suggestions after the goal filter. */
+.goalResults { display: grid; gap: 10px; min-width: 0; padding: 13px 16px;
+  border-bottom: 1px solid #cfdfd0; background: linear-gradient(145deg,#f1f9ee,#fffdf5); }
+.goalResultsHeading h2 { display: flex; align-items: center; gap: 8px; margin: 0;
+  color: #174b38; font-size: clamp(17px,2.5vw,23px); line-height: 1.2; }
+.goalResultsHeading h2 svg { flex: none; color: #078d68; }
+.goalResultsHeading p { margin: 5px 0 0; color: #547060; font-size: 12px; line-height: 1.35; }
+.goalResultGrid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; }
+.goalResultGrid > :is(button,a) { display: flex; align-items: center; gap: 7px;
+  min-width: 0; min-height: 61px; padding: 8px; border: 1px solid #cfe3d6;
+  border-radius: 12px; background: #fffef9; color: #155b42; text-decoration: none;
+  text-align: left; cursor: pointer; }
+.goalResultGrid > :is(button,a):hover,
+.goalResultGrid > button[aria-pressed="true"] { border-color: #1b9c70; background: #e5f4e9; }
+.goalResultGrid > :is(button,a) svg { flex: none; }
+.goalResultGrid > :is(button,a) span { display: flex; flex-direction: column;
+  min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.goalResultGrid > :is(button,a) strong { font-size: 13px; line-height: 1.12; }
+.goalResultGrid > :is(button,a) small { color: #627968; font-size: 10px; line-height: 1.22; font-weight: 550; }
+@media (max-width: 640px) {
+  .goalResults { padding: 9px; gap: 7px; }
+  .goalResultsHeading h2 { font-size: clamp(15px,4vw,18px); }
+  .goalResultsHeading p { font-size: 11px; }
+  .goalResultGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+  .goalResultGrid > :is(button,a) { min-height: 48px; padding: 7px 8px; gap: 6px; border-radius: 10px; }
+  .goalResultGrid > :is(button,a) svg { width: 19px; height: 19px; }
+  .goalResultGrid > :is(button,a) strong { font-size: 12px; }
+  .goalResultGrid > :is(button,a) small { font-size: 10px; }
+  .goalResultGrid > :last-child { grid-column: 1 / -1; }
+}
+
 /* Keep the last Reiki filter action accessible above the fixed mobile navigation. */
 @media (max-width: 640px) {
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
