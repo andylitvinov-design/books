@@ -368,7 +368,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     event.target.value = ''
     queueFiles(files)
   }
-  function queueFiles(files) {
+  function queueFiles(files,ownerCut=false) {
     if (files.length === 0) return
     if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
@@ -377,7 +377,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
     alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
-      target, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
+      target, ownerCut, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
     setError('')
     setMessage('')
@@ -421,7 +421,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         ruToken.token.expiresAt<Date.now()+30_000||
         entriesRef.current.some(item=>item.state!=='done'))
         throw Error('telegram_cut_state')
-      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})])
+      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})],true)
       setMessage(t.telegramCutImported)
     }catch(reason){setError(humanError(reason,t))}
     finally{setImportingTelegramCut(false)}
@@ -449,7 +449,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   async function finish(entry, resultId, auth, channelId) {
     await completeYoutubeUpload({
       videoId:resultId,channelId,
-      readDetails:() => readUploadedDetails(resultId,auth.value),
+      readDetails:() => readUploadedDetails(resultId,auth.value,undefined,{requireProcessed:entry.ownerCut===true}),
       update:partial => update(entry.id,partial),
       save:details => saveLink(entry.id,resultId,details.privacyStatus,entry.title,entry.target,details.channelId),
     })
