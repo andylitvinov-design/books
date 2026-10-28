@@ -10,6 +10,28 @@ const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3118";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Loopback only");
 const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
+// Geometry evidence is limited to fixed synthetic selectors and numeric bounds.
+async function recordSupportGeometry({ geometry, engine, locale, width, page }) {
+  assert.ok(["chromium", "webkit"].includes(engine));
+  assert.ok(["ru", "en", "es"].includes(locale));
+  assert.ok([320, 390, 430].includes(width));
+  const rectKeys = ["x", "y", "right", "bottom", "width", "height", "shown",
+    "left", "top", "buttonLeft", "buttonRight", "buttonTop", "buttonBottom"];
+  const measured = {};
+  for (const key of ["client", "scroll"]) {
+    assert.ok(Number.isFinite(geometry[key]));
+    measured[key] = geometry[key];
+  }
+  for (const key of ["a", "photo", "tools", "toolsSection", "readableTools", "hero", "tabs", "videos", "footer",
+    "assessmentHeading", "scaleGroup", "allFocus", "scaleRows", "recommendations", "toolsHeading", "toolGrid", "detailedTests"]) {
+    measured[key] = (geometry[key] || []).map(rect => Object.fromEntries(rectKeys
+      .filter(name => Number.isFinite(rect[name]) || typeof rect[name] === "boolean")
+      .map(name => [name, rect[name]])));
+  }
+  const stem = engine + "-" + locale + "-" + width;
+  await writeFile(output + "/" + stem + "-geometry.json", JSON.stringify({ engine, locale, width, geometry: measured }, null, 2) + "\n");
+  await page.screenshot({ path: output + "/" + stem + ".png", fullPage: true });
+}
 const evidence = [];
 const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
 for (const browserType of [chromium, webkit]) {
@@ -59,6 +81,11 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
+              assessmentHeading:measure('#mobile-assessment-title'),
+              scaleGroup:measure('fieldset'), allFocus:measure('[data-focus-option="all"]'),
+              scaleRows:measure('[data-support-scale]'), recommendations:measure('[data-support-recommendations]'),
+              toolsHeading:measure('#mobile-tools-title'), toolGrid:measure('#support-tools > div'),
+              detailedTests:measure('[data-support-detailed-analysis]'),
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
@@ -76,15 +103,10 @@ for (const browserType of [chromium, webkit]) {
               footer:measure('[data-support-mobile-bottom-nav]'),
             };
           });
+          await recordSupportGeometry({ geometry, engine: browserType.name(), locale, width, page });
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
-          if(width===320) {
-            const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
-            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
-              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
-            await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
-          }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<385,
             label+" five readable 43px action rows plus detailed tests must expose the player early");
           assert.ok(geometry.readableTools.every(t =>
