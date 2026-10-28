@@ -29,8 +29,9 @@ import styles from "./holistic-support-mobile.module.css";
 export type SupportMobileVideo = {
   id: string;
   title: string;
+  lessonOrder?: number;
   topics: MeditationTopic[];
-  program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek";
+  program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek-dionysus" | "greek-demeter";
   author: "andrey" | "psimaster";
   sourceLanguage: "en" | "ru";
   // Verified public practitioner profile for this particular recording.
@@ -39,11 +40,12 @@ export type SupportMobileVideo = {
 };
 
 export type SupportMobileCourse = {
-  id: "maya" | "egypt" | "greek";
+  id: "maya" | "egypt" | "greek-dionysus" | "greek-demeter";
   title: string;
   shortTitle: string;
   poster: string;
   href: string;
+  seriesHref?: string;
   videoCount: number;
   videoGroups: { title: string; href: string; count: number }[];
   videos: SupportMobileVideo[];
@@ -152,7 +154,7 @@ const copy = {
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     masterProfile: "Open master profile", videoMaster: "Meditation guide",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
+    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", "greek-dionysus": "Dionysus channel", "greek-demeter": "Demeter channel" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
@@ -166,6 +168,7 @@ const copy = {
     coursesAll: "Browse all courses", mastersShort: "Masters", coursesReiki: "Explore Tantra Reiki",
     mysteryCourses: "Original mystery courses", mysterySource: "Russian originals · PsiMaster archive",
     watchLesson: "Watch lesson", openCourse: "Explore course", lessonCount: "videos",
+    lessonOrdinal: "Lesson", lessonOf: "of", lessonPrevious: "Previous lesson", lessonNext: "Next lesson",
     originalCourseVideos: "Original course recordings",
     healingTitle: "Reiki support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Reiki support services",
@@ -251,7 +254,7 @@ const copy = {
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     masterProfile: "Открыть страницу мастера", videoMaster: "Мастер медитаций",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
-    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
+    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", "greek-dionysus": "Канал Диониса", "greek-demeter": "Канал Деметры" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
@@ -265,6 +268,7 @@ const copy = {
     coursesAll: "Все курсы Академии", mastersShort: "Мастера", coursesReiki: "Курс Тантра Рейки",
     mysteryCourses: "Курсы мистерий", mysterySource: "Оригинал на русском · архив PsiMaster",
     watchLesson: "Смотреть урок", openCourse: "Открыть программу", lessonCount: "видео",
+    lessonOrdinal: "Урок", lessonOf: "из", lessonPrevious: "Предыдущий урок", lessonNext: "Следующий урок",
     originalCourseVideos: "Оригинальные видеоуроки",
     healingTitle: "Рейки поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
@@ -350,7 +354,7 @@ const copy = {
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     masterProfile: "Abrir perfil del guía", videoMaster: "Guía de meditación",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
+    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", "greek-dionysus": "Canal de Dioniso", "greek-demeter": "Canal de Deméter" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
@@ -364,6 +368,7 @@ const copy = {
     coursesAll: "Todos los cursos", mastersShort: "Guías", coursesReiki: "Curso de Tantra Reiki",
     mysteryCourses: "Cursos originales de misterios", mysterySource: "Audio original en ruso · archivo PsiMaster",
     watchLesson: "Ver lección", openCourse: "Ver programa", lessonCount: "vídeos",
+    lessonOrdinal: "Lección", lessonOf: "de", lessonPrevious: "Lección anterior", lessonNext: "Lección siguiente",
     originalCourseVideos: "Lecciones originales en vídeo",
     healingTitle: "Apoyo Reiki", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
@@ -488,12 +493,16 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
         (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
     }
+    // Four thumbnails remain the meditation mock; an explicitly selected
+    // course must expose all its numbered episodes, including lessons 5–7.
+    if (choice === "pump" && program !== "all") return eligible;
     return eligible.slice(0, 4);
   }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
   const selected = relevantVideos.find(video => video.id === selectedId) ??
     videos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
+  const selectedLessonIndex = relevantVideos.findIndex(video => video.id === selected?.id);
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
@@ -823,7 +832,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
                       data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{choice === "pump" ? t.watchLesson : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
-                    {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
+                    {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.seriesHref ?? activeMystery.href} prefetch={false}
                       data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                   </div>
                 )}
@@ -846,15 +855,30 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <div className={styles.videoGrid} role="group" aria-label={t.gallery}>
                     {relevantVideos.map(video => <button type="button" key={video.id}
                       className={styles.videoCard} aria-pressed={selected?.id === video.id}
-                      data-support-video={video.id} onClick={() => pickVideo(video.id)} aria-label={video.title}>
+                      data-support-video={video.id} data-source-order={video.lessonOrder}
+                      onClick={() => pickVideo(video.id)} aria-label={video.title}>
                       <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
                         alt="" width={320} height={180} unoptimized loading="lazy" />
                       <span className={styles.videoDark} aria-hidden="true" />
                       <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
-                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
+                      <span className={styles.videoTitle}>{choice === "pump" && activeMystery && video.lessonOrder ? `${t.lessonOrdinal} ${video.lessonOrder} · ` : ""}{shortVideoTitle(video.title, locale)}</span>
                     </button>)}
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+                {choice === "pump" && activeMystery && selectedLessonIndex >= 0 ? (
+                  <nav className={styles.lessonNavigation} aria-label={t.originalCourseVideos}
+                    data-support-lesson-navigation>
+                    <button type="button" disabled={selectedLessonIndex === 0}
+                      onClick={() => pickVideo(relevantVideos[selectedLessonIndex - 1].id)}>
+                      {t.lessonPrevious}
+                    </button>
+                    <span aria-live="polite">{t.lessonOrdinal} {selectedLessonIndex + 1} {t.lessonOf} {relevantVideos.length}</span>
+                    <button type="button" disabled={selectedLessonIndex === relevantVideos.length - 1}
+                      onClick={() => pickVideo(relevantVideos[selectedLessonIndex + 1].id)}>
+                      {t.lessonNext}
+                    </button>
+                  </nav>
+                ) : null}
                 <p className={styles.videoHint}>{t.galleryHint}</p>
 
               </div>
