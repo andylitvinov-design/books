@@ -34,6 +34,7 @@ test("each card performs a real, non-mutating action in existing modules", () =>
   assert.match(client, /scrollToSupport\("support-meditation-player"\)/);
   assert.match(client, /data-support-journey-action="support"/);
   assert.match(client, /changeChoice\(selectedChoice\)/);
+  assert.match(client, /scrollToSupport\(selectedChoice === "talisman"/);
   assert.match(client, /href="#support-progress" data-support-journey-action="progress"/);
   assert.doesNotMatch(client, /\/api\/create-booking|\/api\/payments\/charge/);
 });
