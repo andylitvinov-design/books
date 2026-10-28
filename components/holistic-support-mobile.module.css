@@ -506,44 +506,72 @@
   .progressFocus span,.progressAverage span { font-size: 8px; }
 }
 
-/* The owner-approved mobile flow: lowest-rating picker at left, photo alone in
-   the centre, four original recordings ABOVE the large guided video. */
-.assessment > .recommendButton {
+/* The approved top band: Goal filter below check-ins; focus and quick match
+   below the portrait. The original large video and four-card rail remain intact. */
+.page .assessment > .goalFilterTrigger {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; max-width: none; min-height: 46px; margin: 12px 0 0;
-  border-radius: 13px; padding: 9px 10px;
+  padding: 9px 10px; border: 1px solid #b5d7c1; border-radius: 13px;
+  background: linear-gradient(105deg,#087f60,#12a97d); color: white;
+  font-size: 15px; font-weight: 800; line-height: 1.2;
+  box-shadow: 0 5px 14px #0a80502b;
 }
+.goalFilterTrigger svg { flex: none; }
+.goalFilterTrigger:hover { filter: brightness(.96); }
+.focusValue strong { color: #193b30; font-size: clamp(16px,1.8vw,21px);
+  line-height: 1.15; overflow-wrap: anywhere; }
+.profile > .recommendButton { width: 100%; margin: 0; }
 .gallerySelection {
   margin: 0 0 9px; color: #16543f; font-size: 13px; font-weight: 750;
   line-height: 1.35; overflow-wrap: anywhere;
 }
+.activeGoalStrip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  min-height: 46px; padding: 8px 16px; background: #eaf6ec; color: #19513c;
+  border-bottom: 1px solid #c6e4d0; font-size: 13px; }
+.activeGoalStrip > svg { flex: none; color: #098c68; }
+.activeGoalStrip span { flex: 1; }
+.activeGoalStrip button { min-height: 38px; padding: 5px 9px; border: 1px solid #a4d5b9;
+  border-radius: 9px; background: #fffdf9; color: #0b7351; font-size: 12px; font-weight: 800; }
+.activeGoalStrip button:last-child { display: grid; place-items: center; width: 38px; padding: 0; }
 .videoSection { background: #fffbf3; }
 .videoSourceRow { display: flex; justify-content: flex-end; align-items: center;
   min-height: 39px; padding: 2px 19px 6px; background: #fffaf1; }
 .videoSourceRow .youtubeLink { margin: 0; }
 .heroBody .playButton { position: relative; top: 8px; }
 @media (max-width: 640px) {
-  .page .assessment > .recommendButton {
-    display: flex; align-items: center; justify-content: center; flex-direction: row;
-    width: 100%; min-width: 0; max-width: none; min-height: 41px;
-    margin: 5px 0 0; padding: 6px 3px; gap: 4px;
+  .page .assessment > .goalFilterTrigger {
+    min-height: 41px; margin: 5px 0 0; padding: 6px 3px; gap: 4px;
     font-size: clamp(10px,2.85vw,13px); font-weight: 850;
-    line-height: 1.08; border-radius: 10px; white-space: normal;
-    background: linear-gradient(110deg,#0b9c70,#047557);
-    color: white;
+    line-height: 1.1; border-radius: 10px; white-space: normal;
   }
-  .assessment > .recommendButton svg { flex: none; width: 16px; height: 16px; }
+  .goalFilterTrigger svg { width: 15px; height: 15px; }
   .profile { justify-content: center; }
+  .profile .focusSelector { width: 100%; max-width: none; padding: 5px 2px;
+    gap: 2px; text-align: center; border-radius: 11px; }
+  .focusCaption { font-size: clamp(9px,2.6vw,11px); }
+  .profile .focusValue { justify-content: center; gap: 3px; }
+  .profile .focusValue svg { width: 16px; height: 16px; }
+  .focusValue strong { font-size: clamp(11px,3vw,14px); }
+  .page .profile > .recommendButton { display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px; min-height: 45px;
+    padding: 5px 3px; font-size: clamp(10px,2.9vw,12px); border-radius: 12px; }
+  .profile > .recommendButton svg { width: 17px; height: 17px; }
   .videoSection { padding: 11px 9px 8px; }
   .videoHeading { margin-bottom: 7px; }
   .gallerySelection { font-size: clamp(11px,2.85vw,13px); margin-bottom: 7px; }
   .videoHint { margin-top: 5px; }
   .heroBody .playButton { top: 8px; }
   .videoSourceRow { min-height: 34px; padding: 0 10px 4px; }
+  .activeGoalStrip { gap: 5px; padding: 5px 8px; font-size: 11px; }
+  .activeGoalStrip button { min-height: 36px; padding: 4px 6px; font-size: 11px; }
 }
 @media (max-width: 350px) {
-  .page .assessment > .recommendButton { min-height: 39px; padding: 5px 2px;
-    font-size: 10.5px; gap: 3px; }
-  .assessment > .recommendButton svg { width: 14px; height: 14px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; padding: 5px 2px;
+    font-size: 10px; gap: 3px; }
+  .goalFilterTrigger svg { width: 13px; height: 13px; }
+  .profile .focusSelector { padding: 4px 1px; }
+  .focusValue strong { font-size: 10.8px; }
+  .page .profile > .recommendButton { min-height: 44px; font-size: 10px; }
   .gallerySelection { font-size: 10.5px; }
 }
 
