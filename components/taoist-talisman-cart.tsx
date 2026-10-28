@@ -67,7 +67,7 @@ const copy = {
   },
 } as const;
 
-export function TaoistTalismanCart({ locale }: { locale: PublicLocale }) {
+export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicLocale; inline?: boolean }) {
   const t = copy[locale];
   const [ids, setIds] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -130,10 +130,10 @@ export function TaoistTalismanCart({ locale }: { locale: PublicLocale }) {
     finally { setBusy(false); }
   };
 
-  return <section className={styles.shell} data-taoist-talisman-cart aria-labelledby="talisman-cart-title">
-    <Link href={"/" + locale + "/holistic-support#talismans"} className={styles.back}>← {t.back}</Link>
+  return <section className={styles.shell} data-taoist-talisman-cart data-inline={inline ? "true" : undefined} aria-labelledby={inline ? "talisman-inline-cart-title" : "talisman-cart-title"}>
+    {!inline ? <Link href={"/" + locale + "/holistic-support#talismans"} className={styles.back}>← {t.back}</Link> : null}
     <header className={styles.heading}>
-      <h1 id="talisman-cart-title">{t.title}</h1><p>{t.intro}</p>
+      <h1 id={inline ? "talisman-inline-cart-title" : "talisman-cart-title"}>{t.title}</h1><p>{t.intro}</p>
     </header>
     {loaded && selected.length === 0
       ? <div className={styles.empty}><p>{t.empty}</p><Link href={"/" + locale + "/holistic-support#talismans"}>{t.browse} →</Link></div>

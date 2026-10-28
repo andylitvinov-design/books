@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
@@ -190,6 +191,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [orderKind, setOrderKind] = useState<SupportRequestKind>("energy");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -462,10 +464,14 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               </div> : null}
             </>
           ) : choice === "talisman" ? (
-            <div className={styles.insetPanel}>
-              <div className={styles.insetIntro}><Sparkles size={33} aria-hidden="true" />
-                <div><h2>{t.talismansTitle}</h2><p>{t.talismansIntro}</p></div></div>
-              <TaoistTalismanCatalog locale={locale} featuredId={recommendedTalisman?.id} rankedIds={recommended?.talismans.map(item => item.id)} />
+            <div data-support-talisman-experience>
+              <HolisticSupportTalismanViewer key={focus} locale={locale} focus={focus}
+                rankedIds={recommended?.talismans.map(item => item.id)}
+                catalogOpen={talismanCatalogOpen} onToggleCatalog={() => setTalismanCatalogOpen(open => !open)} />
+              <div id="support-talisman-full-catalog" className={styles.insetPanel} hidden={!talismanCatalogOpen}>
+                {talismanCatalogOpen ? <TaoistTalismanCatalog locale={locale}
+                  featuredId={recommendedTalisman?.id} rankedIds={recommended?.talismans.map(item => item.id)} /> : null}
+              </div>
             </div>
 
           ) : choice === "healing" ? (
