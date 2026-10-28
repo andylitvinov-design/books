@@ -26,7 +26,7 @@ test("the compact invitation has localized actionable Pro and My Practice links 
   const practice = read("components/app/practice-workspace.jsx");
   assert.ok(widget.includes('href={"/" + locale + "/pro"}'));
   assert.ok(widget.includes('href={"/" + locale + "/practice"}'));
-  assert.ok(widget.includes('locale === "es" ? "en" : locale'));
+  assert.ok(!widget.includes('accountLocale + "/app/practice"'));
   assert.match(pro, /<ProfiHub locale=\{locale\}/);
   assert.match(practice, /if\(params\.get\('panel'\)==='services'\)\s*\{?\s*setActivePanel\('services'\)/);
   for (const label of ["Become a Master", "Станьте мастером", "Hazte profesional",
