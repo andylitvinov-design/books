@@ -618,7 +618,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     : journeySupportFormat === "consultation" ? MessageCircle : HandHeart;
   const showJourneyVideo = () => {
     if (!journeyVideoAllowed) { openGoalFilter(); return; }
-    setRecommendation({ ...scores }); setChoice("meditation"); setGoalFilterOpen(false);
+    setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
     scrollToSupport("support-meditation-player");
