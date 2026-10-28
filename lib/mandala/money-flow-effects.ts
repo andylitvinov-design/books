@@ -83,7 +83,6 @@ export function paintMoneyScene(
   const cx = w / 2;
   const cy = h / 2;
   const t = Math.max(0, seconds);
-  const r = Math.min(w, h);
   const tau = Math.PI * 2;
   ctx.save();
   ctx.globalCompositeOperation = "screen";
@@ -249,6 +248,5 @@ export function paintMoneyScene(
       }
       break;
   }
-  // A soft fade on the first/last second keeps transitions non-jarring.
   ctx.restore();
 }
