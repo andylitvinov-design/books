@@ -152,3 +152,20 @@ test('only Dot owner current uploaded job can be changed, never arbitrary video 
  const yt=source('lib/practitioners/owner-telegram-video-visibility.mjs')
  assert.doesNotMatch(yt,/uploadType=resumable|videos.insert|videoStorage/)
 })
+
+test('YouTube privacy policy hold is distinct from a missing OAuth scope',async()=>{
+ const base=async(_,opt={})=>opt.method==='PUT'
+   ?new Response(JSON.stringify({error:{errors:[{reason:'forbiddenPrivacySetting'}]}}),{
+       status:403,headers:{'Content-Type':'application/json'}})
+   :Response.json({items:[item()]})
+ await assert.rejects(
+   ()=>changeOwnerRuYoutubeVisibility(ID,TOKEN,'public',base),
+   /VIDEO_YOUTUBE_VISIBILITY_BLOCKED/)
+ const scope=async(_,opt={})=>opt.method==='PUT'
+   ?new Response(JSON.stringify({error:{errors:[{reason:'insufficientPermissions'}]}}),{
+       status:403,headers:{'Content-Type':'application/json'}})
+   :Response.json({items:[item()]})
+ await assert.rejects(
+   ()=>changeOwnerRuYoutubeVisibility(ID,TOKEN,'public',scope),
+   /VIDEO_YOUTUBE_VISIBILITY_CONSENT_REQUIRED/)
+})
