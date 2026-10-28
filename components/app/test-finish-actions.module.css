@@ -6,6 +6,7 @@
 .wrap button>span:nth-child(2){flex:1}
 .report{background:#396f66;color:white;border-color:#396f66!important}
 .next{background:#fffdf8;color:#4e433c;border-color:#d9c5b3!important}
+.discuss{grid-column:1/-1;background:#f8edf3!important;color:#813c58!important;border-color:#dab3c2!important;min-height:51px!important;}
 .icon{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#ffffff24;color:inherit;font-size:18px}
 .next .icon{background:#ebede6;color:#3d6f62}
 .note{grid-column:1/-1;font-size:11px;line-height:1.5;color:#746b63;margin:0 2px}
