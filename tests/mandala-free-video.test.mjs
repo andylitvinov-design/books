@@ -146,7 +146,7 @@ test("background-only reusable clip preserved from live without photo or payment
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
-  assert.match(studio,/backgroundOnly\?"money-background":"personal-mandala"/);
+  assert.match(studio,/backgroundOnly\?\(theme==="money"\?"money-background":theme\+"-background"\)/);
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio,/if \(!art\) return/);
   assert.match(browser,/holistic-house-money-background/);
