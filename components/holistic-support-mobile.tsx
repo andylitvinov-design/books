@@ -231,6 +231,17 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Google returns to the same public mobile page. Restore only the selected
+  // public Reiki panel so the original consent form can complete OAuth.
+  useEffect(() => {
+    try {
+      const pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+      if (pending?.path === window.location.pathname &&
+          typeof pending.service === "string" &&
+          pending.service.startsWith("Reiki support · ")) setChoice("healing");
+    } catch { /* Keep ordinary first-screen navigation available. */ }
+  }, []);
+
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
   const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
