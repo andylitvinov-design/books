@@ -341,7 +341,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
       data-support-master-hero={selected && reikiFormat === "session" ? id(selected) : undefined}
       aria-label={r.heading}>
-      <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/support-mock-hero.webp"
+      <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
         alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 900px"/>
       <div className={styles.reikiStageShade} aria-hidden="true"/>
       <div className={styles.reikiStageTabs} role="tablist" aria-label={r.heading}>
