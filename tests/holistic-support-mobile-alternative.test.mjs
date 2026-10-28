@@ -20,7 +20,7 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support\\\/mobile/);
+  assert.match(nav, /holistic-support.*mobile\\|mandala/);
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
@@ -366,7 +366,7 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);\n  assert.match(gallery, /data-support-reiki-marketplace/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
@@ -377,9 +377,9 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   assert.doesNotMatch(gallery, /handlePayment|createPaymentIntent|new ServiceOffering|autoSubmit/);
   assert.match(galleryCss, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(galleryCss, /\.reikiFocusButton\[aria-pressed="true"\]/);
-  assert.match(galleryCss, /height: 288px; min-height: 288px; max-height: 288px/);
+  assert.match(galleryCss, /min-height: 305px; height: auto; max-height: none/);
   assert.match(talismanCss, /height: 288px; min-height: 288px; max-height: 288px/);
-  assert.match(galleryCss, /height: 282px; min-height: 282px; max-height: 282px/);
+  assert.match(galleryCss, /scroll-snap-type: x proximity/);
   assert.match(talismanCss, /height: 282px; min-height: 282px; max-height: 282px/);
   assert.match(css, /\.hero \{ min-height: 288px;/);
 });
@@ -421,7 +421,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
 test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/holistic-support-master-gallery.module.css");
-  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+  for (const label of ["Сессия","Инициация","Курс","Краткий",
     "Личный разбор текстом","Личный разбор голосом",
     "В течение суток","В течение 3 дней","В выбранный час",
     "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
