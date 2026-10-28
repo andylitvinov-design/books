@@ -50,6 +50,12 @@ test("public request has only verified published preferences and not sensitive n
   }};
   assert.equal(readRemoteSupportPublicDraft(publicStorage, draft.serviceId, now)?.date, "");
   assert.equal(readRemoteSupportPublicDraft(publicStorage, draft.serviceId, now)?.time, "");
+  const scheduled = { ...unscheduled, date: "2026-10-30", time: "15:00" };
+  const scheduledStorage = { getItem(key) {
+    return key === REMOTE_SUPPORT_PUBLIC_DRAFT_KEY ? JSON.stringify(scheduled) : null;
+  }};
+  assert.equal(readRemoteSupportPublicDraft(scheduledStorage, draft.serviceId, now)?.date, "2026-10-30");
+  assert.equal(readRemoteSupportPublicDraft(scheduledStorage, draft.serviceId, now)?.time, "15:00");
   assert.match(remoteSupportPublicRequestSummary(unscheduled, "ru"), /По согласованию/);
   assert.match(remoteSupportPublicRequestSummary(unscheduled, "en"), /To be agreed/);
   assert.equal(readRemoteSupportPublicDraft({getItem:()=>JSON.stringify({
