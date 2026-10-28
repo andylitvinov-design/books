@@ -37,6 +37,14 @@ test('every practitioner action is gated by server-verified Google session', () 
   assert.match(showcase, /TABS\.map\(/)
 })
 
+test('anonymous clicks open an explicit Google confirmation instead of navigating immediately', () => {
+  assert.match(showcase, /setPendingAction\(key\)/)
+  assert.match(showcase, /async function confirmSignIn\(\)/)
+  assert.match(showcase, /aria-modal="true"/)
+  assert.match(showcase, /onClick=\{\(\) => void confirmSignIn\(\)\}/)
+  assert.match(showcase, /onClick=\{\(\) => setPendingAction\(''\)\}/)
+})
+
 test('OAuth allowlist returns to exactly the same language-specific public page', () => {
   assert.equal((auth.match(/'practice-preview'/g) || []).length >= 5, true)
   assert.match(auth, /continueTo === 'practice-preview'[\s\S]{0,90}\$\{origin\}\/\$\{locale\}\/practice/)
