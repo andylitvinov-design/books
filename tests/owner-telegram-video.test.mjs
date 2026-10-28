@@ -9,7 +9,7 @@ import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStar
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
-import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
+import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu,waitForUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
@@ -741,4 +741,82 @@ test('private MP4 playback streams byte slices without 4.5MB buffered response',
  })
  assert.equal(response.status,206)
  assert.equal((await response.arrayBuffer()).byteLength,500001)
+})
+
+
+test('YouTube asynchronous processing is polled by receipt ID without second POST or PUT',async()=>{
+ let init=0,put=0,reads=0,sleeps=0
+ const saved=[]
+ const fetcher=async(url,opt={})=>{
+   if(String(url).includes('/channels?'))return Response.json({
+     items:[{id:VIDEO_RU_CHANNEL_ID}]
+   })
+   if(opt.method==='POST'){
+     init++
+     return new Response('',{status:200,headers:{
+       location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=once'
+     }})
+   }
+   if(opt.method==='PUT'){put++;return Response.json({id:'Yt123456abc'})}
+   reads++
+   return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID,title:'Verified'},
+     status:{privacyStatus:'unlisted',uploadStatus:reads<3?'uploaded':'processed'}
+   }]})
+ }
+ const media=Buffer.alloc(2048);media.write('ftyp',4)
+ const result=await uploadUnlistedRu(media,'token'.repeat(9),{
+   fetcher,onUploaded:id=>saved.push(id),
+   processingDelays:[0,0],
+   sleep:async()=>{sleeps++}
+ })
+ assert.equal(result.id,'Yt123456abc')
+ assert.equal(result.uploadStatus,'processed')
+ assert.equal(init,1)
+ assert.equal(put,1)
+ assert.equal(reads,3)
+ assert.equal(sleeps,2)
+ assert.deepEqual(saved,['Yt123456abc'])
+})
+
+test('YouTube readback polling fails closed on wrong channel and exhausted processing',async()=>{
+ let reads=0
+ const sameId=async()=>{reads++;return Response.json({items:[{
+   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+   status:{privacyStatus:'unlisted',uploadStatus:'uploaded'}
+ }]})}
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:sameId,delays:[0,0],sleep:async()=>{}
+ }),/VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
+ assert.equal(reads,3)
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:async()=>Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:'UCaaaaaaaaaaaaaaaaaaaaaa'},
+     status:{privacyStatus:'unlisted',uploadStatus:'uploaded'}
+   }]}),delays:[0,0],sleep:async()=>{throw Error('must-not-wait')}
+ }),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(()=>waitForUploadedRu('Yt123456abc','token'.repeat(9),{
+   fetcher:async()=>Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+     status:{privacyStatus:'private',uploadStatus:'uploaded'}
+   }]}),delays:[0,0],sleep:async()=>{throw Error('must-not-wait')}
+ }),/VIDEO_YOUTUBE_PRIVACY_HOLD/)
+})
+
+test('Dot status and existing cron reconcile only recorded IDs, never re-upload',()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ const cron=readFileSync(new URL('../app/api/internal/housekeeping/route.js',import.meta.url),'utf8')
+ assert.match(service,/export async function reconcilePendingOwnerYoutubeVideo/)
+ assert.match(service,/knownVideoId=videoId/)
+ assert.match(service,/knownVideoId\s*\?'⏳ YouTube получил видео/)
+ assert.match(service,/row\?\.state!=='uncertain'\|\|!row\.youtube_video_id/)
+ assert.match(service,/if\(row\?\.state==='uncertain'&&row\.youtube_video_id\)/)
+ assert.match(service,/background:\(\)=>verifyUncertain\(/)
+ assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and state='uncertain'/)
+ assert.match(service,/callback_data:'hh-video:status'/)
+ assert.doesNotMatch(service.slice(service.indexOf('async function verifyUncertain'),service.indexOf('export async function receiveOwnerTelegramVideoWebhook')),/uploadUnlistedRu|method:'PUT'|method:'POST'/)
+ assert.match(cron,/runHousekeepingCron\(request/)
+ assert.match(cron,/HH_OWNER_VIDEO_ENABLED==='true'/)
+ assert.match(cron,/await reconcilePendingOwnerYoutubeVideo\(config\)/)
+ assert.doesNotMatch(cron,/unconditional.*upload|uploadUnlistedRu/)
 })

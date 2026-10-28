@@ -1,0 +1,35 @@
+name: Meditation catalogue targeted checks
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - "data/academy/meditation-*"
+      - "lib/holistic-support/meditation-*"
+      - "components/holistic-meditation-*"
+      - "app/[locale]/holistic-support/page.tsx"
+      - "tests/meditation-catalog-candidates.test.mjs"
+      - "tests/holistic-support-meditations.test.mjs"
+      - ".github/workflows/meditation-catalog-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Meditation selection and existing gallery regression
+        run: node --test tests/meditation-catalog-candidates.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-goal-filter.test.mjs
+      - name: Lint changed UI, server loader and model
+        run: npx eslint components/holistic-meditation-finder.tsx components/holistic-meditation-gallery.tsx lib/holistic-support/meditation-discovery-server.ts app/'[locale]'/holistic-support/page.tsx lib/holistic-support/meditation-catalog-ranker.mjs
+      - name: Typecheck
+        run: npx tsc --noEmit --pretty false

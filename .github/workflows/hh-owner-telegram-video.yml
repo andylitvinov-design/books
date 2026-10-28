@@ -7,6 +7,7 @@ on:
       - ".github/workflows/hh-owner-telegram-video.yml"
       - "app/admin/youtube-upload/page.js"
       - "app/admin/materials/page.js"
+      - "app/api/internal/housekeeping/route.js"
       - "components/admin-telegram-videos.jsx"
       - "app/api/admin/telegram-video/**"
       - "app/api/app/crm/messenger/webhook/**"
@@ -34,6 +35,7 @@ on:
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
       - "app/api/admin/telegram-video/**"
+      - "app/api/internal/housekeeping/route.js"
       - ".github/workflows/hh-owner-telegram-video.yml"
 permissions:
   contents: read
@@ -53,7 +55,7 @@ jobs:
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
-        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
+        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit --incremental false
       - name: Next production build

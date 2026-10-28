@@ -167,20 +167,127 @@ for (const browserType of [chromium, webkit]) {
           await filter.waitFor({state:"visible",timeout:8000});
           assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
           await filter.locator('[data-goal-sector="money"]').click();
-          await filter.locator('[data-goal-concern="income"] input').check();
-          await filter.locator('[data-goal-task="stableIncome"] input').check();
-          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),6,label+" now/want sliders");
+          for (const concern of ["income","moneyStress","workStuck","decisions"]) {
+            await filter.locator('[data-goal-concern="'+concern+'"] input').check();
+          }
+          for (const goal of ["stableIncome","moneyConfidence","growth","clearPlan"]) {
+            await filter.locator('[data-goal-task="'+goal+'"] input').check();
+          }
+          assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
+            label+" more than three problems can be selected");
+          assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
+            label+" more than three goals can be selected");
+          assert.equal(await filter.locator('[data-goal-axis]').count(),4,label+" four money indicators");
+          assert.equal(await filter.locator('[data-goal-axis] input[type="range"]').count(),4,
+            label+" two subjective indicators have now and want sliders");
+          assert.equal(await filter.locator('[data-goal-metric]').count(),4,
+            label+" income and reserve have real-unit now and want controls");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" no fabricated default income");
+          await filter.locator('[data-goal-currency]').selectOption("EUR");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').fill("2000");
+          await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
+          await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
+          if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
+          const filterOverflow=await page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          assert.ok(filterOverflow<=3,label+" goal filter must not overflow horizontally: "+filterOverflow);
           await filter.locator('[data-support-goal-apply]').click();
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
+          const results=root.locator('[data-support-goal-results]');
+          await results.waitFor({state:"visible",timeout:8000});
+          assert.equal(await results.locator('[data-support-goal-action]').count(),5,
+            label+" five real recommendation categories");
+          assert.match(await results.locator('[data-support-goal-action="tests"]').getAttribute("href")??"",/\/tests$/,
+            label+" existing tests route");
+          assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
+            label+" real business learning route");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
-            label+" real published recordings preserved");
+            label+" only source-backed recordings");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
+          await root.locator('[data-support-goal-action="talismans"]').click();
+          const talisman=root.locator('[data-support-talisman-viewer]');
+          await talisman.waitFor({state:"visible",timeout:8000});
+          // Owner-approved shopping mock: verify actual category navigation,
+          // three selectors and the existing quote dialog at all iPhone sizes.
+          const categories=talisman.locator("[data-support-talisman-category]");
+          assert.equal(await categories.count(),6,label+" six scrollable intentions");
+          const compactSizes=await talisman.evaluate(el=>{
+            const category=el.querySelector('[data-support-talisman-category-switcher]')?.getBoundingClientRect();
+            const first=el.querySelector('[data-support-talisman-category]')?.getBoundingClientRect();
+            const filters=el.querySelector('[data-support-talisman-filters]')?.getBoundingClientRect();
+            const artwork=el.querySelector('[data-support-talisman-artwork]')?.getBoundingClientRect();
+            return {categoryHeight:category?.height,cardWidth:first?.width,cardHeight:first?.height,
+              filtersHeight:filters?.height,artWidth:artwork?.width,artHeight:artwork?.height};
+          });
+          assert.ok(compactSizes.categoryHeight<=158 && compactSizes.cardWidth<=96 &&
+            compactSizes.cardHeight<=90 && compactSizes.filtersHeight<=65,
+            label+" compact 4-up categories and filters: "+JSON.stringify(compactSizes));
+          assert.ok(compactSizes.artWidth>=100 && compactSizes.artHeight>=125,
+            label+" featured source artwork must remain clearly visible");
+          assert.equal(await talisman.locator('[data-support-talisman-artwork] img').count(),1,
+            label+" original Fu image must be framed once, not swapped for fake jewellery");
+          const expand=talisman.locator('[aria-controls="talisman-category-options"]');
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"true",
+            label+" All categories expands six choices without adding a catalogue");
+          await expand.click();
+          assert.equal(await expand.getAttribute("aria-expanded"),"false",
+            label+" compact carousel returns after expanding");
+          const catRail=talisman.locator("[data-support-talisman-categories]");
+          assert.ok(await catRail.evaluate(el=>el.scrollWidth>el.clientWidth),
+            label+" more categories must really exist beyond the visible row");
+          await talisman.locator("[data-support-talisman-categories-next]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-support-talisman-categories]")?.scrollLeft>0,
+            null,{timeout:5000});
+          await talisman.locator('[data-support-talisman-category="relationships"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony",label+" love selects the existing harmony artwork");
+          await talisman.locator('[data-support-talisman-category="money"]').click();
+          assert.equal(await talisman.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity",label+" money selects the existing prosperity artwork");
+          if(width===390) await talisman.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-premium-talisman-390.png",
+            animations:"disabled",timeout:12000});
+          await talisman.locator('[data-support-talisman-filter="master"]').click();
+          assert.equal(await talisman.locator("#talisman-master-note").isVisible(),true,
+            label+" maker disclosure does not invent a named master");
+          await talisman.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),1,
+            label+" description filter narrows to one real item");
+          await talisman.locator('[data-support-talisman-filter="description"] select').selectOption("all");
+          assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
+            label+" clearing description restores all actual Fu art");
+          await talisman.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
+          await talisman.locator("[data-support-talisman-request]").click();
+          const order=page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
+          await order.waitFor({state:"visible",timeout:8000});
+          assert.equal(await order.locator('[data-cart-talisman="fu-prosperity"]').count(),1,
+            label+" Order opens the existing cart for the selected public item");
+          assert.equal(await order.locator("[data-talisman-quote-saved]").count(),0,
+            label+" opening a quote does not fabricate a CRM receipt or payment");
+          await order.locator("button[aria-label]").first().click();
+          await order.waitFor({state:"hidden",timeout:8000});
+          await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-goal-filter-trigger]').click();
-          await root.locator('[data-support-goal-reset]').click();
+          assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
+            label+" chosen currency preserved when editing");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
+            label+" factual income draft survives editing");
+          await filter.locator('[data-goal-currency]').selectOption("USD");
+          assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"",
+            label+" changing currency must not silently convert or relabel prior income");
+          assert.equal(await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').inputValue(),"1",
+            label+" reserve months remain unaffected by currency");
+          await filter.locator('[data-support-goal-reset]').click();
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
+          assert.equal(await root.locator('[data-goal-axis]').count(),4,
+            label+" energy also has four distinct measures");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
+          assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
@@ -197,7 +304,6 @@ for (const browserType of [chromium, webkit]) {
           // Talisman has the same hero-first stage and source images in a
           // three-tile shelf. Navigation and local quote must not submit.
           await root.locator('[data-support-tool="talisman"]').click();
-          const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
             label+" three verified Fu illustrations below their large hero");
@@ -247,13 +353,69 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");
           assert.equal(await tab("description").count(),1,label+" central Description tab");
           assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          // Screenshot regression: shared .page button {font:inherit} used to inflate
+          // every Reiki tab into a huge two-line block on real iPhone Safari.
+          const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
+            elements.map(element => {
+              const rect=element.getBoundingClientRect();
+              const css=getComputedStyle(element);
+              return {height:rect.height,fontsize:parseFloat(css.fontSize),left:rect.left,
+                right:rect.right,top:rect.top,content:element.textContent?.trim()};
+            }));
+          assert.ok(tabSizes.every(item => item.height >= 40 && item.height <= 50 &&
+            item.fontsize <= 13 && item.left >= -1 && item.right <= width+1),
+            label+" Reiki tabs are compact, readable and on-screen: "+JSON.stringify(tabSizes));
+          assert.ok(Math.max(...tabSizes.map(item=>item.top)) -
+            Math.min(...tabSizes.map(item=>item.top)) <= 2,
+            label+" four action tabs occupy a single row");
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-main-390.png", fullPage: true,
+          });
           await tab("filter").click();
           const reikiFilter=healing.locator('[data-support-reiki-filter]');
           await reikiFilter.waitFor({state:"visible"});
+          const navPosition=await root.locator('[data-support-mobile-bottom-nav]')
+            .evaluate(element => getComputedStyle(element).position);
+          assert.equal(navPosition, "static",
+            label+" the bottom nav must not obscure an expanded Reiki filter");
+          if (width === 390) await page.screenshot({
+            path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
+          });
+          const intro=healing.locator('[data-support-reiki-photo-intro]');
+          const introHeight=await intro.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(introHeight >= 68 && introHeight <= 160,
+            label+" scenic photo remains visible ABOVE the filter, "+introHeight);
+          const art=healing.locator('[data-support-reiki-central] img').first();
+          assert.ok((await art.getAttribute('src')).includes("reiki-approved-sunrise-v3.webp"),
+            label+" approved high-resolution Reiki image, not low-quality mock thumbnail");
+          const artHeight=await art.evaluate(element => element.parentElement.getBoundingClientRect().height);
+          assert.ok(artHeight >= 180 && artHeight <= 230,
+            label+" filter photo is framed in a scenic header, not stretched over the whole sheet: "+artHeight);
+          const filterLayout=await reikiFilter.evaluate(element => {
+            const buttons=Array.from(element.querySelectorAll(
+              '[data-support-reiki-format] button,[data-support-reiki-price] button,'+
+              '[data-support-reiki-timing] button,[data-support-reiki-report] button,'+
+              '[data-support-reiki-provider] button'));
+            const rect=element.getBoundingClientRect();
+            return {height:rect.height,buttons:buttons.map(button=>{
+              const box=button.getBoundingClientRect();
+              return {height:box.height,font:parseFloat(getComputedStyle(button).fontSize)};
+            }),scrollWidth:document.documentElement.scrollWidth,
+              viewportWidth:document.documentElement.clientWidth};
+          });
+          assert.ok(filterLayout.height <= 565,
+            label+" Reiki filters should be a compact sheet, not an enormous page: "+
+              JSON.stringify(filterLayout));
+          assert.ok(filterLayout.buttons.every(button =>
+            button.height >= 40 && button.height <= 60 && button.font <= 13),
+            label+" Reiki chips must keep 44px touch targets without inflated typography: "+
+              JSON.stringify(filterLayout.buttons));
+          assert.ok(filterLayout.scrollWidth <= filterLayout.viewportWidth + 2,
+            label+" no page-wide overflow while price choices remain horizontally scrollable");
           assert.equal(await reikiFilter.locator('[data-support-reiki-format] button').count(),3,
             label+" session initiation training all available");
-          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),6,
-            label+" five price ranges plus All");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),5,
+            label+" five real price bands; Reset is the unfiltered choice");
           assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').count(),3,
             label+" brief text voice report");
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
@@ -284,6 +446,10 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider] button').nth(1)
             .getAttribute("aria-pressed"),"true",label+" Reiki master preference selectable");
           await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          // Apply must remain clickable even with the fixed bottom navigation.
+          await reikiFilter.locator('[data-support-reiki-apply]').click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="main"]').count(),1,
+            label+" apply action returns to the existing large photo");
           await tab("media").click();
           assert.equal(await healing.locator('[data-support-reiki-media]').count(),1,
             label+" media tab does not autoplay or invent a video");

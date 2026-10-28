@@ -171,6 +171,33 @@ for (const engine of [chromium, webkit]) {
           await viewer.waitFor({ state: "visible" });
           assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 3,
             label + " three approved symbolic illustrations");
+          const categories = viewer.locator("[data-support-talisman-category]");
+          assert.equal(await categories.count(), 6, label + " six real-data intent shortcuts");
+          await viewer.locator('[data-support-talisman-category="relationships"]').click();
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + " love category selects existing harmony art");
+          await viewer.locator('[data-support-talisman-category="money"]').click();
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity", label + " money category selects existing prosperity art");
+          const categoryRail = viewer.locator("[data-support-talisman-categories]");
+          assert.ok(await categoryRail.evaluate(el => el.scrollWidth > el.clientWidth),
+            label + " category carousel has genuinely more items offscreen");
+          await viewer.locator("[data-support-talisman-categories-next]").click();
+          await page.waitForFunction(() =>
+            (document.querySelector("[data-support-talisman-categories]")?.scrollLeft ?? 0) > 0,
+            null, { timeout: 4000 });
+          await viewer.locator('[data-support-talisman-filter="master"]').click();
+          assert.equal(await viewer.locator("#talisman-master-note").isVisible(), true,
+            label + " unknown maker is disclosed, not fabricated");
+          await viewer.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
+          await viewer.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
+          assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 1,
+            label + " description property filters source designs");
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + " property filter updates featured design");
+          await viewer.locator('[data-support-talisman-filter="description"] select').selectOption("all");
+          assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 3,
+            label + " clearing property restores the actual catalogue");
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-prosperity", label + " money is the lowest score");
           await viewer.locator("[data-support-talisman-next]").click();

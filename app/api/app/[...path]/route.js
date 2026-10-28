@@ -144,7 +144,7 @@ async function handle(request, { params }) {
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
       onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang'])
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake'].includes(body.continueTo) ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -157,7 +157,7 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
-        !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -192,7 +192,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -213,7 +213,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -248,6 +248,8 @@ async function handle(request, { params }) {
                 ? `${origin}/${locale}/app/coaching${coachingMode ? '/'+coachingMode : ''}${coachingLang==='es'?'?lang=es':''}`
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching/intake`
+              : continueTo === 'practice-preview'
+                ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
