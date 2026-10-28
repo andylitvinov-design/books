@@ -47,7 +47,8 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-type Choice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
+export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
+type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
@@ -264,14 +265,15 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [] }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation" }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
+  initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
   const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
-  const [choice, setChoice] = useState<Choice>("meditation");
+  const [choice, setChoice] = useState<Choice>(initialChoice);
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
@@ -419,14 +421,18 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
-    // The separate Tests panel replaces the content below the mobile tools.
-    // Reveal it after React commits the selection, including on small iPhones.
-    if (value === "tests") window.requestAnimationFrame(() =>
+  };
+  // Scroll only after React actually commits the new Tests panel. This also
+  // supports direct deep links from the video mandala editor (?view=tests).
+  useEffect(() => {
+    if (choice !== "tests" || goalFilterOpen) return;
+    const frame = window.requestAnimationFrame(() =>
       document.getElementById("support-tests-panel")?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
         block: "start",
       }));
-  };
+    return () => window.cancelAnimationFrame(frame);
+  }, [choice, goalFilterOpen]);
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
@@ -444,7 +450,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
       <div className={styles.container}>
         <header className={styles.compactAppHeader} data-support-app-header>
-          <Link href={"/" + locale + "/holistic-support"} prefetch={false} className={styles.compactBrand}>
+          <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false} className={styles.compactBrand}>
             <strong>Holistic House</strong>
             <span>{t.newUi}</span>
           </Link>
@@ -493,11 +499,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
-            <Link href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
-              className={styles.videoMandalaShortcut} data-support-video-mandala
-              aria-label={t.videoMandala}>
-              <Sparkles size={15} aria-hidden="true" /><span>{t.videoMandala}</span>
-            </Link>
+            <button type="button" className={styles.testsShortcut} data-support-tool="tests"
+              aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
+              onClick={() => changeChoice("tests")}>
+              <TestTubeDiagonal size={15} aria-hidden="true" /><span>{t.testsShort}</span>
+            </button>
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <div className={styles.focusSelector} data-support-active-focus aria-label={t.focusLabel}>
               <span className={styles.focusCaption}>{t.focusLabelShort}</span>
@@ -534,11 +540,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                 onClick={() => changeChoice("masters")} aria-label={t.healingMasters}>
                 <HandHeart size={15} aria-hidden="true" />{t.mastersShort}
               </button>
-              <button type="button" className={styles.testsShortcut} data-support-tool="tests"
-                aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
-                onClick={() => changeChoice("tests")}>
-                <TestTubeDiagonal size={15} aria-hidden="true" />{t.testsShort}
-              </button>
+              <Link href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
+                className={styles.mandalaShortcut} data-support-video-mandala
+                aria-label={t.videoMandala}>
+                <Sparkles size={18} aria-hidden="true" /><span>{t.videoMandala}</span>
+              </Link>
             </div>
           </section>
         </div>
@@ -816,7 +822,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
         </section>
         <footer className={styles.disclaimer}>
           <p>{t.healthNote}</p>
-          <Link href={"/" + locale + "/holistic-support"} prefetch={false}>{t.standard} <ArrowRight size={16} aria-hidden="true" /></Link>
         </footer>
       </div>
 
@@ -833,8 +838,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
       </section> : null}
 
       <nav className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
-        <Link href={"/" + locale + "/"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
-        <Link href={"/" + locale + "/app"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
+        <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
+        <Link href={"/" + locale + "/practice"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false} data-support-mobile-messages>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.navMessages}</span>
         </Link>
