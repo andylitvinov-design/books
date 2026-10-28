@@ -165,6 +165,12 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
+          // Regression for real iPhone screenshot: heading must not sit behind
+          // the iOS status bar after the programmatic scroll to this panel.
+          await page.waitForFunction(() => {
+            const title=document.getElementById("support-goal-filter-title");
+            return !!title && title.getBoundingClientRect().top >= 59;
+          }, null, {timeout:4000});
           assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
           await filter.locator('[data-goal-sector="money"]').click();
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
@@ -189,6 +195,37 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="desired"]').fill("4000");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
+          // The fourth measure must finish BEFORE the buttons begin: no
+          // sticky overlay, no oversized reset card, no squeezed primary CTA.
+          const layout=await filter.evaluate(el=>{
+            const last=el.querySelector('[data-goal-axis]:last-child');
+            const footer=el.querySelector('[data-support-goal-actions]');
+            const apply=el.querySelector('[data-support-goal-apply]');
+            const reset=el.querySelector('[data-support-goal-reset]');
+            const sector=el.querySelector('[data-goal-sector]');
+            const panel=el.getBoundingClientRect(), a=apply.getBoundingClientRect(),
+              f=footer.getBoundingClientRect(), l=last.getBoundingClientRect();
+            return {
+              position:getComputedStyle(footer).position,
+              panelWidth:panel.width, actionWidth:a.width,
+              footerTop:f.top, lastAxisBottom:l.bottom,
+              footerHeight:f.height, applyHeight:a.height,
+              applySize:parseFloat(getComputedStyle(apply).fontSize),
+              resetSize:parseFloat(getComputedStyle(reset).fontSize),
+              sectorSize:parseFloat(getComputedStyle(sector).fontSize),
+              applyClipped:apply.scrollHeight>apply.clientHeight+2 || apply.scrollWidth>apply.clientWidth+2,
+              resetClipped:reset.scrollHeight>reset.clientHeight+2 || reset.scrollWidth>reset.clientWidth+2,
+            };
+          });
+          assert.equal(layout.position,"static",label+" actions must be in document flow");
+          assert.ok(layout.footerTop>=layout.lastAxisBottom-2,
+            label+" CTA must never cover final slider: "+JSON.stringify(layout));
+          assert.ok(layout.actionWidth>=layout.panelWidth*.76,
+            label+" recommendation CTA must use the panel width, not narrow left cell: "+JSON.stringify(layout));
+          assert.ok(layout.applySize<=17 && layout.resetSize<=15 && layout.sectorSize<=15,
+            label+" button font sizes must override parent .page button shorthand: "+JSON.stringify(layout));
+          assert.ok(!layout.applyClipped && !layout.resetClipped,
+            label+" full action labels must remain visible: "+JSON.stringify(layout));
           if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
           const filterOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth);
