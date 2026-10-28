@@ -125,8 +125,14 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes recommendations under header");
+          // The top check-in now has five readable axes, not the old four.
+          // Keep the guide immediately below the tallest top card while allowing
+          // that legitimate extra row (without hiding the guide below the fold).
+          const topStage=geometry.guide[0]?.y-geometry.a[0]?.y;
+          const tallestTop=Math.max(geometry.a[0].height,geometry.toolsSection[0].height);
+          assert.ok(geometry.guide.length===1 && topStage<360 && topStage<=tallestTop+28,
+            label+" five-row check-in keeps the guide below the compact top cards: "+
+              JSON.stringify({topStage,tallestTop}));
           assert.ok(geometry.guide[0].bottom<=geometry.hero[0].y+2,
             label+" recommendation card precedes original scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
