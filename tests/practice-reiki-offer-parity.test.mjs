@@ -83,3 +83,14 @@ test('create service dedicated Reiki path and published-only read preserve exist
   assert.match(css,/@media\s*\(max-width:650px\)/);
   assert.doesNotMatch(publicApi,/draftCopy|draft_copy/);
 });
+
+test('unfinished price rows remain private saveable drafts, never published free offers', () => {
+  const pending={...session,variants:[{...session.variants[0],price:null}]};
+  assert.equal(normalizeReikiOffer(pending,{complete:false}).variants[0].price,null);
+  assert.equal(reikiOfferPricing(normalizeReikiOffer(pending,{complete:false})).pricingMode,'contact');
+  assert.deepEqual(matchReikiVariants(pending,{kind:'session',report:'brief',price:'free'}),[]);
+  assert.throws(()=>normalizeReikiOffer(pending,{complete:true}),/INVALID_REIKI_OFFER/);
+  const saved=validateServiceDraft({...base,pricingMode:'contact',confirmedPrice:null,currency:'',reikiOffer:pending},{complete:false});
+  assert.equal(saved.reikiOffer.variants[0].price,null);
+  assert.throws(()=>validateServiceDraft({...base,reikiOffer:pending},{complete:true}),/INVALID_REIKI_OFFER/);
+});

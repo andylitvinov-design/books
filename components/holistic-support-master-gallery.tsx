@@ -346,7 +346,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
       }
     }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [locale, consultations, attempt]);
+  }, [locale, consultations, kind, attempt]);
 
   // Reopen the same approved master after the existing Google OAuth redirect.
   // The OAuth marker contains only public service title/path, never a client's
