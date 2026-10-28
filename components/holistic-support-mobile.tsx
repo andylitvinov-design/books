@@ -550,7 +550,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     // never overwrite the dedicated check-in, which syncs on every drag.
     setRecommendation(asFocusScores(scores));
     setGoalSelection(value);
-    setGuideVersion(previous => previous + 1); setGuideOpen(true);
+    setGuideVersion(previous => previous + 1);
+    // A visitor opting out of every format must see the empty-state, not a
+    // suggestion dialogue that could fabricate an unrequested recommendation.
+    setGuideOpen(formats.length > 0);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
