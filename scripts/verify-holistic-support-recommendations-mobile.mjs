@@ -33,24 +33,19 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ": public route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
-          // The server-rendered native radio exists before React hydration;
-          // wait for handlers to attach before checking exclusive state.
-          await page.waitForFunction(() => {
-            const input = document.querySelector('[data-support-focus="relationships"]');
-            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
-          }, null, { timeout: 30000 });
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + ": four accessible self-ratings");
           assert.equal(await root.locator('[data-support-detailed-analysis]').getAttribute("href"),
             "/" + locale + "/personality-profiles", label + ": canonical profile, no duplicate test flow");
-          const focused = root.locator('[data-support-focus="relationships"]');
-          const allFocus = root.locator('[data-support-focus="all"]');
-          assert.equal(await allFocus.isChecked(), true, label + ": All is initial focus");
-          await focused.check();
-          assert.equal(await focused.isChecked(), true, label + ": scale owns Focus");
-          assert.equal(await allFocus.isChecked(), false, label + ": All is deselected");
-          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1,
-            label + ": exactly one selected focus");
+          await page.waitForFunction(() => {
+            const input = document.querySelector('[data-support-focus="all"]');
+            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+          }, null, {timeout:30000});
+          const focus = root.locator('input[type="radio"][name="support-focus"]');
+          assert.equal(await focus.count(), 5, label + ": four inline domains and All");
+          assert.equal(await root.locator('[data-support-focus="all"]').isChecked(), true, label + ": All initially");
+          await root.locator('[data-support-focus="relationships"]').check();
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1, label + ": exclusive focus");
           const slider = root.locator('[data-support-scale="relationships"] input[type="range"]');
           await slider.focus();
           await slider.press("Home");
@@ -72,27 +67,83 @@ for (const engine of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
             label + ": no unintended autoplay before explicit Play");
           await symbolCard.locator("button").click();
+          const viewer = root.locator("[data-support-talisman-viewer]");
+          await viewer.waitFor({ state: "visible" });
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + ": recommended symbol opens in the same scenic viewer");
+          assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 3,
+            label + ": three existing illustrated designs; no fabricated stock");
+          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+            label + ": changing to talisman mode stops the video");
+          const first = await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman");
+          await viewer.locator("[data-support-talisman-next]").click();
+          assert.notEqual(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            first, label + ": carousel next control really changes the design");
+          await viewer.locator('[data-support-talisman-thumb="fu-harmony"]').click();
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + ": tapping an illustration returns to the selected symbol");
+          // Dispatch native touch events against React's hydrated viewer; this
+          // exercises the real swipe handlers rather than only checking arrows.
+          await viewer.locator("[data-support-talisman]").evaluate(element => {
+            const first = new Touch({ identifier: 1, target: element, clientX: 270, clientY: 240 });
+            const last = new Touch({ identifier: 1, target: element, clientX: 120, clientY: 240 });
+            element.dispatchEvent(new TouchEvent("touchstart", {
+              bubbles: true, touches: [first], targetTouches: [first], changedTouches: [first],
+            }));
+            element.dispatchEvent(new TouchEvent("touchend", {
+              bubbles: true, touches: [], targetTouches: [], changedTouches: [last],
+            }));
+          });
+          assert.notEqual(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-harmony", label + ": real touch-start/end swipe changes the design");
+          await viewer.locator('[data-support-talisman-filter="goal"] select').selectOption("money");
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity", label + ": changing goal ranks an existing design, not a new SKU");
+          await viewer.locator("[data-support-talisman-request]").click();
+          const inlineOrder = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
+          await inlineOrder.waitFor({ state: "visible" });
+          assert.equal(await inlineOrder.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
+            label + ": the existing verified quote form opens in a same-page modal");
+          assert.equal(await inlineOrder.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,
+            label + ": selected design is in quote basket");
+          assert.equal(await inlineOrder.locator("[data-talisman-quote-saved]").count(), 0,
+            label + ": opening the basket is not a submitted CRM lead or payment");
+          await inlineOrder.locator('button[aria-label]').first().click();
+          await inlineOrder.waitFor({ state: "hidden" });
+          const catalogToggle = viewer.locator('button[aria-controls="support-talisman-full-catalog"]');
+          await catalogToggle.click();
           const catalog = root.locator("[data-taoist-talisman-catalog]");
           await catalog.waitFor({ state: "visible" });
           assert.equal(await catalog.locator("[data-tao-talisman]").first().getAttribute("data-tao-talisman"),
-            "fu-harmony", label + ": existing catalog ranks suggested item first");
-          assert.equal(await catalog.locator("[data-tao-talisman-order][aria-pressed='true']").count(), 0,
-            label + ": recommendation never automatically adds a paid item");
-          await allFocus.check();
-          assert.equal(await recommendations.count(), 0, label + ": new focus clears old results");
+            "fu-harmony", label + ": expanding the existing catalog keeps recommendation priority");
+          await catalogToggle.click();
+          await catalog.waitFor({ state: "hidden" });
+          // The new broad focus still uses one native radio group and the same
+          // private recommendation snapshot; changing focus never submits a quote.
+          await root.locator('[data-support-focus="all"]').check();
+          await recommendations.waitFor({ state: "hidden" });
+          await root.locator('[data-support-focus="all"]').focus();
+          await root.locator('[data-support-focus="all"]').press("ArrowRight");
+          assert.equal(await root.locator('[data-support-focus="energy"]').isChecked(), true,
+            label + ": native radio keyboard selects one domain");
+          await root.locator('[data-support-focus="all"]').check();
           assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1,
-            label + ": All is mutually exclusive");
-          await root.locator("[data-support-recommendations]").click();
+            label + ": exactly one after keyboard and All");
+          await root.locator('[data-support-recommendations]').click();
           await recommendations.waitFor({ state: "visible" });
-          assert.ok((await recommendations.innerText()).includes({
-            en: "All four areas", ru: "Все четыре сферы", es: "Las cuatro áreas",
-          }[locale]), label + ": All explains four-area recommendation");
-          assert.match(await recommendations.locator("[data-support-recommended-video]")
-            .getAttribute("data-support-recommended-video"), /^[A-Za-z0-9_-]{11}$/,
-            label + ": All recommends a genuine recording");
-          await root.locator('[data-support-focus="money"]').check();
-          assert.equal(await recommendations.count(), 0,
-            label + ": another scale invalidates the previous snapshot");
+          assert.equal(await recommendations.locator('[data-support-recommended-talisman]').getAttribute('data-support-recommended-talisman'),
+            "fu-harmony", label + ": All prioritizes lower relationship rating");
+          await recommendations.locator('[data-support-recommended-talisman] button').click();
+          await viewer.waitFor({ state: "visible" });
+          assert.equal(await viewer.locator('[data-support-talisman-filter="goal"] select').inputValue(),
+            "all", label + ": viewer does not silently force a specific focus");
+          assert.equal(await viewer.locator('[data-support-talisman]').getAttribute('data-support-talisman'),
+            "fu-harmony", label + ": broad ranking reaches existing viewer");
+          assert.equal(await page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]').count(), 0,
+            label + ": changing broad focus does not open a quote");
+          await slider.focus();
+          await slider.press("ArrowRight");
+          await recommendations.waitFor({ state: "hidden" });
           const geometry = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scrollWidth: document.documentElement.scrollWidth,
@@ -104,7 +155,7 @@ for (const engine of [chromium, webkit]) {
             await page.screenshot({ path: output + "/" + engine.name() + "-" + locale + "-390.png" });
           }
           evidence.push({ engine: engine.name(), locale, width, videoId,
-            talismanId: "fu-harmony", profile: "/" + locale + "/personality-profiles",
+            talismanId: "fu-harmony", carousel: true, inlineQuote: true, profile: "/" + locale + "/personality-profiles",
             overflow: false, errors: 0 });
         } finally {
           await page.close();

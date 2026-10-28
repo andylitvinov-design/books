@@ -20,9 +20,6 @@
 .assessment, .tools { display: flex; flex-direction: column; }
 .assessment h1, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
 .subText { margin: 0 0 12px; color: #5e645a; font-size: 16px; line-height: 1.4; }
-.scaleGroup { min-width: 0; margin: 0; padding: 0; border: 0; }
-.visuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; border: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
-.allFocus { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 4px 9px; border: 1px solid #c1d9c9; border-radius: 11px; background: #edf6ee; color: #21664e; font-size: 13px; font-weight: 800; cursor: pointer; }
 .scaleList { display: grid; gap: 11px; margin-top: 10px; }
 .scaleRow { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 61px; }
 .scaleIcon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 50%; background: #dfebd3; color: #3c912c; }
@@ -30,17 +27,11 @@
 .scaleIcon[data-tone="relationships"] { color: #ed4952; background: #fae0df; }
 .scaleIcon[data-tone="goals"] { color: #9855d4; background: #eee0f8; }
 .scaleDetail { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
-.scaleHeading { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; }
-.scaleLabel { flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 750; }
-.focusOption { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: none; min-height: 34px; padding: 1px 5px; border-radius: 9px; color: #586f61; font-size: 12px; font-weight: 750; cursor: pointer; }
-.focusOption:has(input:checked), .allFocus:has(input:checked) { background: #d8f1df; color: #096347; }
-.focusOption input[type="radio"], .allFocus input[type="radio"] { display: grid; place-items: center; flex: 0 0 19px; width: 19px; height: 19px; margin: 0; appearance: none; border: 2px solid #7ca18b; border-radius: 5px; background: #fffdfa; cursor: pointer; }
-.focusOption input[type="radio"]:checked, .allFocus input[type="radio"]:checked { border-color: #087856; background: #07855e; }
-.focusOption input[type="radio"]:checked::after, .allFocus input[type="radio"]:checked::after { content: ""; width: 6px; height: 10px; margin-top: -2px; border-right: 2px solid white; border-bottom: 2px solid white; transform: rotate(45deg); }
-.scaleRow input[type="range"] { display: block; width: 100%; height: 25px; margin: 0; accent-color: #0f9c73; cursor: pointer; }
-.scaleRow[data-support-scale="money"] input[type="range"] { accent-color: #e4a11a; }
-.scaleRow[data-support-scale="relationships"] input[type="range"] { accent-color: #e7505b; }
-.scaleRow[data-support-scale="goals"] input[type="range"] { accent-color: #9f63d5; }
+.scaleLabel { font-size: 17px; font-weight: 750; }
+.scaleRow input { display: block; width: 100%; height: 25px; margin: 0; accent-color: #0f9c73; cursor: pointer; }
+.scaleRow[data-support-scale="money"] input { accent-color: #e4a11a; }
+.scaleRow[data-support-scale="relationships"] input { accent-color: #e7505b; }
+.scaleRow[data-support-scale="goals"] input { accent-color: #9f63d5; }
 .scaleValue { display: grid; flex: 0 0 38px; place-items: center; height: 42px; border-radius: 12px; background: #e2eddf; color: #29382d; font-size: 22px; font-weight: 800; }
 .scaleValue[data-tone="money"] { background: #faecd0; }
 .scaleValue[data-tone="relationships"] { background: #fae3e0; }
@@ -55,6 +46,11 @@
 .fileInput { position: absolute; width: 1px; height: 1px; opacity: 0; bottom: 24px; right: 24px; }
 .photo:focus-within { outline: 3px solid #dc9c37; outline-offset: 6px; }
 .photoError { margin: 0; color: #a12d32; font-size: 13px; }
+.focusSelector { display: grid; gap: 3px; width: 100%; max-width: 252px; padding: 10px 14px; border: 1px solid #e6e3d7; border-radius: 19px; background: #fffdf8; text-align: left; box-shadow: 0 3px 12px #15261b0d; }
+.focusCaption { color: #666b60; font-size: 12px; }
+.focusValue { display: flex; align-items: center; gap: 7px; color: #279957; }
+.focusValue select { flex: 1 1 auto; min-width: 0; appearance: none; border: 0; outline-offset: 1px; color: #182b20; background: transparent; font-size: 19px; font-weight: 800; }
+.focusValue > svg:last-child { color: #263b34; pointer-events: none; }
 .recommendButton { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; max-width: 252px; min-height: 55px; padding: 10px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #007c5b, #1eaa78); color: white; font-size: 16px; font-weight: 800; line-height: 1.18; box-shadow: 0 7px 17px #0a85542a; }
 .recommendButton:hover { background: #006d52; }
 .assessment > .recommendButton { max-width: none; margin-top: auto; }
@@ -80,22 +76,9 @@
 .recommendationCopy button { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; margin-top: 3px; padding: 7px 11px; border: 1px solid #a6d5ba; border-radius: 11px; background: #e4f3e8; color: #0a684b; font-size: 14px; font-weight: 800; text-align: left; }
 .recommendationCopy button:hover { background: #d0ead8; }
 .recommendationPanel > .detailedAnalysisLink { width: fit-content; max-width: 100%; margin-top: 0; }
-@media (max-width: 800px) { .recommendationGrid { grid-template-columns: minmax(0,1fr); } }
-@media (max-width: 640px) {
-  .detailedAnalysisLink { margin-top: 6px; min-height: 42px; padding: 7px 8px; font-size: 13px; }
-  .recommendationPanel { padding: 11px; margin-bottom: 9px; gap: 8px; border-radius: 16px; }
-  .recommendationLead p { font-size: 14px; }
-  .recommendationCard { gap: 9px; padding: 9px; }
-  .recommendationVideoPreview { width: 91px; flex-basis: 91px; }
-  .recommendationTalismanImage { width: 58px; height: 76px; flex-basis: 58px; }
-  .recommendationCopy span { font-size: 15px; }
-  .recommendationCopy button { font-size: 14px; }
-}
-@media (max-width: 375px) {
-  .detailedAnalysisLink { font-size: 12px; gap: 4px; }
-  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
-  .recommendationCopy span { font-size: 14px; }
-}
+
+
+
 .tools h2 { margin-bottom: 17px; }
 .toolGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)) minmax(70px, .6fr); gap: 12px; min-height: 300px; }
 .toolButton:last-child { grid-column: 1 / -1; flex-direction: row; min-height: 70px; }
@@ -186,14 +169,7 @@
 .localeLinks a { display: grid; place-items: center; min-height: 45px; border: 1px solid #bfcbbe; border-radius: 11px; color: #146b52; font-weight: 800; text-decoration: none; }
 .localeLinks a[aria-current="page"] { border-color: #13785c; background: #d9ebdf; }
 .settingsPanel button { min-height: 44px; padding: 9px 14px; border: 0; border-radius: 11px; background: #096b52; color: white; font-weight: 800; }
-@media (max-width: 900px) {
-  .topGrid { grid-template-columns: minmax(0,1fr) minmax(0,.78fr); }
-  .assessment { grid-column: 1; }
-  .profile { grid-column: 2; }
-  .tools { grid-column: 1 / -1; }
-  .toolGrid { grid-template-rows: auto; min-height: auto; }
-  .toolButton { min-height: 96px; }
-}
+
 
 /* The alternative screen is a single app workspace, not a long marketing page. */
 .compactAppHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 53px; padding: 5px 4px 10px; }
@@ -222,245 +198,346 @@
   color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
 .photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
 .camera { z-index: 2; }
+.focusCaptionLong { display: inline; }
+.focusCaptionShort { display: none; }
 
+
+
+
+/* Mobile redesign: one hierarchy, readable text at 320–430px.
+   Four scales and portrait share the first row; six useful actions are
+   on the next row, immediately before the scenic working area. */
+.headingLong { display: inline; }
+.headingCompact { display: none; }
+
+
+
+
+
+/* Reference-faithful mobile interface: one 3-zone band above the large player.
+   Previous experimental phone breakpoints were removed to avoid CSS conflicts. */
+.toolMicro { display: none; }
+.toolShortcuts { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 8px; min-width: 0; }
+.toolShortcuts a,.toolShortcuts button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 36px; padding: 6px 9px; border: 1px solid #d6e6d9; border-radius: 10px;
+  background: #f3faf1; color: #147357; font-size: 13px; font-weight: 800; text-decoration: none; }
+.toolShortcuts button[aria-pressed="true"] { border-color: #16a276; background: #dcefe6; }
+.progressStarted { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.progressOpened { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.progressAverage { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0;
+  border-left: 1px solid #ddd5c8; padding-left: 10px; color: #187b5e; }
+.progressAverage strong { color: #213e32; }
+.progressAverage span { color: #5d6a60; }
+.progressGrid { grid-template-columns: minmax(0,1.32fr) minmax(0,.85fr) minmax(0,.85fr); }
+.photoReference { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photo:has(.photoReference) .camera { display: none; }
+@media (min-width: 641px) and (max-width: 900px) {
+  .topGrid { grid-template-columns: minmax(0,1.05fr) minmax(0,.77fr) minmax(0,1.05fr); gap: 10px; }
+  .assessment,.tools { padding: 15px 12px; }
+  .assessment h1,.tools h2 { font-size: 20px; }
+  .toolGrid { gap: 8px; min-height: 260px; }
+  .toolButton { min-height: 96px; font-size: 16px; }
+  .photo { width: min(100%,150px); height: auto; aspect-ratio: 1; }
+  .recommendButton { font-size: 14px; }
+}
 @media (max-width: 640px) {
-  .page { background: linear-gradient(150deg,#dce9e2 0%,#f5f1e7 52%,#fcf7ed 100%); }
-  .container { width: calc(100% - 14px); padding: 0 0 calc(75px + env(safe-area-inset-bottom)); }
+  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .container { width: calc(100% - 12px); padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
   .compactAppHeader { display: none; }
-  .topGrid {
-    display: grid; grid-template-columns: minmax(0,1.08fr) minmax(0,.88fr) minmax(0,1.26fr);
-    grid-template-areas: "assessment profile tools"; align-items: stretch; gap: 5px;
-    min-width: 0; margin: 0 0 9px;
-  }
-  .assessment,.tools { min-width: 0; border-radius: 17px;
-    padding: 10px 7px 9px; background: #fffcf6f5;
-    box-shadow: 0 7px 20px #51664d16; border: 1px solid #e5e1d8; }
+  .topGrid { display: grid; grid-template-areas: "assessment profile tools";
+    grid-template-columns: minmax(0,1.14fr) minmax(0,.85fr) minmax(0,1.13fr);
+    align-items: stretch; gap: 5px; min-width: 0; margin: 0 0 9px; }
+  .assessment,.tools { min-width: 0; padding: 9px 6px 7px; border: 1px solid #e5e4d8;
+    border-radius: 16px; background: #fffcf6ed; box-shadow: 0 5px 15px #29493613; }
   .assessment { grid-area: assessment; }
   .tools { grid-area: tools; }
-  .assessment h1,.tools h2 {
-    margin: 0 0 6px; min-height: 33px;
-    font-size: clamp(13px,3.7vw,16px); line-height: 1.08;
-    font-weight: 850; letter-spacing: -.03em; text-wrap: balance;
-  }
-  .subText { display: none; }
-  .allFocus { display: flex; justify-content: center; gap: 5px; min-height: 25px; padding: 2px; font-size: clamp(9px,2.6vw,11px); line-height: 1.1; text-align: center; }
-  .allFocus input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
-  .scaleList { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
-  .scaleRow { display: grid; grid-template-columns: 23px minmax(0,1fr) 25px;
-    align-items: center; gap: 3px; min-height: 42px; }
-  .scaleIcon { width: 23px; height: 28px; flex: none; border-radius: 10px; }
-  .scaleIcon svg { width: 17px; height: 17px; }
-  .scaleDetail { position: relative; display: grid; gap: 0; min-width: 0; }
-  /* Keep the full scale label/slider readable on 320px: the focus check
-     tucks against the category icon instead of squeezing the label. */
-  .scaleHeading { display: block; }
-  .focusOption { position: absolute; z-index: 2; left: -24px; top: 15px;
-    min-width: 24px; min-height: 24px; padding: 0; gap: 0;
-    border: 1px solid #9cbca8; background: #fffcf7; box-shadow: 0 2px 5px #173e3422; }
-  .focusOption span { display: none; }
-  .focusOption input[type="radio"] { flex-basis: 17px; width: 17px; height: 17px; }
-  .scaleLabel { font-size: clamp(11px,3vw,13px); font-weight: 800;
-    letter-spacing: -.02em; line-height: 1.15; white-space: normal; overflow-wrap: break-word; }
-  .scaleRow input[type="range"] { display: block; width: 100%; min-width: 0; height: 22px; margin: 0; }
-  .scaleValue { width: 25px; height: 30px; flex: none; min-width: 0;
-    font-size: 14px; border-radius: 9px; }
-  .detailedAnalysisLink { display: flex; min-height: 32px; margin: 5px 0 0;
-    justify-content: center; gap: 3px; padding: 4px 2px; border-radius: 10px;
-    font-size: 10px; line-height: 1.15; text-align: center; }
+  .assessment h1,.tools h2 { min-height: 25px; margin: 0 0 3px; color: #243b30;
+    font-size: clamp(12px,3.5vw,15px); line-height: 1.1; font-weight: 850;
+    letter-spacing: -.03em; text-wrap: balance; }
+  .subText { display: block; margin: 0 0 3px; color: #607467; font-size: clamp(9.5px,2.7vw,11px); line-height: 1.13; }
+  /* Put the full domain word above its slider: neither "Отношения" nor
+     "Relationships" may be truncated by the icon and number. */
+  .scaleList { display: grid; gap: 3px; margin: 1px 0 0; }
+  .scaleRow { display: grid; grid-template-columns: 21px minmax(0,1fr) 23px;
+    grid-template-rows: 15px 19px; align-items: center; gap: 0 2px;
+    min-height: 35px; min-width: 0; }
+  .scaleDetail { display: contents; }
+  .scaleLabel { grid-column: 1 / 3; grid-row: 1; min-width: 0;
+    font-size: clamp(10.4px,3.08vw,13px); line-height: 1.05;
+    white-space: nowrap; font-weight: 800; letter-spacing: -.025em; }
+  .scaleIcon { grid-column: 1; grid-row: 2; width: 20px; height: 20px;
+    flex: none; border-radius: 9px; padding: 0; }
+  .scaleIcon svg { width: 15px; height: 15px; }
+  .scaleRow input { display: block; grid-column: 2 / 4; grid-row: 2;
+    width: 100%; min-width: 0; height: 19px; margin: 0; }
+  .scaleValue { grid-column: 3; grid-row: 1; width: 23px; height: 21px;
+    min-width: 0; flex: none; border-radius: 7px; font-size: 13px; }
+  .detailedAnalysisLink { display: flex; min-width: 0; min-height: 29px; width: 100%;
+    align-items: center; justify-content: center; gap: 3px; padding: 4px 3px;
+    margin: 4px 0 0; border-radius: 9px; background: #f2f9ee;
+    border: 1px solid #badcc7; color: #12694e; text-align: center;
+    font-size: clamp(10px,2.6vw,12px); line-height: 1.1; font-weight: 800; }
   .detailedAnalysisLink svg { width: 13px; height: 13px; flex: none; }
   .detailedAnalysisLink svg:last-child { display: none; }
   .detailedFull { display: none; }
   .detailedCompact { display: inline; }
-  .assessment > .recommendButton { margin-top: 8px; }
-  .tools > .detailedAnalysisLink { margin-top: 8px; min-height: 43px; font-size: 12px; }
-
-  /* Five readable actions down the right, instead of 2x2 tiles with broken
-     words at iPhone widths; the full options remain accessible via aria-label. */
-  .tools h2 { margin-bottom: 6px; }
-  .toolGrid { display: grid; grid-template-columns: minmax(0,1fr);
-    grid-template-rows: repeat(5, 44px); align-content: start; min-height: 0; gap: 6px; }
-  .toolButton { display: flex; flex-direction: row; justify-content: flex-start;
-    align-items: center; gap: 8px; min-width: 0; min-height: 43px; padding: 5px 7px;
-    text-align: left; border-radius: 12px;
-    font-size: clamp(11px,3.2vw,14px); line-height: 1.12; font-weight: 800;
-    overflow-wrap: normal; word-break: normal; hyphens: auto; }
-  .toolButton svg { width: 23px; height: 23px; flex: 0 0 23px; }
-  .toolButton:last-child { grid-column: auto; min-height: 43px; }
-  .toolLong { display: none; }
-  .toolCompact { display: block; min-width: 0; white-space: normal; overflow-wrap: break-word; }
-  .toolButton[aria-pressed="true"] { box-shadow: 0 5px 12px #0879572a; }
-
-  /* Photo, choice of focus and primary action are a single central tower. */
-  .profile { grid-area: profile; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; gap: 8px; min-width: 0;
-    padding: 4px 0 2px; text-align: center; }
-  .photo { width: min(100%,100px); height: auto; aspect-ratio: 1;
-    padding: 2px; border: 3px solid #fff;
-    box-shadow: 0 0 0 2px #98d7dd,0 0 0 5px #ffffffe8,0 8px 24px #1c565542; }
-  .photoPlaceholder strong { font-size: clamp(9px,2.7vw,11px);
-    line-height: 1.03; padding: 10px 18px 5px 4px; }
-  .camera { width: 28px; height: 28px; right: 0; bottom: 1px; border-width: 1px; }
+  /* The central portrait is a single photo click target with no extra upload button. */
+  .profile { grid-area: profile; display: flex; flex-direction: column; align-items: stretch;
+    justify-content: center; gap: 6px; padding: 0; min-width: 0; text-align: center; }
+  .photo { align-self: center; width: min(100%,100px); height: auto; aspect-ratio: 1;
+    padding: 1px; border: 3px solid #fff; background: #e2f3e9;
+    box-shadow: 0 0 0 2px #91cbd2,0 0 0 5px #fffcf9,0 7px 22px #206b5b29; }
+  .photoReference { inset: 0; border-radius: 50%; width: 100%; height: 100%; object-fit: cover; }
+  .photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; gap: 0; padding: 0; }
+  .photoPlaceholder strong { display: none; }
+  .photo:has(.photoReference) .camera { display: none; }
+  .photo:has(.photoPreview) .camera { display: grid; }
+  .camera { width: 29px; height: 29px; right: 0; bottom: 0; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
-  .photoError { font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; }
-  .recommendButton { display: flex; flex-direction: column; gap: 3px;
-    justify-content: center; align-items: center; width: 100%; max-width: none;
-    min-height: 59px; border-radius: 13px; padding: 7px 3px;
-    background: linear-gradient(145deg,#03ac7b,#006e54);
-    font-size: clamp(11px,3.2vw,14px); line-height: 1.15;
-    font-weight: 850; text-align: center; }
-  .recommendButton svg { width: 21px; height: 21px; flex: none; }
+  .photoError { margin: 0; font-size: 10px; line-height: 1.14; overflow-wrap: anywhere; }
+  .focusSelector { width: 100%; max-width: none; min-width: 0; padding: 6px 2px;
+    border-radius: 13px; gap: 2px; text-align: center; background: #fffdfa; }
+  .focusCaption { font-size: clamp(9.5px,2.65vw,11px); line-height: 1.08; }
+  .focusCaptionLong { display: none; }
+  .focusCaptionShort { display: inline; }
+  .focusValue { display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .focusValue svg { width: 15px; height: 15px; flex: none; }
+  .focusValue select { flex: 1; min-width: 0; font-size: clamp(12px,3.25vw,15px);
+    font-weight: 850; line-height: 1.15; text-align: center; }
+  .profile > .recommendButton { display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; width: 100%; max-width: none; min-height: 47px;
+    padding: 5px 3px; border-radius: 13px; color: white; text-align: center;
+    background: linear-gradient(130deg,#0baa79,#057353);
+    box-shadow: 0 6px 14px #087c5836; font-size: clamp(10.4px,2.9vw,12.5px); line-height: 1.14; }
+  .profile > .recommendButton svg { flex: none; width: 18px; height: 18px; }
   .recommendLong { display: none; }
-  .recommendShort { display: block; min-width: 0; overflow-wrap: break-word; }
-
-  /* Hero now uses the owner's approved sample: full seated pose and sunset,
-     not the previous zoomed face from the unrelated Reiki page. */
-  .experience { border-radius: 20px; border: 1px solid #e3dcd0; }
-  .hero { min-height: 382px; padding: 12px 12px 15px; border-radius: 19px;
-    background: #132f2e; }
-  .heroBackdrop { object-fit: cover; object-position: 75% center;
-    filter: saturate(1.15) contrast(1.02); }
-  .heroShade { background: linear-gradient(90deg,
-      rgba(6,33,33,.97) 0%,rgba(9,38,35,.9) 27%,rgba(10,39,37,.58) 58%,rgba(14,40,34,.12) 100%),
-      linear-gradient(0deg,rgba(9,31,29,.52),transparent 57%); }
-  .heroFilters { display: grid;
-    grid-template-columns: minmax(0,1.18fr) repeat(3,minmax(0,1fr));
-    gap: 5px; width: 100%; align-items: stretch;
-    flex-wrap: nowrap; overflow: visible; }
-  .heroMode,.heroFilter { min-width: 0; min-height: 48px; padding: 5px 2px;
-    border-radius: 15px; line-height: 1.11; font-size: clamp(10px,2.8vw,12px);
-    text-align: center; font-weight: 850; gap: 3px; white-space: normal; }
-  .heroMode { display: flex; flex-direction: row; align-items: center;
-    justify-content: center; padding: 5px 3px;
-    border-color: #70d9af; color: #fff; background: linear-gradient(125deg,#0aae7a,#007656); }
-  .heroMode svg { width: 14px; height: 14px; flex: none; }
-  .heroFilter { display: flex; flex-direction: column; align-items: center;
-    justify-content: center; position: relative; overflow: hidden;
-    background: rgba(32,65,59,.82); border-color: #ffffff64; }
+  .recommendShort { display: block; white-space: normal; }
+  /* Four main cards exactly as in the mock, plus two small shortcuts so
+     Academy and Masters remain reachable without crowding the hero. */
+  .tools h2 { margin: 0 0 6px; }
+  .toolGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-template-rows: repeat(2,minmax(0,77px)); min-height: 0; gap: 5px; }
+  .toolButton,.toolButton:last-child { grid-column: auto; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; min-width: 0; min-height: 77px; padding: 5px 2px;
+    border: 1px solid #e9e1d4; border-radius: 12px;
+    background: #fbf6ec; color: #263b2e; font-size: clamp(9.4px,2.67vw,11.6px);
+    line-height: 1.12; text-align: center; font-weight: 780;
+    word-break: normal; overflow-wrap: normal; hyphens: none; }
+  /* .page button {font:inherit} is more specific than .toolButton;
+     explicitly keep the intended compact screenshot typography. */
+  .page .toolButton { font-size: clamp(9.4px,2.67vw,11.6px); line-height: 1.12; font-weight: 800; }
+  .page .recommendButton { font-size: clamp(10.4px,2.9vw,12.5px); line-height: 1.14; font-weight: 800; }
+  .toolButton svg { width: 25px; height: 25px; flex: none; }
+  .toolButton[aria-pressed="true"] { background: linear-gradient(130deg,#0aab79,#047353);
+    color: white; border-color: #40be9a; box-shadow: 0 5px 15px #138a6738; }
+  .toolLong { display: none; }
+  .toolCompact { display: block; min-width: 0; max-width: 100%; white-space: normal; }
+  .toolMicro { display: none; }
+  .toolShortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 4px; min-width: 0; margin: 5px 0 0; }
+  .toolShortcuts a,.toolShortcuts button { min-width: 0; min-height: 25px; padding: 2px 0;
+    gap: 3px; border-radius: 8px; font-size: clamp(9.4px,2.66vw,11px);
+    white-space: nowrap; background: #eef7ee; }
+  .toolShortcuts svg { display: none; }
+  .toolShortcuts a,.toolShortcuts button { overflow: hidden; text-overflow: clip;
+    white-space: nowrap; letter-spacing: -.02em; }
+  .experience { border-radius: 18px; margin-top: 0; }
+  .hero { min-height: 288px; border-radius: 17px; padding: 10px 10px 15px;
+    background: #16382f; }
+  .heroBackdrop { object-fit: cover; object-position: 72% 51%; filter: saturate(1.05) contrast(1.05); }
+  .heroShade { background: linear-gradient(95deg,rgba(5,33,31,.96),rgba(6,37,33,.70) 51%,rgba(5,36,28,.08) 90%),
+    linear-gradient(0deg,rgba(8,36,32,.45),transparent 65%); }
+  .heroFilters { display: grid; grid-template-columns: minmax(0,1.19fr) repeat(3,minmax(0,1fr));
+    align-items: stretch; gap: 5px; flex-wrap: nowrap; overflow: visible; width: 100%; }
+  .heroMode,.heroFilter { min-width: 0; min-height: 43px; padding: 5px 2px; gap: 2px;
+    border-radius: 22px; font-size: clamp(9.5px,2.77vw,12px);
+    line-height: 1.12; font-weight: 800; text-align: center; white-space: normal; }
+  .heroMode { display: flex; justify-content: center; align-items: center; flex-direction: row;
+    background: linear-gradient(125deg,#10b17e,#067c5a); border-color: #3bdba1; }
+  .heroMode svg { flex: none; width: 16px; height: 16px; }
+  .heroFilter { display: flex; position: relative; flex-direction: column;
+    justify-content: center; align-items: center; background: #1c40398f;
+    border-color: #fff7; overflow: hidden; }
   .heroFilter > svg { display: none; }
-  .heroFilter span { font-size: clamp(10px,2.8vw,12px); font-weight: 850;
-    white-space: nowrap; line-height: 1.1; }
-  .filterValue { display: block; min-width: 0; max-width: 100%; overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap; color: #e0f0e6;
-    font-size: clamp(9px,2.6vw,11px); font-weight: 650; }
-  .heroFilter select { position: absolute; inset: 0; z-index: 2; width: 100%;
-    min-width: 0; max-width: none; height: 100%; margin: 0; padding: 0;
-    appearance: none; opacity: 0; cursor: pointer; }
-  .heroFilter:focus-within { outline: 3px solid #ffdd95; outline-offset: 2px; }
-  .hero[data-playing="true"] .heroFilters { padding: 8px; background: #153d34; }
-  .heroBody { max-width: 290px; padding: 24px 3px 4px; }
-  .videoOriginal { padding: 6px 10px; font-size: 11px; border-radius: 17px; }
-  .videoOriginal svg { width: 15px; height: 15px; }
-  .heroBody h2 { max-width: 285px; margin: 11px 0 9px;
-    font-size: clamp(33px,8.7vw,43px); font-weight: 900; line-height: 1.05;
-    letter-spacing: -.035em; text-shadow: 0 2px 6px #0c2828cc; }
-  .heroDescription { max-width: 263px; margin: 0 0 16px;
-    font-size: clamp(14px,4vw,18px); line-height: 1.29; }
-  .playButton { width: min(288px,100%); min-height: 58px;
-    font-size: clamp(17px,4.5vw,21px);
-    padding: 9px 13px; gap: 9px; border-radius: 16px; }
-  .playButton svg { width: 23px; height: 23px; }
-
-  .videoSection { padding: 13px 10px 10px; }
-  .videoHeading { display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: nowrap; gap: 7px; margin-bottom: 10px; }
-  .videoHeading h3 { min-width: 0; font-size: clamp(16px,4.35vw,21px);
-    line-height: 1.16; letter-spacing: -.02em; }
+  .heroFilter span { font-size: clamp(10px,2.83vw,12px); white-space: nowrap; line-height: 1.1; }
+  .filterValue { display: block; max-width: 100%; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis; color: #e8efe8;
+    font-size: clamp(9px,2.53vw,10.8px); }
+  .heroFilter select { position: absolute; z-index: 2; inset: 0; width: 100%;
+    height: 100%; min-width: 0; max-width: none; padding: 0; margin: 0;
+    opacity: 0; appearance: none; cursor: pointer; }
+  .heroFilter:focus-within { outline: 3px solid #f8d89c; outline-offset: 2px; }
+  .hero[data-playing="true"] .heroFilters { padding: 7px; background: #193c33; }
+  .heroBody { flex: 1; max-width: min(68%,265px); padding: 13px 1px 0; }
+  .videoOriginal { padding: 5px 8px; border-radius: 16px; font-size: 10px; line-height: 1.1; }
+  .videoOriginal svg { width: 13px; height: 13px; }
+  .heroBody h2 { max-width: 245px; margin: 9px 0 6px;
+    font-size: clamp(27px,7.75vw,36px); line-height: 1.05;
+    font-weight: 900; letter-spacing: -.038em; text-wrap: balance; }
+  .heroDescription { max-width: 250px; margin: 1px 0 13px; color: #f8fcf4;
+    font-size: clamp(12px,3.45vw,16px); line-height: 1.24; font-weight: 650; }
+  .playButton { width: min(270px,100%); min-height: 51px; padding: 8px 8px;
+    border-width: 1px; border-radius: 14px; font-size: clamp(15px,4.25vw,19px);
+    gap: 7px; box-shadow: 0 0 0 2px #c8e8b655,0 5px 15px #062f284a; }
+  .playButton svg { flex: none; width: 20px; height: 20px; }
+  .videoSection { padding: 13px 9px 10px; }
+  .videoHeading { gap: 7px; margin: 0 0 9px; align-items: center; }
+  .videoHeading h3 { min-width: 0; font-size: clamp(14px,3.75vw,19px); line-height: 1.17; }
   .videoHeading h3 span,.videoLanguage { display: none; }
-  .seeAll { flex: none; font-size: clamp(11px,2.9vw,13px); min-height: 36px; }
+  .seeAll { min-height: 30px; flex: none; font-size: clamp(10px,2.72vw,12.5px); }
   .videoGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
     grid-template-rows: minmax(0,1fr); grid-auto-flow: row; grid-auto-columns: auto;
-    gap: 6px; width: 100%; min-width: 0;
-    overflow: visible; padding: 0; scroll-snap-type: none; }
-  .videoCard { min-width: 0; aspect-ratio: .78; min-height: 112px; padding: 5px;
-    border-width: 2px; border-radius: 11px; scroll-snap-align: none; }
-  /* Source-verified videos retain real titles/URLs. Only their decorative
-     preview art mirrors the approved nature-themed mock, never a fake frame. */
-  .videoCard { isolation: isolate; }
-  .videoCard img { z-index: -2; }
+    width: 100%; min-width: 0; gap: 6px; overflow: visible; padding: 0; scroll-snap-type: none; }
+  .videoCard { min-width: 0; aspect-ratio: .94; min-height: 82px; padding: 5px;
+    border-radius: 11px; border-width: 2px; scroll-snap-align: none; isolation: isolate; }
+  .videoCard img { z-index: -2; object-position: center; }
   .videoCard::after { content: ""; position: absolute; inset: 0; z-index: -1;
-    pointer-events: none; background-image: url("/images/holistic-house/support-mock-video-posters.webp");
-    background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; }
+    background-image: url("/images/holistic-house/support-mock-video-posters.webp");
+    background-size: 400% 100%; background-repeat: no-repeat; background-position: 0 0; pointer-events: none; }
   .videoCard:nth-child(2)::after { background-position: 33.3333% 0; }
   .videoCard:nth-child(3)::after { background-position: 66.6667% 0; }
   .videoCard:nth-child(4)::after { background-position: 100% 0; }
   .videoDark { z-index: 0; }
-  .thumbnailPlay { z-index: 1; }
-  .videoTitle { position: relative; z-index: 2; font-size: clamp(10px,2.8vw,13px); line-height: 1.12; }
-  .thumbnailPlay { top: 6px; left: 6px; width: 27px; height: 27px; border-width: 1px; }
-  .thumbnailPlay svg { width: 13px; height: 13px; }
-  .videoHint { font-size: 11px; line-height: 1.32; margin: 9px 0 0; }
-  .youtubeLink { font-size: 12px; min-height: 36px; margin: 0; }
-
-  .progressPanel { margin-top: 9px; padding: 12px 11px 9px; border-radius: 17px; }
-  .progressPanel h2 { margin: 0 0 8px; font-size: 19px; }
-  .progressGrid { grid-template-columns: 54px minmax(0,1fr) minmax(0,1fr);
-    gap: 7px; padding: 9px; border-radius: 15px; }
-  .progressRing { width: 53px; height: 53px; }
-  .progressRing::before { width: 40px; height: 40px; }
-  .progressRing strong { font-size: 14px; }
-  .progressGrid > div:not(:first-child) { gap: 2px; font-size: 12px; line-height: 1.14; }
-  .progressGrid > div:not(:first-child) span { font-size: 11px; }
-  .progressFocus { padding-left: 6px; }
-  .progressFocus svg { width: 21px; height: 21px; }
-  .privacyNote { margin: 8px 0 0; font-size: 11px; line-height: 1.23; }
-  .privacyNote svg { width: 16px; height: 16px; }
-  .disclaimer { display: flex; margin: 12px 3px; font-size: 11px; line-height: 1.25; }
-  .disclaimer a { margin: 0; font-size: 11px; }
-  .bottomNav { min-height: 65px; padding: 5px 8px calc(5px + env(safe-area-inset-bottom)); }
-  .bottomNav > :is(a,button) { font-size: 11px; min-height: 54px; gap: 3px; }
+  .thumbnailPlay { z-index: 1; width: 26px; height: 26px; top: 5px; left: 5px; border-width: 1px; }
+  .thumbnailPlay svg { width: 12px; height: 12px; }
+  .videoTitle { z-index: 2; font-size: clamp(10px,2.83vw,13px); line-height: 1.15; font-weight: 850; }
+  .videoHint { margin: 7px 0 0; font-size: 10.5px; line-height: 1.3; }
+  .youtubeLink { margin: 0; min-height: 30px; font-size: 12px; }
+  .progressPanel { margin-top: 8px; padding: 11px 9px 8px; border-radius: 17px; }
+  .progressPanel h2 { margin: 0 0 8px; font-size: 18px; }
+  .progressGrid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);
+    gap: 7px; padding: 9px 8px; border-radius: 12px; align-items: center; }
+  .progressStarted { gap: 7px; }
+  .progressRing { flex: none; width: 47px; height: 47px; }
+  .progressRing::before { width: 35px; height: 35px; }
+  .progressRing strong { font-size: 13px; }
+  .progressGrid > div:not(:first-child) { gap: 3px; font-size: 11px; line-height: 1.12; }
+  .progressOpened { font-size: 11px; gap: 3px; line-height: 1.12; }
+  .progressOpened strong { font-size: 10.5px; }
+  .progressOpened span { font-size: 9px; color: #657069; }
+  .progressFocus,.progressAverage { padding-left: 6px; }
+  .progressFocus svg,.progressAverage svg { width: 19px; height: 19px; }
+  .progressFocus strong,.progressAverage strong { font-size: 11.5px; }
+  .progressFocus span,.progressAverage span { font-size: 9px; }
+  .privacyNote { margin: 8px 0 0; font-size: 10px; line-height: 1.23; }
+  .privacyNote svg { width: 15px; height: 15px; }
+  .disclaimer { display: flex; gap: 4px; margin: 9px 3px; font-size: 11px; }
+  .disclaimer a { font-size: 11px; margin: 0; }
+  .bottomNav { min-height: 63px; padding: 5px 7px calc(4px + env(safe-area-inset-bottom)); }
+  .bottomNav > :is(a,button) { min-height: 50px; font-size: 11px; gap: 3px; }
   .bottomNav > :is(a,button) svg { width: 23px; height: 23px; }
-  .settingsPanel { bottom: calc(78px + env(safe-area-inset-bottom)); }
-  .recommendationPanel { padding: 12px; margin-bottom: 9px; gap: 8px; border-radius: 16px; }
-  .recommendationGrid { grid-template-columns: minmax(0,1fr); gap: 8px; }
-  .recommendationLead p { font-size: 13px; }
-  .recommendationCard { gap: 8px; padding: 8px; }
-  .recommendationVideoPreview { width: 80px; flex-basis: 80px; }
-  .recommendationTalismanImage { width: 57px; height: 75px; flex-basis: 57px; }
-  .recommendationCopy span { font-size: 14px; }
-  .recommendationCopy button { font-size: 13px; min-height: 43px; }
+  .settingsPanel { bottom: calc(77px + env(safe-area-inset-bottom)); }
+  .recommendationPanel { padding: 11px; margin-bottom: 7px; gap: 7px; }
+  .recommendationGrid { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .recommendationCard { padding: 8px; gap: 8px; }
+  .recommendationVideoPreview { width: 75px; flex-basis: 75px; }
+  .recommendationTalismanImage { width: 55px; height: 72px; flex-basis: 55px; }
+  .recommendationCopy span { font-size: 13px; }
+  .recommendationCopy button { min-height: 42px; font-size: 13px; }
   .insetPanel { padding: 14px 10px; }
   .insetIntro h2 { font-size: 22px; }
   .consultOptions { grid-template-columns: minmax(0,1fr); }
-  .consultOptions a { min-height: 75px; font-size: 16px; }
+  .consultOptions a { min-height: 73px; font-size: 17px; }
 }
+
+@media (min-width: 351px) and (max-width: 640px) {
+  /* Equal-looking reference cards need a few extra pixels for full Russian
+     words: do not let "Медитация"/"Талисман" overflow or split. */
+  .topGrid { grid-template-columns: minmax(0,1.12fr) minmax(0,.83fr) minmax(0,1.27fr); }
+  .toolButton,.toolButton:last-child { font-size: clamp(9.2px,2.49vw,10.9px); padding: 4px 1px; }
+  .toolCompact { letter-spacing: -.02em; }
+  .page .toolButton { font-size: clamp(9.2px,2.49vw,10.9px); }
+}
+
 @media (max-width: 350px) {
-  .topGrid { grid-template-columns: minmax(0,1.06fr) minmax(0,.89fr) minmax(0,1.22fr); gap: 4px; }
-  .assessment,.tools { padding: 8px 5px; }
-  .assessment h1,.tools h2 { font-size: 12px; }
-  .scaleRow { grid-template-columns: 21px minmax(0,1fr) 22px; gap: 2px; min-height: 40px; }
-  .scaleIcon { width: 21px; height: 25px; }
-  .scaleIcon svg { width: 16px; height: 16px; }
-  .scaleLabel { font-size: 11px; }
-  .scaleValue { width: 22px; height: 27px; font-size: 13px; }
-  /* Keep five help rows and the right-side Tests action readable at 320px;
-     preserve the prior release's compact scales and heading layout. */
-  .tools > .detailedAnalysisLink { min-height: 43px; max-height: none; margin-top: 4px;
-    padding: 3px 2px; gap: 3px; font-size: 12px; line-height: 1; }
-  .assessment h1,.tools h2 { min-height: 29px; margin-bottom: 3px; }
-  .scaleList { gap: 2px; margin-top: 2px; }
-  .scaleRow { min-height: 35px; }
-  .scaleRow input[type="range"] { height: 17px; }
-  .scaleDetail { gap: 0; }
-  .scaleLabel { line-height: 1.02; font-size: 10.5px; letter-spacing: -.035em; }
-  .toolGrid { gap: 3px; }
-  .toolButton { min-height: 39px; line-height: 1.05; }
-  .topGrid { margin-bottom: 5px; }
-  .toolGrid { gap: 5px; }
-  .toolButton { gap: 4px; padding: 4px; min-height: 43px; font-size: 11px; }
-  .toolButton svg { width: 20px; height: 20px; flex-basis: 20px; }
-  .profile { gap: 7px; }
+  .topGrid { grid-template-columns: minmax(0,1.16fr) minmax(0,.83fr) minmax(0,1.15fr); gap: 4px; }
+  .assessment,.tools { padding: 7px 4px 6px; border-radius: 13px; }
+  .assessment h1,.tools h2 { font-size: 11.5px; min-height: 24px; margin-bottom: 2px; }
+  .subText { font-size: 9px; margin-bottom: 2px; }
+  .scaleList { gap: 2px; }
+  .scaleRow { grid-template-columns: 18px minmax(0,1fr) 20px; grid-template-rows: 15px 18px;
+    min-height: 34px; gap: 0 2px; }
+  .scaleLabel { font-size: 10.7px; letter-spacing: -.04em; }
+  .scaleIcon { width: 17px; height: 18px; }
+  .scaleIcon svg { width: 13px; height: 13px; }
+  .scaleValue { width: 20px; height: 19px; font-size: 11px; }
+  .scaleRow input { height: 18px; }
+  .detailedAnalysisLink { min-height: 27px; margin-top: 3px; font-size: 10px; }
   .photo { width: min(100%,82px); }
-  .photoPlaceholder strong { font-size: 9px; }
-  .focusOption { min-width: 22px; min-height: 21px; left: -21px; top: 12px; }
-  .focusOption input[type="radio"] { flex-basis: 16px; width: 16px; height: 16px; }
-  .recommendButton { min-height: 55px; font-size: 11px; }
-  .hero { min-height: 366px; padding: 10px; }
-  .heroMode,.heroFilter { min-height: 47px; gap: 2px; padding: 4px 2px; font-size: 10px; }
-  .heroBody h2 { font-size: 31px; }
+  .profile { gap: 4px; }
+  .focusSelector { padding: 5px 1px; }
+  .focusCaption { font-size: 9px; }
+  .focusValue select { font-size: 11.5px; }
+  .focusValue svg { width: 13px; height: 13px; }
+  .profile > .recommendButton { min-height: 44px; font-size: 10.5px; }
+  .profile > .recommendButton svg { width: 16px; height: 16px; }
+  .toolGrid { grid-template-rows: repeat(2,minmax(0,68px)); gap: 4px; }
+  .toolButton,.toolButton:last-child { min-height: 68px; padding: 3px 0; gap: 3px; font-size: 10px; }
+  .toolButton svg { width: 21px; height: 21px; }
+  .toolCompact { display: none; }
+  .toolMicro { display: block; min-width: 0; font-size: 10px; white-space: nowrap; }
+  .page .toolButton { font-size: 10px; }
+  .page .recommendButton { font-size: 10.5px; }
+  .toolShortcuts { margin-top: 4px; gap: 3px; }
+  .toolShortcuts a,.toolShortcuts button { font-size: 9px; padding: 1px 0; min-height: 24px; }
+  .toolShortcuts svg { display: none; }
+  .hero { min-height: 282px; padding: 9px 8px 13px; }
+  .heroFilters { gap: 4px; }
+  .heroMode,.heroFilter { min-height: 40px; border-radius: 13px; font-size: 9.5px; padding: 4px 1px; }
+  .heroMode svg { width: 13px; height: 13px; }
+  .heroFilter span { font-size: 9.5px; }
+  .filterValue { font-size: 9px; }
+  .heroBody { max-width: 70%; padding-top: 10px; }
+  .heroBody h2 { font-size: 27px; }
+  .heroDescription { font-size: 12px; }
+  .playButton { min-height: 47px; font-size: 15px; }
   .videoGrid { gap: 4px; }
-  .videoCard { min-height: 103px; padding: 4px; }
+  .videoCard { min-height: 75px; padding: 3px; }
   .videoTitle { font-size: 10px; }
+  .progressGrid { gap: 4px; padding: 7px 5px; }
+  .progressRing { width: 39px; height: 39px; }
+  .progressRing::before { width: 30px; height: 30px; }
+  .progressRing strong { font-size: 11px; }
+  .progressOpened strong { font-size: 9px; }
+  .progressOpened span { font-size: 8px; }
+  .progressFocus,.progressAverage { padding-left: 3px; }
+  .progressFocus strong,.progressAverage strong { font-size: 10px; }
+  .progressFocus span,.progressAverage span { font-size: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page *, .page *::before, .page *::after { scroll-behavior: auto; transition: none; }
+  .page *,.page *::before,.page *::after { scroll-behavior: auto; transition: none; }
+}
+
+/* Exclusive Focus belongs to the existing four scale rows, not the photo column. */
+.scaleGroup { min-width: 0; margin: 0; padding: 0; border: 0; }
+.focusLegend { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.focusHeader { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.focusHeader .subText { flex: 1; min-width: 0; margin: 0; }
+.allFocus { display: flex; align-items: center; gap: 6px; min-width: 44px; min-height: 44px; flex: none;
+  color: #145b45; font-size: 14px; font-weight: 750; cursor: pointer; }
+.inlineFocus { display: grid; place-items: center; flex: 0 0 44px; height: 44px; cursor: pointer; }
+.page .allFocus input[type="radio"], .page .inlineFocus input[type="radio"] {
+  appearance: none; display: grid; grid-area: auto; place-items: center; flex: none; width: 20px; height: 20px;
+  margin: 0; border: 2px solid #568774; border-radius: 4px; background: #fffdf8;
+  cursor: pointer; }
+.page .allFocus input[type="radio"]:checked, .page .inlineFocus input[type="radio"]:checked {
+  background: #078960; border-color: #078960; }
+.page .allFocus input[type="radio"]:checked::after, .page .inlineFocus input[type="radio"]:checked::after {
+  content: ""; width: 9px; height: 5px; border-left: 2px solid white; border-bottom: 2px solid white;
+  transform: translateY(-1px) rotate(-45deg); }
+@media (max-width: 640px) {
+  /* The approved three-zone dashboard has a <285px height budget. Use real
+     24px native targets, not an invisible overlapping hit-area extension.
+     All shares the score-guide row; full domain captions stay above sliders. */
+  .scaleList { row-gap: 0; }
+  .allFocus { min-height: 24px; gap: 4px; font-size: 10px; line-height: 1.1; }
+  .scaleRow { grid-template-columns: 24px minmax(0,1fr) 23px;
+    grid-template-rows: 15px 24px; column-gap: 4px; min-height: 39px; }
+  .inlineFocus { grid-column: 1; grid-row: 2; width: 24px; height: 24px; min-width: 24px; }
+  .page .allFocus input[type="radio"], .page .inlineFocus input[type="radio"] { width: 24px; height: 24px; }
+}
+@media (max-width: 350px) {
+  .scaleRow { grid-template-columns: 24px minmax(0,1fr) 20px; }
 }

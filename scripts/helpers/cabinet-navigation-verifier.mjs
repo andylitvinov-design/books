@@ -7,8 +7,11 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
   await expect(page).toHaveURL(origin + '/' + locale + '/app/portrait', { timeout: 30000 })
   const profile = page.locator('[data-profile-domains][data-profile-interactive="true"]')
   await expect(profile).toBeVisible({ timeout: 30000 })
-  await expect(profile.getByRole('heading', {
-    name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true,
+  await expect(profile).toHaveAttribute('data-profile-mode', 'account')
+  const archive = profile.locator('[data-profile-report-archive]')
+  await expect(archive).toBeVisible()
+  await expect(archive.getByRole('heading', {
+    name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true,
   })).toBeVisible()
 }
 
