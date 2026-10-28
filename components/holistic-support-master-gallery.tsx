@@ -137,7 +137,7 @@ const words = {
 const reikiUi = {
   en: {
     tabs: { main: "Main", filter: "Filter", description: "Description", media: "Video / audio" },
-    format: "Format", formats: { session: "Session", initiation: "Initiation", course: "Training course" },
+    format: "Format", formats: { session: "Session", initiation: "Initiation", course: "Programme" },
     price: "Price", prices: { all: "Any", free: "Free", low: "€0–20", mid: "€21–50", high: "€51–100", premium: "€100+" },
     time: "Preferred timing", times: { day: "Within 24h", days: "Within 3 days", chosen: "Chosen hour" },
     report: "Requested report", reports: { brief: "Brief", text: "Personal text review", voice: "Personal voice review" },
@@ -159,7 +159,7 @@ const reikiUi = {
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
-    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Курс обучения" },
+    format: "Формат", formats: { session: "Сессия", initiation: "Инициация", course: "Программа" },
     price: "Цена", prices: { all: "Все", free: "Free", low: "0–20 €", mid: "21–50 €", high: "51–100 €", premium: "100+ €" },
     time: "Желаемый срок", times: { day: "В течение суток", days: "В течение 3 дней", chosen: "В выбранный час" },
     report: "Отчёт", reports: { brief: "Краткий", text: "Личный разбор текстом", voice: "Личный разбор голосом" },
@@ -181,7 +181,7 @@ const reikiUi = {
   },
   es: {
     tabs: { main: "Inicio", filter: "Filtro", description: "Descripción", media: "Vídeo / audio" },
-    format: "Formato", formats: { session: "Sesión", initiation: "Iniciación", course: "Curso de formación" },
+    format: "Formato", formats: { session: "Sesión", initiation: "Iniciación", course: "Programa" },
     price: "Precio", prices: { all: "Todos", free: "Gratis", low: "0–20 €", mid: "21–50 €", high: "51–100 €", premium: "100+ €" },
     time: "Plazo preferido", times: { day: "En 24 horas", days: "En 3 días", chosen: "Hora elegida" },
     report: "Informe", reports: { brief: "Breve", text: "Análisis personal escrito", voice: "Análisis personal por voz" },
@@ -536,6 +536,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
     setMethod(""); setSelectedId(null); setOrderOpen(false);
   };
+  // Both type selectors drive the existing published-offer filters, not a new booking flow.
+  const chooseReikiFormat = (value: ReikiFormat, showMain = false) => {
+    setReikiFormat(value); setReikiPrice("all"); setReikiTime("any");
+    setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
+    setMethod(""); setSelectedId(null); setOrderOpen(false);
+    if (showMain) setReikiTab("main");
+  };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
       data-support-master-hero={selected ? id(selected) : undefined}
@@ -576,8 +583,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <div className={styles.reikiOptions} data-cols="three">
               {(["session", "initiation", "course"] as const).map(value =>
                 <button type="button" key={value} aria-pressed={reikiFormat === value}
-                  onClick={() => { setReikiFormat(value); setReikiRole("any"); setReikiCertificate(false);
-                    setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
+                  onClick={() => chooseReikiFormat(value)}>
                   {value === "session" ? <UserRound size={17} aria-hidden="true"/> :
                     value === "initiation" ? <Sparkles size={17} aria-hidden="true"/> :
                     <GraduationCap size={17} aria-hidden="true"/>}
@@ -708,6 +714,17 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             <strong>{option.label}</strong><small>{option.method}</small>
           </button>;
         })}
+      </div>}
+      {kind === "healing" && <div className={styles.reikiQuickFormat} role="group"
+        aria-label={r.format} data-support-reiki-quick-format>
+        {(["session", "initiation", "course"] as const).map(value =>
+          <button type="button" key={value} data-support-reiki-quick-kind={value}
+            aria-pressed={reikiFormat === value} onClick={() => chooseReikiFormat(value, true)}>
+            {value === "session" ? <UserRound size={16} aria-hidden="true"/> :
+              value === "initiation" ? <Sparkles size={16} aria-hidden="true"/> :
+              <GraduationCap size={16} aria-hidden="true"/>}
+            <span>{r.formats[value]}</span>
+          </button>)}
       </div>}
       {consultations && <section className={styles.consultBrowse} aria-label={c.heading}
         data-support-consultation-categories>
