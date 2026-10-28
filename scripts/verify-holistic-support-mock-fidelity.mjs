@@ -119,14 +119,22 @@ for (const browserType of [chromium, webkit]) {
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
-          if(width===320) {
-            const headHeight=Math.round(geometry.guide[0].y-geometry.a[0].y);
-            console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
-              Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
-            await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
-          }
-          assert.ok(geometry.guide.length===1 && geometry.guide[0].y-geometry.a[0].y<285,
-            label+" screenshot-like three-zone dashboard exposes recommendations under header");
+          const headHeight=Math.round(geometry.guide[0].y-geometry.a[0].y);
+          const topCardHeight=Math.max(geometry.a[0].height,geometry.toolsSection[0].height);
+          console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
+            Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
+          if(width===320) await page.screenshot({
+            path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true,
+          });
+          // Five actual ratings require more vertical space than the old
+          // four-row mock, especially with large RU/ES labels at 390px.
+          // Gate the actual three-zone stack against its card height and
+          // a strict small-screen ceiling instead of a stale 285px constant.
+          assert.ok(geometry.guide.length===1 &&
+            headHeight<=topCardHeight+16 &&
+            topCardHeight <= (width<=350 ? 300 : 375),
+            label+" five-checkin three-zone dashboard stays compact with no phantom whitespace: "+
+              JSON.stringify({headHeight,topCardHeight,width}));
           assert.ok(geometry.guide[0].bottom<=geometry.hero[0].y+2,
             label+" recommendation card precedes original scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
