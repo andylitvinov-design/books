@@ -31,6 +31,7 @@ const translations = {
     moneyHeading: "Money flow · 12 visual stories", moneyIntro: "Choose a symbolic flow around your own photograph. Four favourites first.",
     allMoney: "See all 12 looks", lessMoney: "Show four favourites", moneyNote: "A creative attention exercise, not a promise of income.",
     previewPlay: "Preview movement", previewPause: "Pause preview",
+    clipPlay: "Tap to play scene", clipPause: "Pause scene", clipReady: "Moving preview",
     effect: "Animation", effects: ["Golden light", "Energy flow", "Prosperity symbols", "Temple glow"],
     aspect: "Format", square: "Square · 1:1", portrait: "Vertical · 9:16",
     duration: "Duration", seconds: "sec",
@@ -53,6 +54,7 @@ const translations = {
     moneyHeading: "Денежный поток · 12 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
     allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
     previewPlay: "Посмотреть движение", previewPause: "Пауза",
+    clipPlay: "Нажмите для видео", clipPause: "Пауза видео", clipReady: "Видео в движении",
     effect: "Эффект", effects: ["Золотой свет", "Поток энергии", "Символы процветания", "Сияние храма"],
     aspect: "Формат", square: "Квадрат · 1:1", portrait: "Вертикальный · 9:16",
     duration: "Длительность", seconds: "сек",
@@ -75,6 +77,7 @@ const translations = {
     moneyHeading: "Flujo de prosperidad · 12 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
     allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
     previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
+    clipPlay: "Toca para ver el vídeo", clipPause: "Pausar vídeo", clipReady: "Vista en movimiento",
     effect: "Animación", effects: ["Luz dorada", "Flujo de energía", "Símbolos de prosperidad", "Luz del templo"],
     aspect: "Formato", square: "Cuadrado · 1:1", portrait: "Vertical · 9:16",
     duration: "Duración", seconds: "seg",
@@ -100,17 +103,54 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
   return [edge, Math.round(edge * 16 / 9)];
 }
 
-// Genuine still frames from the identical cinematic renderer used for video.
-// No fake play icons or misleading pictures of actors.
-function CinematicSceneThumbnail({ scene, photo, title }: {
-  scene: MoneySceneId; photo: HTMLImageElement | null; title: string;
+// Every selectable scene is a *real, animated* preview of the very same
+// Canvas footage used in the downloaded file. Only one selected card runs,
+// after an explicit user tap. The other cards remain rich cinematic stills.
+// This avoids twelve simultaneous decoders, battery drain and autoplay.
+function CinematicSceneThumbnail({ scene, photo, title, playing }: {
+  scene: MoneySceneId; photo: HTMLImageElement | null; title: string; playing: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (typeof IntersectionObserver === "undefined") {
+      // Older WebViews can still display and play an animation.
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(Boolean(entry?.isIntersecting)),
+      { threshold: 0.05, rootMargin: "100px" },
+    );
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d", { alpha: false });
-    if (ctx) paintCinematicMoneyFrame(ctx, photo, scene, 3.2, "landscape", title);
-  }, [scene, photo, title]);
-  return <canvas className={styles.moneyFlowThumb} width={220} height={132} aria-hidden="true" ref={canvasRef} />;
+    if (!ctx) return;
+    paintCinematicMoneyFrame(ctx, photo, scene, 3.2, "landscape", title);
+    if (!playing || !visible) return;
+    let raf = 0;
+    let stopped = false;
+    let startedAt = 0;
+    let lastFrame = 0;
+    const draw = (now: number) => {
+      if (stopped) return;
+      if (!startedAt) startedAt = now;
+      // Seven frames per second looks like a video loop without slowing iOS.
+      if (!document.hidden && now - lastFrame >= 140) {
+        paintCinematicMoneyFrame(ctx, photo, scene, 3.2 + ((now - startedAt) / 1000) % 6, "landscape", title);
+        lastFrame = now;
+      }
+      raf = window.requestAnimationFrame(draw);
+    };
+    raf = window.requestAnimationFrame(draw);
+    return () => { stopped = true; window.cancelAnimationFrame(raf); };
+  }, [scene, photo, title, playing, visible]);
+  return <canvas className={styles.moneyFlowThumb} width={320} height={192}
+    data-mandala-scene-preview={scene} data-scene-playing={playing && visible ? "true" : "false"} aria-hidden="true" ref={canvasRef} />;
 }
 
 function chooseMime(): string {
@@ -432,9 +472,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl }: {
           {moneyScenes.slice(0, showAllMoney ? moneyScenes.length : 4).map((scene, index) => (
             <button type="button" key={scene.id} data-mandala-money-option={scene.id}
               disabled={recording} aria-pressed={moneyScene === scene.id}
-              onClick={() => { setMoneyScene(scene.id); setPreviewPlaying(false); }}>
-              <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]} photo={sharedThumbnailPhoto} />
-              <span className={styles.moneyFlowText}><strong>{scene.label[locale]}</strong><small>{String(index + 1).padStart(2, "0")} · VIDEO</small></span>
+              onClick={() => {
+                if (moneyScene === scene.id && previewPlaying) {
+                  setPreviewPlaying(false);
+                } else {
+                  setMoneyScene(scene.id);
+                  // Selecting a video is an explicit gesture to watch its
+                  // moving client-local thumbnail and full-size preview.
+                  setPreviewPlaying(true);
+                }
+              }}>
+              <span className={styles.moneyFlowMedia}>
+                <CinematicSceneThumbnail scene={scene.id} title={scene.label[locale]}
+                  photo={sharedThumbnailPhoto}
+                  playing={moneyScene === scene.id && previewPlaying && !recording} />
+                <span className={styles.moneyFlowPlayBadge} aria-hidden="true">
+                  {moneyScene === scene.id && previewPlaying
+                    ? <Pause size={18} fill="currentColor" />
+                    : <Play size={18} fill="currentColor" />}
+                </span>
+                <span className={styles.moneyFlowClipLabel}>
+                  {moneyScene === scene.id && previewPlaying ? t.clipReady : t.clipPlay}
+                </span>
+              </span>
+              <span className={styles.moneyFlowText}>
+                <strong>{scene.label[locale]}</strong>
+                <small>{String(index + 1).padStart(2, "0")} · {moneyScene === scene.id && previewPlaying ? t.clipPause : "VIDEO"}</small>
+              </span>
             </button>
           ))}
         </div>
