@@ -407,6 +407,14 @@ export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
                 <h2 id="profi-practice-title">{t.proChoice}</h2>
                  <h3 className={styles.sectionSubtitle}>{t.proTitle}</h3>
                 <p>{t.proLead}</p>
+                <Link href={"/"+locale+"/practice"} className={styles.practiceShowcaseEntry}
+                  prefetch={false} data-profi-practice-showcase-entry>
+                  <Rocket size={19} aria-hidden="true"/>
+                  <span>{locale==="ru"?"Открыть новый кабинет практика":locale==="es"?"Abrir espacio profesional":"Open practitioner workspace"}
+                    <small>{locale==="ru"?"Сначала посмотрите дизайн без входа через Google":locale==="es"?"Explora el diseño antes de iniciar sesión":"Explore the full design without signing in"}</small>
+                  </span>
+                  <ArrowRight size={19} aria-hidden="true"/>
+                </Link>
               </div>
               <div className={styles.offerStudio}>
                 <div className={styles.offerChoices}>
