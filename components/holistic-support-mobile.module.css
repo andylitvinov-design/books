@@ -124,6 +124,12 @@
 .videoHeading h3 span { color: #537762; }
 .videoLanguage { flex: none; color: #48775d; font-size: 13px; font-weight: 750; }
 .videoGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.videoPager { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px 0 0; color: #426654; font-size: 14px; font-weight: 800; }
+.videoPager button { min-height: 44px; padding: 7px 14px; border: 1px solid #b5d8c1; border-radius: 12px; background: #eef6ee; color: #145f49; font-size: 14px; font-weight: 800; }
+.videoPager button:disabled { opacity: .42; cursor: not-allowed; }
+.academyLinks { margin: 12px 0 4px; }
+.academyLinks a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 9px 13px; border: 1px solid #b4d6be; border-radius: 12px; background: #eef6ed; color: #146d53; font-size: 14px; font-weight: 850; text-decoration: none; }
+.academyLinks a:hover { background: #ddeddd; }
 .videoCard { position: relative; display: flex; align-items: flex-end; min-width: 0; min-height: 169px; padding: 10px; overflow: hidden; border: 3px solid transparent; border-radius: 16px; background: #384941; color: white; text-align: left; box-shadow: 0 6px 13px #142a1c22; }
 .videoCard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .videoDark { position: absolute; inset: 0; background: linear-gradient(180deg, #0013 20%, #041d1abf 95%); }

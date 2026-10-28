@@ -14,15 +14,17 @@ import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import { HolisticInlineSupportOrder } from "@/components/holistic-inline-support-order";
 import type { SupportRequestKind } from "@/components/remote-energy-support-booking";
-import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
+
+export type SupportMobileTopic = "business" | "love" | "energy" | "goals";
+export type SupportMobileProgram = "sun" | "reiki" | "energy" | "egypt" | "greek-demeter" | "greek-dionysus" | "maya";
 
 export type SupportMobileVideo = {
   id: string;
   title: string;
-  topics: MeditationTopic[];
-  program: "sun" | "reiki" | "energy";
+  topics: SupportMobileTopic[];
+  program: SupportMobileProgram;
   author: "andrey" | "psimaster";
   sourceLanguage: "en" | "ru";
 };
@@ -31,9 +33,20 @@ type Focus = "energy" | "money" | "relationships" | "goals";
 type Choice = "meditation" | "consultation" | "talisman" | "pump";
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
-type Theme = "all" | MeditationTopic;
+type Theme = "all" | SupportMobileTopic;
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
+const programOrder: SupportMobileProgram[] = ["egypt", "greek-demeter", "greek-dionysus", "maya", "sun", "reiki", "energy"];
+const ancientPrograms: SupportMobileProgram[] = ["egypt", "greek-demeter", "greek-dionysus", "maya"];
+const courseByProgram: Record<SupportMobileProgram, string> = {
+  egypt: "egyptian-priesthood/learn",
+  "greek-demeter": "videos/greek-mysteries-demeter",
+  "greek-dionysus": "videos/greek-mysteries-dionysus",
+  maya: "videos/maya-archetypes",
+  sun: "videos/strength-protection",
+  reiki: "principles-of-energywork",
+  energy: "videos/energy-pump-ups",
+};
 const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
@@ -41,12 +54,12 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "talisman", Icon: Sparkles },
   { id: "pump", Icon: RotateCcw },
 ];
-const focusTopics: Record<Focus, MeditationTopic> = {
-  energy: "energy", money: "business", relationships: "love", goals: "business",
+const focusTopics: Record<Focus, SupportMobileTopic> = {
+  energy: "energy", money: "business", relationships: "love", goals: "goals",
 };
 const focusRequest: Record<Focus, string> = {
   energy: "Inner balance and calm", money: "Work and money",
-  relationships: "Connection and relationships", goals: "Work and money",
+  relationships: "Connection and relationships", goals: "Personal goals and meaning",
 };
 
 const copy = {
@@ -65,8 +78,11 @@ const copy = {
     optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Energy" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive" },
-    themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
+    programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", egypt: "Egypt · Osiris (7)", "greek-demeter": "Greece · Demeter (5)", "greek-dionysus": "Greece · Dionysus (7)", maya: "Maya & Aztec (6)" },
+    programShort: { sun: "Sun", reiki: "Reiki", energy: "Energy", egypt: "Osiris", "greek-demeter": "Demeter", "greek-dionysus": "Dionysus", maya: "Maya" },
+    themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", goals: "Goals / Meaning" },
+    themeShort: { all: "All", business: "Money", love: "Love", energy: "Energy", goals: "Goals" },
+    previousVideos: "Previous", nextVideos: "Next", openCourse: "Open full course", allMagicCourses: "Mysteries & symbolic courses",
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
@@ -98,8 +114,11 @@ const copy = {
     optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Подкачка" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
-    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив" },
-    themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
+    programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", egypt: "Египет · Осирис (7)", "greek-demeter": "Греция · Деметра (5)", "greek-dionysus": "Греция · Дионис (7)", maya: "Майя и ацтеки (6)" },
+    programShort: { sun: "Солнце", reiki: "Рейки", energy: "Энергия", egypt: "Осирис", "greek-demeter": "Деметра", "greek-dionysus": "Дионис", maya: "Майя" },
+    themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", goals: "Цели / Смысл" },
+    themeShort: { all: "Все", business: "Деньги", love: "Отношения", energy: "Энергия", goals: "Цели" },
+    previousVideos: "Назад", nextVideos: "Далее", openCourse: "Открыть весь курс", allMagicCourses: "Мистерии и магические курсы",
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
@@ -131,8 +150,11 @@ const copy = {
     optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Energía" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
-    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético" },
-    themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
+    programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", egypt: "Egipto · Osiris (7)", "greek-demeter": "Grecia · Deméter (5)", "greek-dionysus": "Grecia · Dioniso (7)", maya: "Maya y aztecas (6)" },
+    programShort: { sun: "Sol", reiki: "Reiki", energy: "Energía", egypt: "Osiris", "greek-demeter": "Deméter", "greek-dionysus": "Dioniso", maya: "Maya" },
+    themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", goals: "Metas / Sentido" },
+    themeShort: { all: "Todos", business: "Dinero", love: "Relaciones", energy: "Energía", goals: "Metas" },
+    previousVideos: "Anterior", nextVideos: "Siguiente", openCourse: "Abrir curso completo", allMagicCourses: "Misterios y cursos simbólicos",
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
@@ -176,6 +198,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
   const [theme, setTheme] = useState<Theme>("all");
+  const [videoPage, setVideoPage] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
@@ -202,31 +225,43 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
       videos, talismans: TAOIST_TALISMANS, locale }) : null, [recommendation, videos, locale]);
   const recommendedTalisman = TAOIST_TALISMANS.find(item => item.id === recommended?.talismans[0]?.id) ?? null;
 
-  const relevantVideos = useMemo(() => {
+  const matchingVideos = useMemo(() => {
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
+    const wanted = theme !== "all" ? theme : choice === "pump" ? "energy" : focusTopics[focus];
     const themed = filtered.filter(video => video.topics.includes(wanted));
-    // The explicit theme selector filters strictly. Focus alone is a ranking
-    // hint so four verified videos can still be explored without false claims.
-    if (choice === "pump" || theme !== "all") return themed.slice(0, 4);
+    // On Goals / Meaning, feature one real recording from each ancient tradition
+    // before offering the remaining episodes. Every lesson remains reachable.
+    if (choice !== "pump" && program === "all" && wanted === "goals") {
+      const firstOfEach = ancientPrograms
+        .map(key => themed.find(video => video.program === key))
+        .filter((video): video is SupportMobileVideo => Boolean(video));
+      return [...firstOfEach, ...themed.filter(video => !firstOfEach.some(item => item.id === video.id))];
+    }
+    if (choice === "pump" || theme !== "all" || focus === "goals") return themed;
     if (recommended) {
       const positions = new Map(recommended.videos.map((video, index) => [video.id, index]));
       return filtered.slice().sort((a, b) =>
-        (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+        (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER));
     }
-    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4);
+    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))];
   }, [videos, master, program, theme, focus, choice, recommended]);
+  const totalPages = Math.max(1, Math.ceil(matchingVideos.length / 4));
+  const safePage = Math.min(videoPage, totalPages - 1);
+  const relevantVideos = matchingVideos.slice(safePage * 4, safePage * 4 + 4);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
   const pickVideo = (id: string) => { setSelectedId(id); setPlaying(false); };
-  const chooseFocus = (value: Focus) => { setFocus(value); setRecommendation(null); setSelectedId(null); setPlaying(false); };
+  const chooseFocus = (value: Focus) => {
+    setFocus(value); setRecommendation(null); setSelectedId(null); setPlaying(false);
+    setVideoPage(0); setProgram("all"); setMaster("all"); setTheme(value === "goals" ? "goals" : "all");
+  };
   const onRecommendations = () => {
     setRecommendation({ focus, scores: { ...scores } });
-    setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
-    setSelectedId(null); setPlaying(false);
+    setChoice("meditation"); setTheme(focus === "goals" ? "goals" : "all"); setProgram("all"); setMaster("all");
+    setVideoPage(0); setSelectedId(null); setPlaying(false);
     // Scroll to the newly rendered choices, not past them to the video player.
     window.requestAnimationFrame(() => document.getElementById("support-personal-recommendations")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
@@ -237,13 +272,24 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const changeChoice = (value: Choice) => {
-    setChoice(value); setPlaying(false); setSelectedId(null);
+    setChoice(value); setPlaying(false); setSelectedId(null); setVideoPage(0);
     if (value === "pump") { setTheme("energy"); setProgram("all"); }
   };
-  const activeProgramValues = Array.from(new Set(videos.map(video => video.program)));
+  const changeProgram = (next: Program) => {
+    setProgram(next); setPlaying(false); setSelectedId(null); setVideoPage(0);
+    if (next !== "all" && ancientPrograms.includes(next)) { setTheme("goals"); setChoice("meditation"); }
+    else if (next === "energy") setTheme("energy");
+    else setTheme("all");
+  };
+  const changeTheme = (next: Theme) => {
+    setTheme(next); setProgram("all"); setVideoPage(0);
+    if (choice === "pump" && next !== "energy") setChoice("meditation");
+    setPlaying(false); setSelectedId(null);
+  };
+  const activeProgramValues = programOrder.filter(key => videos.some(video => video.program === key));
   const activeAuthorValues = Array.from(new Set(videos.map(video => video.author)));
-  const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
-  const progressTotal = relevantVideos.length;
+  const progressCount = matchingVideos.filter(video => opened.includes(video.id)).length;
+  const progressTotal = matchingVideos.length;
   const FocusIcon = scoreIcons[focus];
   const scene = choice === "meditation" || choice === "pump";
 
@@ -345,7 +391,15 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 <span>{recommended.videos[0].title}</span>
                 {!recommended.matchedVideo ? <small>{t.recommendationFallback}</small> : null}
                 <button type="button" onClick={() => {
-                  setChoice("meditation"); setTheme("all"); setProgram("all"); setMaster("all");
+                  const target = videos.find(item => item.id === recommended.videos[0].id);
+                  const isGoals = recommendation.focus === "goals";
+                  const targetProgram = isGoals && target ? target.program : "all";
+                  const position = targetProgram === "all" ? 0 : videos
+                    .filter(item => item.program === targetProgram && item.topics.includes("goals"))
+                    .findIndex(item => item.id === target?.id);
+                  setChoice("meditation"); setTheme(isGoals ? "goals" : "all");
+                  setProgram(targetProgram); setMaster("all");
+                  setVideoPage(Math.max(0, Math.floor(position / 4)));
                   pickVideo(recommended.videos[0].id);
                   document.getElementById("support-mobile-experience")?.scrollIntoView({ block: "start" });
                 }}>{t.seeVideo}<ArrowRight size={16} aria-hidden="true" /></button>
@@ -388,16 +442,16 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
                   <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
-                    <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
-                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
+                    <strong className={styles.filterValue}>{program === "all" ? t.all : t.programShort[program]}</strong>
+                    <select value={program} aria-label={t.program} onChange={event => changeProgram(event.target.value as Program)}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
                   <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
-                    <strong className={styles.filterValue}>{t.themes[theme]}</strong>
-                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setPlaying(false); setSelectedId(null); }}>
-                      {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
+                    <strong className={styles.filterValue}>{t.themeShort[theme]}</strong>
+                    <select value={theme} aria-label={t.theme} onChange={event => changeTheme(event.target.value as Theme)}>
+                      {(["all", "business", "love", "energy", "goals"] as Theme[]).map(key =>
                         <option key={key} value={key}>{t.themes[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
@@ -410,7 +464,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{choice === "pump" ? t.energyTitle : t.heroTitle[focus]}</h2>
+                    <h2>{choice === "pump" ? t.energyTitle : t.heroTitle[theme === "goals" ? "goals" : focus]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
                       data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
@@ -420,7 +474,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               </div>
               <div className={styles.videoSection}>
                 <div className={styles.videoHeading}>
-                  <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {t.foci[focus]}</span></h3>
+                  <h3>{choice === "pump" ? t.energyTitle : t.gallery} <span>· {theme === "all" ? t.foci[focus] : t.themes[theme]}</span></h3>
                   <Link href={"/" + locale + "/holistic-support#meditation-practices"} prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
                 {relevantVideos.length > 0 ? (
@@ -436,6 +490,25 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                     </button>)}
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
+                {totalPages > 1 ? <div className={styles.videoPager} data-support-video-pager aria-label={t.gallery}>
+                  <button type="button" disabled={safePage === 0} onClick={() => {
+                    setVideoPage(Math.max(0, safePage - 1)); setSelectedId(null); setPlaying(false);
+                  }}>{t.previousVideos}</button>
+                  <span>{safePage + 1} / {totalPages}</span>
+                  <button type="button" disabled={safePage + 1 >= totalPages} onClick={() => {
+                    setVideoPage(Math.min(totalPages - 1, safePage + 1)); setSelectedId(null); setPlaying(false);
+                  }}>{t.nextVideos}</button>
+                </div> : null}
+                {(theme === "goals" || focus === "goals" || (program !== "all" && ancientPrograms.includes(program))) ?
+                  <div className={styles.academyLinks} data-support-magical-courses>
+                    {program !== "all" ?
+                      <Link href={"/" + locale + "/academy/" + courseByProgram[program]} prefetch={false}>
+                        {t.openCourse}<ArrowRight size={16} aria-hidden="true" />
+                      </Link> :
+                      <Link href={"/" + locale + "/academy/mysteries"} prefetch={false}>
+                        {t.allMagicCourses}<ArrowRight size={16} aria-hidden="true" />
+                      </Link>}
+                  </div> : null}
                 <p className={styles.videoHint}>{t.galleryHint}</p>
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
