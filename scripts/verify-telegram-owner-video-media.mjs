@@ -51,7 +51,7 @@ try{
   if(result.status!==0||result.stdout?.length!==3)throw Error('VIDEO_FRAME_READ_FAILED')
   return [...result.stdout]
  }
- const blue=pixelAt(1),yellow=pixelAt(2.5),red=pixelAt(3.5)
+ const blue=pixelAt(0.25),yellow=pixelAt(1),red=pixelAt(3.5)
  if(!(blue[2]>blue[0]+60&&blue[2]>blue[1]+60&&
       yellow[0]>yellow[2]+60&&yellow[1]>yellow[2]+60&&
       red[0]>red[1]+60&&red[0]>red[2]+60))
@@ -135,8 +135,8 @@ try{
  const audioSeconds=last?Number(last[1])*3600+Number(last[2])*60+Number(last[3]):0
  if(audible.status!==0||audioSeconds<131.5||audioSeconds>132.5)
    throw Error('VIDEO_11_AUDIO_3_PHOTO_SOUND_TRUNCATED')
- // The three images were sent after the audio, but must all appear over
- // the whole 132-second timeline rather than only at its end.
+ // The three images were sent after the audio. Place each before its
+ // corresponding preceding audio near the end (not as an outro).
  function ownerPixelAt(seconds){
    const result=spawnSync(binary,['-hide_banner','-loglevel','error','-ss',String(seconds),
      '-i',ownerTarget,'-frames:v','1',
@@ -145,11 +145,11 @@ try{
    if(result.status!==0||result.stdout?.length!==3)throw Error('VIDEO_OWNER_FRAME_READ_FAILED')
    return [...result.stdout]
  }
- const first=ownerPixelAt(10),middle=ownerPixelAt(60),lastFrame=ownerPixelAt(100)
+ const first=ownerPixelAt(10),middle=ownerPixelAt(114),lastFrame=ownerPixelAt(126)
  if(!(first[2]>first[0]+60&&first[2]>first[1]+60&&
      middle[0]>middle[2]+60&&middle[1]>middle[2]+60&&
      lastFrame[0]>lastFrame[1]+60&&lastFrame[0]>lastFrame[2]+60))
-   throw Error('VIDEO_OWNER_LATE_PHOTOS_NOT_SPREAD')
+   throw Error('VIDEO_OWNER_LATE_PHOTOS_NOT_PAIRED')
  console.log('MEDIA_11_AUDIO_3_PHOTO_FULL_SMOKE_PASSED audio_seconds='+audioSeconds+
    ' container_seconds='+containerSeconds+' MP4 bytes='+ownerMp4.length)
  console.log('MEDIA_15X15_SMOKE_PASSED 15 photos + 15 audio H264/AAC bytes='+fullMp4.length)

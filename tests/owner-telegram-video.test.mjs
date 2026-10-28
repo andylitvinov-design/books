@@ -173,8 +173,8 @@ test('15 photographs and 15 audio pieces are allowed and compose in their real m
  const mixed=[...interleaved].reverse()
  const plan=photoTimeline(mixed)
  assert.equal(plan.length,15)
- assert.deepEqual(plan.map(x=>x.startMs),Array.from({length:15},(_,i)=>i*2000))
- assert.ok(plan.every(x=>x.durationMs===2000))
+ assert.deepEqual(plan.map(x=>x.startMs),[0,1000,...Array.from({length:13},(_,i)=>(i+1)*2000)])
+ assert.deepEqual(plan.map(x=>x.durationMs),[1000,1000,...Array(12).fill(2000),4000])
  const args=videoRenderArguments(mixed,'/tmp/full-15-15.mp4')
  assert.equal(args.filter(x=>x==='-i').length,30)
  assert.ok(args.some(x=>x.includes('concat=n=15:v=1')))
@@ -194,14 +194,14 @@ test('full owner batch: 11 audio + 3 late photos exceeds old 120s cap, keeps all
    images:3,audios:11,bytes:34_500_000,seconds:330
  })
  const plan=photoTimeline([...files].reverse())
- assert.deepEqual(plan.map(p=>p.startMs),[0,110000,220000])
- assert.deepEqual(plan.map(p=>p.durationMs),[110000,110000,110000])
+ assert.deepEqual(plan.map(p=>p.startMs),[0,270000,300000])
+ assert.deepEqual(plan.map(p=>p.durationMs),[270000,30000,30000])
  const args=videoRenderArguments([...files].reverse(),'/tmp/full-owner-batch.mp4')
  assert.equal(args.filter(x=>x==='-i').length,14)
  assert.ok(args.some(x=>x.includes('concat=n=3:v=1')))
  assert.ok(args.some(x=>x.includes('concat=n=11:v=0:a=1')))
  assert.ok(args.includes('-shortest'))
- assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['110.000','110.000','134.000'])
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['270.000','30.000','54.000'])
  assert.ok(args.includes('-r')&&args.includes('2'))
  assert.equal(ownerVideoLimitReason(files,part('audio',20)), 'invalid')
  const maxImages=Array.from({length:15},(_,i)=>part('photo',i))
@@ -224,7 +224,11 @@ test('FFmpeg command arguments use no shell and encode a single bounded 16:9 str
  assert.ok(args.includes('libx264'))
  assert.ok(args.includes('aac'))
  assert.ok(args.some(v=>v.includes('concat=n=2:v=1')))
- assert.ok(args.some(v=>v.includes('scale=1920:1080')))
+ assert.ok(args.some(v=>v.includes('setsar=1,scale=1920:1080:force_original_aspect_ratio=decrease')))
+ assert.ok(args.includes('-aspect:v')&&args.includes('16:9'))
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/form\.set\('width','1920'\)/)
+ assert.match(service,/form\.set\('height','1080'\)/)
  assert.ok(!args.includes('-c:v copy'))
  assert.throws(()=>videoRenderArguments([part('photo',0)],'/tmp/output.mp4'),/INVALID_COMPOSITION/)
 })
@@ -234,23 +238,23 @@ test('photo positions follow cumulative audio durations in mixed Telegram messag
  const unordered=[updates[4],updates[5],updates[1],updates[3],updates[2],updates[0]]
  const plan=photoTimeline(unordered)
  assert.deepEqual(plan.map(x=>[x.part.updateId,x.startMs,x.durationMs]),[
-   [100,0,4000],[102,4000,3000],[104,7000,2000]
+   [100,0,2000],[102,2000,2000],[104,4000,5000]
  ])
  const args=videoRenderArguments(unordered,'/tmp/output.mp4')
- assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['4.000','3.000','10.000'])
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['2.000','2.000','13.000'])
  assert.equal(plan.reduce((sum,p)=>sum+p.durationMs,0),9000)
 })
-test('consecutive photos split the following audio segment without reordering',()=>{
+test('consecutive photos split the preceding audio segment without reordering',()=>{
  const plan=photoTimeline([part('photo',0),part('audio',1,{duration:3}),
    part('photo',2),part('photo',3),part('audio',4,{duration:4})])
  assert.deepEqual(plan.map(x=>[x.startMs,x.durationMs]),[
-   [0,3000],[3000,2000],[5000,2000]
+   [0,1000],[1000,1000],[2000,5000]
  ])
 })
-test('photos after the last audio stay visible as an outro, never a zero-length frame',()=>{
+test('photos sent after audio cover their preceding audio, never append an outro',()=>{
  const seq=[part('photo',0),part('audio',1,{duration:8}),part('photo',2)]
  assert.deepEqual(photoTimeline(seq).map(x=>[x.startMs,x.durationMs]),[
-   [0,6500],[6500,1500]
+   [0,4000],[4000,4000]
  ])
  const ending=[part('audio',0,{duration:2}),part('photo',1),part('photo',2)]
  assert.deepEqual(photoTimeline(ending).map(x=>[x.startMs,x.durationMs]),[
