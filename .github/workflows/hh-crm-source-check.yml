@@ -84,6 +84,9 @@ on:
       - 'tests/practitioner-direct-message*.test.mjs'
       - 'components/app/practitioner-client-profiles.*'
       - 'components/app/practice-request-conversation.*'
+      - 'lib/practitioners/request-media.js'
+      - 'supabase/migrations/*request_bound_voice_media*'
+      - 'tests/practitioner-request-voice.test.mjs'
       - 'components/app/practice-workspace.jsx'
       - 'components/app/app-workspace.jsx'
       - 'components/app/messenger-notification-settings.*'
@@ -172,6 +175,10 @@ jobs:
         run: node --test tests/business-enquiry-reply-handoffs.test.mjs tests/business-enquiry-reply-channel.test.mjs tests/client-contact-phone.test.mjs tests/crm-consent.test.mjs tests/crm-integration-diagnostics.test.mjs tests/crm-communications-hub.test.mjs tests/crm-security-contract.test.mjs tests/crm-public-registration.test.mjs tests/public-service-enquiries.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-sms.test.mjs tests/crm-workflow.test.mjs tests/crm-lead-triage.test.mjs tests/crm-lead-guardian.test.mjs tests/crm-followup-pagination.test.mjs tests/crm-workday.test.mjs tests/crm-workday-ui.test.mjs tests/crm-activity.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-owner-ops.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs tests/public-contact-page.test.mjs tests/practitioner-client-crm.test.mjs tests/practitioner-private-relay.test.mjs tests/practitioner-crm-tasks.test.mjs tests/practitioner-client-work-queue.test.mjs tests/practitioner-conversation-state.test.mjs tests/messenger-notification-subscriptions.test.mjs
       - name: Verify UTF-8 envelopes and concurrent in-app message sends
         run: node --conditions=react-server --test tests/practitioner-message-send.integration.mjs tests/practitioner-message-chain.test.mjs
+      - name: Verify per-request private voice, RLS, same-origin upload and encrypted attachment binding
+        run: node --test tests/practitioner-request-voice.test.mjs
+      - name: Lint request-bound audio service and streaming endpoints
+        run: npx eslint --ext .js,.jsx lib/practitioners/request-media.js lib/practitioners/client-messages.js components/app/practice-request-conversation.jsx app/api/app/practitioner-client-messages/route.js app/api/app/practitioner-client-messages/media/route.js 'app/api/app/practitioner-client-messages/media/[assetId]/route.js'
       - name: Native member-to-practitioner media inbox, encryption and outsider-denial
         run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs
       - name: Lint member inbox backend, privacy route and EN/RU/ES UI

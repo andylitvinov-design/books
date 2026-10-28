@@ -157,6 +157,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const create = page.locator("[data-mandala-video-generate]");
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
+        // Selecting a different genuine MP4 starts a new async decode.
+        // Wait for the actual master canplay event rather than testing a stale state.
+        await page.waitForFunction(() => {
+          const button=document.querySelector("[data-mandala-video-generate]");
+          const master=document.querySelector("[data-mandala-master-mp4]");
+          return Boolean(button && !button.disabled && master && master.readyState >= 2);
+        },undefined,{timeout:25000});
         assert.equal(await create.isEnabled(), true);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator('[data-video-aspect="landscape"]').click();

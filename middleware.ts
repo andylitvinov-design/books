@@ -164,11 +164,14 @@ export async function middleware(request: NextRequest) {
       return ' ' + value.origin
     } catch {return ''}
   })()
+  // The mobile Support gallery displays moderated public practitioner media.
+  // Keep this exact allowlist off private Account, reports and all API paths.
+  const supportMobilePublishedMedia = /^\/(en|ru|es)\/holistic-support\/mobile\/?$/.test(pathname)
   // Public-only master marketing images. Never grant the private client media
   // origin to unrelated Account, client report, admin, or API pages.
   const listingImageOrigin = (() => {
     if(!(/^\/(en|ru|es)\/(app\/practice(?:\/|$)|masters(?:\/|$)|m\/[a-z0-9-]{3,24}\/?$|services(?:\/|$))/.test(pathname) ||
-      /^\/m\/[a-z0-9-]{3,24}\/?$/.test(pathname)))return ''
+      /^\/m\/[a-z0-9-]{3,24}\/?$/.test(pathname) || supportMobilePublishedMedia))return ''
     try{
       const url=new URL(process.env.HH_APP_SUPABASE_URL||'')
       return url.protocol==='https:'&&url.hostname.endsWith('.supabase.co')?' '+url.origin:''
@@ -201,7 +204,7 @@ export async function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubeOAuthUploadAllowed ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin,
     youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader ? ' https://player.vimeo.com' : '') : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + directMessageStorageOrigin,
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + directMessageStorageOrigin,
     "font-src 'self'", "connect-src 'self'" + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)

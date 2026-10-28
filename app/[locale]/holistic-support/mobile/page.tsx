@@ -10,6 +10,17 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
 
+// These recordings are attributed to Andrey in the existing approved sources:
+// English guided meditations and the historical PsiMaster / Andrey archive.
+// Link to his existing published practitioner profile; do not create a duplicate.
+function andreyMasterProfile(locale: "en" | "ru" | "es") {
+  return {
+    slug: "andy-litvinov",
+    name: locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov",
+    image: "/images/holistic-house/portrait-static/andy-192-86e7f5b9ca61.webp",
+  };
+}
+
 // These four English originals are already published in the Academy. The
 // current Support page curates only Sun Flight; the alternate screen presents
 // the other three existing, verified recordings without rendering new media.
@@ -104,6 +115,7 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
             program: entry.id,
             author: "psimaster",
             sourceLanguage: "ru",
+            masterProfile: andreyMasterProfile("ru"),
           });
         }
         if (seen.size) videoGroups.push({
@@ -133,6 +145,7 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
         program: index < 3 ? "sun" : "energy",
         author: "psimaster",
         sourceLanguage: "ru",
+        masterProfile: andreyMasterProfile("ru"),
       }))
     : englishGuidedMeditations
       .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
@@ -143,6 +156,7 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
         program: video.key === "flight-to-sun" ? "sun" : "reiki",
         author: "andrey",
         sourceLanguage: "en",
+        masterProfile: andreyMasterProfile(locale),
       }));
 
   return (

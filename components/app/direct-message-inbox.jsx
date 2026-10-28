@@ -112,9 +112,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const [audioPreview,setAudioPreview]=useState('')
   useEffect(()=>{
     if(!file||!AUDIO_MIMES.has(directMediaMime(file))){setAudioPreview('');return}
-    const url=URL.createObjectURL(file)
+    const url=globalThis.URL.createObjectURL(file)
     setAudioPreview(url)
-    return()=>URL.revokeObjectURL(url)
+    return()=>globalThis.URL.revokeObjectURL(url)
   },[file])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
