@@ -80,7 +80,7 @@ Use only approved and correctly scoped signals; do not flatten them into a singl
 
 1. **Auth scope:** resolve signed-in identity server-side; fetch only that person's stored results, goal and history under RLS, through existing account APIs. If guest, use only volunteered public focus and session-local non-sensitive choices; no private history query.
 2. **Safety/consent filter:** discard disabled, unavailable, wrong-language, restricted-license, research-only, invalidly scored, non-startable or inappropriate-age/administration instruments. Do not accidentally show a test as available because it exists in a research catalogue.
-3. **Match source scales:** use current **test-explorer**, scale-guide and public ranking helpers to match source-defined topics and scale coverage. Explain exactly what the test measures (and what it does not measure). Use existing \`rankPublicTestMatches\` / \`estimatedTestMatchPercent\` where applicable; if showing match %, label it **interest-match heuristic, not accuracy/health percentage**.
+3. **Match source scales:** use current **test-explorer**, scale-guide and public ranking helpers to match source-defined topics and scale coverage. Explain exactly what the test measures (and what it does not measure). Use existing `rankPublicTestMatches` / `estimatedTestMatchPercent` where applicable; if showing match %, label it **interest-match heuristic, not accuracy/health percentage**.
 4. **Priority order:** (a) explicitly confirmed topic/question, (b) appropriate goal gap from comparable self-ratings, (c) independently supported assessment-scale relevance, (d) novelty/due status and recency, (e) desired length and format. A user's manual topic correction must win even if another stored measure looks more extreme.
 5. **Deterministic tie-break:** stable catalogue key, not random rotations that change across reloads. Encourage variety across substantive constructs for the alternative; never offer two indistinguishable tests when one meaningful option exists.
 6. **Evidence gate:** if profile or scale evidence is incomplete/low-confidence, show **"Because you chose [topic]"** rather than fabricating "your weakest score". If a questionnaire's provenance/validity is unsuitable, it may appear in the ordinary catalogue with its original label but must not generate a confident personalized clinical inference.
@@ -93,13 +93,13 @@ Do not create a competing fixed 100-point health/recommendation score. If a tuna
 
 | Reason code | Meaning (not a medical judgment) | UI copy example |
 |---|---|---|
-| \`chosen_focus\` | User explicitly picked this direction | "You selected relationships as today's focus." |
-| \`goal_gap_same_scale\` | Current and personal target exist on same 0–10 self-rating | "Your energy self-rating is 4/10 and your chosen target is 8/10." |
-| \`scale_coverage\` | A reviewed compatible source scale indicates an additional research topic | "This test may help you explore recovery patterns." |
-| \`unexplored_topic\` | Relevant eligible test not yet completed | "You haven't explored this topic with this questionnaire yet." |
-| \`view_recent_result\` | Result already saved and repeat not due | "You completed this test recently. Open your report." |
-| \`selected_time\` | Matches available duration preference | "A short option for today." |
-| \`no_evidence\` | User has not shared comparable measures | "Start with what interests you; your results will build up over time." |
+| `chosen_focus` | User explicitly picked this direction | "You selected relationships as today's focus." |
+| `goal_gap_same_scale` | Current and personal target exist on same 0–10 self-rating | "Your energy self-rating is 4/10 and your chosen target is 8/10." |
+| `scale_coverage` | A reviewed compatible source scale indicates an additional research topic | "This test may help you explore recovery patterns." |
+| `unexplored_topic` | Relevant eligible test not yet completed | "You haven't explored this topic with this questionnaire yet." |
+| `view_recent_result` | Result already saved and repeat not due | "You completed this test recently. Open your report." |
+| `selected_time` | Matches available duration preference | "A short option for today." |
+| `no_evidence` | User has not shared comparable measures | "Start with what interests you; your results will build up over time." |
 
 ## 5. Conversation model and state transitions
 
@@ -107,15 +107,15 @@ The consultant is **an automated guide, not a human therapist**. For P0, use exi
 
 | State | Entered by | Next action and observable result |
 |---|---|---|
-| \`loading_context\` | Open My Test | Privacy-safe spinner; account auth check; avoid displaying stale previous-user content |
-| \`guest_choose_focus\` | Not authenticated or no approved data | Show Google sign-in suggestion + four nonexclusive topic choices; free catalogue remains usable |
-| \`signed_in_recommendations\` | Valid private profile or user-chosen topic | 1 primary + ≤1 alternative; personalized or neutral reason with source |
-| \`question_received\` | Free text/chip submitted | Echo user's question, classify topic/duration/correction or ask **one** clarifying question |
-| \`recommendations_updated\` | User corrected focus or preference | Visible change to both choices / reasons; preserve prior messages and unsaved data |
-| \`test_opened\` | Click named test CTA | Existing authorized runner, not a completion event; offer Back/Resume if supported |
-| \`awaiting_verified_result\` | Runner open/return | Display neutral pending/continue state; never assign ✓ on route navigation |
-| \`result_confirmed\` | Existing result persisted & read back server-side | Render report link, dated receipt, ribbon ✓ if today-specific criteria met |
-| \`no_match_or_error\` | Empty catalog, API failure, malformed text | Honest fallback: try again / browse all / choose topic; never guessed scores |
+| `loading_context` | Open My Test | Privacy-safe spinner; account auth check; avoid displaying stale previous-user content |
+| `guest_choose_focus` | Not authenticated or no approved data | Show Google sign-in suggestion + four nonexclusive topic choices; free catalogue remains usable |
+| `signed_in_recommendations` | Valid private profile or user-chosen topic | 1 primary + ≤1 alternative; personalized or neutral reason with source |
+| `question_received` | Free text/chip submitted | Echo user's question, classify topic/duration/correction or ask **one** clarifying question |
+| `recommendations_updated` | User corrected focus or preference | Visible change to both choices / reasons; preserve prior messages and unsaved data |
+| `test_opened` | Click named test CTA | Existing authorized runner, not a completion event; offer Back/Resume if supported |
+| `awaiting_verified_result` | Runner open/return | Display neutral pending/continue state; never assign ✓ on route navigation |
+| `result_confirmed` | Existing result persisted & read back server-side | Render report link, dated receipt, ribbon ✓ if today-specific criteria met |
+| `no_match_or_error` | Empty catalog, API failure, malformed text | Honest fallback: try again / browse all / choose topic; never guessed scores |
 
 Sample conversations below are **examples only; figures are never hardcoded UI defaults**:
 
@@ -157,10 +157,10 @@ Sample conversations below are **examples only; figures are never hardcoded UI d
 
 Known production-source modules as of 2026-10-28 (verify current changes before implementation):
 
-- **Test discovery:** \`lib/assessments/test-explorer.js\`, \`lib/assessments/scale-guides.js\`, \`lib/assessments/test-problems.js\`, existing Test Explorer and actual question runner.
-- **Profile selection:** \`components/personality-profiles-builder.tsx\`, \`lib/profile/profile-scale-selection.js\`, profile battery and scale-to-topic mappings. Four life directions, with optional goal facet; respect #1881.
-- **Course/test reuse:** \`components/app/my-course.jsx\`, \`lib/inner-growth/course-entry-intent.js\`, existing selected test plans / My Tests, \`app.assessment_results\`, \`app_private.assessment_plans\` as governed by existing server auth and RLS.
-- **Conversation:** existing HomeConversationGuide / \`ideas-guidance.mjs\` / \`home-conversation.mjs\` rule-based patterns from #1519. Reuse intent classification and safe handling; do **not** couple My Tests to an external LLM.
+- **Test discovery:** `lib/assessments/test-explorer.js`, `lib/assessments/scale-guides.js`, `lib/assessments/test-problems.js`, existing Test Explorer and actual question runner.
+- **Profile selection:** `components/personality-profiles-builder.tsx`, `lib/profile/profile-scale-selection.js`, profile battery and scale-to-topic mappings. Four life directions, with optional goal facet; respect #1881.
+- **Course/test reuse:** `components/app/my-course.jsx`, `lib/inner-growth/course-entry-intent.js`, existing selected test plans / My Tests, `app.assessment_results`, `app_private.assessment_plans` as governed by existing server auth and RLS.
+- **Conversation:** existing HomeConversationGuide / `ideas-guidance.mjs` / `home-conversation.mjs` rule-based patterns from #1519. Reuse intent classification and safe handling; do **not** couple My Tests to an external LLM.
 - **Progress:** existing My Development Path / #1637 plus any implemented, **verified** daily ribbon/7-step journey from #2484. Avoid competing counters or status flags.
 
 Proposed **internal adapter contract** (design, **not a new schema mandate**):
