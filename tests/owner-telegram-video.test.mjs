@@ -594,3 +594,76 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  // direct client route, token, unreviewed upload or bypass.
  assert.equal(typeof trimOwnerTelegramVideo,'function')
 });
+
+
+test('YouTube owner OAuth start restores an expired/missing admin browser session without leaking Google credentials', async () => {
+  const [ts,vm,crypto]=await Promise.all([
+    import('typescript'),import('node:vm'),import('node:crypto')
+  ])
+  const source=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+  let authorized=false, configured=true, issued=0
+  const modules={
+    'next/server':{NextResponse:{redirect(location,options={}){
+      const response={url:String(location),status:options.status??307,
+        headers:options.headers,cookies:{set(name,value,opts){issued++;response.cookie={name,value,opts}}}}
+      return response
+    }}},
+    'node:crypto':crypto,
+    '@/lib/prescriptions/admin':{async requireAdminRequest(){return authorized}},
+    '@/lib/app/config':{getAppConfig(){return {}}},
+    '@/lib/app/crypto':{seal(){return 'sealed-with-private-server-key'}},
+    '@/data/app-services':{PRACTITIONER_ID:'synthetic-owner-id'},
+    '@/lib/practitioners/owner-telegram-video-service':{ownerVideoOauthConfigured(){return configured}},
+  }
+  const result=ts.default.transpileModule(source,{
+    compilerOptions:{module:ts.default.ModuleKind.CommonJS,target:ts.default.ScriptTarget.ES2022}
+  }).outputText
+  const sandbox={exports:{},require(name){
+    assert.ok(Object.hasOwn(modules,name),'Unexpected OAuth import: '+name)
+    return modules[name]
+  },URL,URLSearchParams,Response,process:{env:{HH_OWNER_VIDEO_GOOGLE_CLIENT_ID:'synthetic-public.apps.googleusercontent.com'}}}
+  vm.default.runInNewContext(result,sandbox)
+
+  const anonymous=await sandbox.exports.GET()
+  assert.equal(anonymous.status,303)
+  assert.equal(anonymous.url,'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect')
+  assert.equal(anonymous.headers['cache-control'],'no-store')
+  assert.equal(issued,0,'no anonymous Google state cookie is issued')
+
+  authorized=true
+  configured=false
+  const unavailable=await sandbox.exports.GET()
+  assert.equal(unavailable.status,503,'missing Google configuration fails closed')
+  assert.equal(issued,0)
+  configured=true
+  const connected=await sandbox.exports.GET()
+  assert.equal(connected.status,307)
+  const google=new URL(connected.url)
+  assert.equal(google.origin,'https://accounts.google.com')
+  assert.equal(google.searchParams.get('redirect_uri'),'https://holistichouse.vercel.app/api/admin/telegram-video/youtube/callback')
+  assert.equal(google.searchParams.get('access_type'),'offline')
+  assert.match(google.searchParams.get('scope'),/youtube\\.upload/)
+  assert.match(google.searchParams.get('scope'),/youtube\\.readonly/)
+  assert.equal(connected.cookie.name,'hh_tgvideo_oauth_state')
+  assert.equal(connected.cookie.opts.httpOnly,true)
+  assert.equal(connected.cookie.opts.sameSite,'lax')
+  assert.equal(issued,1,'only an owner-verified request creates a sealed Google state')
+})
+
+test('YouTube owner auth recovery uses fixed destinations across admin, practitioner and Supabase Google callback', () => {
+  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+  const login=read('app/admin/login/page.js')
+  const entry=read('components/practitioner-auto-entry.jsx')
+  const access=read('lib/app/practitioner-access.js')
+  const auth=read('app/api/app/[...path]/route.js')
+  assert.match(login,/['"]youtubeConnect['"]\\]\\.includes\\(params\\?\\.destination\\)/)
+  assert.match(login,/requireAdminRequest\\(\\)/)
+  assert.match(entry,/youtubeConnect: '\\/api\\/admin\\/telegram-video\\/youtube\\/start'/)
+  assert.match(entry,/response\\.redirectUrl !== ADMIN_DESTINATIONS\\[safeDestination\\]/)
+  assert.match(access,/youtubeConnect: '\\/api\\/admin\\/telegram-video\\/youtube\\/start'/)
+  assert.equal(auth.split("'practitioner-youtubeConnect'").length-1,3,
+    'OAuth start allowlist, callback allowlist and destination mapping are all pinned')
+  assert.match(auth,/continueTo === 'practitioner-youtubeConnect'\\s*\\? \`\\$\\{origin\\}\\/admin\\/login\\?destination=youtubeConnect`/)
+  assert.match(auth,/!practitionerEmailAllowed\\(actor\\) \\|\\| !await repo\\.isPractitioner\\(actor\\)/)
+  assert.match(auth,/issueTrustedAdminSession\\(response/)
+})
