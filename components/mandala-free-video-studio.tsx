@@ -901,6 +901,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 playing={moneyScene===money.id&&previewPlaying&&!recording}/>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{name}</span>
+              {getRealMoneyFilm(money.id).src.includes("/film-collection-v2/") ?
+                <span className={videoStyles.filmBadge}>FULL HD</span> : null}
               {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
               <span className={videoStyles.srOnly}>{index+1}</span>
             </button>;
@@ -933,6 +935,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               )}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
+              {getThemedRealFilm(theme,other.id) ?
+                <span className={videoStyles.filmBadge}>FULL HD</span> : null}
               {otherScene===other.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
             </button>;
           })}
