@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -873,7 +874,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               // This is a private local blob, never optimized or uploaded.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl} alt="" draggable={false}/>
-            ) : <span className={videoStyles.photoEmpty}><Camera size={31} aria-hidden="true"/><small>{ui.addPhoto}</small></span>}
+            ) : <span className={videoStyles.photoEmpty}>
+              <Image src="/images/holistic-house/support-reference-avatar.webp"
+                alt="" width={176} height={176} unoptimized />
+            </span>}
             <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
           </button>
           <button type="button" className={videoStyles.videoMandalaChoice}

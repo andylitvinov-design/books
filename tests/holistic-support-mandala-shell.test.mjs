@@ -12,6 +12,8 @@ test("video mandala and mobile Support use a single four-tab app shell", () => {
   const siteDock = read("components/mobile-bottom-navigation.tsx");
   const banner = read("components/sitewide-antistress-banner.tsx");
   const studio = read("components/mandala-meditation-client.tsx");
+  const videoStudio = read("components/mandala-free-video-studio.tsx");
+  const videoCss = read("components/mandala-video-mobile.module.css");
 
   assert.match(route, /<HolisticSupportMobileNav locale=\{locale\} page="mandala"/);
   assert.match(mobile, /<HolisticSupportMobileNav locale=\{locale\} page="mobile"/);
@@ -30,6 +32,8 @@ test("video mandala and mobile Support use a single four-tab app shell", () => {
   assert.match(css, /\.mobileAppNav\{display:block\}/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.equal((studio.match(/<MandalaFreeVideoStudio /g) || []).length, 1, "reuse one video engine");
+  assert.match(videoStudio, /support-reference-avatar\\.webp/);
+  assert.match(videoCss, /\\.supportTop\\{grid-template-columns:minmax\\(0,1\\.14fr\\)/);
 });
 
 test("every locale keeps an equivalent canonical editor; browser test covers real mobile shortcut", () => {
