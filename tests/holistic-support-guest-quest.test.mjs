@@ -95,6 +95,7 @@ test("test completion checkmark belongs to the current verified guest/member, no
   assert.doesNotMatch(panel, /persist\(markQuestStep\(stateRef\.current, "test"\)\)/);
   assert.match(route, /joined === 'support-journey\/test-status' && method === 'GET'/);
   assert.match(route, /return json\(\{ completed \}\)/);
+  assert.match(route, /if \(!actor && config\.guestEnabled\)/, "a signed-in member never inherits an earlier browser guest result");
   const fromEarlierUser = normalizeQuest({ starts: 2, completed: { test: true, course: true } });
   const currentAccountHasNoTest = normalizeQuest({ ...fromEarlierUser,
     completed: { ...fromEarlierUser.completed, test: false } });
