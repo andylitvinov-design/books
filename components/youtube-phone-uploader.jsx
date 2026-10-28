@@ -370,7 +370,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }
   function queueFiles(files) {
     if (files.length === 0) return
-    if (importingTelegramCut || entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
+    if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
     if (unfinished.length + files.length > 10) {setError(t.errors.too_many);return}
     if (files.some(file => !isVideoFile(file))) {setError(t.errors.invalid_file);return}
