@@ -19,6 +19,10 @@ const productionInputs = [
   'components/app/opora-experience-player.jsx',
   'components/app/opora-experience-player.module.css',
   'lib/inner-growth/opora-as56-experience-guides.js',
+  'lib/inner-growth/opora-as59-seven-skills.js',
+  'lib/inner-growth/opora-as60-experiential-practices.js',
+  'lib/inner-growth/opora-as60-integrated-journey.js',
+  'lib/inner-growth/opora-as60-varied-content.js',
   'lib/inner-growth/anti-stress-skills-v6.js',
   'lib/inner-growth/course-slide-sequence.js',
 ]
