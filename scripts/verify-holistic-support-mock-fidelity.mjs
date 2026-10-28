@@ -29,6 +29,13 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(res?.status(), 200, label + " status");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({state:"visible", timeout:35000});
+          // SSR HTML precedes React hydration. Do not synthesize slider changes
+          // against a native-only input before React has attached handlers.
+          await page.waitForFunction(() => {
+            const input = document.querySelector('[data-support-scale="relationships"] input[type="range"]');
+            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+          }, null, {timeout:30000});
+
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
           assert.equal(await root.locator('[data-support-tool]').count(), 4, label + " tools");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
@@ -78,11 +85,15 @@ for (const browserType of [chromium, webkit]) {
           await current.press("Home");
           await current.press("ArrowRight");
           assert.equal(await current.inputValue(),"2",label+" keyboard slider works");
+          await page.waitForFunction(() => document.querySelector('[data-support-scale="relationships"] output')?.textContent?.trim() === "2",
+            null,{timeout:8000});
+
           await root.locator('select[aria-label]').first().selectOption("relationships");
           await root.locator('[data-support-recommendations]').click();
           const panel = root.locator('[data-support-personal-recommendations]');
           await panel.waitFor({state:"visible",timeout:8000});
-          assert.ok((await panel.innerText()).includes("2/10"),label+" selected self-score");
+          const chosenText=await panel.innerText();
+          assert.ok(chosenText.includes("2/10"),label+" selected self-score: "+chosenText.slice(0,160));
           assert.equal(await panel.locator("[data-support-recommended-talisman]").getAttribute("data-support-recommended-talisman"),
             "fu-harmony",label+" source-backed harmony talisman");
           assert.equal(await panel.locator('[data-support-recommended-video]').count(),1,label+" one source recording");
