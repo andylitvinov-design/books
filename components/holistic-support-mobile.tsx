@@ -357,6 +357,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
+    // The separate Tests panel replaces the content below the mobile tools.
+    // Reveal it after React commits the selection, including on small iPhones.
+    if (value === "tests") window.requestAnimationFrame(() =>
+      document.getElementById("support-tests-panel")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      }));
   };
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
