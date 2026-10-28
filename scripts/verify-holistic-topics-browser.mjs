@@ -106,6 +106,28 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
+          // Negative control: prove the read-only Playwright guard actually
+          // blocks a browser POST before network transport. This nonexistent
+          // route has no mutation handler and contains no user information.
+          // Exercise once per engine; the remaining 16 cases stay read-only.
+          if (locale === "en" && width === 320) {
+            const probePath = "/__hh-read-only-qa-probe";
+            const outcome = await page.evaluate(async path => {
+              try {
+                const result = await fetch(path, { method: "POST", body: "synthetic-only" });
+                return "HTTP " + result.status;
+              } catch {
+                return "blocked";
+              }
+            }, probePath);
+            assert.equal(outcome, "blocked", label + " blocks synthetic POST before transport");
+            const probe = "POST " + probePath;
+            assert.equal(unexpectedWrites.filter(value => value === probe).length, 1,
+              label + " observes exactly one intentional blocked-write probe");
+            // Do not clear any other unexpected writes: the final assertion
+            // must still reject unsolicited enquiry, booking and payment calls.
+            unexpectedWrites.splice(unexpectedWrites.indexOf(probe), 1);
+          }
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
