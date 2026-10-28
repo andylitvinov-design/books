@@ -18,3 +18,20 @@ test('verified private Telegram cut is an exact URL and media size',()=>{
   assert.equal(isOwnerTelegramMp4(bytes,1024),true)
   assert.equal(isOwnerTelegramMp4(bytes,1025),false)
 })
+
+test('imported owner MP4 waits for genuine YouTube processing; never reports uploaded as processed',async()=>{
+  const {readUploadedDetails}=await import('../lib/youtube/browser-upload.js')
+  const original=globalThis.fetch
+  let status='uploaded'
+  const channel='UCjWq6NHZTQkUr3bC3WbXXcw'
+  globalThis.fetch=async()=>({ok:true,json:async()=>({items:[{
+    id:'Y4K4piEwwA8',snippet:{channelId:channel},
+    status:{privacyStatus:'unlisted',uploadStatus:status}
+  }]})})
+  try{
+    assert.equal(await readUploadedDetails('Y4K4piEwwA8','sample',undefined,{requireProcessed:true}),null)
+    status='processed'
+    assert.deepEqual(await readUploadedDetails('Y4K4piEwwA8','sample',undefined,{requireProcessed:true}),
+      {privacyStatus:'unlisted',channelId:channel})
+  }finally{globalThis.fetch=original}
+})
