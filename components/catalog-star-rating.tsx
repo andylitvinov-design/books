@@ -42,13 +42,22 @@ export function useCatalogRatings(kind: CatalogRatingKind, ids: readonly string[
     const controller = new AbortController();
     if (!keyList) { setRatings({}); setLoading(false); return; }
     setLoading(true); setUnavailable(false);
-    const url = "/api/catalog/ratings?kind=" + encodeURIComponent(kind) + "&keys=" + encodeURIComponent(keyList);
-    void fetch(url, { credentials: "same-origin", cache: "no-store", signal: controller.signal })
-      .then(async response => {
+    // The endpoint bounds batches to 40 items. Fetch sequentially to avoid
+    // a fan-out of Postgres connections on larger Academy archives.
+    const load = async () => {
+      const ids = [...new Set(keyList.split(",").filter(Boolean))];
+      const collected: Stars = {};
+      for (let offset=0; offset<ids.length; offset+=40) {
+        const url = "/api/catalog/ratings?kind=" + encodeURIComponent(kind)
+          + "&keys=" + encodeURIComponent(ids.slice(offset,offset+40).join(","));
+        const response = await fetch(url, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
         const data = await response.json();
         if (!response.ok || !data?.ratings || typeof data.ratings !== "object") throw new Error(data?.error || "RATINGS_UNAVAILABLE");
-        if (!controller.signal.aborted) setRatings(data.ratings as Stars);
-      })
+        Object.assign(collected,data.ratings);
+      }
+      if (!controller.signal.aborted) setRatings(collected);
+    };
+    void load()
       .catch(() => { if (!controller.signal.aborted) setUnavailable(true); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
