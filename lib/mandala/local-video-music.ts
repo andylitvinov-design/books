@@ -165,6 +165,17 @@ export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">
   return !file.type || file.type.startsWith("audio/") || file.type === "application/octet-stream";
 }
 
+/** Record exactly the same PCM wave the visitor can hear in native preview.
+ * This avoids a different timbre when the video is exported.
+ */
+export function startPresetAudio(
+  preset: Exclude<AmbientMusic, "none">, volume = 75,
+): Promise<AmbientSession | null> {
+  const wave = createAmbientPreviewWav(preset);
+  const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
+  return startUploadedAudio(file, volume);
+}
+
 /** Export one user-supplied audio recording alongside the canvas stream.
  * Decode locally using Web Audio because audio.captureStream() is unavailable
  * on many iPhones. This graph deliberately does not connect to speakers.
