@@ -146,6 +146,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
+  const practiceInner = page === 'practice'
   const retestLifetime = useRef({ mounted: false, epoch: 0 })
   const retestScope = useRef(null)
   retestScope.current = { accountId: data?.account?.id, page, recordId,
@@ -585,8 +586,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
-      {!documentReader && <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : 'hh-app'}>
+      {!documentReader && !practiceInner && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
@@ -618,7 +619,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && page !== 'runs' && (
+      {!documentReader && !practiceInner && page !== 'runs' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <Link key={id} href={href} prefetch={false}
@@ -660,7 +661,8 @@ export default function AppWorkspace({ locale, path = [] }) {
                  locale={searchParams.get('lang')==='es'?'es':locale}
                  template={recordId==='egyptian'?'hh-egyptian-goal-planning-v1':'hh-greek-goal-planning-v1'} />
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
-          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} accountId={data.account.id} key={data.account.id} />}
+          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null}
+            accountId={data.account.id} key={data.account.id} showcaseEntry />}
           {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -782,11 +784,11 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
         </>
       )}
-      {!documentReader && page !== 'portrait' && <footer className="hh-footer">
+      {!documentReader && !practiceInner && page !== 'portrait' && <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
