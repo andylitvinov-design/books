@@ -13,6 +13,11 @@ test("approved mobile video design is the one canonical Mandala editor with four
   }
   assert.match(studio,/const themeChoices: VideoTheme\[\]/);
   assert.match(studio,/data-video-theme=\{item\}/);
+  // Preserve features concurrently added to production.
+  assert.match(studio,/data-video-wish/);
+  assert.match(studio,/data-video-music-preview/);
+  assert.match(studio,/data-video-music-volume/);
+  assert.match(studio,/data-mandala-master-mp4/);
   assert.match(studio,/data-video-template=/);
   assert.match(studio,/data-video-photo-picker/);
   assert.match(studio,/onPickPhoto/);
@@ -20,12 +25,20 @@ test("approved mobile video design is the one canonical Mandala editor with four
   assert.match(parent,/<MandalaFreeVideoStudio locale=\{locale\}/);
   assert.equal((parent.match(/<MandalaFreeVideoStudio /g)||[]).length,1,"one studio, not a duplicate editor");
   assert.match(parent,/id="mandala-photo"/);
-  assert.match(ui,/\.firstSteps\{display:grid/);
-  assert.match(ui,/\.themeGrid\{display:grid/);
+  assert.match(studio,/data-video-support-layout/);
+  assert.match(studio,/data-video-mandala-hero/);
+  assert.match(studio,/data-video-recommend-focus/);
+  assert.match(studio,/data-video-hero-create/);
+  assert.match(studio,/data-video-reset-settings/);
+  assert.match(studio,/const lowestTheme=checkOrder\.reduce/);
+  assert.doesNotMatch(studio,/<nav className=\{videoStyles\.bottomNav\}/);
+  assert.match(ui,/\.supportTop\{display:grid/);
+  assert.match(ui,/\.hero\{position:relative/);
   assert.match(ui,/\.templateRail\{display:grid/);
   assert.match(ui,/\.templateArt\{/);
   assert.match(ui,/\.download\{/);
-  assert.match(ui,/\.bottomNav\{position:sticky/);
+  assert.match(ui,/\.heroTabs\{display:grid/);
+  assert.match(ui,/\.heroThemes\{display:flex/);
   assert.match(ui,/@media\(max-width:380px\)/);
 });
 
@@ -89,4 +102,30 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
   assert.doesNotMatch(studio+audio,/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
+});
+
+test("the video mandala hero mirrors Support's 3-part entry, with functional routes and no-upload video", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  for(const lang of ['check:"1. Check in with yourself"','check:"1. Оцени себя сейчас"','check:"1. Evalúa cómo estás"'])
+    assert.ok(studio.includes(lang));
+  for(const key of ['"energy"','"money"','"relationships"','"goals"'])
+    assert.ok(studio.includes(key));
+  assert.match(studio,/setScores\(prev=>\(\{\.\.\.prev,\[key\]:Number/);
+  assert.match(studio,/selectCategory\(lowestTheme\)/);
+  assert.match(studio,/href=\{"\/"\+locale\+"\/talismans"\}/);
+  assert.match(studio,/href=\{"\/"\+locale\+"\/masters"\}/);
+  assert.match(studio,/href="#video-templates"/);
+  assert.match(studio,/data-mandala-money-preview/);
+  assert.match(studio,/data-mandala-cinematic-canvas/);
+  assert.match(studio,/startFromHero/);
+  assert.match(studio,/document\.querySelector\("\[data-video-photo-consent\]"\)\?\.scrollIntoView/);
+  assert.match(studio,/onClick=\{createVideo\}/);
+  assert.match(studio,/data-mandala-video-download/);
+  assert.match(studio,/data-video-theme=\{item\}/);
+  assert.match(css,/\.heroCanvas canvas\{display:block/);
+  assert.match(css,/\.supportTop\{display:grid/);
+  assert.match(css,/@media\(max-width:390px\)/);
+  assert.match(browser,/data-video-hero-create/);
 });

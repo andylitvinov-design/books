@@ -1,8 +1,10 @@
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
-import type { PublicPractitioner } from "@/lib/practitioners/public-types";
+import type { PublicPractitioner, ServiceIntroduction, VideoPresentation } from "@/lib/practitioners/public-types";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { publicServicePhotoUrl } from "@/lib/practitioners/public-service-media.mjs";
+import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract.js";
 import type { EnergySupportMaster } from "@/components/remote-energy-support-booking";
 
 /** Allow only intentionally public external presentation providers. Never expose uploaded private assets. */
@@ -13,6 +15,27 @@ function isPublicPresentationUrl(value: string): boolean {
       ["youtube.com", "www.youtube.com", "www.youtube-nocookie.com", "youtu.be",
         "vimeo.com", "player.vimeo.com", "soundcloud.com", "www.soundcloud.com"].includes(url.hostname);
   } catch { return false; }
+}
+
+// Only published, moderator-approved service introductions are projected.
+// The canonical presentation contract checks external video hosts and owner
+// upload object keys; upload URLs point to the explicitly public presentation
+// bucket and never include a signed/private token.
+function publicIntroduction(intro: ServiceIntroduction, locale: "en" | "ru" | "es", supabaseUrl: string) {
+  if (intro.language !== locale) return [];
+  try {
+    if (intro.media.kind === "external" && !isPublicPresentationUrl(intro.media.url)) return [];
+    const url = publicPresentationUrl(intro.media, supabaseUrl, intro.type);
+    return url ? [{ type: intro.type, url }] : [];
+  } catch { return []; }
+}
+function publicVideoPreview(video: VideoPresentation | null | undefined, supabaseUrl: string) {
+  if (!video) return [];
+  try {
+    if (video.kind === "external" && !isPublicPresentationUrl(video.url)) return [];
+    const url = publicPresentationUrl(video, supabaseUrl, "video");
+    return url ? [{ type: "video" as const, url }] : [];
+  } catch { return []; }
 }
 
 // Single published-only source for the standalone wizard and the in-page wizard.
@@ -32,6 +55,7 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
         title: record.profile.professionalTitle || "",
         photo: record.profile.photoPath || "",
         serviceId: service.id,
+        serviceTitle: service.copy?.title || "",
         methods: service.methods?.length ? service.methods : ["Remote support"],
         bio: record.profile.shortBio || "",
         description: service.copy?.shortDescription || service.copy?.description || "",
@@ -40,13 +64,9 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
         reviewCount: 0,
         reviewAverage: 0,
         presentations: [
-          ...(service.serviceIntroductions || [])
-            .filter(intro => intro.language === locale && intro.media.kind === "external" &&
-              isPublicPresentationUrl(intro.media.url))
-            .map(intro => ({ type: intro.type, url: (intro.media as {kind:"external";url:string}).url })),
-          ...(record.profile.videoPresentation?.kind === "external" &&
-            isPublicPresentationUrl(record.profile.videoPresentation.url)
-              ? [{ type: "video" as const, url: record.profile.videoPresentation.url }] : []),
+          ...(service.serviceIntroductions || []).flatMap(intro =>
+            publicIntroduction(intro, locale, config.supabaseUrl)),
+          ...publicVideoPreview(record.profile.videoPresentation, config.supabaseUrl),
         ],
         priceOptions: service.priceOptions?.length
           ? service.priceOptions
@@ -70,9 +90,10 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
  * No draft, paused service, credentials claim or unapproved price is leaked.
  */
 export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promise<EnergySupportMaster[]> {
+  const config = getAppConfig();
   const [legacy, records]: [EnergySupportMaster[], PublicPractitioner[]] = await Promise.all([
     listRemoteEnergySupportMasters(locale),
-    createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale),
+    createPractitionerRepository(config).listPublicPractitioners(locale),
   ]);
   const masterOffers: EnergySupportMaster[] = records.flatMap(record =>
     record.services
@@ -85,6 +106,7 @@ export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promi
         title: record.profile.professionalTitle || "",
         photo: record.profile.photoPath || "",
         serviceId: service.id,
+        serviceTitle: service.copy?.title || "",
         serviceHref: getPublicServiceDetailHref(locale, record.slug, service.slug),
         methods: service.methods || [],
         bio: record.profile.shortBio || "",
@@ -96,10 +118,8 @@ export async function listReikiSupportMasters(locale: "en" | "ru" | "es"): Promi
         // The structured Reiki variants, not legacy duration-only options,
         // control the price, report and certificate matched by the filter.
         priceOptions: [],
-        presentations: (service.serviceIntroductions || [])
-          .filter(intro => intro.language === locale && intro.media.kind === "external" &&
-            isPublicPresentationUrl(intro.media.url))
-          .map(intro => ({ type: intro.type, url: (intro.media as {kind:"external";url:string}).url })),
+        presentations: (service.serviceIntroductions || []).flatMap(intro =>
+          publicIntroduction(intro, locale, config.supabaseUrl)),
       }))
   );
   return [...masterOffers, ...legacy];
@@ -123,9 +143,9 @@ export type PublicConsultationOffer = {
   presentations: { type: "audio" | "video"; url: string }[];
 };
 
-// Display only media explicitly marked public, without exposing private storage paths.
-function publicConsultationPhoto(path: string): string {
-  return /^\/(?:images\/|api\/public\/)[a-zA-Z0-9_/%.-]+$/.test(path) ? path : "";
+// The existing editor writes owned public-bucket URLs, not only site-local paths.
+function publicConsultationPhoto(path: string, supabaseUrl: string): string {
+  return publicServicePhotoUrl(path, supabaseUrl);
 }
 
 export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"): Promise<PublicConsultationOffer[]> {
@@ -159,11 +179,12 @@ export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"
           href: getPublicServiceDetailHref(locale, practitioner.slug, service.slug),
           deliveryFormat: service.deliveryFormat,
           photos: [...new Set([service.imagePath, ...(service.photos || [])]
-            .map(publicConsultationPhoto).filter(Boolean))].slice(0, 5),
-          presentations: (service.serviceIntroductions || [])
-            .filter(intro => intro.language === locale && intro.media.kind === "external" &&
-              isPublicPresentationUrl(intro.media.url))
-            .map(intro => ({ type: intro.type, url: (intro.media as { kind: "external"; url: string }).url })),
+            .map(path => publicConsultationPhoto(path, config.supabaseUrl)).filter(Boolean))].slice(0, 5),
+          presentations: [
+            ...(service.serviceIntroductions || []).flatMap(intro =>
+              publicIntroduction(intro, locale, config.supabaseUrl)),
+            ...publicVideoPreview(service.videoPresentation, config.supabaseUrl),
+          ].slice(0, 2),
 
         };
       })

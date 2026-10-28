@@ -494,23 +494,23 @@
 .consultHeading p { margin:0; color:#758175; font-size:12px; flex:1 1 auto; }
 .consultHeading a { display:flex; align-items:center; gap:4px; color:#098463; font-size:12px; font-weight:800; text-decoration:none; white-space:nowrap; }
 .consultCategoryWrap { position:relative; min-width:0; }
-.consultCategoryRail { display:flex; gap:8px; max-width:100%; padding:2px 3px 9px;
+.consultCategoryRail { display:flex; gap:7px; max-width:100%; padding:2px 48px 9px 3px;
   overflow-x:auto; overscroll-behavior-inline:contain; scroll-snap-type:x mandatory; scrollbar-width:none; }
 .consultCategoryRail::-webkit-scrollbar { display:none; }
-.consultCategory { flex:0 0 clamp(106px,20%,160px); min-height:90px; display:flex;
-  flex-direction:column; align-items:center; justify-content:center; gap:7px; min-width:0;
-  padding:7px 6px; border:1px solid #e6e1d7; border-radius:14px; background:#fefbf6;
+.consultCategory { flex:0 0 auto; min-height:48px; display:flex;
+  flex-direction:row; align-items:center; justify-content:center; gap:6px; min-width:0;
+  padding:8px 12px; border:1px solid #e6e1d7; border-radius:12px; background:#fefbf6;
   color:#25392f; font-size:12px; font-weight:750; line-height:1.15; text-align:center;
-  scroll-snap-align:start; cursor:pointer; }
-.consultCategory span { display:block; overflow-wrap:anywhere; max-width:100%; }
-.consultCategory svg { flex:none; color:#07836d; stroke-width:1.9; }
+  white-space:nowrap; scroll-snap-align:start; cursor:pointer; }
+.consultCategory span { display:block; max-width:none; overflow-wrap:normal; white-space:nowrap; }
+.consultCategory svg { flex:none; width:19px; height:19px; color:#07836d; stroke-width:1.9; }
 .consultCategory[data-support-consultation-category="imagery"] svg { color:#1681a1; }
 .consultCategory[data-support-consultation-category="constellations"] svg { color:#b25b57; }
 .consultCategory[data-support-consultation-category="business"] svg { color:#d59a1a; }
-.consultCategory[aria-pressed="true"] { border:2px solid #087f66; padding:6px 5px;
+.consultCategory[aria-pressed="true"] { border:2px solid #087f66; padding:7px 11px;
   background:linear-gradient(145deg,#ddf8ec,#f6fffb); box-shadow:0 2px 5px #006a4a1d; }
-.consultCategoryNext { position:absolute; right:-2px; top:23px; display:grid; place-items:center;
-  width:38px; height:38px; border:1px solid #ecede6; border-radius:50%;
+.consultCategoryNext { position:absolute; right:-2px; top:5px; display:grid; place-items:center;
+  width:44px; height:44px; border:1px solid #ecede6; border-radius:50%;
   background:#fffefa; color:#093b34; box-shadow:0 4px 12px #1d3b302b; cursor:pointer; }
 .consultFilters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 41px;
   gap:7px; min-width:0; padding:0 2px 4px; }
@@ -543,6 +543,10 @@
 .consultMedia { position:absolute; z-index:3; right:12px; top:99px; display:grid;
   place-items:center; width:43px; height:43px; border:1px solid #fff8;
   border-radius:50%; background:#062c27b8; color:#fff; }
+.consultPreviewGroup { position:relative; z-index:3; max-width:72%; padding:1px 0 3px; }
+.consultPreviewGroup > small { display:block; margin-bottom:5px; font-size:10px;
+  line-height:1.2; color:#ecf5e8; font-weight:750; text-shadow:0 1px 4px #06231d; }
+.consultPreviewGroup .consultPreviews { width:100%; max-width:100%; }
 .consultPreviews { position:relative; z-index:2; display:flex; width:max-content;
   max-width:66%; gap:5px; padding-bottom:7px; overflow-x:auto; }
 .consultPreviews button { position:relative; width:54px; height:46px; flex:0 0 54px;
@@ -558,6 +562,13 @@
 .consultDetails strong { font-size:17px; }
 .consultDetails p { margin:7px 0; color:#385246; font-size:13px; line-height:1.4; }
 .consultDetails small { color:#64766b; font-size:11px; }
+.consultDetailsLink,.consultFallback a { display:inline-flex; gap:5px; align-items:center;
+  justify-content:center; min-height:42px; padding:8px 10px; border:1px solid #9adcb9;
+  border-radius:10px; color:#087354; background:#eaf9ef; font-weight:800;
+  font-size:12px; text-decoration:none; }
+.consultDetailsLink { margin:4px 7px 7px 0; }
+.consultFallback { max-width:460px; line-height:1.45; }
+.consultFallback a { display:flex; margin:8px auto 0; }
 .consultRail { display:flex; gap:10px; min-width:0; max-width:100%;
   padding:3px 4px 10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
 .consultCard { display:flex; flex:0 0 clamp(156px,23%,215px); flex-direction:column;
@@ -581,12 +592,12 @@
   .consultHeading h2 { font-size:20px; }
   .consultHeading p { font-size:11px; }
   .consultHeading a { font-size:11px; }
-  .consultCategoryRail { gap:5px; padding:2px 2px 8px; }
-  .consultCategory { flex-basis:clamp(89px,25%,116px); min-height:78px;
-    padding:5px 3px; border-radius:12px; font-size:10px; gap:5px; }
-  .consultCategory[aria-pressed="true"] { padding:4px 2px; }
-  .consultCategory svg { width:23px; height:23px; }
-  .consultCategoryNext { top:19px; width:34px; height:34px; }
+  .consultCategoryRail { gap:5px; padding:2px 47px 8px 2px; }
+  .consultCategory { flex-basis:auto; min-height:44px;
+    padding:6px 9px; border-radius:10px; font-size:11px; gap:5px; }
+  .consultCategory[aria-pressed="true"] { padding:5px 8px; }
+  .consultCategory svg { width:17px; height:17px; }
+  .consultCategoryNext { top:2px; width:44px; height:44px; }
   .consultFilters { grid-template-columns:repeat(3,minmax(0,1fr)) 36px; gap:4px; }
   .consultField { padding:5px 4px; min-height:52px; border-radius:9px; }
   .consultField > span { gap:3px; font-size:10px; }
@@ -605,7 +616,9 @@
   .hero[data-support-consultation-hero="true"] .price { font-size:16px; }
   .consultProvider { font-size:10px; margin-top:4px; }
   .consultMedia { top:60px; right:9px; width:39px; height:39px; }
-  .consultPreviews { max-width:70%; }
+  .consultPreviewGroup { max-width:74%; padding-bottom:2px; }
+  .consultPreviewGroup > small { font-size:9px; margin-bottom:3px; }
+  .consultPreviews { max-width:100%; }
   .consultPreviews button { width:44px; height:39px; flex-basis:44px; }
   .hero[data-support-consultation-hero="true"] .arrows { top:43%; right:6px; }
   .hero[data-support-consultation-hero="true"] .actions { gap:6px; }
@@ -620,7 +633,7 @@
 }
 @media(max-width:350px) {
   .consultHeading p { display:none; }
-  .consultCategory { flex-basis:90px; font-size:9.7px; }
+  .consultCategory { flex-basis:auto; padding:6px 7px; font-size:10px; }
   .consultField > span { font-size:9px; }
   .consultField select { font-size:9px; }
   .hero[data-support-consultation-hero="true"] { min-height:345px; }
