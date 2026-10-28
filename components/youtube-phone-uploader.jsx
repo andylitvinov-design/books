@@ -173,9 +173,9 @@ function mergeHistory(old, record) {
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
 export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, oauthSource='missing', initialChannels,
-  initialHistory=[], historyReady=false, importTelegramCut=false}) {
+  initialHistory=[], historyReady=false, importTelegramCut=false, approvedMeditation=null}) {
   const t = copy[locale] || copy.ru
-  const [target, setTarget] = useState('ru')
+  const [target, setTarget] = useState(approvedMeditation?.language==='en'?'en':'ru')
   const [channels, setChannels] = useState(initialChannels || {ru:null,en:null})
   const [connected, setConnected] = useState(null)
   const [candidate, setCandidate] = useState(null)
@@ -189,6 +189,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const [busy, setBusy] = useState(false)
   const [pairBusy, setPairBusy] = useState(false)
   const [importingTelegramCut,setImportingTelegramCut] = useState(false)
+  const [importingMeditation,setImportingMeditation] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [history, setHistory] = useState(initialHistory)
@@ -368,7 +369,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     event.target.value = ''
     queueFiles(files)
   }
-  function queueFiles(files,ownerCut=false,sourceCutUrl=null) {
+  function queueFiles(files,ownerCut=false,sourceCutUrl=null,meditationId=null) {
     if (files.length === 0) return
     if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
@@ -377,7 +378,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
     alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
-      target, ownerCut, sourceCutUrl, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
+      target, ownerCut, sourceCutUrl, meditationId, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
     setError('')
     setMessage('')
@@ -426,6 +427,53 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }catch(reason){setError(humanError(reason,t))}
     finally{setImportingTelegramCut(false)}
   }
+  async function importApprovedMeditation(){
+    if(!approvedMeditation||!enabled||!historyStatus||busy||authPending||pairBusy||
+      importingTelegramCut||importingMeditation||
+      target!==approvedMeditation.language||
+      connected?.id!==channels[target]?.id||connected?.target!==target||
+      entriesRef.current.some(item=>item.state!=='done')){
+      setError(t.more);return
+    }
+    setImportingMeditation(true);setError('');setMessage('')
+    try{
+      const base='/api/admin/practitioners/meditations/'+approvedMeditation.id+'/handoff'
+      const metadataResponse=await fetch(base,{credentials:'same-origin',redirect:'error',
+        cache:'no-store',signal:AbortSignal.timeout(15000)})
+      if(!metadataResponse.ok)throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
+      const meta=await metadataResponse.json()
+      if(meta.id!==approvedMeditation.id||meta.language!==target||meta.mime!=='video/mp4'||
+        !Number.isSafeInteger(meta.bytes)||meta.bytes<128||meta.bytes>45000000)
+        throw Error('MEDITATION_HANDOFF_MISMATCH')
+      const response=await fetch(base+'?download=1',{credentials:'same-origin',redirect:'error',
+        cache:'no-store',signal:AbortSignal.timeout(120000)})
+      if(!response.ok||(response.headers.get('content-type')||'').split(';')[0]!=='video/mp4')
+        throw Error('MEDITATION_HANDOFF_UNAVAILABLE')
+      const size=Number(response.headers.get('content-length'))
+      if(size!==meta.bytes)throw Error('MEDITATION_HANDOFF_MISMATCH')
+      const bytes=new Uint8Array(await response.arrayBuffer())
+      if(bytes.byteLength!==meta.bytes||
+        String.fromCharCode(...bytes.subarray(4,8))!=='ftyp')throw Error('MEDITATION_HANDOFF_MISMATCH')
+      if(targetRef.current!==meta.language||connected?.id!==channelsRef.current[meta.language]?.id||
+        entriesRef.current.some(item=>item.state!=='done'))
+        throw Error('MEDITATION_HANDOFF_CHANGED')
+      const filename=String(meta.title||'Meditation')
+        .replace(/[^\p{L}\p{N}\s_-]/gu,'').trim().slice(0,75)||'Meditation'
+      queueFiles([new File([bytes],filename+'.mp4',{type:'video/mp4'})],false,null,meta.id)
+      setMessage(locale==='ru'
+        ?'Одобренная медитация импортирована. Проверьте язык, канал, видео и нажмите «Загрузить на YouTube».'
+        :'Approved meditation imported. Check channel and playback, then press Upload to YouTube.')
+    }catch(reason){setError(humanError(reason,t)||String(reason?.message||'MEDITATION_HANDOFF_UNAVAILABLE'))}
+    finally{setImportingMeditation(false)}
+  }
+  async function verifyMeditationReceipt(entry,videoId,auth){
+    const response=await fetch('/api/admin/practitioners/meditations/youtube-verify',{
+      method:'POST',credentials:'same-origin',cache:'no-store',headers:{'content-type':'application/json'},
+      body:JSON.stringify({id:entry.meditationId,videoId,accessToken:auth.value})})
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok)throw Error(result.error||'YOUTUBE_READBACK_UNAVAILABLE')
+    if(!result.processed)throw Error('readback_unverified')
+  }
   async function saveLink(entryId, videoId, privacyStatus, title, targetKey, channelId) {
     try {
       const result = await saveYoutubeUploadHistoryAction({
@@ -447,6 +495,11 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   async function finish(entry, resultId, auth, channelId) {
+    if(entry.meditationId){
+      // Remember the provider ID before verification: retries must never upload twice.
+      update(entry.id,{videoId:resultId,state:'verifying'})
+      await verifyMeditationReceipt(entry,resultId,auth)
+    }
     await completeYoutubeUpload({
       videoId:resultId,channelId,
       readDetails:() => readUploadedDetails(resultId,auth.value,undefined,{requireProcessed:entry.ownerCut===true}),
@@ -625,6 +678,21 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
       )}
       {selectedConfig && connected && !connectedCorrectly && <p className={styles.error}>{t.incorrect}</p>}
       <div className={styles.form}>
+        {approvedMeditation&&<div data-private-meditation-import className={styles.pairing}>
+          <h3>{locale==='ru'?'Одобренная медитация':'Approved meditation'}</h3>
+          <p>{approvedMeditation.title} · {approvedMeditation.language.toUpperCase()} · Unlisted</p>
+          <p className={styles.muted}>{locale==='ru'
+            ?'Перед загрузкой обязательно проверьте канал и содержание. Никакой автопубликации без вашего подтверждения.'
+            :'Check the channel and content before publishing. Upload requires your explicit confirmation.'}</p>
+          <button type="button" className={styles.secondary} onClick={importApprovedMeditation}
+            disabled={!enabled||!historyStatus||busy||authPending||pairBusy||
+              importingMeditation||importingTelegramCut||!connectedCorrectly||
+              target!==approvedMeditation.language||unresolvedUpload||
+              entries.some(item=>item.state!=='done')}>
+            {importingMeditation?(locale==='ru'?'Загружаем приватный MP4…':'Loading private MP4…'):
+              (locale==='ru'?'Добавить одобренную медитацию в очередь':'Add approved meditation to queue')}
+          </button>
+        </div>}
         {importTelegramCut&&<div data-private-telegram-cut-import>
           <p className={styles.muted}>{t.telegramCutHint}</p>
           <button type="button" className={styles.secondary}
