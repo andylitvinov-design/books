@@ -47,10 +47,13 @@ test('listener grants cannot publish mic/video/data, host may only publish micro
 test('status and admission depend on real provider host presence, not room existence',()=>{
   const room='hh-test-room'
   const rooms=[{name:room}]
-  const host={identity:HOST_IDENTITY}
+  const host={identity:HOST_IDENTITY,tracks:[{source:2,muted:false}]}
   const guests=Array.from({length:MAX_LISTENERS},(_,i)=>({identity:'listener-'+i}))
   assert.equal(audioPresence([],[],room).live,false)
   assert.equal(audioPresence(rooms,guests,room).live,false)
+  assert.equal(audioPresence(rooms,[{identity:HOST_IDENTITY}],room).live,false)
+  assert.equal(audioPresence(rooms,[{identity:HOST_IDENTITY,tracks:[{source:1}]}],room).live,false)
+  assert.equal(audioPresence(rooms,[{identity:HOST_IDENTITY,tracks:[{source:2,muted:true}]}],room).live,true)
   assert.deepEqual(audioPresence(rooms,[host],room),{enabled:true,live:true,listeners:0})
   assert.ok(canListen(audioPresence(rooms,[host],room)))
   assert.equal(canListen(audioPresence(rooms,[host,...guests],room)),false)
