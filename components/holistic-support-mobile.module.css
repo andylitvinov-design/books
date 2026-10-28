@@ -1149,3 +1149,9 @@
   .videoFeedFooter > small { font-size: 10px; }
   .videoFeedChoose { font-size: 11px; }
 }
+
+
+/* Guest video energy is a transparent local preview limit, not DRM or a paid gate.
+   Keep the original hero, four featured posters and filtered YouTube feed unchanged. */
+.playButton:disabled { cursor: not-allowed; opacity: .7; box-shadow: none; }
+.playButton:disabled:hover { filter: none; }
