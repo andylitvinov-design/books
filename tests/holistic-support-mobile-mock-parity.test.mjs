@@ -21,15 +21,16 @@ test("optional app surface excludes commercial header/ribbon, preserving regular
 test("original 3-zone mock: ratings left, inline portrait/focus center, four functions right", () => {
   assert.match(css, /@media \(max-width: 640px\)\s*\{/);
   assert.match(css, /@media \(max-width: 350px\)\s*\{/);
-  assert.match(css, /grid-template-areas: "assessment profile tools"/);
+  assert.match(css, /grid-template-areas: "assessment profile" "tools tools"/);
   assert.match(css, /\.assessment \{ grid-area: assessment;/);
   assert.match(css, /\.tools \{ grid-area: tools;/);
   assert.match(css, /\.profile \{ grid-area: profile;/);
-  assert.match(css, /\.scaleList \{ display: flex; flex-direction: column;/);
-  assert.match(css, /\.toolButton \{ display: flex; flex-direction: row;/);
-  assert.match(css, /\.photo \{ width: min\(100%,100px\);/);
+  assert.match(css, /\.scaleList \{ display: grid;/);
+  assert.match(css, /\.toolButton,\.toolButton:last-child \{\s*display: flex; flex-direction: column;/);
+  assert.match(css, /\.photo \{ flex: none; align-self: center;/);
   assert.match(client, /className=\{styles\.recommendShort\}/);
-  assert.match(client, /support-mock-portrait\.webp/);
+  assert.match(client, /data-support-photo-placeholder/);
+  assert.doesNotMatch(client, /src="\/images\/holistic-house\/support-mock-portrait\.webp"/);
   assert.match(client, /support-mock-hero\.webp/);
   assert.match(css, /support-mock-video-posters\.webp/);
   for (const filename of ["support-mock-hero.webp", "support-mock-portrait.webp", "support-mock-video-posters.webp"]) {
@@ -38,7 +39,15 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
     assert.equal(picture.toString("ascii", 8, 12), "WEBP", filename + " format");
     assert.ok(picture.length > 1000, filename + " was not saved");
   }
-  assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: minmax\(0,1fr\);/);
+  assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\);/);
+  assert.match(css, /\.scaleDetail \{ display: grid; min-width: 0;/);
+  assert.match(css, /\.profile > \.recommendButton/);
+  assert.match(css, /\.toolGrid > \.detailedAnalysisLink/);
+  // Rule must beat the generic .page button { font: inherit } declaration.
+  assert.match(css, /\.page \.toolButton \{[\s\S]*?font-size: clamp\(12px,3\.23vw,14px\)/);
+  assert.match(css, /\.page \.recommendButton \{[\s\S]*?font-size: clamp\(12px,3\.25vw,14px\)/);
+  assert.match(client, /assessmentShort:/);
+  assert.match(client, /toolsShort:/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
   assert.match(client, /aria-label=\{t.options\[id\]\}/);
   assert.match(client, /type="range" min="1" max="10"/);

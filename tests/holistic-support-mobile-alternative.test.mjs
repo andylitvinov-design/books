@@ -115,13 +115,13 @@ test("personal recommendations rank verified recordings and existing talismans, 
 });
 
 
-test("recommendations move under the check-in; tests move under five support actions", () => {
+test("recommendations sit under selected focus; five modes and tests form six mobile actions", () => {
   const assessment = client.split('<section className={styles.assessment}')[1].split("</section>")[0];
   const profile = client.split('<section className={styles.profile}')[1].split("</section>")[0];
   const tools = client.split('<section className={styles.tools}')[1].split("</section>")[0];
-  assert.match(assessment, /data-support-recommendations/);
+  assert.doesNotMatch(assessment, /data-support-recommendations/);
   assert.doesNotMatch(assessment, /data-support-detailed-analysis/);
-  assert.doesNotMatch(profile, /data-support-recommendations/);
+  assert.match(profile, /data-support-recommendations/);
   assert.match(tools, /data-support-detailed-analysis/);
   assert.match(tools, /choices\.map/);
   assert.match(client, /id: "healing", Icon: HandHeart/);
@@ -134,7 +134,7 @@ test("recommendations move under the check-in; tests move under five support act
   assert.match(client, /\/services\/remote-energy-support/);
   assert.match(client, /\/masters/);
   assert.match(client, /<HolisticInlineSupportOrder/);
-  assert.match(css, /\.toolButton:last-child \{ grid-column: 1 \/ -1/);
-  assert.match(css, /grid-template-rows: repeat\(5, 44px\); align-content: start/);
-  assert.match(css, /\.detailedCompact \{ display: inline; \}/);
+  assert.match(css, /grid-template-areas: "assessment profile" "tools tools"/);
+  assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.detailedCompact \{ display: block; \}/);
 });
