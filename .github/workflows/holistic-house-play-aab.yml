@@ -120,12 +120,20 @@ jobs:
         env:
           HH_PLAY_VERSION_CODE: ${{ inputs.version_code }}
           HH_PLAY_VERSION_NAME: ${{ inputs.version_name }}
+          HH_EXPECTED_WEBSITE_CERT_SHA256: ${{ vars.HH_EXPECTED_WEBSITE_CERT_SHA256 }}
         run: |
           apk=android/app/build/outputs/apk/release/app-release.apk
           test -s "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > hh-website-apk-signature.txt
           grep -E '^Verified using v[23] scheme .*: true$' hh-website-apk-signature.txt
           grep -E '^Signer #1 certificate SHA-256 digest: [a-f0-9]{64}$' hh-website-apk-signature.txt
+          # An ephemeral or unintended key must never become a public update chain.
+          # The approved public signing fingerprint is non-secret but explicitly
+          # configured in the protected release Environment by the owner.
+          expected="$(printf %s "$HH_EXPECTED_WEBSITE_CERT_SHA256" | tr '[:upper:]' '[:lower:]')"
+          [[ "$expected" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Approved website signing certificate not configured"; exit 1; }
+          actual="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' hh-website-apk-signature.txt | head -1)"
+          test "$actual" = "$expected" || { echo "::error::APK signing fingerprint differs from approved release certificate"; exit 1; }
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > hh-website-apk-badging.txt
           grep -F "package: name='com.holistichouse.app' versionCode='$HH_PLAY_VERSION_CODE' versionName='$HH_PLAY_VERSION_NAME'" hh-website-apk-badging.txt
           grep -F "targetSdkVersion:'36'" hh-website-apk-badging.txt
