@@ -77,7 +77,9 @@ test("Video checkmark needs a voluntary question response after a real player st
   assert.match(page, /data-support-video-question-answer/);
   assert.match(page, /onClick=\{quest\.answerVideoQuestion\}/);
   assert.match(page, /videoDone=\{quest\.record\.videoQuestionAnswered\}/);
-  assert.match(quest, /completed === true/);
+  assert.match(quest, /typeof verifiedCompletion === "boolean"/);
+  assert.match(quest, /test: verifiedCompletion/);
+  assert.match(quest, /completed: \{ \.\.\.next\.completed, test: false \}/);
   assert.doesNotMatch(page, /localStorage|sessionStorage|navigator\.sendBeacon|fetch\(/);
 });
 
