@@ -13,8 +13,9 @@ test('hourly dispatch must keep secrets server-side and not use Hobby hourly Ver
  assert.match(route,/HH_PUSH_CRON_SECRET/)
  assert.deepEqual(vercel.crons,[
   {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
-  {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
-  {path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'},
+  {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
+  {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
+  {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
  ])
  assert.equal(vercel.crons.some(cron=>cron.path==='/api/internal/notification-dispatch'),false)
 })

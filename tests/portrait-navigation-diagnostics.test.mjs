@@ -762,11 +762,45 @@ function runnerNodes(tree, parents = []) {
   return [{ node: tree, parents }, ...(tree.children || []).flatMap(child => runnerNodes(child, [...parents, tree]))]
 }
 const hasClass = (node, name) => String(node.props?.className || '').split(/\s+/).includes(name)
-async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = false, navigationFailure = null, readinessFailure = null, sourceTransform = value => value } = {}) {
+async function actualEnglishRunHandoff(source) {
+  const { default: ts } = await import('typescript')
+  const file = ts.createSourceFile('verify-portrait-mobile.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  assert.equal(file.parseDiagnostics.length, 0, 'The actual verifier must parse before extracting its handoff')
+  const loops = []
+  const visit = node => {
+    if (ts.isForOfStatement(node) && ts.isVariableDeclarationList(node.initializer) &&
+      node.initializer.declarations.length === 1 && ts.isIdentifier(node.initializer.declarations[0].name) &&
+      node.initializer.declarations[0].name.text === 'locale' && ts.isArrayLiteralExpression(node.expression) &&
+      node.expression.elements.length === 2 && node.expression.elements.every(ts.isStringLiteral) &&
+      node.expression.elements.map(element => element.text).join(',') === 'en,ru') loops.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  assert.equal(loops.length, 1, 'Exactly one actual EN then RU locale loop must own the handoff')
+  const loop = loops[0]
+  const owners = file.statements.filter(ts.isTryStatement)
+  assert.equal(owners.length, 1, 'Exactly one top-level verifier try/finally must own the live locale loop')
+  assert.ok(owners[0].finallyBlock && owners[0].tryBlock.statements.includes(loop),
+    'The locale loop must execute directly in the verifier try body, not an uncalled function or conditional wrapper')
+  assert.ok(ts.isBlock(loop.statement), 'Locale-loop boundaries must be an explicit block')
+  const branches = loop.statement.statements.filter(node => ts.isIfStatement(node) &&
+    ts.isBinaryExpression(node.expression) && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+    ts.isIdentifier(node.expression.left) && node.expression.left.text === 'locale' &&
+    ts.isStringLiteral(node.expression.right) && node.expression.right.text === 'en')
+  assert.equal(branches.length, 1, 'Exactly one direct EN handoff branch is required')
+  const branch = branches[0]
+  assert.ok(ts.isBlock(branch.thenStatement) && branch.elseStatement && ts.isBlock(branch.elseStatement),
+    'The EN handoff and separate RU Goals branch must both have explicit boundaries')
+  assert.ok(branch.thenStatement.statements.length > 0 && branch.elseStatement.statements.length > 0,
+    'Neither locale branch may become an empty no-op')
+  return { body: source.slice(branch.thenStatement.getStart(file) + 1, branch.thenStatement.end - 1),
+    branchStart: branch.getStart(file), branchEnd: branch.end, loopStart: loop.getStart(file), loopEnd: loop.end,
+    thenStart: branch.thenStatement.getStart(file), thenEnd: branch.thenStatement.end,
+    elseStart: branch.elseStatement.getStart(file), elseEnd: branch.elseStatement.end }
+}
+async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = false, actionVisible = true, actionVisibilityFailure = null, navigationFailure = null, readinessFailure = null, sourceTransform = value => value } = {}) {
   const source = sourceTransform(await readFile(sourceURL, 'utf8'))
-  const start = source.indexOf("    if(locale==='en'){")
-  const end = source.indexOf('\n    }\n  }\n  // Next', start)
-  assert.ok(start > 0 && end > start)
+  const { body } = await actualEnglishRunHandoff(source)
   const originalURL = origin + '/en/app/runs/synthetic-run?mode=quick'
   let url = originalURL
   const calls = [], entries = runnerNodes(tree)
@@ -783,6 +817,7 @@ async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = f
       return { nodes, first: () => ({ nodes: nodes.slice(0, 1) }) }
     },
   }
+  const action = { kind: 'test-action', click: async () => calls.push(['test-action-click']) }
   const expect = target => ({
     async toHaveURL(expected, settings) {
       calls.push(['url', typeof expected === 'string' ? 'same-run' : 'original-pattern', settings?.timeout ?? null])
@@ -791,7 +826,14 @@ async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = f
       else assert.ok(expected.test(url), 'Expected EN quick-run URL')
     },
     async toBeVisible(...args) {
-      calls.push(['visible']); assert.deepEqual(args, [], 'No new timeout override or inflation')
+      assert.deepEqual(args, [], 'No new timeout override or inflation')
+      if (target === action) {
+        calls.push(['action-visible'])
+        if (actionVisibilityFailure) throw actionVisibilityFailure
+        assert.equal(actionVisible, true, 'The actual panel action must be visible before the explicit start click')
+        return
+      }
+      calls.push(['visible'])
       if (readinessFailure) throw readinessFailure
       assert.equal(target.nodes.length, 1, 'Semantic readiness requires one mounted real runner/question')
       assert.notEqual(target.nodes[0].node.props.hidden, true)
@@ -812,10 +854,14 @@ async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = f
       assert.equal(target.nodes.length, 1); assert.equal(target.nodes[0].node.type, 'fieldset')
     },
   })
-  const run = () => runInNewContext('(async () => {' + source.slice(start, end) + '\n} })()', {
+  const run = () => runInNewContext('(async () => {' + body + '\n})()', {
     locale: 'en', name: 'webkit', page, expect,
-    work: { click: async () => calls.push(['work-click']) }, takeTest: { click: async () => calls.push(['take-test-click']) },
-    suggested: { first: () => ({ click: async () => calls.push(['suggested-click']) }) },
+    work: { click: async () => calls.push(['work-click']) }, testsTab: { click: async () => calls.push(['tests-tab-click']) },
+    panel: { locator: selector => {
+      calls.push(['panel-locator', selector])
+      assert.equal(selector, 'button[data-testid^="portrait-take-test-"]', 'Only the current catalogue-backed test action')
+      return { first: () => { calls.push(['action-first']); return action } }
+    } },
     console: { log: () => calls.push(['success-marker']) },
   }, { timeout: 1000 })
   return { run, calls }
@@ -823,7 +869,7 @@ async function actualRunHandoffFixture({ tree, duplicate = false, changedURL = f
 test('actual quick Runner proves mounted loaded UI with disabled false before the unchanged handoff success marker', options, async () => {
   const fixture = await actualRunHandoffFixture({ tree: await renderActualQuickRunner() })
   await fixture.run()
-  assert.deepEqual(fixture.calls.map(call => call[0]), ['work-click', 'take-test-click', 'suggested-click', 'url', 'locator', 'visible', 'locator', 'visible', 'property', 'url', 'success-marker'])
+  assert.deepEqual(fixture.calls.map(call => call[0]), ['work-click', 'tests-tab-click', 'panel-locator', 'action-first', 'action-visible', 'test-action-click', 'url', 'locator', 'visible', 'locator', 'visible', 'property', 'url', 'success-marker'])
   assert.deepEqual(fixture.calls.filter(call => call[0] === 'url'), [['url', 'original-pattern', 60000], ['url', 'same-run', null]])
 })
 for (const [name, settings] of [
@@ -840,12 +886,12 @@ for (const [name, settings] of [
   if (settings.questionless) runnerNodes(tree).find(({ node }) => hasClass(node, 'hh-quick-form')).node.children = []
   const fixture = await actualRunHandoffFixture({ tree })
   await assert.rejects(fixture.run(), error => error.code === 'ERR_ASSERTION')
-  assert.equal(fixture.calls.filter(call => call[0] === 'suggested-click').length, 1)
+  assert.equal(fixture.calls.filter(call => call[0] === 'test-action-click').length, 1)
   assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'), 'Must not advance after failed readiness')
 })
 test('semantic run readiness rejects ambiguous runner and a changed destination', options, async () => {
   const tree = await renderActualQuickRunner()
-  for (const extra of [{ duplicate: true }, { changedURL: true }]) {
+  for (const extra of [{ duplicate: true }, { changedURL: true }, { actionVisible: false }]) {
     const fixture = await actualRunHandoffFixture({ tree, ...extra })
     await assert.rejects(fixture.run(), error => error.code === 'ERR_ASSERTION')
     assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'))
@@ -853,11 +899,12 @@ test('semantic run readiness rejects ambiguous runner and a changed destination'
 })
 test('semantic run readiness retains primary failures and performs no retry or extra action', options, async () => {
   const tree = await renderActualQuickRunner()
-  for (const kind of ['navigationFailure', 'readinessFailure']) {
+  for (const kind of ['navigationFailure', 'readinessFailure', 'actionVisibilityFailure']) {
     const failure = new Error('synthetic original timeout')
     const fixture = await actualRunHandoffFixture({ tree, [kind]: failure })
     await assert.rejects(fixture.run(), error => error === failure)
-    assert.deepEqual(fixture.calls.filter(call => call[0].endsWith('-click')), [['work-click'], ['take-test-click'], ['suggested-click']])
+    assert.deepEqual(fixture.calls.filter(call => call[0].endsWith('-click')),
+      kind === 'actionVisibilityFailure' ? [['work-click'], ['tests-tab-click']] : [['work-click'], ['tests-tab-click'], ['test-action-click']])
     assert.ok(!fixture.calls.some(call => call[0] === 'success-marker'))
   }
 })
@@ -869,7 +916,25 @@ test('run readiness is tied to current keyed bootstrap-backed Runner source and 
   assert.match(runtime, /page === 'runs' && \([\s\S]*?<Runner\s+key=\{recordId\}\s+id=\{recordId\}/)
   assert.match(runtime, /const value = await appFetch\('runs\/' \+ id\)[\s\S]*?setRun\(value\)/)
   assert.match(source, /for\s*\(const locale of \['en','ru'\]\)/)
-  const handoff = source.slice(source.indexOf("    if(locale==='en'){"), source.indexOf('  // Next', source.indexOf("    if(locale==='en'){")))
+  const extracted = await actualEnglishRunHandoff(source)
+  const handoff = extracted.body
+  // The extractor must reject missing, duplicated or malformed boundaries;
+  // whitespace/quote changes must not silently select comments or the RU else.
+  for (const invalid of [
+    source.replace("if (locale === 'en') {", "if (locale === 'ru') {"),
+    source.slice(0, extracted.branchEnd) + '\n' + source.slice(extracted.branchStart, extracted.branchEnd) + source.slice(extracted.branchEnd),
+    source + '\n' + source.slice(extracted.loopStart, extracted.loopEnd),
+    source.slice(0, extracted.branchStart) + source.slice(extracted.branchStart, extracted.branchEnd).replace('} else {', '} {') + source.slice(extracted.branchEnd),
+    source.slice(0, extracted.loopStart) + 'async function unusedHandoff() {' + source.slice(extracted.loopStart, extracted.loopEnd) + '}\n' + source.slice(extracted.loopEnd),
+    source.slice(0, extracted.loopStart) + 'if (false) {' + source.slice(extracted.loopStart, extracted.loopEnd) + '}\n' + source.slice(extracted.loopEnd),
+    source.slice(0, extracted.thenStart) + '{}' + source.slice(extracted.thenEnd),
+    source.slice(0, extracted.elseStart) + '{}' + source.slice(extracted.elseEnd),
+    source.slice(0, extracted.elseStart) + 'void 0;' + source.slice(extracted.elseEnd),
+    source + '\nfunction malformed(',
+  ]) await assert.rejects(actualEnglishRunHandoff(invalid), error => error.code === 'ERR_ASSERTION')
+  const spaced = await actualEnglishRunHandoff(source.replace("if (locale === 'en') {", 'if(locale === "en"){'))
+  assert.equal(spaced.body, handoff)
+  assert.doesNotMatch(handoff, /goalsAction|hh-development-goals-panel|data-development-target-editor/)
   assert.doesNotMatch(handoff, /waitForTimeout|waitForLoadState|networkidle|\.catch\(|try\s*\{|\.evaluate\(|\.fill\(|\.check\(|\.press\(|\.fetch\(|\.request\./)
   assert.equal((handoff.match(/timeout:/g) || []).length, 1)
   assert.match(source, /assert\.equal\(appProblems\.length,0,'Browser script errors: '\+appProblems\.join\('; '\)\)/)
