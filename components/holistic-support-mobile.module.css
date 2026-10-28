@@ -211,6 +211,8 @@
   color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
 .photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
 .camera { z-index: 2; }
+.detailedFull { display: inline; }
+.detailedCompact { display: none; }
 
 @media (max-width: 640px) {
   .page { background: linear-gradient(150deg,#dce9e2 0%,#f5f1e7 52%,#fcf7ed 100%); }
@@ -416,7 +418,20 @@
   .scaleIcon svg { width: 16px; height: 16px; }
   .scaleLabel { font-size: 11px; }
   .scaleValue { width: 22px; height: 27px; font-size: 13px; }
-  .detailedAnalysisLink { font-size: 9px; }
+  /* Preserve production #2341 compact Tests CTA and the <=295px top dashboard. */
+  .detailedAnalysisLink { min-height: 29px; max-height: 33px; margin-top: 3px;
+    padding: 3px 2px; gap: 3px; font-size: 12px; line-height: 1; }
+  .detailedFull { display: none; }
+  .detailedCompact { display: inline; }
+  .assessment h1,.tools h2 { min-height: 29px; margin-bottom: 3px; }
+  .scaleList { gap: 2px; margin-top: 2px; }
+  .scaleRow { min-height: 35px; }
+  .scaleRow input[type="range"] { height: 17px; }
+  .scaleDetail { gap: 0; }
+  .scaleLabel { line-height: 1.02; font-size: 10.5px; letter-spacing: -.035em; }
+  .toolGrid { gap: 3px; }
+  .toolButton { min-height: 39px; line-height: 1.05; }
+  .topGrid { margin-bottom: 5px; }
   .toolGrid { gap: 5px; }
   .toolButton { gap: 4px; padding: 4px; min-height: 43px; font-size: 11px; }
   .toolButton svg { width: 20px; height: 20px; flex-basis: 20px; }
