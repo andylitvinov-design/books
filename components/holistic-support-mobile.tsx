@@ -12,7 +12,7 @@ import {
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
-import { HolisticSupportGoalFilter, goalSectorFocus, type GoalSelection } from "@/components/holistic-support-goal-filter";
+import { HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection, type GoalSelection } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
@@ -412,7 +412,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
                 <Filter size={16} aria-hidden="true" />
                 <span><strong>{t.goalFilter}: {t.goalSector[goalSelection.sector]}</strong>
-                  {goalSelection.tasks.length ? " · " + goalSelection.tasks.length + "/3" : ""}</span>
+                  {summarizeGoalSelection(locale, goalSelection) ? " · " + summarizeGoalSelection(locale, goalSelection) : ""}</span>
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
