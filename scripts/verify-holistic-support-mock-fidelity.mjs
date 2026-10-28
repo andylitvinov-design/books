@@ -512,6 +512,30 @@ for (const browserType of [chromium, webkit]) {
             label+" published-only consultation gallery reuses the scenic stage");
           assert.equal(await offers.locator('a[data-support-offer-request]').count(),1,
             label+" secure service request is an explicit navigation, not a silent booking");
+          const accountLocale = locale === "es" ? "en" : locale;
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-intro",
+            label+" the published service ID reaches the existing Google-protected enquiry");
+          assert.equal(await offers.locator('[data-support-consultation-previews] button').count(),2,
+            label+" published photos show a real, selectable strip in the service hero");
+          await offers.locator('[data-support-consultation-photo="1"]').click();
+          assert.equal(await offers.locator('[data-support-consultation-photo="1"]').getAttribute("aria-pressed"),
+            "true",label+" tapping a service photo selects it");
+          await offers.locator('[data-support-master-thumb="qa-session"]').click();
+          assert.equal(await offers.locator('a[data-support-offer-request]').getAttribute('href'),
+            "/" + accountLocale + "/app/consultations?service=qa-session",
+            label+" other service opens its own protected request instead of reusing the first");
+          await offers.locator('button[aria-controls="support-consultation-details"]').click();
+          assert.equal(await offers.locator('#support-consultation-details a[href="/'+locale+'/services"]').count(),
+            1,label+" Details opens the original approved service page");
+          await offers.locator('[data-support-consultation-category="imagery"]').click();
+          assert.equal(await offers.locator('[data-support-master-hero]').count(),0,
+            label+" empty imagery category does not invent a bookable offer");
+          assert.equal(await offers.locator('a[href="/'+locale+'/services/imagery-therapy"]').count(),1,
+            label+" absent published imagery falls back to the real educational service page");
+          await offers.locator('[role="status"] button').first().click();
+          assert.equal(await offers.locator('[data-support-master-thumb]').count(),2,
+            label+" reset recovers all published services without losing the catalogue");
           assert.deepEqual(errors,[],label+" browser exceptions");
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
