@@ -641,3 +641,22 @@
   .hero[data-support-consultation-hero="true"] .copy h2 { font-size:22px; }
   .consultPreviews { max-width:65%; }
 }
+
+/* Three direct Reiki service formats. Accessible and shared with the detailed filter. */
+.reikiQuickFormat { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;
+  min-width:0;padding:8px 12px;background:#fffaf1; }
+.viewer .reikiQuickFormat button { display:flex;align-items:center;justify-content:center;gap:5px;
+  min-width:0;min-height:44px;padding:6px;border:1px solid #c7d7cb;border-radius:12px;
+  background:#f7f9f2;color:#234538;font:800 12px/1.16 Arial,Helvetica,sans-serif;cursor:pointer; }
+.reikiQuickFormat button span { min-width:0;overflow-wrap:anywhere; }
+.reikiQuickFormat button svg { flex:none;color:#087f60; }
+.viewer .reikiQuickFormat button[aria-pressed="true"] { color:#fff;border-color:#17aa81;
+  background:linear-gradient(110deg,#078967,#0eae7a);box-shadow:0 3px 9px #07564029; }
+.reikiQuickFormat button[aria-pressed="true"] svg { color:#fff; }
+.viewer .reikiQuickFormat button:focus-visible { outline:3px solid #e6b75f;outline-offset:2px; }
+@media(max-width:640px) {
+  .reikiQuickFormat { gap:5px;padding:6px 9px; }
+  .viewer .reikiQuickFormat button { min-height:44px;gap:3px;padding:5px 3px;
+    font:800 clamp(10px,2.8vw,12px)/1.16 Arial,Helvetica,sans-serif; }
+  .reikiQuickFormat button svg { width:14px;height:14px; }
+}
