@@ -3,6 +3,7 @@ export declare function supportTestFocus(input?: {
   scores?: Record<string, number>;
   editedCheckins?: string[];
   goalSector?: string | null;
+  goalConcerns?: string[];
   category?: string | null;
 }): string[];
 export declare function supportTestHref(locale: string, options?: Parameters<typeof supportTestFocus>[0]): string;
