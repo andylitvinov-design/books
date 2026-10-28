@@ -37,8 +37,14 @@ for (const engine of [chromium, webkit]) {
             label + ": four accessible self-ratings");
           assert.equal(await root.locator('[data-support-detailed-analysis]').getAttribute("href"),
             "/" + locale + "/personality-profiles", label + ": canonical profile, no duplicate test flow");
-          const focus = root.locator("select").first();
-          await focus.selectOption("relationships");
+          const focused = root.locator('[data-support-focus="relationships"]');
+          const allFocus = root.locator('[data-support-focus="all"]');
+          assert.equal(await allFocus.isChecked(), true, label + ": All is initial focus");
+          await focused.check();
+          assert.equal(await focused.isChecked(), true, label + ": scale owns Focus");
+          assert.equal(await allFocus.isChecked(), false, label + ": All is deselected");
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1,
+            label + ": exactly one selected focus");
           const slider = root.locator('[data-support-scale="relationships"] input[type="range"]');
           await slider.focus();
           await slider.press("Home");
@@ -66,6 +72,21 @@ for (const engine of [chromium, webkit]) {
             "fu-harmony", label + ": existing catalog ranks suggested item first");
           assert.equal(await catalog.locator("[data-tao-talisman-order][aria-pressed='true']").count(), 0,
             label + ": recommendation never automatically adds a paid item");
+          await allFocus.check();
+          assert.equal(await recommendations.count(), 0, label + ": new focus clears old results");
+          assert.equal(await root.locator('input[name="support-focus"]:checked').count(), 1,
+            label + ": All is mutually exclusive");
+          await root.locator("[data-support-recommendations]").click();
+          await recommendations.waitFor({ state: "visible" });
+          assert.ok((await recommendations.innerText()).includes({
+            en: "All four areas", ru: "Все четыре сферы", es: "Las cuatro áreas",
+          }[locale]), label + ": All explains four-area recommendation");
+          assert.match(await recommendations.locator("[data-support-recommended-video]")
+            .getAttribute("data-support-recommended-video"), /^[A-Za-z0-9_-]{11}$/,
+            label + ": All recommends a genuine recording");
+          await root.locator('[data-support-focus="money"]').check();
+          assert.equal(await recommendations.count(), 0,
+            label + ": another scale invalidates the previous snapshot");
           const geometry = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scrollWidth: document.documentElement.scrollWidth,
