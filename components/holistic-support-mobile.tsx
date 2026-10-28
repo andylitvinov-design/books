@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
-  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, Filter,
+  ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, X, Zap,
 } from "lucide-react";
@@ -28,6 +28,9 @@ export type SupportMobileVideo = {
   program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek";
   author: "andrey" | "psimaster";
   sourceLanguage: "en" | "ru";
+  // Verified public practitioner profile for this particular recording.
+  // Recordings with no confirmed practitioner intentionally show no badge.
+  masterProfile?: { slug: string; name: string; image: string };
 };
 
 export type SupportMobileCourse = {
@@ -81,6 +84,7 @@ const copy = {
     optionsCompact: { meditation: "Meditation", consultation: "Test / call", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters" },
     optionsMicro: { meditation: "Video", consultation: "Test", talisman: "Talisman", healing: "Reiki" },
     master: "Teacher", program: "Program", theme: "Topic", all: "All",
+    masterProfile: "Open master profile", videoMaster: "Meditation guide",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
@@ -129,6 +133,7 @@ const copy = {
     optionsCompact: { meditation: "Медитация", consultation: "Тест / сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера" },
     optionsMicro: { meditation: "Видео", consultation: "Тест", talisman: "Талисман", healing: "Рейки" },
     master: "Мастер", program: "Программа", theme: "Тема", all: "Все",
+    masterProfile: "Открыть страницу мастера", videoMaster: "Мастер медитаций",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
@@ -177,6 +182,7 @@ const copy = {
     optionsCompact: { meditation: "Meditación", consultation: "Test / sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías" },
     optionsMicro: { meditation: "Vídeo", consultation: "Test", talisman: "Talismán", healing: "Reiki" },
     master: "Guía", program: "Programa", theme: "Tema", all: "Todos",
+    masterProfile: "Abrir perfil del guía", videoMaster: "Guía de meditación",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
@@ -555,6 +561,19 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
                 </div>
+                {selected?.masterProfile ? <Link
+                  href={"/" + locale + "/masters/" + selected.masterProfile.slug}
+                  prefetch={false} className={styles.heroMasterLink}
+                  data-support-video-master={selected.masterProfile.slug}
+                  aria-label={t.masterProfile + ": " + selected.masterProfile.name}>
+                  <Image src={selected.masterProfile.image} alt="" width={46} height={46}
+                    className={styles.heroMasterAvatar} />
+                  <span className={styles.heroMasterCopy}>
+                    <strong>{selected.masterProfile.name}</strong>
+                    <small>{t.videoMaster}</small>
+                  </span>
+                  <ChevronRight size={19} aria-hidden="true" className={styles.heroMasterArrow} />
+                </Link> : null}
                 {playing && selected ? <div className={styles.iframeWrap}>
                   <iframe key={selected.id} src={videoSrc} title={selected.title}
                     referrerPolicy="strict-origin-when-cross-origin"
