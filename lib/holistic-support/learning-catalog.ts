@@ -1,4 +1,5 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { listPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
 import { academyDisplayTitle, findAcademyRecord } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { LearningCatalogItem, LearningDirection } from "@/components/holistic-support-learning-catalog";
@@ -151,6 +152,21 @@ export function buildSupportLearningCatalog(locale: PublicLocale,
     image: "/academy/reiki-yggdrasil/source/temple-studies.png",
     language: "ru", kind: "course", cost: "free", lessons: 7,
   });
+  // Reuse already published canonical personal Level-1 initiation pricing.
+  // The FREE introduction is not the paid personal appointment. Do not
+  // invent payment success, provider schedule or course tuition.
+  for (const offer of listPublicReikiAcademyOffers(locale)) {
+    if (offer.kind !== "initiation") continue;
+    const personal = offer.priceOptions.find(option => option.id === "personal");
+    if (!personal || typeof personal.amountEur !== "number" || personal.amountEur <= 0) continue;
+    const topic = topicOfTitle("reiki", offer.method);
+    items.push({
+      id: "personal-" + offer.id, direction: "reiki", topic,
+      title: offer.title + " · " + personal.label, description: offer.description,
+      href: offer.href, teacher: andrey, kind: "initiation",
+      cost: "priced", price: { amount: personal.amountEur, currency: "EUR" },
+    });
+  }
   for (const course of mysteries) items.push({
     id: "mystery-" + course.id, direction: "temple",
     topic: course.id === "greek" ? "greece" : course.id,
