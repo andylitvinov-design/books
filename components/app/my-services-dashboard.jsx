@@ -186,7 +186,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
             <ChevronRight className={styles.cardChevron} size={16} aria-hidden="true"/>
           </summary>
         </details>})}
-      </div>
+      </div>}
       {items.length===0&&!creating&&canAdd&&<p className={styles.empty}>{lang==='ru'?'Пока нет услуг. Добавьте своё первое предложение.':lang==='es'?'Aún no hay servicios. Añade tu primera oferta.':'No services yet. Add your first offer.'}</p>}
       {!composing&&items.length>0&&!visible.length&&<p className={styles.empty} role="status">{c.noResults}</p>}
     </div>
