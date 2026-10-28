@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
-import { ArrowRight, BookOpen, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Heart, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -48,6 +48,9 @@ type PublishedConsultation = {
   price: number | null;
   currency: string;
   href: string;
+  deliveryFormat: string;
+  photos: string[];
+  presentations: { type: "video" | "audio"; url: string }[];
 };
 type DirectoryResponse = { masters?: EnergySupportMaster[]; consultations?: PublishedConsultation[] };
 const words = {
@@ -56,7 +59,7 @@ const words = {
     verified: "Published practitioner", publicOffer: "Published service", online: "Online",
     method: "Method", allMethods: "All practices", price: "Price", allPrices: "All offers",
     freeOnly: "Free", paidOnly: "With a published price",
-    galleryMasters: "Choose a master", galleryOffers: "Other consultations",
+    galleryMasters: "Choose a master", galleryOffers: "Other services",
     reikiFocus: "Reiki support intention",
     reikiOptions: {
       strength: { label: "Strength support", method: "Kundalini Reiki" },
@@ -80,7 +83,7 @@ const words = {
     verified: "Опубликованный мастер", publicOffer: "Опубликованная услуга", online: "Онлайн",
     method: "Метод", allMethods: "Все практики", price: "Цена", allPrices: "Все предложения",
     freeOnly: "Бесплатно", paidOnly: "С опубликованной ценой",
-    galleryMasters: "Выбери мастера", galleryOffers: "Другие консультации",
+    galleryMasters: "Выбери мастера", galleryOffers: "Другие услуги",
     reikiFocus: "Цель Рейки поддержки",
     reikiOptions: {
       strength: { label: "Поддержка силы", method: "Кундалини Рейки" },
@@ -104,7 +107,7 @@ const words = {
     verified: "Profesional publicado", publicOffer: "Servicio publicado", online: "En línea",
     method: "Método", allMethods: "Todas las prácticas", price: "Precio", allPrices: "Todas",
     freeOnly: "Gratis", paidOnly: "Con precio publicado",
-    galleryMasters: "Elige un profesional", galleryOffers: "Otras consultas",
+    galleryMasters: "Elige un profesional", galleryOffers: "Otros servicios",
     reikiFocus: "Objetivo del apoyo Reiki",
     reikiOptions: {
       strength: { label: "Apoyo a la fuerza", method: "Kundalini Reiki" },
@@ -193,6 +196,80 @@ const reikiUi = {
   },
 } as const;
 
+
+type ConsultationCategory = "all" | "psycho" | "imagery" | "constellations" | "business";
+const CONSULTATION_CATEGORIES = [
+  { id: "all", Icon: MessageCircle },
+  { id: "psycho", Icon: Leaf },
+  { id: "imagery", Icon: Eye },
+  { id: "constellations", Icon: Users },
+  { id: "business", Icon: BriefcaseBusiness },
+] as const;
+
+const consultationUi = {
+  en: {
+    heading: "Services", subtitle: "Choose your direction", all: "All services",
+    categories: { all: "Consultations", psycho: "Psycho-homeopathy", imagery: "Guided imagery",
+      constellations: "Systemic constellations", business: "Business consulting" },
+    master: "Practitioner", allMasters: "All practitioners", format: "Format", allFormats: "Any format",
+    price: "Price", reset: "Reset", showNext: "More service categories",
+    online: "Online", inPerson: "In person", hybrid: "Online / in person",
+    order: "Request service", details: "Details", published: "Published service",
+    media: "View approved introduction", photos: "Service photos",
+    notice: "A request is not a confirmed booking or payment.",
+  },
+  ru: {
+    heading: "Услуги", subtitle: "Выбери направление поддержки", all: "Все услуги",
+    categories: { all: "Консультации", psycho: "Психогомеопатия", imagery: "Гайдед имажери",
+      constellations: "Системные расстановки", business: "Бизнес-консалтинг" },
+    master: "Мастер", allMasters: "Все мастера", format: "Формат", allFormats: "Все форматы",
+    price: "Цена", reset: "Сбросить", showNext: "Следующие категории услуг",
+    online: "Онлайн", inPerson: "Очно", hybrid: "Онлайн / очно",
+    order: "Заказать", details: "Подробнее", published: "Опубликованная услуга",
+    media: "Открыть опубликованную презентацию", photos: "Фото услуги",
+    notice: "Заявка не означает подтверждённую запись или оплату.",
+  },
+  es: {
+    heading: "Servicios", subtitle: "Elige tu dirección", all: "Todos los servicios",
+    categories: { all: "Consultas", psycho: "Psicohomeopatía", imagery: "Imágenes guiadas",
+      constellations: "Constelaciones sistémicas", business: "Consultoría empresarial" },
+    master: "Profesional", allMasters: "Todos", format: "Formato", allFormats: "Cualquier formato",
+    price: "Precio", reset: "Restablecer", showNext: "Más categorías",
+    online: "En línea", inPerson: "Presencial", hybrid: "En línea / presencial",
+    order: "Solicitar", details: "Detalles", published: "Servicio publicado",
+    media: "Ver presentación publicada", photos: "Fotos del servicio",
+    notice: "Solicitar no confirma una reserva ni realiza un pago.",
+  },
+} as const;
+
+/** Browse real approved offers by shared topics, without manufacturing category inventory. */
+function matchesConsultationCategory(offer: PublishedConsultation, category: ConsultationCategory) {
+  if (category === "all") return true;
+  const source = [offer.title, offer.description, offer.areaKey, offer.href].join(" ").toLowerCase();
+  switch (category) {
+    case "psycho": return /homeopath|homeopat|гомеопат|alchemy|алхими|alquimia/.test(source);
+    case "imagery": return /imagery|imagin|образн|имажери|guided|гипнотерап|hypnotherap|hipnoterap/.test(source);
+    case "constellations": return /constellat|constelac|расстанов|системн|systemic/.test(source);
+    case "business": return /business|бизнес|empresa|negocio|consulting|консалтинг|consultor/.test(source);
+  }
+}
+function consultationCover(offer: PublishedConsultation) {
+  if (offer.photos?.[0]) return offer.photos[0];
+  if (matchesConsultationCategory(offer, "imagery")) return "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp";
+  if (matchesConsultationCategory(offer, "constellations")) return "/images/holistic-house/video-posters/constellations-en-v1.webp";
+  if (matchesConsultationCategory(offer, "business")) return "/images/holistic-house/hero-olive-incense.webp";
+  if (/andrey|andy|андре/i.test(offer.practitionerName)) {
+    return "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp";
+  }
+  return "/images/holistic-house/hero-olive-incense.webp";
+}
+function consultationFormatName(format: string, locale: PublicLocale) {
+  if (format === "online") return consultationUi[locale].online;
+  if (format === "in_person" || format === "offline") return consultationUi[locale].inPerson;
+  if (format === "hybrid") return consultationUi[locale].hybrid;
+  return format || consultationUi[locale].allFormats;
+}
+
 function validMaster(value: unknown): value is EnergySupportMaster {
   return Boolean(value && typeof value === "object" &&
     "slug" in value && typeof value.slug === "string" &&
@@ -228,6 +305,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const [method, setMethod] = useState("");
   const [reikiFocus, setReikiFocus] = useState<ReikiFocus>("love");
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "published">("all");
+  const [consultCategory, setConsultCategory] = useState<ConsultationCategory>("all");
+  const [consultMaster, setConsultMaster] = useState("");
+  const [consultFormat, setConsultFormat] = useState("");
+  const [consultDetailsOpen, setConsultDetailsOpen] = useState(false);
+  const [consultPhotoIndex, setConsultPhotoIndex] = useState(0);
+  const categoryRailRef = useRef<HTMLDivElement>(null);
   const [reikiTab, setReikiTab] = useState<ReikiTab>("main");
   const [reikiFormat, setReikiFormat] = useState<ReikiFormat>("session");
   const [reikiPrice, setReikiPrice] = useState<ReikiPrice>("all");
@@ -277,7 +360,12 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     (!supportedMethods || master.methods.some(offersMethod)) &&
     (kind !== "healing" || master.priceOptions.some(option =>
       matchesReikiEuroPrice(master, reikiPrice, option.price))));
+  const consultationMasters = [...new Set((offers || []).map(offer => offer.practitionerName))].sort();
+  const consultationFormats = [...new Set((offers || []).map(offer => offer.deliveryFormat).filter(Boolean))];
   const visibleOffers = (offers || []).filter(offer => {
+    if (!matchesConsultationCategory(offer, consultCategory)) return false;
+    if (consultMaster && offer.practitionerName !== consultMaster) return false;
+    if (consultFormat && offer.deliveryFormat !== consultFormat) return false;
     if (priceFilter === "free") return offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact");
     if (priceFilter === "published") return offer.pricingMode !== "contact" && offer.price !== null && Number.isFinite(offer.price);
     return true;
@@ -288,7 +376,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const selectedMaster = !consultations ? (selected as EnergySupportMaster | null) : null;
   const selectedOffer = consultations ? (selected as PublishedConsultation | null) : null;
   const index = selected ? entries.findIndex(entry => id(entry) === id(selected)) : 0;
-  const select = (itemId: string) => { setSelectedId(itemId); };
+  const select = (itemId: string) => { setSelectedId(itemId); setConsultPhotoIndex(0); setConsultDetailsOpen(false); };
   const step = (delta: number) => {
     if (!entries.length) return;
     select(id(entries[(index + delta + entries.length) % entries.length]));
@@ -314,6 +402,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         ? publishedPrice(selectedOffer.price, selectedOffer.currency, locale) : null)
     : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
   const displayPrice = currentPrice || t.quote;
+  const c = consultationUi[locale];
+  const currentConsultPhoto = selectedOffer?.photos?.[consultPhotoIndex] || (selectedOffer ? consultationCover(selectedOffer) : "");
+  const consultationPrice = (offer: PublishedConsultation) =>
+    offer.pricingMode === "free" || (offer.price === 0 && offer.pricingMode !== "contact")
+      ? t.freeOnly
+      : offer.pricingMode !== "contact" && offer.price !== null
+        ? publishedPrice(offer.price, offer.currency, locale) || t.quote : t.quote;
 
   const ready = consultations ? offers !== null : masters !== null;
   const r = reikiUi[locale];
