@@ -17,7 +17,7 @@ export default function MessagesBottomNavigation({locale='en'}){
     {ITEMS.map(({path,Icon,en,ru,es})=>{
       const active=path==='messages'
       const label=locale==='ru'?ru:locale==='es'?es:en
-      const href=path==='practice'?'/'+locale+'/practice':
+      const href=path==='practice'?'/'+accountLocale+'/app/practice':
         path==='messages'?'/'+locale+'/app/messages':
         path==='materials'?'/'+accountLocale+'/app/practice?panel=materials':
         path==='profile'?'/'+accountLocale+'/app/practice?panel=profile':
