@@ -535,8 +535,16 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          assert.equal(await root.locator('[data-support-courses-panel] a').count(),2,
-            label+" Academy course routes still work");
+          const academyHrefs=await root.locator('[data-support-courses-panel] a')
+            .evaluateAll(links => links.map(a => a.getAttribute("href")));
+          // Academy's two canonical links remain, while optional published
+          // Maya/Egyptian/Greek course links may increase the total.
+          assert.ok(academyHrefs.includes("/"+locale+"/academy") &&
+            academyHrefs.includes("/"+locale+"/academy/reiki/tantra-reiki/discover"),
+            label+" existing Academy and free Reiki paths remain available");
+          assert.ok(academyHrefs.length>=2 && academyHrefs.every(href =>
+            typeof href === "string" && href.startsWith("/"+locale+"/academy")),
+            label+" additional published course links stay in localized Academy: "+JSON.stringify(academyHrefs));
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
