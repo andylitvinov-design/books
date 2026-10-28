@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import candidates from "@/data/academy/meditation-catalog-candidates-20261028.json";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
+import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { getAppConfig } from "@/lib/app/config";
 import type { MeditationCatalogRecord } from "@/lib/holistic-support/meditation-catalog-types";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -26,8 +27,15 @@ export async function loadMeditationDiscovery(locale: PublicLocale): Promise<{
   videos: MeditationCatalogRecord[];
   publishedSourceIds: string[];
 }> {
-  const published = freeMeditationVideos(locale);
-  const known = new Map(published.map(video => [video.id, video.title]));
+  // These are the already public owner sources, across their *original* audio
+  // languages. Site locale only chooses the filter's initial audio language.
+  const known = new Map([
+    ...freeMeditationVideos("ru").map(video => [video.id, video.title] as const),
+    ...englishGuidedMeditations
+      .filter(video => video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId))
+      .map(video => [video.youtubeId!, video.title] as const),
+  ]);
+  void locale;
   const originals = candidates.videos
     .filter(video => video.source_kind === "original" && known.has(video.youtube_id)
       && video.metadata_confidence === "owner_source")
