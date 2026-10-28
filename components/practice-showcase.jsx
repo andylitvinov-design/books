@@ -140,7 +140,8 @@ function destination(locale, key) {
   const appLocale = locale === 'es' ? 'en' : locale
   const root = '/' + appLocale + '/app/practice'
   const routes = {
-    home:'/' + appLocale + '/app/portrait',
+    // The Home tab is the public homepage, never the old personal login gate.
+    home:'/' + locale,
     // The highlighted tab retains the same signed-in preview; editors live in their own tools.
     practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
@@ -215,11 +216,23 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   function openAction(key) {
     if (busy) return
+    // This selected tab is already the new practitioner page. It must never
+    // request Google sign-in or send a visitor to the legacy Account landing.
+    if (key === 'practice') {
+      setPendingAction('')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    // Home is public navigation, not entry to the private personal Cabinet.
+    if (key === 'home') {
+      router.push(destination(locale, key))
+      return
+    }
     if (signedIn) {
       router.push(destination(locale, key))
       return
     }
-    // An action first offers Google sign-in; merely browsing is always free.
+    // Actual edit/actions prompt Google, then open the existing protected tool.
     setNotice('')
     setPendingAction(key)
   }
