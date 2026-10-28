@@ -207,7 +207,8 @@ for (const browserType of [chromium, webkit]) {
             label+" only source-backed recordings");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
           await root.locator('[data-support-goal-action="talismans"]').click();
-          await root.locator('[data-support-talisman-viewer]').waitFor({state:"visible",timeout:8000});
+          const talisman=root.locator('[data-support-talisman-viewer]');
+          await talisman.waitFor({state:"visible",timeout:8000});
           // Owner-approved shopping mock: verify actual category navigation,
           // three selectors and the existing quote dialog at all iPhone sizes.
           const categories=talisman.locator("[data-support-talisman-category]");
@@ -279,7 +280,6 @@ for (const browserType of [chromium, webkit]) {
           // Talisman has the same hero-first stage and source images in a
           // three-tile shelf. Navigation and local quote must not submit.
           await root.locator('[data-support-tool="talisman"]').click();
-          const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           assert.equal(await talisman.locator('[data-support-talisman-thumb]').count(),3,
             label+" three verified Fu illustrations below their large hero");
