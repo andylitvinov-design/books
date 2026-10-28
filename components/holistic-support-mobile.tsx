@@ -28,6 +28,7 @@ import styles from "./holistic-support-mobile.module.css";
 export type SupportMobileVideo = {
   id: string;
   title: string;
+  description?: string;
   topics: MeditationTopic[];
   program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek";
   author: "andrey" | "psimaster";
@@ -184,7 +185,10 @@ const copy = {
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
+    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.",
+    feedTitle: "Explore all meditations", feedHint: "Scroll through the descriptions and select a recording. It opens in the player above; playback never starts automatically.",
+    feedChoose: "Select", feedAudioRu: "Russian audio", feedAudioEn: "English audio",
+    feedFallback: "An original recording from the published collection.", feedCount: "videos", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose an existing free self-check or a personality profile. These tests support reflection, not medical diagnosis.",
     testsShort: "Tests", tests: "Open free tests", testsProfiles: "Personality profiles", testsProfilesHint: "Explore existing profile questionnaires", testsGuide: "How tests work", testsGuideHint: "Understand privacy and results", testsPrivacy: "Your ratings and photo on this screen are not sent to the tests catalogue.", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
@@ -293,7 +297,10 @@ const copy = {
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
+    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.",
+    feedTitle: "Лента медитаций", feedHint: "Листай вниз и выбирай запись по описанию. Она откроется в большом плеере сверху, без автозапуска.",
+    feedChoose: "Выбрать", feedAudioRu: "звук RU", feedAudioEn: "звук EN",
+    feedFallback: "Оригинальная запись из опубликованной коллекции.", feedCount: "видео", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Выбери бесплатный тест или профиль личности. Результаты помогают в самоисследовании, но не заменяют диагностику.",
     testsShort: "Тесты", tests: "Открыть тесты", testsProfiles: "Профили личности", testsProfilesHint: "Существующие опросники и типологии", testsGuide: "О тестах", testsGuideHint: "Как проходят тесты и сохраняются результаты", testsPrivacy: "Оценки и фото с этого экрана не передаются в каталог тестов.", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
@@ -402,7 +409,10 @@ const copy = {
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
+    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.",
+    feedTitle: "Explora todas las meditaciones", feedHint: "Desplázate por las descripciones y elige una grabación. Se abrirá arriba, sin reproducción automática.",
+    feedChoose: "Elegir", feedAudioRu: "audio en ruso", feedAudioEn: "audio en inglés",
+    feedFallback: "Grabación original de la colección publicada.", feedCount: "vídeos", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Elige un test gratuito o un perfil de personalidad. Son herramientas de reflexión, no de diagnóstico.",
     testsShort: "Tests", tests: "Abrir tests gratuitos", testsProfiles: "Perfiles de personalidad", testsProfilesHint: "Cuestionarios y perfiles disponibles", testsGuide: "Sobre los tests", testsGuideHint: "Privacidad y resultados", testsPrivacy: "Tus puntuaciones y foto de esta pantalla no se envían al catálogo de tests.", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
@@ -523,11 +533,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const browseVideos = useMemo(() => choice === "pump"
     ? [...videos, ...courses.flatMap(course => course.videos)]
     : videos, [choice, videos, courses]);
-  const relevantVideos = useMemo(() => {
+  // One source-backed filtered catalogue powers both the four featured tiles
+  // and the full vertical feed. Selecting a recording outside the first four
+  // must still change the same hero player, never silently reset to item one.
+  const catalogVideos = useMemo(() => {
     const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    // This category rail changes the same source-backed hero and four thumbnails.
-    // No YouTube ID is duplicated and historical courses remain separate.
     const categoryFiltered = choice !== "meditation" || meditationCategory === "all" ? filtered
       : meditationCategory === "meaning" ? filtered.filter(video => video.program === "sun")
       : filtered.filter(video => video.topics.includes(meditationCategoryTopics[meditationCategory]!));
@@ -536,17 +547,18 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER));
     }
     if (suggested && choice === "meditation") {
       const order = new Map(suggested.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER));
     }
-    return eligible.slice(0, 4);
+    return eligible;
   }, [browseVideos, master, program, theme, meditationCategory, choice, suggested, goalMatch]);
-  const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
+  const relevantVideos = catalogVideos.slice(0, 4);
+  const selected = catalogVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
@@ -1020,7 +1032,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </button>
                 </div>
               </section>
-              <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"}>
+              <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"} data-selected-video={selected?.id ?? ""}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
@@ -1109,6 +1121,38 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
                 <p className={styles.videoHint}>{t.galleryHint}</p>
+                {catalogVideos.length > 0 ? <section className={styles.videoFeed}
+                  data-support-meditation-feed aria-labelledby="support-meditation-feed-title">
+                  <div className={styles.videoFeedHeading}>
+                    <h3 id="support-meditation-feed-title">{t.feedTitle}</h3>
+                    <span>{catalogVideos.length} {t.feedCount}</span>
+                  </div>
+                  <p className={styles.videoFeedHint}>{t.feedHint}</p>
+                  <ul className={styles.videoFeedList}>
+                    {catalogVideos.map(video => <li key={video.id}>
+                      <button type="button" className={styles.videoFeedItem}
+                        data-support-meditation-feed-item={video.id}
+                        aria-pressed={selected?.id === video.id}
+                        onClick={() => { pickVideo(video.id); scrollToSupport("support-meditation-player"); }}>
+                        <span className={styles.videoFeedPoster}>
+                          <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
+                            alt="" width={320} height={180} unoptimized loading="lazy" />
+                          <span className={styles.videoFeedPlay} aria-hidden="true">
+                            <Play size={19} fill="currentColor" />
+                          </span>
+                        </span>
+                        <span className={styles.videoFeedCopy}>
+                          <strong>{video.title}</strong>
+                          <span className={styles.videoFeedDescription}>{video.description || t.feedFallback}</span>
+                          <span className={styles.videoFeedFooter}>
+                            <small>{t.programs[video.program]} · {video.sourceLanguage === "ru" ? t.feedAudioRu : t.feedAudioEn}</small>
+                            <span className={styles.videoFeedChoose}>{t.feedChoose}<ArrowRight size={15} aria-hidden="true" /></span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>)}
+                  </ul>
+                </section> : null}
 
               </div>
               <div className={styles.videoSourceRow} data-support-video-source>
