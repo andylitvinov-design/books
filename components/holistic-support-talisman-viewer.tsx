@@ -235,8 +235,10 @@ export function HolisticSupportTalismanViewer({
             ))}
           </select><ChevronDown size={17} aria-hidden="true" />
         </label>
+      </div>
+      <div className={styles.starFilters} data-support-talisman-star-filters>
         <StarFilter locale={locale} minimum={minimumStars} onChange={value=>{setMinimumStars(value);setSelectedId(null);}}/>
-        <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13}}>
+        <label className={styles.starSort}>
           <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)}/>{t.best}
         </label>
       </div>
@@ -260,7 +262,6 @@ export function HolisticSupportTalismanViewer({
             {selected.id === preferredId ? t.recommended : t.symbol}</span>
           <h2>{heroTitle}</h2>
           <p>{selected[locale].description}</p>
-          <CatalogStarRating locale={locale} summary={stars.ratings[selected.id]} onRate={value=>stars.rate(selected.id,value)} unavailable={stars.unavailable} compact/>
           <span className={styles.price}>{t.price}</span>
           <div className={styles.heroTraits}>
             <span><Leaf size={13} aria-hidden="true" />{t.daoist}</span>
@@ -290,6 +291,10 @@ export function HolisticSupportTalismanViewer({
             onClick={() => { setSelectedId(item.id); setDetailsOpen(false); }} />)}
         </div>
       </section>}
+      {items.length>0 && <div className={styles.starReview} data-support-talisman-rating={selected.id}>
+        <CatalogStarRating locale={locale} summary={stars.ratings[selected.id]}
+          onRate={value=>stars.rate(selected.id,value)} unavailable={stars.unavailable} compact/>
+      </div>}
       {basketError && <p className={styles.error} role="alert">{t.basketError}</p>}
       {detailsOpen && <p id="talisman-design-details" className={styles.expandedDetails}>
         {selected[locale].description} {t.note}
