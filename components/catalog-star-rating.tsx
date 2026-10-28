@@ -62,6 +62,17 @@ export function useCatalogRatings(kind: CatalogRatingKind, ids: readonly string[
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [kind, keyList]);
+  // Several catalog sections can show the same service on one page. Keep their
+  // counters consistent after a single authenticated vote, without refetch loops.
+  useEffect(() => {
+    const update = (event: Event) => {
+      const { kind: eventKind, key, rating } =
+        (event as CustomEvent<{kind:CatalogRatingKind;key:string;rating:StarSummary}>).detail;
+      if (eventKind === kind) setRatings(current => ({ ...current, [key]: rating }));
+    };
+    window.addEventListener("hh-catalog-rating-updated", update);
+    return () => window.removeEventListener("hh-catalog-rating-updated", update);
+  }, [kind]);
   const rate = useCallback(async (key: string, stars: number) => {
     const response = await fetch("/api/catalog/ratings", {
       method: "POST", credentials: "same-origin", cache: "no-store",
@@ -71,6 +82,7 @@ export function useCatalogRatings(kind: CatalogRatingKind, ids: readonly string[
     const result = await response.json();
     if (!response.ok || !result?.rating) throw new Error(result?.error || "RATINGS_UNAVAILABLE");
     setRatings(current => ({ ...current, [key]: result.rating as StarSummary }));
+    window.dispatchEvent(new CustomEvent("hh-catalog-rating-updated", { detail: {kind,key,rating:result.rating} }));
     return result.rating as StarSummary;
   }, [kind]);
   return { ratings, unavailable, loading, rate };
