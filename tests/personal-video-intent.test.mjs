@@ -4,16 +4,20 @@ import {readFileSync} from "node:fs";
 import {suggestPersonalVideoScene,graphemeTrim,captionFromWish,PERSONAL_VIDEO_THEMES} from "../lib/mandala/personal-video-intent.mjs";
 
 const money=["golden-rain","cosmic-flow","abundance-tree","opportunity-falls","money-magnet",
-  "path-to-goals","partners","infinite-flow","golden-shield","abundance-circle","life-gifts","dreams"];
-const energy=["sun-flight","green-vortex","light-waterfall","gentle-shield"];
+  "path-to-goals","partners","infinite-flow","golden-shield","abundance-circle","life-gifts","dreams",
+  "wealth-sunrise","golden-harvest","radiant-portal","prosperity-coast"];
+const energy=["solar-surge","ocean-pulse","sunbeam-flow","river-power","desert-light","mountain-air",
+  "sun-flight","green-vortex","light-waterfall","gentle-shield"];
+const life=["wildflower-dance","fern-awakening","coastal-freedom","lone-tree","meadow-morning"];
+const health=["calm-sea","morning-dew","mossy-stream","gentle-falls","sea-breeze"];
 const love=["heart-light","warm-connection","blossom-garden","two-circles"];
 const goals=["light-path","open-door","guiding-stars","meaning-tree"];
 const suggest=(theme,wish,availableScenes,locale="ru")=>
   suggestPersonalVideoScene({theme,wish,locale,availableScenes});
 
-test("all 24 existing visual scenes represented; never builds a second catalog",()=>{
-  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","relationships","energy","goals"]);
-  assert.equal(money.length+love.length+energy.length+goals.length,24);
+test("all 44 scenes remain in ONE local video editor with six categories",()=>{
+  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","energy","life","health","relationships","goals"]);
+  assert.equal(money.length+love.length+energy.length+life.length+health.length+goals.length,44);
 });
 test("RU personal money wishes choose corresponding artwork, preserving explicit category",()=>{
   assert.equal(suggest("money","Я принимаю достойную оплату за свой труд",money).sceneId,"money-magnet");
@@ -22,10 +26,13 @@ test("RU personal money wishes choose corresponding artwork, preserving explicit
   assert.equal(suggest("money","Хочу финансовой стабильности",money).sceneId,"golden-shield");
   assert.equal(suggest("money","Хочу больше любви",money).theme,"money");
 });
-test("RU 4 categories and clear visual fallbacks",()=>{
+test("RU six categories and safe visual fallbacks",()=>{
   assert.equal(suggest("relationships","Взаимная любовь и тепло",love).sceneId,"two-circles");
   assert.equal(suggest("energy","Дайте отдых и расслабление",energy).sceneId,"light-waterfall");
   assert.equal(suggest("goals","Я выбираю ясность и смысл",goals).sceneId,"guiding-stars");
+  assert.equal(suggest("life","Мне хочется видеть цветы",life).sceneId,"wildflower-dance");
+  assert.equal(suggest("health","Ищу спокойствия и тишины",health).sceneId,"calm-sea");
+  assert.equal(suggest("health","Хочу больше отдыха",health).sceneId,"gentle-falls");
   assert.deepEqual(suggest("goals","мне бы как-нибудь",goals),{
     theme:"goals",sceneId:"light-path",matched:false,reasonId:"default_scene",captionSuggestionId:"goals"});
 });
