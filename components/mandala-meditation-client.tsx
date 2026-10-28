@@ -7,6 +7,7 @@ import type { ChangeEvent } from "react";
 import { ArrowLeft, Download, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
 import { renderMandalaPng } from "@/lib/mandala/export-png";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -395,6 +396,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
               </details>
             </div>
           </div>
+          <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} />
           <div className={styles.videoPane}>
             <h2><Play size={17} aria-hidden="true" />{t.music}</h2>
             <div className={styles.topicFilters} role="group" aria-label={t.filter}>

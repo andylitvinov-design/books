@@ -52,6 +52,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const imagePolicy = (response?.headers()["content-security-policy"] || "")
           .split(";").find(item => item.trim().startsWith("img-src")) || "";
         assert.match(imagePolicy, /\bblob:/, engine + " mandala CSP must allow local Blob images");
+        const mediaPolicy = (response?.headers()["content-security-policy"] || "")
+          .split(";").find(item => item.trim().startsWith("media-src")) || "";
+        assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
         const preset = page.locator('[data-mandala-preset="star"]');
         await preset.click();
@@ -81,6 +84,31 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const png = await bufferFromStream(await download.createReadStream());
         assert.deepEqual(png.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
         assert.ok(png.length > 2000, engine + " PNG must include composed illustration and photo");
+
+        // Actual free video render (one synthetic client photo). All other
+        // locale/width permutations check the UI without a costly 10s render.
+        const studio = page.locator("[data-mandala-free-video]");
+        await studio.waitFor({ state: "visible", timeout: 15000 });
+        const create = page.locator("[data-mandala-video-generate]");
+        assert.equal(await create.isEnabled(), true);
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          await create.click();
+          const videoLink = page.locator("[data-mandala-video-download]");
+          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          const filename = await videoLink.getAttribute("download");
+          assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
+          assert.equal(await page.locator("[data-mandala-video-preview]").count(), 1);
+          const [videoDownload] = await Promise.all([
+            page.waitForEvent("download", { timeout: 20000 }),
+            videoLink.click(),
+          ]);
+          assert.equal(videoDownload.suggestedFilename(), filename);
+          const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
+          assert.ok(videoBytes.length > 10000, "generated silent video has a real encoded payload");
+          if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
+          else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
+          assert.deepEqual(uploaded, [], "video render must not POST a client photo");
+        }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
         await focus.click();
