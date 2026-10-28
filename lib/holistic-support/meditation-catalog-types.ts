@@ -29,6 +29,7 @@ export type MeditationCatalogRecord = {
   embed_status: "unverified" | "confirmed" | "blocked";
   rights_status: string;
   metadata_checked_at?: string | null;
+  youtube_oembed_checked_at?: string | null;
   content_checked_at?: string | null;
   discovery_status?: "private_review" | "link_only" | "previously_published";
 };
