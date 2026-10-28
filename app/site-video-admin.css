@@ -153,3 +153,7 @@
   .kling-studio-free-actions { flex-direction: column; align-items: stretch; }
   .kling-studio-free-actions > a { justify-content: center; }
 }
+
+.kling-studio-local-result { display: grid; justify-items: start; gap: .65rem; padding: .6rem 0; }
+.kling-studio-local-result video { width: 100%; max-width: 220px; height: auto; max-height: 340px; aspect-ratio: 9 / 16; object-fit: contain; background: #261a15; border-radius: .6rem; }
+.kling-studio-local-result > a { text-decoration: none; }
