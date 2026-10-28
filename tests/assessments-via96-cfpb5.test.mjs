@@ -107,7 +107,7 @@ test('both measures have immutable SHA256 and appear as optional selectable card
     assert.ok(interpretationPlan(def.key,'v1'))
   }
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.deepEqual(coverage,{total:150,registered:150,uncovered:[],obsolete:[]})
+  assert.deepEqual(coverage,{total:149,registered:150,uncovered:[],obsolete:['ons-personal-wellbeing-4:v1']})
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     for(const key of [via.key,cfpb.key]){

@@ -111,9 +111,11 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     ...IPIP_THREE_CATALOG.map((item) => item.key),
     ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
-    ...ADDITIONAL_PROFESSIONAL_CATALOG.map((item) => item.key),
+    ...ADDITIONAL_PROFESSIONAL_CATALOG.filter(item => item.key !== 'ons-personal-wellbeing-4').map((item) => item.key),
   ].sort())
-  for (const key of ['functioning-review'])
+  assert.equal(ADDITIONAL_PROFESSIONAL_CATALOG.length,5)
+  assert.equal(monitoringCatalogItem('ons-personal-wellbeing-4').registrationRequired,true)
+  for (const key of ['functioning-review','ons-personal-wellbeing-4'])
     assert.equal(monitoringCatalogItem(key).startable, false)
 })
 

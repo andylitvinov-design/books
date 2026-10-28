@@ -16,6 +16,8 @@ import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/
 import { validTestKeys } from '../lib/app/test-selection-intent.js'
 
 test('eight adult EN/RU questionnaires have stable provenance, six questions and two distinct scored resources',()=>{
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(MONITORING_CATALOG.find(item=>item.key==='ons-personal-wellbeing-4').startable,false)
   assert.equal(RELATIONSHIPS_INTIMACY_KEYS.length,8)
   assert.equal(RELATIONSHIPS_INTIMACY_DEFINITIONS.length,16)
   assert.equal(RELATIONSHIP_DIMENSION_ROWS.length,16)
@@ -62,10 +64,11 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.equal(count,150)
+  assert.equal(count,149)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
-  assert.equal(coverage.registered,coverage.total)
+  assert.equal(coverage.registered,coverage.total+1)
+  assert.deepEqual(coverage.obsolete,['ons-personal-wellbeing-4:v1'])
   for(const lang of ['en','ru']){
     const entries=buildExplorerEntries({locale:lang,audience:'guest'})
     for(const key of RELATIONSHIPS_INTIMACY_KEYS){

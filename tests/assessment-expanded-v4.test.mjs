@@ -10,11 +10,13 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries, coverageForSelection } from '../lib/assessments/test-explorer.js'
 
 test('v4 has ten distinct non-diagnostic bilingual questionnaires with reproducible immutable hashes', () => {
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(MONITORING_CATALOG.find(item=>item.key==='ons-personal-wellbeing-4').startable,false)
   assert.equal(EXPANDED_BATTERY_V4_KEYS.length, 10)
   assert.equal(EXPANDED_BATTERY_V4_DEFINITIONS.length, 20)
   assert.equal(new Set(EXPANDED_BATTERY_V4_KEYS).size, 10)
   assert.equal(new Set(EXPANDED_BATTERY_V4_DEFINITIONS.map(({ id }) => id)).size, 20)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 150)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 149)
   for (const key of EXPANDED_BATTERY_V4_KEYS) {
     const item = MONITORING_CATALOG.find(entry => entry.key === key)
     assert.equal(item?.guestEligible, true)

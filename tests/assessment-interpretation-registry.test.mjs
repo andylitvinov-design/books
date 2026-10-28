@@ -19,6 +19,9 @@ import {
 const enabled = MONITORING_CATALOG.filter(row => row.startable)
 const versionIds = new Set(enabled.map(row => row.key + ':' + row.version))
 const runnable = ASSESSMENT_DEFINITIONS.filter(def => versionIds.has(def.key + ':' + def.version))
+// Holding launch availability does not remove pre-existing interpretation coverage.
+const heldOns = getAssessmentDefinition('ons-personal-wellbeing-4', 'v1', 'en')
+const reportable = [...runnable, heldOns]
 const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'max' ? (q.max ?? def.answerScale?.max) : (q.min ?? def.answerScale?.min),
 ]))
@@ -43,10 +46,13 @@ function scoreSumAt(definition, dimensionKey, target) {
 
 test('all current runnable tests have exact-version plans; licensed references stay disabled', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.ok(coverage.total>=150)
-  assert.equal(coverage.registered, coverage.total)
+  assert.equal(coverage.total,149)
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(coverage.registered, 150)
   assert.deepEqual(coverage.uncovered, [])
-  assert.deepEqual(coverage.obsolete, [])
+  assert.deepEqual(coverage.obsolete, ['ons-personal-wellbeing-4:v1'])
+  assert.equal(heldOns.scoring.dimensions.length,4)
+  assert.equal(heldOns.id,'78e257f3-7d2d-5feb-a317-d39f8c2a8e19')
   assert.equal(new Set(runnable.map(d => d.key)).size, coverage.total)
   assert.equal(interpretationPlan('hh-current-state', 'v2')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v1')?.key, 'hh-current-state')
@@ -59,12 +65,15 @@ test('all current runnable tests have exact-version plans; licensed references s
     assert.equal(plan.reviewStatus, 'preauthored-requires-clinical-qa')
   }
   for (const row of MONITORING_CATALOG.filter(row => !row.startable)) {
-    assert.equal(interpretationPlan(row.key, row.version), null, 'Unavailable tests must not acquire a plan: ' + row.key)
+    if (row.key === heldOns.key) {
+      assert.equal(row.registrationRequired,true)
+      assert.equal(interpretationPlan(row.key,row.version)?.key,heldOns.key)
+    } else assert.equal(interpretationPlan(row.key, row.version), null, 'Other unavailable tests must not acquire a plan: ' + row.key)
   }
 })
 
-test('every score dimension in each runnable test has a localized report at valid extremes', () => {
-  for (const def of runnable) for (const extreme of ['min', 'max']) {
+test('every score dimension in each runnable and held ONS definition has a localized report at valid extremes', () => {
+  for (const def of reportable) for (const extreme of ['min', 'max']) {
     const result = scoreAssessment(def, answersFor(def, extreme), syntheticTraumaContext(def))
     assert.ok(result.dimensions.length, def.key)
     for (const language of ['en','ru']) {
@@ -95,7 +104,7 @@ test('every score dimension in each runnable test has a localized report at vali
 test('synthetic scores across instrument ranges have an unambiguous supported or unavailable interpretation', () => {
   let checked = 0
   let cfpbValid = 0, cfpbInvalid = 0
-  for (const def of runnable) {
+  for (const def of reportable) {
     const scored = scoreAssessment(def, answersFor(def, 'min'), syntheticTraumaContext(def))
     for (const d of scored.dimensions) {
       const min = d.min, max = d.max

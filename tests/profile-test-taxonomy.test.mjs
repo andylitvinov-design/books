@@ -51,7 +51,12 @@ test('five profile directions cover public axes and every area has a parent', ()
 })
 
 test('every guest-startable scored test appears in at least one real topic without phantom scales', () => {
-  assert.ok(publicTests.length >= 40, 'source/rights gating must not silently lose runnable assessments')
+  const ons = source.find(item => item.key === 'ons-personal-wellbeing-4')
+  assert.ok(ons, 'The held source remains in the catalogue')
+  assert.equal(ons.startable, false)
+  assert.equal(ons.selectable, false)
+  assert.ok(!publicTests.some(item => item.key === ons.key))
+  assert.ok(publicTests.length >= 39, 'Only the approved ONS hold may reduce the public scored inventory')
   const groups = buildProfileScaleGroups(publicTests, allAreas, PROFILE_AREA_AXES)
   const mapped = new Set(groups.flatMap(group => group.scales.map(scale => scale.testKey)))
   const keys = new Set(publicTests.map(item => item.key))

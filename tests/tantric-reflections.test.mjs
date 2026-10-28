@@ -67,10 +67,10 @@ test('six original EN/RU tantra questionnaires include the full 64-question port
    }
  }
  const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
- assert.equal(coverage.total, 150)
+ assert.equal(coverage.total, 149)
  assert.equal(coverage.registered, 150)
  assert.deepEqual(coverage.uncovered, [])
- assert.deepEqual(coverage.obsolete, [])
+ assert.deepEqual(coverage.obsolete, ['ons-personal-wellbeing-4:v1'])
 })
 
 test('all dimensions have bilingual labels, optional steps, axes and stable versioned SQL definitions', async () => {

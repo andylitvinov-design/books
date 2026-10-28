@@ -32,6 +32,8 @@ const score = (values,language='en') => scoreAssessment(getAssessmentDefinition(
 const text = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('source-exact EN/RU six items, anchors, instructions, safety, attribution and immutable identities',()=>{
+  assert.equal(MONITORING_CATALOG.length,151)
+  assert.equal(MONITORING_CATALOG.find(item=>item.key==='ons-personal-wellbeing-4').startable,false)
   assert.equal(ASRS6_DEFINITIONS.length,2)
   for(const d of ASRS6_DEFINITIONS){
     const l=source.locales[d.instrumentLocale]
@@ -100,7 +102,7 @@ test('all six valid answers required, including zero; missing/null never become 
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,149)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
