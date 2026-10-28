@@ -300,3 +300,15 @@
   .reikiReset { font-size: 11px; }
   .reikiOptions button { font-size: 10px; }
 }
+
+
+/* Exact compact hero parity with the existing meditation window, while the filter can grow. */
+@media (max-width: 640px) {
+  .reikiStage:not([data-active-tab="filter"]) { height: 288px; min-height: 288px; max-height: 288px; }
+  .reikiStage:not([data-active-tab="filter"]) .reikiStageContent { min-height: 0; overflow: hidden; }
+  .reikiTabCopy h2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .reikiTabCopy p { -webkit-line-clamp: 2; }
+}
+@media (max-width:350px) {
+  .reikiStage:not([data-active-tab="filter"]) { height: 282px; min-height: 282px; max-height: 282px; }
+}
