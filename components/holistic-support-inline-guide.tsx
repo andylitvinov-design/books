@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Clock3, HandHeart, MessageCircle, Play, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Clock3, HandHeart, Play, Sparkles, X } from "lucide-react";
 import { goalSectorFocus, summarizeGoalSelection, type GoalSelection, type GoalSector } from "@/components/holistic-support-goal-filter";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "@/lib/holistic-support/guide-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
