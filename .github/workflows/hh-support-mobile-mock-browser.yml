@@ -27,6 +27,7 @@ on:
       - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
+      - 'tests/holistic-meditation-mobile-categories.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
   pull_request:
     branches: ['codex/public-book-library']
@@ -55,6 +56,7 @@ on:
       - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/verify-holistic-support-mock-fidelity.mjs'
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
+      - 'tests/holistic-meditation-mobile-categories.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
 permissions:
   contents: read
@@ -82,7 +84,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/holistic-support-course-profiles.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
+          node --test tests/holistic-support-course-profiles.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs tests/holistic-meditation-mobile-categories.test.mjs
           npx eslint components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
