@@ -551,8 +551,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
               <p>{t.goalResultsNote}</p>
             </div>
             <div className={styles.goalResultGrid}>
-              <button type="button" data-support-goal-action="meditation"
-                aria-pressed={choice === "meditation"}
+              {activeGoalFormats.includes("meditation") ? <button type="button"
+                data-support-goal-action="meditation" aria-pressed={choice === "meditation"}
                 onClick={() => { changeChoice("meditation"); window.requestAnimationFrame(() =>
                   document.getElementById("support-meditation-gallery")?.scrollIntoView({
                     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -560,28 +560,58 @@ export function HolisticSupportMobile({ locale, videos, courses = [] }: {
                   })); }}>
                 <Play size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
-              </button>
-              <button type="button" data-support-goal-action="tests" aria-pressed={choice === "tests"}
+              </button> : null}
+              {activeGoalFormats.includes("consultation") ? <button type="button"
+                data-support-goal-action="consultation" aria-pressed={choice === "consultation"}
+                onClick={() => changeChoice("consultation")}>
+                <MessageCircle size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.consultation}</strong><small>{t.goalResultHints.consultation}</small></span>
+              </button> : null}
+              {activeGoalFormats.includes("tests") ? <button type="button"
+                data-support-goal-action="tests" aria-pressed={choice === "tests"}
                 aria-controls="support-tests-panel" onClick={() => changeChoice("tests")}>
                 <TestTubeDiagonal size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
-              </button>
-              <Link href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
-                : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
+              </button> : null}
+              {activeGoalFormats.includes("courses") ? <Link
+                href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
+                  : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
                 <BookOpen size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.courses}</strong><small>{t.goalResultHints.courses}</small></span>
-              </Link>
-              <button type="button" data-support-goal-action="talismans"
-                aria-pressed={choice === "talisman"} onClick={() => changeChoice("talisman")}>
+              </Link> : null}
+              {activeGoalFormats.includes("talismans") ? <button type="button"
+                data-support-goal-action="talismans" aria-pressed={choice === "talisman"}
+                onClick={() => changeChoice("talisman")}>
                 <Sparkles size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.talismans}</strong><small>{t.goalResultHints.talismans}</small></span>
-              </button>
-              <button type="button" data-support-goal-action="masters"
-                aria-pressed={choice === "masters"} onClick={() => changeChoice("masters")}>
+              </button> : null}
+              {activeGoalFormats.includes("healing") ? <button type="button"
+                data-support-goal-action="healing" aria-pressed={choice === "healing"}
+                onClick={() => changeChoice("healing")}>
+                <HandHeart size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.healing}</strong><small>{t.goalResultHints.healing}</small></span>
+              </button> : null}
+              {activeGoalFormats.includes("masters") ? <button type="button"
+                data-support-goal-action="masters" aria-pressed={choice === "masters"}
+                onClick={() => changeChoice("masters")}>
                 <UserRound size={21} aria-hidden="true" />
                 <span><strong>{t.goalResultLabels.masters}</strong><small>{t.goalResultHints.masters}</small></span>
-              </button>
+              </button> : null}
+              {activeGoalFormats.includes("initiations") ? <Link
+                href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}
+                data-support-goal-action="initiations">
+                <Zap size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.initiations}</strong><small>{t.goalResultHints.initiations}</small></span>
+              </Link> : null}
+              {activeGoalFormats.includes("mandala") ? <Link
+                href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
+                data-support-goal-action="mandala">
+                <Flower2 size={21} aria-hidden="true" />
+                <span><strong>{t.goalResultLabels.mandala}</strong><small>{t.goalResultHints.mandala}</small></span>
+              </Link> : null}
             </div>
+            {activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
+              role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
           </section> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
