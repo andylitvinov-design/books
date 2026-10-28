@@ -99,7 +99,7 @@ function profileComponent(input = profiles) {
   const fn = one(file.statements.filter(x => ts.isFunctionDeclaration(x) && x.name?.text === "HolisticSupportCourseProfiles"));
   assert.ok(fn.modifiers?.some(x => x.kind === ts.SyntaxKind.ExportKeyword));
   assert.equal(fn.body.statements.length, 3, "only two copy bindings and the actual JSX return");
-  const bindings = { ...Object.fromEntries(iconNames.map(name => [name, "icon-" + name])), Image: "image", Link: "link", styles: {} };
+  const bindings = { ...Object.fromEntries(iconNames.map(name => [name, "icon-" + name])), Image: "image", Link: "link", HolisticSupportLearningCatalog: "learning-catalog", styles: {} };
   bindings.content = evaluate(named(file.statements, "content").initializer.getText(file));
   bindings.profiles = evaluate(named(file.statements, "profiles").initializer.getText(file), bindings);
   return evaluate(fn.getText(file).replace(/^export\s+/, ""), bindings);
