@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { createSupportDashboardRecorder } from "./helpers/support-dashboard-diagnostics.mjs";
+const recordSupportDashboardFailure = createSupportDashboardRecorder();
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3118";
@@ -91,6 +93,10 @@ for (const browserType of [chromium, webkit]) {
             console.log("Support top dashboard "+label+": "+headHeight+"px, assessment "+
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
+          }
+          if (!(geometry.hero[0].y-geometry.a[0].y<285)) {
+            try { await recordSupportDashboardFailure(page, { engine: browserType.name(), locale, width }, geometry); }
+            catch { /* Diagnostics must not replace the original fatal assertion. */ }
           }
           assert.ok(geometry.hero[0].y-geometry.a[0].y<285,
             label+" screenshot-like three-zone dashboard exposes scenic player by 285px");

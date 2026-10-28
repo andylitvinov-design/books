@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 const read = async (path) => readFile(path, "utf8");
@@ -70,7 +71,12 @@ test("RU archive reuses photo-left course cards and preserved native destination
   assert.match(discovery, /isSearching \|\| showAllLegacy/);
   assert.match(discovery, /aria-expanded=\{showAllLegacy\}/);
   assert.match(discovery, /href="#academy-psimaster-courses"/);
-  assert.match(css, /@media \(max-width: 620px\)\s*\{\s*\.quickPaths\s*\{ grid-template-columns: repeat\(2/);
+  // The Oct25 photo-led hero supersedes the old two-column quick-path chips.
+  const phoneHero = css.match(/@media \(max-width: 700px\)\s*\{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(phoneHero, "Photo-led quick paths keep their explicit phone breakpoint");
+  assert.match(phoneHero, /\.quickPaths\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(phoneHero, /\.pathCard\s*\{[^}]*grid-template-columns:\s*82px minmax\(0,\s*1fr\) 19px/);
+  assert.match(phoneHero, /\.pathPhoto\s*\{[^}]*width:\s*82px; height:\s*84px/);
   assert.match(route, /const record = findAcademyRecord\(key, locale\)/);
   assert.match(route, /return <AcademyRecordPage locale=\{locale\} record=\{record\}/);
   assert.doesNotMatch(discovery, /psimaster\.net/);
@@ -91,7 +97,23 @@ test("EN and ES public catalogues never market the Russian-only PsiMaster course
   assert.match(videos, /if \(locale === "ru"\) groups.push\(\{ language: "ru"/);
   assert.match(videos, /language: "en"/);
   assert.match(discovery, /matchedLegacyCourses.length > 0 \|\| matchedLegacyVideos.length > 0/);
-  assert.match(discovery, /legacyCourses.length \|\| legacyVideos.length \? <a href="#academy-psimaster-courses"/);
+  const ast = ts.createSourceFile("academy-discovery.tsx", discovery, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const archiveLinks = [];
+  const visit = (node) => {
+    if (ts.isConditionalExpression(node) && node.condition.getText(ast) === "legacyCourses.length || legacyVideos.length") archiveLinks.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.equal(archiveLinks.length, 1, "One real archive link conditional, not a detached source string");
+  const condition = archiveLinks[0];
+  assert.equal(condition.whenFalse.kind, ts.SyntaxKind.NullKeyword);
+  const link = ts.isParenthesizedExpression(condition.whenTrue) ? condition.whenTrue.expression : condition.whenTrue;
+  assert.ok(ts.isJsxElement(link));
+  assert.equal(link.openingElement.tagName.getText(ast), "a");
+  const attributes = Object.fromEntries(link.openingElement.attributes.properties.filter(ts.isJsxAttribute)
+    .map((attribute) => [attribute.name.getText(ast), attribute.initializer?.getText(ast)]));
+  assert.equal(attributes.href, '"#academy-psimaster-courses"');
+  assert.equal(attributes.className, "{styles.archiveLink}");
   assert.match(sitemap, /preferredAcademyRecords\(locale\)/);
   assert.match(sitemap, /locale === "ru" \|\| suffix !== "\/egyptian-priesthood"/);
   // Keep all original route data for RU and old bookmarks; no destructive deletion.

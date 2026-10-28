@@ -97,7 +97,12 @@ test('Private original video can be manually downloaded for YouTube only by its 
   ['/admin/materials/coaching/other',false],['/en/app/coaching/egyptian',false],
   ['/en/client',false],['/api/app/practice/courses',false],
  ]){
+  // This separate public feature must remain false on every recorder route
+  // vector below; execute its current source gate rather than leave it unbound.
+  const publicMandalaLocalImages=gate('publicMandalaLocalImages',pathname)
+  assert.equal(publicMandalaLocalImages,false,'unrelated public media capability: '+pathname)
   const value=vm.runInNewContext(media,{
+   publicMandalaLocalImages,
    tantraReikiPage:false,ownerRecorderPage:false,deliveryOrigin:'',reportNarrationReader:false,
    reikiIntroAudioManager:gate('reikiIntroAudioManager',pathname),
    coachingOwnerAudioManager:gate('coachingOwnerAudioManager',pathname),

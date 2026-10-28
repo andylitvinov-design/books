@@ -480,7 +480,22 @@ test("Academy promotes DAO Reiki Yggdrasil and Tantra Reiki as separate programs
   assert.match(landing, /yggdrasil\/basic-course/);
   const moduleMap = await readFile("data/academy/yggdrasil-module-map.ts", "utf8");
   assert.match(moduleMap, /slug: "instructor-course"/);
-  assert.match(landing, /<Image src=\{module\.image\}/);
+  const landingAst = ts.createSourceFile("yggdrasil-program-landing.tsx", landing, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const moduleImages = [];
+  const visitImages = (node) => {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(landingAst) === "Image" &&
+        node.attributes.properties.some((attribute) => ts.isJsxAttribute(attribute) && attribute.name.getText(landingAst) === "className" &&
+          attribute.initializer?.getText(landingAst) === '"yggdrasil-module-art-image"')) moduleImages.push(node);
+    ts.forEachChild(node, visitImages);
+  };
+  visitImages(landingAst);
+  assert.equal(moduleImages.length, 1, "Exactly one real module artwork image is rendered");
+  const attributes = Object.fromEntries(moduleImages[0].attributes.properties.filter(ts.isJsxAttribute)
+    .map((attribute) => [attribute.name.getText(landingAst), attribute.initializer?.getText(landingAst)]));
+  assert.equal(attributes.src, "{cardArtworkUrl(module.image)}");
+  assert.equal(attributes.unoptimized, "{hasCardArtwork(module.image)}");
+  assert.equal(attributes.alt, "{module.title[locale]}");
+  assert.match(landing, /import \{ cardArtworkUrl, hasCardArtwork \} from "@\/lib\/public-card-artwork"/);
   assert.match(landing, /yggdrasil-module-card/);
   assert.match(landing, /yggdrasilModuleLandings/);
   const curriculumComponent = await readFile("components/yggdrasil-curriculum.tsx", "utf8");

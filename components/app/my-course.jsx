@@ -527,6 +527,7 @@ export function MyCourse({ data, locale = 'en' }) {
   async function confirmFastStart() {
     const intent={accountId,courseId:selectedCourse.current,epoch:viewGeneration,programId:requestedProgram?.id||ACTIVE_COURSE_PROGRAM_ID}
     if (!fastAntistressEntry || stage!==0 || busy || actionLock.current || atLimit ||
+        renderedStartSerial !== acceptedStartSerial.current ||
         (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled) ||
         intent.accountId!==currentAccount.current || !isSelected(intent.courseId,intent.epoch)) return
     await act('start',{consent:true,programId:intent.programId})
