@@ -17,8 +17,8 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /recorder\.start\(500\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
-  assert.match(video, /loadLocalImage\(snapshot\)/);
-  assert.match(video, /sourceRef\.current !== snapshot/);
+  assert.match(video, /loadSceneImage\(snapshot\)/);
+  assert.match(video, /sourceRef\.current !== snapshotKey/);
   assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
 
@@ -95,7 +95,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = moneyScene && photoUrl \? photoUrl : frameUrl/);
+  assert.match(studio, /source = moneyScene && backgroundOnly \? BACKGROUND_CLIP : moneyScene && photoUrl \? photoUrl : frameUrl/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
   assert.match(studio, /videoBitsPerSecond: quality === "fullhd" \? 5_000_000 : 3_000_000/);
