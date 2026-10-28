@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import styles from "./service-reviews.module.css";
+import { CatalogStarRating, useCatalogRatings } from "@/components/catalog-star-rating";
 
 type Review={
   id:string;displayName:string;rating:number;body:string;status?:string;
@@ -83,6 +84,7 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
 export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
+  const stars=useCatalogRatings("service",[serviceId]);
   const [data,setData]=useState<ReviewPayload|null>(null);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -160,11 +162,11 @@ export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=fal
     <section id="reviews" className={styles.root} aria-labelledby="service-reviews-heading">
       <div className={styles.header}>
         <div><p className={styles.kicker}>{t.kicker}</p><h2 id="service-reviews-heading">{t.title}</h2></div>
-        {data&&<div className={styles.score} aria-label={t.average}>
-          <strong>{data.summary.count?data.summary.average.toFixed(1):"—"}</strong>
-          <span aria-hidden="true">★</span>
-          <small>{data.summary.count} {t.reviewCount}</small>
-        </div>}
+        <div>
+          <CatalogStarRating locale={language} summary={stars.ratings[serviceId]}
+            onRate={readOnly?undefined:value=>stars.rate(serviceId,value)} unavailable={stars.unavailable}/>
+          {data&&<small className={styles.note}>{data.summary.count} {t.reviewCount}</small>}
+        </div>
       </div>
       <p className={styles.note}>{verifiedOnly
         ? language==='ru'?'Отзывы принимаются только после выполненного заказа. Публичная публикация требует проверки.':

@@ -419,3 +419,28 @@
   .categoryRail { scroll-behavior: auto; }
   .categoryCard,.categoryHeader > button svg { transition: none; }
 }
+
+
+/* Ratings belong in their own slim row: do not change the approved three-chip
+   selector height in the iPhone hero. Voting sits outside the fixed-height
+   image stage so all five stars stay keyboard/touch accessible. */
+.starFilters { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px;
+  padding:6px 17px 9px; background:#fffaf1; border-top:1px solid #ece5d8; }
+.starSort { display:inline-flex; align-items:center; gap:6px; min-height:36px;
+  font-size:12px; font-weight:700; color:#504838; cursor:pointer; }
+.starSort input { width:16px; height:16px; accent-color:#087c5a; }
+.starReview { padding:6px 16px; background:#fffaf1; border-bottom:1px solid #e8dbc5; }
+.starReview :global([data-catalog-star-rating]) { margin:0; }
+@media (max-width:640px) {
+  /* Without this cap an inherited button line-height can stretch the rail
+     above 90px on 320px Safari and break the four-up approved category row. */
+  .categoryFrame:not([data-expanded="true"]) .categoryRail {
+    height:84px; min-height:0; align-items:center; overflow-y:hidden;
+  }
+  .categoryFrame:not([data-expanded="true"]) .categoryCard {
+    box-sizing:border-box; height:76px; min-height:0; max-height:76px;
+    flex-shrink:0; overflow:hidden;
+  }
+  .starFilters { gap:3px 10px; padding:4px 9px 7px; }
+  .starReview { padding:4px 10px; }
+}
