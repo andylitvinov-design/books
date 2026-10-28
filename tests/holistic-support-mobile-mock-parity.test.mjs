@@ -81,3 +81,11 @@ test("four source-verified videos are all visible at once, not hidden in a swipe
   assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
 });
+
+test("390–430px practice starts early without reducing action tap targets", () => {
+  assert.match(css, /@media \(min-width: 390px\) and \(max-width: 430px\)/);
+  assert.match(css, /\.topGrid \{ padding-top: 5px; padding-bottom: 4px; \}/);
+  assert.match(css, /grid-template-rows: repeat\(2,51px\)/);
+  assert.match(css, /\.toolButton,\.toolButton:last-child \{[\s\S]*?min-height: 51px/);
+  assert.match(css, /\.page \.toolButton \{[\s\S]*?font-size: clamp\(12px,3\.23vw,14px\)/);
+});
