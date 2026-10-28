@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Film, Sparkles, Square, X } from "lucide-react";
+import { Download, Film, Pause, Play, Sparkles, Square, X } from "lucide-react";
+import { moneyScenes, paintMoneyScene } from "@/lib/mandala/money-flow-effects";
+import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -21,6 +23,9 @@ const translations = {
   en: {
     heading: "Your free personal video",
     description: "Animate this mandala and your photo without an AI subscription.",
+    moneyHeading: "Money flow · 12 visual stories", moneyIntro: "Choose a symbolic flow around your own photograph. Four favourites first.",
+    allMoney: "See all 12 looks", lessMoney: "Show four favourites", moneyNote: "A creative attention exercise, not a promise of income.",
+    previewPlay: "Preview movement", previewPause: "Pause preview",
     effect: "Animation", effects: ["Golden light", "Energy flow", "Prosperity symbols", "Temple glow"],
     aspect: "Format", square: "Square · 1:1", portrait: "Vertical · 9:16",
     duration: "Duration", seconds: "sec",
@@ -37,6 +42,9 @@ const translations = {
   ru: {
     heading: "Ваше бесплатное личное видео",
     description: "Оживите мандалу и фотографию без подписки на нейросеть.",
+    moneyHeading: "Денежный поток · 12 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
+    allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
+    previewPlay: "Посмотреть движение", previewPause: "Пауза",
     effect: "Эффект", effects: ["Золотой свет", "Поток энергии", "Символы процветания", "Сияние храма"],
     aspect: "Формат", square: "Квадрат · 1:1", portrait: "Вертикальный · 9:16",
     duration: "Длительность", seconds: "сек",
@@ -53,6 +61,9 @@ const translations = {
   es: {
     heading: "Tu vídeo personal gratis",
     description: "Anima el mandala y tu foto sin pagar una suscripción de IA.",
+    moneyHeading: "Flujo de prosperidad · 12 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
+    allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
+    previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
     effect: "Animación", effects: ["Luz dorada", "Flujo de energía", "Símbolos de prosperidad", "Luz del templo"],
     aspect: "Formato", square: "Cuadrado · 1:1", portrait: "Vertical · 9:16",
     duration: "Duración", seconds: "seg",
@@ -94,7 +105,7 @@ function loadLocalImage(url: string): Promise<HTMLImageElement> {
 // already composited in the local mandala PNG; no pixel is transmitted.
 function paint(
   ctx: CanvasRenderingContext2D, art: HTMLImageElement,
-  effect: Effect, time: number, aspect: Aspect,
+  effect: Effect, time: number, aspect: Aspect, moneyScene: MoneySceneId | null,
 ) {
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
@@ -168,6 +179,7 @@ function paint(
     }
   }
   ctx.restore();
+  if (moneyScene) paintMoneyScene(ctx, moneyScene, time);
   if (aspect === "portrait") {
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(244,219,169,.85)";
@@ -192,6 +204,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
 }) {
   const t = translations[locale];
   const [effect, setEffect] = useState<Effect>("glow");
+  const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>(null);
+  const [showAllMoney, setShowAllMoney] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
   const [duration, setDuration] = useState<(typeof durations)[number]>(10);
   const [recording, setRecording] = useState(false);
@@ -227,22 +242,39 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
-  }, [frameUrl, effect, aspect, duration]);
+  }, [frameUrl, effect, moneyScene, aspect, duration]);
 
+  // No autoplay: paint a still scene, and animate only while a visitor
+  // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
   useEffect(() => {
     if (!frameUrl || jobRef.current) return;
     let cancelled = false;
+    let animation = 0;
+    let startedAt = 0;
+    let lastFrame = -1000;
     void loadLocalImage(frameUrl).then(image => {
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width = 720;
-      canvas.height = aspect === "portrait" ? 1280 : 720;
+      canvas.width = aspect === "portrait" ? 540 : 540;
+      canvas.height = aspect === "portrait" ? 960 : 540;
       const ctx = canvas.getContext("2d", { alpha: false });
-      if (ctx) paint(ctx, image, effect, 0, aspect);
+      if (!ctx) return;
+      paint(ctx, image, effect, 0, aspect, moneyScene);
+      if (!previewPlaying) return;
+      const draw = (now: number) => {
+        if (cancelled || jobRef.current) return;
+        if (!startedAt) startedAt = now;
+        if (now - lastFrame >= 80 && !document.hidden) {
+          paint(ctx, image, effect, (now - startedAt) / 1000, aspect, moneyScene);
+          lastFrame = now;
+        }
+        animation = window.requestAnimationFrame(draw);
+      };
+      animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
-    return () => { cancelled = true; };
-  }, [frameUrl, effect, aspect]);
+    return () => { cancelled = true; window.cancelAnimationFrame(animation); };
+  }, [frameUrl, effect, moneyScene, aspect, previewPlaying]);
 
   async function createVideo() {
     if (!frameUrl || jobRef.current || recording) return;
@@ -253,16 +285,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
     try {
       const image = await loadLocalImage(snapshot);
       if (sourceRef.current !== snapshot || !aliveRef.current) return;
+      setPreviewPlaying(false);
       const canvas = canvasRef.current;
       if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
         setNotice(t.unsupported);
         return;
       }
-      canvas.width = 720;
-      canvas.height = aspect === "portrait" ? 1280 : 720;
+      canvas.width = 540;
+      canvas.height = aspect === "portrait" ? 960 : 540;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
-      paint(ctx, image, effect, 0, aspect);
+      paint(ctx, image, effect, 0, aspect, moneyScene);
       stream = canvas.captureStream(15);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
 
@@ -309,7 +342,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
       const animate = (now: number) => {
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / 15) {
-          paint(ctx, image, effect, Math.min(duration, (now - start) / 1000), aspect);
+          paint(ctx, image, effect, Math.min(duration, (now - start) / 1000), aspect, moneyScene);
           lastFrame = now;
         }
         job.animation = requestAnimationFrame(animate);
@@ -331,16 +364,46 @@ export function MandalaFreeVideoStudio({ locale, frameUrl }: {
       <h2><Film size={21} aria-hidden="true" />{t.heading}<span className={styles.freeVideoBadge}>$0</span></h2>
       <p className={styles.freeVideoIntro}>{t.description}</p>
       <div className={styles.freeVideoPreview}>
-        <canvas ref={canvasRef} width={720} height={1280} aria-label={t.heading}
+        <canvas ref={canvasRef} width={540} height={960} aria-label={t.heading}
           style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : "1 / 1", display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}
       </div>
+      <section className={styles.moneyFlowSection} data-mandala-money-effects aria-label={t.moneyHeading}>
+        <h3>{t.moneyHeading}</h3>
+        <p>{t.moneyIntro}</p>
+        <div className={styles.moneyFlowGrid}>
+          {moneyScenes.slice(0, showAllMoney ? moneyScenes.length : 4).map((scene, index) => (
+            <button type="button" key={scene.id} data-mandala-money-option={scene.id}
+              disabled={recording} aria-pressed={moneyScene === scene.id}
+              onClick={() => { setMoneyScene(scene.id); setPreviewPlaying(false); }}>
+              <span className={styles.moneyFlowIcon} aria-hidden="true">
+                <span>{scene.symbol}</span><small>{index + 1}</small>
+              </span>
+              <span>{scene.label[locale]}</span>
+            </button>
+          ))}
+        </div>
+        <div className={styles.moneyFlowToolbar}>
+          <button type="button" className={styles.moneyFlowExpand}
+            disabled={recording} aria-expanded={showAllMoney} onClick={() => setShowAllMoney(value => !value)}>
+            {showAllMoney ? t.lessMoney : t.allMoney}
+          </button>
+          <button type="button" className={styles.moneyFlowPreviewButton}
+            data-mandala-money-preview disabled={recording || !frameUrl}
+            aria-pressed={previewPlaying}
+            onClick={() => setPreviewPlaying(value => !value)}>
+            {previewPlaying ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+            {previewPlaying ? t.previewPause : t.previewPlay}
+          </button>
+        </div>
+        <p className={styles.moneyFlowNote}>{t.moneyNote}</p>
+      </section>
       <fieldset className={styles.freeVideoFieldset} disabled={recording}>
         <legend>{t.effect}</legend>
         <div className={styles.freeVideoOptions}>
           {effects.map((option, index) => (
             <button type="button" key={option} aria-pressed={effect === option}
-              onClick={() => setEffect(option)}>{t.effects[index]}</button>
+              onClick={() => { setMoneyScene(null); setEffect(option); setPreviewPlaying(false); }}>{t.effects[index]}</button>
           ))}
         </div>
       </fieldset>
