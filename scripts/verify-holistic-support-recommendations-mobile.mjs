@@ -1,14 +1,14 @@
-// Loopback-only responsive browser acceptance for the alternative Support recommender.
-// Synthetic slider entries; no authentication, charges, CRM submissions or provider playback.
+// Loopback-only mobile browser acceptance: the lowest score selects original
+// meditation thumbnails ABOVE the scenic player. Synthetic ratings only.
+// NO client records, external YouTube playback, payment or CRM submission.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
-
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
-  throw new Error("Personal Support browser verification is loopback-only");
+  throw new Error("Personal Support acceptance is loopback-only");
 const output = "artifacts/holistic-support-recommendations";
 await mkdir(output, { recursive: true });
 const evidence = [];
@@ -24,114 +24,137 @@ for (const engine of [chromium, webkit]) {
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
         });
         const errors = [];
-        page.on("pageerror", error => errors.push(error.message));
-        // Only inspect the iframe src, never contact third-party YouTube playback.
+        page.on("pageerror", err => errors.push(err.message));
         await page.route("**/youtube-nocookie.com/**", route => route.abort());
         try {
           const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
-          assert.equal(response?.status(), 200, label + ": public route");
+          assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
+          await page.waitForFunction(() => {
+            const input = document.querySelector('[data-support-scale="relationships"] input[type="range"]');
+            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+          }, null, {timeout:30000});
+
+          const assessment = root.locator('[aria-labelledby="mobile-assessment-title"]');
+          const photo = root.locator("[data-support-photo]");
+          const gallery = root.locator("[data-support-meditation-gallery]");
+          const hero = root.locator("[data-support-player]");
+          const launch = assessment.locator("[data-support-recommendations]");
+          assert.equal(await launch.count(), 1, label + " one left-side picker");
+          assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
+            label + " no duplicate focus picker");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
-            label + ": four accessible self-ratings");
-          assert.equal(await root.locator('[data-support-detailed-analysis]').getAttribute("href"),
-            "/" + locale + "/personality-profiles", label + ": canonical profile, no duplicate test flow");
-          const focus = root.locator("select").first();
-          await focus.selectOption("relationships");
-          const slider = root.locator('[data-support-scale="relationships"] input[type="range"]');
-          await slider.focus();
-          await slider.press("Home");
-          await slider.press("ArrowRight");
-          assert.equal(await slider.inputValue(), "2", label + ": real keyboard slider input");
-          await root.locator("[data-support-recommendations]").click();
-          const recommendations = root.locator("[data-support-personal-recommendations]");
-          await recommendations.waitFor({ state: "visible" });
-          assert.ok((await recommendations.innerText()).includes("2/10"),
-            label + ": reflects exact submitted self-rating");
-          const videoCard = recommendations.locator("[data-support-recommended-video]");
-          assert.equal(await videoCard.count(), 1, label + ": one verified selected recording");
-          const videoId = await videoCard.getAttribute("data-support-recommended-video");
-          assert.match(videoId, /^[A-Za-z0-9_-]{11}$/, label + ": source YouTube ID");
-          const symbolCard = recommendations.locator("[data-support-recommended-talisman]");
-          assert.equal(await symbolCard.getAttribute("data-support-recommended-talisman"), "fu-harmony",
-            label + ": relationships maps to published harmony talisman");
-          await videoCard.locator("button").click();
-          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
-            label + ": no unintended autoplay before explicit Play");
-          await symbolCard.locator("button").click();
+            label + " four editable self-scores");
+          assert.equal(await root.locator(".focusSelector").count(), 0,
+            label + " no old focus control");
+          assert.equal(await root.locator('[data-support-detailed-analysis]').count(), 0,
+            label + " old left Tests CTA replaced");
+          assert.equal(await gallery.locator("[data-support-video]").count(), 4,
+            label + " four verified thumbnail cards");
+          assert.equal(await root.locator("[data-support-meditation-basis]").count(), 0,
+            label + " no recommendation until visitor clicks");
+          const before = await gallery.locator("[data-support-video]").allTextContents();
+          const geometry = await page.evaluate(() => {
+            const rect = selector => {
+              const el = document.querySelector(selector);
+              const r = el?.getBoundingClientRect();
+              return r ? { top:r.top, bottom:r.bottom, left:r.left, right:r.right } : null;
+            };
+            return { width: document.documentElement.clientWidth,
+              scroll: document.documentElement.scrollWidth,
+              gallery:rect("[data-support-meditation-gallery]"),
+              hero:rect("[data-support-player]"),
+            };
+          });
+          assert.ok(geometry.gallery && geometry.hero &&
+            geometry.gallery.top < geometry.hero.top &&
+            geometry.gallery.bottom <= geometry.hero.top + 2,
+            label + " thumbnails must be above the main player");
+          assert.ok(geometry.scroll <= geometry.width + 2, label + " no width overflow");
+
+          const relationships = assessment.locator('[data-support-scale="relationships"] input[type="range"]');
+          await relationships.focus();
+          await relationships.press("Home");
+          await relationships.press("ArrowRight");
+          assert.equal(await relationships.inputValue(), "2", label + " keyboard 2/10");
+          await launch.click();
+          const basis = gallery.locator("[data-support-meditation-basis]");
+          await basis.waitFor({ state:"visible", timeout:10000 });
+          assert.ok((await basis.innerText()).includes("2/10"),
+            label + " real selected minimum in gallery");
+          assert.ok((await basis.innerText()).includes({
+            en:"Relationships",ru:"Отношения",es:"Relaciones",
+          }[locale]), label + " matched lowest topic in user language");
+          assert.equal(await hero.locator("iframe").count(), 0, label + " no playback on ranking");
+          assert.equal(await gallery.locator("[data-support-video]").count(), 4, label + " still four real videos");
+          const after = await gallery.locator("[data-support-video]").allTextContents();
+          assert.equal(after.length, before.length, label + " ranking did not add recordings");
+
+          const selectedThumb = gallery.locator("[data-support-video]").last();
+          const id = await selectedThumb.getAttribute("data-support-video");
+          await selectedThumb.click();
+          assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
+            label + " thumbnail changes the scenic player selection");
+          assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
+          assert.ok((await root.locator(".videoSourceRow").count()) <= 1,
+            label + " one source URL location");
+
+          // Editing scores invalidates the previous snapshot. A second explicit
+          // click takes a new minimum and refreshes the same four thumbnails.
+          const money = assessment.locator('[data-support-scale="money"] input[type="range"]');
+          await money.focus();
+          await money.press("Home");
+          assert.equal(await money.inputValue(), "1", label + " lower money to 1");
+          assert.equal(await basis.count(), 0, label + " stale ranking is removed");
+          await launch.click();
+          await basis.waitFor({ state:"visible" });
+          const text = await basis.innerText();
+          assert.ok(text.includes("1/10") && text.includes({
+            en:"Money",ru:"Деньги",es:"Dinero",
+          }[locale]), label + " new minimum replaces previous topic");
+          const firstId = await gallery.locator("[data-support-video]").first().getAttribute("data-support-video");
+          assert.match(firstId, /^[A-Za-z0-9_-]{11}$/, label + " verified original video ID");
+
+          // The independent talisman flow still opens an existing SKU and local
+          // quotation dialog; a click is NOT a lead, charge or delivery.
+          await root.locator('[data-support-tool="talisman"]').click();
           const viewer = root.locator("[data-support-talisman-viewer]");
           await viewer.waitFor({ state: "visible" });
-          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
-            "fu-harmony", label + ": recommended symbol opens in the same scenic viewer");
           assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 3,
-            label + ": three existing illustrated designs; no fabricated stock");
-          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
-            label + ": changing to talisman mode stops the video");
-          const first = await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman");
+            label + " three approved symbolic illustrations");
+          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
+            "fu-prosperity", label + " money is the lowest score");
           await viewer.locator("[data-support-talisman-next]").click();
-          assert.notEqual(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
-            first, label + ": carousel next control really changes the design");
-          await viewer.locator('[data-support-talisman-thumb="fu-harmony"]').click();
-          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
-            "fu-harmony", label + ": tapping an illustration returns to the selected symbol");
-          // Dispatch native touch events against React's hydrated viewer; this
-          // exercises the real swipe handlers rather than only checking arrows.
-          await viewer.locator("[data-support-talisman]").evaluate(element => {
-            const first = new Touch({ identifier: 1, target: element, clientX: 270, clientY: 240 });
-            const last = new Touch({ identifier: 1, target: element, clientX: 120, clientY: 240 });
-            element.dispatchEvent(new TouchEvent("touchstart", {
-              bubbles: true, touches: [first], targetTouches: [first], changedTouches: [first],
-            }));
-            element.dispatchEvent(new TouchEvent("touchend", {
-              bubbles: true, touches: [], targetTouches: [], changedTouches: [last],
-            }));
-          });
-          assert.notEqual(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
-            "fu-harmony", label + ": real touch-start/end swipe changes the design");
-          await viewer.locator('[data-support-talisman-filter="goal"] select').selectOption("money");
-          assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
-            "fu-prosperity", label + ": changing goal ranks an existing design, not a new SKU");
+          await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
           await viewer.locator("[data-support-talisman-request]").click();
-          const inlineOrder = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
-          await inlineOrder.waitFor({ state: "visible" });
-          assert.equal(await inlineOrder.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
-            label + ": the existing verified quote form opens in a same-page modal");
-          assert.equal(await inlineOrder.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,
-            label + ": selected design is in quote basket");
-          assert.equal(await inlineOrder.locator("[data-talisman-quote-saved]").count(), 0,
-            label + ": opening the basket is not a submitted CRM lead or payment");
-          await inlineOrder.locator('button[aria-label]').first().click();
-          await inlineOrder.waitFor({ state: "hidden" });
-          const catalogToggle = viewer.locator('button[aria-controls="support-talisman-full-catalog"]');
-          await catalogToggle.click();
-          const catalog = root.locator("[data-taoist-talisman-catalog]");
-          await catalog.waitFor({ state: "visible" });
-          assert.equal(await catalog.locator("[data-tao-talisman]").first().getAttribute("data-tao-talisman"),
-            "fu-harmony", label + ": expanding the existing catalog keeps recommendation priority");
-          await catalogToggle.click();
-          await catalog.waitFor({ state: "hidden" });
-          const geometry = await page.evaluate(() => ({
-            width: document.documentElement.clientWidth,
-            scrollWidth: document.documentElement.scrollWidth,
-          }));
-          assert.ok(geometry.scrollWidth <= geometry.width + 2,
-            label + ": no horizontal overflow " + JSON.stringify(geometry));
-          assert.deepEqual(errors, [], label + ": no runtime page errors");
+          const modal = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
+          await modal.waitFor({ state:"visible" });
+          assert.equal(await modal.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
+            label + " existing protected quote UI, no new backend");
+          assert.equal(await modal.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,
+            label + " correct public design in quote");
+          assert.equal(await modal.locator("[data-talisman-quote-saved]").count(), 0,
+            label + " no fabricated CRM receipt");
+          await modal.locator('button[aria-label]').first().click();
+          await modal.waitFor({ state:"hidden" });
+
           if (width === 390) {
+            await root.locator('[data-support-photo] input[type="file"]').setInputFiles({
+              name:"synthetic.png", mimeType:"image/png",
+              buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==","base64"),
+            });
+            await photo.locator("img").first().waitFor({ state:"visible" });
             await page.screenshot({ path: output + "/" + engine.name() + "-" + locale + "-390.png" });
           }
-          evidence.push({ engine: engine.name(), locale, width, videoId,
-            talismanId: "fu-harmony", carousel: true, inlineQuote: true, profile: "/" + locale + "/personality-profiles",
-            overflow: false, errors: 0 });
-        } finally {
-          await page.close();
-        }
+          assert.deepEqual(errors, [], label + " no JS exceptions");
+          evidence.push({ locale, width, engine:engine.name(), firstId, fourVideos:true,
+            highestNeed:"money=1", railAboveHero:true, noAutoplay:true, quoteNotSubmitted:true });
+        } finally { await page.close(); }
       }
     }
-  } finally {
-    await browser.close();
-  }
+  } finally { await browser.close(); }
 }
-await writeFile(output + "/summary.json", JSON.stringify({ cases: evidence }, null, 2));
-console.log("Personalized Support browser checks passed: " + evidence.length + " cases");
+await writeFile(output+"/summary.json",JSON.stringify({cases:evidence},null,2));
+console.log("Support lowest-rating / gallery / talisman browser checks: " + evidence.length + " passed");
