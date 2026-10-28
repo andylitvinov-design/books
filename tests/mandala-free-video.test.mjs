@@ -134,7 +134,7 @@ test("money-flow template gallery is real user-triggered moving video, not symbo
   assert.match(studio, /setPreviewPlaying\(true\)/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\]/);
   assert.match(studio, /CinematicSceneThumbnail scene=\{scene\.id\}/);
-  assert.match(studio, /photo=\{sharedThumbnailPhoto\}/);
+  assert.match(studio, /photo=\{backgroundOnly \? null : sharedThumbnailPhoto\}/);
   assert.match(studio, /width=\{320\} height=\{192\}/);
   assert.match(css, /\.moneyFlowMedia/);
   assert.match(css, /\.moneyFlowPlayBadge/);
