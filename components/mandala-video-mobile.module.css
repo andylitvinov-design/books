@@ -137,6 +137,18 @@
 .musicTools button:disabled{opacity:.5;cursor:not-allowed}
 .musicTools label{display:flex;flex:1 1 150px;flex-direction:column;gap:3px;color:#456c5b;font-size:12px;font-weight:700}
 .musicTools input{accent-color:#07976e;width:100%;min-height:24px}
+.audioUpload{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0 8px}
+.audioUploadLabel{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 12px;border:1px solid #b6dbca;border-radius:12px;background:#eefaf3;color:#146249;font-size:12px;font-weight:800;cursor:pointer}
+.audioUpload input[type=file]{flex:1 1 155px;min-width:0;width:100%;max-width:100%;font-size:11px;color:#456c5b}
+.audioUpload input[type=file]::file-selector-button{background:#fff;border:1px solid #d1ded4;border-radius:8px;padding:7px 9px;color:#165d46;cursor:pointer}
+.audioUpload small{flex-basis:100%;line-height:1.5}
+.audioSelection{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%;min-width:0;padding:8px 10px;border-radius:10px;background:#f5f8f0;color:#235447;font-size:11px;overflow-wrap:anywhere}
+.audioSelection strong{font-weight:800}
+.audioSelection button{border:1px solid #c8d9ce;border-radius:8px;background:#fff;color:#476359;padding:7px 9px;min-height:36px;font-size:11px;font-weight:800}
+.musicCard audio[data-video-audio-player]{display:block;width:100%;min-height:48px;max-width:100%;margin:9px 0;border-radius:10px;background:#f4f8f2}
+.audioRights{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:#235246;font-size:12px;line-height:1.5}
+.audioRights input{width:19px;height:19px;min-width:19px;accent-color:#088d6c;margin-top:0}
+@media(max-width:380px){.audioUpload input[type=file]{flex-basis:100%}.audioUploadLabel{width:100%}.audioSelection{align-items:flex-start}}
 
 /* Home/Support visual parity — one existing editor, one real media canvas.
    On 320–430px the three-column check-in/portrait/tools matches the site's
