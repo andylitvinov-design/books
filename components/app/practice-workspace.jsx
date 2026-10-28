@@ -174,7 +174,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials'){
       setActivePanel('materials')
-      if(params.get('materialTab')==='courses'&&params.get('create')==='1')setProCourseStart(true)
+      if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
+        setProCourseStart(true)
+        const meditation=params.get('meditation')
+        if(['audio','video'].includes(meditation))setMeditationType(meditation)
+      }
     }
     if(params.get('panel')==='services'){
       setActivePanel('services')
@@ -184,6 +188,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         setNewServiceRequest(current=>current+1)
       }
     }
+    // The public practitioner showroom passes only allowlisted panel choices.
+    if(['profile','requests','analytics','events'].includes(params.get('panel')))setActivePanel(params.get('panel'))
     if(params.get('panel')==='marketing')setActivePanel('marketing')
     if(params.get('panel')==='express-reports')setActivePanel('express-reports')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
