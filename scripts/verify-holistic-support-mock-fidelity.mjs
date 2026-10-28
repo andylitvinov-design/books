@@ -350,6 +350,10 @@ for (const browserType of [chromium, webkit]) {
           await tab("filter").click();
           const reikiFilter=healing.locator('[data-support-reiki-filter]');
           await reikiFilter.waitFor({state:"visible"});
+          const navInFilter=await root.locator('[data-support-mobile-bottom-nav]')
+            .evaluate(element => getComputedStyle(element).position);
+          assert.equal(navInFilter, "static",
+            label+" mobile nav must not cover the active Reiki filter");
           if (width === 390) await page.screenshot({
             path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
           });
