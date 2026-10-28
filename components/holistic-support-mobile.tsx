@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, Filter,
-  Coins, Compass, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
+  Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, UserRound, X, Zap,
 } from "lucide-react";
 
@@ -309,6 +309,8 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const progressTotal = relevantVideos.length;
   const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
+  const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
+  const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
   const scene = choice === "meditation" || choice === "pump";
 
   return (
@@ -367,7 +369,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
             {photoError ? <p className={styles.photoError} role="alert">{photoError}</p> : null}
             <div className={styles.focusSelector} data-support-active-focus aria-label={t.focusLabel}>
               <span className={styles.focusCaption}>{t.focusLabelShort}</span>
-              <span className={styles.focusValue}><FocusIcon size={19} aria-hidden="true" /><strong>{t.foci[focus]}</strong></span>
+              <span className={styles.focusValue}><ActiveFocusIcon size={19} aria-hidden="true" /><strong>{activeFocusLabel}</strong></span>
             </div>
             <button type="button" className={styles.recommendButton}
               data-support-recommendations aria-label={t.recommend} aria-controls="support-meditation-gallery"
@@ -532,7 +534,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
               </div>
               <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div className={styles.progressFocus}><FocusIcon size={25} aria-hidden="true" /><strong>{t.foci[focus]}</strong><span>{t.focusStatus}</span></div>
+            <div className={styles.progressFocus}><ActiveFocusIcon size={25} aria-hidden="true" /><strong>{activeFocusLabel}</strong><span>{t.focusStatus}</span></div>
             <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
