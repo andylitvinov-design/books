@@ -180,3 +180,123 @@
   .reikiFocusButton strong { font-size: 9.1px; }
   .reikiFocusButton small { font-size: 8.2px; }
 }
+
+
+/* Reiki: keep one scenic central photo/video stage. Tabs replace its content in place. */
+.reikiStage {
+  position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 11px;
+  min-height: 442px; padding: 14px; overflow: hidden; border-radius: 19px;
+  background: #143c33; color: #fff;
+}
+.reikiStageBackdrop { position: absolute; z-index: -3; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.reikiStagePortrait { position: absolute; z-index: -2; inset: 13% 0 6% 51%;
+  width: 49% !important; height: 81% !important; object-fit: cover; object-position: 50% 25%;
+  border-radius: 16px; opacity: .9; }
+.reikiStageShade { position: absolute; z-index: -1; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg,#052d27f5 0%,#073e34d4 53%,#103f3144 95%),
+  linear-gradient(0deg,#092c23d9,transparent 70%); }
+.reikiStageTabs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; width: 100%; }
+.reikiStageTab { display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 0; min-height: 46px; padding: 8px 5px; border: 1px solid #ecf5e699;
+  border-radius: 23px; background: #1c4238bf; backdrop-filter: blur(5px);
+  color: #fff; font: 800 13px/1.16 Arial,Helvetica,sans-serif; cursor: pointer; }
+.reikiStageTab svg { flex: none; }
+.reikiStageTab[aria-selected="true"] { border-color: #7de6bf; background: linear-gradient(130deg,#0bb27d,#087b5d);
+  box-shadow: 0 4px 12px #002e2966; }
+.reikiStageTab:focus-visible,.reikiOptions button:focus-visible,.reikiApply:focus-visible,
+.reikiReset:focus-visible,.reikiSecondary:focus-visible { outline: 3px solid #ffd28b; outline-offset: 2px; }
+.reikiStageContent { display: flex; flex: 1; min-height: 260px; align-items: flex-end; }
+.reikiTabCopy { display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  max-width: min(75%,520px); padding: 8px 0 3px; text-shadow: 0 1px 9px #021f1f66; }
+.reikiTabCopy h2 { margin: 0; font: 900 clamp(27px,4vw,45px)/1.04 Arial,Helvetica,sans-serif;
+  letter-spacing: -.028em; text-wrap: balance; overflow-wrap: anywhere; }
+.reikiTabCopy p { margin: 0; font: 600 clamp(13px,1.85vw,17px)/1.35 Arial,Helvetica,sans-serif;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.reikiPill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #e8eeda9c;
+  border-radius: 25px; padding: 5px 10px; background: #154c3e99; font-size: 12px; font-weight: 750; }
+.reikiSelectedPrice { color: #f7e6b9; font-size: 14px; }
+.reikiMainActions { display: flex; flex-wrap: wrap; align-items: center; width: 100%; gap: 8px; margin-top: 6px; }
+.reikiApply { display: inline-flex; flex: 1; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 7px; min-height: 49px; min-width: 0; padding: 10px 13px; border: 1px solid #a6ebc1;
+  border-radius: 14px; background: linear-gradient(120deg,#008c66,#12b988);
+  color: #fff; font: 850 15px/1.2 Arial,Helvetica,sans-serif; text-align: center;
+  text-decoration: none; cursor: pointer; text-shadow: none; }
+.reikiApply small { display: block; width: 100%; font-size: 11px; font-weight: 650; opacity: .94; }
+.reikiSecondary { min-height: 49px; padding: 9px 14px; border: 1px solid #edf0d98a;
+  border-radius: 14px; background: #123c33b9; color: white; font-weight: 800; cursor: pointer; }
+.reikiCaution { color: #f6eed9; font-size: 10px; line-height: 1.25; }
+.reikiInlineLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 43px; padding: 9px 13px; border: 1px solid #e6f4d5aa; border-radius: 13px;
+  background: #185744b8; color: #fff; font-weight: 800; text-decoration: none; }
+.reikiMediaLinks { display: flex; flex-wrap: wrap; gap: 7px; }
+.reikiStage[data-active-tab="filter"] { min-height: 0; }
+.reikiStage[data-active-tab="filter"] .reikiStageContent { min-height: 0; align-items: stretch; }
+.reikiFilterSheet { display: grid; gap: 11px; width: 100%; min-width: 0; padding: 16px;
+  border: 1px solid #e8d9c3; border-radius: 19px; background: #fffcf2f5;
+  color: #1f3b31; box-shadow: 0 8px 25px #002b253e; text-shadow: none; }
+.reikiFilterHeading { display: flex; gap: 9px; align-items: flex-start; justify-content: space-between; }
+.reikiFilterHeading h2 { margin: 0 0 3px; font-size: clamp(18px,3vw,25px); line-height: 1.15; }
+.reikiFilterHeading p { margin: 0; color: #54665e; font-size: 12px; line-height: 1.3; }
+.reikiReset { flex: none; min-height: 40px; padding: 5px 7px; border: 0; background: transparent;
+  color: #0c8060; font-size: 12px; font-weight: 800; cursor: pointer; }
+.reikiFieldset { display: block; min-width: 0; margin: 0; padding: 0; border: 0; }
+.reikiFieldset legend { display: block; width: 100%; margin: 0 0 6px; padding: 0;
+  color: #213d32; font-size: 13px; line-height: 1.2; font-weight: 850; }
+.reikiOptions { display: grid; gap: 6px; min-width: 0; }
+.reikiOptions[data-cols="two"] { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.reikiOptions[data-cols="three"] { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.reikiOptions[data-cols="price"] { grid-template-columns: repeat(6,minmax(0,1fr)); }
+.reikiOptions button { display: flex; align-items: center; justify-content: center; min-width: 0;
+  min-height: 48px; padding: 7px 5px; border: 1px solid #e5d9c9; border-radius: 12px;
+  background: #fffaf3; color: #234337; font: 760 12px/1.18 Arial,Helvetica,sans-serif;
+  overflow-wrap: anywhere; cursor: pointer; }
+.reikiOptions button[aria-pressed="true"] { border-color: #36bc91; background: linear-gradient(135deg,#008b69,#0bb58a);
+  color: #fff; box-shadow: 0 4px 9px #00866a29; }
+.reikiCertificate { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px;
+  cursor: pointer; color: #1c4132; }
+.reikiCertificate strong { display: block; font-size: 13px; }
+.reikiCertificate small { display: block; margin-top: 3px; font-size: 11px; color: #62776c; }
+.reikiCertificate input { width: 22px; height: 22px; accent-color: #079d73; flex: none; }
+.reikiPreferences { margin: 0; color: #6a685b; font-size: 11.5px; line-height: 1.35; }
+.reikiFilterSheet .reikiApply { width: 100%; flex: auto; }
+.reikiLearning { display: grid; gap: 9px; padding: 16px; background: #fbf6e9; color: #244233; }
+.reikiLearning h3,.reikiLearning p { margin: 0; }
+.reikiLearning h3 { font-size: 19px; }
+.reikiLearning p { color: #5a6a5d; font-size: 13px; }
+.reikiLearning a { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; border: 1px solid #c8dcca; border-radius: 12px; background: #e7f4e9;
+  color: #0e7957; text-decoration: none; font-weight: 800; }
+@media (max-width:640px) {
+  .reikiStage { min-height: 288px; padding: 9px; gap: 9px; border-radius: 17px; }
+  .reikiStageBackdrop { object-position: 65% center; }
+  .reikiStagePortrait { inset: 22% 0 10% 51%; width: 49% !important; height: 68% !important; }
+  .reikiStageTabs { gap: 4px; }
+  .reikiStageTab { min-height: 44px; padding: 6px 2px; gap: 3px; flex-direction: column;
+    border-radius: 15px; font-size: clamp(10px,2.7vw,12px); line-height: 1.05; }
+  .reikiStageTab svg { width: 15px; height: 15px; }
+  .reikiStageContent { min-height: 215px; }
+  .reikiTabCopy { max-width: 71%; padding: 4px 0; gap: 5px; }
+  .reikiTabCopy h2 { font-size: clamp(23px,6.5vw,30px); }
+  .reikiTabCopy p { font-size: clamp(11px,3.2vw,13px); line-height: 1.22; -webkit-line-clamp: 3; }
+  .reikiPill { padding: 4px 7px; font-size: 10px; }
+  .reikiMainActions { margin-top: 3px; gap: 5px; }
+  .reikiApply { min-height: 45px; padding: 7px; font-size: clamp(11px,3.3vw,14px); }
+  .reikiSecondary { min-height: 45px; padding: 7px 9px; font-size: 11px; }
+  .reikiFilterSheet { padding: 11px 9px; gap: 9px; border-radius: 15px; }
+  .reikiFilterHeading h2 { font-size: 17px; }
+  .reikiFilterHeading p { font-size: 11px; }
+  .reikiFieldset legend { font-size: 12px; }
+  .reikiOptions { gap: 4px; }
+  .reikiOptions[data-cols="price"] { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .reikiOptions button { min-height: 43px; padding: 5px 3px; font-size: clamp(10px,2.86vw,12px); border-radius: 10px; }
+}
+@media (max-width:350px) {
+  .reikiStage { min-height: 282px; padding: 7px; }
+  .reikiStageTab { font-size: 9.6px; }
+  .reikiTabCopy { max-width: 76%; }
+  .reikiTabCopy h2 { font-size: 21px; }
+  .reikiTabCopy p { font-size: 10.5px; }
+  .reikiFilterSheet { padding: 10px 7px; }
+  .reikiReset { font-size: 11px; }
+  .reikiOptions button { font-size: 10px; }
+}
