@@ -20,6 +20,10 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
+// Formatting is not a layout contract: bind the six equal columns to their
+// actual milestone selector rather than accepting an unrelated grid.
+const SIX_MILESTONE_GRID = /(?:^|\})\s*\.hh-scale\s*\{[^}]*\bgrid-template-columns\s*:\s*repeat\(\s*6\s*,\s*minmax\(\s*0\s*,\s*1fr\s*\)\s*\)\s*;/
+
 test('My Course describes exactly six EN/RU sequential steps and six optional goals', () => {
   assert.equal(COURSE_STEPS.length, 6)
   assert.equal(Object.keys(GROWTH_GOALS).length, 6)
@@ -113,7 +117,7 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /<MyCourse data=\{data\} locale=\{locale\}/)
   assert.match(shell, /root \+ '\/course'/)
   assert.match(shell, /hh-mobile-app-nav/)
-  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
+  assert.match(css, SIX_MILESTONE_GRID)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
   const completion=read('components/app/course-completion-review.jsx')
@@ -745,4 +749,18 @@ test('guests get a brief Google course invitation, while signed-in clients can i
   assert.match(css, /@media\(max-width:530px\)/)
   assert.match(css, /\.phases\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.doesNotMatch(preview, /localStorage|sessionStorage|fetch\(|dangerouslySetInnerHTML|client data/i)
+})
+
+test('six-milestone grid contract accepts formatting but rejects changed layout or selector', () => {
+  for (const css of [
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale {\n display: grid;\n grid-template-columns: repeat( 6, minmax( 0, 1fr ) );\n}',
+  ]) assert.match(css, SIX_MILESTONE_GRID)
+  for (const css of [
+    '.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,2fr));}',
+    '.hh-scale{display:grid;} .unrelated{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale-other{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.other .hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}',
+  ]) assert.doesNotMatch(css, SIX_MILESTONE_GRID)
 })

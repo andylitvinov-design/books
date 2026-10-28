@@ -315,10 +315,41 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
   assert.doesNotMatch(hub,/localStorage|sessionStorage|fetch\(|createClient\(|navigator\.share/)
 })
 
+function assertProStarterContract(source) {
+  const tree=ts.createSourceFile('practice-workspace.jsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  const calls=[]
+  const visit=node=>{
+    if(ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='setProStarter'){
+      const value=node.arguments[0]
+      if(value&&ts.isConditionalExpression(value)&&ts.isCallExpression(value.condition)&&
+        ts.isPropertyAccessExpression(value.condition.expression)&&
+        ts.isArrayLiteralExpression(value.condition.expression.expression))calls.push(node)
+    }
+    ts.forEachChild(node,visit)
+  }
+  visit(tree)
+  assert.equal(calls.length,1,'One explicit URL starter allowlist')
+  const call=calls[0],value=call.arguments[0],condition=value.condition
+  assert.equal(call.arguments.length,1)
+  assert.equal(condition.expression.name.text,'includes')
+  assert.equal(condition.arguments.length,1)
+  assert.ok(ts.isIdentifier(condition.arguments[0])&&condition.arguments[0].text==='starter')
+  const allowed=condition.expression.expression.elements
+  assert.ok(allowed.every(item=>ts.isStringLiteral(item)))
+  const expected=['session','intro','workshop','diagnostic','energy','personal','reiki']
+  assert.deepEqual(allowed.map(item=>item.text),expected)
+  assert.ok(ts.isIdentifier(value.whenTrue)&&value.whenTrue.text==='starter')
+  assert.ok(ts.isStringLiteral(value.whenFalse)&&value.whenFalse.text==='')
+  for(const starter of [...expected,'unknown','__proto__','constructor','toString','reiki-extra',null,undefined,{},[]]){
+    const actual=runInNewContext(value.getText(tree),{starter},{timeout:1000})
+    assert.equal(actual,expected.includes(starter)?starter:'','URL starter allowlist and empty fallback')
+  }
+}
+
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
+  assertProStarterContract(practice)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
   for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
@@ -392,6 +423,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     return exports
   }
   const jsxRuntime = {jsx:element,jsxs:element,Fragment:'fragment'}
+  let reviewRepositoryCalls = 0
   const modules = {
     'react/jsx-runtime':jsxRuntime,
     'next/navigation':{notFound:()=>{throw new Error('Unexpected locale')}},
@@ -400,6 +432,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     '@/data/site-metadata':{metadataBaseFor:()=>{throw new Error('Metadata outside regression')}},
     '@/lib/app/config':{getAppConfig:()=>Object.freeze({synthetic:true})},
     '@/lib/practitioners/repository':{createPractitionerRepository:()=>({listPublicPractitioners:async()=>[]})},
+    '@/lib/practitioners/reviews':{createServiceReviewRepository:()=>{reviewRepositoryCalls++;throw new Error('Review repository outside empty-directory regression')}},
     '@/lib/practitioners/article-repository':{createArticleRepository:()=>({publicList:async()=>[]})},
     '@/lib/practitioners/course-repository':{createPractitionerCourseRepository:()=>({catalog:async()=>[]})},
     '@/components/master-network-explorer':{MarketplaceMasterFinder:'finder'},
@@ -420,6 +453,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
   for (const locale of ['en','ru','es']) {
     for (const requested of [undefined,'mentors','articles','invalid',['articles']]) {
       const tree = await route({params:Promise.resolve({locale}),searchParams:Promise.resolve({view:requested})})
+      assert.equal(reviewRepositoryCalls,0,'Empty-directory regression must not invoke the review repository')
       const props = nodes(tree).find(node=>node.type==='community-switch').props
       const expected = requested === 'articles' ? 'articles' : 'mentors'
       assert.equal(props.initialView,expected,locale+': route view '+String(requested))

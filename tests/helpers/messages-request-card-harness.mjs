@@ -22,6 +22,12 @@ export function compose({root,props,fetch,crmThreads=[]}){
     if(!networkListeners.has(type))networkListeners.set(type,new Set())
     if(remove)networkListeners.get(type).delete(fn);else networkListeners.get(type).add(fn)
   }
+  // Synthetic object URLs only: never call host/browser blob or media methods.
+  const objectURLs=new Set();let nextObjectURL=0
+  class FixtureURL extends URL {
+    static createObjectURL(file){assert.ok(file&&typeof file==='object');const value='blob:synthetic-preview-'+(++nextObjectURL);objectURLs.add(value);return value}
+    static revokeObjectURL(value){objectURLs.delete(value)}
+  }
   const typeIds=new WeakMap();let nextType=0
   const identity=type=>{if(!typeIds.has(type))typeIds.set(type,++nextType);return typeIds.get(type)}
   const equal=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]))
@@ -37,16 +43,25 @@ export function compose({root,props,fetch,crmThreads=[]}){
   function icon(props){return jsx('i',{'data-fixture-icon':true,...props})}
   function CrmFixture(props){hooks.useEffect(()=>{let alive=true;Promise.resolve().then(()=>{if(alive)props.onThreadsLoaded?.({loading:false,error:false,threads:crmThreads,partial:false})});return()=>{alive=false}},[props.onThreadsLoaded]);return jsx('fixture-crm',props)}
   function inert(name){return props=>jsx('fixture-'+name,props)}
+  function VoiceRecorderFixture(props){
+    assert.ok(['en','ru','es'].includes(props.locale),'recorder locale is explicit')
+    assert.equal(typeof props.disabled,'boolean','recorder disabled wiring')
+    assert.equal(typeof props.onRecorded,'function','recorder completion callback')
+    if(props.onRecordingChange!==undefined)assert.equal(typeof props.onRecordingChange,'function','recorder state callback')
+    // Preserve callbacks for explicit synthetic interaction, never invoke them on mount.
+    return jsx('fixture-voice-recorder',props)
+  }
   const externals={
     react:hooks,'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:()=>icon}),
     'next/link':{default:props=>jsx('a',props)},
     '@supabase/supabase-js':{createClient:()=>{throw Error('Forbidden storage/client operation')}},
     '@/components/session-photo-uploader':{preparePhoto:()=>{throw Error('Forbidden photo operation')}},
-    '@/lib/practitioners/direct-message-policy.mjs':{directMediaSpec:()=>{throw Error('Forbidden media operation')}},
   }
   const actual=new Set(['messages-simple-inbox.jsx','direct-message-inbox.jsx','messages-contact-card.jsx','practice-request-conversation.jsx'])
   const boundary={
+    // Recorder UI is outside these text/lifetime cases; never request microphone/media.
+    './direct-voice-recorder':{default:VoiceRecorderFixture},
     './private-chat-photo':{default:()=>{throw Error('Forbidden photo renderer')}},
     './crm-messenger':{default:CrmFixture},
     './messages-client-requests':{default:inert('client-requests')},
@@ -61,7 +76,7 @@ export function compose({root,props,fetch,crmThreads=[]}){
     // Compile the exact .mjs helper bytes as CommonJS for this VM wrapper;
     // TypeScript otherwise forces .mjs output to keep ESM export syntax.
     const source=readFileSync(path,'utf8'),compiled=ts.transpileModule(source,{fileName:path.replace(/\.mjs$/,'.js'),compilerOptions:{allowJs:true,jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-    const context={exports,URL,URLSearchParams,AbortController,console,crypto:{randomUUID:()=> '60000000-0000-4000-8000-'+String(++nextOperation).padStart(12,'0')},
+    const context={exports,URL:FixtureURL,URLSearchParams,AbortController,console,crypto:{randomUUID:()=> '60000000-0000-4000-8000-'+String(++nextOperation).padStart(12,'0')},
       setTimeout:()=>{throw Error('Unexpected timer')},clearTimeout:()=>{},
       window:{get location(){return url},history:{state:null,replaceState:(_state,_title,path)=>{url=new URL(path,url)}},
         addEventListener:(type,fn)=>networkListener('window:'+type,fn),removeEventListener:(type,fn)=>networkListener('window:'+type,fn,true),
@@ -75,6 +90,11 @@ export function compose({root,props,fetch,crmThreads=[]}){
         if(key==='@/lib/app/messages-inbox-tabs.mjs')return load(resolve(root,'lib/app/messages-inbox-tabs.mjs'))
         if(key==='@/lib/app/messenger-private-media.mjs')return load(resolve(root,'lib/app/messenger-private-media.mjs'))
         if(key==='@/lib/practitioners/conversation-state')return load(resolve(root,'lib/practitioners/conversation-state.js'))
+        if(key==='@/lib/practitioners/direct-message-policy.mjs'){
+          const policy=load(resolve(root,'lib/practitioners/direct-message-policy.mjs'))
+          return {directMediaMime:policy.directMediaMime,DIRECT_MEDIA_PROXY_MAX_BYTES:policy.DIRECT_MEDIA_PROXY_MAX_BYTES,
+            directMediaSpec:()=>{throw Error('Forbidden media operation')}}
+        }
         if(Object.hasOwn(externals,key))return externals[key]
         if(Object.hasOwn(boundary,key))return boundary[key]
         if(key.endsWith('.module.css'))return {default:new Proxy({},{get:(_t,k)=>key+':'+String(k)})}
@@ -114,6 +134,7 @@ export function compose({root,props,fetch,crmThreads=[]}){
     setOnline(next){networkOnline=Boolean(next);for(const fn of networkListeners.get(networkOnline?'window:online':'window:offline')||[])fn()},
     networkListenerCount(){return [...networkListeners.values()].reduce((n,set)=>n+set.size,0)},
     updateProps(next){rootProps={...rootProps,...next};dirty=true},
+    objectURLCount(){return objectURLs.size},
     intervalCount(){return timers.size},fireIntervals(){for(const fn of [...timers.values()])fn()},
     rerender(){dirty=true},unmount(){active=false;for(const f of instances.values())cleanup(f);instances.clear()},
     nodes(){const walk=n=>n==null||typeof n!=='object'?[]:Array.isArray(n)?n.flatMap(walk):[n,...walk(n.children)];return walk(tree)},

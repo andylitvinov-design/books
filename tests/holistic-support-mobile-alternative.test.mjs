@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import vm from "node:vm";
+import { isPublicTestDiscoveryPath } from "../lib/site-navigation-model.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const route = read("app/[locale]/holistic-support/mobile/page.tsx");
@@ -9,6 +11,69 @@ const client = read("components/holistic-support-mobile.tsx");
 const css = read("components/holistic-support-mobile.module.css");
 const chooser = read("components/holistic-support-choices.tsx");
 const nav = read("components/mobile-bottom-navigation.tsx");
+
+
+// Evaluate only the two route declarations and their live null-return guard;
+// never mount navigation, run its effects, or import its browser dependencies.
+function assertOwnedSupportDockRoutes(source) {
+  const ast = ts.createSourceFile("mobile-bottom-navigation.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(ast.parseDiagnostics.length, 0);
+  const components = ast.statements.filter(node => ts.isFunctionDeclaration(node)
+    && node.name?.text === "MobileBottomNavigation"
+    && node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword));
+  assert.equal(components.length, 1, "actual exported navigation component");
+  const statements = components[0].body.statements;
+  const declarations = statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations]);
+  const get = name => {
+    const found = declarations.filter(node => ts.isIdentifier(node.name) && node.name.text === name);
+    assert.equal(found.length, 1, "one direct live binding: " + name);
+    assert.ok(found[0].initializer, "initialized binding: " + name);
+    return found[0];
+  };
+  const pathname = get("pathname"), clientRoute = get("clientRoute"), hidden = get("hidden");
+  assert.equal(pathname.initializer.getText(ast), "usePathname()");
+  const guards = statements.filter(node => ts.isIfStatement(node) && node.expression.getText(ast) === "hidden");
+  assert.equal(guards.length, 1, "direct live hidden guard, not a nested or dead copy");
+  const guard = guards[0];
+  assert.ok(!guard.elseStatement && ts.isReturnStatement(guard.thenStatement)
+    && guard.thenStatement.expression?.kind === ts.SyntaxKind.NullKeyword, "hidden returns no global dock");
+  const returnedNav = statements.filter(node => ts.isReturnStatement(node)
+    && node.expression && ts.isJsxElement(node.expression)
+    && node.expression.openingElement.tagName.getText(ast) === "nav");
+  assert.equal(returnedNav.length, 1, "the same component returns the visible global dock");
+  assert.ok(pathname.pos < clientRoute.pos && clientRoute.pos < hidden.pos
+    && hidden.pos < guard.pos && guard.pos < returnedNav[0].pos, "live declaration/guard/render order");
+  for (const declaration of [pathname, clientRoute, hidden]) {
+    assert.ok(ts.isVariableDeclarationList(declaration.parent)
+      && (declaration.parent.flags & ts.NodeFlags.Const), "route bindings cannot be reassigned");
+  }
+  // Do not project a dead predicate out of a component that already returned,
+  // or ignore a direct assignment/control-flow change before the actual nav.
+  for (const statement of statements) {
+    if (statement === guard || statement === returnedNav[0]) continue;
+    assert.ok(statement.pos < returnedNav[0].pos, "no statements after the live nav return");
+    assert.ok(ts.isVariableStatement(statement)
+      || (ts.isExpressionStatement(statement) && ts.isCallExpression(statement.expression)
+        && ts.isIdentifier(statement.expression.expression)
+        && statement.expression.expression.text === "useEffect"),
+    "navigation spine has only declarations, effects, hidden guard and visible return");
+  }
+  const script = new vm.Script("const clientRoute = " + clientRoute.initializer.getText(ast)
+    + "; const hidden = " + hidden.initializer.getText(ast)
+    + "; (() => { " + guard.getText(ast) + " return false; })() === null");
+  const check = (path, expected) => assert.equal(script.runInNewContext(
+    { pathname: path, isPublicTestDiscoveryPath }, { timeout: 500 }), expected, path);
+  for (const locale of ["en", "ru", "es"]) {
+    for (const section of ["mobile", "mandala"])
+      for (const end of ["", "/", "/child"]) check("/" + locale + "/holistic-support/" + section + end, true);
+    for (const path of ["app/messages", "app/practice", "prescriptions/test", "client/private"])
+      check("/" + locale + "/" + path, true);
+    for (const path of ["holistic-support", "holistic-support/mobile-old", "holistic-support/mandala-old", "client/tests", "pro", "services"])
+      check("/" + locale + "/" + path, false);
+  }
+  for (const path of ["/admin", "/document-preview/test"]) check(path, true);
+  for (const path of ["/", "/prefix/en/holistic-support/mandala", "/fr/holistic-support/mandala"]) check(path, false);
+}
 
 test("alternate support screen is separate, linked and localized without replacing the original", () => {
   const standard = read("app/[locale]/holistic-support/page.tsx");
@@ -20,8 +85,31 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support\\\/mobile/);
+  assertOwnedSupportDockRoutes(nav);
   assert.match(client, /data-support-mobile-bottom-nav/);
+});
+
+
+test("owned Support dock routing rejects dead guards, broad hiding and missing private boundaries", () => {
+  for (const [name, from, to] of [
+    ["false hide predicate", "const hidden =", "const hidden = false; const unusedHidden ="],
+    ["global hiding", "const hidden =", "const hidden = true ||"],
+    ["omitted Mandala", "(?:mobile|mandala)", "mobile"],
+    ["lost path boundary", "(?:mobile|mandala)(?:\\/|$)", "(?:mobile|mandala)"],
+    ["lost private client guard", "clientRoute &&", "false &&"],
+    ["lost private app guard", "(?:prescriptions|app)", "prescriptions"],
+    ["dead guard wrapper", "if (hidden) return null;", "if (false) { if (hidden) return null; }"],
+    ["wrong live guard", "if (hidden) return null;", "if (false) return null;"],
+    ["non-null hidden render", "if (hidden) return null;", "if (hidden) return false;"],
+    ["unexported lookalike", "export function MobileBottomNavigation", "function MobileBottomNavigation"],
+    ["earlier direct exit", "if (hidden) return null;", "return null; if (hidden) return null;"],
+    ["earlier conditional exit", "if (hidden) return null;", "if (true) return null; if (hidden) return null;"],
+    ["mutable hidden binding", "const hidden =", "let hidden ="],
+    ["ignored direct reassignment", "if (hidden) return null;", "hidden = true; if (hidden) return null;"],
+  ]) {
+    assert.equal(nav.split(from).length, 2, "unique mutation anchor: " + name);
+    assert.throws(() => assertOwnedSupportDockRoutes(nav.replace(from, to)), undefined, name);
+  }
 });
 
 test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
