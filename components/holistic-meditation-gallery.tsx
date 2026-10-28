@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BriefcaseBusiness, Heart, HeartPulse, Play, Sparkles } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-meditation-gallery.module.css";
@@ -22,7 +23,7 @@ const copy = {
     audio: "Original audio: English",
     other: "Choose another recording",
     empty: "No verified recording is available for this theme yet. Try All.",
-    watch: "Play selected recording",
+    watch: "Play selected recording", best: "Highest rated first",
   },
   ru: {
     filter: "Фильтр медитаций по темам",
@@ -32,7 +33,7 @@ const copy = {
     audio: "Оригинальное аудио: русский",
     other: "Выбрать другую запись",
     empty: "Для этой темы пока нет подтверждённых записей. Выберите «Все».",
-    watch: "Воспроизвести выбранную запись",
+    watch: "Воспроизвести выбранную запись", best: "Сначала лучшие оценки",
   },
   es: {
     filter: "Filtrar las meditaciones por tema",
@@ -42,7 +43,7 @@ const copy = {
     audio: "Audio original: inglés",
     other: "Elegir otra grabación",
     empty: "Aún no hay grabaciones verificadas para este tema. Prueba Todas.",
-    watch: "Reproducir la grabación seleccionada",
+    watch: "Reproducir la grabación seleccionada", best: "Mejor valorados primero",
   },
 } as const;
 
@@ -56,8 +57,13 @@ export function HolisticMeditationGallery({
 }) {
   const [activeTopic, setActiveTopic] = useState<FilterTopic>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const [sortRated,setSortRated] = useState(false);
+  const stars = useCatalogRatings("video", videos.map(video => video.id));
   const t = copy[locale];
-  const visibleVideos = videos.filter(video => activeTopic === "all" || video.topics.includes(activeTopic));
+  const visibleVideos = (sortRated ? sortByStars(videos, video => video.id, stars.ratings) : videos).filter(video =>
+    (activeTopic === "all" || video.topics.includes(activeTopic))
+    && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[video.id], minimumStars)));
   const activeVideo = visibleVideos.find(video => video.id === selectedId) ?? visibleVideos[0];
 
   return (
@@ -80,6 +86,12 @@ export function HolisticMeditationGallery({
           );
         })}
       </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",margin:"10px 0"}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={value=>{setMinimumStars(value);setSelectedId(null);}} />
+        <label style={{fontSize:13,display:"inline-flex",alignItems:"center",gap:6}}>
+          <input type="checkbox" checked={sortRated} onChange={event=>setSortRated(event.target.checked)} />{t.best}
+        </label>
+      </div>
       <p className={styles.guidance}>{t.guidance}</p>
       <p className={styles.resultCount} role="status">{visibleVideos.length} {t.result}</p>
       {activeVideo ? (
@@ -96,6 +108,7 @@ export function HolisticMeditationGallery({
             </div>
             <div className={styles.videoCaption}>
               <h3 aria-live="polite">{activeVideo.title}</h3>
+              <CatalogStarRating locale={locale} summary={stars.ratings[activeVideo.id]} onRate={value=>stars.rate(activeVideo.id,value)} unavailable={stars.unavailable}/>
               <span className={styles.audioLanguage}>{t.audio}</span>
             </div>
           </div>
@@ -123,6 +136,7 @@ export function HolisticMeditationGallery({
                       <span className={styles.recordingTitle}>
                         <small>{String(index + 1).padStart(2, "0")}</small>
                         <span>{video.title}</span>
+                        <small>{stars.ratings[video.id]?.count ? stars.ratings[video.id].average.toFixed(1) + " ★ (" + stars.ratings[video.id].count + ")" : "— ★"}</small>
                       </span>
                       <Play size={16} aria-hidden="true" />
                     </button>
