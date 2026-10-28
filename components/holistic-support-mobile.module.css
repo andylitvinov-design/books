@@ -1003,3 +1003,18 @@
   .page .assessment .scaleRow input { height: 17px; }
   .page .assessment > .goalFilterTrigger { min-height: 39px; }
 }
+
+
+/* The real iPhone three-column row must not stretch the check-in card.
+   At 390px the original 77px action tiles made the entire header 291px tall
+   although the check-in CTA finished by 255px. Keep the same four action tiles,
+   all labels and the bottom Video Mandala shortcut; just recover 18px. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .tools .toolGrid { grid-template-rows: repeat(2, minmax(0, 68px)); }
+  .page .tools .toolButton,
+  .page .tools .toolButton:last-child {
+    min-height: 68px;
+    padding-block: 3px;
+    gap: 3px;
+  }
+}
