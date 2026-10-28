@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'data/native-public-releases.json'
+      - 'lib/native/public-downloads.mjs'
+      - 'app/api/native-download/**'
+      - 'tests/holistic-house-native-public-downloads.test.mjs'
       - 'app/layout.tsx'
       - 'app/manifest.ts'
       - 'public/manifest.webmanifest'
@@ -38,6 +42,10 @@ on:
       - codex/public-book-library
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'data/native-public-releases.json'
+      - 'lib/native/public-downloads.mjs'
+      - 'app/api/native-download/**'
+      - 'tests/holistic-house-native-public-downloads.test.mjs'
       - 'app/layout.tsx'
       - 'app/manifest.ts'
       - 'public/manifest.webmanifest'
@@ -82,9 +90,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs tests/holistic-house-native-public-downloads.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
-        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' lib/public-locales.ts
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
@@ -103,6 +111,13 @@ jobs:
           grep -q 'Install Holistic House for free' /tmp/hh-install-en.html
           curl --fail --silent --show-error http://127.0.0.1:3098/es/install -o /tmp/hh-install-es.html
           grep -q 'Instala Holistic House gratis' /tmp/hh-install-es.html
+          # No release-signed APK or App Store app has been approved yet.
+          # The server must 404, never send an unsigned/test package or redirect.
+          for platform in android ios; do
+            code="$(curl --silent --show-error --output /tmp/hh-native-"${platform}".json --write-out '%{http_code}' http://127.0.0.1:3098/api/native-download/"${platform}")"
+            test "$code" = 404
+            grep -q 'native_.*_release_not_published' /tmp/hh-native-"${platform}".json
+          done
           for size in 180 192 512; do
             curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
             grep -qi '^content-type: image/png' /tmp/hh-icon-headers
