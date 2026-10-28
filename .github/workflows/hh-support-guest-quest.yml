@@ -12,7 +12,7 @@ on:
       - 'scripts/verify-support-guest-quest.mjs'
       - '.github/workflows/hh-support-guest-quest.yml'
   push:
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/support-quest-seven-steps-20261028']
     paths:
       - 'components/holistic-support-guest-quest.*'
       - 'components/holistic-support-mobile.tsx'
