@@ -15,6 +15,7 @@ import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import { PractitionerReviews } from "@/components/practitioner-reviews";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
 import PractitionerVideoGallery from "@/components/practitioner-video-gallery";
+import MasterProfileActions from "./master-profile-actions";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
 import styles from "./profile.module.css";
 
@@ -142,74 +143,84 @@ export default async function MasterProfile({ params }: PageProps) {
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.layout}>
-        <div className={styles.breadcrumbs}>
-          <Link href={"/" + locale + "/masters"}>
-            ← {ru ? "Все мастера" : es ? "Todos los profesionales" : "All masters"}
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span>{name}</span>
-        </div>
         <section className={styles.hero} aria-labelledby="practitioner-name">
-          <div className={styles.identity}>
-            {profile.photoPath ? (
-              <img className={styles.portrait} src={profile.photoPath} alt={name}
-                width={144} height={168} />
-            ) : (
-              <div className={styles.portraitFallback} aria-hidden="true">
-                {name.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-            <div className={styles.identityCopy}>
-              <p className={styles.kicker}>
-                {ru ? "ПРАКТИК HOLISTIC HOUSE" : es ? "PROFESIONAL HOLISTIC HOUSE" : "HOLISTIC HOUSE PRACTITIONER"}
-              </p>
-              <h1 id="practitioner-name">{name}</h1>
-              {profile.professionalTitle && <p className={styles.professionalTitle}>{profile.professionalTitle}</p>}
-              <div className={styles.heroFacts}>
-                {location && <span className={styles.location}>⌖ {location}</span>}
-                {Boolean(profile.languages?.length) && (
-                  <span className={styles.location}>◉ {profile.languages?.join(" · ").toUpperCase()}</span>
-                )}
-              </div>
-              {(practitioner.isPartner || hasVerifiedCredential) && (
-                <div className={styles.badges}>
-                  {practitioner.isPartner && (
-                    <span>{ru ? "Партнёр Holistic House" : es ? "Colaborador Holistic House" : "Holistic House Partner"}</span>
-                  )}
-                  {hasVerifiedCredential && (
-                    <span>{ru ? "Квалификация проверена" : es ? "Formación verificada" : "Credentials verified"}</span>
-                  )}
+          <div className={styles.heroMedia}>
+            <div className={styles.heroTop}>
+              <Link className={styles.backLink} href={"/" + locale + "/masters"}>
+                <span aria-hidden="true">←</span>
+                {ru ? "Все мастера" : es ? "Todos los profesionales" : "All masters"}
+              </Link>
+              <MasterProfileActions locale={locale} name={name} slug={practitioner.slug} />
+            </div>
+            <div className={styles.identity}>
+              {profile.photoPath ? (
+                <img className={styles.portrait} src={profile.photoPath} alt={name}
+                  width={144} height={168} fetchPriority="high" />
+              ) : (
+                <div className={styles.portraitFallback} aria-hidden="true">
+                  {name.slice(0, 1).toUpperCase()}
                 </div>
               )}
+              <div className={styles.identityCopy}>
+                <p className={styles.kicker}>
+                  {ru ? "ПРАКТИК HOLISTIC HOUSE" : es ? "PROFESIONAL HOLISTIC HOUSE" : "HOLISTIC HOUSE PRACTITIONER"}
+                </p>
+                <h1 id="practitioner-name">{name}</h1>
+                {profile.professionalTitle && <p className={styles.professionalTitle}>{profile.professionalTitle}</p>}
+                <div className={styles.heroFacts}>
+                  {location && <span className={styles.location}>⌖ {location}</span>}
+                  {Boolean(profile.languages?.length) && (
+                    <span className={styles.location}>{profile.languages?.join(" · ").toUpperCase()}</span>
+                  )}
+                </div>
+                {(practitioner.isPartner || hasVerifiedCredential) && (
+                  <div className={styles.badges}>
+                    {practitioner.isPartner && (
+                      <span>✧ {ru ? "Партнёр Holistic House" : es ? "Colaborador Holistic House" : "Holistic House Partner"}</span>
+                    )}
+                    {hasVerifiedCredential && (
+                      <span>✓ {ru ? "Квалификация проверена" : es ? "Formación verificada" : "Credentials verified"}</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          {(shortBio || fullBio) && <p className={styles.heroBio}>{shortBio || fullBio}</p>}
-          <p className={styles.heroHint}>
-            {ru ? "Знакомьтесь с подходом, выбирайте услуги и открывайте авторские материалы." :
-              es ? "Conoce su enfoque, descubre servicios y explora sus materiales originales." :
-                "Explore this practitioner's approach, services and original materials."}
-          </p>
-          <div className={styles.heroActions}>
-            <Link className={styles.primary} href="#practitioner-services">
-              {ru ? "Выбрать услугу" : es ? "Elegir un servicio" : "Choose a service"}
-              <span aria-hidden="true">→</span>
-            </Link>
-            <Link className={styles.secondary} href="#practitioner-reviews">
-              {ru ? "Отзывы о мастере" : es ? "Opiniones del profesional" : "Practitioner reviews"} ★
-            </Link>
-            {practitioner.canMessage && (
-              <Link className={styles.secondary}
-                href={'/' + locale + '/app/messages?to=' + encodeURIComponent(practitioner.slug)}
-                prefetch={false}>
-                {ru ? 'Написать сообщение' : es ? 'Enviar un mensaje' : 'Send a message'} →
+          <div className={styles.heroBody}>
+            <div className={styles.highlights} aria-label={ru ? "Опубликованные материалы мастера" : es ? "Contenido publicado" : "Published practitioner content"}>
+              <div><strong>{services.length}</strong><span>{ru ? "услуг" : es ? "servicios" : "services"}</span></div>
+              <div><strong>{publishedMeditations.length + videos.length + sharedAudios.length}</strong><span>{ru ? "практик и видео" : es ? "prácticas y vídeos" : "practices & videos"}</span></div>
+              <div><strong>{profile.languages?.length || 0}</strong><span>{ru ? "языка" : es ? "idiomas" : "languages"}</span></div>
+            </div>
+            {(shortBio || fullBio) && <p className={styles.heroBio}>{shortBio || fullBio}</p>}
+            <p className={styles.heroHint}>
+              {ru ? "Знакомьтесь с подходом, выбирайте услуги и открывайте авторские материалы." :
+                es ? "Conoce su enfoque, descubre servicios y explora sus materiales originales." :
+                  "Explore this practitioner's approach, services and original materials."}
+            </p>
+            <div className={styles.heroActions}>
+              <Link className={styles.primary} href="#practitioner-services">
+                <span aria-hidden="true">✦</span>
+                {ru ? "Выбрать услугу" : es ? "Elegir un servicio" : "Choose a service"}
+                <span aria-hidden="true">→</span>
               </Link>
-            )}
-            {hasEnergySupport && (
-              <Link className={styles.secondary}
-                href={"/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(practitioner.slug)}>
-                {ru ? "Энергетическая поддержка" : es ? "Apoyo energético" : "Remote energy support"} →
+              <Link className={styles.secondary} href="#practitioner-reviews">
+                {ru ? "Отзывы о мастере" : es ? "Opiniones del profesional" : "Practitioner reviews"} ★
               </Link>
-            )}
+              {practitioner.canMessage && (
+                <Link className={styles.secondary}
+                  href={"/" + locale + "/app/messages?to=" + encodeURIComponent(practitioner.slug)}
+                  prefetch={false}>
+                  {ru ? "Написать сообщение" : es ? "Enviar un mensaje" : "Send a message"} →
+                </Link>
+              )}
+              {hasEnergySupport && (
+                <Link className={styles.secondary}
+                  href={"/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(practitioner.slug)}>
+                  {ru ? "Энергетическая поддержка" : es ? "Apoyo energético" : "Remote energy support"} →
+                </Link>
+              )}
+            </div>
           </div>
         </section>
 
@@ -221,22 +232,12 @@ export default async function MasterProfile({ params }: PageProps) {
           <a href="#practitioner-about">{ru ? "О мастере" : es ? "Acerca de" : "About"}</a>
         </nav>
 
-        {profile.videoPresentation && (
-          <div className={styles.welcomeVideo}>
-            <PractitionerPresentationVideo
-              locale={locale}
-              video={profile.videoPresentation}
-              playbackUrl={publicPresentationUrl(profile.videoPresentation, config.supabaseUrl)}
-            />
-          </div>
-        )}
-
         <section className={styles.services} id="practitioner-services" aria-labelledby="practitioner-services-heading">
           <header className={styles.sectionHeading}>
             <div>
               <p className={styles.kicker}>{ru ? "УСЛУГИ" : es ? "SERVICIOS" : "SERVICES"}</p>
               <h2 id="practitioner-services-heading">
-                {ru ? "Мои услуги" : es ? "Mis servicios" : "My services"}
+                {ru ? "Услуги мастера" : es ? "Servicios del profesional" : "Practitioner services"}
               </h2>
             </div>
             <span className={styles.count}>
@@ -252,9 +253,8 @@ export default async function MasterProfile({ params }: PageProps) {
           )}
         </section>
 
-
         <PractitionerReviews practitionerSlug={practitioner.slug} locale={locale}
-          services={services.map(service=>({id:service.id,slug:service.slug,title:service.copy.title}))} />
+          services={services.map(service => ({id: service.id, slug: service.slug, title: service.copy.title}))} />
 
         <section id="practitioner-meditations" className={styles.meditations} aria-labelledby="practitioner-meditations-heading">
           <header className={styles.sectionHeading}>
@@ -271,6 +271,11 @@ export default async function MasterProfile({ params }: PageProps) {
               es ? "Grabaciones originales y prácticas publicadas. El idioma del material se indica por separado." :
                 "Original recordings and published practices. Each item shows its original language."}
           </p>
+          {videos.length > 0 && (
+            <div className={styles.approvedVideoGallery}>
+              <PractitionerVideoGallery videos={videos} locale={locale} variant="compact" />
+            </div>
+          )}
           {publishedMeditations.length > 0 && (
             <div className={styles.meditationGrid}>
               {publishedMeditations.map(item => (
@@ -292,11 +297,6 @@ export default async function MasterProfile({ params }: PageProps) {
                   </span>
                 </Link>
               ))}
-            </div>
-          )}
-          {videos.length > 0 && (
-            <div className={styles.approvedVideoGallery}>
-              <PractitionerVideoGallery videos={videos} locale={locale} />
             </div>
           )}
           {sharedAudios.length > 0 && (
@@ -324,7 +324,7 @@ export default async function MasterProfile({ params }: PageProps) {
         <section id="practitioner-about" className={styles.about} aria-labelledby="practitioner-about-heading">
           <div>
             <p className={styles.kicker}>{ru ? "ПОДХОД" : es ? "ENFOQUE" : "APPROACH"}</p>
-            <h2 id="practitioner-about-heading">{ru ? "О специалисте" : es ? "Sobre mí" : "About"}</h2>
+            <h2 id="practitioner-about-heading">{ru ? "Мой подход" : es ? "Mi enfoque" : "My approach"}</h2>
           </div>
           <div className={styles.aboutContent}>
             {profile.methods && profile.methods.length > 0 && (
@@ -346,6 +346,15 @@ export default async function MasterProfile({ params }: PageProps) {
                 <summary>{ru ? "Подробнее о моём подходе" : es ? "Más sobre mi enfoque" : "More about my approach"} <span aria-hidden="true">⌄</span></summary>
                 <p>{fullBio}</p>
               </details>
+            )}
+            {profile.videoPresentation && (
+              <div className={styles.welcomeVideo}>
+                <PractitionerPresentationVideo
+                  locale={locale}
+                  video={profile.videoPresentation}
+                  playbackUrl={publicPresentationUrl(profile.videoPresentation, config.supabaseUrl)}
+                />
+              </div>
             )}
             {es && <p className={styles.note}>La biografía facilitada por el profesional puede aparecer en su idioma original.</p>}
           </div>
