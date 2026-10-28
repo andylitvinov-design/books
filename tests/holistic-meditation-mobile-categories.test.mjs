@@ -53,7 +53,7 @@ test("Compact 320–430px cards stay readable while retaining original playback,
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)/);
   assert.match(mobile, /youtube-nocookie\.com\/embed/);
   assert.match(mobile, /onClick=\{startVideo\}/);
-  assert.match(mobile, /return eligible\.slice\(0, 4\)/);
+  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
   assert.doesNotMatch(mobile, /<audio|autoplay=\{true\}|localStorage|navigator\.sendBeacon|fetch\(/);
   const parsed = ts.transpileModule(mobile, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
@@ -61,4 +61,39 @@ test("Compact 320–430px cards stay readable while retaining original playback,
   });
   assert.deepEqual((parsed.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
     .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), []);
+});
+
+test("Full feed follows the four featured cards, uses one filtered catalogue and never auto-plays", () => {
+  const gallery = mobile.indexOf('id="support-meditation-gallery"');
+  const featured = mobile.indexOf('data-support-video={video.id}', gallery);
+  const feed = mobile.indexOf('data-support-meditation-feed aria-labelledby=', featured);
+  const rows = mobile.indexOf('data-support-meditation-feed-item={video.id}', feed);
+  const sourceLink = mobile.indexOf('data-support-video-source', feed);
+  assert.ok(gallery > 0 && featured > gallery && feed > featured && rows > feed && sourceLink > rows,
+    "featured four -> full vertical catalogue -> original YouTube source link");
+  assert.match(mobile, /const catalogVideos = useMemo\(\(\) => \{/);
+  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
+  assert.match(mobile, /const selected = catalogVideos\.find\(video => video\.id === selectedId\)/);
+  assert.match(mobile, /catalogVideos\.map\(video => <li key=\{video\.id\}>/);
+  assert.match(mobile, /aria-pressed=\{selected\?\.id === video\.id\}/);
+  assert.match(mobile, /pickVideo\(video\.id\); scrollToSupport\("support-meditation-player"\)/);
+  assert.match(mobile, /data-selected-video=\{selected\?\.id \?\? ""\}/);
+  assert.match(mobile, /video\.description \|\| t\.feedFallback/);
+  assert.match(mobile, /unoptimized loading="lazy"/);
+  assert.match(css, /\.videoFeedItem \{[^}]*grid-template-columns:/);
+  assert.match(css, /\.videoFeedList \{[^}]*display: grid/);
+  assert.match(css, /\.videoFeedItem\[aria-pressed="true"\]/);
+  assert.match(css, /\.videoFeedDescription \{[^}]*-webkit-line-clamp: 3/);
+  for (const label of ["Лента медитаций", "Листай вниз", "Выбрать", "Explore all meditations",
+    "Select", "Explora todas las meditaciones", "Elegir"]) assert.ok(mobile.includes(label), label);
+});
+
+test("Feed summaries come from existing source titles, with Spanish copy and original language noted", () => {
+  const route = read("app/[locale]/holistic-support/mobile/page.tsx");
+  assert.match(source, /const originalRuDescriptions = \[/);
+  assert.match(source, /description: originalRuDescriptions\[index\]/);
+  assert.match(source, /description: englishSun\.description/);
+  assert.match(route, /description: locale === "es" \? spanishMeditationDescriptions\[video\.key\] : video\.description/);
+  assert.match(mobile, /video\.sourceLanguage === "ru" \? t\.feedAudioRu : t\.feedAudioEn/);
+  assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon|autoplay=\{true\}/);
 });
