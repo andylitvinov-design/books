@@ -264,6 +264,9 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          // React batches onSave + sector navigation. A real WebKit frame can
+          // paint before the Accepted badge commits, even though Next worked.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"visible",timeout:8000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
