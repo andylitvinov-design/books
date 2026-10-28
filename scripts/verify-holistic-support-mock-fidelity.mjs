@@ -247,13 +247,53 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");
           assert.equal(await tab("description").count(),1,label+" central Description tab");
           assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          // Screenshot regression: shared .page button {font:inherit} used to inflate
+          // every Reiki tab into a huge two-line block on real iPhone Safari.
+          const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
+            elements.map(element => {
+              const rect=element.getBoundingClientRect();
+              const css=getComputedStyle(element);
+              return {height:rect.height,fontsize:parseFloat(css.fontSize),left:rect.left,
+                right:rect.right,top:rect.top,content:element.textContent?.trim()};
+            }));
+          assert.ok(tabSizes.every(item => item.height >= 40 && item.height <= 50 &&
+            item.fontsize <= 13 && item.left >= -1 && item.right <= width+1),
+            label+" Reiki tabs are compact, readable and on-screen: "+JSON.stringify(tabSizes));
+          assert.ok(Math.max(...tabSizes.map(item=>item.top)) -
+            Math.min(...tabSizes.map(item=>item.top)) <= 2,
+            label+" four action tabs occupy a single row");
           await tab("filter").click();
           const reikiFilter=healing.locator('[data-support-reiki-filter]');
           await reikiFilter.waitFor({state:"visible"});
+          const intro=healing.locator('[data-support-reiki-photo-intro]');
+          const introHeight=await intro.evaluate(element => element.getBoundingClientRect().height);
+          assert.ok(introHeight >= 68 && introHeight <= 160,
+            label+" scenic photo remains visible ABOVE the filter, "+introHeight);
+          const filterLayout=await reikiFilter.evaluate(element => {
+            const buttons=Array.from(element.querySelectorAll(
+              '[data-support-reiki-format] button,[data-support-reiki-price] button,'+
+              '[data-support-reiki-timing] button,[data-support-reiki-report] button,'+
+              '[data-support-reiki-provider] button'));
+            const rect=element.getBoundingClientRect();
+            return {height:rect.height,buttons:buttons.map(button=>{
+              const box=button.getBoundingClientRect();
+              return {height:box.height,font:parseFloat(getComputedStyle(button).fontSize)};
+            }),scrollWidth:document.documentElement.scrollWidth,
+              viewportWidth:document.documentElement.clientWidth};
+          });
+          assert.ok(filterLayout.height <= 565,
+            label+" Reiki filters should be a compact sheet, not an enormous page: "+
+              JSON.stringify(filterLayout));
+          assert.ok(filterLayout.buttons.every(button =>
+            button.height >= 40 && button.height <= 60 && button.font <= 13),
+            label+" Reiki chips must keep 44px touch targets without inflated typography: "+
+              JSON.stringify(filterLayout.buttons));
+          assert.ok(filterLayout.scrollWidth <= filterLayout.viewportWidth + 2,
+            label+" no page-wide overflow while price choices remain horizontally scrollable");
           assert.equal(await reikiFilter.locator('[data-support-reiki-format] button').count(),3,
             label+" session initiation training all available");
-          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),6,
-            label+" five price ranges plus All");
+          assert.equal(await reikiFilter.locator('[data-support-reiki-price] button').count(),5,
+            label+" five real price bands; Reset is the unfiltered choice");
           assert.equal(await reikiFilter.locator('[data-support-reiki-report] button').count(),3,
             label+" brief text voice report");
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
@@ -284,6 +324,10 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider] button').nth(1)
             .getAttribute("aria-pressed"),"true",label+" Reiki master preference selectable");
           await reikiFilter.locator('button').filter({hasText:/^(Сбросить|Reset filters|Restablecer)$/}).click();
+          // Apply must remain clickable even with the fixed bottom navigation.
+          await reikiFilter.locator('[data-support-reiki-apply]').click();
+          assert.equal(await healing.locator('[data-support-reiki-panel="main"]').count(),1,
+            label+" apply action returns to the existing large photo");
           await tab("media").click();
           assert.equal(await healing.locator('[data-support-reiki-media]').count(),1,
             label+" media tab does not autoplay or invent a video");
