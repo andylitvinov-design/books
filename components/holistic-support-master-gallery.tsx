@@ -314,7 +314,155 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         ? publishedPrice(selectedOffer.price, selectedOffer.currency, locale) : null)
     : cheapest && selectedMaster ? publishedPrice(cheapest.price, selectedMaster.currency, locale) : null;
   const displayPrice = currentPrice || t.quote;
+
   const ready = consultations ? offers !== null : masters !== null;
+  const r = reikiUi[locale];
+  const reikiLearningMatches = (reikiPrice === "all" || reikiPrice === "free") && !reikiCertificate;
+  const reikiCount = reikiFormat === "session" ? visibleMasters.length : Number(reikiLearningMatches);
+  const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
+    : "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#initiation-choices";
+  const reikiLearningLabel = reikiFormat === "course" ? r.course : r.initiation;
+  const reikiLearningIntro = reikiFormat === "course" ? r.courseNote : r.initiationNote;
+  const filteredRequest = [
+    r.report + ": " + r.reports[reikiReport],
+    ...(reikiTime === "any" ? [] : [r.time + ": " + r.times[reikiTime]]),
+    ...(reikiRole === "any" ? [] : [r.role + ": " + r.roles[reikiRole]]),
+  ].join(" · ");
+  const resetReikiFilters = () => {
+    setReikiFormat("session"); setReikiPrice("all"); setReikiTime("any");
+    setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
+    setMethod(""); setSelectedId(null); setOrderOpen(false);
+  };
+  const reikiStage = kind === "healing" ? (
+    <section className={styles.reikiStage} data-support-reiki-central data-active-tab={reikiTab}
+      aria-label={r.heading}>
+      <Image className={styles.reikiStageBackdrop} src="/images/holistic-house/support-mock-hero.webp"
+        alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 900px"/>
+      {reikiFormat === "session" && selectedMaster?.photo &&
+        <Image className={styles.reikiStagePortrait} src={selectedMaster.photo}
+          alt="" fill unoptimized sizes="(max-width: 640px) 45vw, 400px"/>}
+      <div className={styles.reikiStageShade} aria-hidden="true"/>
+      <div className={styles.reikiStageTabs} role="tablist" aria-label={r.heading}>
+        {(["main", "filter", "description", "media"] as const).map(tab => (
+          <button type="button" key={tab} role="tab" id={"reiki-tab-" + tab}
+            aria-selected={reikiTab === tab} aria-controls="reiki-active-panel"
+            className={styles.reikiStageTab} data-support-reiki-tab={tab}
+            onClick={() => setReikiTab(tab)}>
+            {tab === "main" ? <HandHeart size={16} aria-hidden="true"/> :
+              tab === "filter" ? <Filter size={16} aria-hidden="true"/> :
+              tab === "description" ? <FileText size={16} aria-hidden="true"/> :
+              <Headphones size={16} aria-hidden="true"/>}
+            <span>{r.tabs[tab]}</span>
+          </button>
+        ))}
+      </div>
+      <div id="reiki-active-panel" className={styles.reikiStageContent} role="tabpanel"
+        aria-labelledby={"reiki-tab-" + reikiTab} data-support-reiki-panel={reikiTab}>
+        {reikiTab === "filter" ? <div className={styles.reikiFilterSheet} data-support-reiki-filter>
+          <div className={styles.reikiFilterHeading}>
+            <div><h2>{r.heading}</h2><p>{r.intro}</p></div>
+            <button type="button" className={styles.reikiReset} onClick={resetReikiFilters}>{r.resetFilters}</button>
+          </div>
+          <fieldset className={styles.reikiFieldset} data-support-reiki-format>
+            <legend>1. {r.format}</legend>
+            <div className={styles.reikiOptions} data-cols="three">
+              {(["session", "initiation", "course"] as const).map(value =>
+                <button type="button" key={value} aria-pressed={reikiFormat === value}
+                  onClick={() => { setReikiFormat(value); setReikiRole("any"); setReikiCertificate(false);
+                    setSelectedId(null); setOrderOpen(false); }}>{r.formats[value]}</button>)}
+            </div>
+          </fieldset>
+          <fieldset className={styles.reikiFieldset} data-support-reiki-price>
+            <legend>2. {r.price}</legend>
+            <div className={styles.reikiOptions} data-cols="price">
+              {PRICE_BANDS.map(value =>
+                <button type="button" key={value} aria-pressed={reikiPrice === value}
+                  onClick={() => { setReikiPrice(value); setSelectedId(null); setOrderOpen(false); }}>
+                  {r.prices[value]}
+                </button>)}
+            </div>
+          </fieldset>
+          <fieldset className={styles.reikiFieldset} data-support-reiki-timing>
+            <legend>3. {r.time}</legend>
+            <div className={styles.reikiOptions} data-cols="three">
+              {(["days", "day", "chosen"] as const).map(value =>
+                <button type="button" key={value} aria-pressed={reikiTime === value}
+                  onClick={() => setReikiTime(value === reikiTime ? "any" : value)}>{r.times[value]}</button>)}
+            </div>
+          </fieldset>
+          <fieldset className={styles.reikiFieldset} data-support-reiki-report>
+            <legend>4. {r.report}</legend>
+            <div className={styles.reikiOptions} data-cols="three">
+              {(["brief", "text", "voice"] as const).map(value =>
+                <button type="button" key={value} aria-pressed={reikiReport === value}
+                  onClick={() => setReikiReport(value)}>{r.reports[value]}</button>)}
+            </div>
+          </fieldset>
+          {reikiFormat === "session" ? <fieldset className={styles.reikiFieldset} data-support-reiki-provider>
+            <legend>5. {r.role}</legend>
+            <div className={styles.reikiOptions} data-cols="two">
+              {(["practitioner", "master"] as const).map(value =>
+                <button type="button" key={value} aria-pressed={reikiRole === value}
+                  onClick={() => setReikiRole(value === reikiRole ? "any" : value)}>{r.roles[value]}</button>)}
+            </div>
+          </fieldset> : <label className={styles.reikiCertificate} data-support-reiki-certificate>
+            <span><strong>5. {r.certificate}</strong><small>{r.certificateNote}</small></span>
+            <input type="checkbox" checked={reikiCertificate}
+              onChange={event => setReikiCertificate(event.target.checked)}/>
+          </label>}
+          <p className={styles.reikiPreferences} role="status">{r.preferences} {r.notBooked}</p>
+          <button type="button" className={styles.reikiApply} data-support-reiki-apply
+            onClick={() => setReikiTab("main")}>
+            <Filter size={19} aria-hidden="true"/>{r.show}
+            <small>{r.count}: {ready || reikiFormat !== "session" ? reikiCount : "…"}</small>
+          </button>
+        </div> : reikiTab === "description" ? <div className={styles.reikiTabCopy}>
+          <span className={styles.reikiPill}>{r.details}</span>
+          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
+          <p>{reikiFormat === "session" ?
+            selectedMaster?.description || selectedMaster?.bio || t.description : reikiLearningIntro}</p>
+          <p>{r.preferences} {r.notBooked}</p>
+          {selectedMaster && reikiFormat === "session" &&
+            <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
+        </div> : reikiTab === "media" ? <div className={styles.reikiTabCopy} data-support-reiki-media>
+          <span className={styles.reikiPill}>{r.tabs.media}</span>
+          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
+          {reikiFormat === "session" && selectedMaster?.presentations?.length ?
+            <div className={styles.reikiMediaLinks}>
+              {selectedMaster.presentations.map((media, i) =>
+                <a key={i} href={media.url} target="_blank" rel="noopener noreferrer"
+                  className={styles.reikiInlineLink}>
+                  {media.type === "video" ? <PlayCircle size={19}/> : <Headphones size={19}/>}
+                  {r.mediaOpen} {media.type === "video" ? "Video" : "Audio"}
+                  <ArrowRight size={15}/>
+                </a>)}
+            </div> : <p>{r.mediaNone}</p>}
+          {reikiFormat === "session" && selectedMaster &&
+            <Link href={profileLink} className={styles.reikiInlineLink}>{r.provider}<ArrowRight size={16}/></Link>}
+          {reikiFormat !== "session" &&
+            <Link href={reikiLearningPath} className={styles.reikiInlineLink}>{r.learn}<ArrowRight size={16}/></Link>}
+        </div> : <div className={styles.reikiTabCopy} data-support-reiki-main>
+          <span className={styles.reikiPill}><HandHeart size={15}/>{t.healing}</span>
+          <h2>{reikiFormat === "session" ? selectedMaster?.name || r.heading : reikiLearningLabel}</h2>
+          <p>{reikiFormat === "session" ?
+            selectedMaster?.description || selectedMaster?.bio || r.intro : reikiLearningIntro}</p>
+          {reikiFormat === "session" && <strong className={styles.reikiSelectedPrice}>{displayPrice}</strong>}
+          <div className={styles.reikiMainActions}>
+            {reikiFormat === "session" && selectedMaster && cheapest ?
+              <button type="button" className={styles.reikiApply}
+                data-support-reiki-request onClick={() => setOrderOpen(true)}>{r.request}<ArrowRight size={17}/></button> :
+              reikiFormat !== "session" && reikiLearningMatches ?
+                <Link className={styles.reikiApply} href={reikiLearningPath}>{r.learn}<ArrowRight size={17}/></Link> :
+                <button type="button" className={styles.reikiApply}
+                  onClick={() => setReikiTab("filter")}>{r.choose}<Filter size={17}/></button>}
+            <button type="button" className={styles.reikiSecondary}
+              onClick={() => setReikiTab("filter")}>{r.tabs.filter}</button>
+          </div>
+          <small className={styles.reikiCaution}>{r.notBooked}</small>
+        </div>}
+      </div>
+    </section>
+  ) : null;
 
   return (
     <div className={styles.viewer} data-support-master-viewer data-support-directory-kind={kind}>
@@ -330,22 +478,28 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>;
         })}
       </div>}
-      {!ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
+      {reikiStage}
+      {kind === "healing" && reikiFormat !== "session" ? <section className={styles.reikiLearning} data-support-reiki-learning>
+        <h3>{reikiLearningLabel}</h3>
+        <p>{reikiLearningMatches ? reikiLearningIntro : r.learningNone}</p>
+        <Link href={reikiLearningPath} prefetch={false}>{r.learn}<ArrowRight size={18}/></Link>
+      </section> : !ready ? <div className={styles.status} role={failed ? "alert" : "status"}>
         <p>{failed ? t.unavailable : t.loading}</p>
         {failed && <button type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>}
         <Link href={"/" + locale + "/masters"}>{t.exploreMasters}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div> : !selected ? <div className={styles.status} role="status">
-        <p>{kind === "healing" ? t.reikiUnavailable : t.empty}</p>
+        <p>{kind === "healing" && reikiPrice !== "all" ? r.learningNone :
+          kind === "healing" ? t.reikiUnavailable : t.empty}</p>
         {kind === "healing" && <p className={styles.unavailableMethod} data-support-reiki-unavailable>
           {t.reikiOptions[reikiFocus].label} · {t.reikiOptions[reikiFocus].method}
         </p>}
         <button type="button" onClick={() => {
           setMethod(""); setPriceFilter("all"); setSelectedId(null);
-          if (kind === "healing") setReikiFocus("love");
+          if (kind === "healing") { setReikiFocus("love"); resetReikiFilters(); }
         }}>{kind === "healing" ? t.reikiSeeAvailable : t.reset}</button>
         <Link href={"/" + locale + (consultations ? "/services" : "/masters")}>{consultations ? t.exploreServices : t.exploreMasters}</Link>
       </div> : <>
-        <section className={styles.hero} data-support-master-hero={id(selected)}
+        {kind !== "healing" && <section className={styles.hero} data-support-master-hero={id(selected)}
           aria-label={selectedMaster?.name || selectedOffer?.title}
           onTouchStart={event => { const touch=event.touches[0]; if(touch) touchStart.current={x:touch.clientX,y:touch.clientY}; }}
           onTouchEnd={endSwipe}>
@@ -400,7 +554,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
             </button> : <Link href={profileLink} className={styles.primary}>{t.details}<ArrowRight size={21}/></Link>}
             {selectedMaster && <Link className={styles.secondary} href={profileLink}>{t.details}</Link>}
           </div>
-        </section>
+        </section>}
         <section className={styles.more} aria-label={consultations ? t.galleryOffers : t.galleryMasters}>
           <div className={styles.heading}>
             <h3>{consultations ? t.galleryOffers : t.galleryMasters}</h3>
@@ -435,8 +589,11 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           <button type="button" onClick={() => setOrderOpen(false)} aria-label={t.close}><X size={22}/></button>
         </div>
         {orderOpen && selectedMaster && <RemoteEnergySupportBooking key={selectedMaster.serviceId}
-          locale={locale} masters={[selectedMaster]} preferredPractitioner={selectedMaster.slug}
-          mode="inline" selectedKind="energy" initialGoal="" />}
+          locale={locale} masters={[kind === "healing"
+            ? {...selectedMaster, priceOptions: matchingPriceOptions} : selectedMaster]}
+          preferredPractitioner={selectedMaster.slug}
+          mode="inline" selectedKind="energy" initialGoal=""
+          initialIntention={kind === "healing" ? filteredRequest : ""} />}
       </dialog>
     </div>
   );
