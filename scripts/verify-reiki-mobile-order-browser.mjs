@@ -79,7 +79,7 @@ try {
       await page.evaluate(([p, service]) => window.sessionStorage.setItem("hh-google-enquiry-return",
         JSON.stringify({path:p,service,panel:"synthetic-panel"})),
         [path,"Reiki support · Andy · 30 min"]);
-      await page.reload({waitUntil:"domcontentloaded"});
+      await page.goto(origin + path + "?hh_enquiry=google", {waitUntil:"domcontentloaded"});
       const resumed = page.locator('dialog[open] [data-remote-public-order-contact]');
       await resumed.waitFor({state:"visible",timeout:30000});
       assert.equal(new URL(page.url()).pathname,path,locale+": resumes same public modal");
