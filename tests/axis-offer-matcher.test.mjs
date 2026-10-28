@@ -4,8 +4,10 @@ import { readFileSync } from "node:fs";
 import { PROFILE_RESEARCH_AXES } from "../lib/profile/profile-scale-selection.js";
 import {
  AXIS_REFS, LIFE_AREAS, SERVICE_AXIS_LINKS, ORIGINAL_VIDEO_AXIS_LINKS,
- verifiedAxisEvidence, sourceBandPosition, publishedAxisOffers, rankAxisOffers,
+ verifiedAxisEvidence, sourceBandPosition, publishedAxisOffers, rankAxisOffers, videoFacetAxisLinks,
 } from "../lib/holistic-support/axis-offer-matcher.mjs";
+import { rankMeditationCatalog } from "../lib/holistic-support/meditation-catalog-ranker.mjs";
+import { rankClientServices } from "../lib/holistic-support/client-intent-model.mjs";
 
 const sample = (override = {}) => ({
  key:"energy",dimensionKey:"weekly.energy",resultId:"verified-result",
@@ -107,6 +109,48 @@ test("private sexual wellbeing cannot drive paid offers, media or automated enro
  assert.deepEqual(rankAxisOffers({chosenAxis:"nonsense",offers:all}),[]);
  assert.deepEqual(rankAxisOffers({chosenAxis:"recovery::energy",offers:[{...offer("recovery::energy"),status:"candidate"}]}),[]);
 });
+
+test("optional public meditation-axis filter increases specific verified metadata matches, never publish candidates",()=>{
+ const videoCatalog=JSON.parse(readFileSync(new URL("../data/academy/meditation-catalog-candidates-20261028.json",import.meta.url),"utf8")).videos;
+ const money=videoCatalog.find(v=>v.youtube_id==="fWfG5gXHK5Y");
+ const links=videoFacetAxisLinks(money);
+ assert.ok(links.some(x=>x.ref==="money::money_pressure" && x.strength===3));
+ assert.equal(links.find(x=>x.ref==="money::money_pressure").strength,3);
+ const base=rankMeditationCatalog({videos:[money],editorialPreview:true,request:{
+  language:"en",goal:"money",situations:["money_worries"]}});
+ const specific=rankMeditationCatalog({videos:[money],editorialPreview:true,request:{
+  language:"en",goal:"money",situations:["money_worries"],axisRefs:["money::money_pressure"]}});
+ assert.equal(base.length,1);
+ assert.equal(specific.length,1);
+ assert.ok(specific[0].score>base[0].score);
+ assert.ok(specific[0].reasons.some(x=>x.facet==="axis"&&x.value==="money::money_pressure"));
+ const closed=rankMeditationCatalog({videos:[money],request:{
+  language:"en",goal:"money",axisRefs:["money::money_pressure"]}});
+ assert.deepEqual(closed,[]); // No editorial approval, no forced release.
+});
+test("existing published-service matching reuses optional axis without changing enrolment",()=>{
+ const offers=[{id:"business",title:"Business coaching",href:"/en/services/business-consulting"},
+ {id:"alchemy",title:"Alchemy",href:"/en/services/alchemy-of-soul"}];
+ const request={goal:"money",situations:["income_uncertainty"]};
+ const normal=rankClientServices({offers,request});
+ const chosen=rankClientServices({offers,request:{...request,axisRefs:["money::money_pressure"]}});
+ assert.equal(normal.length,1);
+ assert.equal(chosen.length,1);
+ assert.ok(chosen[0].score>normal[0].score);
+ assert.ok(chosen[0].reasons.some(x=>x.facet==="axis"&&x.value==="money::money_pressure"));
+});
+test("public video finder lists canonical facets but does not receive private source measurements",()=>{
+ const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+ const ui=read("components/holistic-meditation-finder.tsx");
+ const types=read("lib/holistic-support/meditation-catalog-types.ts");
+ assert.match(ui,/data-meditation-profile-axis/);
+ assert.match(ui,/axisRefs:axisFocus \? \[axisFocus\] : \[\]/);
+ assert.match(ui,/PROFILE_RESEARCH_AXES/);
+ assert.ok(!ui.includes("buildPortraitRecommendations"));
+ assert.ok(!ui.includes("appFetch("));
+ assert.match(types,/axisRefs\?: string\[\]/);
+});
+
 test("client integration is opt-in, local only, responsive, and reused from completed tests",()=>{
  const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
  const ui=read("components/app/personal-axis-matches.jsx");
