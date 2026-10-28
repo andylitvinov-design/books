@@ -2,12 +2,14 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, CirclePlay, Coins, Download, Film, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Target, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
-import { otherVideoScenes, paintThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
+import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
+import type { FilmSource } from "@/lib/mandala/film-collection-v2";
+import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { startAmbientMusic } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
@@ -110,7 +112,8 @@ const studioCopy = {
     myVideos:"Current video",stepPhoto:"1. Add a photo",stepTheme:"2. Choose a theme",
     videoUnavailable:"The cinematic MP4 is unavailable. Please refresh this page.",
     stepTemplate:"3. Choose a template",stepSettings:"4. Customize your video",
-    themes:{money:"Money",relationships:"Relationships",energy:"Energy",goals:"Goals & meaning"},
+    themes:{money:"Money",energy:"Energy",life:"Life",health:"Health & wellbeing",relationships:"Relationships",goals:"Goals & meaning"},
+    healthNote:"Calming visualizations only · not medical advice, diagnosis or treatment.",
     replace:"Replace photo",addPhoto:"Add photo",noPhoto:"Your photo here",photoPrivate:"Only on your device",
     allTemplates:"All templates",fewTemplates:"Show less",templateHint:"Moving scenery; your face stays unchanged",
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
@@ -142,7 +145,8 @@ const studioCopy = {
     myVideos:"Текущий ролик",stepPhoto:"1. Загрузите фото",stepTheme:"2. Выберите тему",
     videoUnavailable:"Не удалось загрузить HD-видеоролик. Обновите страницу.",
     stepTemplate:"3. Выберите шаблон",stepSettings:"4. Настройте видео",
-    themes:{money:"Деньги",relationships:"Отношения",energy:"Энергия",goals:"Цели и смыслы"},
+    themes:{money:"Деньги",energy:"Энергия",life:"Жизнь",health:"Здоровье",relationships:"Отношения",goals:"Цели и смыслы"},
+    healthNote:"Визуализации для спокойствия и внимания · не диагностика и не лечение.",
     replace:"Заменить фото",addPhoto:"Загрузить фото",noPhoto:"Ваше фото",photoPrivate:"Только на устройстве",
     allTemplates:"Все шаблоны",fewTemplates:"Свернуть",templateHint:"Анимируется фон; лицо на фото не меняется",
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
@@ -174,7 +178,8 @@ const studioCopy = {
     myVideos:"Vídeo actual",stepPhoto:"1. Sube una foto",stepTheme:"2. Elige un tema",
     videoUnavailable:"No se pudo cargar el vídeo HD. Actualiza la página.",
     stepTemplate:"3. Elige una plantilla",stepSettings:"4. Personaliza el vídeo",
-    themes:{money:"Dinero",relationships:"Relaciones",energy:"Energía",goals:"Metas y sentido"},
+    themes:{money:"Dinero",energy:"Energía",life:"Vida",health:"Salud",relationships:"Relaciones",goals:"Metas y sentido"},
+    healthNote:"Visualizaciones para relajación · no constituyen diagnóstico ni tratamiento médico.",
     replace:"Cambiar foto",addPhoto:"Subir foto",noPhoto:"Tu foto",photoPrivate:"Solo en tu dispositivo",
     allTemplates:"Todas las plantillas",fewTemplates:"Mostrar menos",templateHint:"Se anima el entorno; tu rostro no se altera",
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
@@ -218,7 +223,7 @@ const moneyTemplates = [
 
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
 const durations = [10, 20, 30, 60] as const;
-const themeChoices: VideoTheme[] = ["money","relationships","energy","goals"];
+const themeChoices: VideoTheme[] = ["money","energy","life","health","relationships","goals"];
 const themeMusic: Exclude<AmbientMusic,"none">[] = ["harmony","prosperity","energy","love","meditation"];
 const musicBackgrounds = [
   "linear-gradient(145deg,#f7cf9a,#688b89)",
@@ -238,39 +243,44 @@ function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
 // Genuine still frames from the identical cinematic renderer used for video.
 // No fake play icons or misleading pictures of actors.
 // Tap to play exactly one visible thumbnail, without autoplay or 12 decoders.
+function NativeFilmThumbnail({ film, id, photo, title, playing }: {
+  film: { src: string; poster: string };
+  id: string; photo: HTMLImageElement | null; title: string; playing: boolean;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") { setVisible(true); return; }
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(Boolean(entry?.isIntersecting)),
+      { threshold: .05, rootMargin: "100px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    if (!playing || !visible) { video.pause(); return; }
+    video.muted = true;
+    void video.play().catch(() => { /* Safari requires a user gesture; tile is clickable */ });
+    return () => video.pause();
+  }, [playing, visible, film.src]);
+  return <video ref={ref} muted playsInline loop preload="none"
+    src={film.src} poster={film.poster}
+    aria-label={title} data-mandala-scene-preview={id}
+    data-real-mp4={film.src} data-photo-overlay-available={photo ? "true" : "false"}
+    data-scene-playing={playing && visible ? "true" : "false"}
+    className={styles.moneyFlowThumb}/>;
+}
 function CinematicSceneThumbnail({ scene, photo, title, playing }: {
   scene: MoneySceneId; photo: HTMLImageElement | null; title: string; playing: boolean;
 }) {
-  const ref=useRef<HTMLVideoElement>(null);
-  const [visible,setVisible]=useState(false);
-  const film=getRealMoneyFilm(scene);
-  useEffect(()=>{
-    const el=ref.current;
-    if(!el)return;
-    if(typeof IntersectionObserver==="undefined"){setVisible(true);return;}
-    const observer=new IntersectionObserver(([entry])=>setVisible(Boolean(entry?.isIntersecting)),
-      {threshold:.05,rootMargin:"100px"});
-    observer.observe(el);
-    return ()=>observer.disconnect();
-  },[]);
-  useEffect(()=>{
-    const video=ref.current;
-    if(!video)return;
-    if(!playing||!visible){video.pause();return;}
-    // Genuine H.264 frames from first-party MP4: never start playback on
-    // page load, never render a fake canvas loop as a video thumbnail.
-    video.muted=true;
-    void video.play().catch(()=>{/* iPhone may need another direct tap. */});
-    return ()=>video.pause();
-  },[playing,visible,scene]);
-  return <video ref={ref} muted playsInline loop preload="none"
-    src={film.src} poster={film.poster}
-    aria-label={title} data-mandala-scene-preview={scene}
-    data-real-mp4={film.src} data-photo-overlay-available={photo?"true":"false"}
-    data-scene-playing={playing&&visible?"true":"false"}
-    className={styles.moneyFlowThumb}/>;
+  const film = getRealMoneyFilm(scene);
+  return <NativeFilmThumbnail film={film} id={scene} photo={photo} title={title} playing={playing}/>;
 }
-
 function ThemedSceneThumbnail({ theme, scene, photo, title }: {
   theme: OtherTheme; scene: LocalSceneId; photo: HTMLImageElement | null; title: string;
 }) {
