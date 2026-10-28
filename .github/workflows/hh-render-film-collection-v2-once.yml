@@ -1,0 +1,60 @@
+name: HH one-time cinematic Full HD film collection v2
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/render-hh-film-collection-v2.mjs'
+      - '.github/workflows/hh-render-film-collection-v2-once.yml'
+permissions:
+  contents: write
+concurrency:
+  group: hh-native-film-v2-PR-HEAD
+  cancel-in-progress: true
+jobs:
+  render-once:
+    if: github.repository == 'andylitvinov-design/books' && github.event.pull_request.head.ref == 'feat/expanded-life-energy-wellness-films-20261028' && github.event.pull_request.head.repo.full_name == 'andylitvinov-design/books'
+    runs-on: ubuntu-latest
+    timeout-minutes: 37
+    env:
+      HH_FILM_V2_RENDER_APPROVED: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: feat/expanded-life-energy-wellness-films-20261028
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate existing owner FFmpeg dependency
+        run: node scripts/ensure-owner-video-renderer.mjs
+      - name: Render 20 approved and licensed 1080x1920 MP4 film compositions
+        run: node scripts/render-hh-film-collection-v2.mjs
+      - name: Require twenty playable films and frame posters
+        run: |
+          test "$(find public/videos/holistic-house/film-collection-v2 -name '*.mp4' | wc -l)" -eq 20
+          test "$(find public/videos/holistic-house/film-collection-v2 -name '*.jpg' | wc -l)" -eq 20
+          test -f public/videos/holistic-house/film-collection-v2/manifest.json
+      - name: Commit only the finished film bytes to PR branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/videos/holistic-house/film-collection-v2/
+          if git diff --cached --quiet; then
+            echo "Media files already current; no asset commit needed"
+            exit 0
+          fi
+          git commit -m 'assets(video): twenty distinct Full HD film scenes for money energy life wellbeing'
+          for attempt in $(seq 1 16); do
+            git fetch --no-tags origin '+refs/heads/feat/expanded-life-energy-wellness-films-20261028:refs/remotes/origin/feat/expanded-life-energy-wellness-films-20261028'
+            git rebase origin/feat/expanded-life-energy-wellness-films-20261028
+            if git push origin HEAD:refs/heads/feat/expanded-life-energy-wellness-films-20261028; then
+              echo 'HH_FILM_V2_MEDIA_COMMITTED'
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'HH_FILM_V2_MEDIA_PUSH_RETRIES_EXHAUSTED'
+          exit 1
