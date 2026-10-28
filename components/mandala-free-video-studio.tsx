@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Download, Film, Play, Pause, Share2, Sparkles, Square, X } from "lucide-react";
 import { moneyScenes, paintMoneyScene } from "@/lib/mandala/money-flow-effects";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
@@ -437,6 +437,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoIdentity }: {
     setNotice("");
   }, [frameUrl, photoIdentity, purpose, effect, moneyScene, aspect, duration, pace, strength, captionMode, captionText]);
 
+  // Safari can commit a previous paint after a fast format switch. Enforce
+  // the backing resolution synchronously on every aspect update, before the
+  // browser can capture a frame. Recording disables the aspect controls.
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || jobRef.current) return;
+    const size = dimensions(aspect);
+    if (canvas.width !== size.width) canvas.width = size.width;
+    if (canvas.height !== size.height) canvas.height = size.height;
+  }, [aspect]);
+
   useEffect(() => {
     if (!frameUrl || jobRef.current) return;
     let cancelled = false;
@@ -660,7 +671,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoIdentity }: {
       </fieldset>
 
       <div className={styles.freeVideoPreview}>
-        <canvas ref={canvasRef} width={dimensions(aspect).width} height={dimensions(aspect).height} aria-label={t.heading}
+        <canvas key={aspect} ref={canvasRef} width={dimensions(aspect).width} height={dimensions(aspect).height} aria-label={t.heading}
           style={{ aspectRatio: aspect === "portrait" ? "9 / 16" : aspect === "landscape" ? "16 / 9" : "1 / 1",
             display: result ? "none" : "block" }} />
         {result && <video src={result.url} controls playsInline preload="metadata" data-mandala-video-preview />}

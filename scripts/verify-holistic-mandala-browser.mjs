@@ -119,10 +119,25 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("#mandala-video-caption").fill("Safe personal intention");
         await page.locator('[data-mandala-video-aspect="landscape"]').click();
         await page.locator('[data-mandala-video-duration="10"]').click();
-        await page.waitForFunction(() => {
-          const canvas = document.querySelector("[data-mandala-free-video] canvas");
-          return canvas?.width === 960 && canvas?.height === 540;
-        }, undefined, { timeout: 10000 });
+        assert.equal(await page.locator('[data-mandala-video-aspect="landscape"]').getAttribute("aria-pressed"),
+          "true", engine + " 16:9 option must remain selected");
+        try {
+          await page.waitForFunction(() => {
+            const canvas = document.querySelector("[data-mandala-free-video] canvas");
+            return canvas?.width === 960 && canvas?.height === 540;
+          }, undefined, { timeout: 12000 });
+        } catch {
+          const diagnostic = await page.evaluate(() => {
+            const canvas = document.querySelector("[data-mandala-free-video] canvas");
+            return {
+              canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
+              aspect: document.querySelector('[data-mandala-video-aspect="landscape"]')?.getAttribute("aria-pressed"),
+              photo: Boolean(document.querySelector('#mandala-photo')),
+              editor: Boolean(document.querySelector('[data-mandala-free-video]')),
+            };
+          });
+          throw new Error(engine + " " + locale + " " + width + "px canvas resolution did not settle: " + JSON.stringify(diagnostic));
+        }
         const canvasSize = await page.locator("[data-mandala-free-video] canvas").evaluate(canvas =>
           ({ width: canvas.width, height: canvas.height }));
         assert.deepEqual(canvasSize, { width: 960, height: 540 }, "landscape must use actual 16:9 pixels");
