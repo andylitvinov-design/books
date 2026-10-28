@@ -61,6 +61,15 @@ test('gallery is lazy in same signed-in cabinet with account switch guard and re
   assert.match(gallery,/confirm\(t\.confirm\)/)
   assert.doesNotMatch(gallery,/localStorage|sessionStorage|Kling|HeyGen/i)
 })
+test('canceled 2h signed uploads keep their storage quota until safe cleanup',()=>{
+  assert.match(schema,/released_at timestamptz/)
+  assert.match(server,/reapOwnExpiredUploads/)
+  assert.match(server,/created_at<now\(\)-interval '3 hours'/)
+  assert.match(server,/status<>'deleted' or released_at is null/)
+  assert.match(server,/daily\.n>=6/)
+  assert.match(server,/storage\.remove\(\[file\.object_key\]\)/)
+  assert.match(server,/released_at=case when ready_at is not null then now\(\) else null end/)
+})
 test('no client image or wish in personal videos API input or storage schema',()=>{
   assert.doesNotMatch(server,/photoUrl|wishText|clientMessage|rawPrompt|faceImage/i)
   assert.doesNotMatch(schema,/photo_url|raw_photo|client_wish|test_result|health_history/i)
