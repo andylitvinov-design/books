@@ -93,8 +93,10 @@ test("the thematic energy support path preserves privacy and request journeys wi
   const filter = read("components/holistic-support-topic-filter.tsx");
   assert.ok(page.includes("<HolisticSupportTopicFilter locale={locale} />"));
   assert.doesNotMatch(page, /data-holistic-healing|data-holistic-offer=/);
-  for (const link of ["#meditation-practices", "#talismans", "/services/remote-energy-support"])
-    assert.ok(filter.includes(link), "missing thematic link " + link);
+  assert.ok(filter.includes('href="#meditation-practices"'), "meditations must retain an in-page anchor");
+  for (const trigger of ["talisman", "expert"])
+    assert.ok(filter.includes('data-holistic-order-trigger={id}'), "order cards must open the existing inline request panel: " + trigger);
+  assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\}/);
   assert.ok(filter.includes("data-holistic-topic-card={id}"));
   assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
   assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);

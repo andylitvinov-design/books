@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicLocale } from "@/data/academy/catalog";
-import { listRemoteEnergySupportMasters } from "@/lib/practitioners/public-remote-support-masters";
+import { listPublishedConsultationOffers, listRemoteEnergySupportMasters } from "@/lib/practitioners/public-remote-support-masters";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,17 @@ export async function GET(request: NextRequest) {
   if (!locale || !isPublicLocale(locale)) {
     return NextResponse.json({ error: "INVALID_LOCALE" }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
+  const kind = request.nextUrl.searchParams.get("kind");
+  if (kind && kind !== "consultation") {
+    return NextResponse.json({ error: "INVALID_KIND" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
   try {
+    if (kind === "consultation") {
+      const consultations = await listPublishedConsultationOffers(locale);
+      return NextResponse.json({ consultations }, {
+        headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+      });
+    }
     const masters = await listRemoteEnergySupportMasters(locale);
     return NextResponse.json({ masters }, {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },

@@ -224,3 +224,21 @@
  .kindChooser{gap:6px;padding:8px}
  .kindChooser button{padding:8px 6px;font-size:11px}
 }
+
+/* The first-screen chooser lives in HolisticInlineSupportOrder.
+   Preserve the full standalone wizard; show only verified results here. */
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.compactResults .results{margin:0;scroll-margin-top:90px}
+.compactResults .sectionHeading{margin-bottom:9px}
+.compactResults .stepNumber{display:none}
+.compactResults .sectionHeading h2{font-size:22px}
+.compactResults .disclaimer{margin:11px 4px 4px;font-size:10.5px}
+.compactResults .bookingForm .field textarea{display:block;width:100%;max-width:100%;min-height:54px;padding:9px 11px;font:400 16px/1.4 system-ui,sans-serif}
+.compactResults .bookingForm .field small{color:#63736d;font-size:10px;line-height:1.4}
+.clearBudget{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:0 10px 0 0;padding:8px 12px;border:1px solid #aa8c73;border-radius:10px;background:#f4e8da;color:#65432f;cursor:pointer;font:750 12px/1.3 system-ui,sans-serif}
+.clearBudget:hover{background:#e6d1bd}
+@media(max-width:650px){
+ .compactResults .sectionHeading h2{font-size:20px}
+ .compactResults .empty{padding:12px}
+ .compactResults .results{margin:0}
+}

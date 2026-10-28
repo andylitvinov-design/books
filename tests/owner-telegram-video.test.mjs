@@ -1,17 +1,20 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
-import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
-  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
+import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
+  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
+  ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
-import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
 import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
-import {OWNER_AI_COMMANDS} from '../lib/practitioners/owner-ai-telegram.mjs'
+import {OWNER_AI_COMMANDS,ownerScopedTelegramCommands} from '../lib/practitioners/owner-ai-telegram.mjs'
 
 const TIME=1793001600000
 const BOT='holistichouse_bot'
@@ -36,11 +39,30 @@ test('owner-only Telegram video deep link and explicit private preview resend co
    message_id:56,text:'/start video'}}
  assert.equal(parsed(update)?.action,'start')
  assert.equal(parsed({...update,message:{...update.message,text:'/video_retry'}})?.action,'retry')
+ assert.equal(parsed({...update,message:{...update.message,text:'/video_status'}})?.action,'status')
  assert.equal(parsed(callback('hh-video:retry'))?.action,'retry')
  assert.equal(parsed({...update,message:{...update.message,text:'/start@wrongbot video'}}),null)
  const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
  assert.equal(parsed(group),null)
 })
+test('Dot confirms video processing start in Toronto and exposes in-progress status',()=>{
+ const totals={images:2,audios:3,seconds:108}
+ const started=ownerVideoRenderingMessage(totals,'2026-10-27T19:36:14.000Z')
+ assert.match(started,/Сборка видео началась в 15:36 \(Торонто\)/)
+ assert.match(started,/2 фото.*3 аудио.*108 сек/)
+ assert.match(started,/приватный MP4/)
+ assert.match(started,/\/video_status/)
+ assert.match(started,/YouTube ничего не загружаю/)
+ assert.ok(started.includes('\n📷 '),'receipt must contain an actual newline')
+ assert.match(ownerVideoRenderingMessage(totals,'2026-12-27T19:36:14.000Z'),/14:36 \(Торонто\)/)
+ assert.doesNotMatch(ownerVideoRenderingMessage(totals,null),/Торонто/)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/where practitioner_id=\$1 returning processing_started_at/)
+ assert.match(service,/await ownerMessage\(owner,ownerVideoRenderingMessage\(batch.totals,batch.startedAt\)/)
+ assert.match(service,/background:\(\)=>buildVideo\(config,batch,owner,fetcher\)/)
+ assert.match(service,/rendering\?ownerVideoRenderingMessage\(rendering,row.processing_started_at\)/)
+})
+
 test('photo and voice/audio messages attach only in an explicit owner video session',()=>{
  assert.equal(parsed(media([photo],'photo')).action,'media')
  assert.equal(parsed(media([photo],'photo')).part.kind,'photo')
@@ -61,25 +83,140 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  const fixed='b6e8526e-c251-4dd5-a9ca-2886c430f912'
  assert.equal(parsed(callback('hh-video:start')).action,'start')
  assert.equal(parsed(callback('hh-video:done')).action,'done')
+ assert.equal(parsed(callback('hh-video:status')).action,'status')
  assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
+ const manifestButton=ownerVideoConfirmationButtons(fixed,966890850,14).inline_keyboard[0][0]
+ assert.match(manifestButton.text,/проверенный набор/)
+ assert.ok(manifestButton.callback_data.length<=64)
+ assert.deepEqual(
+   (({action,jobId,itemsUpdateId,itemCount})=>({action,jobId,itemsUpdateId,itemCount}))(parsed(callback(manifestButton.callback_data))),
+   {action:'confirm',jobId:fixed,itemsUpdateId:966890850,itemCount:14})
+ // A late lower-ID Telegram update is accepted while the high-water ID stays
+ // unchanged; a manifest with 14 sources must not authorize 15.
+ assert.equal(parsed(callback(ownerVideoConfirmationButtons(fixed,966890850,15)
+   .inline_keyboard[0][0].callback_data))?.itemCount,15)
+ assert.ok(ownerVideoConfirmationButtons(fixed,Number.MAX_SAFE_INTEGER,30)
+   .inline_keyboard[0][0].callback_data.length<=64)
+ assert.throws(()=>ownerVideoConfirmationButtons(fixed,966890850,31),/INVALID_VIDEO_JOB/)
+ assert.equal(parsed(callback('hh-video:c:'+fixed+':X')),null)
  assert.equal(parsed(callback('hh-video:publish:bad')),null)
  const spoof=callback('hh-video:done');spoof.callback_query.message.from.username='Attacker_bot'
  assert.equal(parsed(spoof),null)
  const unpaired=callback('hh-video:done');unpaired.callback_query.from.id=555
  assert.equal(parsed(unpaired),null)
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
+ assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
+ assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
  assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[0][0].callback_data,'hh-video:publish:'+fixed)
 })
 test('strict ordered safe source limits and anti-duplication',()=>{
  const items=[part('photo',0),part('audio',1)]
  assert.deepEqual(safeVideoParts(items),{images:1,audios:1,bytes:4600,seconds:3})
- assert.equal(VIDEO_IMAGE_LIMIT,6)
- assert.equal(VIDEO_AUDIO_LIMIT,4)
+ assert.equal(VIDEO_IMAGE_LIMIT,15)
+ assert.equal(VIDEO_AUDIO_LIMIT,15)
  assert.equal(safeVideoParts([...items,items[1]]),null)
- assert.equal(safeVideoParts([...Array.from({length:7},(_,i)=>part('photo',i)),part('audio',7)]),null)
- assert.equal(safeVideoParts([part('audio',0,{duration:121})]),null)
+ assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',16)]),null)
+ assert.equal(safeVideoParts([part('audio',0,{duration:1801})]),null)
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
+})
+
+test('production database item constraint is widened to 30 without weakening RLS',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261027174939_hh_owner_video_15_photo_15_audio_20261027.sql',import.meta.url),'utf8')
+ assert.match(sql,/drop constraint telegram_owner_video_jobs_items_check/)
+ assert.match(sql,/jsonb_array_length\(items\) <= 30/)
+ assert.doesNotMatch(sql,/disable row level security|drop table|grant\s+.*\s+to\s+anon/i)
+})
+
+test('serverless bundled FFmpeg path falls back to executable in traced node_modules only',async()=>{
+ const temp=mkdtempSync(join(tmpdir(),'hh-video-exec-'))
+ try{
+   const folder=join(temp,'node_modules','ffmpeg-static')
+   mkdirSync(folder,{recursive:true})
+   const executable=join(folder,'ffmpeg')
+   writeFileSync(executable,'#!/bin/sh\\nexit 0\\n',{mode:0o755})
+   assert.equal(await resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),executable)
+   assert.equal(await resolveOwnerVideoFfmpegPath(executable,temp),executable)
+   chmodSync(executable,0o644)
+   await assert.rejects(()=>resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),/VIDEO_RENDERER_UNAVAILABLE/)
+ }finally{rmSync(temp,{force:true,recursive:true})}
+})
+
+test('Vercel npm installation permits only the pinned ffmpeg binary downloader',()=>{
+ const config=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'))
+ assert.equal(config.dependencies['ffmpeg-static'],'5.3.0')
+ assert.equal(config.allowScripts['ffmpeg-static@5.3.0'],true)
+ assert.equal(Object.keys(config.allowScripts).length,1)
+ assert.equal(config.allowScripts['ffmpeg-static'],undefined)
+ assert.equal(config.allowScripts['unrs-resolver@1.11.1'],undefined)
+ const next=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
+ assert.match(next,/\/api\/app\/notification-channels\/telegram\/webhook/)
+ assert.match(next,/node_modules\/ffmpeg-static\/ffmpeg/)
+})
+
+test('15 photographs and 15 audio pieces are allowed and compose in their real mixed order',()=>{
+ const interleaved=Array.from({length:15},(_,i)=>[
+   part('photo',i*2),part('audio',i*2+1,{duration:2})
+ ]).flat()
+ const totals=safeVideoParts(interleaved)
+ assert.deepEqual(totals,{images:15,audios:15,bytes:69000,seconds:30})
+ assert.equal(VIDEO_MAX_INPUT_BYTES,90_000_000)
+ assert.equal(VIDEO_MAX_SECONDS,1800)
+ assert.equal(safeVideoParts([...interleaved,part('photo',30)]),null)
+ assert.equal(safeVideoParts([...interleaved,part('audio',30)]),null)
+ assert.equal(safeVideoParts(interleaved.map((item,i)=>
+   i===1?{...item,duration:1800}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:5_000_000}:{...item,bytes:1_100_000})),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:1_250_000}:item))?.images,15)
+ const mixed=[...interleaved].reverse()
+ const plan=photoTimeline(mixed)
+ assert.equal(plan.length,15)
+ assert.deepEqual(plan.map(x=>x.startMs),[0,1000,...Array.from({length:13},(_,i)=>(i+1)*2000)])
+ assert.deepEqual(plan.map(x=>x.durationMs),[1000,1000,...Array(12).fill(2000),4000])
+ const args=videoRenderArguments(mixed,'/tmp/full-15-15.mp4')
+ assert.equal(args.filter(x=>x==='-i').length,30)
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=1')))
+ assert.ok(args.some(x=>x.includes('concat=n=15:v=0:a=1')))
+ assert.ok(args.includes('libx264')&&args.includes('aac'))
+})
+
+test('full owner batch: 11 audio + 3 late photos exceeds old 120s cap, keeps all sources',()=>{
+ const audios=Array.from({length:11},(_,i)=>part('audio',i,{
+   duration:30,bytes:3_000_000
+ }))
+ const photos=Array.from({length:3},(_,i)=>part('photo',i+11,{
+   bytes:500_000
+ }))
+ const files=[...audios,...photos]
+ assert.deepEqual(safeVideoParts(files),{
+   images:3,audios:11,bytes:34_500_000,seconds:330
+ })
+ const plan=photoTimeline([...files].reverse())
+ assert.deepEqual(plan.map(p=>p.startMs),[0,270000,300000])
+ assert.deepEqual(plan.map(p=>p.durationMs),[270000,30000,30000])
+ const args=videoRenderArguments([...files].reverse(),'/tmp/full-owner-batch.mp4')
+ assert.equal(args.filter(x=>x==='-i').length,14)
+ assert.ok(args.some(x=>x.includes('concat=n=3:v=1')))
+ assert.ok(args.some(x=>x.includes('concat=n=11:v=0:a=1')))
+ assert.ok(args.includes('-shortest'))
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['270.000','30.000','54.000'])
+ assert.ok(args.includes('-r')&&args.includes('2'))
+ assert.equal(ownerVideoLimitReason(files,part('audio',20)), 'invalid')
+ const maxImages=Array.from({length:15},(_,i)=>part('photo',i))
+ assert.equal(ownerVideoLimitReason(maxImages,part('photo',16)),'photos')
+ const maxAudio=Array.from({length:15},(_,i)=>part('audio',i))
+ assert.equal(ownerVideoLimitReason(maxAudio,part('audio',16)),'audios')
+ assert.equal(ownerVideoLimitReason(files,part('audio',20,{duration:1600})),'seconds')
+ assert.equal(ownerVideoLimitReason(files,part('audio',20,{duration:30,bytes:57_000_000})),'bytes')
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/if\(event.action==='done'\)\{[\s\S]*await renderManifest\(config\)/)
+ assert.match(service,/if\(event.action==='confirm'\)\{[\s\S]*await reserveRender\(config,event\)/)
+ assert.match(service,/event.itemsUpdateId!==Number\(row.last_update_id\)/)
+ assert.match(service,/event.itemCount!==row.items.length/)
+ const webhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
+ assert.match(webhook,/export const maxDuration=300/)
 })
 test('FFmpeg command arguments use no shell and encode a single bounded 16:9 stream',()=>{
  const args=videoRenderArguments([part('photo',0),part('photo',1),part('audio',2)],'/tmp/output.mp4')
@@ -87,7 +224,11 @@ test('FFmpeg command arguments use no shell and encode a single bounded 16:9 str
  assert.ok(args.includes('libx264'))
  assert.ok(args.includes('aac'))
  assert.ok(args.some(v=>v.includes('concat=n=2:v=1')))
- assert.ok(args.some(v=>v.includes('scale=1920:1080')))
+ assert.ok(args.some(v=>v.includes('setsar=1,scale=1920:1080:force_original_aspect_ratio=decrease')))
+ assert.ok(args.includes('-aspect:v')&&args.includes('16:9'))
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/form\.set\('width','1920'\)/)
+ assert.match(service,/form\.set\('height','1080'\)/)
  assert.ok(!args.includes('-c:v copy'))
  assert.throws(()=>videoRenderArguments([part('photo',0)],'/tmp/output.mp4'),/INVALID_COMPOSITION/)
 })
@@ -97,23 +238,23 @@ test('photo positions follow cumulative audio durations in mixed Telegram messag
  const unordered=[updates[4],updates[5],updates[1],updates[3],updates[2],updates[0]]
  const plan=photoTimeline(unordered)
  assert.deepEqual(plan.map(x=>[x.part.updateId,x.startMs,x.durationMs]),[
-   [100,0,4000],[102,4000,3000],[104,7000,2000]
+   [100,0,2000],[102,2000,2000],[104,4000,5000]
  ])
  const args=videoRenderArguments(unordered,'/tmp/output.mp4')
- assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['4.000','3.000','2.000'])
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['2.000','2.000','13.000'])
  assert.equal(plan.reduce((sum,p)=>sum+p.durationMs,0),9000)
 })
-test('consecutive photos split the following audio segment without reordering',()=>{
+test('consecutive photos split the preceding audio segment without reordering',()=>{
  const plan=photoTimeline([part('photo',0),part('audio',1,{duration:3}),
    part('photo',2),part('photo',3),part('audio',4,{duration:4})])
  assert.deepEqual(plan.map(x=>[x.startMs,x.durationMs]),[
-   [0,3000],[3000,2000],[5000,2000]
+   [0,1000],[1000,1000],[2000,5000]
  ])
 })
-test('photos after the last audio stay visible as an outro, never a zero-length frame',()=>{
+test('photos sent after audio cover their preceding audio, never append an outro',()=>{
  const seq=[part('photo',0),part('audio',1,{duration:8}),part('photo',2)]
  assert.deepEqual(photoTimeline(seq).map(x=>[x.startMs,x.durationMs]),[
-   [0,6500],[6500,1500]
+   [0,4000],[4000,4000]
  ])
  const ending=[part('audio',0,{duration:2}),part('photo',1),part('photo',2)]
  assert.deepEqual(photoTimeline(ending).map(x=>[x.startMs,x.durationMs]),[
@@ -183,6 +324,7 @@ test('Google RU ownership and Unlisted are checked before and after upload',asyn
  })
  assert.equal(data.channelId,VIDEO_RU_CHANNEL_ID)
  assert.equal(data.privacy,'unlisted')
+ assert.equal(data.uploadStatus,'processed')
  assert.equal(begin,1)
  assert.equal(uploaded,1)
  assert.equal(calls.filter(c=>c.method==='PUT').length,1)
@@ -199,8 +341,8 @@ test('Google fails closed on wrong channel, missing authorization and wrong visi
   status:{privacyStatus:'private'}}]})
  await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),privateVideo),/PRIVACY_HOLD/)
 })
-test('YouTube readback rejects failed, rejected, deleted and unconfirmed uploads',async()=>{
- for(const uploadStatus of ['failed','rejected','deleted',undefined,'unknown']){
+test('YouTube readback requires complete processing, and reports confirmed status',async()=>{
+ for(const uploadStatus of ['uploaded','failed','rejected','deleted',undefined,'unknown']){
   const fetcher=async()=>Response.json({items:[{
    id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
    status:{privacyStatus:'unlisted',uploadStatus}
@@ -208,13 +350,14 @@ test('YouTube readback rejects failed, rejected, deleted and unconfirmed uploads
   await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher),
    /VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
  }
- for(const uploadStatus of ['uploaded','processed']){
-  const fetcher=async()=>Response.json({items:[{
-   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
-   status:{privacyStatus:'unlisted',uploadStatus}
-  }]})
-  assert.equal((await verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher)).id,'Yt123456abc')
- }
+ const fetcher=async()=>Response.json({items:[{
+  id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+  status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+ }]})
+ assert.deepEqual(await verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher),{
+  id:'Yt123456abc',channelId:VIDEO_RU_CHANNEL_ID,privacy:'unlisted',
+  uploadStatus:'processed',title:''
+ })
 })
 test('failed YouTube processing preserves the uploaded ID without another media request',async()=>{
  let puts=0,inits=0;const saved=[]
@@ -267,7 +410,22 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(service,/if\(event.action==='done'\)/)
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
  const doneHandler=service.split("if(event.action==='done'){")[1].split("if(event.action==='retry'){")[0]
- assert.doesNotMatch(doneHandler,/if\(batch.state==='reserved'\)\{\s*await ownerMessage/)
+ assert.match(doneHandler,/if\(batch.state==='reserved'\)\{[\s\S]*await ownerMessage\(owner/)
+ assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId,manifest.itemCount\)/)
+ assert.match(service,/event.itemsUpdateId!==Number\(row.last_update_id\)/)
+ assert.match(service,/event.itemCount!==row.items.length/)
+ assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId,manifest.itemCount\)/)
+ assert.match(service,/if\(event.action==='confirm'\)/)
+ assert.match(service,/if\(result.state==='limit'&&result.notify\)/)
+ assert.doesNotMatch(doneHandler.split("if(event.action==='confirm')")[0],/background:\(\)=>buildVideo/)
+ assert.match(doneHandler,/background:\(\)=>buildVideo\(config,batch,owner,fetcher\)/)
+ assert.match(service,/async function markPreviewDelivery\(config,jobId,confirmed\)/)
+ assert.match(service,/!Number.isSafeInteger\(result.result\?\.message_id\)/)
+ assert.match(service,/markPreviewDelivery\(config,batch.jobId,false\)/)
+ assert.match(service,/markPreviewDelivery\(config,jobId,true\)/)
+ assert.match(service,/const ready=row\?\.state==='preview'/)
+ assert.match(service,/Повторить доставку MP4/)
+ assert.match(service,/https:\/\/holistichouse\.vercel\.app\/admin\/materials/)
  assert.match(service,/state='uncertain'/)
  assert.equal(readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8').includes("await requireAdminRequest()"),true)
 })
@@ -309,18 +467,24 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
-   .find(x=>x.callback_data==='hh-video:start')
+   .find(x=>x.url==='https://t.me/Andydotbot?start=video')
  assert.ok(videoButton)
  assert.match(videoButton.text,/Создать видео/)
+ assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
+   .some(x=>x.url==='https://t.me/Andydotbot?start=combine'))
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
-   .some(x=>x.callback_data==='hh-video:start'))
+   .some(x=>x.url==='https://t.me/Andydotbot?start=video'))
  const dotOwner={id:privateBase.id,is_bot:false}
  const dotCommand={update_id:2007,message:{
    date:TIME/1000,chat:privateBase,from:dotOwner,message_id:47,text:'/video'}}
  assert.equal(parseOwnerVideoUpdate(dotCommand,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ const dotLink={...dotCommand,message:{...dotCommand.message,text:'/start video'}}
+ assert.equal(parseOwnerVideoUpdate(dotLink,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ assert.match(ownerVideoStartMessage().text,/\/video_done/)
  const dotCallback={update_id:2008,callback_query:{id:'video-start',
    data:'hh-video:start',from:dotOwner,
    message:{chat:privateBase,from:{is_bot:true,username:'Andydotbot'}}}}
@@ -335,8 +499,37 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  assert.match(transport,/saved\[i\]\?\.description===command.description/)
 });
 
+test('private /video command remains registered if Owner AI is disabled',()=>{
+ const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
+   ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,false),[])
+ assert.deepEqual(menu('dedicated',true,true),[])
+ const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
+ assert.match(source,/ownerMenu\(env\)/)
+ assert.match(source,/commands:ownerCommands,scope:\{type:'chat',chat_id:chatNumber\}/)
+ assert.match(source,/ownerCommands.every\(\(command,i\)=>/)
+ assert.match(source,/!info.allowed_updates\?\.includes\('callback_query'\)/)
+ const audioService=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
+ assert.match(audioService,/env.HH_OWNER_AI_TG_ENABLED==='true'\|\|env.HH_OWNER_VIDEO_ENABLED==='true'/)
+})
+
 test('admin YouTube upload guide points owner video to the same Dot bot, not CRM',()=>{
  const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
  assert.match(page,/https:\/\/t\.me\/Andydotbot\?start=video/)
  assert.doesNotMatch(page,/t\.me\/holistichouse_bot\?start=video/)
+})
+
+test('Vercel installs pinned FFmpeg and ships its binary with the private Dot webhook',()=>{
+ const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'))
+ assert.equal(pkg.dependencies['ffmpeg-static'],'5.3.0')
+ assert.equal(pkg.allowScripts?.['ffmpeg-static@5.3.0'],true)
+ assert.match(pkg.scripts.prebuild,/node scripts\/ensure-owner-video-renderer\.mjs/)
+ const nextConfig=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
+ assert.match(nextConfig,/serverExternalPackages:\s*\[["']ffmpeg-static["']\]/)
+ assert.match(nextConfig,/notification-channels\/telegram\/webhook/)
+ const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
+ assert.match(workflow,/ensure-owner-video-renderer\.mjs --verify-trace/)
 })

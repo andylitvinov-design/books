@@ -3893,7 +3893,8 @@ function RequestForm({ service, locale, data, close, onDone }) {
         timezone:remoteDraft.timezone, startsAt:remoteDraft.startsAt,
         expectedPrice:remoteDraft.expectedPrice, expectedCurrency:remoteDraft.expectedCurrency,
       } : undefined,
-      talismanRequest: talismanDraft ? { version:1, goal:talismanDraft.goal } : undefined,
+      talismanRequest: talismanDraft ? { version:1, goal:talismanDraft.goal,
+          ...(talismanDraft.catalogId ? {catalogId:talismanDraft.catalogId} : {}) } : undefined,
       shareResultId: (remoteDraft || talismanDraft) ? null : (shareId || null),
       shareConfirmed: confirmed,
     }

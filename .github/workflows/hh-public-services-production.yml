@@ -27,8 +27,10 @@ jobs:
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
         run: |
-          node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs
-          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/academy-course-video-playlist.tsx
+          node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
+          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
+          node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs
+          npx eslint components/holistic-support-mobile.tsx components/taoist-talisman-catalog.tsx lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs
           npx tsc --noEmit
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
@@ -55,6 +57,7 @@ jobs:
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
+          node scripts/verify-holistic-support-recommendations-mobile.mjs || status=$?
           node scripts/verify-holistic-topics-browser.mjs || status=$?
           node scripts/verify-direction-focus-mobile.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
@@ -80,6 +83,7 @@ jobs:
             artifacts/business-quiz-mobile/
             artifacts/ideas-mobile/
             artifacts/holistic-support-mobile/
+            artifacts/holistic-support-recommendations/
             artifacts/holistic-topic-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/

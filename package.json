@@ -30,7 +30,7 @@
     "test:billing:db": "node --conditions=react-server --test --test-concurrency=1 tests/billing-database.integration.mjs",
     "test:session-save": "node --test tests/client-session-cabinet-navigation.test.mjs tests/app-auth-pkce.integration.mjs tests/client-session-save-to-google.test.mjs tests/session-exit-save-navigation.test.mjs",
     "test:coaching:release": "node --test tests/coaching-session-pdf.test.mjs tests/coaching-gentle-dialogue.test.mjs tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/tantric-intimacy-coaching.test.mjs tests/coaching-topic-groups.test.mjs tests/coaching-session-onboarding.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-persistence.test.mjs tests/coaching-author-audio.test.mjs",
-    "prebuild": "node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs",
+    "prebuild": "node scripts/ensure-owner-video-renderer.mjs && node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs",
     "predev": "node scripts/cache-ancient-coaching-photos.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs",
     "build:static-artwork": "node scripts/build-public-card-artwork.mjs"
   },
@@ -73,6 +73,9 @@
     "postcss": "^8.5.23",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
+  },
+  "allowScripts": {
+    "ffmpeg-static@5.3.0": true
   },
   "overrides": {
     "nanoid": "3.3.18",
