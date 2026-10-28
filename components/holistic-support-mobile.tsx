@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
@@ -11,6 +11,8 @@ import {
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportInlineGuide } from "@/components/holistic-support-inline-guide";
+import { SupportGuestQuestPanel, useSupportGuestQuest } from "@/components/holistic-support-guest-quest";
+import type { QuestStepId } from "@/lib/holistic-support/guest-quest.mjs";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
@@ -182,7 +184,7 @@ const copy = {
     meditationCategoryRelated: "Related original Sun practices; no recording is specifically tagged with Meaning.",
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
-    play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
+    play: "Start meditation", playLimitReached: "Guest starts used", playToContinue: "Free sign-in to continue", originalEn: "Original English audio", originalRu: "Original Russian audio",
     youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.",
     feedTitle: "Explore all meditations", feedHint: "Scroll through the descriptions and select a recording. It opens in the player above; playback never starts automatically.",
     feedChoose: "Select", feedAudioRu: "Russian audio", feedAudioEn: "English audio",
@@ -200,7 +202,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
+    private: "Private on this page", privateInfo: "Sliders, photos, video IDs and test results are not stored here. Only anonymous player-start counts and step flags stay in this browser; they are not automatically saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
@@ -294,7 +296,7 @@ const copy = {
     meditationCategoryRelated: "Близкие оригинальные практики Солнца: отдельной записи с темой «Смыслы» пока нет.",
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
-    play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
+    play: "Начать медитацию", playLimitReached: "Заряд закончился", playToContinue: "Войти бесплатно и продолжить", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
     youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.",
     feedTitle: "Лента медитаций", feedHint: "Листай вниз и выбирай запись по описанию. Она откроется в большом плеере сверху, без автозапуска.",
     feedChoose: "Выбрать", feedAudioRu: "звук RU", feedAudioEn: "звук EN",
@@ -312,7 +314,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
+    private: "Лично на этом экране", privateInfo: "Оценки, фото, названия видео и ответы тестов здесь не сохраняются. В браузере остаются только общий счётчик запусков и отметки шагов; в кабинет они автоматически не переносятся.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
@@ -406,7 +408,7 @@ const copy = {
     meditationCategoryRelated: "Prácticas originales del Sol relacionadas; aún no hay una grabación etiquetada específicamente como Sentido.",
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
-    play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
+    play: "Empezar meditación", playLimitReached: "Sin inicios de invitado", playToContinue: "Entrar gratis para seguir", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
     youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.",
     feedTitle: "Explora todas las meditaciones", feedHint: "Desplázate por las descripciones y elige una grabación. Se abrirá arriba, sin reproducción automática.",
     feedChoose: "Elegir", feedAudioRu: "audio en ruso", feedAudioEn: "audio en inglés",
@@ -424,7 +426,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
+    private: "Solo en esta pantalla", privateInfo: "No se guardan puntuaciones, fotos, vídeos concretos ni respuestas. Solo un contador anónimo de inicios y los pasos marcados quedan en este navegador, no en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
@@ -482,9 +484,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const meditationCategoryRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [opened, setOpened] = useState<string[]>([]);
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const quest = useSupportGuestQuest();
 
   // Google returns to the same public page with a one-use non-personal
   // OAuth continuation flag. The client-side scoring/photo dashboard never
@@ -573,6 +575,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     }));
   const onCheckinChange = (id: CheckinArea, value: number) => {
     if (!Number.isInteger(value) || value < 1 || value > 10) return;
+    quest.mark("checkin");
     setScores(previous => ({ ...previous, [id]: value }));
     setEditedCheckins(previous => previous.includes(id) ? previous : [...previous, id]);
     // Invalidate previously applied ranking; keep accepted category answers.
@@ -580,6 +583,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setRecommendation(null); setGoalSelection(null);
   };
   const onRecommendations = () => {
+    quest.mark("recommendation");
     // No unsolicited analysis: launch dialogue from the user's actual inputs.
     setRecommendation(asFocusScores(scores));
     setGoalFilterOpen(false);
@@ -605,6 +609,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setGoalSavedSectors(previous => ({ ...previous, [sector]: value }));
   };
   const applyGoalFilter = (value: GoalSelection) => {
+    quest.mark("recommendation");
     if (value.savedSectors) setGoalSavedSectors(value.savedSectors);
     const formats = value.recommendationFormats ?? [...GOAL_RECOMMENDATION_FORMATS];
     setGoalRecommendationFormats(formats);
@@ -643,11 +648,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setGoalSelection(null); setRecommendation(null); setTheme("all"); setGuideOpen(false);
   };
   const startVideo = () => {
-    if (!selected) return;
+    // A click/YouTube player start, never proof that the meditation was watched.
+    if (!selected || !quest.launch()) return;
     setPlaying(true);
-    setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const chooseMeditationCategory = (value: MeditationCategory) => {
+    quest.mark("category");
     setMeditationCategoryOverride(value);
     // A new primary direction must not inherit stale Programme/Master filters.
     setTheme("all"); setProgram("all"); setMaster("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
@@ -662,6 +668,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     });
   };
   const changeChoice = (value: Choice) => {
+    if (value === "pump") quest.mark("course");
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
   };
@@ -678,8 +685,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   }, [choice, goalFilterOpen]);
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
-  const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
-  const progressTotal = relevantVideos.length;
   const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
@@ -702,6 +707,16 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       : selectedChoice === "healing" ? "support-healing-panel" : "support-mobile-experience");
   };
   const scene = choice === "meditation";
+  const onQuestStep = (id: QuestStepId) => {
+    if (id === "checkin") { scrollToSupport("mobile-assessment-title"); return; }
+    if (id === "category") { changeChoice("meditation"); scrollToSupport("meditation-category-options"); return; }
+    if (id === "recommendation") { onRecommendations(); return; }
+    if (id === "firstVideo" || id === "secondVideo") {
+      changeChoice("meditation"); scrollToSupport("support-meditation-gallery"); return;
+    }
+    if (id === "test") { changeChoice("tests"); return; }
+    if (id === "course") { changeChoice("pump"); scrollToSupport("support-mobile-experience"); }
+  };
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
@@ -918,8 +933,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                     <h2>{goalSelection ? t.goalHero[goalSelection.sector] : meditationCategory === "all" ? t.heroTitle[focus] : t.meditationCategoryHero[meditationCategory]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
+                      data-support-play disabled={!quest.canPlay}><Play size={28} fill="currentColor" aria-hidden="true" />{quest.ready && !quest.canPlay ? t.playLimitReached : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
+                    {quest.ready && !quest.canPlay ? <Link href="#support-progress" className={styles.heroCourseLink} data-support-guest-limit-cta>
+                      {t.playToContinue}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                     {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
                       data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                   </div>
@@ -1042,17 +1059,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </section>
 
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
-          <h2 id="support-mobile-progress-heading">{t.progress}</h2>
-          <div className={styles.progressGrid}>
-            <div className={styles.progressStarted}>
-              <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
-                <strong>{progressCount}/{progressTotal}</strong>
-              </div>
-              <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
-            </div>
-            <div className={styles.progressFocus}><ActiveFocusIcon size={25} aria-hidden="true" /><strong>{activeFocusLabel}</strong><span>{t.focusStatus}</span></div>
-            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
-          </div>
+          <SupportGuestQuestPanel locale={locale} quest={quest} averageScore={averageScore}
+            focusLabel={activeFocusLabel} onStep={onQuestStep} />
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>
         <footer className={styles.disclaimer}>
