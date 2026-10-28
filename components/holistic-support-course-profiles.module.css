@@ -78,3 +78,9 @@
   .actions { max-width:258px; }
 }
 @media (prefers-reduced-motion:reduce) { .profile,.actions button { transition:none; } }
+
+/* A profile's test wizard expands below the photo, without a route change. */
+.inlineTests { display:grid; min-width:0; gap:9px; padding:12px; border:1px solid #b7ddc9; border-radius:17px; background:#f4f8ee; scroll-margin-top:16px; }
+.inlineTestsHeading { display:flex; align-items:center; gap:8px; padding:3px 4px; color:#185d4b; font-size:clamp(15px,2vw,19px); }
+.inlineTestsHeading svg { flex:none; }
+@media (max-width:640px) { .inlineTests { padding:8px 6px; gap:6px; } .inlineTestsHeading { font-size:15px; } }

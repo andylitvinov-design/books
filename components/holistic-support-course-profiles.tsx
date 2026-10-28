@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalityProfilesBuilder, type PublicTest } from "@/components/personality-profiles-builder";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,6 +15,8 @@ import type { SupportMobileCourse } from "@/components/holistic-support-mobile";
 import styles from "./holistic-support-course-profiles.module.css";
 
 export type CourseProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
+
+const profileFocusMap = { energy: "wellbeing", money: "work", love: "relationships", meaning: "identity" } as const;
 
 const profiles = [
   { id: "energy", Icon: HeartPulse },
@@ -79,10 +83,12 @@ const content = {
 } as const;
 
 export function HolisticSupportCourseProfiles({
-  locale, courses, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
+  locale, courses, profileTests, testSector, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
 }: {
   locale: PublicLocale;
   courses: SupportMobileCourse[];
+  profileTests: PublicTest[];
+  testSector: CourseProfileSector | null;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
   active: CourseProfileSector;
   onSelect: (sector: CourseProfileSector) => void;
@@ -118,7 +124,7 @@ export function HolisticSupportCourseProfiles({
         <p>{current.description}</p>
         <div className={styles.actions}>
           <button type="button" className={styles.primary} data-support-profile-test
-            onClick={onTests}><ListChecks size={19} aria-hidden="true" />{t.takeTest}<ArrowRight size={17} aria-hidden="true" /></button>
+            onClick={onTests} aria-controls="support-profile-inline-tests" aria-expanded={testSector === active}><ListChecks size={19} aria-hidden="true" />{t.takeTest}<ArrowRight size={17} aria-hidden="true" /></button>
           <button type="button" data-support-profile-fill
             onClick={() => onFillProfile(active)}><BookOpen size={19} aria-hidden="true" />{t.fill}<ArrowRight size={17} aria-hidden="true" /></button>
           <button type="button" data-support-profile-recommend
@@ -127,6 +133,14 @@ export function HolisticSupportCourseProfiles({
         <p className={styles.hint}>{t.guidance}</p>
       </div>
     </div>
+    {testSector ? <section className={styles.inlineTests} id="support-profile-inline-tests"
+      data-support-profile-inline-tests data-sector={testSector} aria-label={t.profile[testSector].label}>
+      <div className={styles.inlineTestsHeading}>
+        <ListChecks size={19} aria-hidden="true" /><strong>{t.profile[testSector].label} · {t.takeTest}</strong>
+      </div>
+      <PersonalityProfilesBuilder key={testSector} locale={locale} tests={profileTests}
+        inline initialFocus={profileFocusMap[testSector]} />
+    </section> : null}
     <div className={styles.extras} data-support-courses-panel>
       <p className={styles.localNote}><CheckCircle2 size={16} aria-hidden="true" />{t.local}</p>
       <nav className={styles.courseLinks} aria-label={t.academy}>

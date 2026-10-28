@@ -27,17 +27,19 @@ test('profile selection covers only real declared axes and does not invent finan
 
 test('public route uses existing verified guest catalogue, with strict eligibility and locale parity', () => {
   const page = read('app/[locale]/personality-profiles/page.tsx')
+  const catalogue = read('lib/profile/guest-profile-tests.ts')
   const component = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
   const home = read('components/home-featured-workspace.tsx')
   assert.match(page, /isPublicLocale\(locale\)/)
-  assert.match(page, /buildExplorerEntries\(\{ locale: catalogueLocale, audience: "guest" \}\)/)
+  assert.match(catalogue, /buildExplorerEntries\(\{ locale: catalogueLocale, audience: "guest" \}\)/)
   for (const term of ['entry.selectable === true', 'entry.startable === true',
     'entry.guestEligible === true', 'entry.starterEligible !== false',
     'entry.free === true', 'entry.rightsStatus === "cleared"',
     'entry.explicitOptIn !== true', 'entry.scaleGuide?.measurementAxes?.length'])
-    assert.ok(page.includes(term), term)
+    assert.ok(catalogue.includes(term), term)
   assert.match(page, /generateStaticParams/)
+  assert.match(page, /buildGuestProfileTests\(locale\)/)
   for (const locale of ['en', 'ru', 'es']) {
     assert.match(page, new RegExp('locale: "' + locale + '"'))
     assert.ok(page.includes('/' + locale + '/personality-profiles'))
@@ -76,7 +78,7 @@ test('first visit shows a single clear CTA and explanation before the profile wi
   const css = read('components/personality-profiles-builder.module.css')
 
   assert.match(component, /\[started, setStarted\] = useState\(false\)/)
-  assert.match(component, /\{!started \? <>/)
+  assert.match(component, /\{!inline && !started \? <>/)
   assert.match(component, /data-profile-begin/)
   assert.match(component, /onClick=\{\(\) => setStarted\(true\)\}/)
   assert.match(component, /styles\.roadmapSteps/)
@@ -154,7 +156,7 @@ test('five life directions retain the original topics and add a goal-support top
   ]) assert.ok(component.includes(phrase), phrase)
   for (const name of ['PROFILE_AREA_AXES', 'profileAreasWithTests'])
     assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
-  assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
+  assert.ok(component.includes('const [focuses, setFocuses] = useState<Focus[]>(inline && initialFocus ? [initialFocus] : []);'))
   assert.match(component, /\[selectedResearchIds, setSelectedResearchIds\] = useState<string\[\]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
   assert.doesNotMatch(component, /not five diagnoses|пять диагнозов|cinco diagnósticos/)
@@ -184,8 +186,8 @@ test('browse free tests opens the real catalogue and positions the existing pers
 test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overflow finder', () => {
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  const route = read('app/[locale]/personality-profiles/page.tsx')
-  const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
+  const catalogue = read('lib/profile/guest-profile-tests.ts')
+  const slide = builder.slice(builder.indexOf('profile-inline-stage-3'), builder.indexOf('profile-inline-stage-4'))
   const primary = slide.indexOf('data-profile-recommended-tests')
   const fiveMore = slide.indexOf('data-profile-five-more-tests')
   const start = slide.indexOf('data-profile-start-tests')
@@ -203,7 +205,7 @@ test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overf
   assert.ok(builder.includes('keys.length < 12'))
   assert.ok(builder.includes('selectedScaleIds, "pro")'))
   assert.ok(builder.includes('test.key === key &&'))
-  assert.ok(route.includes('testKind: entry.testKind'))
+  assert.ok(catalogue.includes('testKind: entry.testKind'))
   assert.ok(css.includes('.extraFilters {'))
   assert.ok(css.includes('.extraSearch { grid-column: 1 / -1; }'))
   assert.ok(css.includes('.startRow > .primary { width: 100%; }'))
@@ -215,11 +217,11 @@ test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overf
 })
 
 test('all additional tests inherit only chosen facets and the existing server guest rights', () => {
-  const page = read('app/[locale]/personality-profiles/page.tsx')
+  const catalogue = read('lib/profile/guest-profile-tests.ts')
   const builder = read('components/personality-profiles-builder.tsx')
   for (const flag of ['entry.selectable === true', 'entry.startable === true',
     'entry.guestEligible === true', 'entry.free === true', 'entry.rightsStatus === "cleared"',
-    'entry.explicitOptIn !== true']) assert.ok(page.includes(flag), flag)
+    'entry.explicitOptIn !== true']) assert.ok(catalogue.includes(flag), flag)
   assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)'))
   assert.ok(builder.includes('remainingTestKeys.has(test.key) && test.testKind === modeKind'))
   assert.ok(builder.includes('selectedAxisRefs.includes(scale.researchAxisId)'))
@@ -239,7 +241,7 @@ test('all additional tests inherit only chosen facets and the existing server gu
 test('Tests step keeps three plus five cards in place when checkboxes change and always displays topic relevance', () => {
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
+  const slide = builder.slice(builder.indexOf('profile-inline-stage-3'), builder.indexOf('profile-inline-stage-4'))
   assert.match(builder, /rankProfileAxisTests\(tests, scaleGroups, selectedScaleIds, batteryMode\)/)
   assert.match(builder, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
   assert.match(builder, /const featuredTestKeys = new Set\(/)
