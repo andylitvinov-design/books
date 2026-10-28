@@ -6,9 +6,43 @@ on:
   pull_request:
     branches:
       - codex/meditation-category-rail-20261028
+      - codex/public-book-library
+    paths:
+      - 'components/holistic-support-guest-quest.*'
+      - 'components/holistic-support-today-pick.*'
+      - 'components/holistic-support-mobile.*'
+      - 'components/app/test-explorer-google-banner.*'
+      - 'lib/holistic-support/guest-quest.*'
+      - 'lib/holistic-support/today-pick.*'
+      - 'app/[locale]/client/tests/page.tsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'tests/holistic-support-guest-quest.test.mjs'
+      - 'tests/holistic-support-today-pick.test.mjs'
+      - 'scripts/verify-support-guest-quest.mjs'
+      - '.github/workflows/hh-support-guest-quest.yml'
+permissions:
+  contents: read
 jobs:
-  smoke:
+  focused-quest:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Validate workflow parsing
-        run: echo "hh quest workflow registered"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install lock-matched dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused unit and existing video/catalogue contracts
+        run: node --test tests/holistic-support-guest-quest.test.mjs tests/holistic-support-today-pick.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-meditation-mobile-categories.test.mjs tests/holistic-support-course-scene-branches.test.mjs
+      - name: Scoped lint
+        run: npx --no-install eslint components/holistic-support-guest-quest.tsx components/holistic-support-today-pick.tsx components/app/test-explorer-google-banner.tsx components/holistic-support-mobile.tsx lib/holistic-support/guest-quest.mjs lib/holistic-support/today-pick.mjs tests/holistic-support-guest-quest.test.mjs tests/holistic-support-today-pick.test.mjs scripts/verify-support-guest-quest.mjs
+      - name: TypeScript
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Next production build
+        run: npm run build
