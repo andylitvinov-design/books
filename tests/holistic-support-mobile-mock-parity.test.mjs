@@ -29,7 +29,8 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
   assert.match(css, /\.toolButton \{ display: flex; flex-direction: row;/);
   assert.match(css, /\.photo \{ width: min\(100%,100px\);/);
   assert.match(client, /className=\{styles\.recommendShort\}/);
-  assert.match(client, /support-mock-portrait\.webp/);
+  assert.match(client, /data-support-photo-placeholder/);
+  assert.doesNotMatch(client, /src="\/images\/holistic-house\/support-mock-portrait\.webp"/);
   assert.match(client, /support-mock-hero\.webp/);
   assert.match(css, /support-mock-video-posters\.webp/);
   for (const filename of ["support-mock-hero.webp", "support-mock-portrait.webp", "support-mock-video-posters.webp"]) {
@@ -39,6 +40,11 @@ test("original 3-zone mock: ratings left, inline portrait/focus center, four fun
     assert.ok(picture.length > 1000, filename + " was not saved");
   }
   assert.match(css, /\.toolGrid \{ display: grid; grid-template-columns: minmax\(0,1fr\);/);
+  assert.match(css, /\.scaleDetail \{ display: contents; \}/);
+  assert.match(css, /\.profile > \.recommendButton/);
+  assert.match(css, /\.assessment > \.detailedAnalysisLink/);
+  assert.match(client, /assessmentShort:/);
+  assert.match(client, /toolsShort:/);
   assert.match(client, /className=\{styles\.toolCompact\}/);
   assert.match(client, /aria-label=\{t.options\[id\]\}/);
   assert.match(client, /type="range" min="1" max="10"/);
