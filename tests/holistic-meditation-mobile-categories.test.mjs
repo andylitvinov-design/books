@@ -34,7 +34,7 @@ test("Categories are localized and meaningful; Meaning never pretends there is a
   assert.match(mobile, /meditationCategoryTopics\[meditationCategory\]/);
   assert.match(mobile, /meditationCategoryRelated: "Близкие оригинальные практики Солнца/);
   assert.match(mobile, /data-support-meditation-category-related role="status"/);
-  assert.match(mobile, /setTheme\("all"\); setGoalSelection\(null\); setSelectedId\(null\); setPlaying\(false\)/);
+  assert.match(mobile, /setTheme\("all"\); setProgram\("all"\); setMaster\("all"\); setGoalSelection\(null\); setSelectedId\(null\); setPlaying\(false\)/);
   assert.match(source, /verified_legacy_public_embed/);
   assert.doesNotMatch(mobile, /hardcodedYoutubeId|fakePlaylist|new Date\(\)\.toISOString\(\)/);
 });
