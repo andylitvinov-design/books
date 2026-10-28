@@ -27,7 +27,7 @@ function renderedPreview(locale, source = inviteSource) {
  const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true,
  } }).outputText
- const module = { exports: {} }
+ const fixtureModule = { exports: {} }
  const load = name => {
   if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
   if (name === 'next/link') return 'a'
@@ -37,9 +37,9 @@ function renderedPreview(locale, source = inviteSource) {
   if (name === './opora-first-week-invite.module.css') return {}
   throw new Error('Unexpected invitation dependency: ' + name)
  }
- new Function('require', 'module', 'exports', compiled)(load, module, module.exports)
+ new Function('require', 'module', 'exports', compiled)(load, fixtureModule, fixtureModule.exports)
  let actions = 0
- const tree = module.exports.default({ locale, signedOut: true, onAccept: () => { actions++ } })
+ const tree = fixtureModule.exports.default({ locale, signedOut: true, onAccept: () => { actions++ } })
  const nodes = [...descendants(tree)], one = filter => {
   const selected = nodes.filter(filter); assert.equal(selected.length, 1); return selected[0]
  }
@@ -347,9 +347,9 @@ test('delayed route failures are drained and primary failures survive throwing c
 test('a guard-leak counterfactual fails the complete helper lifecycle oracle', async () => {
  const source = read('scripts/helpers/opora-public-entry-verifier.mjs')
  const leaked = mutate(source, 'await until(() => context.unroute(\'**/*\', guard.route), deadline, \'fence removal\'); routeInstalled = false', 'routeInstalled = false /* synthetic leaked handler */')
- const module = await importVerifier(leaked)
+ const verifierModule = await importVerifier(leaked)
  const fixture = lifecycleFixture()
- await fixture.run(module.verifyOporaPublicEntry)
+ await fixture.run(verifierModule.verifyOporaPublicEntry)
  assert.equal(fixture.routes.size, 1)
  assert.throws(() => assert.equal(fixture.routes.size, 0, 'Successful preview must release its fence'))
 })
@@ -479,9 +479,9 @@ test('removing retained graph reconciliation reproduces the original grandchild 
  const changed = mutate(source,
   'if (!owned.has(target) && [...openers].some(opener => owned.has(opener))) changed = adopt(target) || changed',
   'if (false) changed = adopt(target) || changed /* synthetic lost retained edge */')
- const module = await importVerifier(changed)
+ const verifierModule = await importVerifier(changed)
  const { fixture, descendants } = earlyGrandchildFixture({ earlyError: true })
- await fixture.run(module.verifyOporaPublicEntry)
+ await fixture.run(verifierModule.verifyOporaPublicEntry)
  assert.ok(descendants().some(page => !page.isClosed()))
  assert.equal(fixture.routes.size, 0)
  assert.throws(() => assert.ok(descendants().every(page => page.isClosed())))

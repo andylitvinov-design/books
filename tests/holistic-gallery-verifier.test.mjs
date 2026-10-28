@@ -7,10 +7,10 @@ import {expectedGalleryVideos,assertGallerySnapshot,galleryTopics,gallerySelecto
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const manifest = JSON.parse(read('data/academy/psimaster-media.generated.json'))
 function evaluate(path,mocks={}) {
- const module={exports:{}}
+ const evaluatedModule={exports:{}}
  runInNewContext(ts.transpileModule(read(path),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,
- {module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(mocks,id));return mocks[id]}})
- return module.exports
+ {module:evaluatedModule,exports:evaluatedModule.exports,require:id=>{assert.ok(Object.hasOwn(mocks,id));return mocks[id]}})
+ return evaluatedModule.exports
 }
 const english=evaluate('data/academy/english-guided-meditations.ts')
 const model=evaluate('data/academy/holistic-support-meditations.ts',{'./english-guided-meditations':english,'./psimaster-media.generated.json':manifest})

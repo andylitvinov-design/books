@@ -47,8 +47,8 @@ function repository(kind, item) {
     }},
     './database.js':{transaction},
   })
-  const module=load(path,imports)
-  return {repo:kind==='account'?module.createAppRepository({}, {transaction}):module.createGuestRepository({}), count:()=>transactions}
+  const repositoryModule=load(path,imports)
+  return {repo:kind==='account'?repositoryModule.createAppRepository({}, {transaction}):repositoryModule.createGuestRepository({}), count:()=>transactions}
 }
 const input={definitionKey:key,definitionVersion:'v1',instrumentLocale:'en',operationId:'00000000-0000-4000-8000-000000000001'}
 async function rejectBeforeTransaction(kind,item=catalog) {
