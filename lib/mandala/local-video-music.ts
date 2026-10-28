@@ -4,7 +4,7 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation";
-export type AmbientSession = { track: MediaStreamTrack; close: () => void };
+export type AmbientSession = { track: MediaStreamTrack; close: () => void; fadeOut: () => void };
 const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number,number]> = {
   harmony:[174.61,261.63,349.23,523.25],
   prosperity:[196.00,246.94,392.00,493.88],
@@ -13,7 +13,9 @@ const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number
   meditation:[130.81,196.00,261.63,392.00],
 };
 
-export async function startAmbientMusic(preset: AmbientMusic): Promise<AmbientSession | null> {
+export async function startAmbientMusic(
+  preset: AmbientMusic, volume = 30, audible = false,
+): Promise<AmbientSession | null> {
   if (preset === "none" || typeof window === "undefined") return null;
   const AudioCtor = window.AudioContext;
   if (!AudioCtor) return null;
@@ -21,8 +23,14 @@ export async function startAmbientMusic(preset: AmbientMusic): Promise<AmbientSe
   try {
     const destination = context.createMediaStreamDestination();
     const master = context.createGain();
-    master.gain.value = 0.045;
+    // 30% reproduces the original quiet mix. Never blast headphones.
+    const normalized = Number.isFinite(volume) ? Math.min(100,Math.max(0,volume)) : 30;
+    const level = Math.min(.11, .045 * (normalized / 30));
+    master.gain.setValueAtTime(0, context.currentTime);
+    master.gain.linearRampToValueAtTime(level, context.currentTime + .5);
     master.connect(destination);
+    // Browser speaker output is exclusively from an explicit Preview click.
+    if (audible) master.connect(context.destination);
     const voices: OscillatorNode[] = [];
     const frequencies = NOTES[preset];
     for(let i=0;i<frequencies.length;i++) {
@@ -42,9 +50,17 @@ export async function startAmbientMusic(preset: AmbientMusic): Promise<AmbientSe
     await context.resume();
     const track=destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No browser audio track");
-    let closed=false;
+    let closed=false, faded=false;
     return {
       track,
+      fadeOut: () => {
+        if (closed || faded) return;
+        faded = true;
+        const at = context.currentTime;
+        master.gain.cancelScheduledValues(at);
+        master.gain.setValueAtTime(master.gain.value, at);
+        master.gain.linearRampToValueAtTime(0, at + .7);
+      },
       close: () => {
         if (closed) return;
         closed=true;
