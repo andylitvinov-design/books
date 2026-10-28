@@ -212,7 +212,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         {relatedMysteryVideos.length > 0 ? (
           <section className="academy-mystery-video-bridge" aria-label="Оригинальные русскоязычные видеокурсы PsiMaster">
             <h2>Оригинальные видеоуроки из PsiMaster</h2>
-            <p>Сохранённые записи отдельных циклов. Полная программа выше включает и темы, для которых видеозаписи пока не подтверждены.</p>
+            <p>Сохранённые записи отдельных циклов. Содержание программы включает и другие темы, для которых видеозаписи пока не подтверждены.</p>
             <div className="academy-resource-links">
               {relatedMysteryVideos.map((video) => (
                 <Link key={video.id} href={video.href} prefetch={false}>
