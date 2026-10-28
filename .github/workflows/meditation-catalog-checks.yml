@@ -6,9 +6,15 @@ on:
     paths:
       - "data/academy/meditation-*"
       - "lib/holistic-support/meditation-*"
+      - "lib/holistic-support/client-intent-model.*"
+      - "lib/practitioners/discovery-intent.js"
+      - "data/core-service-offers.ts"
       - "components/holistic-meditation-*"
       - "app/[locale]/holistic-support/page.tsx"
       - "tests/meditation-catalog-candidates.test.mjs"
+      - "tests/client-request-relevance-v2.test.mjs"
+      - "tests/services-smart-discovery.test.mjs"
+      - "tests/holistic-support-recommendation-engine.test.mjs"
       - "tests/holistic-support-meditations.test.mjs"
       - ".github/workflows/meditation-catalog-checks.yml"
   workflow_dispatch:
@@ -28,8 +34,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Meditation selection and existing gallery regression
-        run: node --test tests/meditation-catalog-candidates.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-goal-filter.test.mjs
+        run: node --test tests/client-request-relevance-v2.test.mjs tests/meditation-catalog-candidates.test.mjs tests/services-smart-discovery.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-recommendation-engine.test.mjs
       - name: Lint changed UI, server loader and model
-        run: npx eslint components/holistic-meditation-finder.tsx components/holistic-meditation-gallery.tsx lib/holistic-support/meditation-discovery-server.ts app/'[locale]'/holistic-support/page.tsx lib/holistic-support/meditation-catalog-ranker.mjs
+        run: npx eslint components/holistic-meditation-finder.tsx components/holistic-meditation-gallery.tsx lib/holistic-support/meditation-discovery-server.ts app/'[locale]'/holistic-support/page.tsx lib/holistic-support/meditation-catalog-ranker.mjs lib/holistic-support/client-intent-model.mjs lib/practitioners/discovery-intent.js
       - name: Typecheck
         run: npx tsc --noEmit --pretty false
