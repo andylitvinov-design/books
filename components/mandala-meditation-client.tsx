@@ -196,27 +196,10 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const closeButton = useRef<HTMLButtonElement | null>(null);
-  // WebKit may dispatch a synthetic click (detail 0) after pointerup. If
-  // both events toggle state, fullscreen opens and immediately closes.
-  // Record the pointer activation, consume its following click once, and
-  // still support keyboard/screen-reader click without a preceding pointer.
-  const pointerHandledRef = useRef(false);
+  // Let the native button click represent one activation for mouse, touch,
+  // keyboard and assistive technology. Toggling on pointerup can re-layout the
+  // WebKit target *before* the following click, causing a second transition.
   function toggleFocusMode() { setFocusMode(value => !value); }
-  function onFocusPointerUp(event: { pointerType: string }) {
-    // WebKit may deliver a mouse pointerup and click for one activation.
-    // Let native click own mouse and keyboard; touch/pen use pointerup as
-    // a fallback for iPhone in-app browsers that suppress the trailing click.
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-    pointerHandledRef.current = true;
-    toggleFocusMode();
-  }
-  function onFocusClick() {
-    if (pointerHandledRef.current) {
-      pointerHandledRef.current = false;
-      return;
-    }
-    toggleFocusMode();
-  }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
 
@@ -324,8 +307,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}
-          aria-pressed={focusMode} onPointerDown={() => { pointerHandledRef.current = false; }}
-          onPointerUp={onFocusPointerUp} onClick={onFocusClick}>
+          aria-pressed={focusMode} onClick={toggleFocusMode}>
           {focusMode ? <Minimize2 size={18} aria-hidden="true" /> : <Expand size={18} aria-hidden="true" />}
           {focusMode ? t.leave : t.focus}
         </button>
