@@ -219,7 +219,7 @@ const copy = {
     private: "Las respuestas se quedan en el navegador. No se envían a IA externa, CRM ni pagos.",
     ux: {
       ready: "Tu ruta está lista", focus: "Tu objetivo", primary: "PRIMER PASO RECOMENDADO",
-      duration: "Tiempo disponible", durationWarning: "Es tu preferencia, no la duración de una grabación o sesión.",
+      duration: "Tiempo disponible", durationWarning: "Es tu preferencia, no es la duración de una grabación o sesión.",
       local: "Según tus respuestas",
       supportFit: "Elegiste apoyo profesional, no un curso de trabajo o dinero. El programa de negocios y el test gratuito de abajo se centran más en tu tema.",
       benefit: {
