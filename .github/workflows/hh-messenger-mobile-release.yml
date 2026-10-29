@@ -7,6 +7,7 @@ on:
       - 'app/\[locale\]/app/messages/**'
       - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/direct-messages/**'
+      - 'components/app/app-workspace.jsx'
       - 'components/app/direct-message-inbox.jsx'
       - 'components/app/messages-hub.jsx'
       - 'components/app/messenger-sign-in.jsx'
