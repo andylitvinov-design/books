@@ -637,6 +637,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
           await openDirector.click();
           assert.equal(await director.getAttribute("data-director-open"),"true");
+          assert.equal(await director.locator('[data-director-field="theme"],[data-director-field="difficulty"],[data-director-field="goal"],[data-director-field="profile"]').count(),4,
+            "four compact main director fields");
+          assert.equal(await director.locator("[data-director-visual-preferences] > summary").count(),1);
+          await director.locator('[data-director-field="profile"]').click();
+          assert.equal(await page.locator("[data-director-profile-consent]").isChecked(),false,
+            "private saved test profile must remain unchecked");
+          assert.equal(await page.locator("[data-director-profile-import]").isDisabled(),true,
+            "private test request forbidden before explicit consent");
+          await page.locator('[role="dialog"] button:has-text("Готово")').click();
           await director.locator('[data-director-field="goal"]').click();
           await page.locator('[role="dialog"] textarea').fill("PRIVATE_SCRIPT_BROKEN_IF_SENT к ясному горизонту");
           await page.locator('[role="dialog"] button:has-text("Готово")').click();
