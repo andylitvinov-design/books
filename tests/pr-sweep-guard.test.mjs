@@ -7,7 +7,7 @@ const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
 
 test('passes clean current HEAD only when core gate and applicable specialists succeed',()=>{
-  const checks=[check('release-ready'),check('unit-build'),check('database'),check('browser (chromium, core)'),check('browser (webkit, core)')];
+  const checks=[check('release-ready'),check('unit-build'),check('database'),check('verify'),check('browser (chromium, core)'),check('browser (webkit, core)')];
   const result=analyzeCI({pr:pr(),paths:['components/app/app-workspace.jsx'],checks});
   assert.equal(result.ci_ready,true);
   assert.deepEqual(result.blockers,[]);
@@ -84,4 +84,27 @@ test('bad owner, SHA and oversized leases are rejected',()=>{
   assert.throws(()=>makeLease({owner:'x',head_sha:sha('a'),base_sha:sha('b')}),/INVALID_OWNER/);
   assert.throws(()=>makeLease({owner:'work-owner',head_sha:'bad',base_sha:sha('b')}),/INVALID_SHA/);
   assert.throws(()=>makeLease({owner:'work-owner',head_sha:sha('a'),base_sha:sha('b'),leaseMinutes:300}),/INVALID_LEASE_DURATION/);
+});
+
+
+test('no-job workflow validation failure is not hidden by successful job checks',()=>{
+  const result=analyzeCI({
+    pr:pr(),paths:['docs/operations/a.md'],checks:[check('release-ready')],
+    workflowRuns:[{id:123,event:'push',name:'.github/workflows/broken.yml',head_sha:sha('a'),status:'completed',conclusion:'failure'}],
+  });
+  assert.equal(result.ci_ready,false);
+  assert.ok(result.blockers.includes('FAILED_WORKFLOW:123:failure'));
+  assert.ok(analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[check('release-ready')],
+    workflowRuns:[{id:124,event:'pull_request',head_sha:sha('a'),status:'queued'}]}).blockers.includes('WAITING_WORKFLOW:124'));
+});
+
+test('workflow runs change evidence key; changed workflow and guard require own checks',()=>{
+  const input={pr:pr(),paths:['docs/a.md'],checks:[check('release-ready')],workflowRuns:[{id:11,event:'pull_request',head_sha:sha('a'),status:'queued'}]};
+  assert.notEqual(evidenceKey(input),evidenceKey({...input,workflowRuns:[{...input.workflowRuns[0],status:'completed',conclusion:'success'}]}));
+  const expected=productionSpecialists(['.github/workflows/hh-pr-sweep-guard.yml','lib/ci/pr-sweep-guard.mjs']);
+  assert.ok(expected.includes('actionlint-changed'));
+  assert.ok(expected.includes('guard-unit'));
+  assert.ok(productionSpecialists(['components/app/app-workspace.jsx']).includes('verify'));
+  const unverified=analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[{...check('release-ready'),head_sha:null}]});
+  assert.ok(unverified.blockers.includes('WRONG_OR_UNKNOWN_HEAD:release-ready'));
 });

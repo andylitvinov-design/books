@@ -31,7 +31,7 @@ if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) 
     for (let page = 1; page <= 10; page++) {
       const separator = path.includes('?') ? '&' : '?';
       const body = await api(`${path}${separator}per_page=100&page=${page}`);
-      const items = Array.isArray(body) ? body : body.check_runs;
+      const items = Array.isArray(body) ? body : (body.check_runs || body.workflow_runs);
       if (!Array.isArray(items)) throw new Error('Unexpected paginated GitHub response');
       results.push(...items);
       if (items.length < 100) return results;
@@ -47,14 +47,19 @@ if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) 
       if (operation === 'record' && (!token || !current || current.state.owner !== owner)) {
         throw new Error('Record requires GH_TOKEN and a lease held by this owner');
       }
-      const [paths, checks, commitStatuses] = await Promise.all([
+      const [paths, checks, commitStatuses, workflowRuns] = await Promise.all([
         paginate(`/pulls/${prNumber}/files`).then(files => files.map(f=>f.filename)),
         paginate(`/commits/${pr.head.sha}/check-runs`),
         api(`/commits/${pr.head.sha}/status`),
+        paginate(`/actions/runs?head_sha=${encodeURIComponent(pr.head.sha)}`),
       ]);
+      const confirmed = await api(`/pulls/${prNumber}`);
+      if (confirmed.head?.sha !== pr.head.sha || confirmed.base?.sha !== pr.base.sha) {
+        throw new Error('PR_MOVED_DURING_EVIDENCE_COLLECTION');
+      }
       const statuses = commitStatuses.statuses || [];
-      const status = analyzeCI({pr,checks,statuses,paths});
-      const key = evidenceKey({pr,checks,statuses,paths});
+      const status = analyzeCI({pr,checks,statuses,workflowRuns,paths});
+      const key = evidenceKey({pr,checks,statuses,workflowRuns,paths});
       if (operation === 'record') {
         const next = {...current.state, head_sha:pr.head.sha,base_sha:pr.base.sha,
           last_action:'recorded', evidence_key:key, ci_ready:status.ci_ready,
