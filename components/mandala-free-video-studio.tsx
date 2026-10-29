@@ -1185,7 +1185,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <strong>Picks of the Day</strong>
         <div className={videoStyles.dailyPicksRail}>
           <Link href={"/"+locale+"/client/tests?focus="+
-            (videoCategory==="goals"?"meaning":videoCategory==="relationships"?"relationships":videoCategory==="money"?"work":"energy")}
+            (videoCategory==="goals"?"meaning":videoCategory==="relationships"?"relationships":videoCategory==="money"?"clarity":videoCategory==="health"?"health":"body")}
             prefetch={false}>{locale==="ru"?"Мои тесты":locale==="es"?"Mis tests":"My Test"}</Link>
           <Link href={"/"+locale+"/holistic-support/mobile?view=meditation#support-mobile-experience"}
             prefetch={false}>{locale==="ru"?"Медитация":locale==="es"?"Meditación":"Meditation"}</Link>
