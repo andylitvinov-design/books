@@ -37,7 +37,7 @@ try {
           return root && input && Object.keys(input).some(k => k.startsWith("__reactProps$"));
         }, null, { timeout: 40000 });
 
-        const root = page.locator("[data-holistic-mobile-alternative]");
+        const root = page.locator("body");
         const quest = root.locator("[data-support-quest]");
         assert.equal(await quest.locator("[data-support-quest-step]").count(), 7, label + " seven actions");
         assert.equal(await quest.locator("[data-support-quest-completed]").innerText(), "0/7", label + " initial progress");
