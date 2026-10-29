@@ -1,0 +1,66 @@
+# Holistic Mind 3.0 — multi-turn conversation + consented memory
+**29 October 2026 · Stacked DRAFT PRs, NOT PRODUCTION**
+
+## Source of truth / merge order
+Do not create a second chatbot, CRM or profile scoring system.
+1. #2528 Holistic Intelligence core -> codex/public-book-library (production target).
+2. #2532 recommendations and Psychologist Mind -> production.
+3. #2544 free multilingual local conversation -> production.
+4. This memory PR -> production only after DB migration, security and live QA.
+
+The GitHub default codex/bootstrap-books is NOT the Holistic House production target.
+
+## Implemented code (not a live assertion)
+- Free-text RU/EN/ES in the existing guide; guided steps remain available.
+- WebLLM local model: real bounded 12-turn context, on-device generation, one
+  question per reply, cancellation, checked deterministic fallback. No ChatGPT API.
+- Guardrails: input safety and approved catalog decisions outrank model text,
+  which cannot create links, diagnoses, bookings, sales, prescriptions or memory.
+- Existing release-verified Reiki intro audio, not video-editor soundtracks.
+- Explicit memory UI: preferred name, style of address, response length,
+  avoided format, optional one-line personal emphasis; edit/export/delete.
+- Existing server auth + RLS transaction, per-row AES-GCM using existing seal
+  and openSealed, separate revocable consent, remove-one and erase-all API.
+- Private owner-scoped SQL migration in app_private; source-only, not applied.
+- Memory must be explicitly enabled for a chat; no silent chat harvesting.
+  Turning off use does not leave a memory-derived session preference active.
+
+## API and flags
+GET /api/app/agent-memory: authenticated consent+entries.
+POST {action:"consent",accepted:true/false}: save or revoke and wipe.
+POST {action:"set",kind,value}: encrypt only user-entered allowed preference.
+POST {action:"remove",kind}: remove one.
+DELETE /api/app/agent-memory: erase memory and consent.
+The client cannot choose account ID. Server verifies current session, enforces
+origin on mutation and hh_app_backend identity/RLS policy per DB operation.
+No raw chat messages or test scores enter this API.
+
+All features are disabled until release approval:
+- HH_AGENT_MEMORY_ENABLED=false (server default).
+- NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED=false (client default).
+- NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL=false (browser model default).
+The browser model downloads external runtime/assets only after visitor action.
+Upstream code supply-chain/CSP and mobile QA are still pending.
+
+## Required release gates
+- Node tests, TS strict, scoped lint and actual Next build on exact SHA.
+- Signed-in account A/B: B cannot see A's entries even with forged A ID.
+- Guest API cannot read data; RLS and Data API direct role grants verified.
+- Concurrent set/update and AES-GCM record-bound ciphertext readback verified.
+- Consent denied => no write/read; revoke/delete => no stale returned memory.
+- Same-origin write gate, no credentials or protected data in query/telemetry.
+- Chromium and WebKit at 320/390/430px; keyboard and text zoom 200%.
+- WebGPU model weights/CSP/hash/runtime validation, cancellation, cache,
+  Safari/Android/low-memory fallback and no paid inference.
+- At least 200 RU/EN/ES conversation evaluations, including refusal,
+  contradiction, safety, false recommendation and context-switch cases.
+- Controlled merge chain, production Vercel READY, alias and exact SHA.
+Do not label the feature live before these gates have passed.
+
+## Deliberately deferred
+- MCP and A2A until multiple independent agents require interoperability;
+  already existing authorized internal tools are adequate now.
+- assistant-ui whole-app replacement: current custom React guide integrates
+  more safely; add reusable pieces only after compatibility review.
+- Paid model API fallback, cloud GPU expense, autonomous psychotherapy or
+  automatic sensitive memory extraction (none permitted).
