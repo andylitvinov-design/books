@@ -55,6 +55,7 @@ const supersededRunWorkflows = [
   ['practice-google-browser.yml', 'hh-practice-google'],
   ['practitioner-presentations.yml', 'hh-practitioner-presentations'],
   ['hh-private-audio-e2e.yml', 'hh-private-audio'],
+  ['practice-visual-browser.yml', 'hh-practice-visual'],
 ];
 
 for (const [workflow, key] of supersededRunWorkflows) {
@@ -70,7 +71,14 @@ for (const [workflow, key] of supersededRunWorkflows) {
 }
 
 test('non-PR push verification is still triggered for release-sensitive suites', () => {
-  for (const name of ['practice-google-browser.yml', 'practitioner-presentations.yml', 'hh-private-audio-e2e.yml']) {
+  for (const name of ['practice-google-browser.yml', 'practitioner-presentations.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml']) {
     assert.match(read(name), /^  push:/m);
+  }
+});
+
+test('browser readiness polling preserves 120 Bash attempts without unused iterator', () => {
+  for (const name of ['practice-google-browser.yml', 'practice-visual-browser.yml']) {
+    assert.ok(read(name).includes('for ((i=1; i<=120; i++)); do'));
+    assert.ok(!read(name).includes('for i in $(seq 1 120); do'));
   }
 });

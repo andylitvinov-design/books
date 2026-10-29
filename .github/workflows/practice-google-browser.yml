@@ -62,7 +62,7 @@ jobs:
           npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 120); do
+          for ((i=1; i<=120; i++)); do
             if curl --silent --fail http://127.0.0.1:3121/ru/practice > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/practice-after-google-next.log; exit 1; fi
             sleep 2
