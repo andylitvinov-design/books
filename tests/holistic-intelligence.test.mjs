@@ -174,3 +174,30 @@ test("the output exposes editorial reasons, never source notes, client identifie
   assert.ok(!serialized.includes("I want more energy"));
   assert.ok(!serialized.includes("Weekly Pulse"));
 });
+
+test("exact-only and unverified duration/style must never promote approximate audio or paid sessions",()=>{
+  const input={
+    locale:"en",catalogs:{
+      publishedReikiAudio:[audio()],
+      services:[service("business","business-consulting"),service("situation","free-situation-review")],
+    },
+  };
+  const exact=buildHolisticIntelligencePlan({...input,intent:{goal:"energy",
+    chosenAxes:["recovery::energy"],enabledFormats:["audio"],exactOnly:true}});
+  assert.deepEqual(exact.audio,[]);
+  const short=buildHolisticIntelligencePlan({...input,intent:{goal:"energy",
+    enabledFormats:["audio"],maxDurationMinutes:5}});
+  assert.deepEqual(short.audio,[]);
+  const voice=buildHolisticIntelligencePlan({...input,intent:{goal:"energy",
+    enabledFormats:["audio"],musicStyle:"voice_only"}});
+  assert.deepEqual(voice.audio,[]);
+  const onlyExternal=buildHolisticIntelligencePlan({...input,intent:{goal:"energy",
+    enabledFormats:["audio"],sourceKind:"external"}});
+  assert.deepEqual(onlyExternal.audio,[]);
+  const session=buildHolisticIntelligencePlan({...input,intent:{goal:"money",
+    enabledFormats:["service"],exactOnly:true,situations:["hard_decision"],desiredStates:["clarity"]}});
+  assert.ok(session.services.every(x=>x.matchType==="exact"));
+  const notProven=buildHolisticIntelligencePlan({...input,intent:{goal:"money",
+    enabledFormats:["service"],exactOnly:true,situations:["unexpected_new_situation"]}});
+  assert.deepEqual(notProven.services,[]);
+});
