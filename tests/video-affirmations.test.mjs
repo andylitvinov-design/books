@@ -15,7 +15,8 @@ const transpile = ts.transpileModule(library,{
 assert.deepEqual(transpile.diagnostics || [],[]);
 const exposed = {};
 new Function("exports",transpile.outputText)(exposed);
-const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations} = exposed;
+const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations} = exposed;
+const {videoProfileFocus} = await import("../lib/mandala/video-affirmation-focus.mjs");
 
 test("three locales and all six site themes have five ready-to-select, non-clinical phrases", () => {
   for(const locale of ["en","ru","es"]){
@@ -89,4 +90,56 @@ test("affirmation panel uses original light cream and green UI with narrow iPhon
   assert.match(css,/grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
   const component=ts.transpileModule(panel,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
   assert.deepEqual(component.diagnostics || [],[]);
+});
+
+
+test("personalized suggestions only consume eligible, fresh, source-reviewed psych-portrait axes",()=>{
+  const reading=(axis,percent,more={})=>[axis,{
+    mode:"directional",percent,resultId:"owned-result",rule:{goalEligible:true},...more,
+  }];
+  const data={axes:Object.fromEntries([
+    reading("anxiety",22),reading("focus",30),reading("boundaries",48),
+    reading("stress",3,{mode:"descriptive"}),reading("energy",5,{rule:{goalEligible:false}}),
+    reading("mood",10,{resultId:null}),reading("functioning",NaN),reading("unknown",12),
+  ])};
+  assert.deepEqual(videoProfileFocus(data),{axes:["anxiety","focus","boundaries"]});
+  assert.deepEqual(videoProfileFocus({axes:{}}),{axes:[]});
+  assert.doesNotMatch(JSON.stringify(videoProfileFocus(data)),/owned-result|percent|22|30|48/);
+});
+
+test("goals and sourced axes yield five local, editable sentences in RU EN ES",()=>{
+  for(const locale of ["ru","en","es"]){
+    const catalog=affirmationGoalCatalog[locale];
+    assert.equal(catalog.length,12);
+    const selected=personalizedVideoAffirmations(locale,"money",["anxiety","focus"],["boundaries","recovery"]);
+    assert.equal(selected.length,5);
+    assert.equal(selected[0],catalog.find(row=>row.id==="boundaries").sentence);
+    assert.equal(selected[1],catalog.find(row=>row.id==="recovery").sentence);
+    assert.equal(new Set(selected).size,5);
+    assert.ok(selected.every(phrase=>phrase.length>5&&phrase.length<=90));
+    const lines=linesForVideoAffirmations(locale,"energy",{
+      ...defaultAffirmations,enabled:true,selected:[0,1,2,3,4],presetOverride:selected,custom:"My own words"
+    });
+    assert.deepEqual(lines.slice(0,5),selected);
+    assert.equal(lines[5],"My own words");
+  }
+});
+
+test("personal matching is click-only, auth-gated and no scores leave the server",()=>{
+  const personal=read("components/mandala-personal-affirmations.tsx");
+  const focus=read("lib/mandala/video-affirmation-focus.mjs");
+  const route=read("app/api/app/[...path]/route.js");
+  assert.match(panel,/MandalaPersonalAffirmations locale=\{locale\}/);
+  assert.match(personal,/data-video-personal-suggest/);
+  assert.match(personal,/await appFetch\("video-affirmation-focus"\)/);
+  assert.match(personal,/data-video-goals-toggle/);
+  assert.match(personal,/data-video-goal=/);
+  assert.match(personal,/data-video-goals-apply/);
+  assert.match(personal,/goals.length>=3/);
+  assert.match(route,/const actor = await auth\.verified\(\),[\s\S]*?joined === 'video-affirmation-focus'/);
+  assert.match(route,/videoProfileFocus\(buildPsychPortrait\(data\.results\)\)/);
+  assert.doesNotMatch(focus+personal,/sendBeacon|localStorage|sessionStorage|XMLHttpRequest/);
+  assert.match(read("scripts/verify-holistic-mandala-browser.mjs"),/data-video-goals-toggle/);
+  const jsx=ts.transpileModule(personal,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
+  assert.deepEqual(jsx.diagnostics||[],[]);
 });
