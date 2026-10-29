@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
+import MessengerSignIn from './messenger-sign-in'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
 import MessagesSimpleInbox from './messages-simple-inbox'
@@ -174,7 +175,7 @@ export default function MessagesHub({locale='en'}){
     </button>}
     {(unauthenticated||bootstrapSignInRequired)&&!ownerAccountId&&!data&&<p className={styles.authNotice} role="alert">
       {t.sessionRequired}{' '}
-      <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>
+      <MessengerSignIn locale={locale} recipientSlug={directDestination} label={t.signIn}/>
     </p>}
     <div className={styles.tabs} role="tablist" aria-label={t.title}>
       {[['chats',MessageCircle,t.chats],['requests',ClipboardList,t.requests]].map(([id,Icon,label])=>
@@ -231,7 +232,7 @@ export default function MessagesHub({locale='en'}){
           crmState={safeCrmSummary||{loading:Boolean(ownerAccountId),error:false,threads:[],partial:false}}/>
       </>:loading?<p className={styles.note} role="status">{t.loading}</p>:error?
         <p className={styles.note} role="alert">{unauthenticated?
-          <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>:error}</p>:null}
+          <MessengerSignIn locale={locale} recipientSlug={directDestination} label={t.signIn}/>:error}</p>:null}
     </section>
   </div>
 }
