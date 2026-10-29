@@ -76,7 +76,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const audioMatches = recommendMandalaAudio/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
-  assert.match(studio,/theme,kind:audioKind/);
+  assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
   assert.match(studio,/if \(audioAuto && !uploadedAudio\) setMusic/);
   assert.match(studio,/setAudioAuto\(false\);chooseMusic/);
