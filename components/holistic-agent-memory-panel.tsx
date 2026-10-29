@@ -40,15 +40,24 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
     setLoading(true);setError("");
     try{
       const response=await fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"});
-      if(response.status===401){setStatus("signed");return;}
-      if(!response.ok){setStatus("unavailable");return;}
+      if(response.status===401){
+        setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+        setStatus("signed");return;
+      }
+      if(!response.ok){
+        setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+        setStatus("unavailable");return;
+      }
       const data=await response.json() as MemoryReply;
       const rows=Array.isArray(data.items)?data.items:[];
       setItems(rows);setConsent(data.consent===true);
       setDrafts({...emptyDraft,...Object.fromEntries(rows.map(row=>[row.kind,row.value]))});
       setStatus("ready");
       if(useSaved)onUse(data.consent===true?approvedMemoryForLocalPrompt(rows):[]);
-    }catch{setStatus("unavailable");}
+    }catch{
+      setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+      setStatus("unavailable");
+    }
     finally{setLoading(false);}
   }
   function show(){
