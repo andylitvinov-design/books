@@ -117,7 +117,7 @@ test('day one restores five opening screens and all days add untracked support a
     // Only one aphorism/feedback appears. This distinct screen asks for
     // a concrete future action, never another inspirational statement.
     const options=oporaExperienceTransferChoices(day,lang)
-    const daily=oporaAs60Day(day,lang)
+    const daily=oporaAs60VariedDay(day,lang)
     const spokenFeeling=lang==='ru'?'Спокойствие':'Calm'
     const transferText=textOf(h.tree)
     assert.ok(transferText.includes(daily.transfer),
