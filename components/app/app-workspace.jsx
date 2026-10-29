@@ -3096,8 +3096,8 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
-      {discussionLoadedId === result.id && <TestResultDiscussion key={result.id} result={result} locale={locale}
-        initiallyOpen={searchParams?.get('discuss') === '1'} />}
+      {discussionLoadedId === result.id && <TestResultDiscussion key={result.id + ':' + locale} result={result} locale={locale}
+        history={data.results || []} initiallyOpen={searchParams?.get('discuss') === '1'} />}
       <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
       <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
