@@ -95,7 +95,9 @@ for (const browserType of [chromium, webkit]) {
           await page.waitForFunction(state => document.querySelector('[data-practice-showcase]')?.dataset.authState===state,
             expected,{timeout:35000})
           await page.evaluate(async()=>{await document.fonts.ready})
-          await page.waitForTimeout(200)
+          await page.waitForFunction(() => [...document.querySelectorAll('[data-practice-showcase] img')].every(
+            img => img.complete && img.naturalWidth > 0),null,{timeout:20000})
+          await page.waitForTimeout(250)
           assert.equal(await root.locator('header h1').innerText(),title[locale],label+' exact original dashboard')
           assert.equal(await root.locator('[class*="quickGrid"] > button').count(),6,label+' original six creation actions')
           assert.equal(await root.locator('[class*="offerRail"] > button').count(),6,label+' six miniature covers')
