@@ -30,6 +30,10 @@ export default function SupportPhotoCabinet({locale='en'}){
   const [error,setError]=useState('')
   // Ignore mount-time signed URL reads that finish after Save or Delete.
   const photoStorageEpoch=useRef(0)
+  // Safari can deliver a second file choice before the previous decode finishes.
+  // Only the newest completed decode may become the photo eligible for Save.
+  const photoChoiceEpoch=useRef(0)
+  useEffect(()=>()=>{photoChoiceEpoch.current+=1},[])
   useEffect(()=>{
     let mounted=true
     const readEpoch=photoStorageEpoch.current
@@ -45,14 +49,17 @@ export default function SupportPhotoCabinet({locale='en'}){
     const file=event.currentTarget.files?.[0]
     event.currentTarget.value=''
     if(!file)return
+    const choiceEpoch=++photoChoiceEpoch.current
     // A failed replacement must not keep an older, unsaved image ready for Save.
     setBlob(null);setPreview(null)
     setBusy(true);setNotice('');setError('')
     try{
       const result=await prepareBrowserPhoto(file)
+      if(choiceEpoch!==photoChoiceEpoch.current)return
       setBlob(result)
       setPreview(URL.createObjectURL(result))
-    }catch{setError(t.invalid)}finally{setBusy(false)}
+    }catch{if(choiceEpoch===photoChoiceEpoch.current)setError(t.invalid)}
+    finally{if(choiceEpoch===photoChoiceEpoch.current)setBusy(false)}
   }
   async function save(){
     if(!blob||busy)return
