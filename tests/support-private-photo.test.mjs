@@ -52,12 +52,13 @@ test('iPhone Photos and Files use full tap-target and decoded metadata-stripped 
   assert.match(helper,/function waitForBrowserImageLoad\(image:/)
   assert.match(helper,/image\.addEventListener\("load"/)
   assert.match(helper,/image\.addEventListener\("error"/)
-  assert.match(helper,/if \(image\.complete\) finish\(valid\(\)\)/)
+  assert.match(helper,/if \(image\.complete && valid\(\)\) finish\(true\)/)
+  assert.match(helper,/if \(image\.complete && valid\(\)\) return Promise\.resolve\(\)/)
   assert.match(helper,/window\.setTimeout\(\(\) => finish\(false\), 15_000\)/)
   // A hung WebKit HEIC decode must not leave the photo picker spinning:
   // real <img> loading and a bounded error path still control acceptance.
   assert.match(helper,/const loaded = waitForBrowserImageLoad\(image\)/)
-  assert.match(helper,/await Promise\.race\(\[loaded, image\.decode\(\)\.catch\(\(\) => loaded\)\]\)/)
+  assert.match(helper,/await Promise\.race\(\[loaded, Promise\.resolve\(\)\.then\(\(\) => image\.decode\(\)\)\.catch\(\(\) => loaded\)\]\)/)
   assert.match(helper,/canvas\.toBlob\(resolve, "image\/jpeg"/)
   assert.match(helper,/URL\.revokeObjectURL/)
   assert.match(support,/accept=\{SUPPORT_PHOTO_ACCEPT\}/)
