@@ -34,7 +34,7 @@ test("five goals are neutral until explicitly selected and never become scored e
   assert.match(screen, /setQuickGoal\(value\)/);
   assert.match(screen, /setQuickGoal\(null\)/);
   assert.match(screen, /editedCheckins\.length === 0/);
-  assert.match(screen, /averageScore = editedCheckins\.length/);
+  assert.match(screen, /averageScore = editedCheckins\.length === checkinOrder\.length/);
   assert.match(screen, /quickGoal \? t\.quickGoalLabels\[quickGoal\]/);
   assert.match(screen, /quickGoal === "stress" \? t\.quickGoalHeroStress/);
   assert.match(screen, /role="status"/);
