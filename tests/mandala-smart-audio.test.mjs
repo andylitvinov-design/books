@@ -76,14 +76,14 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const audioMatches = recommendMandalaAudio/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
-  assert.match(studio,/theme,kind:audioKind/);
+  assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
   assert.match(studio,/if \(audioAuto && !uploadedAudio\) setMusic/);
   assert.match(studio,/setAudioAuto\(false\);chooseMusic/);
   assert.match(studio,/controls preload="metadata"/);
   assert.match(studio,/presetAudioUrl\(music\)/);
   assert.match(studio,/isSupportedLocalAudio\(file\)/);
-  assert.match(css,/\.audioTrackGrid\{display:grid/);
+  assert.match(css,/\.audioTrackList\{display:flex;flex-direction:column/);
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
