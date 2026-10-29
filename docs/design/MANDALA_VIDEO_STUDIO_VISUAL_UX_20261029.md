@@ -72,3 +72,11 @@ Do not mark this complete from source edits, static tests, HTTP 200 or preview a
 **Live status:** NOT DEPLOYED from this PR at creation
 
 Owner follow-up: after automated release gates, compare an actual iPhone Safari screenshot of the same public video editor against the intended hierarchy; confirm sound and local video saving from a real device.
+
+## Owner refinement — preview loop and section jumps (29 Oct)
+
+- Under the **central video hero**, three equally sized real in-page anchors: **Design → #video-templates** (existing real scene gallery), **Audio → #video-audio** (presets/local upload/player), **Affirmations → #video-hypnosis** (editable hypnoaffirmations). All three panels are still visible in one scrolling page, rather than false exclusive tab views.
+- At the **bottom of the Hypnoaffirmations block**, a large localized **Preview video / Просмотреть видео / Ver vídeo** button enables existing local Canvas + muted first-party MP4 movement and scrolls to the central hero. Repeated clicks keep playback active; the hero's existing Pause button stops it.
+- Editing settings changes the live Canvas/MediaRecorder inputs; the CTA neither persists a file nor triggers paid rendering. Actual recording/export remains a separate explicitly clicked **Create video** action with existing photo/audio rights.
+- Screen-reader navigation landmarks use semantic nav, text labels, and actual anchor targets; focus ring, 44px targets, reduced-motion scrolling, 320–430px three-item nav and EN/RU/ES retained.
+- Regression coverage: structural assertions plus Chromium/WebKit public guest click/scroll/play contract. Real iPhone Safari and visual overlay remain release gates, not inferred from source tests.

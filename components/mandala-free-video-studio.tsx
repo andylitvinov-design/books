@@ -237,8 +237,10 @@ const layoutCopy = {
     photoLink:"Add a photo of me / my goal",photoIncluded:"Photo selected",
     quickControls:"Video preview settings",extraFilters:"More visual styles and themes",
     extraThemes:"Other themes",audioTitle:"Audio track",audioHelp:"Choose an ambient sound or upload your own recording.",
-    hypnosisTitle:"Hypnosis & affirmations",hypnosisHelp:"Optional short, visible phrases and gentle imagery. No proven subliminal effects or clinical hypnosis are claimed.",
+    hypnosisTitle:"Hypnoaffirmations",hypnosisHelp:"Optional short, visible phrases and gentle imagery. No proven subliminal effects or clinical hypnosis are claimed.",
     extraSettings:"More video settings",personalFocus:"My focus and recommended theme",
+    editorNavLabel:"Go to video settings",designTab:"Design",audioTab:"Audio",affirmationsTab:"Affirmations",
+    previewCta:"Preview video",previewHelp:"Preview only — use Create video to save a file.",
   },
   ru: {
     modeLabel:"Выбор режима видео",pump:"Видео-подкачка",therapy:"Видео-терапия",
@@ -247,8 +249,10 @@ const layoutCopy = {
     photoLink:"Добавить фото себя / цели",photoIncluded:"Фото выбрано",
     quickControls:"Параметры видеопревью",extraFilters:"Другие стили и темы",
     extraThemes:"Другие темы",audioTitle:"Аудио-трек",audioHelp:"Подберите звуковую подложку или загрузите свою запись.",
-    hypnosisTitle:"Гипноз и аффирмации",hypnosisHelp:"Короткие фразы и мягкие образы по желанию. Не заменяют клинический гипноз или лечение; скрытый эффект не доказан.",
+    hypnosisTitle:"Гипноаффирмации",hypnosisHelp:"Короткие фразы и мягкие образы по желанию. Не заменяют клинический гипноз или лечение; скрытый эффект не доказан.",
     extraSettings:"Дополнительные настройки видео",personalFocus:"Мои акценты и рекомендации",
+    editorNavLabel:"Перейти к настройкам видео",designTab:"Дизайн",audioTab:"Аудио",affirmationsTab:"Аффирмации",
+    previewCta:"Просмотреть видео",previewHelp:"Это предпросмотр. Для сохранения файла нажмите «Создать видео».",
   },
   es: {
     modeLabel:"Elige el modo de vídeo",pump:"Vídeo de impulso",therapy:"Videoterapia",
@@ -257,8 +261,10 @@ const layoutCopy = {
     photoLink:"Añadir foto de mí / mi objetivo",photoIncluded:"Foto seleccionada",
     quickControls:"Ajustes de vista previa",extraFilters:"Otros estilos y temas",
     extraThemes:"Otros temas",audioTitle:"Pista de audio",audioHelp:"Elige un sonido de ambiente o sube tu propia grabación.",
-    hypnosisTitle:"Hipnosis y afirmaciones",hypnosisHelp:"Frases breves visibles e imágenes suaves opcionales. No sustituyen la hipnosis clínica ni un tratamiento; no hay evidencia de efectos subliminales.",
+    hypnosisTitle:"Hipnoafirmaciones",hypnosisHelp:"Frases breves visibles e imágenes suaves opcionales. No sustituyen la hipnosis clínica ni un tratamiento; no hay evidencia de efectos subliminales.",
     extraSettings:"Más ajustes de vídeo",personalFocus:"Mis prioridades y recomendaciones",
+    editorNavLabel:"Ir a los ajustes del vídeo",designTab:"Diseño",audioTab:"Audio",affirmationsTab:"Afirmaciones",
+    previewCta:"Ver vídeo",previewHelp:"Solo vista previa. Usa Crear vídeo para guardar un archivo.",
   },
 } as const;
 const supportDesignCopy = {
@@ -1085,6 +1091,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void createVideo();
   };
 
+  // This is a local, non-persistent preview. A click also unlocks muted
+  // same-origin footage on iOS before React's paint effect starts.
+  const openAffirmationPreview = () => {
+    if (recording || preparing) return;
+    setPreviewPlaying(true);
+    const film = premiumVideoRef.current;
+    if (film && activeFilm) {
+      film.muted = true;
+      void film.play().catch(() => {
+        if (aliveRef.current) setNotice(ui.videoUnavailable);
+      });
+    }
+    document.getElementById("video-hero")?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "center",
+    });
+  };
+
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
@@ -1223,6 +1247,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </div>
       </section>
+      <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
+        <a href="#video-templates" data-video-editor-tab="design">
+          <Film size={17} aria-hidden="true"/>{layout.designTab}
+        </a>
+        <a href="#video-audio" data-video-editor-tab="audio">
+          <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
+        </a>
+        <a href="#video-hypnosis" data-video-editor-tab="affirmations">
+          <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
+        </a>
+      </nav>
 
       {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
         {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
@@ -1342,7 +1377,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.audioSection} data-video-audio-section aria-labelledby="video-audio-heading">
+      <section className={videoStyles.audioSection} id="video-audio" data-video-audio-section aria-labelledby="video-audio-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-audio-heading">{layout.audioTitle}</h3>
           <p>{layout.audioHelp}</p></div>
         <fieldset className={videoStyles.musicCard} disabled={recording||preparing}>
@@ -1411,7 +1446,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </fieldset>
       </section>
 
-      <section className={videoStyles.hypnosisSection} data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
+      <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
       <MandalaVideoAffirmations locale={locale} theme={theme} settings={affirmations}
@@ -1432,7 +1467,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
-
+      <button type="button" className={videoStyles.affirmationPreviewAction}
+        data-video-affirmation-preview disabled={recording||preparing} onClick={openAffirmationPreview}>
+        <Play size={20} fill="currentColor" aria-hidden="true"/>
+        {layout.previewCta}
+        <ArrowRight size={20} aria-hidden="true"/>
+      </button>
+      <small className={videoStyles.affirmationPreviewHelp}>{layout.previewHelp}</small>
       </section>
 
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">

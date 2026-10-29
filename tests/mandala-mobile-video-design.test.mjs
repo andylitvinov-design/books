@@ -237,11 +237,34 @@ test("mobile composer uses the approved mode → themes → optional photo → p
   assert.ok(locations.every(pos=>pos>0));
   for(let i=1;i<locations.length;i++)assert.ok(locations[i]>locations[i-1],"out of order: "+i);
   for(const title of ["Видео-подкачка","Видео-терапия","Добавить фото себя / цели",
-    "Гипноз и аффирмации","Video boost","Video therapy","Videoterapia"]){
+    "Гипноаффирмации","Video boost","Video therapy","Videoterapia"]){
     assert.ok(studio.includes(title),title);
   }
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(css,/@media\(max-width:355px\)/);
   assert.match(css,/\.photoToggle input\{/);
+});
+
+test("affirmation preview CTA starts the existing hero and local jump links reach design, audio, affirmations", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio,/data-video-editor-nav aria-label=\{layout\.editorNavLabel\}/);
+  for(const [tab,id] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
+    assert.ok(studio.includes('href="#'+id+'" data-video-editor-tab="'+tab+'"'),tab+" must be a real same-page link");
+    assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
+  }
+  assert.match(studio,/data-video-affirmation-preview disabled=\{recording\|\|preparing\} onClick=\{openAffirmationPreview\}/);
+  const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
+  assert.match(previewHandler,/setPreviewPlaying\(true\)/);
+  assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
+  assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);
+  for(const value of ["Просмотреть видео","Preview video","Ver vídeo","Дизайн","Afirmaciones","Гипноаффирмации"])
+    assert.ok(studio.includes(value),value);
+  assert.match(css,/\.editorJumpNav\{display:grid/);
+  assert.match(css,/\.affirmationPreviewAction\{display:flex/);
+  assert.match(css,/\.audioSection,\.hypnosisSection\{scroll-margin-top:84px\}/);
+  assert.match(browser,/data-video-affirmation-preview/);
+  assert.match(browser,/data-video-editor-tab/);
 });

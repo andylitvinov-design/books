@@ -286,6 +286,31 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        // Every editor jump is an actual navigable anchor, not a decorative tab.
+        const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
+        for (const [tab,id] of destinations) {
+          const link=page.locator('[data-video-editor-tab="'+tab+'"]');
+          assert.equal(await link.getAttribute("href"),"#"+id);
+          await link.click();
+          await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
+          const rect=await page.locator("#"+id).boundingBox();
+          assert.ok(rect && rect.y<820 && rect.y+rect.height>0,
+            engine+" "+locale+" "+width+"px "+tab+" jump must reveal its panel");
+        }
+        // From the bottom of Hypnoaffirmations, a single click must scroll
+        // back to the main film and START its existing frame engine.
+        if ((await hero.getAttribute("data-preview-playing"))==="true")
+          await hero.locator("[data-video-preview-toggle]").click();
+        assert.equal(await hero.getAttribute("data-preview-playing"),"false");
+        await page.locator("[data-video-affirmation-preview]").click();
+        await page.waitForFunction(()=>document.querySelector("[data-video-mandala-hero]")?.getAttribute("data-preview-playing")==="true",
+          undefined,{timeout:10000});
+        await page.waitForFunction(()=>{
+          const rect=document.getElementById("video-hero")?.getBoundingClientRect();
+          return rect && rect.top>-140 && rect.top<window.innerHeight-120;
+        },undefined,{timeout:10000});
+        assert.equal(await page.locator("[data-mandala-cinematic-canvas]").count(),1,
+          "affirmation preview reuses the central video canvas");
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.

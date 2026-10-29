@@ -572,6 +572,18 @@
 .audioSection .musicCard{margin:0;padding:9px 8px;background:#fffefa}
 .hypnosisSection .wishPanel{margin:0}
 .hypnosisSection>section{min-width:0}
+/* In-page navigation directly beneath the main live video preview. */
+.editorJumpNav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0 2px}
+.editorJumpNav a{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:46px;padding:9px 5px;border:1px solid #d7e2d4;border-radius:13px;background:linear-gradient(135deg,#fffef9,#f4f3eb);box-shadow:0 2px 7px #193c2b12;color:#205744;text-align:center;text-decoration:none;font:800 clamp(11px,3vw,13px)/1.2 Arial,Helvetica,sans-serif}
+.editorJumpNav a svg{flex:none}
+.editorJumpNav a:hover{background:#e6f4eb;border-color:#83bc9f}
+.catalogShell .templates,.audioSection,.hypnosisSection{scroll-margin-top:84px}
+/* Deliberate, full-width preview action: never claims to save or render. */
+.affirmationPreviewAction{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;margin:4px 0 0;border:0;border-radius:15px;background:linear-gradient(110deg,#087253,#08aa7d);box-shadow:0 8px 20px #0c6c4a30;color:#fff;font:800 clamp(15px,4vw,18px)/1.2 Arial,Helvetica,sans-serif}
+.affirmationPreviewAction svg{flex:none}
+.affirmationPreviewAction:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.affirmationPreviewHelp{display:block;color:#668071;text-align:center;font-size:11px;line-height:1.35}
+@media(max-width:355px){.editorJumpNav{gap:5px}.editorJumpNav a{gap:4px;padding:9px 3px;font-size:10px}.editorJumpNav a svg{width:14px;height:14px}.affirmationPreviewAction{min-height:55px}}
 .therapyCourse{margin-top:13px;scroll-margin-top:12px}
 .extraControls{margin-top:13px}
 .extraControls .settings{margin:10px;border:0;box-shadow:none;background:transparent;padding:5px 1px 10px}
