@@ -996,7 +996,8 @@
   padding:10px 13px;color:#205d49;cursor:pointer;list-style:disclosure-closed;
   font-size:13px;font-weight:800;line-height:1.3}
 .quickLegacy[open]>summary{border-bottom:1px solid #e4e9e2;background:#edf6ed}
-.quickLegacy> :not(summary){margin-left:10px;margin-right:10px}
+.quickLegacy[open]{padding-bottom:11px}
+.quickLegacy> :not(summary){margin-left:0;margin-right:0}
 .studio .result[hidden]{display:none!important}
 @media(min-width:760px){
   .quickBuilder{gap:13px}
