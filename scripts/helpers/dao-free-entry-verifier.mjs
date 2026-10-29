@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { boundedBestEffort } from './browser-failure-evidence.mjs'
+import { persistDaoConsentEvidence } from './dao-consent-evidence.mjs'
 
 const REFERENCE = 'HH-ABCD1234EF56'
 const CONTACT = 'dao-qa@example.test'
@@ -227,6 +228,10 @@ export async function assertDaoFreeEntryCapture(page, expect, { origin, locale, 
         console.error('DAO_CONSENT_FAILURE', JSON.stringify({ locale, state, interaction,
           syntheticSubmissions: guard.submissions.length, blockedRequests: guard.blocked.length }))
       } catch { /* A diagnostic sink failure must not replace the original error. */ }
+      try {
+        persistDaoConsentEvidence({ locale, state, interaction,
+          syntheticSubmissions: guard.submissions.length, blockedRequests: guard.blocked.length })
+      } catch { /* Optional persistence never replaces the original assertion. */ }
       if (failureScreenshotPath) {
         const outcome = await boundedBestEffort(() => form.screenshot({ path: failureScreenshotPath,
           mask: [form.locator('input, textarea')], timeout: 2500 }), 3000)

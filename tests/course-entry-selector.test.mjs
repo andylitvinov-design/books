@@ -161,7 +161,7 @@ test('programme links offer one clear fast-start button without creating a cours
   const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
   assert.ok(consent)
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Continue to the first check-in/)
+  assert.equal(textOf(consent).trim(), "Yes, I'd like to enrol")
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
 })
