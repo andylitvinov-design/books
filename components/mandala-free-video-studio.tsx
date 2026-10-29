@@ -743,7 +743,7 @@ const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
   money:["prosperity-coast","golden-harvest","cosmic-flow","abundance-circle","opportunity-falls","radiant-portal"],
   relationships:["blossom-garden","heart-light","warm-connection","two-circles","warm-connection","heart-light"],
   goals:["light-path","open-door","guiding-stars","meaning-tree","light-path","open-door"],
-  life:["meadow-morning","wildflower-dance","fern-awakening","lone-tree","coastal-freedom","sun-flight"],
+  life:["meadow-morning","wildflower-dance","fern-awakening","lone-tree","coastal-freedom","meadow-morning"],
   health:["morning-dew","sea-breeze","calm-sea","mossy-stream","gentle-falls","morning-dew"],
 };
 const quickThemeOrder: VideoTheme[] = ["energy","money","relationships","goals","life","health"];
