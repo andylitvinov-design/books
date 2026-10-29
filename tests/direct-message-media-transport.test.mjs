@@ -53,7 +53,11 @@ test('private photo/voice file contracts keep binary limit strictly below Vercel
  assert.equal(directMediaSpec('audio/ogg',512).kind,'audio')
  assert.throws(()=>directMediaSpec('application/pdf',512),/MEDIA_TYPE_NOT_ALLOWED/)
  const policy=read('lib/practitioners/direct-message-policy.mjs')
- assert.doesNotMatch(policy,/video\/mp4.*kind:'video'/)
+ assert.equal(directMediaSpec('video/mp4',512).kind,'video')
+ assert.equal(directMediaSpec('video/webm',512).kind,'video')
+ assert.equal(directMediaSpec('video/quicktime',512).kind,'video')
+ assert.throws(()=>directMediaSpec('video/mp4',20_000_001),/MEDIA_SIZE_NOT_ALLOWED/)
+ assert.match(policy,/video\/mp4.*kind:'video'/)
 })
 test('media MIME allowlist rejects prototype properties and non-string keys',()=>{
  for(const mime of ['constructor','__proto__','toString','valueOf','hasOwnProperty',
