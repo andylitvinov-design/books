@@ -238,15 +238,16 @@ test('release retains explicit paid selection, free internal action, reset, priv
 
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {
   const app = read('scripts/verify-app-r1.mjs');
-  assert.match(app, /data-sitewide-capture="core-service"/);
-  assert.match(app, /openContactChannelChooser\(capture,expect\)/);
-  assert.match(app, /message.includes\(names\[locale\]\)/);
-  assert.match(app, /openContactChannelChooser\(ready,expect\)/);
+  const hypnotherapy = read('scripts/helpers/hypnotherapy-request-verifier.mjs');
+  assert.match(app, /verifyHypnotherapyRequest\(servicePage,expect,\{origin,locale,channel:width===390\?'whatsapp':'telegram'\}\)/);
+  assert.match(hypnotherapy, /data-sitewide-capture="core-service"\]\[data-core-service-capture="hypnotherapy"/);
+  assert.match(hypnotherapy, /message.includes\(hypnotherapyService\(locale\)\)/);
+  assert.match(app, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
   assert.match(app, /const order=promo.locator\('a\[data-contact-channel="whatsapp"\]'\)/);
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openContactChannelChooser\(capture, expect\)/);
+  assert.match(production, /openRegisteredContactChannelChooser\(capture, expect, page\)/);
   assert.match(production, /Prepared request must retain the selected service/);
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
@@ -318,34 +319,65 @@ test('actual core JSX has one footer section with one chooser and the matching s
   }
 });
 
-function assertFreeReviewCallerContract(source, compact = false) {
-  assert.match(source, compact ? /openContactChannelChooser\(ready,expect\)/ : /openContactChannelChooser\(ready, expect\)/);
-  assert.match(source, compact ? /assertPreparedContactChannels\(readyChooser,expect\)/ : /assertPreparedContactChannels\(readyChooser, expect\)/);
-  for (const channel of ['whatsapp', 'telegram']) assert.ok(source.includes('!' + channel + 'Text.includes(marker)'), channel + ' must reject private answer markers');
-  assert.match(source, /decodedPageUrl\.includes\(marker\)/);
-  assert.doesNotMatch(source, /ready\.getByRole\('button'\)\.click/);
-  if (compact) {
-    assert.match(source, /name:\s*copy\.copyButton,\s*exact:\s*true/);
-    assert.match(source, /Analytics event metadata never contains answers/);
-    assert.match(source, /Temporary analytics hold must emit no acquisition events/);
+function assertFreeReviewCallerContract(source, compact = false, helper = '') {
+  if (!compact) {
+    assert.ok(source.includes(`preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]')`));
+    assert.ok(source.includes('assert.equal(await preview.locator("form,textarea").count(), 0,'));
+    assert.ok(source.includes('The private answers are entered only in the protected questionnaire'));
+    return;
   }
+  assert.ok(source.includes('await assertFreeReviewLanding(publicPage,expect,locale)'));
+  assert.ok(source.includes('await verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,'));
+  assert.doesNotMatch(source, /if\(false\)await (?:assertFreeReviewLanding|verifyFreeReviewPrivateHandoff)/);
+  for (const required of [
+    'assertFreeReviewPreparedUrls(urls, [...markers, t.focus])',
+    "assert.ok(!decodeURIComponent(url.href).includes(marker), 'Private answers, phone and focus never enter a messenger URL')",
+    'assert.ok(!decodeURIComponent(page.url()).includes(marker))',
+    "assert.ok(!JSON.stringify(evidence).includes(marker), 'Private answers and phone never enter storage or analytics')",
+    "assert.deepEqual(evidence.events, [], 'The temporary analytics hold emits no acquisition events')",
+    ".toHaveAttribute('href', '/' + locale + '/coaching/intake?topic=personal')",
+    "await expect(intake.locator('form, textarea, input[type=\"file\"]')).toHaveCount(0)",
+    "assert.equal(guard.submissions.length, 0, 'A phone without explicit consent never submits')",
+  ]) assert.ok(helper.includes(required), 'Retain current private handoff fence: ' + required);
 }
 
-test('free-review verifier callers open both channels, keep generic drafts and target only Copy answers', () => {
-  for (const [path, compact] of [['scripts/verify-app-r1.mjs', true], ['scripts/verify-public-services-production.mjs', false]]) {
-    const source = read(path);
-    assertFreeReviewCallerContract(source, compact);
-    for (const changed of [
-      source.replace(/openContactChannelChooser\(ready,\s*expect\)/, 'ready'),
-      source.replace('!telegramText.includes(marker)', 'true'),
-      ...(compact ? [source.replace(/name:\s*copy\.copyButton,\s*exact:\s*true/g, '')] : []),
-    ]) assert.throws(() => assertFreeReviewCallerContract(changed, compact), path);
+test('free-review verifier callers preserve private questionnaire and synthetic consented neutral handoff', () => {
+  const helper = read('scripts/helpers/free-review-private-handoff-verifier.mjs');
+  const app = read('scripts/verify-app-r1.mjs');
+  assertFreeReviewCallerContract(app, true, helper);
+  for (const [from, to] of [
+    ['await verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,', 'if(false)await verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,'],
+    ['await assertFreeReviewLanding(publicPage,expect,locale)', 'if(false)await assertFreeReviewLanding(publicPage,expect,locale)'],
+  ]) {
+    assert.ok(app.includes(from));
+    assert.throws(() => assertFreeReviewCallerContract(app.replace(from, to), true, helper));
+  }
+  for (const [from, to] of [
+    ['assertFreeReviewPreparedUrls(urls, [...markers, t.focus])', 'assertFreeReviewPreparedUrls(urls, [])'],
+    ['!decodeURIComponent(url.href).includes(marker)', 'true'],
+    ['!decodeURIComponent(page.url()).includes(marker)', 'true'],
+    ['!JSON.stringify(evidence).includes(marker)', 'true'],
+    ["assert.deepEqual(evidence.events, [], 'The temporary analytics hold emits no acquisition events')", 'void evidence.events'],
+    ["'/coaching/intake?topic=personal'", "'/coaching/intake?private=1'"],
+    ["assert.equal(guard.submissions.length, 0, 'A phone without explicit consent never submits')", 'void guard.submissions'],
+  ]) {
+    assert.ok(helper.includes(from));
+    assert.throws(() => assertFreeReviewCallerContract(app, true, helper.replace(from, to)));
+  }
+  const production = read('scripts/verify-public-services-production.mjs');
+  assertFreeReviewCallerContract(production);
+  for (const [from, to] of [
+    ['/coaching/intake?topic=personal', '/coaching/intake?private=1'],
+    ['preview.locator("form,textarea").count(), 0,', 'preview.locator("form,textarea").count(), 1,'],
+  ]) {
+    assert.ok(production.includes(from));
+    assert.throws(() => assertFreeReviewCallerContract(production.replace(from, to)));
   }
   const intake = read('components/free-drawing-intake.tsx');
-  const draft = intake.slice(intake.indexOf('const whatsappUrl ='), intake.indexOf('function changeAnswer'));
-  assert.match(draft, /request: t\.whatsappIntro/);
-  assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
-  assert.doesNotMatch(intake, /fetch\(|localStorage|sessionStorage|sendBeacon|\/api\//);
+  assert.ok(intake.includes('href={"/" + locale + "/coaching/intake?topic=" + topic}'));
+  assert.ok(intake.includes('Saving does not send it to a coach or create a booking.'));
+  assert.ok(intake.includes('Do not send private answers, drawings or test results through WhatsApp, Telegram or email.'));
+  assert.doesNotMatch(intake, /<form\b|<textarea\b|<input[^>]*type=["']file|clipboard|fetch\(|localStorage|sessionStorage|sendBeacon|\/api\//);
   const temple = read('components/temple-initiation-chooser.tsx');
   assert.match(temple, /<ContactChannelChooser/);
   assert.doesNotMatch(temple, /<a[^>]*href=\{whatsappUrl\}/);

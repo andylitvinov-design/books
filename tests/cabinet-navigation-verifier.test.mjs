@@ -11,29 +11,37 @@ for (const locale of ['en', 'ru']) {
     const events = []
     const profile = { name: 'profile', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
-    const link = { name: 'link', first() { return this }, async click() {
+    let menuOpen = false
+    const summary = { name: 'account-summary', async click() { menuOpen = true; events.push('open-account') } }
+    const menu = { name: 'account-menu', async getAttribute(name) { assert.equal(name, 'open'); return menuOpen ? '' : null }, locator(selector) {
+      if (selector === ':scope > summary') return summary
+      assert.equal(selector, ':scope > div > a[href="' + path + '"]'); return link
+    } }
+    const link = { name: 'link', async click() {
       events.push('click'); page.url = origin + path
     } }
     const page = { name: 'page', url: origin + '/' + locale + '/app/portrait', locator(selector) {
-      if (selector === '[data-profile-domains][data-profile-interactive="true"]') return profile
-      if (selector === 'nav a[href="' + path + '"]:visible') return link
+      if (selector === '[data-profile-domains][data-profile-mode="account"][data-profile-interactive="true"]') return profile
+      if (selector === 'details.hh-account-menu:visible') return menu
       assert.equal(selector, '[data-my-tests-dashboard]')
       return { name: 'dashboard' }
     } }
     const expect = value => ({
+      async toHaveCount(n) { assert.ok([menu, summary, link].includes(value)); assert.equal(n, 1); events.push('one:' + value.name) },
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
       async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
-      async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
+      async toHaveAttribute(name, value) { if(value === '') { assert.equal(name, 'open'); assert.equal(menuOpen, true); events.push('open') } else { assert.equal(name, 'href'); assert.equal(value, path); events.push('href') } },
     })
     await assertCabinetPortrait(page, expect, { origin, locale })
     await openCabinetMyTests(page, expect, { origin, locale })
     assert.deepEqual(events, [
       'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:heading',
-      'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
+      'one:account-menu', 'visible:account-menu', 'one:account-summary', 'visible:account-summary', 'open-account', 'open',
+      'one:link', 'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
     ])
   })
 }

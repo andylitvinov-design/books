@@ -5,22 +5,37 @@ import assert from 'node:assert/strict'
 // or relying on a nav that is also rendered before consent has been committed.
 export async function assertCabinetPortrait(page, expect, { origin, locale = 'en' }) {
   await expect(page).toHaveURL(origin + '/' + locale + '/app/portrait', { timeout: 30000 })
-  const profile = page.locator('[data-profile-domains][data-profile-interactive="true"]')
+  const profile = page.locator('[data-profile-domains][data-profile-mode="account"][data-profile-interactive="true"]')
   await expect(profile).toBeVisible({ timeout: 30000 })
   await expect(profile.getByRole('heading', {
-    name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true,
+    name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true,
   })).toBeVisible()
 }
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
   const path = '/' + locale + '/app/tests'
-  const link = page.locator('nav a[href="' + path + '"]:visible').first()
-  await expect(link).toBeVisible()
-  await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
-  await expect(link).toHaveAttribute('href', path)
-  await link.click()
+  await openCabinetAccountLink(page, expect, { path, label: locale === 'ru' ? 'Тесты' : 'Tests' })
   await expect(page).toHaveURL(origin + path, { timeout: 30000 })
   await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+}
+
+async function openCabinetAccountLink(page, expect, { path, label }) {
+  // Tests and My Profile remain in the Account menu; the mobile dock
+  // intentionally has different destinations. Open the real disclosure first.
+  const menu = page.locator('details.hh-account-menu:visible')
+  await expect(menu).toHaveCount(1)
+  await expect(menu).toBeVisible()
+  const summary = menu.locator(':scope > summary')
+  await expect(summary).toHaveCount(1)
+  await expect(summary).toBeVisible()
+  if (await menu.getAttribute('open') === null) await summary.click()
+  await expect(menu).toHaveAttribute('open', '')
+  const link = menu.locator(':scope > div > a[href="' + path + '"]')
+  await expect(link).toHaveCount(1)
+  await expect(link).toBeVisible()
+  await expect(link).toHaveText(label)
+  await expect(link).toHaveAttribute('href', path)
+  await link.click()
 }
 
 export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'en', current } = {}) {

@@ -6,6 +6,7 @@ import { OPORA_SEVEN_SKILLS, oporaSkillCards, oporaSkillForDay, oporaSkillPasspo
 import { lessonFor, COURSE_ANTISTRESS_OUTCOME_V3 } from '../lib/inner-growth/lesson-library.js'
 import { buildCourseSlides, verifyCourseSlideVisitOrder } from '../lib/inner-growth/course-slide-sequence.js'
 import { antiStressBlueprint } from '../lib/inner-growth/anti-stress-blueprint.js'
+import { oporaAs60Journey, OPORA_EXPERIENCE_CHANNELS } from '../lib/inner-growth/opora-as60-integrated-journey.js'
 
 const read = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 
@@ -53,7 +54,8 @@ test('New V5 enrolments have seven compact slides; older V3 lessons preserve 15 
  }
 })
 
-test('Public V6 fifteen-screen preview preserves seven skill IDs and supports all three public languages',()=>{
+test('Current AS6 public preview preserves fifteen-screen routes, seven skill IDs and five localized channels',()=>{
+ assert.deepEqual(OPORA_EXPERIENCE_CHANNELS,['body','emotion','mental','imagery','ritual'])
  for(const locale of ['ru','en','es']){
    const blueprint=antiStressBlueprint(locale)
    assert.equal(blueprint.skills.length,7)
@@ -69,7 +71,12 @@ test('Public V6 fifteen-screen preview preserves seven skill IDs and supports al
      assert.equal(d.screens.length,15)
      assert.ok(d.screens.every(s=>s.expected.length>=10))
      assert.equal(d.methodStatus,'implemented')
-     assert.equal(d.methodNames.length,3)
+     const journey=oporaAs60Journey(day,locale)
+     assert.equal(d.methodVersion,'AS-6.0')
+     assert.deepEqual(d.experiences.map(item=>item.id),OPORA_EXPERIENCE_CHANNELS)
+     assert.deepEqual(d.methodNames,OPORA_EXPERIENCE_CHANNELS.map(channel=>journey[channel].title))
+     assert.equal(d.methodNames.length,5)
+     assert.ok(d.methodNames.every(name=>typeof name==='string'&&name.length>0))
    }
  }
 })
@@ -92,7 +99,7 @@ test('V5 remains version-pinned while new AS2 cycles select V6 and keep old modu
 test('V5 practice screens omit visible Skip response buttons; saved legacy routes remain supported',()=>{
  const player=read('components/app/course-slide-player.jsx')
  assert.match(player,/\{!isSkillV5&&!isDayOne&&<button type="button" className=\{styles\.welcomeSkip\}/)
- assert.match(player,/\{!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
+ assert.match(player,/\{!finished&&!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
  assert.match(player,/\.\.\.\(!isSkillV5\?\[\['skip',learning\.practiceSkip\]\]:\[\]\)/)
  const feedbackGate=player.match(/\.\.\.\(!isSkillV5\?\[\['skip',words\.preferNot\]\]:\[\]\)/g)||[]
  assert.equal(feedbackGate.length,3)

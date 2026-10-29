@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
@@ -15,7 +16,7 @@ function fixture(locale,day){
   const saved=[]
   const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){finishCount++},
     onSession:async payload=>{saved.push(structuredClone(payload));return true}})
-  return {h,saved,get finishCount(){return finishCount}}
+  return {h,saved,day,get finishCount(){return finishCount}}
 }
 async function press(h,label){
   const b=findButton(h.tree,label)
@@ -41,7 +42,8 @@ async function saveAndOpenMap(f,locale){
   assert.equal(f.saved.length,0)
   await press(f.h,w.save)
   assert.equal(f.saved.length,1)
-  assert.ok(textOf(f.h.tree).includes(w.receipt))
+  assert.ok(textOf(f.h.tree).includes(f.day===14?oporaEndingCopy(locale).congratsFinal:
+    oporaEndingCopy(locale).congratsTitle.replace('{day}',String(f.day))))
   assert.ok(findButton(f.h.tree,w.start),'Receipt opens the course map directly')
   await press(f.h,w.start)
   const map=nodes(f.h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')
