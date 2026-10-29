@@ -1781,7 +1781,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
-      <MandalaCinematicDirector locale={locale} theme={theme}
+      <MandalaCinematicDirector locale={locale} theme={theme} therapyMode={studioMode==="therapy"}
         disabled={recording||preparing} onApplyStoryboard={plan=>{
           // Only a safe first-party storyboard; no provider/client API call.
           setTheme(plan.theme);setVideoCategory(plan.theme);
