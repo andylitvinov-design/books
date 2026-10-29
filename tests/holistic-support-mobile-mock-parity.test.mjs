@@ -73,10 +73,11 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
 });
 
-test("progress is derived from local opens and four self-ratings, never fake streaks", () => {
+test("progress is derived from opens and four self-ratings, never fake streaks", () => {
   assert.match(client, /progressTotal = relevantVideos\.length/);
   assert.match(client, /progressCount = relevantVideos\.filter/);
-  assert.match(client, /averageScore = \(focusOrder\.reduce/);
+  assert.match(client, /averageScore = \(checkinOrder\.reduce/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
   assert.match(client, /className=\{styles\.progressStarted\}/);
   assert.match(client, /className=\{styles\.progressAverage\}/);
   assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);

@@ -12,7 +12,7 @@ const suggest=(theme,wish,availableScenes,locale="ru")=>
   suggestPersonalVideoScene({theme,wish,locale,availableScenes});
 
 test("all 24 existing visual scenes represented; never builds a second catalog",()=>{
-  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","relationships","energy","goals"]);
+  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","energy","life","health","relationships","goals"]);
   assert.equal(money.length+love.length+energy.length+goals.length,24);
 });
 test("RU personal money wishes choose corresponding artwork, preserving explicit category",()=>{
@@ -66,15 +66,25 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/id="personal-video-result"/);
 });
 
-test("sound preview is user-clicked, volume-controlled, and fades during final export",()=>{
+test("native audio preview is user-clicked, media-controlled, and the selected audio fades during export",()=>{
   const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const audio=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(ui,/data-video-music-preview/);
   assert.match(ui,/data-video-music-volume/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume,true\)/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume\)/);
+  assert.match(ui,/presetAudioUrl\(music\)/);
+  assert.match(ui,/data-video-audio-player/);
+  assert.match(ui,/audioPreviewRef\.current/);
+  assert.match(ui,/data-video-audio-upload/);
+  assert.match(ui,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
+  assert.match(ui,/startPresetAudio\(music,soundVolume\)/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);
   assert.match(audio,/linearRampToValueAtTime\(0, at \+ \.7\)/);
   assert.match(audio,/context\.createMediaStreamDestination\(\)/);
+});
+
+test("full HD energy, life and wellbeing suggestions remain local and multilingual",()=>{
+  assert.equal(suggest("energy","Мне нужен заряд бодрости",["solar-surge","ocean-pulse"]).sceneId,"solar-surge");
+  assert.equal(suggest("life","Я хочу свободу",["wildflower-dance","coastal-freedom"]).sceneId,"coastal-freedom");
+  assert.equal(suggest("health","I want a calm pause",["calm-sea","morning-dew"],"en").sceneId,"calm-sea");
 });

@@ -4,6 +4,13 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation";
+/** Cacheable first-party files: Safari in-app browsers cannot reliably open
+ * synthetic blob: audio, even when WAV bytes are valid.
+ * HTTPS /audio/mandala/*.wav lets WebKit request the actual media using Range.
+ */
+export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
+  return "/audio/mandala/" + preset + ".wav";
+}
 export type AmbientSession = {
   track: MediaStreamTrack;
   close: () => void;
@@ -21,7 +28,7 @@ const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number
 // On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
 // default, even when an HTML video would be audible. iOS 17+ exposes the
 // audioSession API. Change it only for a user-initiated preview or export.
-function acquirePlaybackSession(): () => void {
+export function acquirePlaybackSession(): () => void {
   if (typeof navigator === "undefined") return () => {};
   const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
   if (!session) return () => {};
@@ -118,6 +125,135 @@ export async function startAmbientMusic(
     };
   } catch {
     void context.close().catch(()=>{});
+    restoreSession();
+    return null;
+  }
+}
+
+
+/** Audio export uses the same deterministic PCM bytes as the checked-in
+ * HTTPS WAV files. Do not use generated blob: URLs for iPhone preview:
+ * the original screenshot showed native media "Error" for that source.
+ */
+export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): Blob {
+  const sampleRate = 44100;
+  const duration = 8;
+  const length = sampleRate * duration;
+  const bytes = new ArrayBuffer(44 + length * 2);
+  const view = new DataView(bytes);
+  function ascii(offset: number, value: string) {
+    for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
+  }
+  ascii(0, "RIFF"); view.setUint32(4, 36 + length * 2, true);
+  ascii(8, "WAVE"); ascii(12, "fmt ");
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true); ascii(36, "data");
+  view.setUint32(40, length * 2, true);
+  const frequencies = NOTES[preset];
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const fade = Math.min(1, t / .3, (duration - t) / .4);
+    const sound = frequencies.reduce((sum, hz, index) =>
+      sum + Math.sin(2 * Math.PI * hz * t) * (index === 0 ? .4 : .13)
+        * (1 + .12 * Math.sin(2 * Math.PI * (.09 + index * .03) * t)), 0);
+    view.setInt16(44 + i * 2, Math.round(
+      Math.max(-1, Math.min(1, sound * .62 * Math.max(0, fade))) * 32767,
+    ), true);
+  }
+  return new Blob([bytes], { type: "audio/wav" });
+}
+
+export const LOCAL_AUDIO_MAX_BYTES = 15 * 1024 * 1024;
+export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">): boolean {
+  if (file.size < 1 || file.size > LOCAL_AUDIO_MAX_BYTES) return false;
+  if (!/\.(mp3|m4a|wav|aac|mp4)$/i.test(file.name)) return false;
+  // iOS Files may provide an empty MIME even for a playable audio file.
+  return !file.type || file.type.startsWith("audio/") || file.type === "application/octet-stream";
+}
+
+/** Record exactly the same PCM wave the visitor can hear in native preview.
+ * This avoids a different timbre when the video is exported.
+ */
+export function startPresetAudio(
+  preset: Exclude<AmbientMusic, "none">, volume = 75,
+): Promise<AmbientSession | null> {
+  const wave = createAmbientPreviewWav(preset);
+  const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
+  return startUploadedAudio(file, volume);
+}
+
+/** Export one user-supplied audio recording alongside the canvas stream.
+ * Decode locally using Web Audio because audio.captureStream() is unavailable
+ * on many iPhones. This graph deliberately does not connect to speakers.
+ */
+export async function startUploadedAudio(
+  file: File, volume = 80,
+): Promise<AmbientSession | null> {
+  if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
+  const AudioCtor = window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtor) return null;
+  const restoreSession = acquirePlaybackSession();
+  let context: AudioContext;
+  try { context = new AudioCtor(); }
+  catch { restoreSession(); return null; }
+  let source: AudioBufferSourceNode | null = null;
+  try {
+    // Must call resume inside the Create button's activation, before awaits.
+    const resumed = context.resume();
+    const data = await file.arrayBuffer();
+    await resumed;
+    const buffer = await context.decodeAudioData(data);
+    if (!buffer.length || !Number.isFinite(buffer.duration) || buffer.duration > 180) {
+      throw new Error("Audio is empty or too long to decode on a phone");
+    }
+    if (context.state !== "running") await context.resume();
+    if (context.state !== "running") throw new Error("Audio is still suspended");
+    const destination = context.createMediaStreamDestination();
+    const master = context.createGain();
+    master.gain.setValueAtTime(Math.max(0, Math.min(100, volume)) / 100, context.currentTime);
+    master.connect(destination);
+    source = context.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(master);
+    const track = destination.stream.getAudioTracks()[0];
+    if (!track) throw new Error("No decoded audio output track");
+    source.start();
+    let closed = false, faded = false;
+    return {
+      track,
+      setVolume: (value: number) => {
+        if (closed || faded) return;
+        const now = context.currentTime;
+        master.gain.cancelScheduledValues(now);
+        master.gain.setTargetAtTime(Math.max(0, Math.min(100, value)) / 100, now, .035);
+      },
+      fadeOut: () => {
+        if (closed || faded) return;
+        faded = true;
+        const now = context.currentTime;
+        master.gain.cancelScheduledValues(now);
+        master.gain.setValueAtTime(master.gain.value, now);
+        master.gain.linearRampToValueAtTime(0, now + .7);
+      },
+      close: () => {
+        if (closed) return;
+        closed = true;
+        try { source?.stop(); } catch { /* Source may already have ended. */ }
+        source?.disconnect();
+        master.disconnect();
+        track.stop();
+        void context.close().catch(() => {});
+        restoreSession();
+      },
+    };
+  } catch {
+    try { source?.stop(); } catch { /* Ignore. */ }
+    source?.disconnect();
+    void context.close().catch(() => {});
     restoreSession();
     return null;
   }

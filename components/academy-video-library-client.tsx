@@ -8,6 +8,7 @@ import { useState } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-video-library.module.css";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
+import AcademyVideoProgress from "@/components/app/academy-video-progress";
 
 export type AcademyVideoLesson = { id: string; title: string; unavailable?: boolean };
 export type AcademyVideoChapter = { id: string; title: string; videos: AcademyVideoLesson[] };
@@ -17,6 +18,8 @@ export type AcademyVideoCourse = {
   category: string;
   poster: string;
   href: string;
+  description?: string;
+  freeCourseHref?: string;
   chapters: AcademyVideoChapter[];
 };
 export type AcademyVideoProgram = {
@@ -50,6 +53,7 @@ const ui = {
     show: "Show lessons",
     hide: "Hide lessons",
     watch: "Play",
+    price: "Price · €0", startFree: "Take the course free", freeInfo: "Free five-lesson online course; personal initiation is separate.",
     details: "Explore the complete course",
     youtube: "Watch on YouTube",
     missing: "Source pending:",
@@ -73,6 +77,7 @@ const ui = {
     show: "Показать уроки",
     hide: "Скрыть уроки",
     watch: "Воспроизвести",
+    price: "Цена · €0", startFree: "Пройти курс бесплатно", freeInfo: "Пять онлайн-уроков бесплатны; личная инициация согласуется отдельно.",
     details: "Подробнее о программе",
     youtube: "Смотреть на YouTube",
     missing: "Источник уточняется:",
@@ -96,6 +101,7 @@ const ui = {
     show: "Mostrar lecciones",
     hide: "Ocultar lecciones",
     watch: "Reproducir",
+    price: "Precio · €0", startFree: "Hacer el curso gratis", freeInfo: "Curso online gratis de cinco lecciones; iniciación personal por separado.",
     details: "Ver programa completo",
     youtube: "Ver en YouTube",
     missing: "Fuente pendiente:",
@@ -230,12 +236,24 @@ export function AcademyVideoLibraryClient({
                                 aria-label={(active ? t.hide : t.show) + ": " + course.title}
                               >
                                 <span className={styles.coursePoster}><Image src={course.poster} unoptimized width={96} height={54} sizes="76px" alt="" loading="lazy" /></span>
-                                <span className={styles.courseCopy}><strong>{course.title}</strong><small>{courseVideoCount(course)} {courseVideoCount(course) === 1 ? t.video : t.videos}</small></span>
+                                <span className={styles.courseCopy}><strong>{course.title}</strong><small>{courseVideoCount(course)} {courseVideoCount(course) === 1 ? t.video : t.videos}</small>
+                                   {course.freeCourseHref ? <span className={styles.freePricePill}>{t.price}</span> : null}
+                                 </span>
                                 <ChevronDown className={styles.chevron + (active ? " " + styles.rotate : "")} aria-hidden="true" />
                               </button>
                               {active ? (
                                 <div className={styles.lessonPanel} id={coursePanel}>
-                                  {course.chapters.map((chapter) => (
+                                  {course.freeCourseHref ? <div className={styles.freeCourseIntro} data-academy-free-reiki-course>
+                                     {course.description ? <p>{course.description}</p> : null}
+                                     <div className={styles.freeCourseActions}>
+                                       <span className={styles.freePricePill}>{t.price}</span>
+                                       <Link href={course.freeCourseHref} prefetch={false} className={styles.freeCourseStart}>
+                                         {t.startFree} <ArrowUpRight size={17} aria-hidden="true" />
+                                       </Link>
+                                     </div>
+                                     <small>{t.freeInfo}</small>
+                                   </div> : null}
+                                   {course.chapters.map((chapter) => (
                                     <section className={styles.chapter} key={chapter.id}>
                                       {chapter.title ? <h4>{chapter.title}</h4> : null}
                                       {(sortRated ? sortByStars(chapter.videos,lesson=>lesson.id,stars.ratings) : chapter.videos).map((lesson) => {
@@ -282,6 +300,7 @@ export function AcademyVideoLibraryClient({
                                                 <a href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer">
                                                   {t.youtube} <ArrowUpRight size={14} aria-hidden="true" />
                                                 </a>
+                                                <AcademyVideoProgress key={lesson.id} videoId={lesson.id} title={lesson.title} locale={locale} />
                                               </div>
                                             ) : null}
                                           </div>

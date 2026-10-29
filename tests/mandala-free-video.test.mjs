@@ -47,7 +47,7 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
 });
 
 
-test("client money-flow studio offers exactly 12 symbolic looks and starts with four favourites", async () => {
+test("client money-flow studio offers 16 original and licensed looks and starts with four favourites", async () => {
   const ts = await import("typescript");
   const studio = read("components/mandala-free-video-studio.tsx");
   const effects = read("lib/mandala/money-flow-effects.ts");
@@ -58,9 +58,10 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
     "golden-rain", "abundance-tree", "money-magnet", "infinite-flow",
     "cosmic-flow", "opportunity-falls", "path-to-goals", "partners",
     "golden-shield", "abundance-circle", "life-gifts", "dreams",
+    "wealth-sunrise","golden-harvest","radiant-portal","prosperity-coast",
   ];
   for (const id of ids) assert.match(effects, new RegExp('id: "' + id + '"'));
-  assert.equal((effects.match(/ id: "/g) || []).length, 12, "exactly twelve client-safe concepts");
+  assert.equal((effects.match(/ id: "/g) || []).length, 16, "sixteen client-safe concepts");
   for (const locale of ["en", "ru", "es"]) assert.match(effects, new RegExp(locale + ': "'));
   assert.match(studio, /moneyTemplates/);
   assert.match(studio, /data-mandala-money-option/);
@@ -95,7 +96,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
+  assert.match(studio, /source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
   assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
@@ -104,7 +105,8 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
   assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
-  assert.match(renderer, /ctx\.drawImage\(src,-pw\/2,-ph\*\.55,pw,ph\)/);
+  assert.match(renderer, /ctx\.arc\(0,0,radius,0,Math\.PI\*2\);ctx\.clip\(\)/);
+  assert.match(renderer, /ctx\.drawImage\(src,-src\.width\*scale\/2,-src\.height\*scale\/2,src\.width\*scale,src\.height\*scale\)/);
   assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
@@ -137,16 +139,18 @@ test("existing 12 money scenes retain tap-triggered animated thumbnails", () => 
   assert.match(browser,/actual H\.264 video must advance in time/);
 });
 
-test("background-only reusable clip preserved from live without photo or payment", () => {
+test("background-only reusable clip is the default, with an explicit photo checkbox", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
-  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
-  assert.match(studio,/theme==="money" && backgroundOnly \? BACKGROUND_CLIP/);
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
+  assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
+  assert.match(studio,/data-video-photo-enabled/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
-  assert.match(studio,/backgroundOnly\?"money-background":"personal-mandala"/);
+  assert.match(studio,/backgroundOnly\?\(theme==="money"\?"money-background":theme\+"-background"\)/);
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio,/if \(!art\) return/);
   assert.match(browser,/holistic-house-money-background/);

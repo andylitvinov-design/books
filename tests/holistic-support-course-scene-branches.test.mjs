@@ -35,51 +35,30 @@ function selection(input = home) {
   const component = one(file.statements.filter(x => ts.isFunctionDeclaration(x) && x.name?.text === "HolisticSupportMobile"));
   const result = one(component.body.statements.filter(ts.isReturnStatement));
   const scene = named(component.body.statements, "scene");
-  assert.equal(scene.initializer.getText(file), 'choice === "meditation"');
+  // A click on Courses must reach the real original video player, not the
+  // assessment profiles. Meditation must retain the same shared player.
+  assert.equal(scene.initializer.getText(file), 'choice === "meditation" || choice === "pump"');
   const branch = one(all(result, x => ts.isConditionalExpression(x) && x.condition.getText(file) === "scene"));
-  const pump = branch.parent;
-  assert.ok(ts.isConditionalExpression(pump));
-  assert.equal(pump.condition.getText(file), 'choice === "pump"');
-  assert.ok(pump.whenFalse === branch);
-  const course = one(all(pump.whenTrue, ts.isJsxSelfClosingElement));
-  const unwrap = node => ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
-  assert.ok(unwrap(pump.whenTrue) === course, "Courses is the actual selected branch, not hidden nested JSX");
-  assert.equal(course.tagName.getText(file), "HolisticSupportCourseProfiles");
-  assert.equal(attr(course, "courses").initializer.expression.getText(file), "courses");
-  return { file, component, scene, branch, pump };
+  const videoJsx = branch.whenTrue.getText(file);
+  assert.ok(videoJsx.includes("data-support-player"), "shared course/meditation player renders");
+  assert.ok(videoJsx.includes('data-support-mystery-course={course.id}'), "original course chooser renders");
+  assert.ok(videoJsx.includes("data-support-courses-panel"), "published Academy links render");
+  const testsBranch = one(all(result, x => ts.isConditionalExpression(x) && x.condition.getText(file) === 'choice === "tests"'));
+  const testsJsx = testsBranch.whenTrue.getText(file);
+  assert.ok(testsJsx.includes("HolisticSupportCourseProfiles"), "four profiles render only inside Tests");
+  assert.ok(testsJsx.includes("data-support-tests-panel"), "original test links remain");
+  assert.ok(!testsJsx.includes("data-support-player"), "Tests must not show course video player");
+  return { file, component, scene, branch, testsBranch };
 }
-function impossibleComparisons(input) {
-  const { file, scene, branch, pump } = selection(input);
-  const choice = one(file.statements.filter(x => ts.isTypeAliasDeclaration(x) && x.name.text === "Choice"));
-  const selected = choice.getText(file) + '\ndeclare const choice: Choice;\ndeclare const React: any;\n' +
-    'declare namespace JSX { interface IntrinsicElements { [name: string]: any } }\n' +
-    "const scene = " + scene.initializer.getText(file) + ";\nconst selected = (" + pump.condition.getText(file) +
-    ") ? null : scene ? " + branch.whenTrue.getText(file) + " : null;";
-  const source = ts.createSourceFile("selected.tsx", selected, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const host = {
-    getSourceFile: name => name === "selected.tsx" ? source : undefined,
-    getDefaultLibFileName: () => "", writeFile: () => { throw Error("No emit"); },
-    getCurrentDirectory: () => "", getDirectories: () => [],
-    fileExists: name => name === "selected.tsx", readFile: name => name === "selected.tsx" ? selected : undefined,
-    getCanonicalFileName: name => name, useCaseSensitiveFileNames: () => true, getNewLine: () => "\n",
-  };
-  const program = ts.createProgram(["selected.tsx"], { noEmit: true, noLib: true, noResolve: true, strict: false, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 }, host);
-  // Other component bindings are intentionally absent: this is a targeted
-  // control-flow regression, not a claim of a full repository typecheck.
-  return program.getSemanticDiagnostics(source).filter(x => x.code === 2367)
-    .map(x => ({ code: x.code, expression: selected.slice(x.start, x.start + x.length) }));
-}
-test("actual Courses branch is separate; meditation JSX has no impossible pump comparisons", () => {
-  assert.deepEqual(impossibleComparisons(home), []);
-  const { file, branch } = selection();
-  const fragment = one(all(branch.whenTrue, ts.isJsxFragment));
-  const offset = fragment.openingFragment.end;
-  const mutant = home.slice(0, offset) + '{choice === "pump" ? null : null}' + home.slice(offset);
-  assert.equal(parse(mutant).parseDiagnostics.length, 0);
-  assert.deepEqual(impossibleComparisons(mutant), [{ code: 2367, expression: 'choice === "pump"' }]);
-  assert.ok(branch.whenTrue.getText(file).includes("data-support-player"));
+test("Courses restores original live course videos; Tests alone shows four diagnostic profiles", () => {
+  const { file, branch, testsBranch } = selection();
+  assert.ok(branch.whenTrue.getText(file).includes('choice === "pump" ? t.watchLesson : t.play'));
+  assert.ok(branch.whenTrue.getText(file).includes("activeMystery?.videoGroups.map"));
+  assert.ok(testsBranch.whenTrue.getText(file).includes('/client/tests'));
+  const mutant = home.replace('const scene = choice === "meditation" || choice === "pump";', 'const scene = choice === "meditation";');
+  assert.throws(() => selection(mutant), {code: "ERR_ASSERTION"});
 });
-test("actual meditation program callback retains selection, pause and selected-video reset", () => {
+test("the selected original programme menu retains selection and playback reset", () => {
   const { file, branch } = selection();
   const group = one(all(branch.whenTrue, x => ts.isJsxElement(x) && attr(x.openingElement, "data-support-filter")?.initializer?.text === "program"));
   const select = one(all(group, x => ts.isJsxElement(x) && x.openingElement.tagName.getText(file) === "select"));
@@ -91,6 +70,9 @@ test("actual meditation program callback retains selection, pause and selected-v
     calls.length = 0; callback({ target: { value: program } });
     assert.deepEqual(calls, [["setProgram", program], ["setPlaying", false], ["setSelectedId", null]]);
   }
+  calls.length = 0;
+  evaluate(handler.getText(file), { ...bindings, choice: "pump" })({target:{value:"egypt"}});
+  assert.deepEqual(calls,[["setProgram","egypt"],["setPlaying",false],["setSelectedId",null],["setMaster","all"],["setTheme","all"]]);
 });
 
 const iconNames = ["ArrowRight", "BookOpen", "CheckCircle2", "Coins", "Compass", "Heart", "HeartPulse", "ListChecks", "Sparkles"];
@@ -106,12 +88,15 @@ function profileComponent(input = profiles) {
 }
 // Public checked-in source fixtures, not records, uploads or external requests.
 const route = parse(read("app/[locale]/holistic-support/mobile/page.tsx"));
-const collections = evaluate(named(route.statements, "mysteryCollections").initializer.getText(route));
+const greekSource = parse(read("data/academy/greek-video-series.ts"));
+const greekSeries = evaluate(named(greekSource.statements, "GREEK_VIDEO_SERIES").initializer.getText(greekSource));
+const collections = evaluate(named(route.statements, "mysteryCollections").initializer.getText(route), { GREEK_VIDEO_SERIES: greekSeries });
 const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
 const media = JSON.parse(read("data/academy/psimaster-media.generated.json"));
 const courses = Array.from(collections, entry => {
   const record = one(curricula.filter(x => x.logicalId === entry.programId && x.sourceLocale === "ru"));
   return { id: entry.id, shortTitle: entry.shortTitle, href: "/ru/academy/" + record.routeKey,
+    seriesHref: entry.id.startsWith("greek-") ? "/ru/academy/" + entry.videoIds[0] : undefined,
     poster: "/inert-course-poster.png", videoCount: media.filter(x => entry.videoIds.includes(x.logicalId)).length };
 });
 const sectors = ["energy", "money", "love", "meaning"];
@@ -132,14 +117,14 @@ function verifyProfiles(locale, input = profiles) {
     for (const action of ["test", "fill", "recommend"]) one(allNodes.filter(x => x.props["data-support-profile-" + action])).props.onClick();
     assert.deepEqual(calls, [...sectors.map(x => ["select", x]), ["tests"], ["fill", active], ["recommend", active]]);
     const links = allNodes.filter(x => x.tag === "link");
-    assert.deepEqual(links.map(x => x.props.href), ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.href) : [])]);
+    assert.deepEqual(links.map(x => x.props.href), ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.seriesHref ?? x.href) : [])]);
     if (locale === "ru") {
       assert.equal(one(allNodes.filter(x => x.props["data-support-mystery-courses"])).tag, "details");
-      for (const course of courses) assert.ok(text(one(links.filter(x => x.props.href === course.href))).includes(course.shortTitle));
+      for (const course of courses) assert.ok(text(one(links.filter(x => x.props.href === (course.seriesHref ?? course.href)))).includes(course.shortTitle));
     } else assert.equal(allNodes.filter(x => x.props["data-support-mystery-courses"]).length, 0);
   }
 }
-for (const locale of ["en", "ru", "es"]) test("actual " + locale + " Courses JSX retains four profiles, three actions and original Academy links", () => verifyProfiles(locale));
+for (const locale of ["en", "ru", "es"]) test("actual " + locale + " Tests JSX retains four profiles, three actions and source Academy links", () => verifyProfiles(locale));
 test("course/profile loss, wrong link and inert real CTA fail the selected JSX contract", () => {
   for (const [before, after] of [
     ['courses.map(course =>', 'courses.slice(0, 2).map(course =>'],
@@ -152,8 +137,8 @@ test("course/profile loss, wrong link and inert real CTA fail the selected JSX c
   }
 });
 test("original RU manifest pointers and media totals remain distinct from four profile sectors", () => {
-  assert.deepEqual(courses.map(x => x.id), ["maya", "egypt", "greek"]);
-  assert.deepEqual(courses.map(x => x.videoCount), [6, 7, 12]);
+  assert.deepEqual(courses.map(x => x.id), ["maya", "egypt", "greek-dionysus", "greek-demeter"]);
+  assert.deepEqual(courses.map(x => x.videoCount), [6, 7, 7, 5]);
   assert.equal(media.length, 45); assert.equal(curricula.length, 22);
   const input = read("app/[locale]/holistic-support/mobile/page.tsx");
   assert.match(input, /if \(locale === "ru"\)/);

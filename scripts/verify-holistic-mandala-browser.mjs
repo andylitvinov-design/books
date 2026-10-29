@@ -70,16 +70,6 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
-        // Prevent duplicate mobile bottom bars after opening the editor from Support.
-        const supportDock=page.locator("[data-mandala-support-bottom-nav]");
-        await supportDock.waitFor({state:"visible",timeout:12000});
-        assert.equal(await supportDock.count(),1,engine+" exactly one Support dock");
-        assert.equal(await supportDock.locator("a").count(),4,engine+" four real dock links");
-        assert.equal(await supportDock.locator('button[aria-controls="mandala-support-settings"]').count(),
-          1,engine+" one settings control");
-        assert.equal(await page.locator('nav[aria-current="page"]').count(),0,
-          engine+" no duplicate legacy editor dock");
-
         // Screenshot-led iPhone hierarchy: two modes, four themes, optional
         // photo, compact live-preview filters, templates, audio, affirmations.
         const modes=page.locator("[data-video-mode-switch]");
@@ -628,6 +618,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus")==="false",
           undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
+
+        // Owner's iPhone regression: a single, functional Support dock is
+        // shared with the local video editor, never a second legacy nav.
+        const dock = page.locator("[data-mandala-support-bottom-nav]");
+        await dock.waitFor({state:"visible",timeout:10000});
+        assert.equal(await dock.count(),1,engine+" exactly one Support dock");
+        assert.equal(await dock.locator("a").count(),4,engine+" four canonical links");
+        assert.equal(await dock.locator('button[aria-controls="mandala-support-settings"]').count(),1,
+          engine+" one settings button");
+        assert.equal(await page.locator('nav[aria-current="page"]').count(),0,
+          engine+" no duplicate legacy editor dock");
 
         const overflow = await page.evaluate(() => {
           const viewport = window.innerWidth;
