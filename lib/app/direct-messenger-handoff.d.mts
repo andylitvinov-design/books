@@ -4,3 +4,7 @@ export declare function directMessengerRecipient(value: unknown): string | null;
 export declare function directMessengerReturnPath(
   locale: 'en' | 'ru' | 'es', recipientSlug?: string | null,
 ): string;
+/** EN/RU/ES onboarding with safe return to the original Messenger language. */
+export declare function directMessengerSetupPath(
+  locale: 'en' | 'ru' | 'es', recipientSlug?: string | null,
+): string;
