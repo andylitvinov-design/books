@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -581,6 +582,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const ui = studioCopy[locale];
   const supportUi = supportDesignCopy[locale];
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
+  const [scoresTouched,setScoresTouched] = useState(false);
   const [theme, setTheme] = useState<VideoTheme>("energy");
   const [videoCategory, setVideoCategory] = useState<VideoCategory>("energy");
   const effect: Effect = "glow";
@@ -1067,7 +1069,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <Icon size={16} aria-hidden="true"/>
                   <input type="range" min={1} max={10} step={1} value={scores[key]}
                     aria-label={ui.themes[key]}
-                    onChange={event=>setScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}))}/>
+                    onChange={event=>{setScoresTouched(true);setScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}));}}/>
                   <output>{scores[key]}</output>
                 </span>
               </label>;
@@ -1340,6 +1342,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <MandalaVideoAffirmations locale={locale} theme={theme} settings={affirmations}
         onChange={setAffirmations} disabled={recording||preparing}/>
+
+      <MandalaGuidedCourse locale={locale} theme={theme}
+        selfRatings={scoresTouched ? scores : {}} disabled={recording||preparing}
+        onApplyFreeVideo={session=>{
+          // This is preparation, NOT a render or a claimed downloadable video.
+          selectCategory(session.theme);
+          setBackgroundOnly(true);
+          setDuration(60);
+          setSpeed("slow");
+          setCaptionMode("custom");
+          setCustomCaption(session.title);
+          setAffirmations({...defaultAffirmations,enabled:true,selected:[0,1,2],
+            custom:"",visibility:["large"]});
+          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
+            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
+            "Session 1 scene is ready. Create and download the video in the editor below.");
+          document.getElementById("video-settings")?.scrollIntoView({behavior:"smooth",block:"start"});
+        }}/>
 
       <section id="video-settings" className={videoStyles.settings} aria-labelledby="video-settings-heading">
         <div className={videoStyles.sectionHeading}>
