@@ -121,12 +121,14 @@ CREATE POLICY "Published video or curated metadata-only YouTube link"
  USING (
    owner_review_status='accepted'
    AND duration_verified_seconds BETWEEN 1 AND 600
+   AND duration_basis IN ('metadata_checked','owner_checked')
    AND content_checked_at IS NOT NULL
    AND (
      (
        editorial_status='approved'
        AND embed_status='confirmed'
        AND rights_status='embed_approved'
+       AND embed_checked_at IS NOT NULL
      )
      OR (
        discovery_status='link_only'
