@@ -157,6 +157,11 @@ test('intelligence route enforces origin and verified session before planning', 
   assert.equal(paidPlan.primary.id,'service:business')
   assert.equal(paidPlan.primary.free,false)
   assert.equal(JSON.stringify(paidPlan).includes(user.id),false)
+  const courseBody={...body,intent:{language:'en',selectedTopics:['energy'],formats:['course']},courseSelection:'reiki_preview'}
+  const course=await route.POST(request(courseBody,headers),params)
+  const coursePlan=await course.json()
+  assert.equal(coursePlan.primary.href,'/en/academy/principles-of-energywork/learn')
+  assert.equal(coursePlan.primary.requiresUserConfirmation,true)
   const historyBody={...body,intent:{...body.intent,formats:['video']},videoHistory:'avoid_marked'}
   const history=await route.POST(request(historyBody,headers),params)
   assert.equal((await history.json()).status,'no_match')

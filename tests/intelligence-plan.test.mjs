@@ -184,3 +184,19 @@ test('completed tests are used only with explicit per-request consent and are no
   await assert.rejects(planIntelligenceRequest({...request,surface:'meditation',testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory}),/INVALID_INTELLIGENCE_REQUEST/)
   assert.equal((await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory:()=>{throw Error('private')}})).status,'unavailable')
 });
+test('a symbolic course preview requires its own explicit choice and points to the existing learner', async () => {
+  const request={...body,intent:{language:'es',selectedTopics:['energy'],formats:['course']}}
+  const absent=await planIntelligenceRequest(request,{})
+  assert.equal(absent.status,'no_match')
+  const result=await planIntelligenceRequest({...request,courseSelection:'reiki_preview'},{})
+  assert.equal(result.status,'recommend')
+  assert.equal(result.primary.href,'/en/academy/principles-of-energywork/learn')
+  assert.equal(result.primary.kind,'course')
+  assert.equal(result.primary.lessonLanguage,'en')
+  assert.equal(result.primary.requiresUserConfirmation,true)
+  assert.match(result.explanation,/Reiki/)
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',preflight:undefined},{})).status,'unavailable')
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',session:{dismissedIds:['course:reiki-preview']}},{})).status,'no_match')
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',intent:{...request.intent,maxDurationMinutes:5}},{})).status,'no_match')
+  await assert.rejects(planIntelligenceRequest({...request,courseSelection:'other'},{}),/INVALID_INTELLIGENCE_REQUEST/)
+});
