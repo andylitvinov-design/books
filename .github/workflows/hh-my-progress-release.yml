@@ -1,0 +1,64 @@
+name: HH My Progress — private history and video marks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/my-progress.*'
+      - 'components/app/academy-video-progress.jsx'
+      - 'components/academy-video-library-client.tsx'
+      - 'app/api/app/video-progress/route.js'
+      - 'lib/app/my-progress.mjs'
+      - 'lib/app/video-progress.js'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'tests/my-progress.test.mjs'
+      - 'supabase/migrations/20261029013500_hh_my_progress_video_marks_20261028.sql'
+      - '.github/workflows/hh-my-progress-release.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/my-progress.*'
+      - 'components/app/academy-video-progress.jsx'
+      - 'components/academy-video-library-client.tsx'
+      - 'app/api/app/video-progress/route.js'
+      - 'lib/app/my-progress.mjs'
+      - 'lib/app/video-progress.js'
+      - 'tests/my-progress.test.mjs'
+      - '.github/workflows/hh-my-progress-release.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-my-progress-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  private-progress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: My Progress source, ownership and status contracts
+        run: node --test tests/my-progress.test.mjs
+      - name: Scoped ESLint
+        run: >
+          npx --no-install eslint
+          components/app/my-progress.jsx
+          components/app/academy-video-progress.jsx
+          components/academy-video-library-client.tsx
+          lib/app/my-progress.mjs
+          lib/app/video-progress.js
+          app/api/app/video-progress/route.js
+          tests/my-progress.test.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Production build
+        run: npm run build
