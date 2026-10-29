@@ -6,7 +6,7 @@ on:
       - 'components/public-pathway-strip.*'
       - 'components/public-journey-refresh.module.css'
       - 'app/**/about/page.tsx'
-      - 'app/\\[locale\\]/contact/**'
+      - 'app/\[locale\]/contact/**'
       - 'tests/public-pathway-migration.test.mjs'
       - 'scripts/verify-public-pathway-mobile.mjs'
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
@@ -30,7 +30,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Wave one public contracts
-        run: node --test tests/public-pathway-migration.test.mjs
+        run: |
+          node --check scripts/verify-public-pathway-mobile.mjs
+          node --test tests/public-pathway-migration.test.mjs
       - name: Lint and typecheck
         run: |
           npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
