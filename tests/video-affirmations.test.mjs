@@ -149,6 +149,33 @@ test("goals and sourced axes yield five local, editable sentences in RU EN ES",(
   }
 });
 
+test("Hypnoaffirmations has precise user-facing EN/RU/ES copy and two real choices",()=>{
+  const personal=read("components/mandala-personal-affirmations.tsx");
+  for(const word of ["Hypnoaffirmations","Гипноаффирмации","Hipnoafirmaciones"]) {
+    assert.ok(panel.includes(word),"missing locale heading: "+word);
+  }
+  assert.match(panel,/25-го кадра/);
+  assert.match(panel,/научно не доказано/);
+  assert.match(panel,/lasting effects on beliefs are not scientifically established/);
+  assert.match(panel,/data-video-hypno-intro/);
+  assert.match(personal,/data-video-choice-mode/); // Child owns its two actual buttons.
+  assert.match(personal,/data-video-manual-select/);
+  assert.match(personal,/data-video-personal-suggest/);
+  assert.match(personal,/aria-pressed=\{selectionMethod==="manual"\}/);
+  assert.match(personal,/aria-pressed=\{selectionMethod==="tests"\}/);
+  assert.match(personal,/onClick=\{onManualSelect\}/);
+  assert.match(personal,/apply\(fresh,goals\);onTestsSelected\(\);/);
+  assert.match(panel,/setSelectionMethod\("manual"\)/);
+  assert.match(panel,/setSelectionMethod\("tests"\)/);
+  assert.match(panel,/presetOverride: undefined/);
+  assert.match(panel,/id="video-hypno-manual"/);
+  assert.match(personal,/await appFetch\("video-affirmation-focus"\)/);
+  assert.match(css,/\.hypnoIntro/);
+  assert.match(css,/\.choiceBar/);
+  assert.match(css,/\.personalManual/);
+  assert.doesNotMatch(panel+personal,/\bsetInterval\s*\(|autoPlay|sendBeacon|localStorage|sessionStorage/i);
+});
+
 test("personal matching is click-only, auth-gated and no scores leave the server",()=>{
   const personal=read("components/mandala-personal-affirmations.tsx");
   const focus=read("lib/mandala/video-affirmation-focus.mjs");
@@ -166,4 +193,27 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   assert.match(read("scripts/verify-holistic-mandala-browser.mjs"),/data-video-goals-toggle/);
   const jsx=ts.transpileModule(personal,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
   assert.deepEqual(jsx.diagnostics||[],[]);
+});
+
+test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+  assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
+  assert.match(studio,/setPremiumReady\(decoded\)/,
+    "already decoded HD frames must remain ready even if preload beat the effect");
+  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "unready scenes must still request real media data");
+  assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
+  assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
+  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
+});
+
+test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+  assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
+  assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
+  assert.match(studio,/video\.load\(\)/);
+  assert.match(studio,/void video\.play\(\)\.then/);
+  assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
+  assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
+  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
+    "Create stays disabled until a real decoded master frame is present");
 });
