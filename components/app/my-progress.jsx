@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -283,9 +283,9 @@ export default function MyProgress({ data, locale='en' }) {
     videoTopics:Object.fromEntries(freeMeditationVideos(lang).map(video=>[video.id,video.topics])),
     orders:sources.orders,locale:lang,
   }),[data,sources,lang])
-  const matchesTopic=entry=>selectedTopic==='all'||entry.topics?.includes(selectedTopic)
-  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'&&matchesTopic(entry)),[progress,selectedTopic])
-  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'&&matchesTopic(entry)),[progress,selectedTopic])
+  const matchesTopic=useCallback(entry=>selectedTopic==='all'||entry.topics?.includes(selectedTopic),[selectedTopic])
+  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'&&matchesTopic(entry)),[progress,matchesTopic])
+  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'&&matchesTopic(entry)),[progress,matchesTopic])
   const rubrics=useMemo(()=>LIBRARY.filter(({id})=>id!=='videos'&&id!=='mandalas')
     .map(({id,Icon})=>({id,Icon,items:progress.entries.filter(entry=>
       entry.category===id&&(selectedTopic==='all'||entry.topics?.includes(selectedTopic)))
