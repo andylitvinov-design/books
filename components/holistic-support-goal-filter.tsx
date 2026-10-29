@@ -346,20 +346,30 @@ export function HolisticSupportGoalFilter({
     onSave(sector, snapshot); // no API, session storage, or analytics
   }
   function nextSector() {
-    // Advance is an explicit acceptance: commit the current snapshot BEFORE
-    // switching. Works even when the visitor never clicked the separate Save.
-    // React batches Save and Next; commit the accepted snapshot before the
-    // next sector is mounted, so Safari/WebKit never loses the checkmark.
-    // Only a deliberate click invokes this synchronous UI transition.
-    flushSync(() => {
-      saveCurrent();
-    });
+    // Save and navigate together: splitting these into a synchronous Save
+    // followed by a second render can leave WebKit with a stale Accepted
+    // badge on narrow phones after parent onSave causes a rerender.
+    const snapshot = snapshotCurrent();
     const index = sectorOrder.findIndex(item => item.id === sector);
-    changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
+    const nextId = sectorOrder[(index + 1) % sectorOrder.length].id;
+    const next = drafts[nextId] ?? accepted[nextId];
+    flushSync(() => {
+      setDrafts(previous => ({ ...previous, [sector]: snapshot }));
+      setAccepted(previous => ({ ...previous, [sector]: snapshot }));
+      setDirty(previous => ({ ...previous, [sector]: false }));
+      onSave(sector, snapshot); // still local-only, never silently persisted
+      setSector(nextId);
+      setConcerns(next?.concerns ?? []);
+      setTasks(next?.tasks ?? []);
+      setRatings(next?.ratings ?? {});
+      setAmounts(next?.amounts ?? {});
+      setCurrency(next?.currency ?? "CAD");
+    });
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto" : "smooth", block: "start" }));
   }
+
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const snapshot = snapshotCurrent();
