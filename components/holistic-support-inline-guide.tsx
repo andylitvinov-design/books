@@ -83,6 +83,7 @@ const copy = {
       ready: "Your route is ready", focus: "Your focus", primary: "RECOMMENDED FIRST STEP",
       duration: "Time you have", durationWarning: "This is your preference, not the duration of a recording or practitioner session.",
       local: "Based on your answers",
+      supportFit: "You chose practitioner support, not a course about work or money. The business course and free self-check below are more topic-specific.",
       benefit: {
         meditation: "Try an available recording. Check its actual duration before starting.",
         tests: "A free self-check to explore your current priorities.",
@@ -151,6 +152,7 @@ const copy = {
       ready: "Маршрут подобран", focus: "Ваш запрос", primary: "РЕКОМЕНДУЕМЫЙ ПЕРВЫЙ ШАГ",
       duration: "У вас есть", durationWarning: "Это ваше пожелание, а не длительность записи или сессии мастера.",
       local: "На основе ваших ответов",
+      supportFit: "Вы выбрали поддержку мастера, а не курс про работу и деньги. Ниже есть более тематические варианты: бизнес-программа и бесплатный тест.",
       benefit: {
         meditation: "Попробуйте опубликованную практику. Длительность записи уточняется при открытии.",
         tests: "Бесплатная самопроверка поможет прояснить текущие приоритеты.",
@@ -219,6 +221,7 @@ const copy = {
       ready: "Tu ruta está lista", focus: "Tu objetivo", primary: "PRIMER PASO RECOMENDADO",
       duration: "Tiempo disponible", durationWarning: "Es tu preferencia, no la duración de una grabación o sesión.",
       local: "Según tus respuestas",
+      supportFit: "Elegiste apoyo profesional, no un curso de trabajo o dinero. El programa de negocios y el test gratuito de abajo se centran más en tu tema.",
       benefit: {
         meditation: "Prueba una grabación publicada. Comprueba su duración al abrirla.",
         tests: "Una autoevaluación gratuita para explorar tus prioridades.",
@@ -792,6 +795,9 @@ export function HolisticSupportInlineGuide({
             </div>
             <h4 data-support-guide-primary-title>{primaryTitle[format]}</h4>
             <p className={styles.benefit}>{t.ux.benefit[format]}</p>
+            {topic === "money" && (format === "healing" || format === "consultation") ? (
+              <p className={styles.fitNote} data-support-guide-fit-note>{t.ux.supportFit}</p>
+            ) : null}
             {minutes !== null ? (
               <p className={styles.timeNote} data-support-guide-time-preference>
                 <Clock3 size={15} aria-hidden="true" />
