@@ -1822,14 +1822,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.quickPanelBody} id="video-step-2-panel" hidden={expandedStep!==2}>
           <div className={videoStyles.quickImageRail}>
-            <button type="button" className={videoStyles.quickImageUpload} data-video-quick-photo data-video-photo-picker
-              disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+            <label htmlFor="mandala-photo" role="button" tabIndex={0} className={videoStyles.quickImageUpload} data-video-quick-photo data-video-photo-picker
+              aria-disabled={recording||preparing||photoPending}
+               onClick={event=>{if(recording||preparing||photoPending){event.preventDefault();return;}setBackgroundOnly(false);}}
+               onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();if(!recording&&!preparing&&!photoPending){setBackgroundOnly(false);event.currentTarget.click();}}}}>
               {photoUrl ? <>
                 {/* Only user-owned local Blob, never submitted to AI or CRM. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photoUrl} alt="" draggable={false}/>
               </> : <><Camera size={24} aria-hidden="true"/><span>{quick.pick}</span></>}
-            </button>
+            </label>
             {activeTemplates.slice(0,6).map(scene=>{
               const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
               const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
