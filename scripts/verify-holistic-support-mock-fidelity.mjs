@@ -494,7 +494,8 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="tests"]').click();
           const testsFromGoals=root.locator('[data-support-tests-panel]');
           await testsFromGoals.waitFor({state:"visible",timeout:8000});
-          assert.equal(await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href'),
+          const testExplorerHref=await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href');
+          assert.equal(new URL(testExplorerHref,'http://holistichouse.local').pathname,
             '/'+locale+'/client/tests',label+" free Test Explorer");
           assert.equal(await testsFromGoals.locator('[data-support-tests-personality]').getAttribute('href'),
             '/'+locale+'/personality-profiles',label+" existing profile builder");
