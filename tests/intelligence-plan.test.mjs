@@ -153,3 +153,18 @@ test('service adapter rejects forged routes and never suggests symbolic or unrev
     assert.equal(related.alternatives.length,0)
   }
 });
+test('video history is read only after a cabinet owner explicitly opts in and marked videos are excluded', async () => {
+  let reads=0
+  const loadVideoHistory=async()=>{reads++;return {records:[{videoId:sourceId,status:'watched',title:'private title'}]}}
+  const request={...body,intent:{language:'en',selectedTopics:['energy'],formats:['video']}}
+  assert.equal((await planIntelligenceRequest(request,{loadCatalog:loader,loadVideoHistory})).status,'recommend')
+  assert.equal(reads,0)
+  const avoided=await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory})
+  assert.equal(avoided.status,'no_match')
+  assert.equal(reads,1)
+  assert.equal(JSON.stringify(avoided).includes('private title'),false)
+  await planIntelligenceRequest({...request,videoHistory:'avoid_marked',preflight:undefined},{loadCatalog:loader,loadVideoHistory})
+  assert.equal(reads,1)
+  await assert.rejects(planIntelligenceRequest({...request,surface:'meditation',videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory}),/INVALID_INTELLIGENCE_REQUEST/)
+  assert.equal((await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory:()=>{throw Error('private error')}})).status,'unavailable')
+});

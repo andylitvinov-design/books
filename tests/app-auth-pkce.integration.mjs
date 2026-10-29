@@ -91,6 +91,7 @@ test('missing or wrong verifier fails closed without a session', async t => {
 // Auth and cookie implementations remain the pinned production SDK and adapter.
 const meditationFixture = JSON.parse(await readFile(new URL('../data/academy/meditation-catalog-candidates-20261028.json', import.meta.url), 'utf8')).videos
 let routeSource = await readFile(new URL('../app/api/app/[...path]/route.js', import.meta.url), 'utf8')
+routeSource = 'export const videoReads=[];\n' + routeSource
 routeSource = routeSource
   .replace("from 'next/server'", "from 'next/server.js'")
   .replace(/import \{ getAppConfig, requireSameOrigin, requestOrigin \} from '@\/lib\/app\/config'/,
@@ -103,6 +104,7 @@ routeSource = routeSource
   .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
   .replace("await import('@/lib/holistic-support/intelligence-test-catalog')", `await import('${new URL('../lib/holistic-support/intelligence-test-catalog.js', import.meta.url)}')`)
   .replace("await import('@/data/core-service-offers')", `await import('${new URL('../data/core-service-offers.ts', import.meta.url)}')`)
+  .replace("await import('@/lib/app/video-progress')", "({listVideoProgress:async (_,actor)=>{videoReads.push(actor.id);return {records:actor.id==='10000000-0000-4000-8000-000000000001'?[{videoId:'HqfixazXqRY',status:'watched'}]:[]}}})")
   .replace("const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')", `const loadMeditationDiscovery = async () => ({ videos: ${JSON.stringify(meditationFixture)}, publishedSourceIds: ['HqfixazXqRY'] })`)
   .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + (/\.[cm]?js$/.test(name) ? '' : '.js'), import.meta.url)}'`)
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
@@ -144,6 +146,10 @@ test('intelligence route enforces origin and verified session before planning', 
   assert.equal(paidPlan.primary.id,'service:business')
   assert.equal(paidPlan.primary.free,false)
   assert.equal(JSON.stringify(paidPlan).includes(user.id),false)
+  const historyBody={...body,intent:{...body.intent,formats:['video']},videoHistory:'avoid_marked'}
+  const history=await route.POST(request(historyBody,headers),params)
+  assert.equal((await history.json()).status,'no_match')
+  assert.deepEqual(route.videoReads,[user.id])
   assert.equal((await route.POST(request({...body, intent:{...body.intent, goalText:'x'.repeat(17000)}}, headers), params)).status, 413)
   const crisis = await route.POST(request({...body, intent:{...body.intent, goalText:'I want to die'}}, headers), params)
   assert.equal((await crisis.json()).status, 'safety_handoff')
@@ -158,6 +164,9 @@ test('intelligence route enforces origin and verified session before planning', 
   const secondResult = await route.POST(request(body, {origin, cookie:secondCookies}), params)
   assert.equal(secondResult.status, 200)
   assert.equal(JSON.stringify(await secondResult.json()).includes(second.id), false)
+  const secondHistory=await route.POST(request(historyBody, {origin,cookie:secondCookies}),params)
+  assert.equal((await secondHistory.json()).status,'recommend')
+  assert.deepEqual(route.videoReads,[user.id,second.id])
   const readsBefore = route.coachingReads.length
   const savedBody = {...body, intent:{language:'en'}, profileFocus:'confirmed_coaching_topic'}
   const saved = await route.POST(request(savedBody, {origin, cookie:secondCookies}), params)

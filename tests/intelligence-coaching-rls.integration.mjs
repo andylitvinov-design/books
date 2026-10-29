@@ -7,6 +7,7 @@ import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal } from '../lib/app/crypto.js'
 import { readPersonalCoaching } from '../lib/app/personal-coaching.js'
+import { listVideoProgress, markVideoProgress } from '../lib/app/video-progress.js'
 import { planIntelligenceRequest } from '../lib/holistic-support/intelligence-plan.mjs'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
@@ -21,7 +22,10 @@ const loadCatalog=async()=>({videos:[source],publishedSourceIds:['HqfixazXqRY']}
 before(async()=>{
   await setup() // Refuses anything except an empty, isolated loopback DB in CI.
   const db=await adminClient()
-  try {await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))}
+  try {
+    await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    await db.query(await readFile(new URL('../supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql',import.meta.url),'utf8'))
+  }
   finally {await db.end()}
   for(const who of [a,b]) {
     await repo.ensureAccount(who)
@@ -56,4 +60,16 @@ test('planning reads only the authenticated owner and never returns private plan
     assert.ok(!json.includes('private synthetic'))
     assert.ok(!json.includes(A)&&!json.includes(B))
   }
+})
+test('explicit video marks affect only the owner who saved them',async()=>{
+  await markVideoProgress(config,a,{videoId:'HqfixazXqRY',title:'Synthetic private title',status:'watched'})
+  const visible=await rawAs(b,'hh_app_backend',db=>db.query('select account_id from app_private.learning_video_progress'))
+  assert.equal(visible.rowCount,0)
+  const request={...body,profileFocus:undefined,videoHistory:'avoid_marked',intent:{language:'en',selectedTopics:['money'],formats:['video']}}
+  const first=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:()=>listVideoProgress(config,a)})
+  const second=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:()=>listVideoProgress(config,b)})
+  assert.equal(first.status,'no_match')
+  assert.equal(second.status,'recommend')
+  assert.equal(JSON.stringify(first).includes('Synthetic private title'),false)
+  assert.equal(JSON.stringify(second).includes('Synthetic private title'),false)
 })

@@ -566,6 +566,7 @@ async function handle(request, { params }) {
           loadCoaching: () => readPersonalCoaching(config, actor),
           loadTests: async locale => (await import('@/lib/holistic-support/intelligence-test-catalog')).buildIntelligenceTestCatalog(locale),
           loadServices: async locale => (await import('@/data/core-service-offers')).coreServiceOffers(locale),
+          loadVideoHistory: async () => (await import('@/lib/app/video-progress')).listVideoProgress(config, actor),
         }))
       } catch (error) {
         if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
