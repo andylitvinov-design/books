@@ -2,6 +2,38 @@ name: Holistic House public services production acceptance
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'app/**/holistic-support/**'
+      - 'app/**/services/**'
+      - 'app/**/toronto/**'
+      - 'app/**/alchemy/**'
+      - 'app/**/business/**'
+      - 'app/api/public/**'
+      - 'app/api/payments/**'
+      - 'app/api/app/**'
+      - 'components/holistic-*'
+      - 'components/mandala-*'
+      - 'components/remote-energy-*'
+      - 'components/taoist-*'
+      - 'components/*service*'
+      - 'components/practice-showcase*'
+      - 'lib/holistic-support/**'
+      - 'lib/practitioners/public-*'
+      - 'lib/commerce/**'
+      - 'lib/checkout/**'
+      - 'tests/holistic-*.mjs'
+      - 'tests/alchemy-*.mjs'
+      - 'tests/remote-*.mjs'
+      - 'tests/direction-*.mjs'
+      - 'tests/public-service*.mjs'
+      - 'scripts/verify-holistic-*.mjs'
+      - 'scripts/verify-public-services*.mjs'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'AGENTS.md'
+      - '.github/workflows/hh-public-services-production.yml'
 permissions:
   contents: read
 concurrency:

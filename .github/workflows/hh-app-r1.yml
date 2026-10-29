@@ -4,6 +4,38 @@ on:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'app/**/app/**'
+      - 'app/**/client/**'
+      - 'app/api/app/**'
+      - 'app/api/client/**'
+      - 'app/api/assessments/**'
+      - 'components/app/**'
+      - 'components/academy-video-library-client.tsx'
+      - 'components/my-course*'
+      - 'components/profile-*'
+      - 'lib/app/**'
+      - 'lib/profile/**'
+      - 'lib/assessments/**'
+      - 'lib/course/**'
+      - 'lib/academy/**'
+      - 'lib/security/**'
+      - 'data/assessments/**'
+      - 'tests/app-*.mjs'
+      - 'tests/client-report*.mjs'
+      - 'tests/assessment-*.mjs'
+      - 'tests/profile-*.mjs'
+      - 'tests/course-*.mjs'
+      - 'tests/my-course*.mjs'
+      - 'tests/opora-*.mjs'
+      - 'tests/personal-video-cloud.test.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'AGENTS.md'
+      - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
 concurrency:
