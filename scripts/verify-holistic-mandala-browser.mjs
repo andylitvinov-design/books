@@ -294,6 +294,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
 
         // Public iPhone control E2E: local affirmations change the live preview
         // and are included by the same canvas renderer in final recordings.
+        // New compact one-page UI: the deep phrase editor is only opened
+        // on an explicit Edit tap; existing real renderer controls are retained.
+        const compactHypno = page.locator("[data-hypno-overview]");
+        await compactHypno.waitFor({state:"visible",timeout:12000});
+        for(const marker of ["data-hypno-request","data-hypno-phrases","data-hypno-display","data-hypno-design","data-hypno-preview"]){
+          assert.equal(await compactHypno.locator("["+marker+"]").count(),1,marker);
+        }
+        const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
+        assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-request-edit]").getAttribute("aria-expanded"),"false");
+        await compactHypno.locator("[data-hypno-phrases-edit]").click();
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
@@ -314,8 +325,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
         assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
         assert.ok((await affirmationsPanel.locator('[data-video-affirmation-preset="0"]').innerText()).length<=26);
-        const collapsedHeight=await affirmationsPanel.evaluate(el=>el.getBoundingClientRect().height);
-        assert.ok(collapsedHeight<650, engine+" "+locale+" "+width+"px panel too tall: "+collapsedHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"true");
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
         await page.locator("[data-video-affirmations-enable]").check();
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
@@ -344,6 +354,27 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        // Owner screenshot acceptance: in-place request edits affect real
+        // selected words, text geometry changes use the shared recorder,
+        // and the live scene rail changes the original (not a mock) scene.
+        await compactHypno.locator("[data-hypno-request-edit]").click();
+        await compactHypno.locator('[data-hypno-problem="1"]').click();
+        await compactHypno.locator('[data-hypno-goal="recovery"]').click();
+        await compactHypno.locator("[data-hypno-apply-request]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I allow myself rest|Я выбираю отдых|Me permito descansar/i);
+        await compactHypno.locator("[data-hypno-display-edit]").click();
+        await compactHypno.locator('[data-hypno-frequency="3"]').click();
+        await compactHypno.locator('[data-hypno-size="large"]').click();
+        await compactHypno.locator('[data-hypno-position="bottom"]').click();
+        assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        const firstScene=compactHypno.locator("[data-hypno-scene]").first();
+        const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
+        assert.ok(await firstScene.count() && await secondScene.count());
+        await secondScene.click();
+        assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
+        await firstScene.click();
+        assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
