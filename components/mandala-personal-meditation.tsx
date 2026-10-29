@@ -182,8 +182,12 @@ export function MandalaPersonalMeditation({
     setVoices(local);
     const voice=local.find(item=>item.name===voiceName)||local[0];
     if(!voice){setNotice(t.noVoice);return;}
-    if(withMusic&&audioSrc&&ambientRef.current){
-      const player=ambientRef.current;
+    if(withMusic&&audioSrc){
+      const player=ambientRef.current||new Audio();
+      ambientRef.current=player;
+      if(player.getAttribute("src")!==audioSrc)player.src=audioSrc;
+      player.loop=true;
+      player.preload="none";
       player.volume=0.2;
       player.currentTime=0;
       void player.play().catch(()=>{
@@ -380,7 +384,6 @@ export function MandalaPersonalMeditation({
               disabled={listening} onChange={event=>setWithMusic(event.currentTarget.checked)}/>
             {t.withMusic}
           </label>:null}
-          {audioSrc?<audio ref={ambientRef} src={audioSrc} preload="none" loop hidden/>:null}
           <button type="button" className={css.listen} data-meditation-listen
             aria-pressed={listening} onClick={toggleNarration}>
             {listening?<Square size={17} aria-hidden="true"/>:<Headphones size={17} aria-hidden="true"/>}
