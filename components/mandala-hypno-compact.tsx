@@ -269,6 +269,12 @@ export function MandalaHypnoCompact({
         </div>}
       </section>
 
+      <label className={css.enable}>
+        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
+          onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
+        <span>{ui.use}</span>
+        {!settings.enabled&&<small>{ui.enabledNote}</small>}
+      </label>
       <section className={css.preview} data-hypno-preview style={activePoster?{backgroundImage:"linear-gradient(95deg,rgba(5,38,34,.93),rgba(5,38,34,.28)),url("+activePoster+")"}:undefined}>
         <div>
           <small>{ui.preview}</small>
@@ -278,14 +284,8 @@ export function MandalaHypnoCompact({
         <button type="button" data-video-affirmation-preview disabled={disabled}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      <button type="button" className={css.create} data-hypno-create-video disabled={disabled}
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
-      <label className={css.enable}>
-        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
-          onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
-        <span>{ui.use}</span>
-        {!settings.enabled&&<small>{ui.enabledNote}</small>}
-      </label>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>
   );
