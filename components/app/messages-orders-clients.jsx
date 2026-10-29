@@ -2,7 +2,7 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,Inbox,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-orders-clients.module.css'
 
@@ -123,7 +123,6 @@ export default function MessagesOrdersClients({locale='en',children}){
         row.remoteBooking?.serviceTitle].some(value=>String(value||'').toLocaleLowerCase().includes(term))))
   },[orders,filter,search,locale,status])
   const selected=orders.find(order=>order.id===selectedId)||null
-  const unread=orders.reduce((sum,order)=>sum+Math.max(0,Number(order.unread)||0),0)
   function chooseSection(value){
     setSection(value)
     const url=new URL(window.location.href)
