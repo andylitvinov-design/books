@@ -22,6 +22,19 @@ test('missing safety, missing whitelist, incorrect language and unknown duration
   assert.equal(reasonAcrossMeditations({ ...base, intent: { language: 'es', selectedTopics: ['energy'] } }).status, 'no_match');
   assert.equal(reasonAcrossMeditations({ ...base, intent: { ...base.intent, maxDurationMinutes: 5 } }).status, 'no_match');
 });
+test('a crisis cue in free text overrides an upstream clear signal before ranking', () => {
+  const result = reasonAcrossMeditations({ ...base, intent: { ...base.intent, goalText: 'I want to die' } });
+  assert.equal(result.status, 'safety_handoff');
+  assert.deepEqual(result.suggestions, []);
+  assert.equal(JSON.stringify(result).includes('I want to die'), false);
+});
+test('malformed or oversized text cannot use an upstream clear signal', () => {
+  for (const goalText of [{}, 'x'.repeat(501)]) {
+    const result = reasonAcrossMeditations({ ...base, intent: { ...base.intent, goalText } });
+    assert.equal(result.status, 'safety_check_required');
+    assert.deepEqual(result.suggestions, []);
+  }
+});
 test('rejects mismatched source URL even when the ID is whitelisted', () => {
   const original = videos.find(video => video.youtube_id === sourceId);
   const result = reasonAcrossMeditations({ ...base, videos: [{ ...original, source_url: 'https://evil.example/' }] });
