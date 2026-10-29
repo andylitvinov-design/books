@@ -6,7 +6,8 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { buildTestResultDiscussion,discussionTopicForTags,
-  interpretTestDiscussionQuestion,testDiscussionOffers } from '../lib/assessments/test-result-discussion.mjs'
+  interpretTestDiscussionQuestion,testDiscussionOffers, discussionFormatFromText,
+  discussionPriorityReason, discussionOpening } from '../lib/assessments/test-result-discussion.mjs'
 
 const result={id:'private-result',definitionKey:'hh-current-state',measurementAt:'2026-10-28T12:00:00.000Z'}
 const report={verified:true,sections:[
@@ -73,7 +74,9 @@ test('account history + result page both expose discussion; no additional data t
   assert.match(workspace,/<TestResultDiscussion /)
   assert.match(workspace,/discussionLoadedId === result.id/)
   assert.match(workspace,/setDiscussionLoadedId\(r\?\.id === id \? id : null\)/)
-  assert.ok(workspace.indexOf('<TestResultDiscussion key={result.id}') < workspace.indexOf('<PersonalResultReport result={result}'), 'Discussion action must appear before the long report')
+  const guideAt=workspace.indexOf('<TestResultDiscussion key={result.id')
+  const reportAt=workspace.indexOf('<PersonalResultReport result={result}')
+  assert.ok(guideAt>=0 && reportAt>guideAt, 'Discussion action must appear before the long report')
   assert.match(battery,/discuss=1#hh-test-result-discussion/)
   assert.match(ui,/data-test-result-offers/)
   assert.doesNotMatch(ui,/fetch\(|appFetch\(|localStorage|sessionStorage/)
@@ -111,4 +114,87 @@ test('completion CTA and guest Google handoff preserve exact saved-result consen
   assert.match(guest,/saveToCabinet\(guestResult, true\)/)
   assert.match(guest,/sessionStorage\.setItem\(TEST_DISCUSSION_INTENT_KEY, intent\.id\)/)
   assert.doesNotMatch(guest,/sessionStorage\.setItem\(.*(score|answer|health)/i)
+})
+
+
+test('professional reading distinguishes published screening, difficulties, resources and neutral traits',()=>{
+  const m=buildTestResultDiscussion({result,report,locale:'ru'})
+  assert.equal(m.highlights.length,3)
+  assert.match(m.summary,/«/)
+  assert.match(m.summary,/3 показателя/)
+  assert.match(m.highlights[0].priorityReason,/трудност/)
+  assert.match(m.highlights[1].priorityReason,/ресурс/)
+  assert.match(m.highlights[2].priorityReason,/особенност/)
+  for(const row of m.highlights){
+    assert.ok(row.reflectionQuestion.length>10)
+    assert.equal(row.trend,null)
+    assert.doesNotMatch(row.priorityReason,/процент здоровья|выше среднего населения/i)
+  }
+  const screening=discussionPriorityReason({...report.sections[0],bandBasis:'screening',recommendedReview:true},'en')
+  assert.match(screening,/professional-review/i)
+  assert.equal(discussionOpening({title:'Sample',highlights:[m.highlights[0]],locale:'ru'}).includes('1 показатель'),true)
+  assert.equal(discussionOpening({title:'Sample',highlights:[m.highlights[0]],locale:'es'}).includes('1 indicador.'),true)
+})
+
+test('professional reading can show arithmetic trend only for exact-source compatible history',()=>{
+  const def=getAssessmentDefinition('asrs-6','v1','en')
+  const score=(positive)=>scoreAssessment(def,Object.fromEntries(
+    Array.from({length:6},(_,i)=>['asrs6.'+String(i+1).padStart(2,'0'),i<positive?2:0])
+  ),syntheticTraumaContext(def))
+  const owner='160dd802-78ed-4ecd-ad2b-2e096372ace3'
+  const prior={...score(0),id:'c7003c77-f71c-41de-9974-80d9059948b4',accountId:owner,measurementAt:'2026-10-07T12:00:00.000Z'}
+  const latest={...score(1),id:'d058b909-bfd1-4531-8181-63e1fdc4674f',accountId:owner,measurementAt:'2026-10-28T12:00:00.000Z'}
+  const source=buildAssessmentResultReport(latest,'en')
+  const m=buildTestResultDiscussion({result:latest,report:source,locale:'en',history:[latest,prior]})
+  assert.equal(m.verified,true)
+  assert.equal(m.comparablePrior,true)
+  assert.equal(m.highlights[0].trend.from,0)
+  assert.equal(m.highlights[0].trend.to,1)
+  assert.match(m.highlights[0].trend.detail,/arithmet|cannot establish/i)
+  const wrongOwner={...prior,accountId:'not-the-same-account'}
+  const noComparison=buildTestResultDiscussion({result:latest,report:source,locale:'en',history:[latest,wrongOwner]})
+  assert.equal(noComparison.highlights[0].trend,null)
+  const wrongVersion={...prior,contentHash:'tampered'}
+  const wrongInstrument=buildTestResultDiscussion({result:latest,report:source,locale:'en',history:[latest,wrongVersion]})
+  assert.equal(wrongInstrument.highlights[0].trend,null)
+})
+
+test('explicit format choice controls first recommendation without turning a click into a sale',()=>{
+  for(const locale of ['en','ru','es']){
+    const byTest=testDiscussionOffers({locale,topic:'work',preference:'test'})
+    assert.deepEqual(byTest.map(v=>v.id),['test','video','course','session'])
+    const byVideo=testDiscussionOffers({locale,topic:'relationships',preference:'video'})
+    assert.equal(byVideo[0].id,'video')
+    assert.match(byVideo[0].href,/topic=love$/)
+    const bySession=testDiscussionOffers({locale,topic:'energy',preference:'session'})
+    assert.equal(bySession[0].id,'session')
+    assert.ok(bySession.every(v=>!/(payment|success|checkout|orderId|score=)/i.test(v.href)))
+  }
+  assert.deepEqual(testDiscussionOffers({locale:'en',needsProfessional:true,preference:'session'}),[])
+})
+
+test('bounded free-text intent never invents a diagnosis, hidden goal or payment',()=>{
+  assert.equal(discussionFormatFromText('Хочу посмотреть короткое видео'),'video')
+  assert.equal(discussionFormatFromText('Пройти следующий тест'),'test')
+  assert.equal(discussionFormatFromText('I want a course'),'course')
+  assert.equal(discussionFormatFromText('Quiero una sesión'),'session')
+  assert.equal(discussionFormatFromText('я хочу умереть'),'urgent')
+  assert.equal(discussionFormatFromText('Почему я так чувствую себя?'),null)
+})
+
+test('the UI waits for user relevance before offers and renders only three choices',()=>{
+  const ui=readFileSync(new URL('../components/app/test-result-discussion.jsx',import.meta.url),'utf8')
+  const workspace=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+  assert.match(ui,/data-discussion-choose-scale/)
+  assert.match(ui,/data-discussion-relevance-choice=/)
+  assert.match(ui,/data-discussion-format-choice=/)
+  assert.match(ui,/data-discussion-professional-review/)
+  assert.match(ui,/model\.summary/)
+  assert.match(ui,/row\.trend/)
+  assert.match(ui,/selected\.optionalStep/)
+  assert.match(ui,/offers\.slice\(0,3\)/)
+  assert.match(ui,/phase!=='safety'/)
+  assert.match(workspace,/history=\{data\.results \|\| \[\]\}/)
+  assert.match(workspace,/discussionLoadedId === result.id/)
+  assert.doesNotMatch(ui,/navigator\.sendBeacon|fetch\(|appFetch\(|localStorage|sessionStorage|POST|autoEnroll/i)
 })
