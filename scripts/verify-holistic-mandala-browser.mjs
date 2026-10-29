@@ -105,7 +105,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const energyTile=page.locator('[data-video-template="solar-surge"]');
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
-        assert.match(await energyClip.getAttribute("data-real-mp4") || "", /film-collection-v2\\/solar-surge\\.mp4$/);
+        assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
         await page.waitForFunction(() => {
           const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
           return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
