@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -107,4 +107,36 @@ test('workflow runs change evidence key; changed workflow and guard require own 
   assert.ok(productionSpecialists(['components/app/app-workspace.jsx']).includes('verify'));
   const unverified=analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[{...check('release-ready'),head_sha:null}]});
   assert.ok(unverified.blockers.includes('WRONG_OR_UNKNOWN_HEAD:release-ready'));
+});
+
+test('Markdown fenced GitHub lease comments block competing agents correctly', () => {
+  const now=Date.parse('2026-10-29T12:00:00Z');
+  const claim=makeLease({owner:'work-repair',head_sha:sha('a'),base_sha:sha('b'),now});
+  const raw=renderLease(claim);
+  const fenced='<!-- HH_PR_SWEEP_LEASE_V1 -->\n' + '```json\n' + JSON.stringify(claim,null,2) + '\n```';
+  assert.deepEqual(parseLease(fenced),parseLease(raw));
+  const old={id:20,body:fenced,created_at:new Date(now).toISOString()};
+  const newer={id:21,body:renderLease({...claim,owner:'merge-sentinel'}),created_at:new Date(now+100).toISOString()};
+  assert.equal(activeLease([newer,old],now+1000)?.state.owner,'work-repair');
+  assert.equal(activeLease([old],now+13*60_000),null);
+});
+
+test('lease parser rejects untrusted prose, missing base SHA and malformed fences',()=>{
+  const claim=makeLease({owner:'work-merge',head_sha:sha('a'),base_sha:sha('b')});
+  assert.equal(parseLease('<!-- HH_PR_SWEEP_LEASE_V1 -->\n```json\n' + JSON.stringify(claim) + '\n```\nmore prose'),null);
+  assert.equal(parseLease('<!-- HH_PR_SWEEP_LEASE_V1 -->\n' + JSON.stringify({...claim,base_sha:undefined})),null);
+  assert.equal(parseLease('<!-- HH_PR_SWEEP_LEASE_V1 -->\n```json\nnot json\n```'),null);
+});
+
+test('core rollout: manual evidence never masks an installed or proposed core gate',()=>{
+  assert.deepEqual(requiredCoreChecks({baseHasCore:true,paths:['docs/a.md']}),['release-ready']);
+  assert.deepEqual(requiredCoreChecks({baseHasCore:false,paths:['.github/workflows/hh-pr-core-release.yml']}),['release-ready']);
+  assert.deepEqual(requiredCoreChecks({baseHasCore:false,paths:['docs/a.md']}),[]);
+  assert.throws(()=>requiredCoreChecks({paths:[]}),/CORE_GATE_STATE_UNKNOWN/);
+  // Core absence is not permission to merge. Relevant failed specialist checks still block.
+  const r=analyzeCI({pr:pr(),required:[],paths:['components/app/app-workspace.jsx'],
+    checks:[check('unit-build','completed','failure'),check('database'),check('verify'),
+      check('browser (chromium, core)'),check('browser (webkit, core)')]});
+  assert.equal(r.ci_ready,false);
+  assert.ok(r.blockers.includes('FAILED:unit-build:failure'));
 });

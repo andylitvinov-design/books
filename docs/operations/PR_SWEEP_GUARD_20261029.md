@@ -40,3 +40,25 @@ The CI inspector requires the production base, non-draft/open PR, exact-head `re
 ## Performance and deployment
 
 Track median queue time, runs/PR, retries on unchanged head, distinct PRs fixed/hour, green-to-merge time, safety violations, and verified production releases for at least seven days. The guard itself is low-cost (API calls, no runner by default), but first rollout requires a GitHub token with suitable permissions or existing connector-equivalent operations. The CLI is intended for Codex/terminal-capable agents; chat-only agents can read/write the identical GitHub comment marker via their connected GitHub tool. Never paste secrets into PR comments.
+
+## Safe staging before core release-gate deployment (29 October addendum)
+
+PR #2526 is not yet merged; therefore the current production baseline does not
+contain `.github/workflows/hh-pr-core-release.yml`. Previously the read-only
+PR guard always required `release-ready`, even for unrelated PRs, making
+agent-driven *independent manual review* impossible to mark as CI-ready.
+
+The guard now reads that exact workflow path at the PR's **base commit**.
+An explicit GitHub 404 is interpreted as `NOT_DEPLOYED_MANUAL_REVIEW_ONLY`;
+all other API errors fail closed. If the PR introduces the core workflow, or
+the base already contains it, `release-ready` remains mandatory. Regardless
+of phase, no pending, cancelled, failed, missing specialist or zero-job
+workflow can be treated as green, and `merge_authorized` always remains
+`false`. This phase does **not** enable GitHub native auto-merge and is not
+permission to merge without independent PR review, required specialist jobs
+or production risk assessment.
+
+Lease parsing also accepts the historical GitHub comment format containing a
+single fenced ```json block after the marker; arbitrary prose and malformed
+blocks are rejected. This restores mutual exclusion with already posted
+Work/Chat/DOT lease comments.
