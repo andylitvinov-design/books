@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { CheckCircle2, Clock3, ExternalLink, Film, RotateCw, ShieldAlert, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { reviewCatalogVideoAction, verifyCatalogVideoAction } from '@/app/admin/videos/review-actions'
+import { reviewCatalogVideoAction, reviewCatalogVideoDurationAction, verifyCatalogVideoAction } from '@/app/admin/videos/review-actions'
 import { VIDEO_AREAS, videoAreasFromRow, videoTopicsFromRow, videoReviewChecks } from '@/lib/site-videos/review-model.mjs'
 import styles from './video-review-queue.module.css'
 
 const copy = {
   en: {
+    manualDuration: 'Duration from the actual player (M:SS, max 10:00)', durationAttestation: 'I personally watched the YouTube video and checked its real runtime.', confirmDuration: 'Confirm duration', durationSaved: 'Owner-checked duration saved', durationHelp: 'A title/oEmbed result does not establish duration.', durationRejected: 'Cannot verify duration of a rejected video.',
     title: 'Video review feed', intro: 'Watch a candidate, confirm or adjust the suggested categories, then accept or reject. Acceptance does not override technical publication checks.',
     pending: 'To review', accepted: 'Accepted', rejected: 'Rejected', all: 'All', language: 'Language', filter: 'Decision', allLanguages: 'All languages',
     duration: 'Duration', unknown: 'not verified', review: 'Suggested categories', topics: 'Subtopics', note: 'Your note (optional)',
@@ -26,6 +27,7 @@ const copy = {
     overlong: 'Longer than ten minutes', refresh: 'Reload list', status: 'Visibility', minutes: 'min',
   },
   ru: {
+    manualDuration: 'Длительность по плееру (М:СС, до 10:00)', durationAttestation: 'Я лично посмотрел видео в YouTube и проверил его реальную длительность.', confirmDuration: 'Подтвердить длительность', durationSaved: 'Проверенная владельцем длительность сохранена', durationHelp: 'Название и oEmbed не подтверждают длительность.', durationRejected: 'Для отклонённого видео длительность не подтверждается.',
     title: 'Лента проверки видео', intro: 'Посмотрите ролик, проверьте предложенные категории и примите или отклоните. Решение владельца не отменяет технические требования к публикации.',
     pending: 'На проверке', accepted: 'Принято', rejected: 'Отклонено', all: 'Все', language: 'Язык', filter: 'Решение', allLanguages: 'Все языки',
     duration: 'Длительность', unknown: 'не подтверждена', review: 'Предложенные категории', topics: 'Подтемы', note: 'Ваш комментарий (необязательно)',
@@ -44,6 +46,7 @@ const copy = {
     overlong: 'Дольше десяти минут', refresh: 'Обновить', status: 'Доступность', minutes: 'мин',
   },
   es: {
+    manualDuration: 'Duración real del reproductor (M:SS, máximo 10:00)', durationAttestation: 'He visto el vídeo en YouTube y comprobado su duración real.', confirmDuration: 'Confirmar duración', durationSaved: 'Duración confirmada y guardada', durationHelp: 'El título y oEmbed no verifican la duración.', durationRejected: 'No se puede verificar un vídeo rechazado.',
     title: 'Revisión de vídeos', intro: 'Mira el vídeo, ajusta las categorías y acepta o rechaza. La aprobación no omite las comprobaciones técnicas.',
     pending: 'Pendientes', accepted: 'Aceptados', rejected: 'Rechazados', all: 'Todos', language: 'Idioma', filter: 'Decisión', allLanguages: 'Todos los idiomas',
     duration: 'Duración', unknown: 'sin verificar', review: 'Categorías sugeridas', topics: 'Subtemas', note: 'Tu comentario (opcional)',
@@ -87,6 +90,8 @@ function ReviewCard({ row, locale, onUpdated }) {
   const [topics, setTopics] = useState(() => videoTopicsFromRow(row))
   const [note, setNote] = useState(row.owner_review_note || '')
   const [screened, setScreened] = useState(false)
+  const [clock, setClock] = useState('')
+  const [durationConfirmed, setDurationConfirmed] = useState(false)
   const [play, setPlay] = useState(false)
   const [message, setMessage] = useState('')
   const [pending, startTransition] = useTransition()
@@ -99,7 +104,10 @@ function ReviewCard({ row, locale, onUpdated }) {
     setTopics(videoTopicsFromRow(row))
     setNote(row.owner_review_note || '')
     setScreened(false)
-  }, [row])
+    setClock(row.duration_verified_seconds > 0
+      ? durationLabel(row.duration_verified_seconds, t) : '')
+    setDurationConfirmed(false)
+  }, [row, t])
 
   const canSave = areas.length > 0 && !pending
   function toggleArea(area) {
@@ -122,6 +130,21 @@ function ReviewCard({ row, locale, onUpdated }) {
         onUpdated(result.record)
         setMessage(action === 'accept' && result.record.discovery_status === 'private_review'
           ? t.pendingChecks : t.saved)
+      } else setMessage(t[result?.error] || t.unavailable)
+    })
+  }
+
+  function verifyDuration() {
+    if (pending || !durationConfirmed) return
+    setMessage('')
+    startTransition(async () => {
+      const result = await reviewCatalogVideoDurationAction({
+        youtubeId: row.youtube_id, revision: row.owner_review_version,
+        clock, confirmed: durationConfirmed,
+      })
+      if (result?.ok) {
+        onUpdated(result.record)
+        setMessage(t.durationSaved)
       } else setMessage(t[result?.error] || t.unavailable)
     })
   }
@@ -180,6 +203,24 @@ function ReviewCard({ row, locale, onUpdated }) {
         <span className={checks.content ? styles.good : styles.warn}>{checks.content ? t.reviewed : t.notReviewed}</span>
         <span className={checks.embed ? styles.good : styles.warn}>{checks.embed ? t.embed : t.noEmbed}</span>
       </div>
+      {!checks.duration && row.owner_review_status !== 'rejected' &&
+        <section className={styles.durationForm} aria-label={t.manualDuration}>
+          <label>{t.manualDuration}
+            <input type="text" inputMode="numeric" placeholder="5:00" autoComplete="off"
+              maxLength={5} value={clock} disabled={pending}
+              onChange={event => setClock(event.target.value)}
+              pattern="[0-9]{1,2}:[0-5][0-9]" />
+          </label>
+          <label className={styles.screened}>
+            <input type="checkbox" checked={durationConfirmed} disabled={pending}
+              onChange={event => setDurationConfirmed(event.target.checked)}/>
+            <span>{t.durationAttestation}</span>
+          </label>
+          <button type="button" disabled={pending || !durationConfirmed} onClick={verifyDuration}>
+            <Clock3 size={16} aria-hidden="true"/>{t.confirmDuration}
+          </button>
+          <p>{t.durationHelp}</p>
+        </section>}
       <p className={styles.visibility}><strong>{t.status}: </strong>{stateLabel}</p>
 
       <fieldset className={styles.categories}>
