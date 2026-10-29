@@ -196,7 +196,11 @@ test("personal matching is click-only, auth-gated and no scores leave the server
 });
 
 test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
-  assert.match(studio,/if\(activeFilm && master && master\.readyState<2\)master\.load\(\)/);
+  assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
+  assert.match(studio,/setPremiumReady\(decoded\)/,
+    "already decoded HD frames must remain ready even if preload beat the effect");
+  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "unready scenes must still request real media data");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
   assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
