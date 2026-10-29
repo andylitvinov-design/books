@@ -81,3 +81,11 @@ The previously chosen **four base scenes per theme** are preserved as the defaul
 
 **New release proof:** focused Node tests assert all six localized mappings, unique four-stage order and non-disclosure; the existing Chromium RU390 actual recorded montage scenario now decodes the **first and fourth saved video frames** with FFmpeg and compares real pixels in addition to validating a genuine media container. These tests require exact-head CI SUCCESS and must not be confused with physical owner iPhone Safari playback or unlimited AI text-to-video. No paid API, job, CRM event, storage migration or duplicate editor was introduced.
 
+
+
+### Avoidance and styles — rendering acceptance
+
+The owner-requested visual exclusions (water, trees/forests, night) are now enforced without making four copies of a single allowed image. When the chosen theme lacks four distinct safe motifs, the plan finds other **already approved first-party scenes**, keeping each shot's actual `theme` so Canvas paints the correct motif. It never silently reintroduces excluded visual cues or invents unavailable licensed footage. The main topic remains unchanged for the visitor, while individual storyboard shots may use visually compatible neighboring themes. Pure executable checks covered 54/54 theme/locale/duration combinations, all six detailed prompt examples and four distinct acceptable shots for water/tree/night exclusions.
+
+Four named visual style filters (**Golden hour / Nature / Dream / Minimal**) now apply separate Canvas color/light grades to the same moving frames in both preview and actual MediaRecorder, rather than affecting only hypothetical AI-provider prompts. Browser-output video and real recorded pixel comparison remain mandatory CI gates; the on-device source tests do not establish physical iPhone Safari export.
+
