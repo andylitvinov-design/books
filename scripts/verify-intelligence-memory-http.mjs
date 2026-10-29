@@ -2,6 +2,7 @@
 import http from 'node:http'
 import assert from 'node:assert/strict'
 import {createHash,randomUUID} from 'node:crypto'
+import {createRequire} from 'node:module'
 import {NextRequest,NextResponse} from 'next/server.js'
 import {getAppConfig} from '../lib/app/config.js'
 import {createRequestAuth} from '../lib/app/session.js'
@@ -63,6 +64,7 @@ try {
     return {status:response.status,cache:response.headers.get('cache-control'),body:await response.json()}
   }
   const guest=await call('export','');assert.equal(guest.status,401);assert.match(guest.cache,/no-store/)
+  assert.deepEqual((await call('status',a)).body,{managementAvailable:true,saveEnabled:true})
   assert.equal((await call('save',a,{}, {origin:'https://hostile.example.invalid'})).status,403)
   assert.equal((await call('export',a,{}, {'x-hh-account-id':ids.b[0]})).status,409)
   const before=await call('export',a), otherBefore=await call('export',b)
@@ -94,5 +96,68 @@ try {
   assert.equal((await call('delete',a,{all:true,expectedRevision:before.body.revision})).body.deleted,true)
   assert.equal((await call('save',a,input)).status,409)
   assert.equal((await call('export',a)).body.records.length,0)
-  console.log(JSON.stringify({auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',feedbackAdjustment:'passed',revocation:'passed',cache:'passed'}))
+  const require=createRequire(`${process.env.HH_INTELLIGENCE_BROWSER_TOOLS}/package.json`)
+  const browser=await require('playwright').chromium.launch({headless:true,...(process.env.HH_BROWSER_EXECUTABLE?{executablePath:process.env.HH_BROWSER_EXECUTABLE}:{})})
+  try {
+    const context=await browser.newContext({viewport:{width:390,height:844}})
+    try {
+      await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
+      await context.route('https://www.youtube.com/**',route=>route.abort())
+      const page=await context.newPage()
+      await page.goto(origin+'/en/app/portfolio',{waitUntil:'networkidle',timeout:60000})
+      await page.locator('#hh-portrait-tab-recommendations').click()
+      const card=page.locator('[data-holistic-intelligence]')
+      await card.getByRole('button',{name:'Manage saved feedback',exact:true}).waitFor()
+      const use=card.getByRole('checkbox',{name:'Use saved “not useful” feedback for this request',exact:true})
+      assert.equal(await use.isChecked(),false)
+      await card.locator('select').selectOption('energy')
+      await card.getByRole('button',{name:'Continue',exact:true}).click()
+      await card.locator('#hh-intelligence-format-cabinet').selectOption('video')
+      await card.getByRole('button',{name:'Continue',exact:true}).click()
+      await card.getByRole('button',{name:'Include symbolic practices',exact:true}).click()
+      await card.getByRole('button',{name:'Do not use my marks',exact:true}).click()
+      await card.getByRole('button',{name:'No',exact:true}).click()
+      await card.getByRole('button',{name:'No',exact:true}).click()
+      await card.getByRole('button',{name:'Skip',exact:true}).click()
+      const link=card.getByRole('link',{name:'Start',exact:true});await link.waitFor({state:'visible'})
+      const popup=page.waitForEvent('popup');await link.click();await (await popup).close()
+      await card.getByRole('button',{name:'No',exact:true}).click()
+      assert.equal((await call('export',a)).body.records.length,0)
+      await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).click()
+      await card.getByText('Only the item and your answer will be saved',{exact:false}).waitFor()
+      assert.equal((await call('export',a)).body.records.length,0)
+      await card.getByRole('button',{name:'Confirm save',exact:true}).click()
+      await card.getByText('Feedback saved.',{exact:true}).waitFor()
+      await use.check()
+      const nextRequest=page.waitForRequest(request=>request.url().endsWith('/api/app/intelligence/plan')&&request.method()==='POST')
+      await card.getByRole('button',{name:'Another option',exact:true}).click()
+      assert.equal(JSON.parse((await nextRequest).postData()).feedbackHistory,'avoid_not_useful')
+      await card.getByRole('button',{name:'Manage saved feedback',exact:true}).click()
+      const download=page.waitForEvent('download')
+      await card.getByRole('button',{name:'Download my feedback',exact:true}).click()
+      const exported=await download
+      assert.equal(exported.suggestedFilename(),'holistic-feedback.json')
+      let bytes='';for await(const chunk of await exported.createReadStream())bytes+=chunk.toString()
+      assert.equal(JSON.parse(bytes)[0].feedback,'not_useful')
+      await card.getByRole('button',{name:'Delete all saved feedback',exact:true}).click()
+      await card.getByText('No saved feedback.',{exact:true}).waitFor()
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+      await context.route('**/api/app/intelligence/feedback/status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({managementAvailable:true,saveEnabled:false})}))
+      const disabledPage=await context.newPage()
+      await disabledPage.goto(origin+'/en/app/portfolio',{waitUntil:'networkidle',timeout:60000})
+      await disabledPage.locator('#hh-portrait-tab-recommendations').click()
+      const disabledCard=disabledPage.locator('[data-holistic-intelligence]')
+      await disabledCard.getByRole('button',{name:'Manage saved feedback',exact:true}).waitFor()
+      assert.equal(await disabledCard.getByRole('checkbox',{name:'Use saved “not useful” feedback for this request',exact:true}).count(),0)
+      await context.unroute('**/api/app/intelligence/feedback/status')
+      const russian=await context.newPage();await russian.setViewportSize({width:320,height:844})
+      await russian.goto(origin+'/ru/app/portfolio',{waitUntil:'networkidle',timeout:60000})
+      await russian.locator('#hh-portrait-tab-recommendations').click()
+      const russianCard=russian.locator('[data-holistic-intelligence]')
+      await russianCard.getByRole('button',{name:'Управлять сохранёнными ответами',exact:true}).waitFor()
+      assert.equal(await russianCard.getByRole('checkbox',{name:'Использовать сохранённые ответы «не полезно» для этого запроса',exact:true}).isChecked(),false)
+      assert.equal(await russian.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+    } finally {await context.close().catch(()=>{})}
+  } finally {await browser.close().catch(()=>{})}
+  console.log(JSON.stringify({auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',feedbackAdjustment:'passed',revocation:'passed',cache:'passed',cabinetMobile:'passed'}))
 } finally {await closeDatabase();await new Promise(resolve=>provider.close(resolve))}
