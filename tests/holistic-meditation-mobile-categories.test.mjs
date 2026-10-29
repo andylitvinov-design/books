@@ -72,7 +72,7 @@ test("Full feed follows the four featured cards, uses one filtered catalogue and
   assert.ok(gallery > 0 && featured > gallery && feed > featured && rows > feed && sourceLink > rows,
     "featured four -> full vertical catalogue -> original YouTube source link");
   assert.match(mobile, /const catalogVideos = useMemo\(\(\) => \{/);
-  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
+  assert.match(mobile, /const relevantVideos = choice === "pump" && program !== "all" \? catalogVideos : catalogVideos\.slice\(0, 4\)/);
   assert.match(mobile, /const selected = catalogVideos\.find\(video => video\.id === selectedId\)/);
   assert.match(mobile, /catalogVideos\.map\(video => <li key=\{video\.id\}>/);
   assert.match(mobile, /aria-pressed=\{selected\?\.id === video\.id\}/);
