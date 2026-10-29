@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
+import {oporaAs60Skills} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 
 // This directly parses production JSX without requiring a Vercel deployment,
 // whose team quota is a separate external precondition.
@@ -37,8 +39,19 @@ test('a practice phrase closes before the guided exercise and controls remain op
 
 test('typed public programme retains the description supplied by the canonical blueprint',()=>{
   const source=readFileSync(new URL('../components/public-antistress-landing.tsx',import.meta.url),'utf8')
-  const blueprint=readFileSync(new URL('../lib/inner-growth/anti-stress-blueprint.js',import.meta.url),'utf8')
   assert.match(source,/skills: \{id:string;title:string;description:string;days:\[number,number\];outcome:string\}\[\]/)
   assert.match(source,/skill\.description/)
-  assert.match(blueprint,/description:base\.description\|\|base\.result/)
+  // AS-6.0 supplies the authored skill descriptions; the blueprint must preserve them.
+  for(const locale of ['en','ru','es']){
+    const expected=oporaAs60Skills(locale)
+    const actual=antiStressBlueprint(locale).skills
+    assert.equal(actual.length,7,locale+' canonical skill count')
+    assert.equal(expected.length,7,locale+' AS-6.0 skill count')
+    for(const [index,skill] of actual.entries()){
+      assert.equal(skill.id,expected[index].id,locale+' skill identity')
+      assert.equal(typeof skill.description,'string',locale+' description type')
+      assert.ok(skill.description.trim().length>0,locale+' nonempty authored description')
+      assert.equal(skill.description,expected[index].description,locale+' canonical description for '+skill.id)
+    }
+  }
 })
