@@ -1,7 +1,7 @@
 # Holistic House Remote Agent v1 — концепция, архитектура, ТЗ и рабочий план
 
 **Дата:** 2026-10-28 (America/Toronto)  
-**Статус:** APPROVED-CONCEPT / DESIGN ONLY; **не установлено, не подключено, не live**.  
+**Статус:** DESIGN DRAFT / на согласовании; **не установлено, не подключено, не live**.  
 **Трекер:** [books #2505](https://github.com/andylitvinov-design/books/issues/2505)  
 **Проект:** [Holistic House](https://holistichouse.vercel.app) / [andylitvinov-design/books](https://github.com/andylitvinov-design/books)  
 **Production source:** ветка **codex/public-book-library**, а не GitHub default **codex/bootstrap-books**.  
