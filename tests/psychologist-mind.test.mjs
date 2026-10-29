@@ -246,3 +246,24 @@ test("uncertainty or a why-question changes phrasing without hallucinating a cau
   assert.equal(why.status, "dialogue");
   assert.match(why.message, /не с диагнозом/);
 });
+
+test("clinician-only KIP and psychodynamic options are discussed but never runnable", () => {
+  const input = { ...safe, locale: "ru",
+    access: { authenticated: true, ownerScoped: true, verifiedPractitioner: true },
+    intent: { mode: "practitioner_draft", focus: "relationships" } };
+  const draft = buildPsychologyProgram(input);
+  assert.equal(draft.status, "clinician_draft");
+  assert.equal(draft.clinicalAssessmentRequired, true);
+  assert.ok(draft.sessions.some(s => s.clinicianDiscussionIds.includes("kip_clinical")));
+  assert.ok(draft.sessions.some(s => s.clinicianDiscussionIds.includes("psychodynamic_interpretation")));
+  assert.ok(draft.sessions.every(s => s.clinicianMethodsRunnableByAI === false));
+  assert.ok(draft.sessions.every(s => !s.methodIds.includes("kip_clinical") &&
+    !s.methodIds.includes("psychodynamic_interpretation")));
+  const trauma = buildPsychologyProgram({ ...input,
+    intent: { mode: "practitioner_draft", focus: "trauma_support" } });
+  assert.deepEqual(trauma.specialistDiscussionOptions,
+    ["cpt_trauma_processing", "emdr_processing", "exposure_processing"]);
+  assert.ok(trauma.sessions.every(s => s.clinicianDiscussionIds.length === 0));
+  const guided = programFor("relationships");
+  assert.ok(guided.sessions.every(s => s.clinicianDiscussionIds.length === 0));
+});
