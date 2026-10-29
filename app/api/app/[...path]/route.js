@@ -564,6 +564,7 @@ async function handle(request, { params }) {
         return json(await planIntelligenceRequest(body, {
           loadCatalog: loadMeditationDiscovery,
           loadCoaching: () => readPersonalCoaching(config, actor),
+          loadTests: async locale => (await import('@/lib/holistic-support/intelligence-test-catalog')).buildIntelligenceTestCatalog(locale),
         }))
       } catch (error) {
         if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')

@@ -102,3 +102,21 @@ test('unavailable private source never becomes a fabricated saved focus', async 
   assert.equal(result.status,'unavailable')
   assert.equal(JSON.stringify(result).includes('private detail'),false)
 });
+test('explicit test format uses the existing public test shortlist and real start route', async () => {
+  const { buildIntelligenceTestCatalog }=await import('../lib/holistic-support/intelligence-test-catalog.js')
+  const projection=buildIntelligenceTestCatalog('en')
+  assert.equal(JSON.stringify(projection).includes('questions'),false)
+  assert.equal(JSON.stringify(projection).includes('definition'),false)
+  const result=await planIntelligenceRequest({...body,intent:{language:'en',selectedTopics:['energy'],formats:['test']}},{loadTests:buildIntelligenceTestCatalog,loadCatalog:async()=>{throw Error('video catalog must not be read')}})
+  assert.equal(result.status,'recommend')
+  assert.equal(result.primary.kind,'test')
+  assert.match(result.primary.href,/^\/en\/client\?startTests=hh-[a-z0-9-]+$/)
+  assert.equal(result.primary.instrumentLanguage,'en')
+  assert.equal(result.primary.requiresUserConfirmation,true)
+});
+test('test format never silently becomes video and sensitive relationship tests stay gated', async () => {
+  const { buildIntelligenceTestCatalog }=await import('../lib/holistic-support/intelligence-test-catalog.js')
+  const result=await planIntelligenceRequest({...body,intent:{language:'en',selectedTopics:['relationships'],formats:['test']}},{loadTests:buildIntelligenceTestCatalog,loadCatalog:loader})
+  assert.equal(result.status,'no_match')
+  assert.equal(result.primary,undefined)
+});
