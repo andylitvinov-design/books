@@ -283,6 +283,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'progress' ? { continueTo: 'progress' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
@@ -544,14 +545,19 @@ export default function AppWorkspace({ locale, path = [] }) {
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
             ? (locale === 'ru' ? 'ОПОРА — Антистресс: сначала тесты' : 'OPORA Stress Relief: assessments first')
             : page === 'course'
-              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course')
+              : page === 'progress'
+                ? (locale === 'ru' ? 'Мой прогресс и история' : 'My Progress & History') : c.welcome}</h1>
           <p>{state === 'unavailable' ? c.unavailableText : stressSignup
             ? (locale === 'ru'
               ? 'После входа: основной исходный HH Weekly Pulse (8 вопросов) до урока 1, дополнительные GAD-7 и Resource Pulse — по желанию. Уже пройденный совместимый результат учитывается.'
               : 'After sign-in: complete HH Weekly Pulse (8 questions) before lesson 1. GAD-7 and Resource Pulse are optional; recent compatible results count.')
             : page === 'course'
               ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
-                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
+                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : page === 'progress'
+                ? (locale === 'ru'
+                  ? 'Ваши сохранённые тесты, курсы, видео, мандалы и заявки откроются здесь после входа с Google.'
+                  : 'Sign in with Google to see your saved tests, courses, videos, mandalas and orders together.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
