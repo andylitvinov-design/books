@@ -1,0 +1,47 @@
+name: HH Agent Memory (opt-in)
+on:
+  pull_request:
+    paths:
+      - "app/api/app/agent-memory/**"
+      - "components/holistic-agent-memory-panel.*"
+      - "components/holistic-language-conversation.tsx"
+      - "lib/holistic-support/agent-memory-*"
+      - "lib/holistic-support/local-conversation-contract.*"
+      - "public/holistic-mind/webllm-worker.mjs"
+      - "supabase/migrations/*hh_agent_memory*"
+      - "tests/holistic-agent-memory-*.test.mjs"
+      - ".github/workflows/hh-agent-memory.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  memory-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: JS syntax
+        run: |
+          node --check lib/holistic-support/agent-memory-policy.mjs
+          node --check lib/holistic-support/agent-memory-store.js
+          node --check app/api/app/agent-memory/route.js
+      - name: Owner memory and privacy source contracts
+        run: node --test tests/holistic-agent-memory-policy.test.mjs tests/holistic-agent-memory-source-contract.test.mjs
+  memory-typed-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install repository locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Scoped ESLint
+        run: npx eslint components/holistic-agent-memory-panel.tsx components/holistic-language-conversation.tsx
