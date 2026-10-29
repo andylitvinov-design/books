@@ -629,9 +629,14 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setChoice(value === "stress" || value === "energy" ? "meditation" : "consultation");
   };
   const skipQuickGoal = () => {
-    setQuickGoal(null); setGoalSelection(null); setRecommendation(null);
-    setGuideOpen(false); setGoalFilterOpen(false); setChoice("meditation");
-    setTheme("all"); setMaster("all"); setProgram("all"); setSelectedId(null); setPlaying(false);
+    // Skip this optional question only; never discard an independently accepted
+    // detailed goal or change an unrelated manually selected tool.
+    if (quickGoal) {
+      setQuickGoal(null); setSelectedId(null); setPlaying(false);
+      if (!goalSelection) {
+        setChoice("meditation"); setTheme("all"); setMaster("all"); setProgram("all");
+      }
+    }
     scrollToSupport("support-mobile-experience");
   };
   const onRecommendations = () => {
