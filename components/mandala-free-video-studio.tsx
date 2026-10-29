@@ -1458,8 +1458,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {photoUrl&&!backgroundOnly?<label className={videoStyles.quickPhotoSwitch}>
             <input type="checkbox" data-video-photo-consent checked={photoConsent}
               disabled={recording||preparing} onChange={event=>{
-                setPhotoConsent(event.currentTarget.checked);
-                if(event.currentTarget.checked)primeNativeMasterFromUserGesture();
+                const approved=event.currentTarget.checked;
+                setPhotoConsent(approved);
+                if(approved)primeNativeMasterFromUserGesture();
               }}/><span>{ui.consent}</span>
           </label>:null}
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
