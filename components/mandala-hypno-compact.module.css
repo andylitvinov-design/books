@@ -81,3 +81,6 @@
 
 .testEntry{display:grid;gap:6px;padding:9px 10px;border:1px solid #c8dfd1;border-radius:11px;background:#f0f8ed}
 .testEntry .designFoot{margin-top:0}
+
+/* Small iPhones retain readable labels; key actions stay at least 44px tall. */
+@media(max-width:360px){.requestPreview strong{font-size:13px}.modeRail button{font-size:11.7px}.selectedPhrases span{font-size:12.3px}.metaGrid strong{font-size:12px}.sceneLabel{font-size:11.4px}}
