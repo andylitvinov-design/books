@@ -150,3 +150,21 @@
 .videoBubble{display:block;width:min(230px,70vw);height:min(230px,70vw);aspect-ratio:1/1;object-fit:cover;border-radius:50%;background:#32242e;max-width:100%;border:3px solid #eed7df}
 .videoDraft{display:block;width:min(240px,74vw);height:min(240px,74vw);object-fit:cover;border-radius:50%;background:#32242e;border:3px solid #e5cad4;max-width:100%}
 @media(max-width:390px){.videoBubble,.videoDraft{width:min(195px,64vw);height:min(195px,64vw)}}
+
+
+/* Telegram-like mobile compose: 44px touch icons, labels retained for assistive technology. */
+@media(max-width:560px){
+  .shell .actions{gap:8px;align-items:center}
+  .shell .actions .filePick,.shell .actions .send{
+    font-size:0;min-width:44px;width:44px;min-height:44px;padding:0;justify-content:center;flex:none
+  }
+  .shell .actions [data-voice-recorder]>button,
+  .shell .actions [data-video-recorder]>button{
+    font-size:0;width:44px;min-width:44px;min-height:44px;padding:0;flex:none
+  }
+  .shell .actions .filePick svg,.shell .actions .send svg,
+  .shell .actions [data-voice-recorder]>button svg,
+  .shell .actions [data-video-recorder]>button svg{
+    width:19px;height:19px;flex:none
+  }
+}
