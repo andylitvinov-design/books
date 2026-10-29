@@ -15,7 +15,7 @@ import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
 import type { FilmSource } from "@/lib/mandala/film-collection-v2";
 import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
-import { acquirePlaybackSession, createAmbientPreviewWav, isSupportedLocalAudio, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
+import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
@@ -122,7 +122,8 @@ const studioCopy = {
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
     brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Sound ambience",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"Built-in presets are original tones, not recorded songs. Add your own song or voice recording below.",
+    originalAudio:"Five original audio background files served by this site. Add your own music or voice recording below.",
+    openAudioDirect:"Open soundtrack directly",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
     audioRightsHelp:"Confirm permission for the selected audio to export your video.",
@@ -161,7 +162,8 @@ const studioCopy = {
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
     brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Звуковой фон",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"Встроенные фоны — синтезированные тона, не музыкальные записи. Можно добавить свою песню или голос.",
+    originalAudio:"Пять готовых звуковых подложек из файлов нашего сайта. Также можно добавить свою музыку или голос.",
+    openAudioDirect:"Открыть аудиофайл отдельно",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
     audioRightsHelp:"Подтвердите право на аудиозапись, чтобы сохранить видео со звуком.",
@@ -200,7 +202,8 @@ const studioCopy = {
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
     brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Ambiente sonoro",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"Los sonidos integrados son tonos sintetizados, no canciones grabadas. Puedes añadir tu propia música o voz.",
+    originalAudio:"Cinco fondos sonoros originales alojados en este sitio. También puedes añadir tu música o voz.",
+    openAudioDirect:"Abrir el archivo de audio",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
     audioRightsHelp:"Confirma tus derechos sobre el audio para exportar el vídeo.",
@@ -605,7 +608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
-  const [tonePreview,setTonePreview] = useState<{preset:AmbientMusic;url:string}|null>(null);
+  const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
   const [captionMode,setCaptionMode] = useState<CaptionMode>("theme");
   const [customCaption,setCustomCaption] = useState("");
@@ -643,7 +646,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (backgroundOnly || !photoUrl || photoConsent) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
-  const previewAudioUrl = uploadedAudio?.url || (tonePreview?.preset===music ? tonePreview.url : null);
+  const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -680,14 +683,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => () => {
     if (result?.url) URL.revokeObjectURL(result.url);
   }, [result]);
-  // Native HTMLAudioElement is audible in iPhone silent mode where an
-  // AudioContext-to-speakers preview was swallowed by WebKit.
+  // Built-in presets come from stable HTTPS WAV files, not a generated
+  // blob: URL: Safari's in-app player reported a native "Error" for blobs.
+  // The actual selected user audio remains a private, local File object.
   useEffect(() => {
-    if(music==="none") { setTonePreview(null); return; }
-    const url=URL.createObjectURL(createAmbientPreviewWav(music));
-    setTonePreview({preset:music,url});
-    return () => URL.revokeObjectURL(url);
-  },[music]);
+    setAudioPlaybackError(false);
+  },[previewAudioUrl]);
   useEffect(() => {
     const player=audioPreviewRef.current;
     if(!player) return;
@@ -942,7 +943,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try {
       if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
       player.muted=false;
-      player.volume=Math.min(1,Math.max(0,soundVolume/100));
+      // iOS Safari may reject programmatic .volume assignments. Playback
+      // must still be attempted from the user's tap.
+      try { player.volume=Math.min(1,Math.max(0,soundVolume/100)); }
+      catch { /* Use device hardware media volume instead. */ }
       void player.play().catch(()=>{
         stopSoundPreview();
         if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
@@ -1452,18 +1456,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
             </label>
           </div>
-          {previewAudioUrl ? <audio key={previewAudioUrl} ref={audioPreviewRef}
-            src={previewAudioUrl} controls preload="metadata"
+          {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={audioPreviewRef}
+            src={previewAudioUrl} controls preload="metadata" loop={!uploadedAudio}
             data-video-audio-player aria-label={uploadedAudio?.file.name||ui.music}
             onPlay={()=>{if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
               setSoundPreview(true);setMusicWarning("");}}
             onPause={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
             onEnded={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
-            onError={()=>setMusicWarning(ui.soundUnavailable)}
+            onError={()=>{setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);}}
             onLoadedMetadata={event=>{
               if(uploadedAudio && Number.isFinite(event.currentTarget.duration) &&
                 event.currentTarget.duration>180)setMusicWarning(ui.audioTooLong);
             }}/> : null}
+          {audioPlaybackError && previewAudioUrl && !uploadedAudio ? <a
+            className={videoStyles.audioDirectLink}
+            href={previewAudioUrl} target="_blank" rel="noopener noreferrer"
+            data-video-audio-direct>{ui.openAudioDirect}</a> : null}
           {uploadedAudio ? <label className={videoStyles.audioRights}>
             <input type="checkbox" data-video-audio-rights checked={audioRights}
               onChange={event=>setAudioRights(event.currentTarget.checked)}
