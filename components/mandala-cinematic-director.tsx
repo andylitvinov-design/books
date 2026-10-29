@@ -16,6 +16,7 @@ export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;s
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean};
 type Field="theme"|"difficulty"|"goal"|"style"|"avoid";
+type StyleId=keyof typeof CINEMATIC_STYLES;
 type Props={locale:PublicLocale;theme:VideoTheme;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
@@ -73,7 +74,7 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
   const [difficulty,setDifficulty]=useState("");
   const [goal,setGoal]=useState("");
   const [avoid,setAvoid]=useState("");
-  const [style,setStyle]=useState("warm");
+  const [style,setStyle]=useState<StyleId>("warm");
   const [aspect,setAspect]=useState<"portrait"|"square"|"landscape">("landscape");
   const [seconds,setSeconds]=useState<20|30|60>(20);
   const [generated,setGenerated]=useState(false);
@@ -112,7 +113,7 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
     setGenerated(false);setApplied(false);
   };
   const selectTopic=(next:VideoTheme)=>{setTopic(next);setGenerated(false);setApplied(false);};
-  const selectStyle=(next:string)=>{setStyle(next);setGenerated(false);setApplied(false);};
+  const selectStyle=(next:StyleId)=>{setStyle(next);setGenerated(false);setApplied(false);};
   const onPlan=()=>{setGenerated(true);setApplied(false);};
   const apply=()=>{
     onApplyStoryboard(plan as CinematicStoryboard);
@@ -194,7 +195,7 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
             aria-pressed={topic===item} onClick={()=>selectTopic(item)}>{t.themes[item]}</button>)}
         </div>:editing==="style"?<div className={css.sheetChoices} role="group" aria-label={t.choose}>
           {Object.entries(CINEMATIC_STYLES).map(([id,item])=><button type="button" key={id}
-            aria-pressed={style===id} onClick={()=>selectStyle(id)}>{item.name[locale]}</button>)}
+            aria-pressed={style===id} onClick={()=>selectStyle(id as StyleId)}>{item.name[locale]}</button>)}
         </div>:<label className={css.freeText}><span>{t.custom}</span>
           <textarea rows={5} maxLength={160} value={fieldValue(editing)}
             placeholder={editing==="difficulty"?t.difficultyPlaceholder:editing==="goal"?t.goalPlaceholder:t.avoidPlaceholder}
