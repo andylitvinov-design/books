@@ -104,6 +104,10 @@ test("personalized suggestions only consume eligible, fresh, source-reviewed psy
   ])};
   assert.deepEqual(videoProfileFocus(data),{axes:["anxiety","focus","boundaries"]});
   assert.deepEqual(videoProfileFocus({axes:{}}),{axes:[]});
+  const changed={axes:Object.fromEntries([
+    reading("focus",9),reading("anxiety",65),reading("boundaries",28),
+  ])};
+  assert.deepEqual(videoProfileFocus(changed),{axes:["focus","boundaries","anxiety"]});
   assert.doesNotMatch(JSON.stringify(videoProfileFocus(data)),/owned-result|percent|22|30|48/);
 });
 
