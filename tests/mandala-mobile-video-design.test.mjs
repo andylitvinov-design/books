@@ -163,9 +163,9 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   // The current slider validates the number once before React state updaters.
   // Keep that value in both the visual check-in and separately touched inputs;
   // do not read event.currentTarget asynchronously inside a state updater.
-  assert.match(studio,/const value=Number\\(event\\.currentTarget\\.value\\)/);
-  assert.match(studio,/setTouchedScores\\(prev=>\\(\\{\\.\\.\\.prev,\\[key\\]:value\\}\\)\\)/);
-  assert.match(studio,/setScores\\(prev=>\\(\\{\\.\\.\\.prev,\\[key\\]:value\\}\\)\\)/);
+  assert.ok(studio.includes("const value=Number(event.currentTarget.value)"));
+  assert.ok(studio.includes("setTouchedScores(prev=>({...prev,[key]:value}))"));
+  assert.ok(studio.includes("setScores(prev=>({...prev,[key]:value}))"));
   assert.match(studio,/selectCategory\(lowestTheme\)/);
   for(const view of ["tests","meditation","consultation","talisman","healing","pump","masters"]) {
     assert.ok(studio.includes("/holistic-support/mobile?view="+view), "new design category: "+view);
