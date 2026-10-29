@@ -314,7 +314,10 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     if(!next){setInspectingVideo(false);return}
     try {
       const mime=directMediaMime(next)
-      directMediaSpec(mime,next.size)
+      // HEIC/large iPhone photos are converted by preparePhoto() at send time.
+      // Do not reject their unconverted MIME/size in the chooser.
+      const photoLike=next.type.startsWith('image/')||/\.(heic|heif|jpe?g|png|webp)$/i.test(next.name)
+      if(!photoLike)directMediaSpec(mime,next.size)
       if(VIDEO_MIMES.has(mime)&&!recorded){
         setInspectingVideo(true)
         if(!await shortVideo(next))throw new Error('VIDEO_DURATION_NOT_ALLOWED')
