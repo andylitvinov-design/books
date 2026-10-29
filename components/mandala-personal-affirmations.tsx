@@ -11,9 +11,9 @@ import css from "./mandala-video-affirmations.module.css";
 
 const copy = {
   en: {
-    choice:"Choose your affirmations",manual:"Choose myself",
+    choice:"Choose affirmations",manual:"Choose myself",
     personal:"Auto-pick from my tests",
-    goals:"Refine my goals",
+    goals:"Goals",
     title:"My priorities",
     hint:"Choose up to three goals. The first chosen goal has the strongest emphasis.",
     apply:"Apply my goals",
@@ -27,9 +27,9 @@ const copy = {
     busy:"Checking my test indicators…",
   },
   ru: {
-    choice:"Как подобрать установки?",manual:"Выбрать самому",
+    choice:"Выберите установки",manual:"Выбрать самому",
     personal:"Автоподбор по тестам",
-    goals:"Уточнить цели",
+    goals:"Цели",
     title:"Мои цели и акценты",
     hint:"Выберите до трёх целей. Первая будет главным акцентом.",
     apply:"Применить выбранные цели",
@@ -43,9 +43,9 @@ const copy = {
     busy:"Сверяем показатели ваших тестов…",
   },
   es: {
-    choice:"Elige tus afirmaciones",manual:"Elegir yo",
+    choice:"Elige afirmaciones",manual:"Elegir yo",
     personal:"Elegir según mis tests",
-    goals:"Precisar mis metas",
+    goals:"Metas",
     title:"Mis metas y prioridades",
     hint:"Elige hasta tres metas. La primera tendrá prioridad.",
     apply:"Aplicar mis metas",
@@ -108,7 +108,14 @@ export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disa
   };
   return (
     <div className={css.personalFocus} data-video-personal-affirmations>
-      <p className={css.chooseHeading}>{ui.choice}</p>
+      <div className={css.choiceBar}>
+        <p className={css.chooseHeading}>{ui.choice}</p>
+        <button type="button" data-video-goals-toggle className={css.goalsToggle}
+          disabled={disabled} aria-expanded={goalsOpen} aria-controls="video-affirmation-priorities"
+          onClick={()=>setGoalsOpen(open=>!open)}>
+          <Target size={15} aria-hidden="true"/>{ui.goals}
+        </button>
+      </div>
       <div className={css.personalButtons} data-video-choice-mode role="group" aria-label={ui.choice}>
         <button type="button" data-video-manual-select className={css.personalManual}
           disabled={disabled||busy} aria-pressed={selectionMethod==="manual"}
@@ -121,11 +128,6 @@ export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disa
           <Sparkles size={17} aria-hidden="true"/>{busy?ui.busy:ui.personal}
         </button>
       </div>
-      <button type="button" data-video-goals-toggle className={css.goalsToggle}
-        disabled={disabled} aria-expanded={goalsOpen} aria-controls="video-affirmation-priorities"
-        onClick={()=>setGoalsOpen(open=>!open)}>
-        <Target size={15} aria-hidden="true"/>{ui.goals}
-      </button>
       {goalsOpen && <div id="video-affirmation-priorities" className={css.goalsFilter} data-video-goals-filter>
         <h4><Target size={17} aria-hidden="true"/>{ui.title}</h4>
         <p>{ui.hint}</p>
