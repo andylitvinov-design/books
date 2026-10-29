@@ -28,6 +28,11 @@ test('private photo API is session-bound and does not expose public media URLs',
   assert.match(api,/requestOrigin/)
   assert.match(api,/auth\.verified\(\)/)
   assert.match(api,/transaction\(config,actor/)
+  // session_active validates the current token, not the account's status:
+  // check the canonical account_active() policy before service-role Storage.
+  assert.match(api,/select app_private\.account_active\(\) as active/)
+  assert.match(api,/rows\[0\]\?\.active!==true/)
+  assert.match(api,/ACCOUNT_UNAVAILABLE',403/)
   assert.match(api,/support-photo\/.*actor\.id/)
   assert.match(api,/const BUCKET='hh-client-private-media'/)
   assert.match(api,/checkPrivateMediaStorage/)
