@@ -911,14 +911,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.width=width;canvas.height=height;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      if(freeStoryboard)paintFreeStoryboard(ctx,image,freeStoryboard,0,duration,aspect,speed,brightness,
+          effect,caption,theme,theme==="money"?(moneyScene||"golden-rain"):otherScene,premiumVideoRef.current);
+        else paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          if(freeStoryboard)paintFreeStoryboard(ctx,image,freeStoryboard,(now-startedAt)/1000,duration,aspect,speed,brightness,
+              effect,caption,theme,theme==="money"?(moneyScene||"golden-rain"):otherScene,premiumVideoRef.current);
+            else paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -927,7 +931,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, duration, freeStoryboard]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -966,7 +970,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.height = outputHeight;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      if(freeStoryboard)paintFreeStoryboard(ctx,image,freeStoryboard,0,duration,aspect,speed,brightness,
+          effect,caption,theme,theme==="money"?(moneyScene||"golden-rain"):otherScene,premiumVideoRef.current);
+        else paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       const framesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
         ? 25 : quality === "fullhd" ? 12 : 15;
@@ -1040,7 +1046,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
-          paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          if(freeStoryboard)paintFreeStoryboard(ctx,image,freeStoryboard,Math.min(duration,(now-start)/1000),duration,aspect,speed,brightness,
+            effect,caption,theme,theme==="money"?(moneyScene||"golden-rain"):otherScene,premiumVideoRef.current);
+          else paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -1133,7 +1141,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try{await navigator.share({files:[file],title:ui.title});}
     catch(e){if(!(e instanceof DOMException && e.name==="AbortError"))setNotice(ui.shareUnsupported);}
   }
+  // All planning happens on-device. A plan is NOT a render: Create remains
+  // a separate user click that passes the actual shots to MediaRecorder.
+  function buildLocalStoryboard() {
+    if(!wish.trim()){setSuggestion(ui.wishMissing);return;}
+    const availableByTheme=Object.fromEntries((["money","energy","relationships","goals","life","health"] as const)
+      .map(key=>[key,key==="money"?moneyTemplates.map(x=>x.id):otherVideoScenes[key].map(x=>x.id)]));
+    const plan=buildFreePromptStoryboard({
+      prompt:wish,locale,preferredTheme:theme,availableByTheme,maxShots:3,
+    });
+    setFreeStoryboard(plan);
+    const first=plan.shots[0];
+    const firstTheme=first.theme as VideoTheme;
+    setTheme(firstTheme);setVideoCategory(firstTheme as VideoCategory);
+    if(firstTheme==="money")setMoneyScene(first.sceneId as MoneySceneId);
+    else {setMoneyScene(null);setOtherScene(first.sceneId as LocalSceneId);}
+    setShowAllMoney(true);
+    if(plan.options.aspect)setAspect(plan.options.aspect as Aspect);
+    if(plan.options.duration)setDuration(plan.options.duration as (typeof durations)[number]);
+    if(plan.options.speed)setSpeed(plan.options.speed as Speed);
+    setPreviewPlaying(false);
+    setSuggestion(plan.matched?"":ui.storyboardNoMatch);
+  }
   function suggestScene() {
+    setFreeStoryboard(null);
     if (!wish.trim()) { setSuggestion(ui.wishMissing); return; }
     const options = theme === "money" ? moneyTemplates.map(scene=>scene.id) :
       otherVideoScenes[theme].map(scene=>scene.id);
@@ -1159,6 +1190,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
+    setFreeStoryboard(null);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     setPreviewPlaying(false); // Theme changes preserve the user's photo checkbox choice.
     if(next==="money")setMoneyScene("golden-rain");
@@ -1167,6 +1199,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const resetVideoSettings=()=>{
     if(recording||preparing)return;
+    setFreeStoryboard(null);
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
     setMusic("none");setSoundVolume(75);setCaptionMode("none");
