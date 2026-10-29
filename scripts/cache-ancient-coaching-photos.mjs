@@ -33,6 +33,24 @@ function validPhoto(bytes,target){
    bytes[3]===0x47&&bytes[4]===0x0d&&bytes[5]===0x0a
  return bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff
 }
+// Some published course covers were deliberately replaced by reviewed,
+// bundled first-party illustrations. These are NOT Wikimedia photographs:
+// do not fetch a historic Commons JPEG into an illustration's .webp path.
+// Keep the allowed local artwork list exact and validate bytes at build time.
+const bundledCoverPaths=new Set([
+ '/images/holistic-house/mandala-gold-reference.webp',
+ '/images/holistic-house/hero-olive-incense.webp',
+])
+async function verifyBundledCover(item){
+ if(!bundledCoverPaths.has(item.path))throw new Error('Unapproved bundled cover: '+item.path)
+ const target=resolve(outputRoot,'.'+item.path)
+ if(!target.startsWith(outputRoot+sep))throw new Error('Unsafe bundled cover path')
+ const bytes=await readFile(target)
+ if(bytes.length<500||bytes.length>1_500_000||
+    bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')
+  throw new Error('Invalid bundled WebP cover: '+item.path)
+ return bytes.length
+}
 async function mirror(item){
  const target=destination(item)
  try{
@@ -73,8 +91,17 @@ async function mirror(item){
 }
 // Bounded concurrency prevents requests swamping Commons or the build runner.
 let total=0
+let bundledCount=0
 for(let i=0;i<manifest.length;i+=3){
- const sizes=await Promise.all(manifest.slice(i,i+3).map(mirror))
+ const sizes=await Promise.all(manifest.slice(i,i+3).map((item,index)=>{
+  // The first two manifest entries are covers; the remaining 16 MUST keep
+  // their strict historical-artifact destination and Wikimedia verification.
+  if(i+index<2&&bundledCoverPaths.has(item.path)){
+   bundledCount++
+   return verifyBundledCover(item)
+  }
+  return mirror(item)
+ }))
  total+=sizes.reduce((sum,size)=>sum+size,0)
 }
-console.log('Historical coaching photos: 18/18 first-party files verified ('+total+' bytes)')
+console.log('Coaching media: 18/18 verified ('+(18-bundledCount)+' Commons photos, '+bundledCount+' bundled covers; '+total+' bytes)')
