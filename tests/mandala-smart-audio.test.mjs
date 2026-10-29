@@ -22,7 +22,7 @@ function audioApi() {
 test("34 original soundtrack presets have distinct site-local WAV masters matching video export",async()=>{
   assert.equal(mandalaAudioTracks.length,34);
   assert.equal(mandalaAudioTracks.filter(x=>x.new).length,21);
-  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,13);
+  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,34);
   const api=audioApi();
   for(const track of mandalaAudioTracks){
     assert.ok(["melody","tones","pulse","nature"].includes(track.kind),track.id);
