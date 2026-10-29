@@ -317,6 +317,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await compactHypno.locator("[data-hypno-phrases-edit]").click();
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        // Guest opening is only a request to import; it never marks test
+        // personalization as successful or sends a profile without consent.
+        await compactHypno.locator("[data-hypno-tests]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-tests]").getAttribute("aria-pressed"),"false");
+        assert.equal(await compactHypno.locator('a[href$="/personality-profiles"]').count(),1);
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
         // Hypnoaffirmations: the first thing visitors see is a truthful, compact
         // explanation and the two explicit ways to choose their phrases.
