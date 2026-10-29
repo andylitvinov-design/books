@@ -7,6 +7,7 @@ begin;
 create table if not exists app_private.agent_memory_consent (
   account_id uuid primary key references app.accounts(id) on delete cascade,
   accepted boolean not null default false,
+  use_in_dialogue boolean not null default false,
   policy_version text not null default 'hh-agent-memory-v1'
     check(policy_version = 'hh-agent-memory-v1'),
   updated_at timestamptz not null default now()
