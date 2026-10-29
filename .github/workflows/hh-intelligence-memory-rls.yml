@@ -47,10 +47,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs scripts/verify-intelligence-memory-http.mjs
       - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
-      - name: Install isolated Chromium
+      - name: Install isolated Chromium and WebKit
         run: |
           npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Verify authenticated feedback API with synthetic owners
         env:
           NODE_ENV: development
@@ -60,4 +60,5 @@ jobs:
           node node_modules/next/dist/bin/next dev --port 3187 > /tmp/hh-intelligence-memory-server.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
+          HH_TEST_BROWSER=chromium node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
+          HH_TEST_BROWSER=webkit node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
