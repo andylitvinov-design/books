@@ -97,6 +97,14 @@ try {
     await card.getByRole('button',{name:'Use this answer',exact:true}).click()
     await card.getByText('Change in your self-report: +2.',{exact:false}).waitFor()
     assert.equal(await card.getByText('not proof of a treatment effect',{exact:false}).isVisible(),true)
+    const handoff=card.getByRole('link',{name:'Explore the video therapy studio',exact:true})
+    assert.equal(await handoff.getAttribute('href'),'/en/holistic-support/mandala')
+    const studioPopup=checkinPage.waitForEvent('popup');await handoff.click();const studio=await studioPopup
+    await studio.waitForLoadState('networkidle')
+    await studio.locator('[data-video-therapy-toggle]').click()
+    assert.equal(await studio.locator('[data-mandala-free-video]').getAttribute('data-video-studio-mode'),'therapy')
+    assert.equal(await studio.locator('#guided-video-series').isVisible(),true)
+    await studio.close()
   } finally { await checkinPage.close() }
   const secularPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
