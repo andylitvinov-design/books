@@ -529,8 +529,10 @@ export function HolisticSupportGoalFilter({
       <footer className={styles.actions} data-support-goal-actions>
         <div className={styles.categoryActions} data-support-goal-category-actions>
           <button type="button" className={styles.save} data-support-goal-save
+            onMouseDown={event => event.preventDefault()}
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
+            onMouseDown={event => event.preventDefault()}
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
         <fieldset className={styles.formatFieldset} data-support-goal-formats>
