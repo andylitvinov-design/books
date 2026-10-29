@@ -241,6 +241,12 @@ test("no-cost offline FFmpeg assembler validates local rights and builds explici
   assert.ok(cmd.includes("libx264"));assert.ok(cmd.includes("+faststart"));
   assert.ok(cmd.some(x=>x.includes("amix=inputs=2")));
   assert.ok(cmd.some(x=>x.includes("concat=n=4")));
+  // Portrait footage in landscape masters preserves the original image:
+  // moving blurred fill replaces enormous static black side pillars.
+  assert.ok(cmd.some(x=>x.includes("boxblur=12:1")));
+  assert.ok(cmd.some(x=>x.includes("force_original_aspect_ratio=decrease[fg")));
+  assert.ok(cmd.some(x=>x.includes("overlay=(W-w)/2:(H-h)/2:shortest=1")));
+  assert.ok(!cmd.some(x=>x.includes("pad=1920:1080")||x.includes("pad=1080:1920")));
   assert.ok(!cmd.includes("-y"));
   assert.throws(()=>validateAssemblyInput({...input,music:{file:"music.wav",rightsConfirmed:false}}),
     /invalid_cinematic_assembly/);
