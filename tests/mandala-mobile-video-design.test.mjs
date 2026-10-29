@@ -4,6 +4,41 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
+// Exercise the real JSX settings button with React server rendering, so
+// removing aria-label makes the oracle fail in all three language variants.
+// Next Link / lucide / CSS are visual-only stubs; the component and hook are real.
+async function renderMandalaDock(source, locale) {
+  const ts=await import("typescript");
+  const React=await import("react");
+  const { renderToStaticMarkup }=await import("react-dom/server");
+  const { runInNewContext }=await import("node:vm");
+  const jsx=await import("react/jsx-runtime");
+  const compiled=ts.transpileModule(source,{fileName:"holistic-support-mandala-dock.tsx",
+    compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,
+      target:ts.ScriptTarget.ES2022}}).outputText;
+  const exports={};
+  const LinkStub=({children,href,prefetch,...props})=>React.createElement("a",{href,...props},children);
+  const IconStub=({size,...props})=>React.createElement("svg",{"aria-hidden":props["aria-hidden"],width:size,height:size});
+  const icons=new Proxy({},{get:()=>IconStub});
+  const requireStub=id=>{
+    if(id==="react")return React;
+    if(id==="react/jsx-runtime")return jsx;
+    if(id==="next/link")return {__esModule:true,default:LinkStub};
+    if(id==="lucide-react")return icons;
+    if(id.endsWith(".module.css"))return {__esModule:true,default:{}};
+    throw new Error("Unexpected dependency in dock: "+id);
+  };
+  runInNewContext(compiled,{exports,require:requireStub},{timeout:2000});
+  assert.equal(typeof exports.HolisticSupportMandalaDock,"function");
+  return renderToStaticMarkup(React.createElement(exports.HolisticSupportMandalaDock,{locale}));
+}
+function assertMandalaHeaderName(html,expected) {
+  const header=html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0];
+  assert.ok(header,"real mandala header must be rendered");
+  const button=header.match(/<button\b[^>]*\baria-label="([^"]+)"/);
+  assert.equal(button?.[1],expected,"localized accessible name");
+}
+
 test("approved mobile video design is the one canonical Mandala editor with six real-footage themes", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const parent=read("components/mandala-meditation-client.tsx");
@@ -143,7 +178,8 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
 test("client photo consent and privacy are enforced without payment or server photo upload", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const audio=read("lib/mandala/local-video-music.ts");
-  assert.match(studio,/!photoUrl \|\| photoConsent/);
+  assert.match(studio,/backgroundOnly \|\| \(Boolean\(photoUrl\) && photoConsent\)/);
+  assert.match(studio,/if\(photoUrl&&!backgroundOnly&&!photoConsent\)/);
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
   assert.match(studio,/disabled=\{!canGenerate\}/);

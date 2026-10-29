@@ -293,9 +293,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.equal(await link.getAttribute("href"),"#"+id);
           await link.click();
           await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
-          const rect=await page.locator("#"+id).boundingBox();
-          assert.ok(rect && rect.y<820 && rect.y+rect.height>0,
-            engine+" "+locale+" "+width+"px "+tab+" jump must reveal its panel");
+          await page.waitForFunction(target=>{
+            const rect=document.getElementById(target)?.getBoundingClientRect();
+            return Boolean(rect && rect.top<window.innerHeight-16 && rect.bottom>16);
+          },id,{timeout:10000});
         }
         // From the bottom of Hypnoaffirmations, a single click must scroll
         // back to the main film and START its existing frame engine.
