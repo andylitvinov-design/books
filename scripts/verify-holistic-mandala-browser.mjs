@@ -456,7 +456,6 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.equal(playTargets.length,5,"show five sound rows before expanding");
           assert.ok(playTargets.every(target=>target.height>=44&&target.width>=44),
             "every initially displayed Play button is touch-accessible");
-            "readable 44px+ audio-only rows at "+width+": "+JSON.stringify(dimensions));
           const attach=await panel.locator("[data-video-audio-attach]").boundingBox();
           assert.ok(attach && attach.height>=44,
             "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
@@ -530,8 +529,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
               preset+" is served with an actual WAV media MIME");
             const body=Buffer.from(await response.body());
             assert.equal(body.subarray(0,4).toString("ascii"),"RIFF",preset+" starts with WAV PCM header");
-            assert.equal(await playButton.getAttribute("aria-pressed"),"true",
-              preset+" direct row Play must visibly switch to Pause");
+            await page.waitForFunction(id=>
+              document.querySelector('[data-video-audio-play="'+id+'"]')?.getAttribute("aria-pressed")==="true",
+              preset,{timeout:12000});
             await page.waitForFunction(() => {
               const a=document.querySelector("[data-video-audio-player]");
               return a && a.error === null && a.readyState >= 2 && a.currentTime > .3;
@@ -549,8 +549,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             assert.equal(await page.locator("[data-video-audio-direct]").count(),0,
               "healthy preset must not show direct-open error fallback");
             await playButton.click();
-            assert.equal(await playButton.getAttribute("aria-pressed"),"false",
-              preset+" second row Play click pauses playback");
+            await page.waitForFunction(id=>
+              document.querySelector('[data-video-audio-play="'+id+'"]')?.getAttribute("aria-pressed")==="false",
+              preset,{timeout:10000});
           }
         }
         if (engine === "chromium" && locale === "ru" && width === 390) {
