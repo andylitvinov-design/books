@@ -158,7 +158,8 @@ export function HolisticLanguageConversation({
     });
     const localRequestId=++requestCounter.current;
     const localContext=prepareLocalConversation({
-      history:entries,currentMessage:value,decision:result,locale,
+      history:entries.map(entry=>({role:entry.role,text:entry.generated||entry.text})),
+      currentMessage:value,decision:result,locale,
     });
     setState(result.state);
     setEntries(prev=>[...prev,
