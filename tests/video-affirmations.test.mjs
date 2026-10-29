@@ -78,7 +78,8 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 });
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
-  assert.match(studio,/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.match(studio,/MandalaHypnoCompact locale=\{locale\} theme=\{theme\}/);
+  assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   assert.match(studio,/caption,affirmations\]\)/);
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
@@ -216,4 +217,66 @@ test("iPhone photo-consent gesture wakes the real HD scene without bypassing rea
   assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
     "Create stays disabled until a real decoded master frame is present");
+});
+
+
+test("compact request flows are locally sourced, goal-first, nonclinical and localized",()=>{
+  const compact=read("components/mandala-hypno-compact.tsx");
+  const compactCss=read("components/mandala-hypno-compact.module.css");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const expected=["energy","money","relationships","goals","life","health"];
+  const {hypnoRequestProblems,buildHypnoRequestPhrases}=exposed;
+  for(const locale of ["ru","en","es"]){
+    for(const theme of expected){
+      assert.equal(hypnoRequestProblems[locale][theme].length,3);
+      for(let index=0;index<3;index++){
+        const goalId=affirmationGoalCatalog[locale][0].id;
+        const proposals=buildHypnoRequestPhrases(locale,theme,index,goalId);
+        assert.equal(proposals.length,5);
+        assert.equal(proposals[0],hypnoRequestProblems[locale][theme][index].phrase);
+        assert.ok(proposals.every(x=>x.length>4&&x.length<=MAX_AFFIRMATION_LENGTH));
+        assert.ok(!proposals.some(x=>/cure|guarantee|излеч|вылеч|garantiz/i.test(x)));
+      }
+    }
+  }
+  for(const marker of ["data-hypno-request","data-hypno-request-edit","data-hypno-apply-request",
+    "data-hypno-phrases","data-hypno-smart","data-hypno-ready","data-hypno-tests",
+    "data-hypno-display","data-hypno-frequency","data-hypno-size","data-hypno-position",
+    "data-hypno-design","data-hypno-scene","data-hypno-preview"]){
+    assert.ok(compact.includes(marker),marker);
+  }
+  assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
+  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
+  assert.match(compactCss,/@media\(max-width:360px\)/);
+  assert.match(compactCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.doesNotMatch(compact,/sendBeacon|localStorage|sessionStorage|XMLHttpRequest|autoPlay/);
+  assert.match(compact,/maxLength=\{400\}/);
+});
+
+test("new text size and position change the actual shared canvas renderer",()=>{
+  const positions=[];
+  const fonts=[];
+  const context={
+    canvas:{width:720,height:1280},
+    save(){},restore(){},fillRect(){},
+    fillText(phrase,x,y){positions.push(y);},
+    set textAlign(v){},set textBaseline(v){},
+    set font(v){fonts.push(v);},
+    set fillStyle(v){},set shadowBlur(v){},set shadowColor(v){},
+  };
+  for(const position of ["top","center","bottom"]){
+    paintVideoAffirmations(context,2,["Test phrase"],{
+      ...defaultAffirmations,enabled:true,density:"low",visibility:["large"],position,
+    });
+  }
+  assert.equal(positions.length,3);
+  assert.ok(positions[0]<positions[1]&&positions[1]<positions[2]);
+  fonts.length=0;
+  for(const textScale of ["small","medium","large"]){
+    paintVideoAffirmations(context,2,["Test phrase"],{
+      ...defaultAffirmations,enabled:true,density:"low",visibility:["large"],textScale,
+    });
+  }
+  const px=fonts.map(x=>Number(x.match(/(\d+(?:\.\d+)?)px/)[1]));
+  assert.ok(px[0]<px[1]&&px[1]<px[2]);
 });
