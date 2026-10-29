@@ -37,7 +37,7 @@
 .scaleValue[data-tone="relationships"] { background: #fae3e0; }
 .scaleValue[data-tone="goals"] { background: #eee3f8; }
 .profile { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; min-width: 0; padding: 6px 0; text-align: center; }
-.photo { position: relative; display: grid; place-items: center; flex: none; width: clamp(130px, 17vw, 195px); height: clamp(130px, 17vw, 195px); padding: 6px; border: 4px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #c9ece2, #f3eadd); box-shadow: 0 0 0 3px #83b9ca, 0 0 0 12px rgb(255 255 255 / 31%), 0 13px 36px rgb(40 87 76 / 22%); cursor: pointer; overflow: hidden; }
+.photo { position: relative; display: grid; place-items: center; flex: none; width: clamp(130px, 17vw, 195px); height: clamp(130px, 17vw, 195px); padding: 6px; border: 4px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #c9ece2, #f3eadd); box-shadow: 0 0 0 3px #83b9ca, 0 0 0 12px rgb(255 255 255 / 31%), 0 13px 36px rgb(40 87 76 / 22%); cursor: pointer; overflow: visible; }
 .photoPreview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .photoPlaceholder { display: grid; place-items: center; gap: 5px; padding: 10px; color: #477d72; text-align: center; }
 .photoPlaceholder strong { max-width: 120px; font-size: 14px; line-height: 1.1; }
@@ -198,11 +198,11 @@
 /* The portrait shown before upload is illustrative, not a saved client photo. */
 .photoReference { position: absolute; inset: 0; width: 100%; height: 100%;
   border-radius: inherit; object-fit: cover; object-position: 50% 42%; }
-.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; }
+.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; border-radius: 50%; overflow: hidden; }
 .photoPlaceholder strong { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1;
   padding: 8px 18px 7px 6px; max-width: none; background: linear-gradient(0deg,#112f2ccf,#112f2c00);
   color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
-.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
+.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 34%; border-radius: 50%; }
 .camera { z-index: 2; }
 .focusCaptionLong { display: inline; }
 .focusCaptionShort { display: none; }
@@ -1083,4 +1083,12 @@
   .profile > .photoSave { min-width: 0; width: 100%; min-height: 33px; padding: 4px 2px; border-radius: 9px; font-size: clamp(9px,2.45vw,11px); }
   .profile > .photoSaved { font-size: 10px; line-height: 1.15; }
   .photoPlaceholder strong { display: block; padding: 4px 2px 3px; bottom: 3px; font-size: clamp(9px,2.2vw,11px); line-height: 1.05; }
+}
+
+/* The portrait is clipped to the ring, while its camera chip stays OUTSIDE
+   the face so eyes, forehead and chin remain readable on 320–430px iPhones. */
+.photoPreview, .photoReference { object-position: 50% 34%; }
+@media (max-width: 640px) {
+  .profile .camera { right: -5px; bottom: -4px; z-index: 4; }
+  .profile .photo { overflow: visible; }
 }
