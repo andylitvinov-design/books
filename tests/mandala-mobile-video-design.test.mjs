@@ -270,7 +270,7 @@ test("all three video editor deep links cancel native hash navigation before exp
   // first click, so the controlled panel repairs the hash on the next frame.
   assert.match(studio,/window\.history\.pushState\(window\.history\.state,"",path\+desired\)/);
   assert.match(studio,/window\.history\.replaceState\(window\.history\.state,"",path\+desired\)/);
-  assert.match(studio,/token!==quickNavTokenRef\.current/);
+  assert.match(studio,/const current=\(\)=>token===quickNavTokenRef\.current/);
   assert.match(studio,/setQuickDetailedOpen\(true\)/);
   assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
   assert.match(studio,/data-video-current-tab=\{quickNavTarget\}/);
@@ -322,7 +322,7 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(studio,/data-video-editor-nav aria-label=\{layout\.editorNavLabel\}/);
+  assert.match(studio,/data-video-editor-nav[^>]*aria-label=\{layout\.editorNavLabel\}/);
   for(const [tab,id] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
     assert.ok(studio.includes('href="#'+id+'" data-video-editor-tab="'+tab+'"'),tab+" must be a real same-page link");
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
