@@ -53,7 +53,14 @@ test('iPhone Photos and Files use full tap-target and decoded metadata-stripped 
   assert.match(helper,/image\.addEventListener\("load"/)
   assert.match(helper,/image\.addEventListener\("error"/)
   assert.match(helper,/if \(image\.complete && valid\(\)\) finish\(true\)/)
-  assert.match(helper,/if \(image\.complete && valid\(\)\) return Promise\.resolve\(\)/)
+  // Safari may finish local Blob decoding during src assignment. The load
+  // handler must already exist before the browser can fire load/error.
+  const imageLoad=helper.slice(helper.indexOf('function waitForBrowserImageLoad('),
+    helper.indexOf('export async function prepareBrowserPhoto('))
+  const onLoad=imageLoad.indexOf('image.addEventListener("load", onLoad)')
+  const setSrc=imageLoad.indexOf('image.src = objectUrl')
+  assert.ok(onLoad>=0 && setSrc>onLoad,'listen before assigning Blob URL')
+  assert.match(helper,/const loaded = waitForBrowserImageLoad\(image, objectUrl\)/)
   assert.match(helper,/window\.setTimeout\(\(\) => finish\(false\), 15_000\)/)
   // A hung WebKit HEIC decode must not leave the photo picker spinning:
   // real <img> loading and a bounded error path still control acceptance.
