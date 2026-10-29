@@ -1326,3 +1326,13 @@
 @media (prefers-reduced-motion: reduce) {
   .quickSectionHeading .quickEdit svg { transition: none; }
 }
+
+/* Optional score-based personalization stays available, not a second homepage.
+   No profile or health data is uploaded by opening this disclosure. */
+.supportContext { min-width: 0; border: 1px solid #e0e9df; border-radius: 15px; overflow: hidden; background: #f5f9f2; }
+.supportContext > summary { cursor: pointer; display: flex; align-items: center; min-height: 45px; padding: 9px 13px; color: #22674f; font: 750 13px/1.3 Arial, Helvetica, sans-serif; }
+.supportContext[open] > summary { border-bottom: 1px solid #dce8db; background: #e9f4e8; }
+.supportContext .supportTop { margin: 0; padding: 9px; }
+.quickPanelBody .quickPhotoSwitch { max-width: 100%; }
+.quickPanelBody :is(.audioSection,.hypnosisSection,.templates,.extraControls) { max-width: 100%; }
+.quickPanelBody :is(.audioSection,.hypnosisSection) { scroll-margin-top: 70px; }
