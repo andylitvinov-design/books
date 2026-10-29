@@ -7,6 +7,10 @@ on:
     branches:
       - codex/meditation-category-rail-20261028
       - codex/public-book-library
+concurrency:
+  # Cancel stale queued checks after each reviewed PR update; save runner minutes.
+  group: hh-support-quest-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   focused-quest:
     runs-on: ubuntu-latest
