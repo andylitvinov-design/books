@@ -116,9 +116,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
         await page.locator("[data-video-affirmations-feature]").check();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
         await page.locator("[data-video-affirmations-feature]").uncheck();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
