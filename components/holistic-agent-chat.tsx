@@ -17,7 +17,7 @@ const copy = {
     intro:"Опишите свой вопрос свободными словами. Личные результаты тестов пока не читаются и не сохраняются.",
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
-    consent:"Разрешаю передать этот текст на собственный защищённый AI-сервер Holistic House.",
+    consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
     loading:"Формирую ответ…",error:"Ответ сейчас недоступен. Проверьте вход в кабинет и попробуйте ещё раз.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
@@ -26,7 +26,7 @@ const copy = {
     intro:"Share your question in your own words. Private test results are not read or saved in this pilot.",
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
-    consent:"I agree to send this message to Holistic House's secured, self-hosted AI server.",
+    consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
     loading:"Preparing a reply…",error:"Reply unavailable. Check that you're signed into your cabinet and try again.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
@@ -35,7 +35,7 @@ const copy = {
     intro:"Escribe tu pregunta con tus propias palabras. Los resultados privados no se leen ni se guardan.",
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
-    consent:"Acepto enviar este texto al servidor privado de IA de Holistic House.",
+    consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
     loading:"Preparando una respuesta…",error:"Respuesta no disponible. Comprueba el inicio de sesión e inténtalo de nuevo.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
@@ -64,7 +64,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
     if(!text||busy||mode==="owned"&&!agree)return;
     const prior=messages.slice(-6),abort=new AbortController();
     controller.current=abort;setBusy(true);setStatus("");setDraft("");
-    setMessages(prev=>[...prev,{role:"user",text}]);
+    setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
       const response=await fetch("/api/holistic-agent/turn",{
         method:"POST",credentials:"same-origin",signal:abort.signal,
@@ -100,7 +100,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       }
       if(abort.signal.aborted)return;
       setChoices(Array.isArray(data.suggestions)?data.suggestions:[]);
-      setMessages(prev=>[...prev,{role:"assistant",text:reply}].slice(-30));
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
     } catch {
       if(!abort.signal.aborted)setStatus(t.error);
