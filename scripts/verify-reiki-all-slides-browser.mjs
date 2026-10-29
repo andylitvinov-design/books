@@ -615,7 +615,11 @@ async function verifySaveOnCompletion(page, locale) {
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
     { waitUntil: "domcontentloaded", timeout: 90000 });
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
-  for (const id of ["welcome-video","welcome-01","welcome-02","flight-01","flight-02","flight-voices",
+  // The real curriculum starts with the title and experience check-in,
+  // followed by the author's introduction; never invent a new course order.
+  assert.deepEqual(expectedSequence.slice(0,3),
+    ["welcome-01","welcome-02","welcome-video"]);
+  for (const id of ["welcome-01","welcome-02","welcome-video","flight-01","flight-02","flight-voices",
     "flight-05","flight-04","flight-03"]) {
     await expect(page.locator("[data-energywork-slide-id]"))
       .toHaveAttribute("data-energywork-slide-id", id);
