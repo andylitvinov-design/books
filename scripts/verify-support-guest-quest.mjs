@@ -121,8 +121,14 @@ try {
         // document BEFORE React hydration; this tests fresh account/activity
         // state, not an unsupported live mutation of mounted React storage.
         await page.addInitScript(() => {
-          localStorage.setItem("hh-support-free-journey-v1",
-            JSON.stringify({ starts: 0, completed: {} }));
+          // Playwright installs init scripts in ALL frames, including
+          // sandboxed YouTube players that forbid localStorage access.
+          // Only reset the first-party top-level document before hydration.
+          if (window.self !== window.top) return;
+          try {
+            localStorage.setItem("hh-support-free-journey-v1",
+              JSON.stringify({ starts: 0, completed: {} }));
+          } catch { /* Browser-private storage unavailable: keep in-memory defaults. */ }
         });
         await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
         await page.locator("[data-support-play]:not([disabled])").waitFor({ timeout: 35000 });
