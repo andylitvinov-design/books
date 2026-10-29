@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  REIKI_REQUEST_PREFIX, REIKI_REQUEST_PREFIX_V2, REIKI_INITIATION_IDS, REIKI_PERSONAL_SESSIONS,
+  REIKI_REQUEST_PREFIX, REIKI_REQUEST_PREFIX_V2, REIKI_REQUEST_PREFIX_V3, REIKI_INITIATION_IDS, REIKI_INITIATION_NAMES, REIKI_PERSONAL_SESSIONS, REIKI_CERTIFICATE_FEE,
   readReikiInitiationRequest, writeReikiInitiationRequest,
   reikiInitiationRequestValid, formatReikiInitiationRequest,
 } from '../data/academy/reiki-initiation-request.js'
@@ -78,7 +78,7 @@ test('private human-readable CRM and journal expose the options in English and R
     assert.match(output,/Tantra Reiki/)
     assert.match(output,/Kundalini Reiki/)
     assert.match(output,/Weekdays after 19:00/)
-    assert.doesNotMatch(output,/hh-reiki-personal-request-v[12]|\{"firstName"/)
+    assert.doesNotMatch(output,/hh-reiki-personal-request-v[123]|\{"firstName"/)
   }
   assert.match(russian,/Бесплатная инициация/)
   assert.match(english,/By donation|Additional initiations by donation/)
@@ -91,7 +91,7 @@ test('chat gift remains free; optional paid 1:1 uses exactly €50/30min or €1
   ])
   for (const personalSession of ['none','express','full']) {
     const answer=writeReikiInitiationRequest(validRequest({personalSession}))
-    assert.ok(answer.startsWith(REIKI_REQUEST_PREFIX_V2))
+    assert.ok(answer.startsWith(REIKI_REQUEST_PREFIX_V3))
     assert.equal(reikiInitiationRequestValid(answer),true)
     assert.equal(readReikiInitiationRequest(answer).personalSession,personalSession)
     assert.ok(answer.length <= 1600)
@@ -136,10 +136,40 @@ test('v1 signed-off applications remain valid and legacy text can still be edite
   assert.equal(reikiInitiationRequestValid(old),true,'Do not break submitted encrypted v1 data')
   assert.equal(readReikiInitiationRequest(old).personalSession,'none')
   assert.match(formatReikiInitiationRequest(old,'en'),/Personal initiation through chat mode/)
-  assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V2))
+  assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V3))
   assert.equal(reikiInitiationRequestValid(old.replace('"motivation":','"personalSession":"full","motivation":')),false)
   const newAnswer=writeReikiInitiationRequest(validRequest({personalSession:'full',donationInitiations:['kundalini']}))
   assert.match(formatReikiInitiationRequest(newAnswer,'en'),/Additional initiations by donation \(chat\): Kundalini Reiki/)
+})
+
+test('optional Level 1 certificate is off by default, selectable for any system, and never charges', () => {
+  assert.equal(REIKI_CERTIFICATE_FEE, '$50')
+  const initial = readReikiInitiationRequest(writeReikiInitiationRequest(validRequest()))
+  assert.equal(initial.certificateRequested, false)
+  assert.equal(initial.certificateSystem, '')
+  assert.match(formatReikiInitiationRequest(writeReikiInitiationRequest(validRequest()), 'ru'), /Сертификат Рейки I ступени: не запрошен/)
+  for (const certificateSystem of REIKI_INITIATION_IDS) {
+    const answer = writeReikiInitiationRequest(validRequest({ certificateRequested: true, certificateSystem }))
+    assert.equal(reikiInitiationRequestValid(answer), true)
+    const decoded = readReikiInitiationRequest(answer)
+    assert.equal(decoded.certificateRequested, true)
+    assert.equal(decoded.certificateSystem, certificateSystem)
+    assert.match(formatReikiInitiationRequest(answer, 'en'), /Level 1 Reiki certificate \(\$50\)/)
+    assert.match(formatReikiInitiationRequest(answer, 'ru'), /сертификат Рейки I ступени \(\$50\)/)
+    assert.match(formatReikiInitiationRequest(answer, 'en'), new RegExp(REIKI_INITIATION_NAMES[certificateSystem]))
+    assert.ok(answer.length <= 1600)
+  }
+  assert.equal(reikiInitiationRequestValid(writeReikiInitiationRequest(validRequest({certificateRequested: true, certificateSystem: ''}))), false)
+  const checked = writeReikiInitiationRequest(validRequest({certificateRequested: true, certificateSystem: 'tantra'}))
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateRequested":true', '"certificateRequested":"yes"')), false)
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateSystem":"tantra"', '"certificateSystem":"unknown"')), false)
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateRequested":true', '"certificateRequested":false')), false)
+  // Previously encrypted v2 requests (including personal-session choices) remain unchanged and valid.
+  const v2 = REIKI_REQUEST_PREFIX_V2 + JSON.stringify({...validRequest({personalSession:'full'}), personalSession:'full'})
+  assert.equal(reikiInitiationRequestValid(v2), true)
+  assert.equal(readReikiInitiationRequest(v2).certificateRequested, false)
+  assert.equal(readReikiInitiationRequest(v2).personalSession, 'full')
+  assert.doesNotMatch(formatReikiInitiationRequest(v2, 'en'), /certificate/i)
 })
 
 test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct public or paid checkout', () => {
@@ -149,6 +179,12 @@ test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct publ
   assert.match(form,/data-reiki-free-choices/)
   assert.match(form,/data-reiki-donation-choices/)
   assert.match(form,/data-reiki-personal-choices/)
+  assert.match(form,/data-reiki-certificate-choice/)
+  assert.match(form,/name="reiki-level1-certificate"/)
+  assert.match(form,/checked=\{request\.certificateRequested\}/)
+  assert.match(form,/name="reiki-certificate-system"/)
+  assert.match(form,/certificateSystem: event\.target\.value/)
+  assert.match(form,/no \$50 charge/)
   assert.match(form,/type="radio" name="reiki-personal-session"/)
   assert.match(form,/REIKI_PERSONAL_SESSIONS\.map/)
   assert.match(form,/personalSession: option\.id/)
