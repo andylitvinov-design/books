@@ -136,7 +136,7 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
   assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
-  assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
+  assert.match(client, /setRecommendation\(editedCheckins\.length === checkinOrder\.length \? asFocusScores\(scores\) : null\)/);
   assert.match(client, /goals: values\.meaning/);
   assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
   assert.doesNotMatch(client, /energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5/);
