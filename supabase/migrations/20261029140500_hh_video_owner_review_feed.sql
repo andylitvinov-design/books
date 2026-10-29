@@ -43,11 +43,13 @@ GRANT UPDATE (goals,subtopics,owner_review_status,owner_review_note,
   discovery_status,claims_risk,content_checked_at,youtube_oembed_checked_at,
   metadata_checked_at,metadata_confidence,updated_at)
  ON public.hh_meditation_catalog_v1 TO hh_app_backend;
+DROP POLICY IF EXISTS hh_video_review_owner_read ON public.hh_meditation_catalog_v1;
 CREATE POLICY hh_video_review_owner_read ON public.hh_meditation_catalog_v1
  FOR SELECT TO hh_app_backend USING (
     (select app_private.session_active())
     AND current_setting('hh.video_review_owner',true)='1'
  );
+DROP POLICY IF EXISTS hh_video_review_owner_edit ON public.hh_meditation_catalog_v1;
 CREATE POLICY hh_video_review_owner_edit ON public.hh_meditation_catalog_v1
  FOR UPDATE TO hh_app_backend
  USING (
@@ -79,11 +81,13 @@ ALTER TABLE app_private.hh_video_review_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON app_private.hh_video_review_events FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT ON app_private.hh_video_review_events TO hh_app_backend;
 GRANT USAGE,SELECT ON SEQUENCE app_private.hh_video_review_events_id_seq TO hh_app_backend;
+DROP POLICY IF EXISTS hh_video_review_events_owner_read ON app_private.hh_video_review_events;
 CREATE POLICY hh_video_review_events_owner_read ON app_private.hh_video_review_events
  FOR SELECT TO hh_app_backend USING (
    (select app_private.session_active())
    AND current_setting('hh.video_review_owner',true)='1'
  );
+DROP POLICY IF EXISTS hh_video_review_events_owner_write ON app_private.hh_video_review_events;
 CREATE POLICY hh_video_review_events_owner_write ON app_private.hh_video_review_events
  FOR INSERT TO hh_app_backend WITH CHECK (
    reviewer_id=(select auth.uid())
