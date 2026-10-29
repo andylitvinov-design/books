@@ -11,7 +11,7 @@
 .visuallyHidden{position:absolute!important;inline-size:1px!important;block-size:1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important}
 .seriesFilters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 16px}
 .seriesFilters strong{flex:0 0 100%;color:#4f382c;font-size:14px;font-weight:800}
-.seriesFilters button{min-height:42px;max-width:100%;padding:8px 14px;border:1px solid #cab7a5;border-radius:13px;background:#fffdf9;color:#5b4536;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.seriesFilters button{min-height:44px;max-width:100%;padding:8px 14px;border:1px solid #cab7a5;border-radius:13px;background:#fffdf9;color:#5b4536;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .seriesFilters button[aria-pressed="true"]{border-color:#72513c;background:#6c4b35;color:white}
 .seriesFilters button:focus-visible{outline:3px solid #8d674c;outline-offset:2px}
 .seriesHeading{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;padding:15px 16px;border:1px solid #decbb8;border-radius:13px;background:#f5eee3}
