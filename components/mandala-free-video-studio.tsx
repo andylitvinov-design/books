@@ -297,6 +297,7 @@ const audioCopy = {
     pick:"Select",picked:"Selected",attach:"Attach to video",attached:"Attached to video",
     detach:"Remove from video",needsAttach:"Select a sound and tap Attach to video before export.",
     applied:"Sound is attached to this video setup. Create the video again to save a file with this sound.",
+    chooseFirst:"Choose a sound",noAudioInfo:"No sound is attached. Select a sound or create a silent video.",
     attachedLabel:"On video",noAttached:"No sound attached",
     recordVoice:"Record my voice",stopVoice:"Finish recording",recordUnavailable:"Microphone is unavailable here. Try Safari or upload an audio file.",
     recordFailed:"Could not record audio. Check microphone permission or use Files.",
@@ -317,6 +318,7 @@ const audioCopy = {
     pick:"Выбрать",picked:"Выбран",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
     detach:"Убрать звук из видео",needsAttach:"Выберите дорожку и нажмите «Прикрепить к видео» перед сохранением.",
     applied:"Дорожка прикреплена к настройкам ролика. Создайте видео заново, чтобы получить файл со звуком.",
+    chooseFirst:"Выберите звук",noAudioInfo:"Звук не прикреплён. Выберите дорожку либо создайте видео без звука.",
     attachedLabel:"В видео",noAttached:"Без звука",
     recordVoice:"Записать голос",stopVoice:"Завершить запись",recordUnavailable:"Микрофон недоступен. Откройте Safari или загрузите аудио из «Файлов».",
     recordFailed:"Записать голос не удалось. Проверьте разрешение на микрофон или загрузите файл.",
@@ -337,6 +339,7 @@ const audioCopy = {
     pick:"Elegir",picked:"Elegido",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
     detach:"Quitar sonido del vídeo",needsAttach:"Elige un sonido y pulsa Adjuntar antes de guardar el vídeo.",
     applied:"Audio adjunto a este vídeo. Créalo de nuevo para guardar el archivo con sonido.",
+    chooseFirst:"Elige un sonido",noAudioInfo:"No hay audio adjunto. Elige un sonido o crea un vídeo sin él.",
     attachedLabel:"En el vídeo",noAttached:"Sin sonido",
     recordVoice:"Grabar voz",stopVoice:"Terminar grabación",recordUnavailable:"El micrófono no está disponible. Prueba Safari o sube un archivo.",
     recordFailed:"No se pudo grabar. Revisa los permisos o utiliza Archivos.",
@@ -1846,21 +1849,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div> : null}
           </div>
 
-          <div className={videoStyles.audioAttachPanel} data-video-audio-attach-panel>
-            <div className={videoStyles.audioApplied} data-video-audio-attached>
-              <small>{audioUi.attachedLabel}</small><strong>{appliedAudioName}</strong>
-            </div>
-            <button type="button" data-video-audio-attach
-              className={videoStyles.audioAttachButton}
-              disabled={!audioNeedsAttachment||audioDurationInvalid||micRecording||(Boolean(uploadedAudio)&&!audioRights)}
-              onClick={attachSelectedAudio}>
-              {audioNeedsAttachment?<Paperclip size={18} aria-hidden="true"/>:<Check size={18} aria-hidden="true"/>}
-              {audioNeedsAttachment?(!uploadedAudio&&music==="none"?audioUi.detach:audioUi.attach):audioUi.attached}
-            </button>
-          </div>
-          <small className={videoStyles.audioAttachHelp} data-video-audio-attach-help aria-live="polite">
-            {audioNeedsAttachment?audioUi.needsAttach:audioUi.applied}
-          </small>
           <div className={videoStyles.musicTools}>
             <button type="button" data-video-music-preview disabled={!previewAudioUrl||audioPlaybackError||recording||preparing}
               onClick={toggleSoundPreview} aria-pressed={soundPreview}>
@@ -1909,6 +1897,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing}/>
             <span>{ui.audioRights}</span>
           </label> : null}
+          <div className={videoStyles.audioAttachPanel} data-video-audio-attach-panel>
+            <div className={videoStyles.audioApplied} data-video-audio-attached>
+              <small>{audioUi.attachedLabel}</small><strong>{appliedAudioName}</strong>
+            </div>
+            <button type="button" data-video-audio-attach
+              className={videoStyles.audioAttachButton}
+              disabled={!audioNeedsAttachment||audioDurationInvalid||micRecording||(Boolean(uploadedAudio)&&!audioRights)}
+              onClick={attachSelectedAudio}>
+              {audioNeedsAttachment?<Paperclip size={18} aria-hidden="true"/>:<Check size={18} aria-hidden="true"/>}
+              {audioNeedsAttachment?(!uploadedAudio&&music==="none"?audioUi.detach:audioUi.attach):attachedAudio?audioUi.attached:audioUi.chooseFirst}
+            </button>
+          </div>
+          <small className={videoStyles.audioAttachHelp} data-video-audio-attach-help aria-live="polite">
+            {audioNeedsAttachment?audioUi.needsAttach:attachedAudio?audioUi.applied:audioUi.noAudioInfo}
+          </small>
           <details className={videoStyles.audioHelpDetails}>
             <summary>{audioUi.helpTitle}</summary>
             <small>{ui.audioDeviceHelp}</small>
