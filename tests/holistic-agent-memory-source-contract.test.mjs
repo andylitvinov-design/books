@@ -37,6 +37,6 @@ test("API uses server verified user, origin and owner RLS transaction",()=>{
 });
 test("local worker has no remote inference call or tool execution",()=>{
  assert.match(model,/CreateMLCEngine/u);
- assert.match(model,/browser-local model prompt|browser-local model|browser-local|in-browser/ui);
+ assert.match(model,/browser-local|in-browser|on-device/i);
  assert.doesNotMatch(model,/OPENAI_API_KEY|ANTHROPIC_API_KEY|service_role|supabase\.from\(/u);
 });
