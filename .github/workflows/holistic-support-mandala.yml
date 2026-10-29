@@ -6,6 +6,8 @@ on:
       - 'app/[locale]/holistic-support/**'
       - 'components/mandala-meditation*'
       - 'components/mandala-free-video-studio.tsx'
+      - 'components/mandala-video-affirmations*'
+      - 'components/mandala-guided-course*'
       - 'components/mandala-video-mobile.module.css'
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
@@ -14,10 +16,14 @@ on:
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
       - 'public/videos/holistic-house/money-films-v1/**'
+      - 'public/videos/holistic-house/film-collection-v2/**'
       - 'tests/real-money-film-library.test.mjs'
+      - 'tests/film-collection-v2.test.mjs'
       - 'tests/holistic-mandala-meditation.test.mjs'
       - 'tests/mandala-export.test.mjs'
       - 'tests/mandala-free-video.test.mjs'
+      - 'tests/video-affirmations.test.mjs'
+      - 'tests/personal-guided-course.test.mjs'
       - 'tests/mandala-mobile-video-design.test.mjs'
       - 'tests/personal-video-intent.test.mjs'
       - 'tests/mandala-sound.test.mjs'
@@ -43,10 +49,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Check browser acceptance script syntax before slow production build
+        run: node --check scripts/verify-holistic-mandala-browser.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/real-money-film-library.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
+        run: node --test tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
       - name: Targeted lint
-        run: npx --no-install eslint lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/local-video-music.ts lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-guided-course.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
       - name: Typecheck
         run: npx --no-install tsc --noEmit
       - name: Build

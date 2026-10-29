@@ -4,11 +4,11 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
-test("approved mobile video design is the one canonical Mandala editor with four theme choices", () => {
+test("approved mobile video design is the one canonical Mandala editor with six real-footage themes", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const parent=read("components/mandala-meditation-client.tsx");
   const ui=read("components/mandala-video-mobile.module.css");
-  for(const theme of ["money","relationships","energy","goals"]){
+  for(const theme of ["money","relationships","energy","life","health","goals"]){
     assert.match(studio,new RegExp('"'+theme+'"'));
   }
   assert.match(studio,/const themeChoices: VideoTheme\[\]/);
@@ -61,10 +61,17 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(studio,/data-video-catalog/);
   assert.match(studio,/data-video-category-rail/);
   assert.match(studio,/data-video-category=\{item\}/);
-  assert.match(studio,/const videoCategories = \["energy","money","relationships","goals","health"\]/);
-  assert.match(studio,/next==="health" \? "gentle-shield"/);
+  assert.match(studio,/const videoCategories = \["energy","money","relationships","goals","life","health"\]/);
+  assert.match(studio,/setTheme\(next\)/);
+  assert.match(studio,/getThemedRealFilm\(theme,other\.id\)/);
+  assert.match(studio,/data-video-health-disclaimer/);
   assert.match(studio,/data-video-catalog-filters/);
   assert.match(studio,/data-video-style/);
+  const styleStart=studio.indexOf("<select data-video-style");
+  const styleEnd=studio.indexOf("</select>",styleStart);
+  assert.ok(styleStart>=0 && styleEnd>styleStart,"the existing visual style selector must be present");
+  assert.match(studio.slice(styleStart,styleEnd),/setShowAllMoney\(true\)/,
+    "choosing a hidden fifth-or-later MP4 or legacy preset reveals its selected thumbnail");
   assert.match(studio,/data-video-motion/);
   assert.match(studio,/data-video-length/);
   assert.match(studio,/setSpeed\(event.currentTarget.value as Speed\)/);
@@ -101,7 +108,7 @@ test("money, energy, relationships and goals have real local frame engines, not 
     "light-path","open-door","guiding-stars","meaning-tree"]) assert.ok(local.includes('"'+id+'"'),id);
   for(const language of ["en","ru","es"]) assert.ok(client.includes(language+': {'));
   assert.match(cinematic,/movingCoins\(ctx,scene,t,w,h,true\)/);
-  assert.equal((scenes.match(/ id: "/g)||[]).length,12);
+  assert.equal((scenes.match(/ id: "/g)||[]).length,16,"12 original + 4 new licensed money scenes");
   for(const path of ["components/mandala-free-video-studio.tsx",
     "lib/mandala/holistic-video-themes.ts","lib/mandala/local-video-music.ts"]){
     const diagnostics=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
@@ -153,7 +160,12 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
     assert.ok(studio.includes(lang));
   for(const key of ['"energy"','"money"','"relationships"','"goals"'])
     assert.ok(studio.includes(key));
-  assert.match(studio,/setScores\(prev=>\(\{\.\.\.prev,\[key\]:Number/);
+  // The current slider validates the number once before React state updaters.
+  // Keep that value in both the visual check-in and separately touched inputs;
+  // do not read event.currentTarget asynchronously inside a state updater.
+  assert.ok(studio.includes("const value=Number(event.currentTarget.value)"));
+  assert.ok(studio.includes("setTouchedScores(prev=>({...prev,[key]:value}))"));
+  assert.ok(studio.includes("setScores(prev=>({...prev,[key]:value}))"));
   assert.match(studio,/selectCategory\(lowestTheme\)/);
   for(const view of ["tests","meditation","consultation","talisman","healing","pump","masters"]) {
     assert.ok(studio.includes("/holistic-support/mobile?view="+view), "new design category: "+view);

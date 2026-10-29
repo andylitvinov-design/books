@@ -143,3 +143,27 @@
   .bubbleGuide,.bubbleUser { animation: none; }
   .thread { scroll-behavior: auto; }
 }
+
+/* V2: optional verified test cards and video choices stay within the chat surface. */
+.inlineChoices { display: grid; gap: 9px; min-width: 0; }
+.inlineChoices > strong { font-size: 14px; color: #1b5c43; }
+.inlineChoices > p { font-size: 13px; line-height: 1.5; margin: 0; color: #264d3e; }
+.inlineOffer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  min-width: 0; padding: 9px; border-radius: 12px; border: 1px solid #d6e3d8;
+  background: #fffdf9; }
+.inlineOffer > img { width: 88px; height: 57px; flex: 0 0 88px; object-fit: cover; border-radius: 8px; }
+.inlineOffer > span { display: grid; flex: 1 1 120px; min-width: 0; gap: 3px; font-size: 13px;
+  line-height: 1.3; overflow-wrap: anywhere; color: #20513e; }
+.inlineOffer small { color: #647668; font-size: 11px; }
+.inlineOffer > :is(a,button) { display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; min-height: 44px; padding: 9px 12px; border: 1px solid #008e68;
+  border-radius: 10px; background: #008e68; color: white; font-weight: 700;
+  text-decoration: none; cursor: pointer; font-size: 13px; line-height: 1.3; }
+.inlineChoices > .textLink { width: fit-content; }
+.card :is(button,a,input):focus-visible { outline: 3px solid #c79d25; outline-offset: 2px; }
+@media (max-width: 390px) {
+  .inlineOffer { padding: 8px; gap: 6px; }
+  .inlineOffer > img { width: 74px; height: 50px; flex-basis: 74px; }
+  .inlineOffer > span { font-size: 12px; flex-basis: 115px; }
+  .inlineOffer > :is(a,button) { width: 100%; }
+}

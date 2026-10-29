@@ -515,3 +515,8 @@
   .catalogShell .heroAudio{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){.catalogShell .videoOrb,.categoryRail button{transition:none}}
+
+/* Licensed Full HD clips enhance the current approved mobile video layout. */
+.categoryRail button[data-tone="life"]{background:#edf7e9;border-color:#c5debf;color:#3c8354}
+.filmBadge{position:absolute;top:7px;left:7px;z-index:2;border:1px solid rgba(255,248,215,.68);border-radius:7px;background:rgba(17,43,39,.82);color:#fff7db;padding:4px 6px;font:800 9px/1 Arial,sans-serif;letter-spacing:.06em;pointer-events:none}
+.healthNote{margin:0 0 11px;padding:10px 12px;border:1px solid #bedbd6;border-radius:12px;background:#edf9f5;color:#406a61;font:600 11.5px/1.4 Arial,sans-serif}
