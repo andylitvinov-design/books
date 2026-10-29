@@ -287,7 +287,7 @@ const audioCopy = {
     types:{all:"All sounds",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
     moods:{all:"Any mood",calm:"Calm",focus:"Focus",uplift:"Inspiration"},
     paces:{all:"Any pace",slow:"Slow",steady:"Steady",active:"Energizing"},
-    voice:"Quiet background under my voice",voiceInfo:"Uses subtle, voice-friendly tracks at 30% volume. Your voice is not uploaded.",
+    voice:"Soft sound for a later voiceover",voiceInfo:"Quiet tracks at 30%. Only one soundtrack exports; voice and music are not mixed here.",
     suggested:"Best for this topic",browse:"Scroll to explore",count:"sounds",
     empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected audio",
   },
@@ -297,7 +297,7 @@ const audioCopy = {
     types:{all:"Все звуки",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
     moods:{all:"Любой",calm:"Успокоение",focus:"Концентрация",uplift:"Вдохновение"},
     paces:{all:"Любой",slow:"Медленный",steady:"Ровный",active:"Бодрый"},
-    voice:"Тихий фон под мой голос",voiceInfo:"Спокойные подложки, громкость 30%. Голос не отправляется на сервер.",
+    voice:"Мягкий фон для будущей озвучки",voiceInfo:"Спокойные треки, громкость 30%. Голос и музыка пока не накладываются одновременно.",
     suggested:"Лучше подходит",browse:"Листайте звуки",count:"звуков",
     empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранная дорожка",
   },
@@ -307,7 +307,7 @@ const audioCopy = {
     types:{all:"Todos",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
     moods:{all:"Cualquiera",calm:"Calma",focus:"Concentración",uplift:"Inspiración"},
     paces:{all:"Cualquiera",slow:"Lento",steady:"Regular",active:"Dinámico"},
-    voice:"Fondo suave bajo mi voz",voiceInfo:"Sonidos suaves al 30%. Tu voz no se envía al servidor.",
+    voice:"Fondo suave para añadir voz después",voiceInfo:"Pistas suaves al 30%. Por ahora solo se exporta una pista de audio.",
     suggested:"Recomendado",browse:"Desliza para explorar",count:"sonidos",
     empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
   },
@@ -1081,6 +1081,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setUploadedAudio(entry);
     setAudioPlaybackError(false);
     setAudioAuto(false);
+    setAudioVoiceFriendly(false);
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
@@ -1602,7 +1603,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <span>{audioUi.context} <strong>{ui.themes[theme]}</strong></span>
             </div>
             <button type="button" data-video-audio-auto aria-pressed={audioAuto}
-              disabled={!recommendedAudioId}
+              disabled={!recommendedAudioId&&!audioAuto}
               onClick={()=>{
                 if(audioAuto){setAudioAuto(false);return;}
                 if(recommendedAudioId){chooseMusic(recommendedAudioId);setAudioAuto(true);}
@@ -1629,7 +1630,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </label>
           </div>
           <label className={videoStyles.audioVoiceOption}>
-            <input data-video-audio-voice type="checkbox" checked={audioVoiceFriendly}
+            <input data-video-audio-voice type="checkbox" checked={audioVoiceFriendly} disabled={Boolean(uploadedAudio)}
               onChange={event=>{
                 const enabled=event.currentTarget.checked;
                 setAudioVoiceFriendly(enabled);
