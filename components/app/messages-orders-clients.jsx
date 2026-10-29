@@ -20,6 +20,8 @@ const TEXT={
   materials:'Materials and progress',materialsInfo:'Delivered materials appear in your private Cabinet after confirmation.',
   myPractice:'My practices',payment:'Payment',paymentInfo:'A request is not a confirmed booking or payment.',
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
+  freeLabel:'FREE',freeConsultation:'Request a free personal consultation',freeConsultationDetail:'Personal written review with Andrey · no call or fee.',
+  freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
  ru:{title:'Сообщения',subtitle:'Заказы и общение',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
@@ -34,6 +36,8 @@ const TEXT={
   materials:'Материалы и результат',materialsInfo:'Выданные материалы откроются в защищённом кабинете после подтверждения.',
   myPractice:'Мои практики',payment:'Оплата',paymentInfo:'Заявка ещё не означает запись или подтверждённую оплату.',
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
+  freeLabel:'БЕСПЛАТНО',freeConsultation:'Записаться на бесплатную консультацию',freeConsultationDetail:'Личный письменный разбор с Андреем · без звонка и оплаты.',
+  freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
  es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
@@ -48,6 +52,8 @@ const TEXT={
   materials:'Materiales y resultado',materialsInfo:'Los materiales entregados aparecen en tu cuenta privada después de la confirmación.',
   myPractice:'Mis prácticas',payment:'Pago',paymentInfo:'Una solicitud no confirma una reserva ni un pago.',
   newer:'Nueva respuesta',signIn:'Inicia sesión para ver tus pedidos',search:'Buscar profesional',more:'Las solicitudes anteriores están en Consultas.',
+  freeLabel:'GRATIS',freeConsultation:'Solicitar una consulta gratuita',freeConsultationDetail:'Revisión personal escrita con Andrey · sin llamada ni pago.',
+  freeReiki:'Empezar el curso gratis de prácticas Reiki',freeReikiDetail:'Cinco lecciones con meditaciones y ejercicios sencillos.',
   incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.'},
 }
 const STATES={
@@ -151,7 +157,7 @@ export default function MessagesOrdersClients({locale='en',children}){
         <RefreshCw size={19} aria-hidden="true"/>
       </button>
     </header>
-    {!detailMode&&<div className={styles.introCard}>
+    {!detailMode&&!(section==='orders'&&!loading&&!error&&ordersData?.orders?.length===0)&&<div className={styles.introCard}>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
         <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
@@ -172,7 +178,30 @@ export default function MessagesOrdersClients({locale='en',children}){
       </button>
     </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
-      {!selected&&<div className={styles.orderToolbar}>
+      {!loading&&!error&&!selected&&ordersData&&orders.length===0&&
+        <div className={styles.freeOffers} data-free-order-offers>
+          <Link href={'/'+locale+'/services/free-situation-review'} className={styles.freeOffer}
+            data-free-order-offer="consultation" prefetch={false}>
+            <img src="/images/holistic-house/andy-about.png" alt="" aria-hidden="true"
+              width="104" height="108" loading="lazy"/>
+            <span className={styles.freeOfferText}>
+              <small>{t.freeLabel}</small><strong>{t.freeConsultation}</strong>
+              <span>{t.freeConsultationDetail}</span>
+            </span>
+            <ChevronRight className={styles.freeOfferArrow} size={19} aria-hidden="true"/>
+          </Link>
+          <Link href={'/'+locale+'/academy/reiki/free-practitioner-course'} className={styles.freeOffer}
+            data-free-order-offer="reiki" prefetch={false}>
+            <img src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" aria-hidden="true"
+              width="104" height="108" loading="lazy"/>
+            <span className={styles.freeOfferText}>
+              <small>{t.freeLabel}</small><strong>{t.freeReiki}</strong>
+              <span>{t.freeReikiDetail}</span>
+            </span>
+            <ChevronRight className={styles.freeOfferArrow} size={19} aria-hidden="true"/>
+          </Link>
+        </div>}
+      {!selected&&!loading&&!error&&orders.length>0&&<div className={styles.orderToolbar}>
         <label className={styles.search}><Search size={19} aria-hidden="true"/>
           <span className={styles.visuallyHidden}>{t.searchOrders}</span>
           <input type="search" value={search} autoComplete="off"
@@ -182,7 +211,7 @@ export default function MessagesOrdersClients({locale='en',children}){
           aria-label={t.filterOrders} title={t.filterOrders}
           onClick={()=>setFiltersOpen(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>
       </div>}
-      {!selected&&filtersOpen&&<div className={styles.filters} aria-label={t.orders}>
+      {!selected&&orders.length>0&&filtersOpen&&<div className={styles.filters} aria-label={t.orders}>
         {[['all',t.all],['waiting',t.waiting],['working',t.working],['finished',t.finished]].map(([key,label])=>
           <button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}
             <span>{key==='all'?orders.length:orders.filter(order=>category(order)===key).length}</span>
@@ -191,9 +220,8 @@ export default function MessagesOrdersClients({locale='en',children}){
       {loading&&<p role="status" className={styles.notice}>{t.loading}</p>}
       {error&&<p role="alert" className={styles.notice}>{signedOut?<Link href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</Link>:t.error}
         {!signedOut&&<button type="button" onClick={reload}>{t.retry}</button>}</p>}
-      {!loading&&!error&&!orders.length&&<div className={styles.empty}>
-        <ShoppingBag size={38} aria-hidden="true"/><p>{t.empty}</p>
-        <Link href={'/'+locale+'/masters'}>{t.explore}<ArrowRight size={18}/></Link></div>}
+      {!loading&&!error&&!orders.length&&<p className={styles.emptyHint} role="status">
+        <ShoppingBag size={17} aria-hidden="true"/>{t.empty}</p>}
       {!loading&&!error&&!selected&&orders.length>0&&!visible.length&&
         <p className={styles.notice}>{locale==='ru'?'По этому запросу заказов не найдено.':
           locale==='es'?'No se encontraron pedidos.':'No matching orders.'}</p>}

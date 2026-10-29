@@ -77,3 +77,37 @@ test('order detail sends through its real request with protected participants on
  assert.match(route,/const actor=await auth\.verified\(\)/)
  assert.match(route,/createPractitionerClientMessages\(config\)/)
 })
+
+test('zero owned orders shows exactly two real free offer links, and truthful EN/RU/ES copy',()=>{
+  const ui=source('components/app/messages-orders-clients.jsx')
+  const css=source('components/app/messages-orders-clients.module.css')
+  const review=source('app/[locale]/services/free-situation-review/page.tsx')
+  const academy=source('app/[locale]/academy/[[...slug]]/page.tsx')
+  for(const required of [
+    '!loading&&!error&&!selected&&ordersData&&orders.length===0',
+    'data-free-order-offers',
+    'data-free-order-offer="consultation"',
+    'data-free-order-offer="reiki"',
+    '/services/free-situation-review',
+    '/academy/reiki/free-practitioner-course',
+    'andy-about.png',
+    'reiki-practitioner-sunrise.webp',
+    'Записаться на бесплатную консультацию',
+    'Личный письменный разбор',
+    'Пройти бесплатный курс практик Рейки',
+    'Request a free personal consultation',
+    'Solicitar una consulta gratuita',
+    '!selected&&!loading&&!error&&orders.length>0',
+  ])assert.ok(ui.includes(required),required)
+  assert.equal([...ui.matchAll(/data-free-order-offer=/g)].length,2)
+  assert.ok(review.includes('FreeEntryLanding locale={locale} kind="situation"'))
+  assert.ok(academy.includes('key === "reiki/free-practitioner-course"'))
+  for(const required of [
+    '.freeOffers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))',
+    '.freeOffer{display:flex;align-items:center',
+    '.freeOffers{grid-template-columns:minmax(0,1fr)',
+    '.freeOffer img{width:67px;height:75px',
+    ':focus-visible',
+  ])assert.ok(css.includes(required),required)
+  assert.equal(ui.includes('freeConsultationDetail:\'30 min'),false)
+})

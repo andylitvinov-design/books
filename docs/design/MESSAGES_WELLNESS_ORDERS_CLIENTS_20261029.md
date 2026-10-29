@@ -19,6 +19,7 @@
 | Gentle helper | Single compact card, only in list view, describes **actual** private function | Cream→sage gradient, botanical approved site art, rounded 18px | `messages-orders-clients.module.css` |
 | Primary folders | Two mutually exclusive accessible tabs: “Мои заказы” / “Мои клиенты” (for non-practitioners: “Переписка”) | Deep green active, neutral inactive, small **actual** record count badge | `MessagesOrdersClients` |
 | Search + optional filters | Search matching owned orders, names, titles/status; owner’s actual clients via current CRM | White rounded field, 44px filter button; no dead decoration | `MessagesOrdersClients`, `MessagesSimpleInbox` |
+| Zero owned orders | Two fully clickable compact service banners immediately below tabs, only after loaded authenticated zero-order response; free *written* situation review with Andrey and five-lesson Reiki Practitioner course | First-party portrait and Reiki image on left, desktop two cards / mobile stacked | `MessagesOrdersClients`, `/services/free-situation-review`, `/academy/reiki/free-practitioner-course` |
 | Order cards | Thumbnail from existing approved public assets; real service title/master/status/date, existing unread chat counter | Separate ivory 16px cards; actual status chips; no invented “Paid” status | `my-orders` endpoint + `MessagesOrdersClients` |
 | Client inbox cards | **Actual** CRM/website/direct threads with source, unread/needs reply, natural preview | White cards, circle initials/verified private portrait only, date | `MessagesSimpleInbox` existing source-specific data |
 | Order detail + chat | Compact pinned order card and pre-existing per-request conversation | Green own/ivory other bubbles; actual messages, original note, private media and send controls | `PracticeRequestConversation` |
@@ -33,6 +34,8 @@
 - Status colors: pending=amber, in progress=green, completed=soft neutral, declined/cancelled=grey. `remoteBooking.price` does **not** mean “paid”.
 - Keep existing user-initiated microphone, private attachments, upload safety, retry and idempotent send semantics; don't introduce external paid APIs, public buckets, duplicate conversations, or synthetic messages.
 - Search/filters must operate over actual authenticated results, with truthful loading, empty, offline, sign-in and failure states.
+- In empty My Orders, hide unnecessary search and introduction; show **exactly two free full-card links** above a compact empty note. Do not show banners for loading, errors, signed-out, client tab, order detail or existing orders. Cover widths 320, 354, 390, 430.
+- Consultation offer means a *free written review*, **not a live free call** (live 30 min remains €50). No fake consultation booking or course completion is created by following these links.
 - Existing five dock links and EN/RU/ES parity, accessible role=tab, aria-selected, focus rings, >=44px touch targets. iPhone widths 320, 354, 390, 430; no horizontal scroll / composer overlap.
 
 ## Routing + role matrix
