@@ -5,7 +5,7 @@ export type PsychologistFocus = "stress" | "relationships" | "self_worth" |
 export type PsychologistMode = "self_guided" | "practitioner_draft";
 export type PsychologistStatus = "ready" | "clinician_draft" |
   "safety_handoff" | "human_review_required" | "safety_check_required" |
-  "paused_for_review" | "needs_focus";
+  "paused_for_review" | "client_paused" | "needs_focus";
 export type PsychologistSafety = {
   status?: "clear" | "urgent" | "human_review" | "unknown";
   flags?: string[]; isMinor?: boolean;
