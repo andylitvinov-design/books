@@ -96,3 +96,23 @@ test("primary capture components render channel chooser after service selection 
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
 });
+
+
+test("Tantra Reiki browser verifies the actual five-intent compact form, consent and synthetic CRM receipt", () => {
+  const verifier = read("scripts/verify-contact-channel-chooser-browser.mjs");
+  const choice = read("components/tantra-initiation-choice.tsx");
+  assert.match(verifier, /verifyTantraCompact\(page, capture, locale, name, submissions\)/);
+  assert.match(verifier, /compactRequestIntents: options\.length/);
+  assert.match(verifier, /"free", "personal", "session", "answers", "feedback"/);
+  assert.match(verifier, /synthetic CRM acknowledgement/);
+  assert.match(verifier, /request\.contactConsent, true/);
+  assert.match(verifier, /request\.contact\.phone, "\+14165550123"/);
+  assert.match(verifier, /consentResetOnSelection: true/);
+  assert.match(verifier, /window\.open = \(\) => null/);
+  assert.match(verifier, /"Tantra Reiki has one compact chooser for five intents"/);
+  assert.doesNotMatch(verifier, /tantra-reiki\/free-initiation[^,\n]+min:5/);
+  assert.match(choice, /key=\{intent\}/);
+  assert.match(choice, /compactPhone/);
+  assert.match(choice, /options\.map\(option => <option/);
+  assert.match(verifier, /assert\.ok\(results\.length >= 30/);
+});
