@@ -141,9 +141,34 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"true");
         const activeTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
         assert.match(activeTherapyBackground,/gradient/i,"chosen therapy entry must turn green");
+        const writer=page.locator("[data-video-personal-meditation]");
+        await writer.waitFor({state:"visible",timeout:12000});
+        assert.ok(await page.locator("[data-meditation-generate]").isVisible(),
+          "meditation script action belongs to therapy mode");
+        await page.locator("[data-meditation-generate]").click();
+        const firstMeditation=await page.locator("[data-meditation-script]").inputValue();
+        const expectedScriptTitle={ru:"ПЕРСОНАЛЬНАЯ МЕДИТАЦИЯ",en:"PERSONAL MEDITATION",es:"MEDITACIÓN PERSONAL"}[locale];
+        assert.ok(firstMeditation.includes(expectedScriptTitle),"genuine localized text is generated");
+        const composerBounds=await page.evaluate(()=>{
+          const result=document.querySelector("[data-video-result]")?.getBoundingClientRect();
+          const writer=document.querySelector("[data-video-personal-meditation]")?.getBoundingClientRect();
+          const button=document.querySelector("[data-meditation-generate]")?.getBoundingClientRect();
+          return {resultBottom:result?.bottom,writerTop:writer?.top,buttonHeight:button?.height};
+        });
+        assert.ok(composerBounds.writerTop>=composerBounds.resultBottom,
+          "meditation block must be below the video's finished result");
+        assert.ok(composerBounds.buttonHeight>=44,"meditation generation needs a phone-sized touch target");
+        await page.locator("[data-meditation-accents] > summary").click();
+        await page.locator('[data-meditation-accent="clarity"]').click();
+        assert.equal(await page.locator('[data-meditation-accent="clarity"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-meditation-generate]").click();
+        assert.notEqual(await page.locator("[data-meditation-script]").inputValue(),firstMeditation,
+          "selected emphasis must change the generated script");
         await therapyButton.click();
         await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
+        assert.equal(await page.locator("[data-video-personal-meditation]").count(),0,
+          "script composer should be limited to opted-in video therapy mode");
         await page.locator("[data-video-advanced-filters] > summary").click();
         await page.locator("[data-video-advanced-aspect]").selectOption("landscape");
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
