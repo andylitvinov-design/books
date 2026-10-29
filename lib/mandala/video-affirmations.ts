@@ -11,6 +11,7 @@ export type AffirmationSettings = {
   density: AffirmationDensity;
   frequency: AffirmationFrequency;
   visibility: AffirmationVisibility[];
+  presetOverride?: string[];
 };
 
 export const defaultAffirmations: AffirmationSettings = {
@@ -23,148 +24,161 @@ export const defaultAffirmations: AffirmationSettings = {
 };
 
 export const suggestedVideoAffirmations: Record<VideoLocale, Record<VideoTheme, readonly string[]>> = {
-  en: {
-    energy: [
-      "I make space for rest and renewal",
-      "I can return to a calm rhythm",
-      "I listen to what my body needs",
-      "I have permission to take a pause",
-      "One gentle step is enough for now",
+  "en": {
+    "energy": [
+      "I feel calm",
+      "I renew my energy",
+      "I breathe with ease",
+      "I allow myself rest",
+      "Step by step"
     ],
-    money: [
-      "I notice opportunities with clarity",
-      "I value my work and my time",
-      "I can make thoughtful money choices",
-      "I move toward financial stability step by step",
-      "I am learning to ask for fair payment",
+    "money": [
+      "I value my work",
+      "I choose clarity",
+      "I welcome options",
+      "I plan with care",
+      "I request fair pay"
     ],
-    life: [
-      "I welcome the rhythm of everyday life",
-      "I can appreciate small moments",
-      "I make time for what nourishes me",
-      "I adapt gently to change",
-      "I can create space for joy",
+    "life": [
+      "I enjoy this moment",
+      "I am here now",
+      "I welcome change",
+      "I choose balance",
+      "Joy is possible"
     ],
-    health: [
-      "I care for myself with patience",
-      "I notice what helps me rest",
-      "I choose gentle supportive habits",
-      "I make room for balance and movement",
-      "I ask for support when I need it",
+    "health": [
+      "I listen to myself",
+      "I rest when needed",
+      "I care for myself",
+      "I move gently",
+      "I ask for support"
     ],
-    relationships: [
-      "I can be open while keeping my boundaries",
-      "I deserve kindness and mutual respect",
-      "I listen to myself and others",
-      "I choose honest, caring connections",
-      "I can express my needs calmly",
+    "relationships": [
+      "I respect boundaries",
+      "I welcome kindness",
+      "I choose honesty",
+      "I listen with care",
+      "I express my needs"
     ],
-    goals: [
-      "I take one meaningful step today",
-      "My direction can become clearer with practice",
-      "I can learn from each attempt",
-      "I give attention to what matters to me",
-      "I build confidence through small actions",
-    ],
+    "goals": [
+      "I see my goal",
+      "I take action",
+      "I keep moving",
+      "I focus on today",
+      "I learn and grow"
+    ]
   },
-  ru: {
-    energy: [
-      "Я могу восстанавливать силы постепенно",
-      "Я возвращаюсь к спокойному ритму",
-      "Я внимателен к потребностям своего тела",
-      "Я разрешаю себе отдыхать",
-      "Сегодня достаточно одного бережного шага",
+  "ru": {
+    "energy": [
+      "Мне спокойно",
+      "У меня есть силы",
+      "Я дышу свободно",
+      "Я выбираю отдых",
+      "Я в равновесии"
     ],
-    money: [
-      "Я замечаю новые возможности",
-      "Я ценю свой труд и своё время",
-      "Я принимаю финансовые решения осознанно",
-      "Я иду к устойчивости небольшими шагами",
-      "Я учусь просить достойную оплату за труд",
+    "money": [
+      "Я ценю свой труд",
+      "Я вижу возможности",
+      "Я выбираю осознанно",
+      "Я создаю достаток",
+      "Я действую разумно"
     ],
-    life: [
-      "Я замечаю хорошие моменты каждого дня",
-      "Я могу радоваться простым вещам",
-      "Я уделяю время тому, что наполняет меня",
-      "Я бережно принимаю перемены",
-      "Я создаю пространство для радости",
+    "life": [
+      "Я люблю жизнь",
+      "Я здесь и сейчас",
+      "Я принимаю перемены",
+      "Я выбираю радость",
+      "Я вижу хорошее"
     ],
-    health: [
-      "Я отношусь к себе терпеливо и внимательно",
-      "Я замечаю, что помогает мне отдыхать",
-      "Я выбираю бережные повседневные привычки",
-      "Я нахожу время для движения и равновесия",
-      "Я могу обращаться за поддержкой",
+    "health": [
+      "Я берегу себя",
+      "Я слышу тело",
+      "Я отдыхаю",
+      "Я выбираю заботу",
+      "Я прошу поддержку"
     ],
-    relationships: [
-      "Я открыт общению и сохраняю границы",
-      "Я достоин доброты и взаимного уважения",
-      "Я прислушиваюсь к себе и другим",
-      "Я выбираю честные и тёплые отношения",
-      "Я могу спокойно выражать свои потребности",
+    "relationships": [
+      "Я выбираю любовь",
+      "Я уважаю границы",
+      "Я принимаю заботу",
+      "Я слышу другого",
+      "Я говорю о важном"
     ],
-    goals: [
-      "Сегодня я делаю один важный шаг",
-      "Я постепенно проясняю своё направление",
-      "Каждая попытка помогает мне учиться",
-      "Я уделяю внимание тому, что мне важно",
-      "Моя уверенность растёт благодаря действиям",
-    ],
+    "goals": [
+      "Я вижу цель",
+      "Я делаю шаг",
+      "Я могу действовать",
+      "Я иду вперёд",
+      "Я выбираю главное"
+    ]
   },
-  es: {
-    energy: [
-      "Puedo recuperar fuerzas paso a paso",
-      "Vuelvo a un ritmo tranquilo",
-      "Escucho las necesidades de mi cuerpo",
+  "es": {
+    "energy": [
+      "Estoy en calma",
+      "Renuevo mi energía",
+      "Respiro con calma",
       "Me permito descansar",
-      "Hoy basta con un pequeño paso amable",
+      "Avanzo poco a poco"
     ],
-    money: [
-      "Observo nuevas oportunidades con claridad",
-      "Valoro mi trabajo y mi tiempo",
-      "Tomo decisiones económicas conscientes",
-      "Avanzo hacia la estabilidad poco a poco",
-      "Aprendo a pedir una remuneración justa",
+    "money": [
+      "Valoro mi trabajo",
+      "Elijo con claridad",
+      "Veo oportunidades",
+      "Planifico con calma",
+      "Pido un pago justo"
     ],
-    life: [
-      "Aprecio los pequeños momentos cotidianos",
-      "Puedo disfrutar de las cosas sencillas",
-      "Dedico tiempo a lo que me nutre",
-      "Me adapto al cambio con amabilidad",
-      "Creo espacio para la alegría",
+    "life": [
+      "Disfruto el presente",
+      "Estoy aquí y ahora",
+      "Acepto los cambios",
+      "Elijo la alegría",
+      "Veo lo bueno"
     ],
-    health: [
-      "Me cuido con paciencia y atención",
-      "Observo lo que me ayuda a descansar",
-      "Elijo hábitos suaves que me apoyan",
-      "Encuentro tiempo para moverme y equilibrarme",
-      "Puedo pedir ayuda cuando la necesito",
+    "health": [
+      "Me cuido",
+      "Escucho a mi cuerpo",
+      "Me permito descansar",
+      "Elijo hábitos sanos",
+      "Puedo pedir apoyo"
     ],
-    relationships: [
-      "Puedo abrirme sin perder mis límites",
-      "Merezco amabilidad y respeto mutuo",
-      "Me escucho y escucho a otras personas",
-      "Elijo relaciones honestas y afectuosas",
-      "Expreso mis necesidades con calma",
+    "relationships": [
+      "Respeto mis límites",
+      "Me abro al cariño",
+      "Elijo la honestidad",
+      "Escucho con cuidado",
+      "Expreso lo que siento"
     ],
-    goals: [
-      "Hoy doy un paso importante",
-      "Mi rumbo se aclara con la práctica",
-      "Aprendo de cada intento",
-      "Dedico atención a lo que me importa",
-      "Construyo confianza con acciones pequeñas",
-    ],
-  },
+    "goals": [
+      "Veo mi meta",
+      "Doy el primer paso",
+      "Sigo avanzando",
+      "Me centro en hoy",
+      "Aprendo y crezco"
+    ]
+  }
 };
 
+
+export const MAX_AFFIRMATION_LENGTH = 36;
+
+// Five concise personal lines; no persistence or network requests.
+export function compactCustomAffirmationInput(value: string): string {
+  return value.split(/\r?\n/).slice(0, 5)
+    .map(line => Array.from(line).slice(0, MAX_AFFIRMATION_LENGTH).join(""))
+    .join("\n");
+}
+
 function cleanLine(text: string): string {
-  return Array.from(text.replace(/\s+/g, " ").replace(/[<>]/g, "").trim()).slice(0, 90).join("");
+  return Array.from(text.replace(/\s+/g, " ").replace(/[<>]/g, "").trim())
+    .slice(0, MAX_AFFIRMATION_LENGTH).join("");
 }
 
 export function linesForVideoAffirmations(
   locale: VideoLocale, theme: VideoTheme, settings: AffirmationSettings,
 ): string[] {
-  const options = suggestedVideoAffirmations[locale][theme];
+  const options = Array.isArray(settings.presetOverride) && settings.presetOverride.length === 5 &&
+    settings.presetOverride.every(text => typeof text === "string" && text.trim().length && text.length <= MAX_AFFIRMATION_LENGTH && !/[<>]/.test(text))
+    ? settings.presetOverride : suggestedVideoAffirmations[locale][theme];
   const selected = [...new Set(settings.selected)]
     .filter(index => Number.isInteger(index) && index >= 0 && index < options.length)
     .slice(0, 5)
@@ -231,4 +245,126 @@ export function paintVideoAffirmations(
   if (settings.visibility.includes("frame") && phase >= 1 && phase < 1 + 1 / 25) {
     write(lines[baseIndex], height * 0.52, Math.max(22, size * 0.042), 0.7, true);
   }
+}
+
+
+// Owner-approved editing topics are not clinical recommendations or outcomes.
+// Keep phrases non-clinical, optional, revisable and local to the editor.
+export type VideoAffirmationGoal =
+  "recovery" | "rhythm" | "strength" | "value" | "planning" | "stability" |
+  "connection" | "boundaries" | "dialogue" | "clarity" | "progress" | "meaning";
+type GoalCopy = { id: VideoAffirmationGoal; label: string; sentence: string };
+export const affirmationGoalCatalog: Record<VideoLocale, GoalCopy[]> = {
+  en: [
+    {id:"recovery",label:"Rest & recovery",sentence:"I recharge gently"},
+    {id:"rhythm",label:"Calmer rhythm",sentence:"I slow down"},
+    {id:"strength",label:"My energy",sentence:"I support my energy"},
+    {id:"value",label:"Value my work",sentence:"My work matters"},
+    {id:"planning",label:"Money planning",sentence:"I plan my finances"},
+    {id:"stability",label:"Financial choices",sentence:"I choose wisely"},
+    {id:"connection",label:"Warm connection",sentence:"I welcome connection"},
+    {id:"boundaries",label:"My boundaries",sentence:"I respect my limits"},
+    {id:"dialogue",label:"Open dialogue",sentence:"I speak honestly"},
+    {id:"clarity",label:"My direction",sentence:"I see my priorities"},
+    {id:"progress",label:"Steady progress",sentence:"I move forward"},
+    {id:"meaning",label:"Meaning & purpose",sentence:"I follow my values"},
+  ],
+  ru: [
+    {id:"recovery",label:"Отдых и восстановление",sentence:"Я восстанавливаю силы"},
+    {id:"rhythm",label:"Спокойный ритм",sentence:"Я замедляюсь"},
+    {id:"strength",label:"Моя энергия",sentence:"Я берегу энергию"},
+    {id:"value",label:"Ценность моего труда",sentence:"Мой труд важен"},
+    {id:"planning",label:"Планирование денег",sentence:"Я планирую бюджет"},
+    {id:"stability",label:"Финансовые решения",sentence:"Я выбираю разумно"},
+    {id:"connection",label:"Тёплые отношения",sentence:"Я выбираю близость"},
+    {id:"boundaries",label:"Личные границы",sentence:"Я сохраняю границы"},
+    {id:"dialogue",label:"Открытый диалог",sentence:"Я говорю искренне"},
+    {id:"clarity",label:"Ясность направления",sentence:"Я вижу главное"},
+    {id:"progress",label:"Движение к цели",sentence:"Я продвигаюсь вперёд"},
+    {id:"meaning",label:"Смысл и ценности",sentence:"Я следую ценностям"},
+  ],
+  es: [
+    {id:"recovery",label:"Descanso y recuperación",sentence:"Recupero mis fuerzas"},
+    {id:"rhythm",label:"Ritmo tranquilo",sentence:"Bajo el ritmo"},
+    {id:"strength",label:"Mi energía",sentence:"Cuido mi energía"},
+    {id:"value",label:"Valorar mi trabajo",sentence:"Mi trabajo importa"},
+    {id:"planning",label:"Planificación económica",sentence:"Planifico mis finanzas"},
+    {id:"stability",label:"Decisiones financieras",sentence:"Elijo con cuidado"},
+    {id:"connection",label:"Conexión cálida",sentence:"Me abro al encuentro"},
+    {id:"boundaries",label:"Mis límites",sentence:"Respeto mis límites"},
+    {id:"dialogue",label:"Diálogo sincero",sentence:"Hablo con sinceridad"},
+    {id:"clarity",label:"Claridad de rumbo",sentence:"Veo mis prioridades"},
+    {id:"progress",label:"Avanzar con calma",sentence:"Sigo avanzando"},
+    {id:"meaning",label:"Sentido y valores",sentence:"Sigo mis valores"},
+  ],
+};
+
+const measuredAxisCopy: Record<VideoLocale, Record<string, string>> = {
+  "en": {
+    "stress": "I can slow down",
+    "anxiety": "I breathe calmly",
+    "sleep": "I welcome rest",
+    "energy": "I notice my energy",
+    "embodiment": "I hear my body",
+    "mood": "I accept my feelings",
+    "emotional_regulation": "I pause first",
+    "resource": "I find support",
+    "self_support": "I am kind to myself",
+    "clarity": "I seek clarity",
+    "focus": "I focus on one task",
+    "functioning": "I take small steps",
+    "meaning": "I choose what matters",
+    "relationships": "I connect gently",
+    "boundaries": "I keep my boundaries"
+  },
+  "ru": {
+    "stress": "Я снижаю темп",
+    "anxiety": "Я дышу спокойно",
+    "sleep": "Я выбираю отдых",
+    "energy": "Я берегу силы",
+    "embodiment": "Я слышу тело",
+    "mood": "Я принимаю чувства",
+    "emotional_regulation": "Я делаю паузу",
+    "resource": "Я нахожу поддержку",
+    "self_support": "Я берегу себя",
+    "clarity": "Я ищу ясность",
+    "focus": "Я держу фокус",
+    "functioning": "Я действую по шагам",
+    "meaning": "Я выбираю важное",
+    "relationships": "Я выбираю контакт",
+    "boundaries": "Я уважаю границы"
+  },
+  "es": {
+    "stress": "Puedo bajar el ritmo",
+    "anxiety": "Respiro con calma",
+    "sleep": "Elijo descansar",
+    "energy": "Cuido mi energía",
+    "embodiment": "Escucho a mi cuerpo",
+    "mood": "Acepto mis emociones",
+    "emotional_regulation": "Hago una pausa",
+    "resource": "Encuentro apoyo",
+    "self_support": "Me trato con cariño",
+    "clarity": "Busco claridad",
+    "focus": "Me concentro",
+    "functioning": "Doy pequeños pasos",
+    "meaning": "Elijo lo importante",
+    "relationships": "Conecto con calma",
+    "boundaries": "Respeto mis límites"
+  }
+};
+
+export function personalizedVideoAffirmations(
+  locale: VideoLocale, theme: VideoTheme, measuredAxes: readonly string[] = [],
+  priorities: readonly VideoAffirmationGoal[] = [],
+): string[] {
+  const catalog = affirmationGoalCatalog[locale];
+  const chosen = [...new Set(priorities)].slice(0,3).flatMap(id => catalog.filter(item => item.id === id));
+  const axes = [...new Set(measuredAxes)].filter(axis => Object.hasOwn(measuredAxisCopy[locale],axis)).slice(0,3);
+  const phrases = [
+    ...chosen.map(item => item.sentence),
+    ...axes.map(axis => measuredAxisCopy[locale][axis]),
+    ...suggestedVideoAffirmations[locale][theme],
+    ...suggestedVideoAffirmations[locale].goals,
+  ];
+  return [...new Set(phrases.map(cleanLine).filter(Boolean))].slice(0,5);
 }
