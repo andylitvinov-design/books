@@ -65,7 +65,8 @@ test("350–430px consultation labels fit; Goals→Tests opens one consistent ta
     'consultation: "Sesión"']) assert.ok(mobile.includes('optionsCompact: {') && mobile.includes(label));
   assert.match(mobile, /<button type="button" className=\{styles\.testsShortcut\} data-support-tool="tests"\s+aria-pressed=\{choice === "tests"\} aria-controls="support-tests-panel"/);
   assert.match(mobile, /onClick=\{\(\) => changeChoice\("tests"\)\}/);
-  assert.doesNotMatch(mobile, /<Link[^\n]*data-support-tool="tests"/);\n  assert.equal((mobile.match(/data-support-tool="tests"/g) || []).length, 1, "single accessible Tests shortcut");
+  assert.doesNotMatch(mobile, /<Link[^\n]*data-support-tool="tests"/);
+  assert.equal((mobile.match(/data-support-tool="tests"/g) || []).length, 1, "single accessible Tests shortcut");
   assert.ok(mobile.includes('data-support-open-tests'));
   assert.ok(mobile.includes('data-support-tests-personality'));
 });
