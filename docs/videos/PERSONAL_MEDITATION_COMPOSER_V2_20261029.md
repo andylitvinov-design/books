@@ -10,11 +10,11 @@ Canonical route: `/{en,ru,es}/holistic-support/mandala`, select **Video therapy*
 
 | Filter | Choices / input | Observable effect in generated script or playback |
 |---|---|---|
-| Current video topic | Energy, Money, Relationships, Goals, Meaning, Wellbeing | Topic-specific resource-focused imagery and action, no medical promises |
+| Current video topic with optional separate meditation topic | Energy, Money, Relationships, Goals, Meaning, Wellbeing; default inherit video topic | The independent meditation choice changes thematic prose, not the visual video settings |
 | Existing personal goal and difficulty | From the **user-entered**, in-memory guided-course focus | Safely interpreted in narrative; never load raw protected test results without opt-in, never transmit externally |
 | Current video composition | Scene, caption, movement and brightness | Selected imagery and narration environment; no imaginary video render |
 | Existing affirmations | Only when independently enabled | Up to 3 optional, user-editable affirmations; no involuntary/hidden speech |
-| Method | **6**: guided imagery, grounding, gentle body awareness, self-kindness, mindful noticing, practice a small future step | Each builds a different, substantial sequence of narrated paragraphs and progress |
+| When to use | Any time, morning, evening, before a conversation | Distinct context-specific opening guidance |\n| Method | **6**: guided imagery, grounding, gentle body awareness, self-kindness, mindful noticing, practice a small future step | Each builds a different, substantial sequence of narrated paragraphs and progress |
 | Length | 3, 5, 8, 12 min | Different number of meaningful guided stages **and** calibrated timed silence; a separate word/voice-based runtime estimate remains visible |
 | Chosen accents | up to 3 of 8: calm, confidence, clarity, boundaries, acceptance, small steps, rest, gratitude | Accent-specific paragraphs; if none chosen, bounded non-clinical word matching of explicit local wishes gives suggestions |
 | Environment | Current video, garden, stream, light, familiar room, forest, sea coast, mountains | Each imagery choice appears in body, not metadata only |
