@@ -51,6 +51,24 @@ test("user wish influences the curated scene order without entering any provider
   malicious.shots[0].providerPrompt=prefix;
   assert.throws(()=>safeCinematicPrompt(malicious,1),/invalid_cinematic_shot/);
 });
+test("detailed client requests choose a matching APPROVED scene, not just the four defaults",()=>{
+  const cases=[
+    {theme:"money",locale:"ru",wish:"Хочу достойную оплату за мой труд",scene:"money-magnet"},
+    {theme:"money",locale:"en",wish:"I need more customers and partners",scene:"partners"},
+    {theme:"energy",locale:"ru",wish:"Мне нужен отдых и расслабление",scene:"light-waterfall"},
+    {theme:"energy",locale:"en",wish:"Breathe freely in the mountain air",scene:"mountain-air"},
+    {theme:"life",locale:"en",wish:"Flowers blooming in spring",scene:"wildflower-dance"},
+    {theme:"health",locale:"es",wish:"Necesito descanso y relax",scene:"gentle-falls"},
+  ];
+  for(const {theme,locale,wish,scene} of cases){
+    const p=buildCinematicStoryboard({theme,locale,wish,aspect:"landscape"});
+    assert.equal(p.shots[2].sceneId,scene,theme+" must be responsive to user words");
+    assert.equal(new Set(p.shots.map(s=>s.sceneId)).size,4,"all four shots stay distinct");
+    assert.ok(p.shots.every(s=>s.providerPrompt===safeCinematicPrompt(p,s.number)));
+    assert.ok(!JSON.stringify(p).includes(wish),"raw personal prompt never enters exported storyboard");
+  }
+});
+
 test("visual avoid rules do not leak private text or force an untrusted prompt",()=>{
   const p=buildCinematicStoryboard({theme:"health",locale:"en",wish:prefix,
     avoid:"water, ocean, stream "+prefix});
