@@ -18,6 +18,7 @@ type Technique = "imagery"|"grounding"|"body-awareness"|"self-kindness"|"mindful
 type Attention = "mixed"|"visual"|"sound"|"body"|"external";
 type Depth = "light"|"reflective";
 type Ending = "return"|"reflection"|"small-step";
+type Moment = "any"|"morning"|"evening"|"before";
 type Props = {
   locale:PublicLocale;theme:VideoTheme;wish:string;scene:string;sound:string;caption:string;
   audioSrc?:string|null;
@@ -33,6 +34,7 @@ const copy = {
     customize:"Additional meditation accents",selected:"Select up to 3 (optional)",extra:"One more personal emphasis · optional",
     placeholder:"For example: more inner steadiness before an important conversation",
     image:"Imagery",images:{video:"Current video scene",garden:"Garden",water:"Water",light:"Soft light",home:"Safe room",forest:"Forest",coast:"Coast",mountain:"Mountains"},
+    meditationTheme:"Meditation topic",sameTheme:"Same as video",moment:"When to use it",moments:{any:"Any time",morning:"Morning",evening:"Evening",before:"Before a conversation"},
     method:"Practice method",methods:{imagery:"Guided imagery",grounding:"Grounding", "body-awareness":"Gentle body awareness", "self-kindness":"Self-kindness", "mindful-noticing":"Mindful noticing", "future-step":"Rehearse a small step"},
     attention:"Focus of attention",attentions:{mixed:"A little of everything",visual:"Visual images",sound:"Sounds",body:"Physical support",external:"Eyes-open surroundings"},
     depth:"Depth",depths:{light:"Light and simple",reflective:"Gentle reflection"},
@@ -57,6 +59,7 @@ const copy = {
     customize:"Дополнительные акценты медитации",selected:"Выберите до 3 (необязательно)",extra:"Ещё один личный акцент · необязательно",
     placeholder:"Например: больше внутренней опоры перед важным разговором",
     image:"Образ",images:{video:"Сюжет текущего видео",garden:"Сад",water:"Вода",light:"Мягкий свет",home:"Уютная комната",forest:"Лес",coast:"Морской берег",mountain:"Горы"},
+    meditationTheme:"Тема медитации",sameTheme:"Как у видео",moment:"Когда использовать",moments:{any:"Когда удобно",morning:"Утром",evening:"Вечером",before:"Перед разговором"},
     method:"Метод медитации",methods:{imagery:"Образная практика",grounding:"Заземление","body-awareness":"Бережно к телу","self-kindness":"Самоподдержка","mindful-noticing":"Наблюдение","future-step":"Репетиция шага"},
     attention:"Куда направить внимание",attentions:{mixed:"Разные ощущения",visual:"Зрительные образы",sound:"Звуки",body:"Телесная опора",external:"Внешний мир · глаза открыты"},
     depth:"Глубина",depths:{light:"Легко и просто",reflective:"Мягкая рефлексия"},
@@ -81,6 +84,7 @@ const copy = {
     customize:"Acentos adicionales",selected:"Elige hasta 3 (opcional)",extra:"Otro matiz personal · opcional",
     placeholder:"Por ejemplo: más tranquilidad antes de una conversación importante",
     image:"Imagen",images:{video:"Escena actual",garden:"Jardín",water:"Agua",light:"Luz suave",home:"Habitación acogedora",forest:"Bosque",coast:"Costa",mountain:"Montañas"},
+    meditationTheme:"Tema de la meditación",sameTheme:"Igual que el vídeo",moment:"Cuándo usarla",moments:{any:"Cuando quieras",morning:"Por la mañana",evening:"Por la noche",before:"Antes de una conversación"},
     method:"Método",methods:{imagery:"Imágenes guiadas",grounding:"Arraigo","body-awareness":"Conciencia corporal suave","self-kindness":"Autocompasión","mindful-noticing":"Observación consciente","future-step":"Ensayar un pequeño paso"},
     attention:"Canal de atención",attentions:{mixed:"Varios sentidos",visual:"Imágenes",sound:"Sonidos",body:"Apoyo físico",external:"Entorno con ojos abiertos"},
     depth:"Profundidad",depths:{light:"Ligera",reflective:"Reflexión suave"},
@@ -114,6 +118,8 @@ export function MandalaPersonalMeditation({
   const [tone,setTone]=useState<ToneKey>("gentle");
   const [length,setLength]=useState<LengthKey>(5);
   const [technique,setTechnique]=useState<Technique>("imagery");
+  const [meditationTheme,setMeditationTheme]=useState<VideoTheme|"inherit">("inherit");
+  const [moment,setMoment]=useState<Moment>("any");
   const [attention,setAttention]=useState<Attention>("mixed");
   const [depth,setDepth]=useState<Depth>("light");
   const [ending,setEnding]=useState<Ending>("return");
@@ -129,8 +135,9 @@ export function MandalaPersonalMeditation({
   const [script,setScript]=useState("");
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
-  const signature=JSON.stringify([locale,theme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-    focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra,technique,attention,depth,ending]);
+  const actualTheme=meditationTheme==="inherit"?theme:meditationTheme;
+  const signature=JSON.stringify([locale,theme,meditationTheme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
+    focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra,technique,attention,depth,ending,moment]);
   const stale=Boolean(script&&generatedFor!==signature);
   const chosenVoice=voices.find(item=>item.name===voiceName)||voices[0];
   const estimatedSeconds=script?meditationNarrationEstimate(script,rate):0;
@@ -211,8 +218,8 @@ export function MandalaPersonalMeditation({
     if(disabled)return;
     stopNarration();
     const next=buildPersonalMeditationScript({
-      locale,theme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending
+      locale,theme:actualTheme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
+      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment
     });
     setScript(next);setGeneratedFor(signature);setNotice(t.creating);
   };
@@ -242,7 +249,7 @@ export function MandalaPersonalMeditation({
       <div className={css.context} data-meditation-context aria-label={t.filters}>
         <small>{t.filters}</small>
         <div className={css.chips}>
-          <span>{t.theme}: {themeLabels[locale][theme]}</span>
+          <span>{t.theme}: {themeLabels[locale][actualTheme]}</span>
           <span>{t.scene}: {scene}</span>
           <span>{t.sound}: {sound||t.quiet}</span>
           <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
@@ -276,6 +283,21 @@ export function MandalaPersonalMeditation({
             </button>)}
           </div>
           <div className={css.selectors}>
+            <label>{t.meditationTheme}
+              <select data-meditation-topic value={meditationTheme} disabled={disabled}
+                onChange={event=>setMeditationTheme(event.target.value as VideoTheme|"inherit")}>
+                <option value="inherit">{t.sameTheme}</option>
+                {(Object.keys(themeLabels[locale]) as VideoTheme[]).map(id=>
+                  <option value={id} key={id}>{themeLabels[locale][id]}</option>)}
+              </select>
+            </label>
+            <label>{t.moment}
+              <select data-meditation-moment value={moment} disabled={disabled}
+                onChange={event=>setMoment(event.target.value as Moment)}>
+                {(Object.keys(t.moments) as Moment[]).map(id=>
+                  <option value={id} key={id}>{t.moments[id]}</option>)}
+              </select>
+            </label>
             <label>{t.image}
               <select data-meditation-imagery value={image} disabled={disabled}
                 onChange={event=>setImage(event.target.value as ImageKey)}>
