@@ -112,6 +112,6 @@ test('Live audio status saves function and provider calls while tabs are hidden'
   assert.match(client, /setInterval\(\(\) => \{ void refresh\(\) \}, 60000\)/)
   assert.match(client, /document\.addEventListener\('visibilitychange', onVisibility\)/)
   assert.match(client, /document\.removeEventListener\('visibilitychange', onVisibility\)/)
-  assert.match(client, /if \(cancelled\)/)
+  assert.match(client, /if \(cancelled \|\| document\.visibilityState === 'hidden'\) return/)
   assert.doesNotMatch(client, /setInterval\(refresh, 15000\)/)
 })
