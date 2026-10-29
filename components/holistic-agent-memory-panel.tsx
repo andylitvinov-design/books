@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import { approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memory-policy.mjs";
 import styles from "./holistic-agent-memory-panel.module.css";
@@ -92,7 +93,7 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
       <header><strong>{copy.title}</strong><button onClick={()=>setOpen(false)} type="button">{copy.close}</button></header>
       <p className={styles.note}>{copy.privacy}</p>
       {loading?<p role="status">{copy.load}</p>:
-        status==="signed"?<p>{copy.signed}</p>:
+        status==="signed"?<p>{copy.signed} <Link href={"/"+locale+"/client"}>{locale==="ru"?"Войти":locale==="es"?"Iniciar sesión":"Sign in"}</Link></p>:
         status==="unavailable"?<p role="status">{copy.unavailable}</p>:
         status==="ready"?<>
           <label className={styles.check}><input type="checkbox" checked={consent}
