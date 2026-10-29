@@ -111,6 +111,11 @@ jobs:
           for i in $(seq 1 120); do
             if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            if (( i == 120 )); then
+              echo "Timed out waiting for the local Next server." >&2
+              tail -80 /tmp/hh-support-mock-next.log
+              exit 1
+            fi
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs
