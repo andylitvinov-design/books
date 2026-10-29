@@ -58,7 +58,8 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return eligible.slice(0, 4)'));
+  assert.ok(client.includes('const relevantVideos = choice === "pump" && program !== "all" ? catalogVideos : catalogVideos.slice(0, 4)'),
+    'four featured source-backed recordings are distinct from the full filtered feed');
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));

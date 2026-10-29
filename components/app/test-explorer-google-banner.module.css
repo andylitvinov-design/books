@@ -1,0 +1,27 @@
+.banner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  width: min(1120px,calc(100% - 18px)); margin: 12px auto 9px; padding: 13px 16px;
+  border: 1px solid #b9dbc6; border-radius: 17px; color: #244734;
+  background: linear-gradient(120deg,#edf8ee,#fff9e9); box-shadow: 0 5px 15px #17482e17; }
+.content { display: grid; flex: 1 1 340px; gap: 5px; min-width: 0; }
+.content > strong { font-size: 18px; line-height: 1.25; }
+.content p { margin: 0; color: #4f6857; font-size: 14px; line-height: 1.45; }
+.content small { display: inline-flex; align-items: center; gap: 6px; color: #657569; font-size: 12px; line-height: 1.32; }
+.content small svg { flex: none; color: #32876a; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; flex: 0 1 300px; }
+.google { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px;
+  border: 0; border-radius: 13px; padding: 9px 16px; background: #0b885f; color: #fff;
+  text-decoration: none; font-size: 15px; font-weight: 800; }
+.google:hover { background: #056b4d; }
+.google:disabled { opacity: .74; cursor: default; }
+.google:focus-visible { outline: 3px solid #b78728; outline-offset: 3px; }
+.member { display: inline-flex; align-items: center; gap: 6px; color: #087a55; font-size: 13px; font-weight: 800; }
+.hint { color: #4b715d; font-size: 12px; line-height: 1.3; }
+.error { width: 100%; margin: 4px 0; font-size: 12px; color: #a52b30; }
+@media (max-width: 430px) {
+  .banner { margin: 6px auto; padding: 10px 12px; border-radius: 14px; }
+  .content { flex-basis: 100%; }
+  .content > strong { font-size: 17px; }
+  .content p { font-size: 13px; }
+  .actions { flex-basis: 100%; }
+  .google { width: 100%; }
+}

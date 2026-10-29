@@ -26,6 +26,18 @@ function andreyMasterProfile(locale: "en" | "ru" | "es") {
 // These four English originals are already published in the Academy. The
 // current Support page curates only Sun Flight; the alternate screen presents
 // the other three existing, verified recordings without rendering new media.
+const russianMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Авторская визуализация полёта к Солнцу для внимания и воображения.",
+  "tantra-reiki": "Практика Тантра Рейки с Андреем: внимание, присутствие и контакт.",
+  "reiki-yggdrasil": "Знакомство с образом Древа миров в авторской практике Рейки Иггдрасиль.",
+  "kundalini-reiki": "Авторская медитация Кундалини Рейки для знакомства с практикой.",
+};
+const spanishMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Visualización guiada con la imagen del sol para explorar la atención y la imaginación.",
+  "tantra-reiki": "Práctica original de Tantra Reiki guiada por Andrey, con audio en inglés.",
+  "reiki-yggdrasil": "Introducción guiada a Reiki Yggdrasil a través de la grabación original.",
+  "kundalini-reiki": "Meditación guiada original en inglés sobre Kundalini Reiki.",
+};
 const englishThemes: Record<string, MeditationTopic[]> = {
   "flight-to-sun": ["business", "love", "energy", "health"],
   "tantra-reiki": ["love", "energy"],
@@ -159,6 +171,8 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
     .map((video): SupportMobileVideo => ({
       id: video.youtubeId!,
       title: video.title,
+      description: locale === "ru" ? russianMeditationDescriptions[video.key]
+        : locale === "es" ? spanishMeditationDescriptions[video.key] : video.description,
       topics: englishThemes[video.key] ?? ["energy"],
       program: video.key === "flight-to-sun" ? "sun" : "reiki",
       author: "andrey",

@@ -74,6 +74,56 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[aria-labelledby="mobile-assessment-title"] [data-support-detailed-analysis]').count(), 0,
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
+          // Same six colorful categories as Talismans, positioned above the
+          // original video, with actual client-side filtering (no page change).
+          const meditationCategories = root.locator('[data-support-meditation-categories]');
+          assert.equal(await meditationCategories.count(), 1, label + " category switcher");
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category]').count(), 6,
+            label + " six original-video categories");
+          const categoryGeometry = await page.evaluate(() => {
+            const row = document.querySelector('[data-support-meditation-category-switcher]');
+            const hero = document.querySelector('[data-support-player]');
+            return {rowBottom: row?.getBoundingClientRect().bottom,
+              heroTop: hero?.getBoundingClientRect().top,
+              pageWidth: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth};
+          });
+          assert.ok(categoryGeometry.rowBottom <= categoryGeometry.heroTop + 2,
+            label + " category menu must be ABOVE the hero " + JSON.stringify(categoryGeometry));
+          assert.ok(categoryGeometry.scrollWidth <= categoryGeometry.pageWidth + 3,
+            label + " category menu does not add page overflow");
+          for (const category of ["money", "meaning", "energy"]) {
+            const button = meditationCategories.locator('[data-support-meditation-category="' + category + '"]');
+            await button.click();
+            assert.equal(await button.getAttribute("aria-pressed"), "true",
+              label + " category selection " + category);
+            const shown = await root.locator('[data-support-video]').count();
+            assert.ok(shown >= 1 && shown <= 4, label + " filtered real recordings " + category + " = " + shown);
+            assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+              label + " selecting category must not auto-play");
+          }
+          assert.equal(await root.locator('[data-support-video]').count(), 4,
+            label + " back to Energy restores four original recordings");
+
+          // Below the four featured thumbnails: RU includes 7 verified Russian
+          // originals PLUS the same 4 reviewed English originals. EN/ES have 4.
+          // Do not accidentally hide the English sources in the Russian locale.
+          const feed = root.locator('[data-support-meditation-feed]');
+          assert.equal(await feed.count(), 1, label + " vertical meditation feed exists");
+          const feedItems = feed.locator('[data-support-meditation-feed-item]');
+          assert.equal(await feedItems.count(), locale === "ru" ? 11 : 4,
+            label + " complete source-backed list instead of the four featured items");
+          const feedText = await feedItems.last().locator('[class*="videoFeedDescription"]').innerText();
+          assert.ok(feedText.trim().length > 25, label + " relevant readable description beside poster");
+          const feedFits = await feedItems.evaluateAll(items => items.every(item => {
+            const r = item.getBoundingClientRect();
+            const poster = item.querySelector('img');
+            const description = item.querySelector('[class*="videoFeedDescription"]');
+            return r.left >= -2 && r.right <= document.documentElement.clientWidth + 2 &&
+              poster && description && poster.getBoundingClientRect().right < description.getBoundingClientRect().left;
+          }));
+          assert.ok(feedFits, label + " every video keeps image left and description right at " + width + "px");
+
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
           // These two locally bundled original-mock visuals must actually load.
           await page.waitForFunction(() => {
@@ -156,6 +206,21 @@ for (const browserType of [chromium, webkit]) {
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
+          // Verify the full-feed selection only AFTER capturing the original
+          // hero and four-card screenshot, so visual QA stays representative.
+          const feedLast = feedItems.last();
+          const feedLastId = await feedLast.getAttribute('data-support-meditation-feed-item');
+          await feedLast.click();
+          await page.waitForFunction(videoId =>
+            document.querySelector('[data-support-player]')?.getAttribute('data-selected-video') === videoId,
+          feedLastId, {timeout: 8000});
+          assert.equal(await feedLast.getAttribute('aria-pressed'), "true",
+            label + " selecting a feed recording updates the original hero");
+          assert.equal(await root.locator('[data-support-player] iframe').count(), 0,
+            label + " feed selection does not autoplay a provider iframe");
+          assert.equal(await root.locator('[data-support-video]').count(), 4,
+            label + " the original four featured thumbnails remain unchanged");
+
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
           await current.focus();
@@ -178,6 +243,18 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
+          // The parent scale may have hydrated while this nested goal editor
+          // is still static SSR HTML on slow iPhone WebKit. Check real React
+          // onClick props, not a synthetic flag, before user interactions.
+          await page.waitForFunction(() => {
+            const controls=[document.querySelector('[data-support-goal-next]'),
+              document.querySelector('[data-goal-sector="money"]')];
+            return controls.every(node => {
+              if (!node) return false;
+              const key=Object.keys(node).find(name => name.startsWith('__reactProps'));
+              return Boolean(key && typeof node[key]?.onClick === 'function');
+            });
+          },null,{timeout:30000});
           // Regression for real iPhone screenshot: heading must not sit behind
           // the iOS status bar after the programmatic scroll to this panel.
           await page.waitForFunction(() => {
@@ -266,7 +343,25 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-support-goal-next]').click();
           // WebKit can resolve a click before React commits accepted/next state.
           // Wait for actual acceptance and navigation; never bypass either gate.
-          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          try {
+            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          } catch (error) {
+            // Preserve exact failed state instead of masking a real WebKit
+            // Save + Next error with retries, a fixture override or fake badges.
+            const state=await filter.evaluate(element=>({
+              active:[...element.querySelectorAll('[data-goal-sector]')].map(btn=>({
+                name:btn.dataset.goalSector,pressed:btn.getAttribute('aria-pressed'),
+                accepted:Boolean(btn.querySelector('[data-goal-accepted]'))})),
+              metrics:[...element.querySelectorAll('[data-goal-metric]')].map(input=>({
+                field:input.getAttribute('data-goal-metric'),
+                part:input.getAttribute('data-metric-field'),value:input.value})),
+              moneyScore:document.querySelector('[data-support-scale="money"] input')?.value,
+              currentScore:element.querySelector('[data-support-goal-checkin-input]')?.value,
+              action:element.querySelector('[data-support-goal-next]')?.textContent?.trim(),
+              focus:document.activeElement?.getAttribute('data-metric-field'),
+            }));
+            throw new Error(label+' Money Save + Next did not produce accepted badge: '+JSON.stringify(state)+'; '+String(error));
+          }
           await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
@@ -429,7 +524,8 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="tests"]').click();
           const testsFromGoals=root.locator('[data-support-tests-panel]');
           await testsFromGoals.waitFor({state:"visible",timeout:8000});
-          assert.equal(await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href'),
+          const testExplorerHref=await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href');
+          assert.equal(new URL(testExplorerHref,'http://holistichouse.local').pathname,
             '/'+locale+'/client/tests',label+" free Test Explorer");
           assert.equal(await testsFromGoals.locator('[data-support-tests-personality]').getAttribute('href'),
             '/'+locale+'/personality-profiles',label+" existing profile builder");
@@ -899,8 +995,20 @@ for (const browserType of [chromium, webkit]) {
             label+" tests hero has a real CTA");
           assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
             label+" Tests do not mix with a consultation/CRM booking");
-          assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
-            '/'+locale+'/client/tests',label+" actual free Test Explorer");
+          // The Test Explorer remains the same existing free route. After
+          // accepted goals the optional `focus` query is intentionally ranked
+          // from allowlisted editorial facets, not an invented account score.
+          const testsHref=await testsPanel.locator('[data-support-open-tests]').getAttribute('href');
+          const testsUrl=new URL(testsHref,"https://holistichouse.vercel.app");
+          assert.equal(testsUrl.pathname,'/'+locale+'/client/tests',
+            label+" actual free Test Explorer");
+          assert.deepEqual([...testsUrl.searchParams.keys()].filter(key=>key!=="focus"),[],
+            label+" no private or unknown fields in Test Explorer URL");
+          const facets=(testsUrl.searchParams.get('focus')||'').split(',').filter(Boolean);
+          const allowed=new Set(["body","resources","clarity","function",
+            "relationships","intimacy","meaning","health","stress","sleep","attention"]);
+          assert.ok(facets.length<=4&&facets.every(facet=>allowed.has(facet)),
+            label+" only reviewed editorial topics, never raw scores/answers: "+testsHref);
           if(width===390) await page.screenshot({
             path:output+"/"+browserType.name()+"-"+locale+"-tests-390.png",fullPage:true});
           const testOverflow=await page.evaluate(() =>

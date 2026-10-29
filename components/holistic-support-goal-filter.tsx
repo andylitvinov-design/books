@@ -286,8 +286,17 @@ export function HolisticSupportGoalFilter({
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
-  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id] &&
-    accepted[id]?.checkin === scores[goalSectorCheckinKey[id]]);
+  const isAccepted = (id: GoalSector) => {
+    // Keep edited, unsaved categories unaccepted. WebKit may dispatch the
+    // previous number field's blur/change AFTER an atomic Save + Next and mark
+    // the now-inactive sector dirty again. If its saved in-page draft is
+    // byte-for-byte the accepted snapshot, this is not a new unsaved edit.
+    const snapshot = savedSectors[id] ?? accepted[id];
+    const savedInactiveDraft = id !== sector && Boolean(dirty[id]) &&
+      drafts[id] !== undefined && JSON.stringify(drafts[id]) === JSON.stringify(snapshot);
+    return Boolean(snapshot && (!dirty[id] || savedInactiveDraft) &&
+      snapshot.checkin === scores[goalSectorCheckinKey[id]]);
+  };
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
@@ -346,20 +355,30 @@ export function HolisticSupportGoalFilter({
     onSave(sector, snapshot); // no API, session storage, or analytics
   }
   function nextSector() {
-    // Advance is an explicit acceptance: commit the current snapshot BEFORE
-    // switching. Works even when the visitor never clicked the separate Save.
-    // React batches Save and Next; commit the accepted snapshot before the
-    // next sector is mounted, so Safari/WebKit never loses the checkmark.
-    // Only a deliberate click invokes this synchronous UI transition.
-    flushSync(() => {
-      saveCurrent();
-    });
+    // Save and navigate together: splitting these into a synchronous Save
+    // followed by a second render can leave WebKit with a stale Accepted
+    // badge on narrow phones after parent onSave causes a rerender.
+    const snapshot = snapshotCurrent();
     const index = sectorOrder.findIndex(item => item.id === sector);
-    changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
+    const nextId = sectorOrder[(index + 1) % sectorOrder.length].id;
+    const next = drafts[nextId] ?? accepted[nextId];
+    flushSync(() => {
+      setDrafts(previous => ({ ...previous, [sector]: snapshot }));
+      setAccepted(previous => ({ ...previous, [sector]: snapshot }));
+      setDirty(previous => ({ ...previous, [sector]: false }));
+      onSave(sector, snapshot); // still local-only, never silently persisted
+      setSector(nextId);
+      setConcerns(next?.concerns ?? []);
+      setTasks(next?.tasks ?? []);
+      setRatings(next?.ratings ?? {});
+      setAmounts(next?.amounts ?? {});
+      setCurrency(next?.currency ?? "CAD");
+    });
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto" : "smooth", block: "start" }));
   }
+
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const snapshot = snapshotCurrent();
@@ -495,11 +514,16 @@ export function HolisticSupportGoalFilter({
           </section>
         </div>
       </div>
+      {/* Prevent blur from replacing a numeric-input node between mousedown and
+          native click on WebKit. Input events have already updated React state.
+          Keyboard and assistive click activation stay native and unchanged. */}
       <footer className={styles.actions} data-support-goal-actions>
         <div className={styles.categoryActions} data-support-goal-category-actions>
           <button type="button" className={styles.save} data-support-goal-save
+            onMouseDown={event => event.preventDefault()}
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
+            onMouseDown={event => event.preventDefault()}
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
         <fieldset className={styles.formatFieldset} data-support-goal-formats>

@@ -1,0 +1,89 @@
+name: HH Quest Validation
+on:
+  # Only a PR build for feature branches; never trigger duplicate push + PR jobs.
+  # After merge, verify the production commit through this same workflow.
+  push:
+    branches:
+      - codex/public-book-library
+  pull_request:
+    branches:
+      - codex/meditation-category-rail-20261028
+      - codex/public-book-library
+      - codex/public-book-library
+concurrency:
+  # Cancel stale queued checks after each reviewed PR update; save runner minutes.
+  group: hh-support-quest-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  focused-quest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install lock-matched dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused unit and existing video/catalogue contracts
+        run: node --test tests/holistic-support-guest-quest.test.mjs tests/holistic-support-today-pick.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-meditation-mobile-categories.test.mjs tests/holistic-support-course-scene-branches.test.mjs
+      - name: Scoped lint
+        run: npx --no-install eslint components/holistic-support-guest-quest.tsx components/holistic-support-today-pick.tsx components/app/test-explorer-google-banner.tsx components/holistic-support-mobile.tsx lib/holistic-support/guest-quest.mjs lib/holistic-support/today-pick.mjs tests/holistic-support-guest-quest.test.mjs tests/holistic-support-today-pick.test.mjs scripts/verify-support-guest-quest.mjs
+      - name: TypeScript
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Next production build
+        run: npm run build
+  mobile-e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3117
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-quest-browser/node_modules/playwright
+      HH_QUEST_BROWSER: ${{ matrix.browser }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked project and isolated browser
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --prefix /tmp/hh-quest-browser --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-quest-browser/node_modules/.bin/playwright install --with-deps "$HH_QUEST_BROWSER"
+      - name: Check 320-430px EN/RU/ES hints, tests, Google gate, video and guest counter
+        run: |
+          set -euo pipefail
+          npx --no-install next dev --hostname 127.0.0.1 --port 3117 > /tmp/hh-quest-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3117/ru/holistic-support/mobile > /dev/null; then ready=1; printf 'Quest server ready after %s attempts\n' "$i"; break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/hh-quest-next.log; exit 1; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then tail -90 /tmp/hh-quest-next.log; exit 1; fi
+          node scripts/verify-support-guest-quest.mjs
+      - name: Save synthetic screenshot only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-quest-${{ matrix.browser }}-synthetic
+          path: artifacts/holistic-support-quest/
+          retention-days: 3
+          if-no-files-found: warn

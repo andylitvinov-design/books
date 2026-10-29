@@ -73,13 +73,16 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
 });
 
-test("progress is derived from opens and four self-ratings, never fake streaks", () => {
-  assert.match(client, /progressTotal = relevantVideos\.length/);
-  assert.match(client, /progressCount = relevantVideos\.filter/);
+test("expanded progress shows seven activity steps while keeping self-rating separate from XP", () => {
+  const journey = read("components/holistic-support-guest-quest.tsx");
+  const model = read("lib/holistic-support/guest-quest.mjs");
+  assert.match(client, /<SupportGuestQuestPanel locale=\{locale\}/);
   assert.match(client, /averageScore = \(checkinOrder\.reduce/);
   assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
-  assert.match(client, /className=\{styles\.progressStarted\}/);
-  assert.match(client, /className=\{styles\.progressAverage\}/);
+  assert.match(journey, /data-support-quest-budget/);
+  assert.match(journey, /data-support-quest-step=\{id\}/);
+  assert.match(model, /GUEST_VIDEO_LIMIT = 10/);
+  assert.match(model, /No assessment scores, answers, goals, media IDs/);
   assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);
 });
 

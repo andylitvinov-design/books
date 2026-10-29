@@ -1025,6 +1025,166 @@
   }
 }
 
+
+/* Same compact, warm category rail as Talismans, placed ABOVE the original
+   meditation video stage. The hero and its three existing filters stay intact. */
+.meditationCategorySection { min-width: 0; padding: 12px 16px 5px; background: #fffaf1; }
+.meditationCategoryHeader { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 9px; }
+.meditationCategoryHeader > div { display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 10px; min-width: 0; }
+.meditationCategoryHeader h2 { margin: 0; color: #203a2f; font-size: clamp(20px,2.5vw,25px);
+  font-weight: 850; letter-spacing: -.035em; }
+.meditationCategoryHeader p { margin: 0; color: #76786d; font-size: 13px; line-height: 1.2; }
+.meditationCategoryHeader > button { display: inline-flex; justify-content: flex-end; align-items: center;
+  gap: 5px; flex: none; min-height: 44px; padding: 4px 0; border: 0; background: transparent;
+  color: #087e5b; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.meditationCategoryHeader > button svg { flex: none; transition: transform .15s ease; }
+.meditationCategoryHeader > button[aria-expanded="true"] svg { transform: rotate(90deg); }
+.meditationCategoryFrame { position: relative; min-width: 0; }
+.meditationCategoryRail { display: flex; align-items: stretch; gap: 7px; max-width: 100%;
+  overflow-x: auto; padding: 2px 43px 7px 2px; scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.meditationCategoryRail::-webkit-scrollbar { display: none; }
+.meditationCategorySection .meditationCategoryCard { display: flex; flex: 0 0 clamp(82px,22%,125px);
+  flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  min-width: 0; min-height: 94px; padding: 8px 5px;
+  border: 1px solid #d8e5d9; border-radius: 15px; background: #f4f9f3;
+  color: #16765a; text-align: center; line-height: 1.18; font-size: clamp(11px,1.4vw,13px);
+  font-weight: 800; scroll-snap-align: start; }
+.meditationCategoryCard svg { flex: none; }
+.meditationCategoryCard > span { display: block; max-width: 100%; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; }
+.meditationCategoryCard:hover { filter: brightness(.97); }
+.meditationCategoryCard[data-category="energy"] { background: #faf5ff; color: #8145c1; border-color: #e1c6f4; }
+.meditationCategoryCard[data-category="money"] { background: #fff9eb; color: #bd850a; border-color: #f0d99e; }
+.meditationCategoryCard[data-category="relationships"] { background: #fff3f5; color: #d94d73; border-color: #f3c0cc; }
+.meditationCategoryCard[data-category="meaning"] { background: #f7f0ff; color: #9857d4; border-color: #e6d1f8; }
+.meditationCategoryCard[data-category="health"] { background: #f1faf3; color: #198466; border-color: #cfe6d4; }
+.meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #3b8199; border-color: #cde2e7; }
+.meditationCategoryCard[aria-pressed="true"] { border: 2px solid #8950d1;
+  box-shadow: 0 0 0 2px #dac7f3, 0 4px 12px #6c42b22c; }
+.meditationCategoryNext { position: absolute; z-index: 5; top: 50%; right: -4px;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  transform: translateY(-50%); border: 0; background: transparent; color: #1b5042; }
+.meditationCategoryNext::before { content: ""; position: absolute; z-index: -1; inset: 5px;
+  border: 1px solid #e5e8df; border-radius: 50%; background: #fffdfa;
+  box-shadow: 0 3px 10px #152c2338; }
+.meditationCategoryNext:hover::before { background: #e2f3e8; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryRail { display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr)); padding-right: 2px;
+  overflow: visible; scroll-snap-type: none; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 88px; width: 100%; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryNext { display: none; }
+@media(max-width:640px) {
+  .meditationCategorySection { padding: 9px 9px 3px; }
+  .meditationCategoryHeader { gap: 7px; margin-bottom: 6px; }
+  .meditationCategoryHeader > div { gap: 3px 7px; align-items: baseline; }
+  .meditationCategoryHeader h2 { font-size: clamp(19px,5.35vw,23px); }
+  .meditationCategoryHeader p { font-size: clamp(9px,2.5vw,11px); }
+  .meditationCategoryHeader > button { min-height: 44px; gap: 3px; font-size: clamp(10px,2.7vw,12px); }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryRail {
+    height: 84px; min-height: 0; align-items: center; gap: 6px;
+    padding: 1px 48px 5px 1px; overflow-y: hidden; }
+  /* Higher specificity than .page button { font: inherit }, avoiding tiny labels on iPhone. */
+  .meditationCategorySection .meditationCategoryCard { flex-basis: calc((100% - 18px) / 4);
+    box-sizing: border-box; min-height: 76px; padding: 6px 2px; gap: 5px;
+    border-radius: 13px; font-size: clamp(11px,2.85vw,13px); font-weight: 800; }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryCard {
+    height: 76px; min-height: 0; max-height: 76px; overflow: hidden; }
+  .meditationCategoryCard svg { width: 22px; height: 22px; }
+  .meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 76px; }
+}
+@media(max-width:350px) {
+  .meditationCategoryHeader p { font-size: 9px; }
+  .meditationCategorySection .meditationCategoryCard { font-size: 11px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .meditationCategoryCard,.meditationCategoryHeader > button svg { transition: none; }
+}
+
+
+/* YouTube-like vertical catalogue below the four featured recordings.
+   Same filtered, verified video IDs; cards select the hero without autoplay. */
+.videoFeed { min-width: 0; margin-top: 17px; padding-top: 15px; border-top: 1px solid #e7e2d5; }
+.videoFeedHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.videoFeedHeading h3 { margin: 0; color: #223c30; font-size: clamp(19px, 2.3vw, 24px);
+  line-height: 1.2; font-weight: 850; }
+.videoFeedHeading > span { flex: none; color: #487d61; font-size: 12px; font-weight: 800; }
+.videoFeedHint { margin: 6px 0 12px; color: #627368; font-size: 13px; line-height: 1.4; }
+.videoFeedList { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.videoFeedList li { min-width: 0; }
+.videoFeedItem { display: grid; grid-template-columns: clamp(106px, 32%, 200px) minmax(0, 1fr);
+  align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 112px;
+  padding: 9px; border: 1px solid #e0dfd3; border-radius: 15px;
+  background: #fffefa; color: #253b31; text-align: left; box-shadow: 0 3px 12px #24372b0a; }
+.videoFeedItem:hover { border-color: #7ebd9b; background: #f4faf4; }
+.videoFeedItem[aria-pressed="true"] { border-color: #078e69; background: #f2faf3;
+  box-shadow: inset 3px 0 #078e69, 0 4px 13px #0b826021; }
+.videoFeedPoster { position: relative; display: block; width: 100%; aspect-ratio: 16/9;
+  overflow: hidden; border-radius: 10px; background: #284e41; }
+.videoFeedPoster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.videoFeedPlay { position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; background: linear-gradient(90deg, #081b1659, #082e1e0a); }
+.videoFeedPlay svg { display: block; box-sizing: content-box; padding: 9px;
+  border: 1px solid #ffffffc4; border-radius: 50%; background: #143c31bf; }
+.videoFeedCopy { display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  min-width: 0; overflow-wrap: anywhere; }
+.videoFeedCopy > strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; color: #22392e; font-size: clamp(14px, 2vw, 17px);
+  font-weight: 850; line-height: 1.19; }
+.videoFeedDescription { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; color: #53675b; font-size: 13px; line-height: 1.3; }
+.videoFeedFooter { display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 5px 9px; }
+.videoFeedFooter > small { font-size: 11px; color: #667d70; line-height: 1.25; }
+.videoFeedChoose { display: inline-flex; align-items: center; gap: 3px; color: #087b59;
+  font-size: 12px; font-weight: 850; white-space: nowrap; }
+@media (max-width: 640px) {
+  .videoFeed { margin-top: 12px; padding-top: 11px; }
+  .videoFeedHeading h3 { font-size: clamp(18px, 4.9vw, 22px); }
+  .videoFeedHint { margin: 4px 0 10px; font-size: 12px; }
+  .videoFeedList { gap: 8px; }
+  .videoFeedItem { gap: 9px; padding: 7px; min-height: 106px; border-radius: 12px; }
+  .videoFeedCopy { gap: 4px; }
+  .videoFeedCopy > strong { font-size: clamp(13px, 3.75vw, 16px); }
+  .videoFeedDescription { font-size: clamp(12px, 3.25vw, 13px); }
+}
+@media (max-width: 350px) {
+  .videoFeedItem { grid-template-columns: 100px minmax(0, 1fr); gap: 7px; padding: 6px; }
+  .videoFeedFooter > small { font-size: 10px; }
+  .videoFeedChoose { font-size: 11px; }
+}
+
+
+/* Guest video energy is a transparent local preview limit, not DRM or a paid gate.
+   Keep the original hero, four featured posters and filtered YouTube feed unchanged. */
+.playButton:disabled { cursor: not-allowed; opacity: .7; box-shadow: none; }
+.playButton:disabled:hover { filter: none; }
+
+/* Optional video reflection is placed after the existing YouTube player.
+   It never claims to verify watch-time and stores no personal response. */
+.videoReflection { display: flex; align-items: center; justify-content: space-between;
+  gap: 13px; margin: 9px 2px; padding: 13px 16px; border: 1px solid #b6d9c2;
+  border-radius: 16px; background: #eff8ee; color: #24513e; }
+.videoReflection > div:first-child { display: grid; gap: 5px; flex: 1 1 auto; min-width: 0; }
+.videoReflection strong { font-size: 15px; line-height: 1.35; }
+.videoReflection p { margin: 0; color: #5f7166; font-size: 12px; line-height: 1.35; }
+.videoReflectionActions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.videoReflectionActions button { display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 43px; padding: 8px 12px; border: 1px solid #079264;
+  border-radius: 12px; background: #07895f; color: white; font-weight: 800; font-size: 13px; }
+.videoReflectionActions .videoReflectionLater { border-color: #b9d9bf; background: #fffdf6;
+  color: #33674f; }
+.videoReflectionCheck { flex: none; color: #0a9268; }
+@media (max-width: 430px) {
+  .videoReflection { align-items: stretch; flex-direction: column; gap: 8px;
+    margin: 5px 0; padding: 10px 12px; border-radius: 13px; }
+  .videoReflection strong { font-size: 14px; }
+  .videoReflectionActions { width: 100%; }
+  .videoReflectionActions button { flex: 1 1 auto; min-height: 45px; font-size: 12px; }
+}
+
 /* Verified Reiki previews: €0 is online learning, not personal initiation. */
 .reikiPills,.videoMetaPills { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
 .reikiPills { margin-top:9px; }
