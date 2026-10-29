@@ -1,0 +1,33 @@
+.page {
+  min-height: 100svh;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  /* The About page contains an independently scrollable testimonial archive.
+     Contain its offscreen flex items here, not in the page scroll extent. */
+  overflow-x: hidden;
+  color: #26382f;
+  background:
+    radial-gradient(ellipse at 64% 0%, rgba(211, 231, 214, .55), transparent 34%),
+    linear-gradient(180deg, #f7f6ee 0%, #fffaf3 55%, #f6f0e7 100%);
+}
+.page :global(.about-portrait) {
+  border: 1px solid #e0d4c2;
+  border-radius: 22px;
+  box-shadow: 0 12px 34px rgba(49, 62, 40, .09);
+}
+.page :global(.about-introduction-copy h1) {
+  color: #26382f;
+  font-size: clamp(52px, 8vw, 92px);
+}
+.page :global(.about-biography section + section) { border-top-color: #dcd6c8; }
+.page :global(.about-explore),
+.page :global(.about-client-cabinet) { border-top-color: #dcd6c8; }
+.page :global(.about-explore a),
+.page :global(.about-client-cabinet a) { color: #236c55; }
+.page :global(.about-explore a:focus-visible),
+.page :global(.about-client-cabinet a:focus-visible) { outline: 3px solid #bf8b32; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .page :global(.about-portrait) { border-radius: 17px; }
+  .page :global(.about-introduction-copy h1) { font-size: clamp(48px, 14vw, 66px); }
+}

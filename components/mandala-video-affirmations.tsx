@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check, Eye, Layers3, Plus, SlidersHorizontal, Sparkles, Type, Waves } from "lucide-react";
 import type { VideoLocale, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import {
@@ -13,7 +14,8 @@ import css from "./mandala-video-affirmations.module.css";
 
 const text = {
   en: {
-    title: "Affirmations", description: "Choose 3–5 short phrases or add your own.",
+    title: "Hypnoaffirmations", description: "Short affirmations appear in your video as readable text or brief “25th-frame” messages. Readable phrases can be consciously repeated.",
+    science: "Brief frames are experimental; lasting effects on beliefs are not scientifically established.",
     use: "In video", suggested: "Short phrases", selected: "chosen",
     custom: "My phrases", customHint: "Up to 5 phrases, 36 characters each",
     placeholder: "One short phrase per line",
@@ -29,7 +31,8 @@ const text = {
     ready: "phrases in video", customCount: "own",
   },
   ru: {
-    title: "Аффирмации", description: "Выберите 3–5 коротких фраз или добавьте свои.",
+    title: "Гипноаффирмации", description: "Короткие установки появляются в видео явно — для осознанного повторения, или на мгновение — методом «25-го кадра».",
+    science: "«25-й кадр» — экспериментальный режим: его влияние на убеждения научно не доказано.",
     use: "В видео", suggested: "Короткие фразы", selected: "выбрано",
     custom: "Свои фразы", customHint: "До 5 фраз, не длиннее 36 знаков",
     placeholder: "Одна короткая фраза в строке",
@@ -45,7 +48,8 @@ const text = {
     ready: "фраз в видео", customCount: "своих",
   },
   es: {
-    title: "Afirmaciones", description: "Elige 3–5 frases cortas o escribe las tuyas.",
+    title: "Hipnoafirmaciones", description: "Las frases aparecen en el vídeo de forma legible, para repetirlas conscientemente, o como breves «fotogramas 25».",
+    science: "Los fotogramas breves son experimentales; no se ha demostrado que cambien las creencias.",
     use: "En vídeo", suggested: "Frases breves", selected: "elegidas",
     custom: "Mis frases", customHint: "Hasta 5 frases, 36 caracteres cada una",
     placeholder: "Una frase corta por línea",
@@ -76,6 +80,7 @@ export function MandalaVideoAffirmations({
   disabled?: boolean;
 }) {
   const ui = text[locale];
+  const [selectionMethod,setSelectionMethod] = useState<"manual"|"tests">("manual");
   const suggestions = settings.presetOverride?.length === 5
     ? settings.presetOverride : suggestedVideoAffirmations[locale][theme];
   const lines = linesForVideoAffirmations(locale, theme, settings);
@@ -85,6 +90,11 @@ export function MandalaVideoAffirmations({
     ? ui.modes[settings.visibility[0]]
     : settings.visibility.length + " " + ui.views;
   const update = (change: Partial<AffirmationSettings>) => onChange({ ...settings, ...change });
+  const chooseManual = () => {
+    setSelectionMethod("manual");
+    if (settings.presetOverride?.length) update({presetOverride: undefined, selected: [0,1,2]});
+    document.getElementById("video-hypno-manual")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+  };
   const toggleSuggestion = (index: number) => {
     const selected = settings.selected.includes(index)
       ? settings.selected.filter(value => value !== index)
@@ -112,12 +122,16 @@ export function MandalaVideoAffirmations({
           <span>{ui.use}</span>
         </label>
       </div>
-      <p className={css.description}>{ui.description}</p>
+      <div className={css.hypnoIntro} data-video-hypno-intro>
+        <p className={css.description}>{ui.description}</p>
+        <p className={css.scienceNote}>{ui.science}</p>
+      </div>
 
       <MandalaPersonalAffirmations locale={locale} theme={theme} settings={settings}
-        onChange={onChange} disabled={disabled}/>
+        onChange={onChange} disabled={disabled} selectionMethod={selectionMethod}
+        onManualSelect={chooseManual} onTestsSelected={()=>setSelectionMethod("tests")}/>
 
-      <fieldset className={css.controls} disabled={disabled}>
+      <fieldset id="video-hypno-manual" className={css.controls} disabled={disabled}>
         <legend className={css.sectionLabel}>
           {ui.suggested} <small>{settings.selected.length}/5 {ui.selected}</small>
         </legend>

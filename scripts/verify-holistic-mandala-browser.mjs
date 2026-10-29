@@ -81,8 +81,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false,
           "background-only is the default; adding a personal photo is opt-in");
         assert.equal(await page.locator("[data-video-photo-picker]").count(),1);
-        // Both opt-in labels and their local action controls must remain
-        // accessible 44px targets at iPhone 320/390/430 widths.
+        // Photo and affirmation controls remain practical touch targets on
+        // 320–430px real Chromium/WebKit layouts, not only CSS declarations.
         const previewTouchTargets=await page.locator(
           "[data-video-preview-choices] label, [data-video-preview-choices] button, [data-video-preview-choices] a"
         ).evaluateAll(nodes=>nodes.map(node=>({
@@ -284,6 +284,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
+        // Hypnoaffirmations: the first thing visitors see is a truthful, compact
+        // explanation and the two explicit ways to choose their phrases.
+        const expectedHypnoTitle={ru:"Гипноаффирмации",en:"Hypnoaffirmations",es:"Hipnoafirmaciones"}[locale];
+        assert.equal(await affirmationsPanel.locator("#video-affirmations-heading").innerText(),expectedHypnoTitle);
+        assert.equal(await affirmationsPanel.locator("[data-video-hypno-intro]").count(),1);
+        assert.equal(await affirmationsPanel.locator("[data-video-choice-mode] button").count(),2);
+        const manualSelect=affirmationsPanel.locator("[data-video-manual-select]");
+        const autoSelect=affirmationsPanel.locator("[data-video-personal-suggest]");
+        assert.equal(await manualSelect.getAttribute("aria-pressed"),"true");
+        assert.equal(await autoSelect.getAttribute("aria-pressed"),"false");
+        await manualSelect.click();
+        assert.equal(await manualSelect.getAttribute("aria-pressed"),"true");
+        assert.equal(await affirmationsPanel.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"false");
         // A short, scannable mobile panel: longer controls are collapsed until asked for.
         assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
         assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
