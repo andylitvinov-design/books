@@ -39,7 +39,7 @@ const copy = {
     ending:"Finishing",endings:{return:"Return to the room",reflection:"A reflection prompt","small-step":"One practical next step"},
     voiceTitle:"Listen to your meditation",voiceDescription:"An installed, on-device voice reads the actual generated text with real pauses. No speech file is created.",
     listen:"Play with local voice",stopListening:"Stop narration",noVoice:"No installed local voice for this language. You can still edit and save your text.",
-    voice:"Device voice",rate:"Reading speed",withMusic:"Play selected background sound quietly",audioFailure:"Background audio was not available; spoken narration can continue.",voiceEstimate:"Estimated listening",voiceNote:"Playback requires an installed local device voice. This is a live preview, not an MP3 or a pre-rendered audio file.",voiceError:"Could not start local narration. Try another installed voice or browser.",
+    voice:"Device voice",rate:"Reading speed",withMusic:"Play selected background sound quietly",audioFailure:"Background audio was not available; spoken narration can continue.",voiceEstimate:"Estimated listening",voicePart:"Part",voicePause:"Quiet pause",voiceReading:"Narration",voiceNote:"Playback requires an installed local device voice. This is a live preview, not an MP3 or a pre-rendered audio file.",voiceError:"Could not start local narration. Try another installed voice or browser.",
     tone:"Narration tone",tones:{gentle:"Very gentle",grounded:"Grounded",uplifting:"Encouraging"},
     length:"Approximate pace",minutes:"min",
     accents:{calm:"Calm",confidence:"Confidence",clarity:"Clarity",boundaries:"Boundaries",acceptance:"Acceptance",motivation:"Small steps",rest:"Rest",gratitude:"Gratitude"},
@@ -63,7 +63,7 @@ const copy = {
     ending:"Завершение",endings:{return:"Вернуться в комнату",reflection:"Вопрос для размышления","small-step":"Один практический шаг"},
     voiceTitle:"Прослушать медитацию",voiceDescription:"Установленный локальный голос устройства читает сформированный текст с настоящими паузами. Аудиофайл при этом не создаётся.",
     listen:"Прослушать голосом устройства",stopListening:"Остановить озвучку",noVoice:"Для этого языка нет установленного локального голоса. Текст можно редактировать и сохранить.",
-    voice:"Голос устройства",rate:"Скорость чтения",withMusic:"Тихо воспроизвести выбранный звуковой фон",audioFailure:"Фоновый звук недоступен; озвучка может продолжаться.",voiceEstimate:"Примерно прослушивание",voiceNote:"Нужен локальный голос, установленный на устройстве. Это реальное прослушивание, но не готовый MP3 или записанная дорожка.",voiceError:"Не удалось запустить озвучку. Попробуйте другой установленный голос или браузер.",
+    voice:"Голос устройства",rate:"Скорость чтения",withMusic:"Тихо воспроизвести выбранный звуковой фон",audioFailure:"Фоновый звук недоступен; озвучка может продолжаться.",voiceEstimate:"Примерно прослушивание",voicePart:"Этап",voicePause:"Пауза",voiceReading:"Озвучка",voiceNote:"Нужен локальный голос, установленный на устройстве. Это реальное прослушивание, но не готовый MP3 или записанная дорожка.",voiceError:"Не удалось запустить озвучку. Попробуйте другой установленный голос или браузер.",
     tone:"Тон текста",tones:{gentle:"Очень мягкий",grounded:"Заземляющий",uplifting:"Вдохновляющий"},
     length:"Примерный ритм",minutes:"мин",
     accents:{calm:"Спокойствие",confidence:"Уверенность",clarity:"Ясность",boundaries:"Границы",acceptance:"Принятие",motivation:"Маленькие шаги",rest:"Отдых",gratitude:"Благодарность"},
@@ -87,7 +87,7 @@ const copy = {
     ending:"Final",endings:{return:"Volver a la habitación",reflection:"Pregunta de reflexión","small-step":"Un paso práctico"},
     voiceTitle:"Escuchar la meditación",voiceDescription:"Una voz local instalada en el dispositivo lee el texto creado con pausas reales. No se genera un archivo de audio.",
     listen:"Escuchar con voz local",stopListening:"Detener la voz",noVoice:"No hay voz local instalada para este idioma. Puedes editar y guardar el texto.",
-    voice:"Voz del dispositivo",rate:"Velocidad de lectura",withMusic:"Reproducir el sonido seleccionado de fondo",audioFailure:"El sonido de fondo no está disponible; la voz puede continuar.",voiceEstimate:"Duración aproximada",voiceNote:"Necesitas una voz local instalada. Es una reproducción real, no un MP3 ni un archivo de audio renderizado.",voiceError:"No se pudo iniciar la voz local. Prueba otra voz instalada o navegador.",
+    voice:"Voz del dispositivo",rate:"Velocidad de lectura",withMusic:"Reproducir el sonido seleccionado de fondo",audioFailure:"El sonido de fondo no está disponible; la voz puede continuar.",voiceEstimate:"Duración aproximada",voicePart:"Parte",voicePause:"Pausa",voiceReading:"Voz",voiceNote:"Necesitas una voz local instalada. Es una reproducción real, no un MP3 ni un archivo de audio renderizado.",voiceError:"No se pudo iniciar la voz local. Prueba otra voz instalada o navegador.",
     tone:"Tono de narración",tones:{gentle:"Muy suave",grounded:"Con los pies en la tierra",uplifting:"Inspirador"},
     length:"Ritmo aproximado",minutes:"min",
     accents:{calm:"Calma",confidence:"Confianza",clarity:"Claridad",boundaries:"Límites",acceptance:"Aceptación",motivation:"Pasos pequeños",rest:"Descanso",gratitude:"Gratitud"},
@@ -121,6 +121,7 @@ export function MandalaPersonalMeditation({
   const [voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);
   const [voiceName,setVoiceName]=useState("");
   const [listening,setListening]=useState(false);
+  const [progress,setProgress]=useState({index:0,total:0,kind:"speech"});
   const [withMusic,setWithMusic]=useState(false);
   const narratorRef=useRef<{stop:(reason?:string)=>void}|null>(null);
   const ambientRef=useRef<HTMLAudioElement>(null);
@@ -162,6 +163,7 @@ export function MandalaPersonalMeditation({
     narratorRef.current=null;
     ambientRef.current?.pause();
     setListening(false);
+    setProgress({index:0,total:0,kind:"speech"});
   }
   function toggleNarration(){
     if(listening){stopNarration();return;}
@@ -184,10 +186,12 @@ export function MandalaPersonalMeditation({
     try{
       const active=playMeditationNarration({
         script,locale,rate,voice,synthesis:window.speechSynthesis,Utterance:SpeechSynthesisUtterance,
+        onProgress:(index,total,kind)=>setProgress({index,total,kind}),
         onStop:reason=>{
           ambientRef.current?.pause();
           narratorRef.current=null;
           setListening(false);
+          setProgress({index:0,total:0,kind:"speech"});
           if(reason==="error")setNotice(t.voiceError);
         }
       });
@@ -360,6 +364,11 @@ export function MandalaPersonalMeditation({
             {listening?<Square size={17} aria-hidden="true"/>:<Headphones size={17} aria-hidden="true"/>}
             {listening?t.stopListening:t.listen}
           </button>
+          {listening&&progress.total>0?<div className={css.narrationProgress}
+            data-meditation-voice-progress aria-label={t.voiceReading}>
+            <span>{progress.kind==="pause"?t.voicePause:t.voicePart} · {progress.index}/{progress.total}</span>
+            <progress value={progress.index} max={progress.total} aria-label={t.voiceReading}/>
+          </div>:null}
           {!voices.length?<p className={css.voiceHint} role="note">{t.noVoice}</p>:null}
           <small className={css.voiceHint}>{t.voiceNote}</small>
         </div>
