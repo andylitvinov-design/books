@@ -3,12 +3,15 @@
  * Each preview and exported video uses this identical renderer.
  * No stock portrait, AI upload, health inference, client storage, or cost.
  */
-export type VideoTheme = "money" | "energy" | "relationships" | "goals";
+export type VideoTheme = "money" | "energy" | "life" | "health" | "relationships" | "goals";
 export type OtherTheme = Exclude<VideoTheme, "money">;
 export type LocalSceneId =
   | "sun-flight" | "green-vortex" | "light-waterfall" | "gentle-shield"
   | "heart-light" | "warm-connection" | "blossom-garden" | "two-circles"
-  | "light-path" | "open-door" | "guiding-stars" | "meaning-tree";
+  | "light-path" | "open-door" | "guiding-stars" | "meaning-tree"
+  | "solar-surge" | "ocean-pulse" | "sunbeam-flow" | "river-power" | "desert-light" | "mountain-air"
+  | "wildflower-dance" | "fern-awakening" | "coastal-freedom" | "lone-tree" | "meadow-morning"
+  | "calm-sea" | "morning-dew" | "mossy-stream" | "gentle-falls" | "sea-breeze";
 export type VideoLocale = "en" | "ru" | "es";
 
 type LocalScene = {
@@ -18,10 +21,30 @@ type LocalScene = {
 };
 export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
   energy: [
+    { id:"solar-surge", symbol:"☀", label:{en:"Solar vitality",ru:"Солнечная энергия",es:"Vitalidad solar"} },
+    { id:"ocean-pulse", symbol:"≋", label:{en:"Ocean pulse",ru:"Пульс океана",es:"Pulso del océano"} },
+    { id:"sunbeam-flow", symbol:"✧", label:{en:"Sunbeam flow",ru:"Поток солнечных лучей",es:"Flujo de luz solar"} },
+    { id:"river-power", symbol:"〰", label:{en:"Power of water",ru:"Сила воды",es:"Fuerza del agua"} },
+    { id:"desert-light", symbol:"◇", label:{en:"Light in motion",ru:"Свет в движении",es:"Luz en movimiento"} },
+    { id:"mountain-air", symbol:"△", label:{en:"Mountain air",ru:"Горный воздух",es:"Aire de montaña"} },
     { id:"sun-flight", symbol:"☀", label:{en:"Sun energy",ru:"Энергия Солнца",es:"Energía del Sol"} },
     { id:"green-vortex", symbol:"✺", label:{en:"Energy spiral",ru:"Спираль энергии",es:"Espiral de energía"} },
     { id:"light-waterfall", symbol:"≋", label:{en:"Light waterfall",ru:"Водопад света",es:"Cascada de luz"} },
     { id:"gentle-shield", symbol:"◉", label:{en:"Gentle protection",ru:"Мягкая защита",es:"Protección suave"} },
+  ],
+  life: [
+    { id:"wildflower-dance", symbol:"✿", label:{en:"Dance of flowers",ru:"Танец цветов",es:"Danza de flores"} },
+    { id:"fern-awakening", symbol:"❧", label:{en:"New beginnings",ru:"Пробуждение жизни",es:"Nuevo comienzo"} },
+    { id:"coastal-freedom", symbol:"≋", label:{en:"Freedom and space",ru:"Свобода и простор",es:"Libertad y espacio"} },
+    { id:"lone-tree", symbol:"♧", label:{en:"Roots of life",ru:"Корни жизни",es:"Raíces de vida"} },
+    { id:"meadow-morning", symbol:"☼", label:{en:"Fresh morning",ru:"Новое утро",es:"Mañana nueva"} },
+  ],
+  health: [
+    { id:"calm-sea", symbol:"≋", label:{en:"Calm sea",ru:"Спокойное море",es:"Mar tranquilo"} },
+    { id:"morning-dew", symbol:"✧", label:{en:"Morning freshness",ru:"Утренняя свежесть",es:"Frescura matinal"} },
+    { id:"mossy-stream", symbol:"♧", label:{en:"Quiet stream",ru:"Тихий ручей",es:"Arroyo tranquilo"} },
+    { id:"gentle-falls", symbol:"〰", label:{en:"Gentle waterfall",ru:"Мягкий водопад",es:"Cascada suave"} },
+    { id:"sea-breeze", symbol:"❋", label:{en:"Sea breeze",ru:"Морской бриз",es:"Brisa marina"} },
   ],
   relationships: [
     { id:"heart-light", symbol:"♡", label:{en:"Heart of light",ru:"Сияние сердца",es:"Corazón de luz"} },
@@ -39,6 +62,8 @@ export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
 
 const PALETTE: Record<OtherTheme, readonly [string,string,string,string]> = {
   energy:["#0a2930","#065b52","#a2f2cc","#eaf9ce"],
+  life:["#123b2c","#327c51","#f7dc96","#e9ffca"],
+  health:["#143b48","#2d747d","#b4e9d6","#e4f7f2"],
   relationships:["#42243c","#a05678","#ffc9a7","#ffedf1"],
   goals:["#282446","#6256a5","#ffe4a2","#eef1ff"],
 };
@@ -176,5 +201,52 @@ export function paintThemedVideoFrame(
   if(title.trim())c.fillText(title.slice(0,72),cx,h*.87,w*.85);
   c.font="600 "+Math.max(9,w*.02)+"px Arial,sans-serif";
   c.fillStyle="rgba(245,239,215,.83)";c.fillText("H O L I S T I C   H O U S E",cx,h*.075,w*.86);
+  c.restore();
+}
+
+
+/**
+ * Composites an actual decoded, first-party Full HD film under the user's
+ * original, *still* photograph. No client upload, AI likeness generation,
+ * diagnoses, physiological claims or hidden health-data inference.
+ */
+export function paintRealThemedVideoFrame(
+  c: CanvasRenderingContext2D,
+  image: HTMLImageElement | null,
+  theme: OtherTheme,
+  time: number,
+  title: string,
+  video: HTMLVideoElement,
+): void {
+  const w = c.canvas.width, h = c.canvas.height;
+  if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+    paintThemedVideoFrame(c, image, theme, "sun-flight", time, title);
+    return;
+  }
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, w, h);
+  const scale = Math.max(w / video.videoWidth, h / video.videoHeight);
+  const vw = video.videoWidth * scale, vh = video.videoHeight * scale;
+  c.drawImage(video, (w - vw) / 2, (h - vh) / 2, vw, vh);
+  const vignette = c.createRadialGradient(w * .50, h * .46, w * .17, w * .5, h * .5, h * .84);
+  vignette.addColorStop(0, "rgba(8,24,28,0)");
+  vignette.addColorStop(1, "rgba(5,19,23,.46)");
+  c.fillStyle = vignette;
+  c.fillRect(0, 0, w, h);
+  if (image) composePortrait(c, image, w, h, time);
+  const bottom = c.createLinearGradient(0, h * .75, 0, h);
+  bottom.addColorStop(0, "rgba(4,22,26,0)");
+  bottom.addColorStop(1, "rgba(4,19,26,.74)");
+  c.fillStyle = bottom;
+  c.fillRect(0, h * .75, w, h * .25);
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillStyle = "#fff9e8";
+  c.font = "600 " + Math.max(12, Math.min(29, w * .042)) + "px Georgia,serif";
+  if (title.trim()) c.fillText(title.slice(0, 72), w / 2, h * .88, w * .86);
+  c.fillStyle = "rgba(255,248,226,.87)";
+  c.font = "600 " + Math.max(10, w * .023) + "px Arial,sans-serif";
+  c.fillText("H O L I S T I C   H O U S E", w / 2, h * .078, w * .9);
   c.restore();
 }

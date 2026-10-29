@@ -16,6 +16,10 @@ export const moneyScenes = [
   { id: "abundance-circle", symbol: "◉", label: { en: "Circle of abundance", ru: "Круг изобилия", es: "Círculo de abundancia" } },
   { id: "life-gifts", symbol: "✻", label: { en: "Life's gifts", ru: "Подарки жизни", es: "Regalos de la vida" } },
   { id: "dreams", symbol: "☆", label: { en: "Dreams in focus", ru: "Воплощение мечты", es: "Sueños en perspectiva" } },
+  { id: "wealth-sunrise", symbol: "☀", label: { en: "Prosperity sunrise", ru: "Рассвет процветания", es: "Amanecer próspero" } },
+  { id: "golden-harvest", symbol: "✺", label: { en: "Golden harvest", ru: "Золотой урожай", es: "Cosecha dorada" } },
+  { id: "radiant-portal", symbol: "◇", label: { en: "Radiant portal", ru: "Портал возможностей", es: "Portal radiante" } },
+  { id: "prosperity-coast", symbol: "≋", label: { en: "Coast of abundance", ru: "Берег изобилия", es: "Costa de abundancia" } },
 ] as const;
 
 export type MoneySceneId = (typeof moneyScenes)[number]["id"];

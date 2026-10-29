@@ -22,7 +22,7 @@ export const CLIENT_SERVICE_FITS: Readonly<Record<string,{
 export type ServiceMatch = {
  offer: CoreServiceOffer; free:boolean; format:string; score:number;
  matchType: "exact" | "partial" | "topic" | "related";
- reasons: Array<{facet:"goal"|"situation"|"outcome"|"technique",value:string}>;
+ reasons: Array<{facet:"goal"|"situation"|"outcome"|"technique"|"axis",value:string}>;
 };
 export function rankClientServices(input?: {
  offers?: CoreServiceOffer[];

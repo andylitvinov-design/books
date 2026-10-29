@@ -124,6 +124,12 @@
 .videoTitle { position: relative; z-index: 1; font-size: 16px; font-weight: 850; line-height: 1.27; overflow-wrap: anywhere; }
 .videoCard[aria-pressed="true"] { border-color: #9de4bc; box-shadow: 0 0 0 2px #0ba476, 0 8px 20px #0d8b5355; }
 .videoHint { margin: 13px 2px 4px; color: #6a6e64; font-size: 13px; line-height: 1.45; }
+.lessonNavigation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 13px 0 5px; }
+.lessonNavigation button { flex: 1 1 110px; min-height: 44px; padding: 7px 10px; border: 1px solid #c8ded2; border-radius: 11px; background: #eaf5ed; color: #135d47; font-size: 12px; font-weight: 800; cursor: pointer; }
+.lessonNavigation button:disabled { opacity: .5; cursor: not-allowed; }
+.lessonNavigation button:focus-visible { outline: 3px solid #167f5e; outline-offset: 2px; }
+.lessonNavigation span { flex: 0 0 auto; color: #405c4e; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
 .emptyMessage { margin: 0; padding: 14px; border-radius: 11px; background: #f5eee3; color: #4e5049; font-size: 16px; }
 .youtubeLink { display: inline-flex; align-items: center; gap: 7px; min-height: 45px; margin-top: 4px; color: #126f53; font-size: 15px; font-weight: 750; text-decoration: underline; }
 .supportEnquiry { display: grid; gap: 9px; padding: 13px 22px 22px; border-top: 1px solid #ebdfcf; }
@@ -601,7 +607,7 @@
 .mysteryPickerHeading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 3px 9px; margin-bottom: 10px; }
 .mysteryPickerHeading strong { color: #254b3c; font-size: 16px; font-weight: 850; }
 .mysteryPickerHeading span { color: #685c4a; font-size: 12px; }
-.mysteryPickerGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mysteryPickerGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
 .mysteryPickerCard { position: relative; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; overflow: hidden; min-width: 0; min-height: 111px; padding: 10px; cursor: pointer; text-align: left; border-radius: 14px; border: 2px solid #e6eadf; color: #fff; background: #183c32; transition: border-color .16s ease, box-shadow .16s ease; }
 .mysteryPickerCard > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
 .mysteryPickerCard::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,rgba(6,31,29,.94) 0%,rgba(13,45,38,.35) 72%,rgba(13,45,38,.18)); }
@@ -618,7 +624,7 @@
   .mysteryPickerHeading { margin-bottom: 7px; }
   .mysteryPickerHeading strong { font-size: 14px; }
   .mysteryPickerHeading span { font-size: 10px; }
-  .mysteryPickerGrid { gap: 6px; }
+  .mysteryPickerGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
   .mysteryPickerCard { min-height: 88px; padding: 8px 6px; border-radius: 12px; }
   .mysteryPickerCard strong { font-size: 14px; }
   .mysteryPickerCard small { font-size: 10px; }
@@ -1017,4 +1023,54 @@
     padding-block: 3px;
     gap: 3px;
   }
+}
+
+/* Verified Reiki previews: €0 is online learning, not personal initiation. */
+.reikiPills,.videoMetaPills { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.reikiPills { margin-top:9px; }
+.reikiPricePill,.reikiAudioPill,.videoMetaPills>small {
+ display:inline-flex; align-items:center; width:fit-content; padding:5px 9px;
+ border-radius:999px; font-size:12px; font-weight:850; line-height:1.2;
+}
+.reikiPricePill,.videoPricePill { background:#def5cd; color:#194e32; }
+.reikiAudioPill,.videoAudioPill { background:#fff7ee; color:#244c40; }
+.reikiHeroActions { display:grid; justify-items:start; width:min(460px,100%); gap:9px; }
+.reikiStartCourse,.reikiAfterVideo a {
+ display:inline-flex; align-items:center; justify-content:center; gap:9px; width:100%;
+ min-height:60px; padding:11px 14px; border:2px solid #fcf4d0; border-radius:15px;
+ background:linear-gradient(105deg,#fbe5ac,#f4c674); color:#3b2a18; text-align:center;
+ font-size:clamp(17px,2.6vw,22px); font-weight:900; text-decoration:none; box-shadow:0 6px 18px #071d193d;
+}
+.reikiStartCourse:hover,.reikiAfterVideo a:hover { background:#ffe8b1; }
+.reikiStartCourse:focus-visible,.reikiAfterVideo a:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+.reikiHeroActions .reikiPreviewButton { min-height:44px; width:auto; padding:9px 15px; border-radius:12px; box-shadow:none; font-size:15px; }
+.reikiAfterVideo { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px; background:#173f35; }
+.reikiAfterVideo a { width:auto; flex:1 1 210px; min-height:48px; font-size:16px; }
+.videoCaption { position:relative; z-index:2; display:grid; gap:5px; width:100%; min-width:0; }
+.videoMetaPills { gap:3px; }
+.videoMetaPills>small { padding:3px 6px; font-size:10px; }
+@media (max-width:640px) {
+ .hero:has(.reikiStartCourse) .heroBody { max-width:min(88%,330px); padding-top:13px; }
+ .hero:has(.reikiStartCourse) .heroBody h2 { font-size:clamp(25px,7vw,35px); }
+ .hero:has(.reikiStartCourse) .heroDescription { max-width:310px; font-size:clamp(12px,3.3vw,15px); }
+ .reikiPills { margin-top:5px; gap:4px; }
+ .reikiPricePill,.reikiAudioPill { padding:4px 7px; font-size:10px; }
+ .reikiStartCourse { min-height:49px; padding:8px; font-size:clamp(14px,4vw,18px); }
+ .reikiHeroActions { gap:5px; }
+ .reikiHeroActions .reikiPreviewButton { min-height:41px; padding:6px 9px; font-size:12px; }
+ .videoMetaPills>small { padding:2px 4px; font-size:9px; }
+ .reikiAfterVideo { padding:7px; }
+ .reikiAfterVideo a { min-height:44px; font-size:13px; }
+}
+@media (max-width:350px) {
+ .hero:has(.reikiStartCourse) .heroBody { max-width:94%; }
+ .hero:has(.reikiStartCourse) .heroBody h2 { font-size:24px; }
+ .hero:has(.reikiStartCourse) .heroDescription { font-size:12px; }
+ .videoMetaPills>small { font-size:8.5px; }
+}
+
+/* In Courses display the real video source thumbnails, not the four scenic
+   meditation mock posters (which otherwise hide the original on iPhone). */
+@media (max-width:640px) {
+  .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
 }

@@ -63,9 +63,13 @@ test("all five built-in tones create playable PCM WAV files with actual nonzero 
     assert.equal(bytes.toString("ascii",8,12),"WAVE");
     assert.equal(bytes.readUInt16LE(20),1,"linear PCM");
     assert.equal(bytes.readUInt16LE(22),1,"mono output");
-    assert.equal(bytes.readUInt32LE(24),22050);
+    assert.equal(bytes.readUInt32LE(24),44100,"44.1kHz iPhone-compatible PCM");
     assert.equal(bytes.readUInt16LE(34),16);
-    assert.equal(bytes.length,44+8*22050*2);
+    assert.equal(bytes.length,44+8*44100*2);
+    const path = api.presetAudioUrl(preset);
+    assert.equal(path, "/audio/mandala/" + preset + ".wav", "stable first-party HTTPS-served audio path");
+    const stored = readFileSync(new URL("../public" + path, import.meta.url));
+    assert.deepEqual(bytes,stored,"previewed static WAV and locally exported soundtrack must be byte-identical");
     let energy=0;
     for(let i=44;i<bytes.length;i+=2){const value=bytes.readInt16LE(i)/32768;energy+=value*value;}
     assert.ok(Math.sqrt(energy/((bytes.length-44)/2))>.03,preset+" is audible rather than a zero WAV");
@@ -143,7 +147,10 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.match(client,/type="file"/);
   assert.match(client,/data-video-audio-upload/);
   assert.match(client,/isSupportedLocalAudio\(file\)/);
-  assert.match(client,/createAmbientPreviewWav\(music\)/);
+  assert.match(client,/presetAudioUrl\(music\)/);
+  assert.doesNotMatch(client,/URL\.createObjectURL\(createAmbientPreviewWav/);
+  assert.match(client,/audioPlaybackError/);
+  assert.match(client,/data-video-audio-direct/);
   assert.match(client,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);

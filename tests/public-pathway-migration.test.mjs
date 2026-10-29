@@ -41,6 +41,15 @@ test("public entry routes preserve their existing content, providers and accessi
   assert.match(contact, /t\.privacy/);
 });
 
+test("About root contains offscreen testimonial cards without disabling gallery scrolling", () => {
+  const pageCss = source("components/public-journey-refresh.module.css");
+  const testimonialCss = source("components/personal-testimonials.module.css");
+  const browserGate = source("scripts/verify-public-pathway-mobile.mjs");
+  assert.match(pageCss,/overflow-x: hidden/);
+  assert.match(testimonialCss,/\.section:is\(\[data-personal-testimonials="all"\], \[data-personal-testimonials="about"\]\) \.videoGrid\{[\s\S]*?overflow-x:auto/);
+  assert.match(browserGate,/state\.content > state\.client && state\.overflowX === "auto" && state\.rootOverflowX === "hidden"/);
+});
+
 test("responsive tiles, minimum touch sizes and visible keyboard focus", () => {
   assert.match(css, /grid-template-columns: repeat\(4/);
   assert.match(css, /overflow-x: auto/);

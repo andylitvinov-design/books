@@ -4,6 +4,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
+      - 'data/academy/greek-video-series.ts'
+      - 'tests/greek-video-series.test.mjs'
       - 'components/holistic-support-course-profiles.tsx'
       - 'components/holistic-support-course-profiles.module.css'
       - 'tests/holistic-support-course-profiles.test.mjs'
@@ -34,6 +36,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
+      - 'data/academy/greek-video-series.ts'
+      - 'tests/greek-video-series.test.mjs'
       - 'components/holistic-support-course-profiles.tsx'
       - 'components/holistic-support-course-profiles.module.css'
       - 'tests/holistic-support-course-profiles.test.mjs'
@@ -86,8 +90,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
-          npx eslint components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
+          node --test tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
+          npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |

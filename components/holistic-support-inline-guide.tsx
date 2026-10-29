@@ -11,10 +11,11 @@ import styles from "./holistic-support-inline-guide.module.css";
 
 type Focus = "energy" | "money" | "relationships" | "goals";
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
-type Phase = "review" | "topic" | "need" | "detail" | "time" | "format" | "confirm" | "recommendations" | "safety";
+type Phase = "review" | "topic" | "test-invite" | "test-pick" | "test-return" | "reflection" | "practice-invite" | "time" | "media-pick" | "media-return" | "exercise" | "feedback" | "path-confirm" | "recommendations" | "safety";
 type Format = "meditation" | "tests" | "courses" | "consultation" | "healing" | "mandala";
 type Message = { role: "guide" | "user"; text: string };
-type Video = { id: string; title: string; topics: string[] };
+type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru" };
+export type SupportGuideTest = { key: string; title: string; durationMinutes: number; questionCount: number | null; instrumentLocale: string; href: string };
 type Choice = "meditation" | "tests" | "pump" | "consultation" | "healing";
 
 const sectors: GoalSector[] = ["energy", "money", "love", "meaning"];
@@ -35,7 +36,7 @@ const formats: { id: Format; filter: string; choice?: Choice }[] = [
 
 const copy = {
   en: {
-    title: "Your AI guide", close: "Close guide", step: "Step",
+    title: "Your personal guide", close: "Close guide", step: "Step",
     areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning" },
     ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
     editedIntro: "You changed your self-rating for",
@@ -79,9 +80,10 @@ const copy = {
     sourceReason: "Priority: your stated goal or ratings. Focus: your confirmed choice. Format: your preference.",
     timeReason: "Your available time is a preference, not a verified media duration.",
     private: "Answers stay in this browser; no external AI request, lead, booking or payment is created.",
+    ux:{focus:"Your focus",primary:"RECOMMENDED FIRST STEP",duration:"Time available",durationWarning:"This is your preference, not the duration of a recording or practitioner session.",supportFit:"You chose personal practitioner support, not a course about business. Other options below may match the topic more closely.",benefit:{meditation:"Open the actual published recording and check its length before playing.",tests:"Start an available free self-check; the result is not inferred here.",courses:"Explore the existing learning path and choose whether it fits.",consultation:"Review practitioner sessions. An enquiry is not a booking.",healing:"Review practitioner Reiki support; the duration and terms require confirmation.",mandala:"Open the video-mandala studio by choice."}},
   },
   ru: {
-    title: "Ваш ИИ-проводник", close: "Закрыть проводника", step: "Шаг",
+    title: "Ваш проводник", close: "Закрыть проводника", step: "Шаг",
     areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы" },
     ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
     editedIntro: "Вы изменили показатель",
@@ -125,9 +127,10 @@ const copy = {
     sourceReason: "Основа: ваши оценки или заполненный фильтр. Тема: ваш подтверждённый выбор. Формат: ваше предпочтение.",
     timeReason: "Указанное время — пожелание, а не проверенная длительность видеозаписи.",
     private: "Ответы остаются в браузере. Внешний ИИ, CRM, запись и оплата не запускаются.",
+    ux:{focus:"Ваш запрос",primary:"РЕКОМЕНДУЕМЫЙ ПЕРВЫЙ ШАГ",duration:"У вас есть",durationWarning:"Это ваше пожелание, а не длительность записи или сессии мастера.",supportFit:"Вы выбрали поддержку мастера, а не курс про работу и деньги. Другие варианты ниже могут быть ближе к теме.",benefit:{meditation:"Откройте опубликованную запись и проверьте её длительность до просмотра.",tests:"Начните доступный бесплатный тест; результат здесь не предполагается.",courses:"Посмотрите существующую программу и решите, подходит ли она.",consultation:"Посмотрите личные сессии. Заявка не означает запись.",healing:"Посмотрите поддержку мастера: длительность и условия уточняются отдельно.",mandala:"Откройте студию видео-мандал по собственному выбору."}},
   },
   es: {
-    title: "Tu guía de IA", close: "Cerrar guía", step: "Paso",
+    title: "Tu guía personal", close: "Cerrar guía", step: "Paso",
     areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     editedIntro: "Has cambiado tu puntuación de",
@@ -171,6 +174,7 @@ const copy = {
     sourceReason: "Base: tus valoraciones o filtro de objetivos. Tema: tu elección. Formato: tu preferencia.",
     timeReason: "El tiempo es tu preferencia, no la duración verificada del vídeo.",
     private: "Las respuestas se quedan en el navegador. No se envían a IA externa, CRM ni pagos.",
+    ux:{focus:"Tu objetivo",primary:"PRIMER PASO RECOMENDADO",duration:"Tiempo disponible",durationWarning:"Es tu preferencia, no es la duración de una grabación o sesión.",supportFit:"Has elegido apoyo profesional, no un curso de negocios. Otras opciones abajo podrían ser más relevantes.",benefit:{meditation:"Abre una grabación publicada y comprueba su duración antes de verla.",tests:"Comienza una autoevaluación gratuita disponible; no suponemos sus resultados.",courses:"Explora el curso existente y decide si es adecuado.",consultation:"Revisa sesiones personales. Una consulta no es una reserva.",healing:"Revisa el apoyo Reiki; los tiempos y condiciones se confirman por separado.",mandala:"Abre el estudio de vídeo mandala si lo deseas."}},
   },
 } as const;
 
@@ -340,8 +344,127 @@ const conversation = {
   },
 } as const;
 
+// Warm, contextual stages layered over the original, already approved guide.
+// Results are not inferred from opening a test/video, and no third-party AI runs.
+const journeyCopy = {
+  en: {
+    hi: "Hi! So good to see you 🌿",
+    tryTopic: "That is only a suggestion. We can explore it or choose another topic.",
+    inviteTest: "Would a quick self-check help us find a direction? I can show you a couple of genuine free tests. Or we can go straight to a practice — no pressure.",
+    inviteTestEmpty: "There isn't a short, guest-accessible test for that topic in our verified catalogue right now. We can move straight to a practice.",
+    tests: "Show short tests", practice: "Let's try a practice", talk: "Let's talk first",
+    reflectAsk: "Of course. What feels most important to change about this topic? A few words are enough.",
+    reflectThanks: "Thanks, I understand your direction a little better.",
+    testPick: "Here are two published tests related to this topic. Which one feels more useful? You can also skip them.",
+    testUnit: "min", questions: "questions", free: "Free", titleTest: "Short self-checks",
+    testLanguage: "Questionnaire language", englishOriginal: "English original",
+    launchTest: "Take this test", testOpened: "The existing questionnaire opens in a new tab. Come back here when you want to continue. I can't see its result in this conversation.",
+    testReturn: "Ready to continue? You can share a general observation or we can move straight to a practice. Opening a questionnaire is not the same as completing it.",
+    backFromTest: "Continue to practice", anotherTest: "Another test", skipTest: "Skip the test",
+    testNotDone: "No problem. You can take it later. Shall we explore a practice instead?",
+    practiceInvite: "Great. We don't need to rush. Would you rather explore a meditation or try a small practice here?",
+    meditation: "Show meditations", shortPractice: "A short practice", other: "Another option",
+    timeQuestion: "How much time do you have right now? I'll use this as a preference, not a claim about video length.",
+    anytime: "Time doesn't matter", timeNote: "Please check the actual duration in the player; not all recordings have verified runtime metadata.",
+    mediaPick: "I found a few published videos for this topic. Choose one you like — or try a simple practice instead.",
+    mediaMissing: "I couldn't verify a recording matching this topic. We can try a simple exercise or open the existing catalogue.",
+    watch: "Open this video", recordedIn: "Audio", mediaWait: "I've selected the recording in the existing player below. Playback starts only if you press Play. Come back when you're ready; just opening a video doesn't mean you watched it.",
+    videoDone: "I've watched it", notYet: "Not yet", changeVideo: "Another video", noAutoplay: "No autoplay",
+    exerciseTitle: "A one-minute self-reflection", exerciseText: "Notice your feet on the ground. Look around and name three neutral things you see. Ask yourself: what small action would support me today? You can stop at any time.",
+    tried: "I've tried it", chooseMeditation: "See meditations",
+    feedbackAsk: "How did it feel? No particular result is expected.", helpful: "It suited me", unsure: "Not sure yet", unhelpful: "Not for me",
+    feedbackThanks: "Thanks for sharing. We can choose a different approach next time.",
+    finalAsk: "We've explored your topic and possible first steps. Would you like a simple path for today and the next few days?",
+    seePath: "Show my path", morePractice: "Another practice", enough: "That's enough today",
+    finalIntro: "Here is a small, optional path from what you chose. Nothing here is a diagnosis or an automatic booking.",
+    missingTests: "No eligible short tests are available right now. Browse the full verified test explorer instead.",
+    browseTests: "Open free tests", askPlaceholder: "Reply or ask a question…", typeLabel: "Your message",
+    unknown: "I may have missed that. Would you prefer a short test or a practice? You can choose a button below.",
+    questionWhy: "I suggested this because of the goal filter you completed, or the ratings you actively changed. I don't have access to your private My Tests on this public page.",
+    questionTests: "A test helps you reflect on your own answers; a practice lets you try a small action. Both are optional.",
+    waitingHint: "No test result is read or saved by this public chat. You may continue without sharing it.",
+    noPersonalData: "This public guide uses the goal filter and ratings on this page only. Private My Tests and scores are not read or sent to an AI provider.",
+  },
+  ru: {
+    hi: "Привет! Рада тебя видеть 🌿",
+    tryTopic: "Это только предложение. Можем исследовать эту тему или выбрать другую.",
+    inviteTest: "Как насчёт небольшой самопроверки, чтобы понять, куда двигаться? У меня есть несколько коротких бесплатных тестов. Или сразу перейдём к практике — как тебе удобнее.",
+    inviteTestEmpty: "По этой теме сейчас нет подтверждённого короткого теста для гостей. Можем сразу перейти к практике.",
+    tests: "Посмотреть тесты", practice: "Давай к практике", talk: "Сначала поговорим",
+    reflectAsk: "Конечно. А что в этой теме тебе сейчас больше всего хочется изменить? Можно ответить своими словами.",
+    reflectThanks: "Спасибо, я чуть лучше понимаю твою цель.",
+    testPick: "Вот два настоящих теста из нашей библиотеки по твоей теме. Какой тебе ближе? Можно и пропустить.",
+    testUnit: "мин", questions: "вопросов", free: "Бесплатно", titleTest: "Короткие тесты",
+    testLanguage: "Язык теста", englishOriginal: "Оригинал на английском",
+    launchTest: "Пройти тест", testOpened: "Открываю существующий тест в новой вкладке. Вернись сюда, когда захочешь продолжить. В этой беседе я не вижу его результат.",
+    testReturn: "Продолжим? Можешь поделиться общим впечатлением, а можем сразу перейти к практике. Открытие теста ещё не означает, что он пройден.",
+    backFromTest: "Перейти к практике", anotherTest: "Другой тест", skipTest: "Без теста",
+    testNotDone: "Хорошо, можно пройти его позже. Давай тогда посмотрим практики?",
+    practiceInvite: "Отлично. Не будем торопиться. Тебе сейчас приятнее посмотреть медитацию или попробовать маленькую практику прямо здесь?",
+    meditation: "Посмотреть медитации", shortPractice: "Короткая практика", other: "Другой вариант",
+    timeQuestion: "У тебя сейчас есть 5 или 10 минут? Учту это как пожелание, но не буду обещать точную длительность записи.",
+    anytime: "Время неважно", timeNote: "Длительность конкретной записи уточни в плеере — не для всех видео она проверена.",
+    mediaPick: "Я подобрала несколько опубликованных записей по этой теме. Посмотри, что больше откликается. Или попробуем короткое упражнение.",
+    mediaMissing: "Не нашлось подтверждённой записи точно по этой теме. Давай попробуем небольшое упражнение или откроем общий каталог.",
+    watch: "Смотреть видео", recordedIn: "Аудио", mediaWait: "Выбранная запись открыта ниже в существующем плеере. Воспроизведение начнётся только после нажатия Play. Вернись, когда захочешь: открытие не означает просмотр.",
+    videoDone: "Я посмотрел", notYet: "Ещё не смотрел", changeVideo: "Другой ролик", noAutoplay: "Без автозапуска",
+    exerciseTitle: "Минутная практика наблюдения", exerciseText: "Почувствуй опору под стопами. Посмотри вокруг и назови три нейтральных предмета. Спроси себя: какое небольшое действие поддержит меня сегодня? В любой момент можно остановиться.",
+    tried: "Я попробовал", chooseMeditation: "Лучше медитацию",
+    feedbackAsk: "Как тебе было? Не нужно добиваться какого-то обязательного результата.", helpful: "Подошло", unsure: "Пока не понял", unhelpful: "Не подошло",
+    feedbackThanks: "Спасибо, что поделился. Если захочешь, в следующий раз выберем другой подход.",
+    finalAsk: "Мы выбрали тему и попробовали найти небольшой первый шаг. Хочешь, соберу простой путь на сегодня и ближайшие дни?",
+    seePath: "Показать мой путь", morePractice: "Ещё практика", enough: "На сегодня хватит",
+    finalIntro: "Вот необязательный маршрут по нашему разговору. Это не диагноз и не автоматическая запись к мастеру.",
+    missingTests: "Сейчас нет доступных коротких тестов по этой теме. Можно открыть полную проверенную библиотеку.",
+    browseTests: "Открыть бесплатные тесты", askPlaceholder: "Ответь или задай вопрос…", typeLabel: "Твоё сообщение",
+    unknown: "Кажется, я не совсем поняла. Хочешь короткий тест или практику? Можно выбрать кнопкой ниже.",
+    questionWhy: "Я предложила эту тему по заполненному фильтру целей или по изменённым тобой шкалам. На публичной странице я не читаю личные результаты My Tests.",
+    questionTests: "Тест помогает присмотреться к своим ответам, а практика — попробовать небольшой шаг. Оба варианта добровольны.",
+    waitingHint: "Этот публичный диалог не читает и не сохраняет результат теста. Продолжить можно без него.",
+    noPersonalData: "Публичный проводник использует только текущий фильтр целей и изменённые здесь шкалы. Приватные My Tests не читаются и не отправляются ИИ.",
+  },
+  es: {
+    hi: "¡Hola! Me alegra verte 🌿",
+    tryTopic: "Es solo una propuesta. Podemos explorar este tema o elegir otro.",
+    inviteTest: "¿Qué te parece una prueba breve y gratuita para aclarar el siguiente paso? También podemos ir directamente a una práctica.",
+    inviteTestEmpty: "Ahora mismo no hay un test corto verificado para invitados sobre este tema. Podemos pasar a una práctica.",
+    tests: "Ver pruebas", practice: "Ir a la práctica", talk: "Primero conversar",
+    reflectAsk: "Claro. ¿Qué te gustaría cambiar sobre este tema? Basta con unas palabras.",
+    reflectThanks: "Gracias, ahora entiendo un poco mejor tu objetivo.",
+    testPick: "Encontré dos pruebas reales de nuestra biblioteca sobre este tema. ¿Cuál prefieres? Puedes omitirlas.",
+    testUnit: "min", questions: "preguntas", free: "Gratis", titleTest: "Pruebas breves",
+    testLanguage: "Idioma del test", englishOriginal: "Original en inglés",
+    launchTest: "Hacer la prueba", testOpened: "La prueba actual se abre en otra pestaña. Vuelve aquí cuando quieras. No puedo ver su resultado en este diálogo.",
+    testReturn: "¿Continuamos? Puedes compartir una impresión general o pasar a la práctica. Abrir la prueba no significa haberla terminado.",
+    backFromTest: "Pasar a la práctica", anotherTest: "Otra prueba", skipTest: "Sin prueba",
+    testNotDone: "De acuerdo, puedes hacerla más tarde. ¿Exploramos prácticas?",
+    practiceInvite: "Perfecto. Sin prisa. ¿Prefieres una meditación o una pequeña práctica aquí mismo?",
+    meditation: "Ver meditaciones", shortPractice: "Práctica breve", other: "Otra opción",
+    timeQuestion: "¿Tienes 5 o 10 minutos? Lo tendré en cuenta como preferencia, pero no como duración confirmada.",
+    anytime: "Sin límite de tiempo", timeNote: "Comprueba la duración real en el reproductor: no está verificada para todas las grabaciones.",
+    mediaPick: "Aquí tienes grabaciones publicadas sobre este tema. Elige una o prueba el ejercicio breve.",
+    mediaMissing: "No hay una grabación verificada que coincida exactamente. Podemos hacer un ejercicio u abrir el catálogo.",
+    watch: "Abrir vídeo", recordedIn: "Audio", mediaWait: "He seleccionado el vídeo en el reproductor existente de abajo. Solo se reproduce al pulsar Play. Abrirlo no significa haberlo visto.",
+    videoDone: "Ya lo vi", notYet: "Aún no", changeVideo: "Otro vídeo", noAutoplay: "Sin reproducción automática",
+    exerciseTitle: "Un minuto de observación", exerciseText: "Siente el apoyo de los pies en el suelo. Mira alrededor y nombra tres objetos neutrales. Pregúntate: ¿qué pequeño paso me ayudaría hoy? Puedes detenerte cuando quieras.",
+    tried: "Lo probé", chooseMeditation: "Prefiero meditación",
+    feedbackAsk: "¿Qué tal fue? No se espera ningún resultado concreto.", helpful: "Me sirvió", unsure: "Aún no lo sé", unhelpful: "No me sirvió",
+    feedbackThanks: "Gracias por contarlo. Podemos elegir algo diferente otro día.",
+    finalAsk: "Hemos explorado el tema y un posible primer paso. ¿Quieres un pequeño plan para hoy y los próximos días?",
+    seePath: "Mostrar mi camino", morePractice: "Otra práctica", enough: "Por hoy basta",
+    finalIntro: "Aquí tienes un camino opcional según nuestra conversación. No es un diagnóstico ni una reserva.",
+    missingTests: "No hay pruebas breves disponibles para este tema. Puedes abrir el catálogo verificado.",
+    browseTests: "Abrir pruebas gratis", askPlaceholder: "Responde o pregunta algo…", typeLabel: "Tu mensaje",
+    unknown: "Puede que no te haya entendido. ¿Prefieres una prueba breve o una práctica? Elige una opción abajo.",
+    questionWhy: "Sugerí este tema según tu filtro de objetivos o los valores que cambiaste. Esta página pública no lee tus resultados privados de My Tests.",
+    questionTests: "Una prueba permite reflexionar sobre tus respuestas; una práctica permite probar algo sencillo. Ambas son opcionales.",
+    waitingHint: "El chat público no lee ni guarda resultados de tests. Puedes continuar sin compartirlos.",
+    noPersonalData: "La guía pública usa solo los objetivos y puntuaciones cambiadas aquí. No accede a My Tests privados ni los envía a una IA externa.",
+  },
+} as const;
+
 export function HolisticSupportInlineGuide({
-  locale, scores, editedCheckins, goalSelection, videos, preferredVideo,
+  locale, scores, editedCheckins, goalSelection, videos, preferredVideo, guideTests,
   onClose, onRefine, onVideo, onChoice,
 }: {
   locale: PublicLocale;
@@ -350,387 +473,326 @@ export function HolisticSupportInlineGuide({
   goalSelection: GoalSelection | null;
   videos: Video[];
   preferredVideo?: Video | null;
+  guideTests: Record<string, SupportGuideTest[]>;
   onClose: () => void;
   onRefine: () => void;
   onVideo: (id: string | null) => void;
   onChoice: (choice: Choice) => void;
 }) {
-  const t = copy[locale];
-  const talk = conversation[locale];
-  const [initial] = useState(() => {
-    const result = opening(locale, scores, editedCheckins, goalSelection);
-    // Empty format selections need an upfront visible explanation, not a hidden option.
-    return goalSelection?.recommendationFormats?.length === 0
-      ? { ...result, message: result.message + " " + conversation[locale].emptyFormat }
-      : result;
-  });
-  const [phase, setPhase] = useState<Phase>(initial.phase);
-  const [topic, setTopic] = useState<GoalSector>(initial.topic);
-  const [need, setNeed] = useState("");
-  const [detail, setDetail] = useState("");
-  const [minutes, setMinutes] = useState<number | null>(null);
-  const [format, setFormat] = useState<Format>("meditation");
-  const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<Message[]>([{ role: "guide", text: initial.message }]);
-  const threadRef = useRef<HTMLDivElement>(null);
-  const resultsRef = useRef<HTMLElement>(null);
+  const t = copy[locale], talk = conversation[locale], journey = journeyCopy[locale];
+  const [initial] = useState(() => opening(locale,scores,editedCheckins,goalSelection));
+  const [phase,setPhase] = useState<Phase>(initial.phase);
+  const [topic,setTopic] = useState<GoalSector>(initial.topic);
+  const [draft,setDraft] = useState("");
+  const [need,setNeed] = useState("");
+  const [minutes,setMinutes] = useState<number | null>(null);
+  const [format,setFormat] = useState<Format>("meditation");
+  const [selectedTest,setSelectedTest] = useState<SupportGuideTest | null>(null);
+  const [selectedVideoId,setSelectedVideoId] = useState<string | null>(null);
+  const [messages,setMessages] = useState<Message[]>([
+    { role:"guide",text:journey.hi },
+    { role:"guide",text:initial.message },
+  ]);
+  const threadRef=useRef<HTMLDivElement>(null);
+  const resultRef=useRef<HTMLElement>(null);
+  useEffect(()=>{const node=threadRef.current;if(node)node.scrollTop=node.scrollHeight;},[messages]);
+  useEffect(()=>{
+    if(phase!=="recommendations")return;
+    const id=window.requestAnimationFrame(()=>resultRef.current?.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",
+    }));
+    return ()=>window.cancelAnimationFrame(id);
+  },[phase]);
 
-  useEffect(() => {
-    const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
-
-  useEffect(() => {
-    if (phase !== "recommendations") return;
-    const frame = window.requestAnimationFrame(() => {
-      resultsRef.current?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-        block: "start",
-      });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [phase]);
-
-  const available = formats.filter(item =>
-    !goalSelection || (goalSelection.recommendationFormats ?? formats.map(f => f.filter)).includes(item.filter as never));
-  const allowed = available.map(item => item.id);
-  const matchingVideo = videos.find(item => /^[A-Za-z0-9_-]{11}$/.test(item.id) &&
-    videoThemes[topic].some(category => item.topics.includes(category)));
-  const selectedVideo = topic === goalSelection?.sector && preferredVideo &&
-    /^[A-Za-z0-9_-]{11}$/.test(preferredVideo.id) &&
-    videoThemes[topic].some(category => preferredVideo.topics.includes(category))
-    ? preferredVideo : matchingVideo ?? null;
-  const category = testJourney[goalSectorFocus[topic]];
-  const summary = t.areas[topic] + " · " + (need || talk.notSure) +
-    (detail ? " · " + detail : "") + " · " +
-    (minutes === null ? t.later : minutes + " min") + " · " + t.formatLabels[format];
-  const progress = phase === "review" || phase === "topic" ? 1
-    : phase === "need" || phase === "detail" ? 2
-      : phase === "time" ? 3 : phase === "format" ? 4 : 5;
-
-  function speak(answer: string, reply: string, next: Phase) {
-    const pair: Message[] = [{ role: "user", text: answer }, { role: "guide", text: reply }];
-    setMessages(previous => [...previous, ...pair].slice(-40));
-    setPhase(next);
+  const allowed=formats.filter(row=>!goalSelection ||
+    (goalSelection.recommendationFormats??formats.map(x=>x.filter)).includes(row.filter as never));
+  const testCards=allowed.some(item=>item.id==="tests")?(guideTests[topic]??[]).filter(item=>item &&
+    /^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key) &&
+    /^\/(?:en|ru)\/client\?startTests=[a-z0-9%-]+$/.test(item.href) &&
+    Number.isFinite(item.durationMinutes)&&item.durationMinutes>0&&item.durationMinutes<=3).slice(0,2):[];
+  const mediaCandidates=(() => {
+    const matches=allowed.some(item=>item.id==="meditation")?videos.filter(v=>/^[A-Za-z0-9_-]{11}$/.test(v.id) &&
+      videoThemes[topic].some(tag=>v.topics.includes(tag))):[];
+    const first=topic===goalSelection?.sector&&preferredVideo&&
+      /^[A-Za-z0-9_-]{11}$/.test(preferredVideo.id)&&matches.some(v=>v.id===preferredVideo.id)
+        ? [preferredVideo,...matches] : matches;
+    return first.filter((v,i,all)=>all.findIndex(x=>x.id===v.id)===i).slice(0,3);
+  })();
+  const focus=testJourney[goalSectorFocus[topic]];
+  const category=focus;
+  const primaryVideo=videos.find(v=>v.id===selectedVideoId)??mediaCandidates[0]??null;
+  const stageStep=["review","topic"].includes(phase)?1:
+    ["test-invite","test-pick","test-return"].includes(phase)?2:
+    ["practice-invite","time","media-pick","media-return","exercise","feedback"].includes(phase)?3:4;
+  function say(answer:string,reply:string,next:Phase) {
+    const pair:Message[]=[{role:"user",text:answer},{role:"guide",text:reply}];
+    setMessages(prev=>[...prev,...pair].slice(-42));
+    setDraft("");setPhase(next);
+  }
+  function reply(answer:string,question:string) {
+    const pair:Message[]=[{role:"user",text:answer},{role:"guide",text:question}];
+    setMessages(prev=>[...prev,...pair].slice(-42));
     setDraft("");
   }
-  function guideReply(answer: string, reply: string) {
-    const pair: Message[] = [{ role: "user", text: answer }, { role: "guide", text: reply }];
-    setMessages(previous => [...previous, ...pair].slice(-40));
-    setDraft("");
+  function enterTopic(next:GoalSector,answer:string=t.areas[next]) {
+    setTopic(next);setNeed("");setSelectedTest(null);setSelectedVideoId(null);
+    const availableForTopic=allowed.some(item=>item.id==="tests")&&(guideTests[next]??[]).some(item=>item&&/^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key));
+    say(answer,availableForTopic?journey.inviteTest:journey.inviteTestEmpty,"test-invite");
   }
-  function chooseTopic(next: GoalSector, answer: string = t.areas[next]) {
-    setTopic(next);
-    setNeed("");
-    setDetail("");
-    speak(answer, talk.topicAck + " «" + t.areas[next] + "». " + t.needQuestion, "need");
+  function acceptTopic() {
+    say(t.agree, testCards.length ? journey.inviteTest : journey.inviteTestEmpty,"test-invite");
   }
-  function chooseNeed(value: string) {
-    const answer = value.trim().slice(0, 240);
-    if (!answer) return;
-    setNeed(answer);
-    speak(answer, talk.needAck + " «" + answer + "». " + talk.detailAsk, "detail");
+  function changeTopic() {say(t.different,t.topicQuestion,"topic");}
+  function showTests() {
+    setFormat("tests");
+    say(journey.tests,testCards.length?journey.testPick:journey.missingTests,
+      testCards.length?"test-pick":"practice-invite");
   }
-  function chooseDetail(value: string) {
-    const answer = value.trim().slice(0, 240);
-    if (!answer) return;
-    setDetail(answer === talk.skip ? "" : answer);
-    speak(answer, (answer === talk.skip ? talk.notSure : talk.detailAck + " «" + answer + "».") +
-      " " + t.timeQuestion, "time");
+  function chooseTest(row:SupportGuideTest) {
+    setSelectedTest(row);setFormat("tests");
+    say(row.title,journey.testOpened+" "+journey.waitingHint,"test-return");
   }
-  function chooseTime(value: number | null) {
+  function beginReflection(){say(journey.talk,journey.reflectAsk,"reflection");}
+  function goPractice(answer:string=journey.practice) {
+    say(answer,journey.practiceInvite,"practice-invite");
+  }
+  function askMediaTime() {
+    setFormat("meditation");
+    say(journey.meditation,journey.timeQuestion,"time");
+  }
+  function chooseMediaTime(value:number|null) {
     setMinutes(value);
-    speak(value === null ? talk.timeLater : value + " min",
-      talk.timeAck + " " + t.formatQuestion, "format");
+    say(value===null?journey.anytime:value+" "+journey.testUnit,
+      mediaCandidates.length?journey.mediaPick+" "+journey.timeNote:journey.mediaMissing,"media-pick");
   }
-  function chooseFormat(next: Format, answer: string = t.formatLabels[next]) {
-    if (!allowed.includes(next)) {
-      guideReply(answer, talk.unknownFormat);
-      return;
+  function openMedia(id:string,title:string) {
+    setSelectedVideoId(id);setFormat("meditation");
+    say(title,journey.mediaWait,"media-return");
+    onVideo(id);
+  }
+  function startExercise() {
+    setFormat("meditation");
+    say(journey.shortPractice,journey.exerciseText,"exercise");
+  }
+  function askFeedback(answer:string) {
+    say(answer,journey.feedbackAsk,"feedback");
+  }
+  function pathPrompt(answer:string) {say(answer,journey.feedbackThanks+" "+journey.finalAsk,"path-confirm");}
+  function showRecommendations(){say(journey.seePath,journey.finalIntro,"recommendations");}
+  function answerQuestion(kind:"why"|"price"|"compare"|"identity"|"process") {
+    const messages={why:journey.questionWhy,price:talk.priceAnswer,compare:journey.questionTests,
+      identity:talk.identityAnswer,process:journey.inviteTest};
+    return messages[kind];
+  }
+  function submitText(text:string) {
+    const intent=interpretSupportUtterance(text,locale);
+    if(intent.kind==="empty")return;
+    const answer=intent.text??text.trim().slice(0,240);
+    if(intent.kind==="safety"){say(answer,talk.safetyAnswer,"safety");return;}
+    if(intent.kind==="switch-topic"){say(answer,t.topicQuestion,"topic");return;}
+    if(intent.kind==="text"&&intent.question){
+      reply(answer,answerQuestion(intent.question as "why"|"price"|"compare"|"identity"|"process"));return;
     }
-    setFormat(next);
-    speak(answer, talk.formatAck + " «" + t.formatLabels[next] + "». " +
-      talk.confirmAsk, "confirm");
-  }
-  function suggestFormat() {
-    const chosen = chooseSupportFormat({ available: allowed, minutes, need });
-    if (!chosen) { guideReply(talk.auto, talk.emptyFormat); return; }
-    chooseFormat(chosen as Format, talk.auto);
-  }
-  function changeTopic() {
-    speak(t.different, talk.concernChanged + " " + t.topicQuestion, "topic");
-  }
-  function changeFormat() {
-    speak(talk.rethink, t.formatQuestion, "format");
-  }
-  function showRecommendations() {
-    speak(talk.userShow, talk.showAck, "recommendations");
-  }
-
-  function answerQuestion(question: "why" | "price" | "compare" | "identity" | "process") {
-    const options = {
-      why: talk.whyAnswer, price: talk.priceAnswer, compare: talk.compareAnswer,
-      identity: talk.identityAnswer, process: talk.processAnswer,
-    };
-    return options[question];
-  }
-
-  function submitText(value: string) {
-    const intent = interpretSupportUtterance(value, locale);
-    if (intent.kind === "empty") return;
-    const answer = intent.text ?? value.trim().slice(0, 240);
-    if (intent.kind === "safety") {
-      speak(answer, talk.safetyAnswer, "safety");
-      return;
-    }
-    if (intent.kind === "switch-topic") { speak(answer, t.topicQuestion, "topic"); return; }
-    if (intent.kind === "switch-format") { speak(answer, t.formatQuestion, "format"); return; }
-    if (intent.kind === "text" && intent.question) {
-      guideReply(answer, answerQuestion(intent.question as "why" | "price" | "compare" | "identity" | "process"));
-      return;
-    }
-    if (phase === "review") {
-      if (intent.kind === "agree") {
-        speak(answer, talk.topicAck + " «" + t.areas[topic] + "». " + t.needQuestion, "need");
-      } else if (intent.kind === "text" && intent.topic && sectors.includes(intent.topic as GoalSector)) {
-        chooseTopic(intent.topic as GoalSector, answer);
-      } else {
-        speak(answer, talk.unknownTopic, "topic");
+    if(phase==="review"||phase==="topic") {
+      if(phase==="review"&&intent.kind==="agree"){acceptTopic();return;}
+      if(intent.kind==="text"&&intent.topic&&sectors.includes(intent.topic as GoalSector)){
+        enterTopic(intent.topic as GoalSector,answer);return;
       }
-      return;
+      say(answer,t.topicQuestion,"topic");return;
     }
-    if (phase === "topic") {
-      if (intent.kind === "text" && intent.topic && sectors.includes(intent.topic as GoalSector)) {
-        chooseTopic(intent.topic as GoalSector, answer);
-      } else {
-        guideReply(answer, talk.unknownTopic);
+    if(phase==="test-invite"||phase==="test-pick") {
+      if(intent.kind==="text"&&intent.format==="tests"||/^(?:да|yes|si|тесты|tests?)$/i.test(answer)){
+        showTests();return;
       }
-      return;
-    }
-    if (phase === "need") { chooseNeed(answer); return; }
-    if (phase === "detail") { chooseDetail(answer); return; }
-    if (phase === "time") {
-      const parsed = parseSupportMinutes(answer);
-      if (parsed !== undefined) chooseTime(parsed);
-      else guideReply(answer, talk.unknownTime);
-      return;
-    }
-    if (phase === "format") {
-      if (intent.kind === "text" && intent.format && allowed.includes(intent.format as Format)) {
-        chooseFormat(intent.format as Format, answer);
-      } else if (intent.kind === "agree" || /(?:подбери|посоветуй|suggest|recomiend)/i.test(answer)) {
-        suggestFormat();
-      } else {
-        guideReply(answer, allowed.length ? talk.unknownFormat : talk.emptyFormat);
+      if(intent.kind==="disagree"||/практик|медитац|practice|meditat|pr[aá]ctica/i.test(answer)){
+        goPractice(answer);return;
       }
-      return;
+      reply(answer,journey.unknown);return;
     }
-    if (phase === "confirm") {
-      if (intent.kind === "agree" || /(?:покажи|рекомендац|show|recommend|mostrar|recomenda)/i.test(answer)) {
-        showRecommendations();
-      } else if (intent.kind === "disagree") {
-        speak(answer, t.formatQuestion, "format");
-      } else guideReply(answer, talk.confirmAsk);
-      return;
+    if(phase==="reflection"){setNeed(answer);say(answer,journey.reflectThanks+" "+journey.inviteTest,"test-invite");return;}
+    if(phase==="test-return") {
+      if(/другой|another|otro/i.test(answer)){showTests();return;}
+      goPractice(answer);return;
     }
-    if (phase === "recommendations") {
-      guideReply(answer, talk.processAnswer);
-      return;
+    if(phase==="practice-invite") {
+      if(/медитац|видео|meditat|video/i.test(answer)||intent.kind==="text"&&intent.format==="meditation"){
+        askMediaTime();return;
+      }
+      if(/практик|упражнен|exercise|practice|ejercic|pr[aá]ctica/i.test(answer)){startExercise();return;}
+      reply(answer,journey.practiceInvite);return;
     }
+    if(phase==="time") {
+      const minutes=parseSupportMinutes(answer);
+      if(minutes!==undefined){chooseMediaTime(minutes);return;}
+      reply(answer,talk.unknownTime);return;
+    }
+    if(phase==="media-pick") {reply(answer,journey.mediaPick);return;}
+    if(phase==="media-return") {
+      if(/посмотр|готов|finished|watched|v[ií]|he visto/i.test(answer)){askFeedback(answer);return;}
+      reply(answer,journey.mediaWait);return;
+    }
+    if(phase==="exercise"){askFeedback(answer);return;}
+    if(phase==="feedback"){pathPrompt(answer);return;}
+    if(phase==="path-confirm") {
+      if(intent.kind==="agree"||/покажи|путь|show|path|mostrar|camino/i.test(answer)){showRecommendations();return;}
+      if(intent.kind==="disagree"){onClose();return;}
+      reply(answer,journey.finalAsk);return;
+    }
+    reply(answer,talk.fallbackAnswer);
   }
-
-  function offer(kind: Format) {
-    if (kind === "meditation") return selectedVideo ? (
-      <div className={styles.offer}>
-        <Image alt="" unoptimized width={112} height={75} loading="lazy"
-          src={"https://i.ytimg.com/vi/" + encodeURIComponent(selectedVideo.id) + "/mqdefault.jpg"} />
-        <span><b>{selectedVideo.title}</b>
-          <button type="button" onClick={() => onVideo(selectedVideo.id)}><Play size={16} aria-hidden="true" />{talk.open}</button>
-        </span>
-      </div>
-    ) : (
-      <div className={styles.offer}><span><b>{talk.missingVideo}</b>
-        <button type="button" onClick={() => onVideo(null)}>{talk.availableVideo}</button>
-      </span></div>
-    );
-    if (kind === "tests") return (
-      <Link className={styles.primaryLink} href={"/" + locale + "/client/tests?journey=" + category} prefetch={false}>
-        {talk.testAction}<ArrowRight size={17} aria-hidden="true" />
+  function offer(kind:Format) {
+    if(kind==="tests") return (
+      <Link className={styles.primaryLink} href={"/"+locale+"/client/tests?journey="+category} prefetch={false}>
+        {journey.browseTests}<ArrowRight size={17} aria-hidden="true"/>
       </Link>
     );
-    if (kind === "courses") return (
-      <Link className={styles.primaryLink}
-        href={"/" + locale + (topic === "money" ? "/explore/business" : "/academy")} prefetch={false}>
-        {talk.courseAction}<ArrowRight size={17} aria-hidden="true" />
-      </Link>
-    );
-    if (kind === "mandala") return (
-      <Link className={styles.primaryLink} href={"/" + locale + "/holistic-support/mandala"} prefetch={false}>
-        {talk.mandalaAction}<ArrowRight size={17} aria-hidden="true" />
-      </Link>
-    );
-    return (
-      <button type="button" className={styles.serviceAction}
-        onClick={() => onChoice(kind === "healing" ? "healing" : "consultation")}>
-        <HandHeart size={18} aria-hidden="true" />
-        <span>{kind === "healing" ? talk.supportAction : talk.sessionAction}</span>
-        <ArrowRight size={17} aria-hidden="true" />
-      </button>
-    );
+    if(kind==="meditation") return primaryVideo ? <button className={styles.serviceAction} type="button"
+      onClick={()=>onVideo(primaryVideo.id)}><Play size={17} aria-hidden="true"/>
+      <span>{primaryVideo.title}</span><ArrowRight size={16} aria-hidden="true"/></button>
+      : <button type="button" className={styles.serviceAction} onClick={()=>onVideo(null)}>{t.videoBrowse}</button>;
+    if(kind==="courses")return <Link className={styles.primaryLink}
+      href={"/"+locale+(topic==="money"?"/explore/business":"/academy")} prefetch={false}>
+      {journey.other}<ArrowRight size={17} aria-hidden="true"/></Link>;
+    if(kind==="mandala")return <Link className={styles.primaryLink}
+      href={"/"+locale+"/holistic-support/mandala"} prefetch={false}>
+      {talk.mandalaAction}<ArrowRight size={17} aria-hidden="true"/></Link>;
+    return <button type="button" className={styles.serviceAction}
+      onClick={()=>onChoice(kind==="healing"?"healing":"consultation")}>
+      <HandHeart size={17} aria-hidden="true"/>
+      <span>{kind==="healing"?talk.supportAction:talk.sessionAction}</span><ArrowRight size={17} aria-hidden="true"/>
+    </button>;
   }
-
-  const alternatives = available.filter(item => item.id !== format)
-    .sort((a, b) => ["tests", "meditation", "courses", "mandala", "healing", "consultation"].indexOf(a.id) -
-      ["tests", "meditation", "courses", "mandala", "healing", "consultation"].indexOf(b.id))
-    .slice(0, 2);
-
+  const alternatives=allowed.filter(row=>row.id!==format).slice(0,2);
+  const stageSummary=t.areas[topic]+(need?" · "+need:"")+(selectedTest?" · "+selectedTest.title:"")+
+    (primaryVideo&&selectedVideoId?" · "+primaryVideo.title:"");
   return (
-    <section id="support-goal-results" className={styles.card} data-support-inline-guide
-      aria-labelledby="support-guide-heading">
+    <section id="support-goal-results" className={styles.card} data-support-inline-guide aria-labelledby="support-guide-heading">
       <header className={styles.header}>
-        <span className={styles.title} id="support-guide-heading">
-          <Sparkles size={18} aria-hidden="true" />{t.title}
-        </span>
-        <span className={styles.progress}>{t.step} {progress}/5</span>
-        <button type="button" className={styles.close} onClick={onClose} aria-label={t.close}>
-          <X size={18} aria-hidden="true" />
-        </button>
+        <span className={styles.title} id="support-guide-heading"><Sparkles size={18} aria-hidden="true"/>{t.title}</span>
+        <span className={styles.progress}>{t.step} {stageStep}/4</span>
+        <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
       <div className={styles.dialogue}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
-          <Image alt="" src="/images/holistic-house/support-reference-avatar.webp"
-            width={128} height={160} sizes="(max-width: 390px) 75px, 100px" />
-          <span className={styles.online} aria-hidden="true" />
+          <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={128} height={160}
+            sizes="(max-width: 390px) 75px, 100px"/>
+          <span className={styles.online} aria-hidden="true"/>
         </div>
         <div className={styles.thread} ref={threadRef} data-support-guide-thread
           role="log" aria-label={t.title} aria-live="polite" aria-relevant="additions">
-          {messages.map((message, index) => (
-            <p className={message.role === "user" ? styles.bubbleUser : styles.bubbleGuide}
-              data-support-guide-message={message.role} key={index}>{message.text}</p>
-          ))}
+          {messages.map((item,i)=><p key={i} data-support-guide-message={item.role}
+            className={item.role==="user"?styles.bubbleUser:styles.bubbleGuide}>{item.text}</p>)}
         </div>
       </div>
       <div className={styles.answers} data-support-guide-phase={phase}>
-        {phase === "review" ? (
+        {phase==="review" ? <div className={styles.options}>
+          <button className={styles.primary} type="button" onClick={acceptTopic}><Check size={16}/>{t.agree}</button>
+          <button type="button" onClick={changeTopic}>{t.different}</button>
+          <button type="button" onClick={onRefine}>{t.clarify}</button>
+        </div> : phase==="topic" ? <div className={styles.options}>
+          {sectors.map(sector=><button type="button" key={sector} data-support-guide-topic={sector}
+            onClick={()=>enterTopic(sector)}>{t.areas[sector]}</button>)}
+        </div> : phase==="test-invite" ? <div className={styles.options}>
+          {testCards.length>0 ? <button type="button" data-guide-open-test-choice
+            className={styles.primary} onClick={showTests}>{journey.tests}</button> : null}
+          <button type="button" data-guide-skip-test onClick={()=>goPractice(journey.practice)}>{journey.practice}</button>
+          <button type="button" data-guide-talk-first onClick={beginReflection}>{journey.talk}</button>
+        </div> : phase==="reflection" ? <div className={styles.options}>
+          <button type="button" className={styles.primary} onClick={showTests}>{journey.tests}</button>
+          <button type="button" onClick={()=>goPractice(journey.practice)}>{journey.practice}</button>
+        </div> : phase==="test-pick" ? <div className={styles.inlineChoices} data-guide-test-options>
+          <strong>{journey.titleTest}</strong>
+          {testCards.map(item=><div className={styles.inlineOffer} key={item.key} data-guide-test-card={item.key}>
+            <span><b>{item.title}</b><small>{journey.free} · {item.durationMinutes} {journey.testUnit}
+              {item.questionCount?" · "+item.questionCount+" "+journey.questions:""}
+              {item.instrumentLocale===locale?"":" · "+journey.englishOriginal}</small></span>
+            <a href={item.href} target="_blank" rel="noopener noreferrer" onClick={()=>chooseTest(item)}
+              data-guide-start-test={item.key}>{journey.launchTest}<ArrowRight size={15} aria-hidden="true"/></a>
+          </div>)}
+          <button type="button" className={styles.textLink} data-guide-skip-test onClick={()=>goPractice(journey.skipTest)}>{journey.skipTest}</button>
+        </div> : phase==="test-return" ? <div className={styles.options}>
+          <button type="button" className={styles.primary} data-guide-continue-after-test onClick={()=>goPractice(journey.backFromTest)}>{journey.backFromTest}</button>
+          <button type="button" onClick={showTests}>{journey.anotherTest}</button>
+          <button type="button" onClick={()=>goPractice(journey.skipTest)}>{journey.skipTest}</button>
+        </div> : phase==="practice-invite" ? <div className={styles.options}>
+          {allowed.some(x=>x.id==="meditation")?<button type="button" className={styles.primary} data-guide-go-meditations onClick={askMediaTime}>{journey.meditation}</button>:null}
+          <button type="button" data-guide-short-practice onClick={startExercise}>{journey.shortPractice}</button>
+          <button type="button" onClick={()=>pathPrompt(journey.other)}>{journey.other}</button>
+        </div> : phase==="time" ? <div className={styles.options}>
+          {[5,10,20].map(n=><button type="button" key={n} data-support-guide-minutes={n}
+            onClick={()=>chooseMediaTime(n)}><Clock3 size={15} aria-hidden="true"/>{n} {journey.testUnit}</button>)}
+          <button type="button" onClick={()=>chooseMediaTime(null)}>{journey.anytime}</button>
+        </div> : phase==="media-pick" ? <div className={styles.inlineChoices} data-guide-media-options>
+          {mediaCandidates.map(item=><div className={styles.inlineOffer} key={item.id} data-guide-media-card={item.id}>
+            <Image src={"https://i.ytimg.com/vi/"+encodeURIComponent(item.id)+"/mqdefault.jpg"}
+              width={105} height={69} alt="" unoptimized loading="lazy"/>
+            <span><b>{item.title}</b><small>{journey.recordedIn}: {item.sourceLanguage?.toUpperCase()??"EN"} · {journey.noAutoplay}</small></span>
+            <button type="button" onClick={()=>openMedia(item.id,item.title)} data-guide-watch-video={item.id}>
+              {journey.watch}<Play size={16} aria-hidden="true"/>
+            </button>
+          </div>)}
+          <button type="button" className={styles.textLink} data-guide-media-short-practice onClick={startExercise}>{journey.shortPractice}</button>
+          {!mediaCandidates.length?<button type="button" className={styles.textLink} onClick={()=>onVideo(null)}>{t.videoBrowse}</button>:null}
+        </div> : phase==="media-return" ? <div className={styles.options}>
+          <button className={styles.primary} type="button" data-guide-self-report-watched onClick={()=>askFeedback(journey.videoDone)}>{journey.videoDone}</button>
+          <button type="button" onClick={()=>reply(journey.notYet,journey.mediaWait)}>{journey.notYet}</button>
+          <button type="button" onClick={()=>say(journey.changeVideo,journey.mediaPick,"media-pick")}>{journey.changeVideo}</button>
+          <button type="button" onClick={()=>pathPrompt(journey.skipTest)}>{journey.skipTest}</button>
+        </div> : phase==="exercise" ? <div className={styles.inlineChoices} data-guide-inline-practice>
+          <p>{journey.exerciseText}</p>
           <div className={styles.options}>
-            <button type="button" className={styles.primary}
-              onClick={() => speak(t.agree, talk.topicAck + " «" + t.areas[topic] + "». " + t.needQuestion, "need")}>
-              <Check size={17} aria-hidden="true" />{t.agree}</button>
-            <button type="button" onClick={onRefine}>{t.clarify}</button>
-            <button type="button" onClick={changeTopic}>{t.different}</button>
+            <button className={styles.primary} type="button" onClick={()=>askFeedback(journey.tried)}>{journey.tried}</button>
+            <button type="button" onClick={askMediaTime}>{journey.chooseMeditation}</button>
           </div>
-        ) : phase === "topic" ? (
-          <div className={styles.options}>
-            {sectors.map(sector => (
-              <button type="button" key={sector} data-support-guide-topic={sector}
-                className={topic === sector ? styles.selected : undefined}
-                onClick={() => chooseTopic(sector)}>{t.areas[sector]}</button>
-            ))}
-            <button type="button" onClick={onRefine}>{t.clarify}</button>
-          </div>
-        ) : phase === "need" ? (
-          <div className={styles.options}>
-            {t.needs[topic].map(option => (
-              <button type="button" key={option} onClick={() => chooseNeed(option)}>{option}</button>
-            ))}
-            <button type="button" onClick={changeTopic}>{t.different}</button>
-          </div>
-        ) : phase === "detail" ? (
-          <div className={styles.options}>
-            {talk.detailOptions[topic].map(option => (
-              <button type="button" key={option} data-support-guide-detail={option}
-                onClick={() => chooseDetail(option)}>{option}</button>
-            ))}
-            <button type="button" onClick={() => chooseDetail(talk.skip)}>{talk.skip}</button>
-          </div>
-        ) : phase === "time" ? (
-          <div className={styles.options}>
-            {[5, 10, 20, 30].map(value => (
-              <button type="button" key={value} data-support-guide-minutes={value}
-                onClick={() => chooseTime(value)}><Clock3 size={16} aria-hidden="true" />{value} min</button>
-            ))}
-            <button type="button" onClick={() => chooseTime(null)}>{t.later}</button>
-          </div>
-        ) : phase === "format" ? (
-          <div className={styles.options}>
-            {available.length ? available.map(item => (
-              <button type="button" key={item.id} data-support-guide-format={item.id}
-                onClick={() => chooseFormat(item.id)}>{t.formatLabels[item.id]}</button>
-            )) : <button type="button" onClick={onRefine}>{talk.emptyFormat}</button>}
-            {available.length ? <button type="button" className={styles.primary}
-              data-support-guide-suggest-format onClick={suggestFormat}><Sparkles size={17} aria-hidden="true" />{talk.auto}</button> : null}
-          </div>
-        ) : phase === "confirm" ? (
-          <div className={styles.confirm} data-support-guide-confirm>
-            <p><strong>{talk.confirm}</strong> {t.areas[topic]}.</p>
-            <p>{talk.confirmNeed} «{need}»{detail ? " · " + detail : ""}.</p>
-            <p>{talk.confirmTime} {minutes === null ? t.later : minutes + " min"}. {talk.confirmFormat} {t.formatLabels[format]}.</p>
-            <div className={styles.options}>
-              <button type="button" className={styles.primary} data-support-guide-show-recommendations
-                onClick={showRecommendations}><Sparkles size={17} aria-hidden="true" />{talk.show}<ArrowRight size={17} aria-hidden="true" /></button>
-              <button type="button" onClick={changeFormat}>{talk.rethink}</button>
-              <button type="button" onClick={changeTopic}>{t.different}</button>
-            </div>
-          </div>
-        ) : phase === "recommendations" ? (
-          <div className={styles.confirm}>
-            <strong>{talk.results}</strong>
-            <p>{talk.preview}: {summary}</p>
-            <button type="button" className={styles.textLink} onClick={() =>
-              speak(talk.returnToChat, t.formatQuestion, "format")}>{talk.returnToChat}</button>
-          </div>
-        ) : (
-          <div className={styles.confirm} role="alert">
-            <p>{talk.safetyAnswer}</p>
-            <button type="button" onClick={onClose}>{talk.safeStop}</button>
-          </div>
-        )}
-        {phase !== "safety" && phase !== "recommendations" ? (
-          <form className={styles.customForm} data-support-guide-compose
-            onSubmit={event => { event.preventDefault(); submitText(draft); }}>
-            <input aria-label={talk.inputLabel} placeholder={talk.askAnything}
-              maxLength={240} value={draft} onChange={event => setDraft(event.target.value)} />
-            <button type="submit" disabled={!draft.trim()}>{talk.textSend}<ArrowRight size={15} aria-hidden="true" /></button>
-          </form>
-        ) : null}
+        </div> : phase==="feedback" ? <div className={styles.options}>
+          {[journey.helpful,journey.unsure,journey.unhelpful].map(v=><button type="button" key={v}
+            onClick={()=>pathPrompt(v)}>{v}</button>)}
+        </div> : phase==="path-confirm" ? <div className={styles.options}>
+          <button type="button" className={styles.primary} data-support-guide-show-recommendations
+            onClick={showRecommendations}><Sparkles size={16} aria-hidden="true"/>{journey.seePath}</button>
+          <button type="button" onClick={askMediaTime}>{journey.morePractice}</button>
+          <button type="button" onClick={onClose}>{journey.enough}</button>
+        </div> : phase==="recommendations" ? <p className={styles.context} data-support-guide-context><strong>{t.ux.focus}: {t.areas[topic]}</strong>{need ? " · "+need : ""}</p> :
+          <div className={styles.confirm} role="alert"><p>{talk.safetyAnswer}</p>
+            <button type="button" onClick={onClose}>{talk.safeStop}</button></div>}
+        {phase!=="safety"&&phase!=="recommendations" ?
+          <form className={styles.customForm} data-support-guide-compose onSubmit={e=>{e.preventDefault();submitText(draft);}}>
+            <input value={draft} onChange={e=>setDraft(e.target.value)} maxLength={240}
+              aria-label={journey.typeLabel} placeholder={journey.askPlaceholder}/>
+            <button disabled={!draft.trim()} type="submit">{talk.textSend}<ArrowRight size={15} aria-hidden="true"/></button>
+          </form>:null}
       </div>
-      {phase === "recommendations" ? (
-        <section className={styles.recommendations} data-support-guide-recommendations ref={resultsRef}
-          id="support-guide-recommendations" aria-labelledby="support-guide-recommendations-title">
-          <h3 id="support-guide-recommendations-title">{talk.results}</h3>
-          <p className={styles.reason}>{talk.resultNote}</p>
-          <div className={styles.result} data-support-guide-recommendation>
-            <strong>{t.resultTitle} · {t.formatLabels[format]} · {t.areas[topic]}</strong>
-            {offer(format)}
-            <details className={styles.why}>
-              <summary>{talk.whyLabel}<ChevronDown size={15} aria-hidden="true" /></summary>
-              <p>{t.sourceReason} «{need}»{detail ? " · " + detail : ""}. {t.timeReason} {t.notDiagnosis}</p>
-            </details>
-          </div>
-          {alternatives.length ? (
-            <div className={styles.alternatives}>
-              <strong>{talk.alternative}</strong>
-              {alternatives.map(item => (
-                <div className={styles.alternative} key={item.id} data-support-guide-alternative={item.id}>
-                  <b>{t.formatLabels[item.id]}</b>{offer(item.id)}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <div className={styles.plan} data-support-guide-program>
-            <strong>{t.planTitle}</strong>
-            <ol>
-              <li><b>{t.planToday}:</b> {t.formatLabels[format]} — {need} {minutes !== null ? " · " + minutes + " min" : ""}</li>
-              <li><b>{t.planThen}:</b> {t.planCheck}</li>
-              <li><b>{t.planContinue}:</b> {t.planContinueText}</li>
-            </ol>
-          </div>
-          <p className={styles.next}>{talk.nextStep}</p>
-          <button type="button" className={styles.textLink} onClick={() =>
-            speak(talk.returnToChat, t.formatQuestion, "format")}>{talk.returnToChat}</button>
-        </section>
-      ) : null}
-      <p className={styles.privacy}>{t.private} {talk.hint}</p>
+      {phase==="recommendations"?<section className={styles.recommendations} ref={resultRef}
+        data-support-guide-recommendations aria-labelledby="support-guide-recommendations-title">
+        <h3 id="support-guide-recommendations-title">{journey.seePath}</h3>
+        <p className={styles.reason}>{stageSummary}</p>
+        <div className={styles.result} data-support-guide-recommendation>
+          <div className={styles.resultTop}><span className={styles.eyebrow}>{t.ux.primary}</span>
+            <span className={styles.formatTag}>{t.formatLabels[format]}</span></div>
+          <h4 data-support-guide-primary-title>{format==="meditation" ? (primaryVideo?.title??t.formatLabels[format]) :
+            format==="tests" ? (testCards[0]?.title??t.formatLabels[format]) : t.formatLabels[format]}</h4>
+          <p className={styles.benefit}>{t.ux.benefit[format]}</p>
+          {topic==="money" && (format==="healing" || format==="consultation") ?
+            <p className={styles.fitNote} data-support-guide-fit-note>{t.ux.supportFit}</p> : null}
+          {minutes!==null ? <p className={styles.timeNote} data-support-guide-time-preference>
+            <Clock3 size={15} aria-hidden="true"/><span>{t.ux.duration}: {minutes} min. {t.ux.durationWarning}</span>
+          </p> : null}
+          {offer(format)}
+          <details className={styles.why}><summary>{talk.whyLabel}<ChevronDown size={15} aria-hidden="true"/></summary>
+            <p>{journey.questionWhy} {t.notDiagnosis}</p></details>
+        </div>
+        {alternatives.length?<div className={styles.alternatives}><strong>{talk.alternative}</strong>
+          {alternatives.map(x=><div className={styles.alternative} key={x.id} data-support-guide-alternative={x.id}>
+            <b>{t.formatLabels[x.id]}</b>{offer(x.id)}</div>)}</div>:null}
+        <div className={styles.plan} data-support-guide-program><strong>{t.planTitle}</strong>
+          <ol><li><b>{t.planToday}:</b> {t.areas[topic]} · {t.formatLabels[format]}</li>
+            <li><b>{t.planThen}:</b> {t.planCheck}</li>
+            <li><b>{t.planContinue}:</b> {t.planContinueText}</li></ol>
+        </div>
+        <p className={styles.next}>{journey.noPersonalData}</p>
+        <button type="button" className={styles.textLink} onClick={()=>say(talk.returnToChat,journey.practiceInvite,"practice-invite")}>{talk.returnToChat}</button>
+      </section>:null}
+      <p className={styles.privacy}>{t.private} {journey.noPersonalData}</p>
     </section>
   );
 }
