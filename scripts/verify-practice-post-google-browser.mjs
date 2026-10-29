@@ -85,9 +85,15 @@ for(const engine of [chromium,webkit]){
           // The previous test stopped at waitForURL here, so it never saw
           // the oversized private service composer shown in the owner's image.
           await root.locator('[class*="quickGrid"] > button').first().click()
-          await page.waitForURL(u=>u.pathname==='/'+locale+'/app/practice'&&
+          // The public ES showcase deliberately routes its protected editor to
+          // the currently supported EN cabinet, never the unsupported ES app URL.
+          // This preserves actual server auth; it is not a synthetic shortcut.
+          const protectedLocale=locale==='es'?'en':locale
+          await page.waitForURL(u=>u.pathname==='/'+protectedLocale+'/app/practice'&&
             u.searchParams.get('panel')==='services'&&u.searchParams.get('create')==='1',
             {timeout:30000})
+          assert.equal(new URL(page.url()).pathname,'/'+protectedLocale+'/app/practice',
+            label+' real server-supported protected editor locale')
           const editor=page.locator('[data-service-slide-editor]')
           await editor.waitFor({state:'visible',timeout:45000})
           assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' opens stage one')
