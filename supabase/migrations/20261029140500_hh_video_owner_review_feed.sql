@@ -38,7 +38,7 @@ COMMENT ON COLUMN public.hh_meditation_catalog_v1.owner_review_version IS
 -- Owner-only backend role: no INSERT/DELETE rights on catalog, no direct public
 -- write grants. A valid account session AND a server-set transaction flag are needed.
 GRANT SELECT ON public.hh_meditation_catalog_v1 TO hh_app_backend;
-GRANT UPDATE (goals,subtopics,owner_review_status,owner_review_note,
+GRANT UPDATE (goals,goal_weights,subtopics,owner_review_status,owner_review_note,
   owner_reviewed_at,owner_reviewed_by,owner_review_version,editorial_status,
   discovery_status,claims_risk,content_checked_at,youtube_oembed_checked_at,
   metadata_checked_at,metadata_confidence,updated_at)
@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS app_private.hh_video_review_events (
  new_goals text[] NOT NULL,
  previous_subtopics text[] NOT NULL,
  new_subtopics text[] NOT NULL,
+ previous_weights jsonb NOT NULL,
+ new_weights jsonb NOT NULL,
  note text NOT NULL DEFAULT '' CHECK (char_length(note) <= 500),
  created_at timestamptz NOT NULL DEFAULT now()
 );
