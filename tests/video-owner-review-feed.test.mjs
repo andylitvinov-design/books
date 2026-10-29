@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   VIDEO_AREAS, videoAreasFromRow, videoTopicsFromRow,
-  prepareVideoReview, videoLinkEligible, videoReviewChecks,
+  prepareVideoReview, prepareDurationReview, videoLinkEligible, videoReviewChecks,
 } from '../lib/site-videos/review-model.mjs'
 
 const review = {
@@ -50,7 +50,7 @@ test('reject malformed IDs, categories, tags, revisions and arbitrary fields', (
 const linkCandidate = {
   owner_review_status: 'accepted', source_kind: 'external', content_type: 'guided',
   editorial_status: 'candidate',
-  duration_verified_seconds: 375, metadata_confidence: 'public_listing',
+  duration_verified_seconds: 375, duration_basis: 'metadata_checked', metadata_confidence: 'public_listing',
   metadata_checked_at: '2026-10-29T13:00:00Z', youtube_oembed_checked_at: '2026-10-29T13:00:00Z',
   content_checked_at: '2026-10-29T13:10:00Z', claims_risk: 'low',
   embed_status: 'unverified', rights_status: 'pending_embed_check',
@@ -61,6 +61,7 @@ test('client link release requires owner, duration, independent listing and scre
   const fields = [
     ['owner_review_status', 'pending'], ['owner_review_status', 'rejected'],
     ['duration_verified_seconds', 601], ['duration_verified_seconds', null],
+    ['duration_basis', 'title_only'], ['duration_basis', 'unknown'],
     ['youtube_oembed_checked_at', null], ['metadata_checked_at', null],
     ['content_checked_at', null], ['metadata_confidence', 'candidate'],
     ['claims_risk', 'high'], ['source_kind', 'original'],
@@ -82,3 +83,16 @@ test('screening never downgrades independently flagged risk or bypasses link-onl
   assert.equal(videoLinkEligible({ ...linkCandidate, claims_risk: 'high' }), false)
   assert.equal(videoLinkEligible({ ...linkCandidate, owner_review_status: 'pending' }), false)
 })
+
+test('owner clock is explicit and restricted to one to ten minutes', () => {
+  const base = { youtubeId: 'DbDoBzGY3vo', revision: 2, confirmed: true };
+  assert.deepEqual(prepareDurationReview({ ...base, clock: '6:51' }),
+    { youtubeId: 'DbDoBzGY3vo', revision: 2, seconds: 411 });
+  assert.equal(prepareDurationReview({ ...base, clock: '10:00' }).seconds, 600);
+  for (const input of [
+    { clock: '10:01' }, { clock: '11:00' }, { clock: '0:00' },
+    { clock: '5:99' }, { clock: '5 min' }, { clock: '05:03', confirmed: false },
+    { clock: '5:00', revision: -1 }, { clock: '5:00', unexpected: true },
+  ]) assert.throws(() => prepareDurationReview({ ...base, clock: '05:00', ...input }), /validation/);
+  assert.equal(videoLinkEligible({ ...linkCandidate, duration_basis: 'owner_checked' }), true);
+});
