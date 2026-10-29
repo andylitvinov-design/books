@@ -57,15 +57,17 @@ jobs:
           node --test tests/practice-google-return-and-services-v5.test.mjs tests/practitioner-preview-auth.test.mjs
           npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/simple-service-editor.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
           npx tsc --noEmit --pretty false
+      - name: Compile production Next application before browser acceptance
+        run: npm run build
       - name: Install Chromium and WebKit
         run: |
           mkdir -p /tmp/holistic-practice-browser
           npm install --prefix /tmp/holistic-practice-browser --no-audit --no-fund playwright@1.63.0
           /tmp/holistic-practice-browser/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Render real protected editor after signed-in Practice (Chromium and WebKit)
+      - name: Render production-mode protected editor after signed-in Practice (Chromium and WebKit)
         run: |
           mkdir -p artifacts/practice-after-google
-          npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
+          npx next start --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 120); do
