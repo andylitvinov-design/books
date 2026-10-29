@@ -109,3 +109,18 @@ test("null or malformed inputs fail closed", () => {
   assert.deepEqual(result.suggestions, []);
   assert.equal(buildHolisticGuidedTurn({ safety: { status: "clear" }, intent: null }).status, "clarify");
 });
+
+test("urgent cues past the first 240 characters trigger handoff, oversized inputs fail closed", () => {
+  const longDanger = "a".repeat(360) + " I want to kill myself";
+  const urgent = buildHolisticGuidedTurn({
+    ...base(), intent: { ...base().intent, rawUtterance: longDanger },
+  });
+  assert.equal(urgent.status, "safety_handoff");
+  assert.deepEqual(urgent.suggestions, []);
+  assert.ok(!JSON.stringify(urgent).includes(longDanger));
+  const oversized = buildHolisticGuidedTurn({
+    ...base(), intent: { ...base().intent, rawUtterance: "a".repeat(4001) },
+  });
+  assert.equal(oversized.status, "safety_check_required");
+  assert.deepEqual(oversized.suggestions, []);
+});
