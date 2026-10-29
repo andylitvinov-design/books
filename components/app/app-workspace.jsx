@@ -1751,10 +1751,15 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     <section className={`hh-runner hh-panel hh-runner--${mode} hh-test-experience ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-test-card-system="v1" data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
-          <p className="hh-kicker">
-            {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title} ·{' '}
-            {def.instrumentLocale.toUpperCase()}
-          </p>
+          <div className="hh-test-runner-heading">
+            <p className="hh-kicker">
+              {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title} ·{' '}
+              {def.instrumentLocale.toUpperCase()}
+            </p>
+            <span className="hh-test-complete-meter" style={{ '--hh-complete': Math.round(100 * answeredCount / Math.max(1, def.questions.length)) + '%' }} aria-hidden="true">
+              <strong>{Math.round(100 * answeredCount / Math.max(1, def.questions.length))}%</strong>
+            </span>
+          </div>
           {(!isContext || mode === 'quick') && (
             <div className="hh-test-mode-toggle" role="group" aria-label={modeCopy.switch}>
               <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>
