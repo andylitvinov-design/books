@@ -48,3 +48,8 @@ test('honors an explicitly different format and excluded safety flags', () => {
   const original = videos.find(video => video.youtube_id === sourceId);
   assert.equal(reasonAcrossMeditations({ ...base, videos: [{ ...original, safety_flags: ['flashing'] }], intent: { ...base.intent, avoidSafetyFlags: ['flashing'] } }).status, 'no_match');
 });
+test('relationship-tagged content remains unavailable until its sensitivity is reviewed', () => {
+  const tantra = videos.find(video => video.youtube_id === 'w2BN-HYmHUk');
+  const result = reasonAcrossMeditations({ ...base, intent:{language:'en',selectedTopics:['relationships']}, videos:[tantra], publishedSourceIds:[tantra.youtube_id] });
+  assert.equal(result.status, 'no_match');
+});

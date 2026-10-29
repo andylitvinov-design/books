@@ -16,6 +16,7 @@ import type {
 } from "@/lib/holistic-support/meditation-catalog-types";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-meditation-finder.module.css";
+import { HolisticIntelligenceCard } from "./holistic-intelligence-card";
 
 const GOALS = ["money", "energy", "relationships", "goals", "meaning"] as const;
 type Goal = (typeof GOALS)[number];
@@ -249,6 +250,8 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
         <h3>{t.title}</h3>
         <p>{t.intro}</p>
       </div>
+      <HolisticIntelligenceCard locale={locale} surface="meditation" videos={videos}
+        publishedSourceIds={publishedSourceIds} audioLanguage={language} />
       <form className={styles.form} onSubmit={apply} aria-label={t.title}>
         <div className={styles.goals} role="group" aria-label={t.title}>
           {GOALS.map(item => (

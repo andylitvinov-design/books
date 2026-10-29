@@ -19,7 +19,7 @@ test('rejects client assertions of identity, consent and safety at every boundar
 });
 test('rejects invalid types, unbounded input and unknown values', () => {
   for (const intent of [
-    { language: 'fr' }, { language: 'en', goalText: 'x'.repeat(501) },
+    { language: 'fr' }, { language: 'en', audioLanguage:'fr' }, { language: 'en', goalText: 'x'.repeat(501) },
     { language: 'en', formats: ['service', 'unknown'] },
     { language: 'en', selectedFacets: ['wrong'] },
     { language: 'en', selectedTopics: Array(41).fill('stress') },

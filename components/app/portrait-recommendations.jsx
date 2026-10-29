@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, BookOpen, Compass, ShieldCheck } from 'lucide-react'
 import { buildPortraitRecommendations } from '@/lib/profile/portrait-recommendations'
 import { PersonalAxisMatches } from './personal-axis-matches'
+import { HolisticIntelligenceCard } from '../holistic-intelligence-card'
 import styles from './portrait-recommendations.module.css'
 
 const COPY = {
@@ -60,7 +61,7 @@ function MeasurementCard({row,locale,copy}) {
   </article>
 }
 
-export function PortraitRecommendations({results = [],locale = 'en'}) {
+export function PortraitRecommendations({results = [],locale = 'en',accountId}) {
   const t=COPY[locale] || COPY.en
   const model=buildPortraitRecommendations(results,locale)
   return <section id="hh-portrait-recommendations" tabIndex={-1} className={styles.root}
@@ -87,6 +88,7 @@ export function PortraitRecommendations({results = [],locale = 'en'}) {
             </div>
           </section>
         </div>}
+    <HolisticIntelligenceCard locale={locale} accountId={accountId} />
     <PersonalAxisMatches measurements={model.measurements} locale={locale} showMeasurements={false} />
     <div className={styles.footer}>
       <p>{t.nextCopy}</p>
