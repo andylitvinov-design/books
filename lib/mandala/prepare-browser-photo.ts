@@ -8,10 +8,11 @@ const FILE_EXT = /\.(jpe?g|png|webp|heic|heif)$/i;
 
 export async function prepareBrowserPhoto(file: File): Promise<Blob> {
   if (!file || !file.size || file.size > SUPPORT_PHOTO_MAX_INPUT_BYTES ||
-    (!MIME_TYPES.has(file.type.toLowerCase()) &&
-      !(file.type === "" && FILE_EXT.test(file.name)))) {
+    (!MIME_TYPES.has(file.type.toLowerCase()) && !FILE_EXT.test(file.name))) {
     throw new Error("PHOTO_FILE_INVALID");
   }
+  // iOS Files sometimes labels a valid HEIC as application/octet-stream.
+  // The browser must still decode the actual bytes before any upload.
   const objectUrl = URL.createObjectURL(file);
   try {
     const image = new Image();
