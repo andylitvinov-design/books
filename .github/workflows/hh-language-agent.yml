@@ -4,10 +4,12 @@ on:
     paths:
       - "lib/holistic-support/language-agent.mjs"
       - "lib/holistic-support/language-agent.d.mts"
+      - "lib/holistic-support/public-reiki-audio-client.*"
       - "components/holistic-language-conversation.*"
       - "components/holistic-support-inline-guide.*"
       - "public/holistic-mind/**"
       - "tests/holistic-language-agent.test.mjs"
+      - "tests/holistic-reiki-audio-language-agent.test.mjs"
       - ".github/workflows/hh-language-agent.yml"
   workflow_dispatch:
 permissions:
@@ -24,6 +26,7 @@ jobs:
       - name: Syntax
         run: |
           node --check lib/holistic-support/language-agent.mjs
+          node --check lib/holistic-support/public-reiki-audio-client.mjs
           node --check public/holistic-mind/webllm-worker.mjs
       - name: Multilingual privacy and catalog contracts
-        run: node --test tests/holistic-language-agent.test.mjs
+        run: node --test tests/holistic-language-agent.test.mjs tests/holistic-reiki-audio-language-agent.test.mjs
