@@ -716,7 +716,7 @@ export function HolisticSupportInlineGuide({
               {journey.watch}<Play size={16} aria-hidden="true"/>
             </button>
           </div>)}
-          <button type="button" className={styles.textLink} onClick={startExercise}>{journey.shortPractice}</button>
+          <button type="button" className={styles.textLink} data-guide-media-short-practice onClick={startExercise}>{journey.shortPractice}</button>
           {!mediaCandidates.length?<button type="button" className={styles.textLink} onClick={()=>onVideo(null)}>{talk.videoBrowse}</button>:null}
         </div> : phase==="media-return" ? <div className={styles.options}>
           <button className={styles.primary} type="button" data-guide-self-report-watched onClick={()=>askFeedback(journey.videoDone)}>{journey.videoDone}</button>
