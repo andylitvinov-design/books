@@ -50,14 +50,21 @@ export function buildFfmpegArgs(input,files,output){
     musicInput=args.filter(x=>x==='-i').length;args.push('-i',files.music);
   }
   if(input.subtitles){subtitleInput=args.filter(x=>x==='-i').length;args.push('-i',files.subtitles);}
-  const filters=input.clips.map((c,i)=>
-    '['+i+':v]trim=duration='+c.seconds+
-    ',setpts=PTS-STARTPTS,scale='+dims[0]+':'+dims[1]+
-    ':force_original_aspect_ratio=decrease,pad='+dims[0]+':'+dims[1]+
-    ':(ow-iw)/2:(oh-ih)/2:color=black,fps=25,format=yuv420p'+
-    ',fade=t=in:st=0:d=0.15'+
-    (c.seconds>1?',fade=t=out:st='+(c.seconds-.18).toFixed(2)+':d=0.18':'')+
-    '[v'+i+']');
+  // Preserve the entire licensed source frame when converting portrait ↔ landscape.
+  // Fill spare space using a blurred copy of the same movie, NEVER solid black
+  // bars or a crop that might cut out the main subject. Offline Mac FFmpeg only.
+  const filters=input.clips.flatMap((c,i)=>[
+    '['+i+':v]trim=duration='+c.seconds+',setpts=PTS-STARTPTS,split=2[bgsrc'+i+'][fgsrc'+i+']',
+    '[bgsrc'+i+']scale='+dims[0]+':'+dims[1]+
+      ':force_original_aspect_ratio=increase,crop='+dims[0]+':'+dims[1]+
+      ',boxblur=12:1[bg'+i+']',
+    '[fgsrc'+i+']scale='+dims[0]+':'+dims[1]+
+      ':force_original_aspect_ratio=decrease[fg'+i+']',
+    '[bg'+i+'][fg'+i+']overlay=(W-w)/2:(H-h)/2:shortest=1,'+
+      'fps=25,format=yuv420p,fade=t=in:st=0:d=0.15'+
+      (c.seconds>1?',fade=t=out:st='+(c.seconds-.18).toFixed(2)+':d=0.18':'')+
+      '[v'+i+']',
+  ]);
   filters.push(input.clips.map((_,i)=>'[v'+i+']').join('')+
     'concat=n='+input.clips.length+':v=1:a=0[vout]');
   if(audioInput!==null&&musicInput!==null){
