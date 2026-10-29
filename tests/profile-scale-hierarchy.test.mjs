@@ -87,7 +87,7 @@ test('five localized screens separate research scales, topics, tests and Ready',
   assert.ok(testStep.includes('data-profile-test-mode'))
   assert.ok(testStep.includes('data-profile-mode={mode}'))
   assert.ok(testStep.includes('data-profile-additional-kind-filter'))
-  assert.ok(testStep.includes('\["all", "questionnaires", "pro"\]'))
+  assert.ok(testStep.includes('["all", "questionnaires", "pro"]'))
   assert.ok(testStep.indexOf('data-profile-recommended-tests')<testStep.indexOf('data-profile-test-mode'))
   assert.ok(testStep.indexOf('data-profile-start-tests')<testStep.indexOf('data-profile-additional-tests'))
   assert.ok(page.includes('entry.selectable === true'))
