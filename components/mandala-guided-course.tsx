@@ -35,6 +35,12 @@ const copy = {
     request:"Discuss the full package",locked:"Review and verified access needed",
     safeguard:"Pause or skip any image that feels uncomfortable. Do not use this for trauma exposure, crisis care or diagnosis. A qualified practitioner must review any clinical treatment plan.",
     privacy:"Private: no upload, third-party AI, CRM, marketing tags or persistent browser storage. Closing the page clears the profile preview.",
+    focusLabel:"YOUR PERSONAL FOCUS",focusHeading:"What matters most to you now?",
+    focusDescription:"Two short notes are enough. Your words shape the imagery of the eight sessions.",
+    difficultyLabel:"Key difficulty · optional",difficultyPlaceholder:"For example: it is hard to pause and feel settled",
+    goalLabel:"Key goal · optional",goalPlaceholder:"For example: move forward calmly and confidently",
+    checkGoals:"Review my goals",selectedGoals:"Your priorities",stage:"8 gentle steps",
+    fromGoals:"From your chosen goals · tests only with consent",fromTests:"From your goals and saved test results",
     themes:{energy:"Energy",money:"Money / work",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Self-care"}
   },
   ru: {
@@ -56,6 +62,12 @@ const copy = {
     request:"Обсудить полный пакет",locked:"После проверки и подтверждения доступа",
     safeguard:"Если образ неприятен — остановитесь или пропустите. Программа не предназначена для работы с травмой, кризисом или диагностики. Клиническую программу проверяет специалист.",
     privacy:"Приватно: нет загрузки в сторонний ИИ, CRM, рекламные системы или постоянное хранилище браузера. При закрытии страницы данные исчезают.",
+    focusLabel:"ЛИЧНЫЙ ФОКУС",focusHeading:"Что для вас важно сейчас?",
+    focusDescription:"Достаточно пары фраз. Они помогут подобрать образы и сюжет восьми встреч.",
+    difficultyLabel:"Ключевая сложность · необязательно",difficultyPlaceholder:"Например: трудно расслабиться после рабочего дня",
+    goalLabel:"Ключевая цель · необязательно",goalPlaceholder:"Например: больше спокойствия и уверенности",
+    checkGoals:"Проверить мои цели",selectedGoals:"Ваши акценты",stage:"8 бережных шагов",
+    fromGoals:"По выбранным целям · тесты только с разрешения",fromTests:"По вашим целям и сохранённым тестам",
     themes:{energy:"Энергия",money:"Деньги / дело",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Забота о себе"}
   },
   es: {
@@ -77,6 +89,12 @@ const copy = {
     request:"Consultar el paquete",locked:"Requiere revisión y acceso confirmado",
     safeguard:"Detente o salta cualquier imagen incómoda. No es para exposición a traumas, crisis ni diagnósticos. Un profesional debe revisar los planes clínicos.",
     privacy:"Privado: sin envío a IA externa, CRM, anuncios ni almacenamiento permanente. Los datos desaparecen al cerrar.",
+    focusLabel:"TU ENFOQUE PERSONAL",focusHeading:"¿Qué es importante para ti ahora?",
+    focusDescription:"Bastan dos notas breves para orientar las imágenes de las ocho sesiones.",
+    difficultyLabel:"Dificultad principal · opcional",difficultyPlaceholder:"Por ejemplo: me cuesta relajarme después del trabajo",
+    goalLabel:"Objetivo principal · opcional",goalPlaceholder:"Por ejemplo: avanzar con calma y confianza",
+    checkGoals:"Revisar mis metas",selectedGoals:"Tus prioridades",stage:"8 pasos amables",
+    fromGoals:"Según tus metas · pruebas solo con permiso",fromTests:"Según tus metas y resultados guardados",
     themes:{energy:"Energía",money:"Dinero / trabajo",relationships:"Relaciones",goals:"Metas",life:"Sentido",health:"Autocuidado"}
   }
 } as const;
@@ -85,6 +103,8 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const t = copy[locale];
   const [goals,setGoals] = useState<VideoTheme[]>([]);
   const [goalsOpen,setGoalsOpen] = useState(false);
+  const [keyDifficulty,setKeyDifficulty] = useState("");
+  const [keyGoal,setKeyGoal] = useState("");
   const [consent,setConsent] = useState(false);
   const [profileStatus,setProfileStatus] = useState<Status>("idle");
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
@@ -94,8 +114,8 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const profileRequestRef = useRef(0);
   const actualGoals = goals.length ? goals : [theme];
   const plan = useMemo(()=>buildPersonalImageryCourse({
-    locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence
-  }),[locale,theme,goals,selfRatings,profileEvidence]);
+    locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal
+  }),[locale,theme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal]);
   const sessions = plan.sessions as Session[];
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
@@ -139,6 +159,11 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       setProfileStatus(evidence.length?"ready":"empty");
     } catch {if(requestId===profileRequestRef.current){setProfileEvidence([]);setProfileStatus("error");}}
   }
+  function createProgramme(){
+    if(disabled || profileStatus==="loading")return;
+    setPlanOpen(true);
+    if(consent && !["ready","empty"].includes(profileStatus))void loadPrivateProfile();
+  }
   function speak(script:string){
     if(typeof window==="undefined" || !("speechSynthesis" in window))return;
     window.speechSynthesis.cancel();
@@ -160,67 +185,98 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   return <section className={css.panel} data-video-guided-course aria-labelledby="guided-course-heading">
     <div className={css.header}>
-      <span className={css.emblem}><Sparkles size={19} aria-hidden="true"/></span>
+      <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
       <div className={css.heading}>
         <small>{t.eyebrow}</small><h3 id="guided-course-heading">{t.title}</h3>
       </div>
+      <span className={css.stageBadge}>01—08</span>
     </div>
     <p className={css.intro}>{t.intro}</p>
-    <div className={css.actions}>
-      <button type="button" className={css.primary} onClick={()=>{setGoalsOpen(true);}}
-        aria-expanded={goalsOpen} disabled={disabled} data-video-personal-pick>
-        <Sparkles size={16} aria-hidden="true"/>{t.personal}
-      </button>
-      <button type="button" onClick={()=>setGoalsOpen(open=>!open)}
-        aria-expanded={goalsOpen} disabled={disabled} data-video-goal-accents>
-        <Target size={16} aria-hidden="true"/>{goalsOpen?t.close:t.accents}<ChevronDown size={15} aria-hidden="true"/>
-      </button>
-    </div>
-    {goalsOpen?<div className={css.goalsPanel} data-video-goals-filter>
-      <strong>{t.goals}</strong><p>{t.chosen}</p>
-      <div className={css.goalChips} role="group" aria-label={t.goals}>
-        {(COURSE_THEMES as readonly VideoTheme[]).map(goal=>
-          <button type="button" key={goal} disabled={disabled} aria-pressed={actualGoals.includes(goal)}
-            onClick={()=>toggleGoal(goal)} data-guided-goal={goal}>
-            {actualGoals.includes(goal)?<Check size={14} aria-hidden="true"/>:null}{t.themes[goal]}
-          </button>)}
+    <div className={css.focusCard} data-video-therapy-focus>
+      <div className={css.focusHeading}>
+        <small><Target size={14} aria-hidden="true"/>{t.focusLabel}</small>
+        <h4>{t.focusHeading}</h4>
+        <p>{t.focusDescription}</p>
       </div>
-      <label className={css.consent}>
-        <input type="checkbox" checked={consent} disabled={disabled}
-          onChange={event=>event.target.checked?setConsent(true):withdraw()}
-          data-guided-profile-consent/>
-        <span>{t.profile}</span>
-      </label>
-      <div className={css.profileActions}>
-        <button type="button" disabled={disabled||!consent||profileStatus==="loading"}
-          onClick={()=>void loadPrivateProfile()} data-guided-profile-import>
-          <ShieldCheck size={15} aria-hidden="true"/>{profileStatus==="loading"?t.loading:t.load}
+      <div className={css.focusFields}>
+        <label htmlFor="therapy-key-difficulty">
+          <span>{t.difficultyLabel}</span>
+          <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
+            data-video-key-difficulty value={keyDifficulty} placeholder={t.difficultyPlaceholder}
+            disabled={disabled} onChange={event=>setKeyDifficulty(event.currentTarget.value)}/>
+        </label>
+        <label htmlFor="therapy-key-goal">
+          <span>{t.goalLabel}</span>
+          <textarea id="therapy-key-goal" rows={2} maxLength={140}
+            data-video-key-goal value={keyGoal} placeholder={t.goalPlaceholder}
+            disabled={disabled} onChange={event=>setKeyGoal(event.currentTarget.value)}/>
+        </label>
+      </div>
+      <div className={css.goalActions}>
+        <button type="button" className={css.goalReview}
+          data-video-goal-accents data-video-personal-pick disabled={disabled}
+          onClick={()=>setGoalsOpen(open=>!open)} aria-expanded={goalsOpen}
+          aria-controls="video-therapy-goals">
+          <Target size={17} aria-hidden="true"/>{goalsOpen?t.close:t.checkGoals}
+          <ChevronDown size={16} aria-hidden="true"/>
         </button>
-        <small aria-live="polite">
-          {profileStatus==="ready"?(plan.evidence.length?t.read:t.empty):profileStatus==="empty"?t.empty:
-            profileStatus==="signin"?t.signin:profileStatus==="error"?t.error:t.none}
-        </small>
+        <span className={css.goalSelection}>{t.selectedGoals}: {actualGoals.map(item=>t.themes[item]).join(" · ")}</span>
       </div>
-      {profileStatus==="signin"?<Link href={"/"+locale+"/app"} prefetch={false}>{t.signInLink}</Link>:null}
-      {profileStatus==="ready" && suggestedGoals.length?<div className={css.suggestions} data-guided-goal-suggestions>
-        <small>{t.suggested}</small>
-        <div>{suggestedGoals.map(goal=><span key={goal}>{t.themes[goal]}</span>)}</div>
-        <button type="button" disabled={disabled} data-guided-apply-suggestions
-          onClick={()=>setGoals(suggestedGoals)}>{t.applySuggested}</button>
+      {goalsOpen?<div className={css.goalsPanel} id="video-therapy-goals" data-video-goals-filter>
+        <strong>{t.goals}</strong><p>{t.chosen}</p>
+        <div className={css.goalChips} role="group" aria-label={t.goals}>
+          {(COURSE_THEMES as readonly VideoTheme[]).map(goal=>
+            <button type="button" key={goal} disabled={disabled} aria-pressed={actualGoals.includes(goal)}
+              onClick={()=>toggleGoal(goal)} data-guided-goal={goal}>
+              {actualGoals.includes(goal)?<Check size={14} aria-hidden="true"/>:null}{t.themes[goal]}
+            </button>)}
+        </div>
+        <label className={css.consent}>
+          <input type="checkbox" checked={consent} disabled={disabled}
+            onChange={event=>event.target.checked?setConsent(true):withdraw()}
+            data-guided-profile-consent/>
+          <span>{t.profile}</span>
+        </label>
+        <div className={css.profileActions}>
+          <button type="button" disabled={disabled||!consent||profileStatus==="loading"}
+            onClick={()=>void loadPrivateProfile()} data-guided-profile-import>
+            <ShieldCheck size={15} aria-hidden="true"/>{profileStatus==="loading"?t.loading:t.load}
+          </button>
+          <small aria-live="polite">
+            {profileStatus==="ready"?(plan.evidence.length?t.read:t.empty):profileStatus==="empty"?t.empty:
+              profileStatus==="signin"?t.signin:profileStatus==="error"?t.error:t.none}
+          </small>
+        </div>
+        {profileStatus==="ready" && suggestedGoals.length?<div className={css.suggestions} data-guided-goal-suggestions>
+          <small>{t.suggested}</small>
+          <div>{suggestedGoals.map(goal=><span key={goal}>{t.themes[goal]}</span>)}</div>
+          <button type="button" disabled={disabled} data-guided-apply-suggestions
+            onClick={()=>setGoals(suggestedGoals)}>{t.applySuggested}</button>
+        </div>:null}
+        {plan.evidence.length?<ul className={css.sources} data-guided-score-provenance>
+          {plan.evidence.map(item=><li key={item.axis+"-"+item.measuredAt}>
+            {item.axis.replaceAll("_"," ")} · {item.sourceTitle} · {item.measuredAt.slice(0,10)}
+          </li>)}
+        </ul>:null}
+        <small className={css.self}>{t.self}</small>
       </div>:null}
-      {plan.evidence.length?<ul className={css.sources} data-guided-score-provenance>
-        {plan.evidence.map(item=><li key={item.axis+"-"+item.measuredAt}>
-          {item.axis.replaceAll("_"," ")} · {item.sourceTitle} · {item.measuredAt.slice(0,10)}
-        </li>)}
-      </ul>:null}
-      <small className={css.self}>{t.self}</small>
-    </div>:null}
-    <button type="button" className={css.planButton} onClick={()=>setPlanOpen(true)}
-      disabled={disabled} data-guided-create-plan>
-      <BookOpen size={18} aria-hidden="true"/>{planOpen?t.refresh:t.create}
-    </button>
+      <button type="button" className={css.planButton} onClick={createProgramme}
+        disabled={disabled||profileStatus==="loading"} data-guided-create-plan>
+        <BookOpen size={23} aria-hidden="true"/>
+        <span><strong>{planOpen?t.refresh:t.create}</strong>
+          <small>{consent?t.fromTests:t.fromGoals}</small></span>
+      </button>
+      {profileStatus==="loading"?<p className={css.profileNotice} role="status">{t.loading}</p>:null}
+      {profileStatus==="signin"?<p className={css.profileNotice}>{t.signin} <Link href={"/"+locale+"/app"} prefetch={false}>{t.signInLink}</Link></p>:null}
+      {profileStatus==="error"?<p className={css.profileNotice} role="status">{t.error}</p>:null}
+    </div>
     {planOpen?<div className={css.programme} data-guided-eight-sessions>
-      <h4>{t.sequence}</h4>
+      <div className={css.sequenceHeader}><div><small>{t.stage}</small><h4>{t.sequence}</h4></div><span>8 / 8</span></div>
+      <div className={css.sessionTrack} aria-label={t.sequence}>
+        {sessions.map((session,index)=><span key={session.id} className={index===0?css.trackActive:""}>
+          {String(index+1).padStart(2,"0")}
+        </span>)}
+      </div>
       <div className={css.sessionList}>
         {sessions.map((session,index)=><article className={css.sessionCard} key={session.id}
           data-guided-session={session.number}>
