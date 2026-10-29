@@ -231,6 +231,16 @@ test("four style choices visibly grade the SAME local Canvas frames in preview a
   assert.match(studio,/ctx\.fillRect\(0,0,w,h\)/);
 });
 
+test("free local browser export requests smoother fps on capable devices without overloading low-end iPhone",()=>{
+  assert.match(studio,/const baselineFramesPerSecond = affirmations\.enabled/);
+  assert.match(studio,/const suggestedFps = phone/);
+  assert.match(studio,/quality === "fullhd" \? \(cores>=8 \? 25 : 20\)/);
+  assert.match(studio,/quality === "fullhd" \? \(cores>=6 \? 20 : 16\)/);
+  assert.match(studio,/baselineFramesPerSecond === 25 \|\| \(phone && cores<=2\)/);
+  assert.match(studio,/canvas\.captureStream\(framesPerSecond\)/);
+  assert.match(studio,/1000 \/ previewFps && !document\.hidden/);
+  assert.doesNotMatch(studio,/fetch\(["']https:\/\/.*framesPerSecond/);
+});
 test("no-cost offline FFmpeg assembler validates local rights and builds explicit H264/AAC graph",()=>{
   const input={version:"hh-assembly-1",locale:"ru",aspect:"landscape",audioMode:"narration_with_music",
     clips:[1,2,3,4].map(i=>({file:"clip-"+i+".mp4",seconds:5,rightsConfirmed:true})),
