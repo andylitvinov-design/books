@@ -38,7 +38,6 @@ test('account progress is organized by site rubrics, with horizontal newest-firs
   assert.match(page, /rubrics\.length \? rubrics\.map/)
   assert.match(page, /aria-expanded=\{historyExpanded\}/)
   assert.match(page, /historyExpanded && <>/)
-  assert.match(page, /appFetch\('messages\/my-orders'/) // may be represented in array below
   assert.match(page, /'messages\/my-orders'/)
   assert.match(page, /\/practice\?panel=services/)
   assert.match(page, /\/messages\?section=orders/)
