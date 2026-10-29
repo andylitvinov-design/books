@@ -107,7 +107,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
     [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
-  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const shellRef=useRef(null),uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
   const [audioPreview,setAudioPreview]=useState('')
@@ -170,7 +170,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     if(!accountId||signedOut)return
     let disposed=false,inFlight=false,last=0
     const refresh=async()=>{
-      if(disposed||inFlight||document.visibilityState!=='visible'||
+      if(disposed||inFlight||shellRef.current?.closest('[hidden]')||document.visibilityState!=='visible'||
         navigator.onLine===false||busy||recording||Date.now()-last<15000)return
       last=Date.now();inFlight=true
       try{
@@ -310,7 +310,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(directMediaMime(file))
-  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
+  return <section ref={shellRef} className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
     data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
     {!simpleDetail&&<header className={styles.head}>
       {!compact&&<div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>}
