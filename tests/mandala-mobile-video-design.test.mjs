@@ -261,10 +261,19 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
 test("all three video editor deep links cancel native hash navigation before expanding details", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   for(const [tab,target] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
-    assert.ok(studio.includes(
-      '<a href="#'+target+'" data-video-editor-tab="'+tab+'"\n'+
-      '          onClick={event=>{event.preventDefault();openQuickDetailed("'+target+'");}}>'
-    ),"native hash navigation must not race React disclosure: "+tab);
+    const start=studio.indexOf('data-video-editor-tab="'+tab+'"');
+    const end=studio.indexOf("</a>",start);
+    assert.ok(start>0&&end>start,"editor anchor is preserved: "+tab);
+    const link=studio.slice(start,end);
+    assert.ok(link.includes('href="#'+target+'"')||
+      studio.slice(start-45,start).includes('href="#'+target+'"'),
+      "semantic native deep link is preserved: "+tab);
+    assert.match(link,/onPointerDown=\{event=>\{/);
+    assert.match(link,/event\.pointerType==="mouse"&&event\.button===0/);
+    assert.ok(link.includes('openQuickDetailed("'+target+'")'),
+      "WebKit primary mouse-down activates the intended destination: "+tab);
+    assert.ok(link.includes('event.preventDefault();openQuickDetailed("'+target+'")'),
+      "keyboard/click fallback prevents the original native hash race: "+tab);
   }
   // A router or WebKit layout transition may reset a fragment after the
   // first click, so the controlled panel repairs the hash on the next frame.
@@ -275,6 +284,7 @@ test("all three video editor deep links cancel native hash navigation before exp
   assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
   assert.match(studio,/data-video-current-tab=\{quickNavTarget\}/);
   assert.match(studio,/behavior:"instant" as ScrollBehavior/);
+  assert.match(studio,/block:"nearest"/);
   assert.doesNotMatch(studio,/window\.setTimeout\(jump,/);
 });
 
