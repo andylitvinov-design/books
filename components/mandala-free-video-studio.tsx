@@ -243,6 +243,7 @@ const layoutCopy = {
     extraSettings:"More video settings",personalFocus:"My focus and recommended theme",
     editorNavLabel:"Go to video settings",designTab:"Design",audioTab:"Audio",affirmationsTab:"Affirmations",
     previewCta:"Preview video",previewHelp:"Preview only — use Create video to save a file.",
+     therapyHeading:"Your personal video therapy",therapySub:"8 guided imagery sessions · the first video is free",
   },
   ru: {
     modeLabel:"Выбор режима видео",pump:"Видео-подкачка",therapy:"Видео-терапия",
@@ -257,6 +258,7 @@ const layoutCopy = {
     extraSettings:"Дополнительные настройки видео",personalFocus:"Мои акценты и рекомендации",
     editorNavLabel:"Перейти к настройкам видео",designTab:"Дизайн",audioTab:"Аудио",affirmationsTab:"Аффирмации",
     previewCta:"Просмотреть видео",previewHelp:"Это предпросмотр. Для сохранения файла нажмите «Создать видео».",
+     therapyHeading:"Ваша персональная видеотерапия",therapySub:"8 образных сессий · первый ролик бесплатно",
   },
   es: {
     modeLabel:"Elige el modo de vídeo",pump:"Vídeo de impulso",therapy:"Videoterapia",
@@ -271,6 +273,7 @@ const layoutCopy = {
     extraSettings:"Más ajustes de vídeo",personalFocus:"Mis prioridades y recomendaciones",
     editorNavLabel:"Ir a los ajustes del vídeo",designTab:"Diseño",audioTab:"Audio",affirmationsTab:"Afirmaciones",
     previewCta:"Ver vídeo",previewHelp:"Solo vista previa. Usa Crear vídeo para guardar un archivo.",
+     therapyHeading:"Tu videoterapia personal",therapySub:"8 sesiones guiadas · primer vídeo gratis",
   },
 } as const;
 const supportDesignCopy = {
@@ -1129,7 +1132,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   return (
     <section className={videoStyles.studio} id="free-personal-video"
-      data-mandala-free-video lang={locale} aria-label={ui.title}>
+      data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
       {activeFilm ? <video
         key={activeFilm.src} ref={premiumVideoRef}
         src={activeFilm.src} poster={activeFilm.poster}
@@ -1166,23 +1169,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>;
           })}
         </div>
-        {photoError?<p className={videoStyles.warning} role="alert">{ui.photoError}</p>:null}
-      </div>
-
-      <section className={videoStyles.catalogShell} data-video-catalog aria-labelledby="video-catalog-heading">
-        <header className={videoStyles.catalogHeading}>
-          <div>
-            <h2 id="video-catalog-heading">{supportUi.catalogTitle}</h2>
-            <p>{supportUi.catalogIntro}</p>
-          </div>
-          <button type="button" onClick={()=>{
-            setShowAllMoney(true);
-            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
-          }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button>
-        </header>
-
-
-
       <div className={videoStyles.previewChoices} data-video-preview-choices data-mandala-output-mode
         role="group" aria-label={layout.previewOptions}>
         <div className={videoStyles.previewChoice}>
@@ -1215,12 +1201,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </a>
         </div>
       </div>
+        {photoError?<p className={videoStyles.warning} role="alert">{ui.photoError}</p>:null}
+      </div>
+
+      <section className={videoStyles.catalogShell} data-video-catalog aria-labelledby="video-catalog-heading">
+        <header className={videoStyles.catalogHeading}>
+          <div>
+            <h2 id="video-catalog-heading">{studioMode==="therapy"?layout.therapyHeading:supportUi.catalogTitle}</h2>
+            <p>{studioMode==="therapy"?layout.therapySub:supportUi.catalogIntro}</p>
+          </div>
+          {studioMode==="pump" ? <button type="button" onClick={()=>{
+            setShowAllMoney(true);
+            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
+          }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button> :
+           <span className={videoStyles.courseIndicator}>01 — 08</span>}
+        </header>
+
+
 
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
         data-hero-promo={!photoUrl&&!previewPlaying&&!recording?"true":"false"}
+         data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
-        <h2 id="video-hero-heading" className={videoStyles.srOnly}>{layout.previewTitle}</h2>
+        <h2 id="video-hero-heading" className={videoStyles.srOnly}>{studioMode==="therapy"?layout.therapyHeading:layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
           style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
@@ -1239,6 +1243,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
+      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
+      <MandalaGuidedCourse locale={locale} theme={theme}
+        selfRatings={touchedScores} disabled={recording||preparing}
+        onApplyFreeVideo={session=>{
+          // This is preparation, NOT a render or a claimed downloadable video.
+          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
+          // First video: scenic meadow-morning master, not a generic money/energy clip.
+          selectCategory(session.videoTheme);
+          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
+          setBackgroundOnly(true);
+          setDuration(60);
+          setSpeed("slow");
+          setCaptionMode("custom");
+          setCustomCaption(session.title);
+          // Preserve the chosen personal goal on the meadow visuals with
+          // original, user-readable supportive phrases from that goal's theme.
+          setAffirmations({...defaultAffirmations,enabled:true,selected:[],
+            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
+            visibility:["large"]});
+          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
+            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
+            "Session 1 scene is ready. Create and download the video in the editor below.");
+          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
+        }}/>
+      </div> : null}
+
+
       <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
         <a href="#video-templates" data-video-editor-tab="design">
           <Film size={17} aria-hidden="true"/>{layout.designTab}
@@ -1250,6 +1281,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
+      {studioMode==="pump" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
           data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
@@ -1268,6 +1300,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {layout.therapyBannerAction}<ArrowRight size={19} aria-hidden="true"/>
         </button>
       </section>
+      </> : null}
 
       {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
         {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
@@ -1493,32 +1526,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </button>
       <small className={videoStyles.affirmationPreviewHelp}>{layout.previewHelp}</small>
       </section>
-
-      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
-      <MandalaGuidedCourse locale={locale} theme={theme}
-        selfRatings={touchedScores} disabled={recording||preparing}
-        onApplyFreeVideo={session=>{
-          // This is preparation, NOT a render or a claimed downloadable video.
-          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
-          // First video: scenic meadow-morning master, not a generic money/energy clip.
-          selectCategory(session.videoTheme);
-          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
-          setBackgroundOnly(true);
-          setDuration(60);
-          setSpeed("slow");
-          setCaptionMode("custom");
-          setCustomCaption(session.title);
-          // Preserve the chosen personal goal on the meadow visuals with
-          // original, user-readable supportive phrases from that goal's theme.
-          setAffirmations({...defaultAffirmations,enabled:true,selected:[],
-            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
-            visibility:["large"]});
-          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
-            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
-            "Session 1 scene is ready. Create and download the video in the editor below.");
-          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
-      </div> : null}
 
       <details className={videoStyles.extraControls} data-video-extra-settings>
         <summary>{layout.extraSettings}</summary>
