@@ -103,7 +103,7 @@ test("money, energy, relationships and goals have real local frame engines, not 
     "light-path","open-door","guiding-stars","meaning-tree"]) assert.ok(local.includes('"'+id+'"'),id);
   for(const language of ["en","ru","es"]) assert.ok(client.includes(language+': {'));
   assert.match(cinematic,/movingCoins\(ctx,scene,t,w,h,true\)/);
-  assert.equal((scenes.match(/ id: "/g)||[]).length,12);
+  assert.equal((scenes.match(/ id: "/g)||[]).length,16,"12 original + 4 new licensed money scenes");
   for(const path of ["components/mandala-free-video-studio.tsx",
     "lib/mandala/holistic-video-themes.ts","lib/mandala/local-video-music.ts"]){
     const diagnostics=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
