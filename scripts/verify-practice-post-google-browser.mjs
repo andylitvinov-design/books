@@ -125,7 +125,25 @@ for(const engine of [chromium,webkit]){
             path:out+'/'+engine.name()+'-'+locale+'-390-service-editor.png',fullPage:false})
           const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
           await input.fill('Synthetic service title')
+          await page.evaluate(()=>{
+            window.__practiceEditorClickTrace=[]
+            document.addEventListener('click',event=>{
+              if(event.target.closest('[data-service-step-controls]'))
+                window.__practiceEditorClickTrace.push(event.target.closest('button')?.textContent?.trim())
+            },true)
+          })
           await editor.locator('[data-service-step-controls] button').last().click()
+          await page.waitForTimeout(300)
+          console.log('PROTECTED_EDITOR_NEXT_DIAG '+JSON.stringify(await page.evaluate(()=>({
+            pathname:location.pathname+location.search,
+            formCount:document.querySelectorAll('[data-service-slide-editor]').length,
+            stages:[...document.querySelectorAll('[data-service-slide-editor]')].map(el=>el.dataset.serviceStage),
+            activeStep:document.querySelector('[data-service-stage-nav] button[aria-pressed=true]')?.textContent,
+            buttons:[...document.querySelectorAll('[data-service-step-controls] button')].map(btn=>({
+              text:btn.textContent?.trim(),disabled:btn.disabled,connected:btn.isConnected})),
+            clicks:window.__practiceEditorClickTrace,
+            inputs:[...document.querySelectorAll('[data-service-slide="presentation"] input')].map(e=>e.value),
+          }))))
           await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
             ?.getAttribute('data-service-stage')==='1',null,{timeout:10000})
           assert.equal(await editor.getAttribute('data-service-stage'),'1',label+' Next opens booking')
