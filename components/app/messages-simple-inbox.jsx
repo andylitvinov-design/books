@@ -89,10 +89,10 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
   locale='en',accountId,requests=[],businessEnquiries=[],telegramUrl='',
-  websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,onClientsCount,onDetailChange,
+  websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
 }){
   const t=COPY[locale]||COPY.en
-  const [crmState,setCrmState]=useState({loading:true,error:false,threads:[],partial:false})
+  const [crmState,setCrmState]=useState({loading:crmEnabled,error:false,threads:[],partial:false})
   const [directThreads,setDirectThreads]=useState([])
   const [portraits,setPortraits]=useState({})
   const [selectedKey,setSelectedKey]=useState('')
@@ -173,9 +173,9 @@ export default function MessagesSimpleInbox({
   const directThreadId=selected?.kind==='direct'?selected.id:''
 
   useEffect(()=>{
-    setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:true,error:false,threads:[],partial:false})
+    setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:crmEnabled,error:false,threads:[],partial:false})
     setDirectThreads([]);setPortraits({})
-  },[accountId])
+  },[accountId,crmEnabled])
   // Safari's keyboard shrinks the visual viewport but does NOT reliably update
   // vh/dvh sizing. Size the conversation to the actually visible area and
   // hide the fixed bottom navigation only while an editor has focus.
@@ -347,10 +347,10 @@ export default function MessagesSimpleInbox({
         </div>}
         {showCard&&selected&&<MessagesContactCard key={accountId+':'+selected.key}
           item={selected} accountId={accountId} locale={locale} onBack={()=>setShowCard(false)}/>}
-        <div className={styles.chatHolder} hidden={showCard||selected?.kind!=='crm'}>
-          <CrmMessengerPanel key={accountId+':'+refreshNonce} accountId={accountId}
+        <div className={styles.chatHolder} hidden={showCard||selected?.kind!=='crm'||!crmEnabled}>
+          {crmEnabled&&<CrmMessengerPanel key={accountId+':'+refreshNonce} accountId={accountId}
             locale={locale} conversationOnly onThreadsLoaded={onCrmThreads} onPortraitFound={onPortraitFound}
-            initialThreadId={crmThreadId}/>
+            initialThreadId={crmThreadId}/>}
         </div>
         <div className={styles.chatHolder} hidden={showCard||selected?.kind!=='direct'}>
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
