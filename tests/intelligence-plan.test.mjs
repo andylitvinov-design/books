@@ -11,6 +11,33 @@ const body = { requestId: 'd4502108-a8b8-4d3b-813f-c255b452bde4', surface: 'cabi
 const videoBody = {...body,symbolicInterest:'include'};
 const loader = async () => ({ videos, publishedSourceIds: [sourceId] });
 
+test('saved negative feedback is used only by explicit owner request after safety checks', async () => {
+  let reads=0
+  const loadFeedback=async candidates=>{reads++;assert.ok(candidates.includes(`youtube:${sourceId}`));return {dismissedIds:[`youtube:${sourceId}`]}}
+  const normal=await planIntelligenceRequest(videoBody,{loadCatalog:loader,loadFeedback})
+  assert.equal(normal.status,'recommend');assert.equal(reads,0)
+  const requested={...videoBody,feedbackHistory:'avoid_not_useful'}
+  const adjusted=await planIntelligenceRequest(requested,{loadCatalog:loader,loadFeedback})
+  assert.equal(adjusted.status,'no_match');assert.equal(reads,1)
+  await planIntelligenceRequest({...requested,preflight:{...preflight,selfHarmThoughts:'yes'}},{loadCatalog:loader,loadFeedback})
+  await planIntelligenceRequest({...requested,symbolicInterest:undefined,intent:{...intent,formats:['audio']}},{loadFeedback})
+  assert.equal(reads,1)
+  await assert.rejects(planIntelligenceRequest({...requested,surface:'meditation'},{loadCatalog:loader,loadFeedback}),/INVALID_INTELLIGENCE_REQUEST/)
+  const corrupt=await planIntelligenceRequest(requested,{loadCatalog:loader,loadFeedback:async()=>({dismissedIds:['youtube:xxxxxxxxxxx']})})
+  assert.equal(corrupt.status,'unavailable')
+});
+
+test('session dismissals cannot displace consented saved exclusions', async () => {
+  const source=videos.find(row=>row.youtube_id===sourceId)
+  const extra=Array.from({length:80},(_,i)=>({...source,youtube_id:String(i).padStart(11,'0')}))
+  const dismissed=Array.from({length:80},(_,i)=>`test:session-${i}`)
+  const result=await planIntelligenceRequest({...videoBody,feedbackHistory:'avoid_not_useful',session:{dismissedIds:dismissed}}, {
+    loadCatalog:async()=>({videos:[...extra,source],publishedSourceIds:[sourceId]}),
+    loadFeedback:async()=>({dismissedIds:[...extra.map(v=>`youtube:${v.youtube_id}`),`youtube:${sourceId}`]})
+  })
+  assert.equal(result.status,'no_match')
+});
+
 test('audio without an approved playable source is clearly a no-match in each language', async () => {
   for (const language of ['en','ru','es']) {
     const result = await planIntelligenceRequest({...body,intent:{...intent,language,formats:['audio']}},{});
