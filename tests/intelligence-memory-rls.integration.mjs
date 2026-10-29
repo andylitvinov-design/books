@@ -7,7 +7,7 @@ import { getAppConfig } from '../lib/app/config.js'
 import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal, openSealed } from '../lib/app/crypto.js'
-import { saveIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback } from '../lib/app/intelligence-feedback.js'
+import { saveIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback } from '../lib/app/intelligence-feedback.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
@@ -62,6 +62,9 @@ test('explicit save is default off, idempotent, owner scoped and deletable even 
   assert.equal(other.records.length,1)
   assert.equal(owner.records.some(record=>record.itemId===input.itemId),true)
   assert.equal(other.records.some(record=>record.itemId===input.itemId),false)
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,a,[input.itemId,'youtube:HqfixazXqRY']),{dismissedIds:[input.itemId]})
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,b,[input.itemId,'youtube:HqfixazXqRY']),{dismissedIds:[]})
+  await assert.rejects(matchingUnhelpfulFeedback(off,a,[input.itemId]),/INTELLIGENCE_MEMORY_DISABLED/)
   assert.equal((await deleteIntelligenceFeedback(off,a,{operationId,expectedRevision:0})).deleted,true)
   await assert.rejects(deleteIntelligenceFeedback(off,a,{operationId,expectedRevision:0}),/INTELLIGENCE_MEMORY_STALE/)
   await assert.rejects(saveIntelligenceFeedback(on,a,input),/INTELLIGENCE_MEMORY_STALE/)
