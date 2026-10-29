@@ -150,16 +150,23 @@ export default function MessagesHub({locale='en',embedded=false,onClientsCount=u
     onReload={()=>setRefreshKey(n=>n+1)} embedded={embedded}
     onClientsCount={onClientsCount} onDetailChange={onDetailChange}/>
   if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
-  // Non-owner accounts have private member conversations but no owner-only CRM.
-  // Render the real existing transport without a second Chats/Requests header.
-  if(embedded)return <div className={styles.hub} data-embedded-member-inbox>
-    {(unauthenticated||bootstrapSignInRequired)&&!data&&
-      <p className={styles.authNotice} role="alert">{t.sessionRequired}{' '}
-        <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>}
-    <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
-    {requestData?.hasPractice&&<MessagesClientRequests data={requestData} locale={locale}
-      onReload={()=>setRefreshKey(v=>v+1)} crmState={{loading:false,error:false,threads:[],partial:false}}/>}
-  </div>
+  // Practitioner and ordinary member accounts share the same compact protected
+  // conversation-list UI, WITHOUT connecting to the owner-only Telegram CRM.
+  // Their direct threads and assigned requests remain separately authorized.
+  if(embedded&&requestData?.accountId)return <MessagesSimpleInbox
+    key={requestData.accountId+':member'} locale={locale}
+    accountId={requestData.accountId} requests={requestData.requests||[]}
+    businessEnquiries={requestData.businessEnquiries||[]}
+    crmEnabled={false} embedded websiteLoading={loading}
+    websiteUnavailable={!usableData&&!loading}
+    onClientsCount={onClientsCount} onDetailChange={onDetailChange}
+    onReload={()=>setRefreshKey(value=>value+1)}/>
+  if(embedded)return <p className={styles.authNotice}
+    role={unauthenticated||bootstrapSignInRequired?'alert':'status'}>
+    {unauthenticated||bootstrapSignInRequired?t.sessionRequired:loading?t.loading:t.failure}{' '}
+    {(unauthenticated||bootstrapSignInRequired)&&
+      <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>}
+  </p>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
