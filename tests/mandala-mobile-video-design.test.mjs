@@ -215,7 +215,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
     assert.ok(studio.includes("/holistic-support/mobile?view="+view), "new design category: "+view);
   }
   assert.doesNotMatch(studio,/href=\{"\/"\+locale\+"\/(?:tests|talismans|masters|academy)"\}/);
-  assert.match(studio,/href="#video-templates"/);
+  assert.match(studio,/openQuickDetailed\("video-templates"\)/);
   assert.match(studio,/data-mandala-money-preview/);
   assert.match(studio,/data-mandala-cinematic-canvas/);
   assert.match(studio,/startFromHero/);
