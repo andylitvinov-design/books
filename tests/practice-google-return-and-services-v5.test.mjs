@@ -71,22 +71,26 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.doesNotMatch(service,/fakePayment|new SupabaseClient|createServiceForGuest/)
 })
 
-test('web Google sign-in returns to original Practice, with editor only after explicit Continue',()=>{
- assert.match(account,/const publicPracticeAction = proPanel === 'services'/)
- assert.match(account,/native\s*\? \{ continueTo: 'my-practice'/)
- assert.match(account,/continueTo: 'practice-preview', \.\.\.\(publicPracticeAction \?/)
- assert.match(account,/\['diagnostic','energy','personal','reiki','intro','workshop'\]\.includes\(proStarter\)/)
- assert.match(account,/\['clients','requests','analytics','profile'\]\.includes\(proPanel\)/)
+test('legacy web Google sign-in returns to clean original Practice with no layout-shifting Continue banner',()=>{
+ assert.match(account,/const proPanel = page === 'practice' \? searchParams\.get\('panel'\)/)
+ assert.match(account,/native\s*\?\s*\{ continueTo: 'my-practice'/)
+ assert.match(account, /:\s*\{ continueTo: 'practice-preview' \}/)
+ assert.doesNotMatch(account,/publicPracticeAction/)
+ assert.doesNotMatch(account,/page === 'practice'[\s\S]{0,240}\{ continueTo: 'practice-preview', \.\.\./)
+ assert.match(callback,/continueTo === 'practice-preview'/)
+ assert.match(callback,/const failedPracticeDestination = continueTo === 'practice-preview'/)
+ // No 'profi' in the web start means callback yields /ru/practice,
+ // not /ru/practice?ready=service (which changes the first screenshot).
+ assert.match(callback,/\?ready='\+encodeURIComponent\(profi\)/)
+ assert.match(front,/data-practice-showcase/)
  assert.match(front,/data-practice-after-google/)
  assert.match(front,/onClick=\{continueAction\}/)
+ assert.match(front,/onClick=\{dismissContinue\}/)
  assert.doesNotMatch(front,/router\.replace\(destination\(locale, ready\)\)/)
- assert.match(callback,/continueTo === 'practice-preview'/)
- assert.match(callback,/'\?ready='\+encodeURIComponent\(profi\)/)
  for(const kind of ['intro','workshop']){
    assert.match(front,new RegExp(kind+":root \\+ '\\?panel=services&create=1&starter="+kind+"'"))
    assert.ok(callback.includes(kind+":'/app/practice?panel=services&create=1&starter="+kind+"'"))
  }
-
 })
 
 test('viewing an empty My Services does not open the wizard without an explicit create request',()=>{
