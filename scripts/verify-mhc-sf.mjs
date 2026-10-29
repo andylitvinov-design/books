@@ -1,3 +1,4 @@
+import { verifyAssessmentCardLayout } from './helpers/assessment-card-visual-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
@@ -49,6 +50,8 @@ async function fill(page,d,mode,guest,locale,responseValues){
  const instructions=page.locator(guest?'.cabinet-test-note[lang="en"]':'.hh-runner-instructions[lang="en"]')
  await expect(instructions).toHaveText(d.instructions)
  if(!guest)await expect(page.locator('.hh-runner-instructions').first()).toHaveText(locale==='ru'?'За последний месяц':'During the past month')
+ await verifyAssessmentCardLayout(page,{guest,mode,output,locale,name:d.key,expect})
+ passed('Shared assessment question cards render at 320/354/390/430 for '+(guest?'guest':'Cabinet')+'/'+locale+'/'+mode)
  const quick=guest?'.cabinet-quick-question':'.hh-quick-question'
  for(let i=0;i<d.questions.length;i++){
   const scope=mode==='quick'?page.locator(quick).nth(i):page.locator(guest?'.cabinet-guided-question':'.hh-runner-question')
