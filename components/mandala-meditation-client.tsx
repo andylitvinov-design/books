@@ -196,6 +196,8 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const [preparedPng, setPreparedPng] = useState<{signature: string; url: string} | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  // A second iPhone Photos/Files choice must invalidate an earlier async decode.
+  const photoChoiceEpoch = useRef(0);
   const closeButton = useRef<HTMLButtonElement | null>(null);
   // WebKit may dispatch a synthetic click (detail 0) after pointerup. If
   // both events toggle state, fullscreen opens and immediately closes.
@@ -216,6 +218,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
+  useEffect(() => () => { photoChoiceEpoch.current += 1; }, []);
 
   useEffect(() => {
     if (!focusMode) return;
@@ -288,14 +291,21 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
     const image = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!image) return;
+    const choiceEpoch = ++photoChoiceEpoch.current;
+    // Never export an older local portrait after a failed or superseded choice.
+    setImageUrl(null);
+    setPreparedPng(null);
+    setImageError("");
     try {
       const prepared = await prepareBrowserPhoto(image);
-      setImageError("");
+      if (choiceEpoch !== photoChoiceEpoch.current) return;
       setImageUrl(URL.createObjectURL(prepared));
       setZoom(1);
       setOffsetX(50);
       setOffsetY(50);
-    } catch { setImageError(t.invalid); }
+    } catch {
+      if (choiceEpoch === photoChoiceEpoch.current) setImageError(t.invalid);
+    }
   }
 
   function selectTopic(topic: Topic) {
@@ -378,7 +388,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
                   {imageUrl ? t.change : t.upload}
                 </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
-                  onClick={() => { setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
+                  onClick={() => { photoChoiceEpoch.current += 1; setImageUrl(null); setPreparedPng(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
                 </button> : null}
               </div>
