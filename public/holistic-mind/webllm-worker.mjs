@@ -20,6 +20,7 @@ let engine = null;
 let loading = false;
 let activeRequest = 0;
 let generating = false;
+let pendingRequest = null;
 const emit = (type, data={}) => self.postMessage({type,...data});
 const clean = (value,max=600) => typeof value==="string"
   ? value.replace(/[\u0000-\u001f\u007f-\u009f]/g," ").replace(/\s+/g," ").trim().slice(0,max) : "";
@@ -91,6 +92,7 @@ self.onmessage=async event=>{
   const {type,requestId}=packet;
   if(type==="cancel") {
     activeRequest=0;
+    pendingRequest=null;
     try {engine?.interruptGenerate?.();} catch { /* manual cancel */ }
     return;
   }
@@ -115,7 +117,10 @@ self.onmessage=async event=>{
     return;
   }
   if(type!=="generate" || !engine || !Number.isSafeInteger(requestId) ||
-      requestId<=0 || generating) return;
+      requestId<=0) return;
+  // A cancellation may still be unwinding GPU work. Keep only the newest
+  // request, and start it when the previous inference releases its lock.
+  if(generating){pendingRequest=packet;return;}
   const c=safeContext(packet.context);
   const turns=safeTurns(packet.turns);
   if(turns.length===0 || turns.at(-1).role!=="user")return;
@@ -144,5 +149,8 @@ self.onmessage=async event=>{
   }finally{
     if(activeRequest===requestId)activeRequest=0;
     generating=false;
+    const next=pendingRequest;
+    pendingRequest=null;
+    if(next) void self.onmessage({data:next});
   }
 };
