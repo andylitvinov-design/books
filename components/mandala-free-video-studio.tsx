@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
@@ -32,6 +32,8 @@ type Result = { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blo
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
+// A selected sound is only a preview; attaching it is a separate, explicit step.
+type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -289,7 +291,17 @@ const audioCopy = {
     paces:{all:"Any pace",slow:"Slow",steady:"Steady",active:"Energizing"},
     voice:"Soft sound for a later voiceover",voiceInfo:"Quiet tracks at 30%. Only one soundtrack exports; voice and music are not mixed here.",
     suggested:"Best for this topic",browse:"Scroll to explore",count:"sounds",
-    empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected audio",
+    empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected sound",
+    search:"Find a sound…",sort:"Sort",byTopic:"Best match",byName:"Name A–Z",
+    videoLength:"Video length",loop:"8-second loop",showMore:"Show all sounds",showLess:"Show fewer",
+    pick:"Select",picked:"Selected",attach:"Attach to video",attached:"Attached to video",
+    detach:"Remove from video",needsAttach:"Select a sound and tap Attach to video before export.",
+    applied:"Sound is attached to this video setup. Create the video again to save a file with this sound.",
+    attachedLabel:"On video",noAttached:"No sound attached",
+    recordVoice:"Record my voice",stopVoice:"Finish recording",recordUnavailable:"Microphone is unavailable here. Try Safari or upload an audio file.",
+    recordFailed:"Could not record audio. Check microphone permission or use Files.",
+    recordTooLarge:"Recording exceeded 15 MB or 3 minutes. Please make a shorter recording.",
+    fileReady:"Voice recorded locally. Confirm audio permission and attach it to the video.",
   },
   ru: {
     context:"Под вашу тему",automatic:"Подобрать по теме",autoOn:"Автоподбор включён",
@@ -299,7 +311,17 @@ const audioCopy = {
     paces:{all:"Любой",slow:"Медленный",steady:"Ровный",active:"Бодрый"},
     voice:"Мягкий фон для будущей озвучки",voiceInfo:"Спокойные треки, громкость 30%. Голос и музыка пока не накладываются одновременно.",
     suggested:"Лучше подходит",browse:"Листайте звуки",count:"звуков",
-    empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранная дорожка",
+    empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранный звук",
+    search:"Найти звук…",sort:"Сортировка",byTopic:"Подходящие",byName:"По названию",
+    videoLength:"Длина видео",loop:"Цикл 8 секунд",showMore:"Показать все звуки",showLess:"Свернуть список",
+    pick:"Выбрать",picked:"Выбран",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
+    detach:"Убрать звук из видео",needsAttach:"Выберите дорожку и нажмите «Прикрепить к видео» перед сохранением.",
+    applied:"Дорожка прикреплена к настройкам ролика. Создайте видео заново, чтобы получить файл со звуком.",
+    attachedLabel:"В видео",noAttached:"Без звука",
+    recordVoice:"Записать голос",stopVoice:"Завершить запись",recordUnavailable:"Микрофон недоступен. Откройте Safari или загрузите аудио из «Файлов».",
+    recordFailed:"Записать голос не удалось. Проверьте разрешение на микрофон или загрузите файл.",
+    recordTooLarge:"Запись больше 15 МБ или 3 минут. Попробуйте короче.",
+    fileReady:"Голос записан на устройстве. Подтвердите право и прикрепите его к видео.",
   },
   es: {
     context:"Para el tema elegido",automatic:"Elegir por tema",autoOn:"Selección activa",
@@ -310,6 +332,16 @@ const audioCopy = {
     voice:"Fondo suave para añadir voz después",voiceInfo:"Pistas suaves al 30%. Por ahora solo se exporta una pista de audio.",
     suggested:"Recomendado",browse:"Desliza para explorar",count:"sonidos",
     empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
+    search:"Buscar sonido…",sort:"Orden",byTopic:"Recomendados",byName:"Nombre A–Z",
+    videoLength:"Duración del vídeo",loop:"Bucle de 8 segundos",showMore:"Ver todos los sonidos",showLess:"Mostrar menos",
+    pick:"Elegir",picked:"Elegido",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
+    detach:"Quitar sonido del vídeo",needsAttach:"Elige un sonido y pulsa Adjuntar antes de guardar el vídeo.",
+    applied:"Audio adjunto a este vídeo. Créalo de nuevo para guardar el archivo con sonido.",
+    attachedLabel:"En el vídeo",noAttached:"Sin sonido",
+    recordVoice:"Grabar voz",stopVoice:"Terminar grabación",recordUnavailable:"El micrófono no está disponible. Prueba Safari o sube un archivo.",
+    recordFailed:"No se pudo grabar. Revisa los permisos o utiliza Archivos.",
+    recordTooLarge:"La grabación supera 15 MB o 3 minutos. Hazla más corta.",
+    fileReady:"Voz grabada localmente. Confirma los derechos y adjúntala al vídeo.",
   },
 } as const;
 
@@ -682,6 +714,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [audioPace,setAudioPace] = useState("all");
   const [audioVoiceFriendly,setAudioVoiceFriendly] = useState(false);
   const [audioAuto,setAudioAuto] = useState(false);
+  const [audioSearch,setAudioSearch] = useState("");
+  const [audioSort,setAudioSort] = useState<"best"|"name">("best");
+  const [showAllAudio,setShowAllAudio] = useState(false);
+  const [audioDurationInvalid,setAudioDurationInvalid] = useState(false);
+  const [attachedAudio,setAttachedAudio] = useState<AttachedAudio|null>(null);
+  const [micRecording,setMicRecording] = useState(false);
+  const micRef = useRef<{recorder:MediaRecorder;stream:MediaStream;chunks:Blob[];timeout:ReturnType<typeof setTimeout>}|null>(null);
   const [soundPreview,setSoundPreview] = useState(false);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const restoreAudioSessionRef = useRef<(() => void) | null>(null);
@@ -719,13 +758,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
+  const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none":"preset:"+music;
+  const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
+    ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
+  const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption,affirmations]);
+    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
-    (!uploadedAudio || audioRights) && !preparing && !recording;
+    (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
+    !audioDurationInvalid && !micRecording && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -735,6 +779,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   });
   const recommendedAudioId = audioMatches[0]?.id as AmbientMusic | undefined;
   const selectedAudio = mandalaAudioTracks.find(item=>item.id===music);
+  const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
+    ?attachedAudio.file.name:mandalaAudioTracks.find(item=>item.id===attachedAudio.id)?.name[locale]||attachedAudio.id;
+  const searchTerm=audioSearch.trim().toLocaleLowerCase(locale);
+  const searchedAudio=audioMatches
+    .filter(track=>!searchTerm || [track.name[locale],track.detail[locale],track.kind]
+      .some(label=>label.toLocaleLowerCase(locale).includes(searchTerm)));
+  const filteredAudio=audioSort==="name"
+    ?[...searchedAudio].sort((a,b)=>a.name[locale].localeCompare(b.name[locale],locale))
+    :searchedAudio;
+  const visibleAudio=showAllAudio?filteredAudio:filteredAudio.slice(0,4);
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -758,6 +812,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       restoreAudioSessionRef.current?.();
       restoreAudioSessionRef.current = null;
       if(uploadedAudioRef.current) URL.revokeObjectURL(uploadedAudioRef.current.url);
+      if(micRef.current){
+        clearTimeout(micRef.current.timeout);
+        micRef.current.recorder.onstop=null;
+        try{if(micRef.current.recorder.state!=="inactive")micRef.current.recorder.stop();}catch{}
+        micRef.current.stream.getTracks().forEach(track=>track.stop());
+        micRef.current=null;
+      }
       aliveRef.current = false;
       const job = jobRef.current;
       if (job) {
@@ -909,10 +970,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
-      musicSession = uploadedAudio
-        ? await startUploadedAudio(uploadedAudio.file,soundVolume)
-        : music === "none" ? null : await startPresetAudio(music,soundVolume);
-      if((music !== "none" || uploadedAudio) && !musicSession) {
+      musicSession = attachedAudio?.kind==="file"
+        ? await startUploadedAudio(attachedAudio.file,soundVolume)
+        : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume) : null;
+      if(attachedAudio && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
         setNotice(ui.soundUnavailable);
         return;
@@ -1080,6 +1141,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     uploadedAudioRef.current=entry;
     setUploadedAudio(entry);
     setAudioPlaybackError(false);
+    setAudioDurationInvalid(false);
     setAudioAuto(false);
     setAudioVoiceFriendly(false);
     setMusic("none");
@@ -1089,8 +1151,61 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function chooseMusic(choice:AmbientMusic){
     clearUploadedAudio();
     setMusic(choice);
+    setAudioDurationInvalid(false);
     setAudioPlaybackError(false);
     setMusicWarning("");
+  }
+  function attachSelectedAudio(){
+    if(recording||preparing||micRecording||audioDurationInvalid)return;
+    if(uploadedAudio&&!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
+    if(uploadedAudio)setAttachedAudio({kind:"file",id:uploadedAudio.url,file:uploadedAudio.file});
+    else if(music!=="none")setAttachedAudio({kind:"preset",id:music});
+    else setAttachedAudio(null);
+    setMusicWarning("");
+  }
+  function stopMicRecording(){
+    const active=micRef.current;
+    if(!active)return;
+    clearTimeout(active.timeout);
+    if(active.recorder.state!=="inactive")active.recorder.stop();
+  }
+  async function startMicRecording(){
+    if(recording||preparing||micRef.current)return;
+    if(typeof navigator==="undefined"||!navigator.mediaDevices?.getUserMedia||
+      typeof MediaRecorder==="undefined"){setMusicWarning(audioUi.recordUnavailable);return;}
+    let stream:MediaStream|null=null;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      if(!aliveRef.current){stream.getTracks().forEach(track=>track.stop());return;}
+      const formats=["audio/mp4","audio/webm;codecs=opus","audio/webm"];
+      const mime=formats.find(format=>MediaRecorder.isTypeSupported(format));
+      const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+      const chunks:Blob[]=[];
+      const session={recorder,stream,chunks,timeout:setTimeout(stopMicRecording,180000)};
+      micRef.current=session;
+      recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
+      recorder.onerror=()=>{setMusicWarning(audioUi.recordFailed);};
+      recorder.onstop=()=>{
+        clearTimeout(session.timeout);
+        stream?.getTracks().forEach(track=>track.stop());
+        if(micRef.current!==session)return;
+        micRef.current=null;
+        setMicRecording(false);
+        if(!chunks.length||!aliveRef.current){setMusicWarning(audioUi.recordFailed);return;}
+        const kind=recorder.mimeType||mime||"audio/mp4";
+        const ext=kind.includes("webm")?"webm":"m4a";
+        const file=new File(chunks,"my-voice."+ext,{type:kind});
+        if(!isSupportedLocalAudio(file)){setMusicWarning(audioUi.recordTooLarge);return;}
+        chooseAudioFile(file);
+        setMusicWarning(audioUi.fileReady);
+      };
+      recorder.start(250);
+      setMusicWarning("");
+      setMicRecording(true);
+    }catch{
+      stream?.getTracks().forEach(track=>track.stop());
+      setMusicWarning(audioUi.recordFailed);
+    }
   }
   async function shareVideo(){
     if(!result)return;
@@ -1138,9 +1253,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing)return;
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
-    setMusic("none");setSoundVolume(75);setCaptionMode("none");
+    setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
-    setAudioVoiceFriendly(false);setCustomCaption("");setQuality("hd");
+    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);
+    setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
