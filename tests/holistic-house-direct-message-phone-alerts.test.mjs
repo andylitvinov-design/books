@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const schema=src('supabase/migrations/20261029194530_hh_direct_message_push_claims.sql')
+const schema=src('supabase/migrations/20261029195501_hh_direct_message_push_claims.sql')
 const dispatch=src('lib/app/direct-message-push.js')
 const route=src('app/api/app/direct-messages/route.js')
 const cron=src('app/api/internal/direct-message-push/route.js')
@@ -31,6 +31,7 @@ test('private database claim cannot leak private text or send without consent',(
     'direct_message_push_finish','direct_message_push_pending'])
     assert.match(schema,new RegExp('app_private\\.'+item+'\\('))
   assert.match(schema,/primary key \(message_id, subscription_id\)/)
+  assert.match(schema,/check\(locale in \('en','ru','es'\)\)/i)
   assert.match(schema,/alter table app_private\.direct_message_push_attempts force row level security/i)
   assert.match(schema,/revoke all on app_private\.direct_message_push_attempts[\s\S]*?from public, anon, authenticated/i)
   assert.match(schema,/revoke all on function[\s\S]*?from public, anon, authenticated/i)

@@ -3,6 +3,14 @@
 -- message/device attempt prevents duplicate sends from the request and cron.
 -- No message body, profile, clinical data, or external provider ID is persisted.
 begin;
+-- Extend the existing Web Push preference to the third supported site language.
+-- Existing EN/RU preferences remain unchanged. Account ES locale is already live.
+alter table app_private.notification_preferences
+  drop constraint notification_preferences_locale_check;
+alter table app_private.notification_preferences
+  add constraint notification_preferences_locale_check
+  check(locale in ('en','ru','es'));
+
 create table app_private.direct_message_push_attempts (
   message_id uuid not null references app.practitioner_direct_messages(id) on delete cascade,
   subscription_id uuid not null references app_private.push_subscriptions(id) on delete cascade,
