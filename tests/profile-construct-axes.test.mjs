@@ -190,7 +190,7 @@ test('current builder derives stable 3+5 suggestions and fit from selected sourc
   assert.ok(component?.body)
   // Execute only the actual pure recommendation declarations, not React, auth,
   // network or scoring. A helper rename alone is not the acceptance criterion.
-  const names = ['modeKind', 'rankedCandidates', 'recommendedKeys', 'recommendedTests', 'fiveMoreTests']
+  const names = ['rankedCandidates', 'recommendedKeys', 'recommendedTests', 'additionalCandidates', 'fiveMoreTests']
   const declarations = component.body.statements.filter(ts.isVariableStatement)
     .flatMap(statement => [...statement.declarationList.declarations])
     .filter(node => ts.isIdentifier(node.name) && names.includes(node.name.text))
@@ -228,7 +228,7 @@ test('current builder derives stable 3+5 suggestions and fit from selected sourc
     { key: 'extra-01', matchPercent: 40 },
   ])
   assert.deepEqual(result.additional, extras.slice(1, 6).map(key => ({ key, matchPercent: 40 })))
-  assert.deepEqual(result.ranking.map(item => item.key), ['broad', 'focused', ...extras])
+  assert.deepEqual(result.ranking.map(item => item.key), ['broad', 'focused', ...extras, 'professional'])
   assert.ok(result.ranking.every(item => item.matchedAxes.length > 0 &&
     item.matchedAxes.every(axis => ['work::focus', 'work::functioning'].includes(axis))))
   // Unchecking every card or retaining only one must not remove suggestions.
@@ -241,8 +241,11 @@ test('current builder derives stable 3+5 suggestions and fit from selected sourc
   assert.deepEqual(other.additional, [])
   assert.deepEqual(other.ranking[0].matchedAxes, ['emotions::stress'])
   const pro = evaluate({ batteryMode: 'pro' })
-  assert.deepEqual(pro.primary, [{ key: 'professional', matchPercent: 40 }])
-  assert.deepEqual(pro.additional, [])
+  assert.deepEqual(pro.primary, result.primary, 'top-three remains stable when filtering other tests')
+  assert.deepEqual(pro.additional, [{ key: 'professional', matchPercent: 40 }])
+  const all = evaluate({ batteryMode: 'all' })
+  assert.equal(all.primary.length, 3)
+  assert.equal(all.additional.length, 5)
   // A high-ranking cluster for one facet must not crowd out another chosen
   // facet merely to fill the three featured slots by rank alone.
   const coverageKeys = ['a-focus-1', 'a-focus-2', 'a-focus-3', 'a-focus-4', 'z-purpose']
