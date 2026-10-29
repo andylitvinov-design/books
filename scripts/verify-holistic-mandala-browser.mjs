@@ -285,6 +285,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
+        // Hypnoaffirmations: the first thing visitors see is a truthful, compact
+        // explanation and the two explicit ways to choose their phrases.
+        const expectedHypnoTitle={ru:"Гипноаффирмации",en:"Hypnoaffirmations",es:"Hipnoafirmaciones"}[locale];
+        assert.equal(await affirmationsPanel.locator("#video-affirmations-heading").innerText(),expectedHypnoTitle);
+        assert.equal(await affirmationsPanel.locator("[data-video-hypno-intro]").count(),1);
+        assert.equal(await affirmationsPanel.locator("[data-video-choice-mode] button").count(),2);
+        const manualSelect=affirmationsPanel.locator("[data-video-manual-select]");
+        const autoSelect=affirmationsPanel.locator("[data-video-personal-suggest]");
+        assert.equal(await manualSelect.getAttribute("aria-pressed"),"true");
+        assert.equal(await autoSelect.getAttribute("aria-pressed"),"false");
+        await manualSelect.click();
+        assert.equal(await manualSelect.getAttribute("aria-pressed"),"true");
+        assert.equal(await affirmationsPanel.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"false");
         // A short, scannable mobile panel: longer controls are collapsed until asked for.
         assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
         assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
@@ -353,27 +366,59 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.waitForFunction(() => {
             const button=document.querySelector("[data-mandala-video-generate]");
             const master=document.querySelector("[data-mandala-master-mp4]");
-            return Boolean(button && !button.disabled && master && master.readyState >= 2 && master.videoWidth > 0);
+            return Boolean(button && !button.disabled && master && master.readyState >= 2 && master.videoWidth>0);
           },undefined,{timeout:25000});
         } catch (error) {
-          // Do not waive actual H.264 decoding in WebKit. Preserve safe
-          // diagnostic states so the exact failing scene can be repaired.
           const state=await page.evaluate(() => {
             const master=document.querySelector("[data-mandala-master-mp4]");
             const button=document.querySelector("[data-mandala-video-generate]");
             return {
-              source:master?.getAttribute("src") || null,
-              readyState:master?.readyState ?? null,
-              networkState:master?.networkState ?? null,
-              decodedWidth:master?.videoWidth ?? 0,
-              mediaError:master?.error?.code ?? null,
-              buttonDisabled:button?.disabled ?? null,
+              src:master?.getAttribute("src")??null,
+              readyState:master?.readyState??null,
+              networkState:master?.networkState??null,
+              videoWidth:master?.videoWidth??0,
+              mediaError:master?.error?.code??null,
+              disabled:button?.disabled??null,
               visibility:document.visibilityState,
             };
           });
-          throw new Error(engine+" "+locale+"/"+width+" real master MP4 did not decode: "+JSON.stringify(state)+"; "+String(error));
+          throw new Error(engine+" "+locale+"/"+width+" decoded MP4 gate: "+JSON.stringify(state)+"; "+String(error));
         }
         assert.equal(await create.isEnabled(), true);
+        // Regression for the owner's real iPhone screenshot: native Safari
+        // displayed "Ошибка" when five presets used generated blob: WAVs.
+        // Every preset must now be an actual first-party HTTP audio file
+        // which WebKit can load, decode and advance after a direct user tap.
+        if (locale === "ru" && width === 390) {
+          for (const preset of ["harmony","prosperity","energy","love","meditation"]) {
+            await page.locator('[data-video-music="'+preset+'"]').click();
+            const native=page.locator("[data-video-audio-player]");
+            await native.waitFor({state:"attached",timeout:12000});
+            const src=await native.getAttribute("src");
+            assert.equal(src,"/audio/mandala/"+preset+".wav",
+              "preset must not use an iOS-unreliable blob URL");
+            const response=await page.request.get(BASE+src,{headers:{Range:"bytes=0-63"}});
+            assert.ok([200,206].includes(response.status()),preset+" media GET/range request");
+            assert.match(response.headers()["content-type"]||"",/audio\/(?:wav|x-wav)/i,
+              preset+" is served with an actual WAV media MIME");
+            const body=Buffer.from(await response.body());
+            assert.equal(body.subarray(0,4).toString("ascii"),"RIFF",preset+" starts with WAV PCM header");
+            await page.locator("[data-video-music-preview]").click();
+            await page.waitForFunction(() => {
+              const a=document.querySelector("[data-video-audio-player]");
+              return a && a.error === null && a.readyState >= 2 && a.currentTime > .3;
+            },undefined,{timeout:18000});
+            const detail=await native.evaluate(a=>({
+              currentTime:a.currentTime,networkState:a.networkState,error:a.error?.code||null,
+              source:a.currentSrc,duration:a.duration,
+            }));
+            assert.equal(detail.error,null,preset+" native media error");
+            assert.ok(detail.duration>=7 && detail.currentTime>.3,preset+" actually plays");
+            assert.equal(await page.locator("[data-video-audio-direct]").count(),0,
+              "healthy preset must not show direct-open error fallback");
+            await page.locator("[data-video-music-preview]").click();
+          }
+        }
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator("[data-video-extra-settings] > summary").click();
           await page.locator('[data-video-aspect="landscape"]').click();

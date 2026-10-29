@@ -15,7 +15,7 @@ import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
 import type { FilmSource } from "@/lib/mandala/film-collection-v2";
 import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
-import { acquirePlaybackSession, createAmbientPreviewWav, isSupportedLocalAudio, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
+import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
@@ -122,7 +122,8 @@ const studioCopy = {
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
     brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Sound ambience",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"Built-in presets are original tones, not recorded songs. Add your own song or voice recording below.",
+    originalAudio:"Five original audio background files served by this site. Add your own music or voice recording below.",
+    openAudioDirect:"Open soundtrack directly",retryAudio:"Retry playback",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
     audioRightsHelp:"Confirm permission for the selected audio to export your video.",
@@ -161,7 +162,8 @@ const studioCopy = {
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
     brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Звуковой фон",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"Встроенные фоны — синтезированные тона, не музыкальные записи. Можно добавить свою песню или голос.",
+    originalAudio:"Пять готовых звуковых подложек из файлов нашего сайта. Также можно добавить свою музыку или голос.",
+    openAudioDirect:"Открыть аудиофайл отдельно",retryAudio:"Повторить",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
     audioRightsHelp:"Подтвердите право на аудиозапись, чтобы сохранить видео со звуком.",
@@ -200,7 +202,8 @@ const studioCopy = {
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
     brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Ambiente sonoro",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"Los sonidos integrados son tonos sintetizados, no canciones grabadas. Puedes añadir tu propia música o voz.",
+    originalAudio:"Cinco fondos sonoros originales alojados en este sitio. También puedes añadir tu música o voz.",
+    openAudioDirect:"Abrir el archivo de audio",retryAudio:"Reintentar",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
     audioRightsHelp:"Confirma tus derechos sobre el audio para exportar el vídeo.",
@@ -654,7 +657,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
-  const [tonePreview,setTonePreview] = useState<{preset:AmbientMusic;url:string}|null>(null);
+  const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
@@ -692,7 +695,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
-  const previewAudioUrl = uploadedAudio?.url || (tonePreview?.preset===music ? tonePreview.url : null);
+  const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -729,14 +732,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => () => {
     if (result?.url) URL.revokeObjectURL(result.url);
   }, [result]);
-  // Native HTMLAudioElement is audible in iPhone silent mode where an
-  // AudioContext-to-speakers preview was swallowed by WebKit.
+  // Built-in presets come from stable HTTPS WAV files, not a generated
+  // blob: URL: Safari's in-app player reported a native "Error" for blobs.
+  // The actual selected user audio remains a private, local File object.
   useEffect(() => {
-    if(music==="none") { setTonePreview(null); return; }
-    const url=URL.createObjectURL(createAmbientPreviewWav(music));
-    setTonePreview({preset:music,url});
-    return () => URL.revokeObjectURL(url);
-  },[music]);
+    setAudioPlaybackError(false);
+  },[previewAudioUrl]);
   useEffect(() => {
     const player=audioPreviewRef.current;
     if(!player) return;
@@ -789,16 +790,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // and final recording. A muted video may play on iPhone without audio
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
-    // Safari can fire canplay before this passive effect when a previously
-    // decoded same-origin MP4 is reused. Do not erase valid readiness.
-    const video = premiumVideoRef.current;
-    setPremiumReady(Boolean(video && video.readyState >= 2 && video.videoWidth > 0));
-    // WebKit can suspend an invisible muted MP4 at NETWORK_IDLE without a
-    // decoded frame. Re-request only an undecoded, non-loading master; do
-    // not treat loaded metadata or a poster as an actual video frame.
-    if (video && video.readyState < 2 &&
-      (video.networkState === video.NETWORK_EMPTY || video.networkState === video.NETWORK_IDLE))
-      video.load();
+    // The keyed HD element may finish decoding *before* this effect runs.
+    // Resetting ready=false unconditionally then waiting only for a new
+    // loadeddata/canplay event can leave Create disabled forever on Safari.
+    // Reconcile the real current frame first; request a load only if needed.
+    const master=premiumVideoRef.current;
+    const decoded=Boolean(activeFilm && master && master.readyState>=2 &&
+      master.videoWidth>0 && master.videoHeight>0);
+    setPremiumReady(decoded);
+    if(activeFilm && master && !decoded)master.load();
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
@@ -1012,7 +1012,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try {
       if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
       player.muted=false;
-      player.volume=Math.min(1,Math.max(0,soundVolume/100));
+      // iOS Safari may reject programmatic .volume assignments. Playback
+      // must still be attempted from the user's tap.
+      try { player.volume=Math.min(1,Math.max(0,soundVolume/100)); }
+      catch { /* Use device hardware media volume instead. */ }
       void player.play().catch(()=>{
         stopSoundPreview();
         if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
@@ -1037,6 +1040,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const entry={file,url:URL.createObjectURL(file)};
     uploadedAudioRef.current=entry;
     setUploadedAudio(entry);
+    setAudioPlaybackError(false);
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
@@ -1044,6 +1048,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function chooseMusic(choice:AmbientMusic){
     clearUploadedAudio();
     setMusic(choice);
+    setAudioPlaybackError(false);
     setMusicWarning("");
   }
   async function shareVideo(){
@@ -1096,6 +1101,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
+  // iPhone WebKit can defer HD decoding for the hidden same-origin master.
+  // Photo consent is a genuine user gesture: briefly unlock muted inline media
+  // rather than marking Create ready without a decoded video frame.
+  function primeNativeMasterFromUserGesture(){
+    const video=premiumVideoRef.current;
+    if(!activeFilm || !video || video.readyState>=2)return;
+    video.muted=true;
+    video.load();
+    void video.play().then(()=>{
+      if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0)
+        setPremiumReady(true);
+      if(!previewPlaying && !recording && !preparing)video.pause();
+    }).catch(()=>{
+      // Keep Create gated: native loadeddata/canplay/error handlers decide readiness.
+    });
+  }
+
   const startFromHero=()=>{
     if(recording||preparing)return;
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
@@ -1156,10 +1178,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
         data-mandala-master-mp4={activeFilm.src}
-        onLoadedData={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
-        onCanPlay={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
-        // Safari may discard a decoded source under media-memory pressure;
-        // never keep the generation button enabled for an emptied master.
+        onLoadedData={event=>{
+          if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
+            setPremiumReady(true);
+        }}
+        onCanPlay={()=>setPremiumReady(true)}
         onEmptied={()=>setPremiumReady(false)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
@@ -1493,7 +1516,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div> : null}
           </div>
           <div className={videoStyles.musicTools}>
-            <button type="button" data-video-music-preview disabled={!previewAudioUrl||recording||preparing}
+            <button type="button" data-video-music-preview disabled={!previewAudioUrl||audioPlaybackError||recording||preparing}
               onClick={toggleSoundPreview} aria-pressed={soundPreview}>
               {soundPreview?ui.soundStop:ui.soundPreview}
             </button>
@@ -1503,18 +1526,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
             </label>
           </div>
-          {previewAudioUrl ? <audio key={previewAudioUrl} ref={audioPreviewRef}
-            src={previewAudioUrl} controls preload="metadata"
-            data-video-audio-player aria-label={uploadedAudio?.file.name||ui.music}
+          {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={audioPreviewRef}
+            src={previewAudioUrl} controls preload="metadata" loop={!uploadedAudio}
+            data-video-audio-player data-video-audio-source={uploadedAudio?"user-file":"site-preset"}
+            aria-label={uploadedAudio?.file.name||ui.music}
             onPlay={()=>{if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
               setSoundPreview(true);setMusicWarning("");}}
             onPause={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
             onEnded={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
-            onError={()=>setMusicWarning(ui.soundUnavailable)}
+            onError={()=>{
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;
+              setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
+            }}
             onLoadedMetadata={event=>{
               if(uploadedAudio && Number.isFinite(event.currentTarget.duration) &&
                 event.currentTarget.duration>180)setMusicWarning(ui.audioTooLong);
             }}/> : null}
+          {audioPlaybackError && previewAudioUrl ? <div className={videoStyles.audioRecovery} role="alert">
+            <button type="button" data-video-audio-retry className={videoStyles.audioDirectLink}
+              onClick={()=>{setAudioPlaybackError(false);setMusicWarning("");}}>{ui.retryAudio}</button>
+            {!uploadedAudio ? <a className={videoStyles.audioDirectLink}
+              href={previewAudioUrl} target="_blank" rel="noopener noreferrer"
+              data-video-audio-direct>{ui.openAudioDirect}</a> : null}
+          </div> : null}
           {uploadedAudio ? <label className={videoStyles.audioRights}>
             <input type="checkbox" data-video-audio-rights checked={audioRights}
               onChange={event=>setAudioRights(event.currentTarget.checked)}
@@ -1708,20 +1742,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <label className={videoStyles.consent}>
           <input type="checkbox" data-video-photo-consent checked={photoConsent}
             disabled={recording||preparing} onChange={event=>{
-              const consented=event.currentTarget.checked;
-              setPhotoConsent(consented);
-              // Safari may evict the decoded muted MP4 while the visitor
-              // configures the editor. Re-arm only on this explicit gesture:
-              // do not enable export until a genuine video frame decodes.
-              const master=premiumVideoRef.current;
-              if(consented && previewPlaying && activeFilm && master && master.readyState<2){
-                setPremiumReady(false);
-                if(master.networkState===master.NETWORK_EMPTY ||
-                  master.networkState===master.NETWORK_IDLE) master.load();
-                void master.play().catch(()=>{
-                  if(aliveRef.current)setNotice(ui.videoUnavailable);
-                });
-              }
+              const approved=event.target.checked;
+              setPhotoConsent(approved);
+              if(approved)primeNativeMasterFromUserGesture();
             }}/>
           <span>{ui.consent}</span>
         </label>
