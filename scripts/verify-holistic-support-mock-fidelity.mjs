@@ -264,6 +264,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          // WebKit can resolve a click before React commits accepted/next state.
+          // Wait for actual acceptance and navigation; never bypass either gate.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
@@ -651,6 +655,15 @@ for (const browserType of [chromium, webkit]) {
           });
           const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
           assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          const intentionLabels = {
+            ru: ["Поддержка энергии","Поддержка любви","Поддержка цели","Поддержка сознания"],
+            en: ["Energy support","Love support","Goal support","Consciousness support"],
+            es: ["Apoyo a la energía","Apoyo al amor","Apoyo a las metas","Apoyo a la conciencia"],
+          };
+          assert.deepEqual((await reikiTabs.allInnerTexts()).map(text=>text.trim()),intentionLabels[locale],
+            label+" session tiles show just four intentions, no Reiki system captions");
+          assert.equal(await reikiTabs.locator("small").count(),0,
+            label+" session goals must not expose methodology captions");
           assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
             "true",label+" only published Tantra Reiki selected initially");
           const marketplace=healing.locator('[data-support-reiki-marketplace]');
@@ -668,6 +681,30 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");
           assert.equal(await tab("description").count(),1,label+" central Description tab");
           assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          const mainTabPosition = await heroMaster.evaluate(element=>{
+            const tabs=element.querySelector('[role="tablist"]')?.getBoundingClientRect();
+            const content=element.querySelector('[data-support-reiki-panel="main"]')?.getBoundingClientRect();
+            return {tabsBottom:tabs?.bottom,contentTop:content?.top};
+          });
+          assert.ok(Number.isFinite(mainTabPosition.tabsBottom) &&
+            Number.isFinite(mainTabPosition.contentTop) &&
+            mainTabPosition.tabsBottom <= mainTabPosition.contentTop+2,
+            label+" Main / Filter / Description / Video tabs must sit ABOVE the scenic hero content: "+
+              JSON.stringify(mainTabPosition));
+          const topFilterPosition = await healing.locator('[data-support-reiki-hero-filter]')
+            .evaluate(element => {
+              const box=element.getBoundingClientRect();
+              const stage=element.closest('[data-support-reiki-central]').getBoundingClientRect();
+              return {top:box.top,bottom:box.bottom,stageTop:stage.top,stageHeight:stage.height};
+            });
+          assert.ok(topFilterPosition.top >= mainTabPosition.tabsBottom-1 &&
+            topFilterPosition.top - mainTabPosition.tabsBottom <= 25 &&
+            topFilterPosition.bottom <= topFilterPosition.stageTop+topFilterPosition.stageHeight/2,
+            label+" large Filter CTA must be at the top of the photo, not beside the lower hero copy: "+
+              JSON.stringify(topFilterPosition));
+          assert.ok(topFilterPosition.bottom <= mainTabPosition.contentTop+1,
+            label+" floating top Filter cannot collide with the published provider text panel: "+
+              JSON.stringify({topFilterPosition,mainTabPosition}));
           // Screenshot regression: shared .page button {font:inherit} used to inflate
           // every Reiki tab into a huge two-line block on real iPhone Safari.
           const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
@@ -755,6 +792,26 @@ for (const browserType of [chromium, webkit]) {
           await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
             label+" three real linked initiation pathways appear on selection");
+          const initiationPicker=marketplace.locator('[data-support-reiki-initiation-types]');
+          assert.equal(await initiationPicker.count(),1,
+            label+" initiation brings its own lower Reiki type menu");
+          assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id]').count(),4,
+            label+" All + exactly the three approved Academy initiation types");
+          for(const id of ["tantra-initiation","kundalini-initiation","yggdrasil-initiation"]) {
+            assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id="'+id+'"]').count(),1,
+              label+" source-backed initiation "+id);
+          }
+          await initiationPicker.locator('[data-support-reiki-initiation-id="yggdrasil-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" Yggdrasil selector hides unrelated initiations");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="yggdrasil-initiation"]').count(),1,
+            label+" retains the original Yggdrasil path");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="kundalini-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer="kundalini-initiation"]').count(),1,
+            label+" Kundalini selector opens the original Academy entry");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="all"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" All restores exactly the three original initiations");
           await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
             label+" 21–50 EUR selects only published-price Tantra initiation");
