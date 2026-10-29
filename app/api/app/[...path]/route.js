@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
-import {directMessengerRecipient,directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
+import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { videoProfileFocus } from '@/lib/mandala/video-affirmation-focus.mjs'
@@ -355,9 +355,14 @@ async function handle(request, { params }) {
           }),
         )
       const actor = await auth.verified()
-      await createAppRepository(config).ensureAccount(actor)
+      const account=await createAppRepository(config).ensureAccount(actor)
+      // On first Google sign-in, the client must finish explicit account
+      // consent before a private thread is created. Keep the chosen master's
+      // public slug through this existing Cabinet onboarding, never in storage.
+      const verifiedDestination=continueTo==='direct-messages'&&account.onboardingState!=='active'
+        ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
       return auth.apply(
-        NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
+        NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
