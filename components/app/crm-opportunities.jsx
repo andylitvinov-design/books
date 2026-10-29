@@ -10,7 +10,7 @@ const COPY={
   total:'Total deals',active:'In progress',requested:'Booking requested',
   contact:'Business contact',choose:'Choose a contact',service:'Service',create:'Create deal',
   newDeal:'New deal',stageFilterLabel:'Filter loaded deals',all:'All stages',open:'Open contact',
-  noContacts:'Add a business contact first in Contacts.',empty:'No deals yet.',
+  noContacts:'Add a business contact first in Contacts.',empty:'No deals yet.',history:'Stage history',noHistory:'No history yet.',historyError:'Cannot read stage history.',
   loading:'Loading…',more:'Load earlier deals',refresh:'Refresh',
   partial:'Showing the latest deals. Load more to see older items; the totals count all owner deals.',
   error:'Unable to load or save. Please retry.',conflict:'Another tab changed the deal. Refresh and retry.',
@@ -28,7 +28,7 @@ const COPY={
   total:'Всего сделок',active:'В работе',requested:'Запрос записи',
   contact:'Деловой контакт',choose:'Выберите контакт',service:'Услуга',create:'Создать сделку',
   newDeal:'Новая сделка',stageFilterLabel:'Фильтр загруженных сделок',all:'Все этапы',open:'Открыть контакт',
-  noContacts:'Сначала добавьте деловой контакт в разделе «Контакты».',empty:'Сделок пока нет.',
+  noContacts:'Сначала добавьте деловой контакт в разделе «Контакты».',empty:'Сделок пока нет.',history:'История этапов',noHistory:'История пока пустая.',historyError:'Не удалось прочитать историю.',
   loading:'Загрузка…',more:'Загрузить старые сделки',refresh:'Обновить',
   partial:'Показаны последние сделки. Более ранние доступны через «Загрузить». Общие счётчики полные.',
   error:'Не удалось сохранить или загрузить. Повторите.',conflict:'Сделка изменена в другой вкладке. Обновите список.',
@@ -46,7 +46,7 @@ const COPY={
   total:'Total',active:'En curso',requested:'Reserva solicitada',
   contact:'Contacto profesional',choose:'Elige un contacto',service:'Servicio',create:'Crear oportunidad',
   newDeal:'Nueva oportunidad',stageFilterLabel:'Filtrar oportunidades cargadas',all:'Todas las etapas',open:'Abrir contacto',
-  noContacts:'Añade un contacto profesional en Contactos.',empty:'Todavía no hay oportunidades.',
+  noContacts:'Añade un contacto profesional en Contactos.',empty:'Todavía no hay oportunidades.',history:'Historial de etapas',noHistory:'Todavía no hay historial.',historyError:'No se pudo leer el historial.',
   loading:'Cargando…',more:'Cargar oportunidades anteriores',refresh:'Actualizar',
   partial:'Se muestran las más recientes. Carga más para ver las anteriores; los totales son completos.',
   error:'No se pudo guardar o cargar. Vuelve a intentarlo.',conflict:'Otra pestaña modificó la oportunidad. Actualiza.',
@@ -89,6 +89,8 @@ export default function CrmOpportunities({
   const [contactId,setContactId]=useState(initialContactId)
   const [service,setService]=useState('consultation')
   const [stageFilter,setStageFilter]=useState('all')
+  const [histories,setHistories]=useState({})
+  const [historyBusy,setHistoryBusy]=useState('')
   const listAbort=useRef(null)
   const sendAbort=useRef(null)
   const accountRef=useRef(accountId)
@@ -125,7 +127,7 @@ export default function CrmOpportunities({
   useEffect(()=>{
     accountRef.current=accountId
     setData(null);setError('');setNotice('');setContactId(initialContactId)
-    setStageFilter('all');setService('consultation')
+    setStageFilter('all');setService('consultation');setHistories({});setHistoryBusy('')
     operation.current=null
     void load(null)
     return ()=>{listAbort.current?.abort();sendAbort.current?.abort()}
@@ -143,6 +145,7 @@ export default function CrmOpportunities({
       await command(accountId,'create',payload,controller.signal)
       if(controller.signal.aborted||accountRef.current!==accountId)return
       operation.current=null
+      setHistories({})
       setNotice(t.created)
       await load(null)
     }catch(e){
@@ -159,6 +162,7 @@ export default function CrmOpportunities({
     try{
       await command(accountId,'change',{id:item.id,expectedRevision:item.revision,stage},controller.signal)
       if(controller.signal.aborted||accountRef.current!==accountId)return
+      setHistories({})
       setNotice(t.updated)
       await load(null)
     }catch(e){
@@ -167,6 +171,21 @@ export default function CrmOpportunities({
     }finally{
       if(!controller.signal.aborted&&accountRef.current===accountId)setBusy(false)
     }
+  }
+  async function loadHistory(item){
+    if(historyBusy||histories[item.id]||busy)return
+    const controller=new AbortController()
+    setHistoryBusy(item.id)
+    try{
+      const response=await command(accountId,'history',{id:item.id},controller.signal)
+      if(response.id!==item.id||!Array.isArray(response.events)||
+         response.events.length>100||response.manualOnly!==true)
+        throw new Error('INVALID_OPPORTUNITY_HISTORY')
+      if(!controller.signal.aborted&&accountRef.current===accountId)
+        setHistories(old=>({...old,[item.id]:response.events}))
+    }catch{
+      if(!controller.signal.aborted&&accountRef.current===accountId)setError(t.historyError)
+    }finally{if(accountRef.current===accountId)setHistoryBusy('')}
   }
   const items=(data?.opportunities||[]).filter(item=>stageFilter==='all'||item.stage===stageFilter)
   const counts=data?.counts||{}
@@ -220,6 +239,17 @@ export default function CrmOpportunities({
           <strong>{item.contactName}</strong>
           <small>{t.services[item.service]} · {getDate(item.createdAt,locale)}</small>
           <button type="button" onClick={()=>onOpenContact?.(item.contactId)}>{t.open}</button>
+          <details className={styles.history} onToggle={event=>{
+            if(event.currentTarget.open)void loadHistory(item)
+          }}>
+            <summary>{t.history}</summary>
+            {historyBusy===item.id&&<span role="status">{t.loading}</span>}
+            {histories[item.id]&&<ol>{histories[item.id].map(entry=><li key={entry.revision}>
+              <span>{entry.from_stage?t.stages[entry.from_stage]+' → ':''}{t.stages[entry.to_stage]}</span>
+              <small>{getDate(entry.occurred_at,locale)}</small>
+            </li>)}</ol>}
+            {histories[item.id]?.length===0&&<small>{t.noHistory}</small>}
+          </details>
         </div>
         <label className={styles.stage}>{t.stages[item.stage]}
           <select value={item.stage} disabled={busy||loading||
