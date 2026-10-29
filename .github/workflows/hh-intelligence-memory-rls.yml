@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/migrations/20261029231000_hh_intelligence_feedback_memory.sql'
       - 'tests/intelligence-memory-rls.integration.mjs'
+      - 'scripts/verify-intelligence-memory-http.mjs'
       - 'lib/app/intelligence-feedback.js'
       - 'lib/app/config.js'
       - 'app/api/app/**/route.js'
@@ -43,5 +44,14 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
-      - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs
+      - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs scripts/verify-intelligence-memory-http.mjs
       - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
+      - name: Verify authenticated feedback API with synthetic owners
+        env:
+          NODE_ENV: development
+          HH_INTELLIGENCE_MEMORY_ENABLED: 'true'
+        run: |
+          node node_modules/next/dist/bin/next dev --port 3187 > /tmp/hh-intelligence-memory-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
