@@ -35,17 +35,29 @@ function imageElement(file: File): Promise<HTMLImageElement> {
 async function safeJpeg(file: File): Promise<File> {
   if (!file.type.startsWith("image/") || file.size > 20_000_000 || file.size < 128)
     throw new Error("INVALID_IMAGE");
-  const image = await imageElement(file);
-  const width = image.naturalWidth;
-  const height = image.naturalHeight;
-  if (width < 100 || height < 100) throw new Error("INVALID_IMAGE");
+  // Safari can reject an Image(blob:) loaded from the file picker even when
+  // the original JPEG is valid. Prefer native blob decoding without a URL;
+  // old iOS engines still use the scoped-CSP Image fallback above.
+  const bitmap = typeof createImageBitmap === "function"
+    ? await createImageBitmap(file).catch(() => null) : null;
+  const image = bitmap ?? await imageElement(file);
+  const width = bitmap?.width ?? (image as HTMLImageElement).naturalWidth;
+  const height = bitmap?.height ?? (image as HTMLImageElement).naturalHeight;
+  if (width < 100 || height < 100) {
+    bitmap?.close();
+    throw new Error("INVALID_IMAGE");
+  }
   const scale = Math.min(1, 1600 / Math.max(width, height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("INVALID_IMAGE");
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  if (!context) {
+    bitmap?.close();
+    throw new Error("INVALID_IMAGE");
+  }
+  try { context.drawImage(image, 0, 0, canvas.width, canvas.height); }
+  finally { bitmap?.close(); }
   const encode = (quality: number): Promise<Blob> =>
     new Promise((resolve, reject) =>
       canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("INVALID_IMAGE")),
