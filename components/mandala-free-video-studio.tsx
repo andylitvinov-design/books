@@ -1559,35 +1559,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setSuggestion("");
     setPreviewPlaying(false);
   };
-  // Last-click-wins guard: delayed WebKit layout callbacks may arrive after
-  // the visitor has switched to another editor tab.
-  const quickNavTokenRef = useRef(0);
-  const openQuickDetailed = (anchor:string) => {
+  // Keep the deep editor tabs usable on mobile WebKit during rapid clicks.
+  // One active request controls the fragment and scroll; no delayed scroll
+  // from the previous tab can steal the next pointer's click target.
+  const quickNavTokenRef=useRef(0);
+  const [quickNavTarget,setQuickNavTarget]=useState("");
+  const openQuickDetailed=(anchor:string)=>{
     const token=++quickNavTokenRef.current;
     const path=window.location.pathname+window.location.search;
     const desired="#"+anchor;
+    const current=()=>token===quickNavTokenRef.current &&
+      window.location.pathname+window.location.search===path;
     const setLocation=(push:boolean)=>{
-      if(token!==quickNavTokenRef.current ||
-         window.location.pathname+window.location.search!==path)return;
-      if(window.location.hash===desired)return;
-      // The native anchor default is prevented on all three editor tabs.
-      // Keep the first click in browser history; repair a router/WebKit
-      // fragment reset after React expands the controlled <details>.
+      if(!current()||window.location.hash===desired)return;
       if(push)window.history.pushState(window.history.state,"",path+desired);
       else window.history.replaceState(window.history.state,"",path+desired);
     };
     setLocation(true);
+    setQuickNavTarget(anchor);
     setQuickDetailedOpen(true);
     const jump=()=>{
-      if(token!==quickNavTokenRef.current)return;
+      if(!current())return;
       setLocation(false);
       const section=document.getElementById(anchor);
       if(section && section.getClientRects().length)
-        section.scrollIntoView({behavior:"auto",block:"start"});
+        section.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"start"});
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
-    window.setTimeout(jump,180);
-    window.setTimeout(jump,400);
   };
   const createQuickVideo = () => {
     if(audioNeedsAttachment){
@@ -2098,7 +2096,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
+      <nav className={videoStyles.editorJumpNav} data-video-editor-nav data-video-current-tab={quickNavTarget} aria-label={layout.editorNavLabel}>
         <a href="#video-templates" data-video-editor-tab="design"
           onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>
           <Film size={17} aria-hidden="true"/>{layout.designTab}
