@@ -6,12 +6,12 @@ begin;
 -- Extend the existing Web Push preference to the third supported site language.
 -- Existing EN/RU preferences remain unchanged. Account ES locale is already live.
 alter table app_private.notification_preferences
-  drop constraint notification_preferences_locale_check;
+  drop constraint if exists notification_preferences_locale_check;
 alter table app_private.notification_preferences
   add constraint notification_preferences_locale_check
   check(locale in ('en','ru','es'));
 
-create table app_private.direct_message_push_attempts (
+create table if not exists app_private.direct_message_push_attempts (
   message_id uuid not null references app.practitioner_direct_messages(id) on delete cascade,
   subscription_id uuid not null references app_private.push_subscriptions(id) on delete cascade,
   claimed_at timestamptz not null default now(),
@@ -20,7 +20,7 @@ create table app_private.direct_message_push_attempts (
   finished_at timestamptz,
   primary key (message_id, subscription_id)
 );
-create index direct_message_push_attempts_subscription_idx
+create index if not exists direct_message_push_attempts_subscription_idx
   on app_private.direct_message_push_attempts (subscription_id, claimed_at desc);
 alter table app_private.direct_message_push_attempts enable row level security;
 alter table app_private.direct_message_push_attempts force row level security;
@@ -30,7 +30,7 @@ revoke all on app_private.direct_message_push_attempts
 -- Called only by the authenticated Next.js backend in server mode. Recipient is
 -- derived from the committed message and the two verified participants, never
 -- from browser-provided chat IDs or a CRM contact.
-create function app_private.direct_message_push_claim(p_message uuid)
+create or replace function app_private.direct_message_push_claim(p_message uuid)
 returns table (
   subscription_id uuid, thread_id uuid, endpoint text, p256dh text,
   auth_secret text, locale text
@@ -71,7 +71,7 @@ $$;
 
 -- Re-check revocation, unread status, active master and device immediately
 -- before the external request, even if consent changed since the claim.
-create function app_private.direct_message_push_allowed(p_message uuid,p_device uuid)
+create or replace function app_private.direct_message_push_allowed(p_message uuid,p_device uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists(
     select 1 from app_private.direct_message_push_attempts attempt
@@ -98,7 +98,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
   )
 $$;
 
-create function app_private.direct_message_push_finish(
+create or replace function app_private.direct_message_push_finish(
   p_message uuid,p_device uuid,p_status text
 ) returns void language plpgsql security definer set search_path = '' as $$
 begin
@@ -113,7 +113,7 @@ $$;
 
 -- No second event/outbox table: only eligible committed, unread messages
 -- with an unclaimed, consented device qualify for bounded cron recovery.
-create function app_private.direct_message_push_pending(p_limit integer)
+create or replace function app_private.direct_message_push_pending(p_limit integer)
 returns table(message_id uuid)
 language sql stable security definer set search_path = '' as $$
   select msg.id
