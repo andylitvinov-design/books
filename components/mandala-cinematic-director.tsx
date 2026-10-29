@@ -97,6 +97,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   const [aspect,setAspect]=useState<"portrait"|"square"|"landscape">("landscape");
   const [seconds,setSeconds]=useState<20|30|60>(20);
   const [generated,setGenerated]=useState(false);
+  const [generatedMode,setGeneratedMode]=useState(therapyMode);
   const [applied,setApplied]=useState(false);
   const [customPlan,setCustomPlan]=useState<CinematicStoryboard|null>(null);
   const [profileConsent,setProfileConsent]=useState(false);
@@ -108,7 +109,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
     mode:therapyMode?"therapy":"creative",
   }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
-  const plan=customPlan??basePlan;
+  const plan=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
+  const showStoryboard=generated && generatedMode===therapyMode;
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -183,7 +185,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   };
   const selectTopic=(next:VideoTheme)=>{setTopic(next);invalidate();};
   const selectStyle=(next:StyleId)=>{setStyle(next);invalidate();};
-  const onPlan=()=>{setGenerated(true);setApplied(false);onInvalidateStoryboard();};
+  const onPlan=()=>{setGeneratedMode(therapyMode);setGenerated(true);setApplied(false);onInvalidateStoryboard();};
   const chooseShot=(number:number,sceneId:string)=>{
     try{
       const next=customizeCinematicShot(plan,number,sceneId);
@@ -252,14 +254,14 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
         </fieldset>
       </div>
       <button type="button" className={css.primary} data-director-create-plan disabled={disabled}
-        onClick={onPlan}><Sparkles size={17} aria-hidden="true"/>{generated?t.refresh:t.plan}</button>
+        onClick={onPlan}><Sparkles size={17} aria-hidden="true"/>{showStoryboard?t.refresh:t.plan}</button>
       <p className={css.privacy}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>
       {therapyMode?<p className={css.privacy} data-director-therapy-review role="note">
         {locale==="ru"?"Это ресурсная образная практика, не лечение или диагноз. Полная персональная терапевтическая программа требует проверки специалистом.":
           locale==="es"?"Es una práctica de imaginación, no un diagnóstico ni tratamiento. El programa terapéutico personalizado requiere revisión profesional.":
           "This is a resource-oriented imagery practice, not diagnosis or treatment. A full personalized therapy programme requires practitioner review."}
       </p>:null}
-      {generated?<div className={css.story} data-director-storyboard>
+      {showStoryboard?<div className={css.story} data-director-storyboard>
         <h4>{t.shots} · {manifest.durationSeconds} {t.seconds}</h4>
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
           className={css.shot} data-director-shot={shot.number}>
