@@ -7,7 +7,7 @@ import { buildAssessmentResultReport } from '../lib/assessments/result-report.js
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { buildTestResultDiscussion,discussionTopicForTags,
   interpretTestDiscussionQuestion,testDiscussionOffers, discussionFormatFromText,
-  discussionPriorityReason, discussionOpening } from '../lib/assessments/test-result-discussion.mjs'
+  discussionPriorityReason, discussionOpening, discussionReflectionQuestion } from '../lib/assessments/test-result-discussion.mjs'
 
 const result={id:'private-result',definitionKey:'hh-current-state',measurementAt:'2026-10-28T12:00:00.000Z'}
 const report={verified:true,sections:[
@@ -171,6 +171,18 @@ test('explicit format choice controls first recommendation without turning a cli
     assert.ok(bySession.every(v=>!/(payment|success|checkout|orderId|score=)/i.test(v.href)))
   }
   assert.deepEqual(testDiscussionOffers({locale:'en',needsProfessional:true,preference:'session'}),[])
+})
+
+test('source topic selects a specific, non-diagnostic question in all three locales',()=>{
+  for(const locale of ['en','ru','es']){
+    const energy=discussionReflectionQuestion('energy',locale)
+    const work=discussionReflectionQuestion('work',locale)
+    const relationships=discussionReflectionQuestion('relationships',locale)
+    const meaning=discussionReflectionQuestion('meaning',locale)
+    assert.ok([energy,work,relationships,meaning].every(q=>q.length>30&&q.includes('?')))
+    assert.equal(new Set([energy,work,relationships,meaning]).size,4)
+    assert.doesNotMatch(energy+work+relationships+meaning,/diagnos(?:ed)? with|у вас диагноз|diagnóstico confirmado/i)
+  }
 })
 
 test('bounded free-text intent never invents a diagnosis, hidden goal or payment',()=>{
