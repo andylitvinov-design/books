@@ -684,6 +684,9 @@ for (const browserType of [chromium, webkit]) {
             topFilterPosition.bottom <= topFilterPosition.stageTop+topFilterPosition.stageHeight/2,
             label+" large Filter CTA must be at the top of the photo, not beside the lower hero copy: "+
               JSON.stringify(topFilterPosition));
+          assert.ok(topFilterPosition.bottom <= mainTabPosition.contentTop+1,
+            label+" floating top Filter cannot collide with the published provider text panel: "+
+              JSON.stringify({topFilterPosition,mainTabPosition}));
           // Screenshot regression: shared .page button {font:inherit} used to inflate
           // every Reiki tab into a huge two-line block on real iPhone Safari.
           const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
