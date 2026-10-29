@@ -1745,7 +1745,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(theme==="money")setMoneyScene(id as MoneySceneId);
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
-        }} onPreview={openAffirmationPreview}/>
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
         <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
