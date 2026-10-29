@@ -145,7 +145,18 @@ try {
           waitUntil: "domcontentloaded", timeout: 90000,
         });
         assert.equal(testResponse?.status(), 200, label + " personalized Test Explorer opens");
+        try {
         await testPage.locator("[data-test-explorer-google-banner]").waitFor({ timeout: 35000 });
+        } catch {
+          // HTTP 200 can still render an unexpected Next page or migration bridge.
+          // Preserve the concrete route/DOM evidence for the original failed WebKit run.
+          const current = await testPage.evaluate(() => ({
+            path: location.pathname, search: location.search,
+            heading: document.querySelector("h1")?.textContent ?? "",
+            text: (document.querySelector("main")?.textContent ?? document.body.textContent ?? "").slice(0,420),
+          }));
+          throw new Error(label + " public Test Explorer was not rendered: " + JSON.stringify(current));
+        }
         await testPage.locator("[data-test-explorer-google-signin]:not([disabled])").waitFor({ timeout: 35000 });
         assert.equal(errors.length, 0, label + " page errors: " + errors.join("; "));
         await testPage.close();

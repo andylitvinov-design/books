@@ -107,6 +107,16 @@ test("test completion checkmark belongs to the current verified guest/member, no
 });
 
 
+test("Spanish Test Explorer retains its editorial notice and the same optional Google sign-in", () => {
+  const spanish = read("app/es/client/tests/page.tsx");
+  const generic = read("app/[locale]/client/tests/page.tsx");
+  assert.match(spanish, /<TestExplorerGoogleBanner locale="es" hasFocus=\{focus\.length > 0\}/);
+  assert.match(generic, /<TestExplorerGoogleBanner locale=\{locale as Locale\} hasFocus=\{focus\.length > 0\}/);
+  assert.match(spanish, /<PublicTestExplorer locale="es" embedded/);
+  assert.match(spanish, /La navegación para elegir las pruebas está en español/);
+  assert.match(spanish, /<Link href="\/es\/client">/);
+});
+
 test("Guest meditation battery never blocks or counts original free Courses lessons", () => {
   const mobile = read("components/holistic-support-mobile.tsx");
   assert.match(mobile, /if \(!selected \|\| \(choice === "meditation" && !quest\.launch\(\)\)\) return;/);
