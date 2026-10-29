@@ -641,7 +641,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
-    (backgroundOnly || !photoUrl || photoConsent) &&
+    (backgroundOnly || Boolean(photoUrl)) &&
+    (backgroundOnly || photoConsent) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (tonePreview?.preset===music ? tonePreview.url : null);
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);

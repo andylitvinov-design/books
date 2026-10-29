@@ -264,6 +264,8 @@ test("owner-requested compact photo choice and deeper options keep one functiona
   assert.ok(photo>0 && photo<categories && categories<hero && hero<gallery && gallery<filters,
     "photo checkbox → topics → video → scenes → optional filters");
   assert.match(studio,/checked=\{!backgroundOnly\}/);
+  assert.match(studio,/\(backgroundOnly \|\| Boolean\(photoUrl\)\)/,
+    "checked photo mode must not enable a video without photo");
   assert.match(studio,/onChange=\{event=>setBackgroundOnly\(!event\.currentTarget\.checked\)\}/);
   assert.match(studio,/data-video-photo-link[\s\S]*?onClick=\{onPickPhoto\}/);
   assert.match(studio,/useEffect\(\(\) => \{ if \(photoUrl\) setBackgroundOnly\(false\); \}, \[photoUrl\]\)/);
