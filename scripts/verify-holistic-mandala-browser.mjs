@@ -452,6 +452,20 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // On WebKit, clicking the nested legacy label after a long scroll can
         // fail to toggle. Test the real customer-facing checkbox and assert
         // both the advanced module and existing video recorder reflect it.
+        // The site has a fixed 70px mobile navigation dock. WebKit's
+        // automatic scrollIntoViewIfNeeded can leave a checkbox under it;
+        // its intercepted retry clicks may cancel each other. Position the
+        // real public checkbox in the safe middle viewport before activation.
+        await compactHypno.locator("[data-hypno-overview-enable]").evaluate(element=>{
+          element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+        });
+        await page.waitForFunction(()=>{
+          const el=document.querySelector("[data-hypno-overview-enable]");
+          const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+          if(!el)return false;
+          const r=el.getBoundingClientRect(), d=dock?.getBoundingClientRect();
+          return r.top>=4 && r.bottom<=innerHeight-4 && (!d || r.bottom<=d.top-8);
+        },undefined,{timeout:10000});
         await compactHypno.locator("[data-hypno-overview-enable]").check();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true,
           "main Hypno toggle must synchronize its original deep phrase editor");
