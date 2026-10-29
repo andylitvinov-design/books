@@ -101,7 +101,9 @@ try {
     assert.equal(await handoff.getAttribute('href'),'/en/holistic-support/mandala')
     const studioPopup=checkinPage.waitForEvent('popup');await handoff.click();const studio=await studioPopup
     await studio.waitForLoadState('networkidle')
-    await studio.locator('[data-video-therapy-toggle]').click()
+    // The current production studio has a quick entry; older versions expose
+    // the legacy toggle. Exercise the visible control instead of a hidden one.
+    await studio.locator('[data-video-quick-therapy]:visible, [data-video-therapy-toggle]:visible').first().click()
     assert.equal(await studio.locator('[data-mandala-free-video]').getAttribute('data-video-studio-mode'),'therapy')
     assert.equal(await studio.locator('#guided-video-series').isVisible(),true)
     await studio.close()
