@@ -17,6 +17,7 @@ export type CinematicShot={number:number;title:string;theme:VideoTheme;sceneId:s
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;
+  requiresPractitionerReview:boolean;
   sceneChoices:{sceneId:string;theme:VideoTheme;visualCue:string}[]};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
