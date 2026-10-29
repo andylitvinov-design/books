@@ -27,3 +27,9 @@
 .empty{color:#62776d;font:500 13px/1.5 system-ui,sans-serif;margin:12px 0}
 .panel :focus-visible{outline:3px solid #93566f;outline-offset:2px}
 @media(max-width:740px){.form{grid-template-columns:minmax(0,1fr)}.button{width:100%}.item{align-items:stretch;flex-direction:column}.stage{width:100%;flex:0 0 auto}.stage select{width:100%}}
+
+.history{border-top:1px solid #e5ebe3;padding-top:6px;max-width:100%;min-width:0}
+.history summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font:700 12px/1.4 system-ui,sans-serif;color:#286d57}
+.history ol{padding:2px 0 2px 18px;margin:0;display:grid;gap:7px}
+.history li{font:600 12px/1.4 system-ui,sans-serif;color:#34544b}
+.history li small{display:block;color:#74857a}
