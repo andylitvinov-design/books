@@ -140,11 +140,16 @@ for (const browserType of [chromium, webkit]) {
             await page.screenshot({path:out+'/'+label+'-full.png',fullPage:true})
           }
           if (item.ready) {
-            const prompt=root.locator('[data-practice-after-google]')
-            await prompt.waitFor({state:'visible',timeout:10000})
-            assert.ok(page.url().includes('/'+locale+'/practice?ready=service'),
-              label+' return from Google must NOT auto-open editor')
-            await prompt.locator('button').first().click()
+            // Historical OAuth ?ready=service URLs must be cleaned, not show
+            // the banner that displaced the owner-approved iPhone dashboard.
+            await page.waitForURL(url => url.pathname==='/'+locale+'/practice' && !url.search,
+              {timeout:10000})
+            assert.equal(await root.locator('[data-practice-after-google]').count(),0,
+              label+' no extra post-Google Continue banner')
+            assert.ok(g.grid.y-g.identity.bottom<35,
+              label+' original profile must lead directly to six creation tiles')
+            // Only a deliberate creation click can open the protected editor.
+            await root.locator('[class*="quickGrid"] > button').first().click()
             await page.waitForURL(url => url.pathname==='/'+locale+'/app/practice' &&
               url.searchParams.get('panel')==='services' && url.searchParams.get('create')==='1',
               {timeout:35000})
