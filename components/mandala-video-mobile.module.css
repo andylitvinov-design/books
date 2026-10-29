@@ -863,3 +863,127 @@
   .audioTrackGrid{grid-auto-columns:clamp(155px,24%,205px)}
   .audioSection .musicCard{padding:14px 16px}
 }
+
+/* Audio-only, compact iPhone picker: no video thumbnails or oversized tiles.
+   Tap targets stay >=44px; filter/text sizing stays readable at 320-430px. */
+.audioSection{padding:11px 9px;gap:7px;background:linear-gradient(145deg,#fffdf7,#f6faf4)}
+.audioSection .blockHeading h3{display:flex;align-items:center;gap:8px;font-size:21px;line-height:1.2}
+.audioSection .blockHeading h3 svg{color:#0c8562;flex:none}
+.audioSection .blockHeading p{font-size:13px;line-height:1.4}
+.audioSection .musicCard{padding:9px 9px 12px;background:#fffefa;border-radius:17px}
+.audioSection .musicCard legend{font-size:13px}
+.audioSection .audioSmartBar{padding:7px 8px;margin:4px 0 9px;gap:8px}
+.audioSection .audioContextText{font-size:12px}
+.audioSection .audioContextText strong{font-size:14px}
+.audioSection .audioSmartBar button{font-size:12px;min-height:44px;max-width:49%;padding:7px 8px}
+.audioSection .audioFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0 0 9px}
+.audioSection .audioFilters label{padding:7px 8px 4px;font-size:12px;line-height:1.25;gap:2px}
+.audioSection .audioFilters select{min-height:42px;font-size:13px;line-height:1.25;white-space:nowrap}
+.audioSection .audioVoiceOption{padding:8px 9px;gap:9px;margin:0 0 9px}
+.audioSection .audioVoiceOption input{min-width:20px;width:20px;height:20px}
+.audioSection .audioVoiceOption span strong{font-size:13px}
+.audioSection .audioVoiceOption span small{font-size:11.5px;line-height:1.35}
+.audioSearchRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(116px,.59fr);gap:7px;min-width:0;margin:0 0 8px}
+.audioSearchInput{display:flex;align-items:center;gap:7px;min-width:0;min-height:46px;
+  border:1px solid #d5dfd6;border-radius:12px;padding:0 9px;color:#5b776a;background:#fff}
+.audioSearchInput svg{flex:none}
+.audioSearchInput input{display:block;width:100%;min-width:0;height:42px;border:0;outline:0;
+  background:transparent;color:#214d3b;font:500 13px/1.3 Arial,Helvetica,sans-serif}
+.audioSearchInput input::placeholder{color:#718579}
+.audioSearchInput:focus-within{outline:2px solid #0e9871;outline-offset:1px}
+.audioSort{display:flex;align-items:center;min-width:0;border:1px solid #d5dfd6;border-radius:12px;background:#fff}
+.audioSort select{width:100%;min-width:0;min-height:44px;border:0;padding:7px 7px;background:transparent;
+  color:#244d40;font:650 12px/1.2 Arial,Helvetica,sans-serif}
+.audioSection .audioCatalogHeading{padding:3px 0 7px;font-size:12px}
+.audioSection .audioCatalogHeading span{font-size:11px}
+.audioTrackList{display:flex;flex-direction:column;gap:7px;min-width:0}
+.audioTrackRow{min-width:0;border-radius:13px}
+.audioTrackSelect{display:grid;grid-template-columns:40px minmax(0,1fr) 52px 53px;
+  gap:7px;align-items:center;width:100%;min-width:0;min-height:66px;padding:7px 8px;
+  border:1px solid #e0e6dd;border-radius:13px;background:#fffdf8;
+  color:#1e4839;text-align:left;cursor:pointer;box-shadow:0 2px 8px #1f423510}
+.audioTrackSelect:hover{background:#f2f9f2}
+.audioTrackSelect[aria-pressed="true"]{border:2px solid #159a73;padding:6px 7px;
+  background:linear-gradient(115deg,#e8f6ed,#fdfcf5);box-shadow:0 2px 9px #166b4924}
+.audioTrackSelect:focus-visible{outline:3px solid #e0b85f;outline-offset:2px}
+.audioTrackList .audioTileGlyph{width:40px;height:40px;border:1px solid #d8e7db;
+  border-radius:11px;background:#edf6ef;color:#1d7659}
+.audioTrackRow[data-audio-kind="nature"] .audioTileGlyph{background:#dcefe9;color:#087f76}
+.audioTrackRow[data-audio-kind="tones"] .audioTileGlyph{background:#f5ead9;color:#876035}
+.audioTrackRow[data-audio-kind="pulse"] .audioTileGlyph{background:#efe7f2;color:#80527d}
+.audioTrackList .audioTileText{display:flex;flex-direction:column;gap:4px;min-width:0}
+.audioTrackList .audioTileText strong{display:flex;align-items:center;gap:4px;min-width:0;
+  font-size:13.5px;line-height:1.2;color:#153b31}
+.audioTrackList .audioTileText strong svg{flex:none;color:#128b6b}
+.audioTrackList .audioTileText small{font-size:11.5px;line-height:1.24;color:#637b6e;max-height:2.45em}
+.audioWave{display:flex;align-items:center;justify-content:center;gap:2px;height:27px;min-width:0;color:#a1c9ad}
+.audioWave i{display:block;flex:0 0 2px;height:6px;background:currentColor;border-radius:4px}
+.audioWave i:nth-child(2),.audioWave i:nth-child(8){height:13px}
+.audioWave i:nth-child(3),.audioWave i:nth-child(7){height:19px}
+.audioWave i:nth-child(4),.audioWave i:nth-child(6){height:10px}
+.audioWave i:nth-child(5){height:24px}
+.audioTrackPick{display:inline-flex;justify-content:flex-end;align-items:center;gap:2px;
+  color:#38785e;font-size:11.5px;font-weight:850;text-align:right;line-height:1.2}
+.audioMore{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;
+  padding:9px;border:1px solid #e0e9df;border-radius:11px;background:#f4faf3;
+  color:#166e53;font-size:13px;font-weight:800;margin-top:7px}
+.audioSection .audioEmpty{font-size:12px;padding:11px}
+.audioSection .audioNowPlaying{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;
+  margin:9px 0 8px;padding:8px 10px;background:#eff7f0;font-size:12px}
+.audioSection .audioNowPlaying strong{flex:1;min-width:90px;text-align:left;font-size:13px;line-height:1.25}
+.audioSection .audioNowPlaying button{min-height:38px;padding:7px 9px;border:1px solid #d4e2d5;
+  border-radius:9px;background:#fff;color:#5c7567;font-size:12px;font-weight:700}
+.audioSection .audioNowPlaying button[aria-pressed="true"]{border-color:#0e9570;color:#12694d}
+.audioSection .audioUpload{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;
+  padding:7px;margin:0 0 10px;background:#fafcf9}
+.audioSection .audioUploadLabel,.audioSection .audioMicButton{display:inline-flex;justify-content:center;align-items:center;
+  flex:1 1 115px;gap:6px;min-width:0;min-height:45px;padding:8px;border-radius:11px;
+  font-size:12.5px;font-weight:800;line-height:1.25;cursor:pointer;text-align:center}
+.audioSection .audioUploadLabel{background:#def4e9;border-color:#b4dcc8}
+.audioSection .audioMicButton{border:1px solid #e4cdb5;background:#fff3e6;color:#86502b}
+.audioSection .audioMicButton[aria-pressed="true"]{background:#a43c36;color:#fff}
+.audioSection .audioUpload>small{flex:1 0 100%;font-size:11px;color:#708578;padding:0 4px;line-height:1.3}
+.audioSection .audioSelection{font-size:12px}
+.audioAttachPanel{display:flex;align-items:stretch;gap:8px;min-width:0;padding:8px;
+  border:1px solid #cee5d8;border-radius:13px;background:linear-gradient(105deg,#edf8ef,#fffdf6)}
+.audioApplied{display:flex;flex:1 1 40%;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+.audioApplied small{font-size:11px;color:#628372}
+.audioApplied strong{font-size:13px;color:#204e3e;overflow-wrap:anywhere;line-height:1.25}
+.audioAttachButton{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  flex:1 1 54%;min-width:0;min-height:48px;padding:9px;
+  border:1px solid #07875e;border-radius:11px;background:linear-gradient(115deg,#0b8965,#20a37d);
+  color:white;font-size:13px;line-height:1.2;font-weight:850;text-align:center}
+.audioAttachButton:disabled{border-color:#bdd7c9;background:#e3f0e7;color:#417865;cursor:default}
+.audioAttachButton svg{flex:none}
+.audioAttachHelp{display:block;margin:5px 0 8px;color:#557467;font-size:11.5px;line-height:1.38}
+.audioSection .musicTools{display:grid;grid-template-columns:minmax(95px,.78fr) minmax(0,1.22fr);gap:7px;margin:7px 0}
+.audioSection .musicTools button{font-size:12px}
+.audioSection .musicTools label{font-size:12px}
+.audioSection .musicCard audio[data-video-audio-player]{min-height:46px}
+.audioHelpDetails{margin-top:5px;color:#708577;font-size:11.5px;line-height:1.4}
+.audioHelpDetails summary{min-height:38px;padding:7px 2px;cursor:pointer}
+.audioHelpDetails small{display:block;font-size:11.5px}
+@media(max-width:375px){
+  .audioSection{padding:9px 7px}
+  .audioSection .musicCard{padding:8px 7px}
+  .audioSection .audioSmartBar{flex-direction:row;align-items:center}
+  .audioSection .audioSmartBar button{width:auto;min-height:44px;max-width:51%;font-size:11.5px}
+  .audioSection .audioFilters label{padding:6px 6px 3px}
+  .audioSection .audioFilters select{font-size:12.5px}
+  .audioSearchRow{grid-template-columns:minmax(0,1fr) 110px;gap:5px}
+  .audioSort select{font-size:11.5px}
+  .audioTrackSelect{grid-template-columns:37px minmax(0,1fr) 57px;gap:6px;padding:6px;min-height:67px}
+  .audioTrackSelect[aria-pressed="true"]{padding:5px}
+  .audioTrackList .audioTileGlyph{width:36px;height:36px}
+  .audioTrackList .audioTileText strong{font-size:13px}
+  .audioTrackList .audioTileText small{font-size:11px}
+  .audioWave{display:none}
+  .audioTrackPick{font-size:11px}
+  .audioApplied strong{font-size:12.5px}
+  .audioAttachButton{font-size:12.5px}
+}
+@media(min-width:760px){
+  .audioTrackList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .audioTrackSelect{grid-template-columns:40px minmax(0,1fr) 52px 54px}
+  .audioFilters{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
