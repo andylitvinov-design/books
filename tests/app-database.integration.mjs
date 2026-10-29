@@ -1255,6 +1255,32 @@ function minimumMonitoringAnswers(definition) {
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
   assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {

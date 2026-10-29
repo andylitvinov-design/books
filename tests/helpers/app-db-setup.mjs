@@ -17,6 +17,11 @@ export async function setup(){const db=await adminClient();try{
  // *isolated* PostgreSQL fixture. The production schema is never modified here.
  // Master network must exist first; message notification preferences follow
  // the previously applied opt-in push migration. No invented/stub tables.
+ // The protected share/session parent tables were applied to production in an
+ // earlier approved migration absent from the source tree; reproduce their
+ // verified schema ONLY for isolated loopback CI, then run the real event DDL.
+ await db.query(await readFile(new URL('./app-client-session-schema-parity.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019152000_hh_public_service_enquiries_secure.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261020123209_hh_practitioner_request_followup_tasks_20261020.sql',import.meta.url),'utf8'))

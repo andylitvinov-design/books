@@ -53,3 +53,30 @@ test('reused migrations preserve table access policy and explicit notification o
   assert.match(migration(fixtures[6]), /message_alerts=true/i);
   assert.match(migration(fixtures[6]), /app\.practitioner_request_messages/);
 });
+
+test('isolated client-session parent schema matches production metadata before the real engagement migration', () => {
+  const schema = readFileSync(new URL('./helpers/app-client-session-schema-parity.sql', import.meta.url), 'utf8');
+  const parent = "await db.query(await readFile(new URL('./app-client-session-schema-parity.sql'";
+  const child = "await db.query(await readFile(new URL('../../supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql'";
+  const before = fixture.indexOf(parent), after = fixture.indexOf(child);
+  assert.ok(before > 0 && after > before && after < fixture.indexOf('create role hh_app_ci_login'));
+  assert.equal(fixture.indexOf(parent, before + 1), -1);
+  assert.equal(fixture.indexOf(child, after + 1), -1);
+  assert.match(schema, /current_database\(\) <> 'hh_app_test'/);
+  for (const table of ['client_delivery_sessions', 'client_session_share_grants', 'client_session_viewer_sessions']) {
+    assert.match(schema, new RegExp('create table app_private\\.' + table + '\\('));
+    assert.match(schema, new RegExp('alter table app_private\\.' + table + ' enable row level security'));
+  }
+  assert.match(schema, /references app_private\.client_delivery_sessions\(id,legacy_client_id\)/);
+  assert.match(schema, /references app_private\.client_session_share_grants\(id\)/);
+  assert.match(schema, /create policy hh_delivery_server_only/);
+  assert.match(schema, /create policy hh_delivery_grant_server_only/);
+  assert.match(schema, /create policy hh_delivery_viewer_server_only/);
+  assert.match(schema, /from public,anon,authenticated,service_role/);
+  assert.match(schema, /to hh_app_backend/);
+  assert.doesNotMatch(schema, /create table app_private\.client_session_engagement_events/i);
+  const real = migration('20261020192118_hh_report_engagement_opt_in_20261020.sql');
+  assert.match(real, /create table if not exists app_private\.client_session_engagement_events/);
+  assert.match(real, /force row level security/i);
+  assert.match(real, /grant select,insert,update,delete on app_private\.client_session_engagement_events to hh_app_backend/);
+});
