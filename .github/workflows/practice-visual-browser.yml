@@ -19,6 +19,8 @@ on:
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
       - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'tests/capture-public-ui-reference.test.mjs'
+      - 'scripts/capture-public-ui-reference.mjs'
       - 'scripts/fixtures/practice-approved-reference-20261028.json'
       - '.github/workflows/practice-visual-browser.yml'
   push:
@@ -57,7 +59,8 @@ jobs:
         run: |
           node --check scripts/verify-practice-visual-browser.mjs
           node --check scripts/compare-ui-screenshots.mjs
-          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/practitioner-preview-auth.test.mjs tests/practice-google-return-and-services-v5.test.mjs
+          node --check scripts/capture-public-ui-reference.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs tests/practice-google-return-and-services-v5.test.mjs
           npx eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit for synthetic UI verification
