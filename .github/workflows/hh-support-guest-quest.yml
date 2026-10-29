@@ -73,7 +73,7 @@ jobs:
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 120); do
-            if curl --silent --fail http://127.0.0.1:3117/ru/holistic-support/mobile > /dev/null; then ready=1; break; fi
+            if curl --silent --fail http://127.0.0.1:3117/ru/holistic-support/mobile > /dev/null; then ready=1; printf 'Quest server ready after %s attempts\n' "$i"; break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/hh-quest-next.log; exit 1; fi
             sleep 2
           done
