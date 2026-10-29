@@ -406,7 +406,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.ok((await affirmationsPanel.locator('[data-video-affirmation-preset="0"]').innerText()).length<=26);
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"true");
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
-        await page.locator("[data-video-affirmations-enable]").check();
+        // The production Hypno overview is now the primary visible opt-in.
+        // On WebKit, clicking the nested legacy label after a long scroll can
+        // fail to toggle. Test the real customer-facing checkbox and assert
+        // both the advanced module and existing video recorder reflect it.
+        await compactHypno.locator("[data-hypno-overview-enable]").check();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true,
+          "main Hypno toggle must synchronize its original deep phrase editor");
         assert.equal(await compactHypno.locator("[data-hypno-create-video]").isEnabled(),true);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
           "settings and top opt-in must always stay synchronized");
