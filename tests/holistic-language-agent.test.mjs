@@ -143,3 +143,25 @@ test("privacy / no content claims on empty verified catalog",()=>{
   assert.equal(r.status,"no_match");assert.deepEqual(r.suggestions,[]);
   assert.equal(Object.hasOwn(r.state,"rawUtterance"),false);
 });
+
+test("style controls actually shorten responses without changing recommendations",()=>{
+  const formal=go("Я устал, хочу видео");
+  const shorter=go("Я устал, хочу видео. Отвечай коротко");
+  assert.equal(formal.status,shorter.status);
+  assert.deepEqual(formal.suggestions,shorter.suggestions);
+  assert.ok(shorter.text.length<formal.text.length);
+});
+test("informal RU makes the same no-match decision in a less formal voice",()=>{
+  const formal=go("Работа, нужна консультация");
+  const informal=go("Работа, нужна консультация. Общайся на ты");
+  assert.equal(formal.status,informal.status);
+  assert.deepEqual(formal.suggestions,informal.suggestions);
+  assert.ok(informal.text.includes("тво")||informal.text.includes("тебе"));
+});
+test("detailed wording leaves verified resource ids unchanged",()=>{
+  const short=go("Я устал, хочу видео");
+  const detailed=go("Я устал, хочу видео. Объясни подробно");
+  assert.equal(detailed.status,short.status);
+  assert.deepEqual(detailed.suggestions,short.suggestions);
+  assert.ok(detailed.text.length>short.text.length);
+});
