@@ -75,6 +75,9 @@ try {
     await yes.focus();await page.keyboard.press('Enter')
     assert.equal(await card.getByText(copy.en.help,{exact:false}).isVisible(),true)
     assert.equal(await card.getByRole('link').count(),0)
+    await card.getByRole('button',{name:'Start over',exact:true}).click()
+    assert.equal(await card.locator('#hh-intelligence-topic-meditation').isVisible(),true)
+    assert.equal(await card.getByRole('link').count(),0)
   } finally { await page.close() }
   const checkinPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
