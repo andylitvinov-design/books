@@ -77,12 +77,12 @@ export default function DirectVideoRecorder({locale='en',disabled=false,onRecord
      const mime=chooseMime()
      if(!mime)throw new Error('VIDEO_FORMAT_UNSUPPORTED')
      stream=await navigator.mediaDevices.getUserMedia({
-       video:{facingMode:{ideal:'user'},width:{ideal:640},height:{ideal:640},frameRate:{ideal:20}},
+       video:{facingMode:{ideal:'user'},width:{ideal:400},height:{ideal:400},frameRate:{ideal:18}},
        audio:{echoCancellation:true,noiseSuppression:true},
      })
      if(!mounted.current){stopTracks(stream);return}
      const recorder=new MediaRecorder(stream,{
-       mimeType:mime,videoBitsPerSecond:750_000,audioBitsPerSecond:64_000,
+       mimeType:mime,videoBitsPerSecond:330_000,audioBitsPerSecond:32_000,
      })
      const session={stream,recorder,chunks:[],discard:false,timer:null}
      current.current=session
