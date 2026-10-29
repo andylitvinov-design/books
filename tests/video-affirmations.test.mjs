@@ -15,7 +15,7 @@ const transpile = ts.transpileModule(library,{
 assert.deepEqual(transpile.diagnostics || [],[]);
 const exposed = {};
 new Function("exports",transpile.outputText)(exposed);
-const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations} = exposed;
+const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations,compactCustomAffirmationInput,MAX_AFFIRMATION_LENGTH} = exposed;
 const {videoProfileFocus} = await import("../lib/mandala/video-affirmation-focus.mjs");
 
 test("three locales and all six site themes have five ready-to-select, non-clinical phrases", () => {
@@ -23,7 +23,7 @@ test("three locales and all six site themes have five ready-to-select, non-clini
     for(const theme of ["energy","money","relationships","goals","life","health"]){
       const choices=suggestedVideoAffirmations[locale][theme];
       assert.equal(choices.length,5,locale+" "+theme);
-      assert.ok(choices.every(text=>text.trim().length>10 && text.length<=90));
+      assert.ok(choices.every(phrase=>phrase.trim().length>=5 && phrase.length<=26 && phrase.trim().split(/\s+/).length<=4), locale+" "+theme);
     }
   }
   assert.deepEqual(defaultAffirmations.selected,[0,1,2]);
@@ -37,8 +37,21 @@ test("selected presets and custom lines are local-only, normalized and bounded",
   assert.equal(lines[0],suggestedVideoAffirmations.ru.energy[0]);
   assert.equal(lines[5],"Моя фраза");
   assert.equal(lines[6],"личная фраза");
-  assert.equal(lines[7].length,90);
+  assert.equal(lines[7].length,MAX_AFFIRMATION_LENGTH);
   assert.ok(lines.every(line=>!/[<>]/.test(line)));
+});
+
+test("custom affirmations are visibly limited to five concise lines", () => {
+  const input=["A".repeat(90),"B".repeat(45),"I am calm","I choose care","I can rest","ignored"].join("\n");
+  const short=compactCustomAffirmationInput(input);
+  const phrases=short.split("\n");
+  assert.equal(MAX_AFFIRMATION_LENGTH,36);
+  assert.equal(phrases.length,5);
+  assert.ok(phrases.every(value=>Array.from(value).length<=MAX_AFFIRMATION_LENGTH));
+  const lines=linesForVideoAffirmations("ru","energy",{
+    ...defaultAffirmations, selected:[],enabled:true,custom:short,
+  });
+  assert.deepEqual(lines,phrases);
 });
 
 test("the renderer draws only when enabled, uses visible readable text, and keeps brief frames brief", () => {
@@ -75,6 +88,9 @@ test("existing video preview and export use identical overlays; frame mode reque
   assert.match(panel,/data-video-affirmations-enable/);
   assert.match(panel,/data-video-affirmation-preset/);
   assert.match(panel,/data-video-custom-affirmations/);
+  assert.match(panel,/data-video-affirmations-custom/);
+  assert.match(panel,/data-video-affirmations-settings/);
+  assert.match(panel,/compactCustomAffirmationInput/);
   assert.match(panel,/data-video-affirmation-frequency/);
   assert.match(panel,/data-video-affirmation-density/);
   assert.match(panel,/data-video-affirmation-visibility/);
@@ -86,6 +102,10 @@ test("affirmation panel uses original light cream and green UI with narrow iPhon
   assert.match(css,/background:\s*#fffdf6/);
   assert.match(css,/background:\s*#087f5e/);
   assert.match(css,/@media \(max-width: 360px\)/);
+  assert.match(css,/\.settingsDetails/);
+  assert.match(css,/\.customDetails/);
+  assert.match(css,/\.frequencyChoices/);
+  assert.match(css,/\.visibilityChoices\s*\{[^}]*grid-template-columns:\s*repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/min-width:\s*0/);
   assert.match(css,/grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
   const component=ts.transpileModule(panel,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
@@ -120,7 +140,7 @@ test("goals and sourced axes yield five local, editable sentences in RU EN ES",(
     assert.equal(selected[0],catalog.find(row=>row.id==="boundaries").sentence);
     assert.equal(selected[1],catalog.find(row=>row.id==="recovery").sentence);
     assert.equal(new Set(selected).size,5);
-    assert.ok(selected.every(phrase=>phrase.length>5&&phrase.length<=90));
+    assert.ok(selected.every(phrase=>phrase.length>5&&phrase.length<=MAX_AFFIRMATION_LENGTH));
     const lines=linesForVideoAffirmations(locale,"energy",{
       ...defaultAffirmations,enabled:true,selected:[0,1,2,3,4],presetOverride:selected,custom:"My own words"
     });
