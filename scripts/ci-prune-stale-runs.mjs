@@ -8,15 +8,11 @@ const int = (v) => Number.isSafeInteger(Number(v)) && Number(v) > 0 ? Number(v) 
 
 export function context(env, event) {
   if (!env.GITHUB_TOKEN || !/^[-\w.]+\/[-\w.]+$/.test(env.GITHUB_REPOSITORY || '')) throw Error('Invalid Actions identity');
-  const base = { repo: env.GITHUB_REPOSITORY, target: TARGET, number: null };
-  if (env.GITHUB_EVENT_NAME === 'push') {
-    if (env.GITHUB_REF !== 'refs/heads/' + TARGET || event?.ref !== 'refs/heads/' + TARGET) throw Error('Not production push');
-    return base;
+  if (env.GITHUB_EVENT_NAME !== 'push' || env.GITHUB_REF !== 'refs/heads/' + TARGET ||
+      event?.ref !== 'refs/heads/' + TARGET || event?.repository?.full_name !== env.GITHUB_REPOSITORY) {
+    throw Error('Not the verified production push event');
   }
-  if (env.GITHUB_EVENT_NAME !== 'pull_request_target' || event?.repository?.full_name !== base.repo ||
-      event?.pull_request?.base?.ref !== TARGET || !['synchronize', 'closed', 'reopened'].includes(event?.action) ||
-      !int(event?.pull_request?.number)) throw Error('Not an authorized PR event');
-  return { ...base, number: event.pull_request.number };
+  return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: null };
 }
 
 export function eligible(run, pr, ctx) {

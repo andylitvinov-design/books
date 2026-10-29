@@ -8,13 +8,15 @@ const ctx = { repo, target: TARGET, number: 5 };
 const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET }, head: { ref: 'feat/one', sha: 'new', repo: { full_name: repo } }, ...x });
 const run = (x = {}) => ({ id: 100, event: 'pull_request', status: 'queued', head_sha: 'old', head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one' } }], ...x });
 
-test('production-only events and verified PR number', () => {
-  const e = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo, GITHUB_EVENT_NAME: 'pull_request_target' };
-  assert.deepEqual(context(e, { repository: { full_name: repo }, action: 'synchronize', pull_request: { number: 5, base: { ref: TARGET } } }), ctx);
-  assert.throws(() => context({ ...e, GITHUB_EVENT_NAME: 'pull_request' }, {}));
-  assert.throws(() => context(e, { repository: { full_name: repo }, action: 'opened', pull_request: { number: 5, base: { ref: TARGET } } }));
-  assert.deepEqual(context({ ...e, GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/' + TARGET }, { ref: 'refs/heads/' + TARGET }), { ...ctx, number: null });
-  assert.throws(() => context({ ...e, GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' }, { ref: 'refs/heads/main' }));
+test('only a verified production push can start a privileged cleanup', () => {
+  const env = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo,
+    GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/' + TARGET };
+  const event = { ref: 'refs/heads/' + TARGET, repository: { full_name: repo } };
+  assert.deepEqual(context(env, event), { repo, target: TARGET, number: null });
+  assert.throws(() => context({ ...env, GITHUB_EVENT_NAME: 'pull_request_target' }, event));
+  assert.throws(() => context({ ...env, GITHUB_EVENT_NAME: 'pull_request' }, event));
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/main' }, event));
+  assert.throws(() => context(env, { ...event, repository: { full_name: 'wrong/repo' } }));
 });
 
 test('never cancel new SHA, production push, running jobs, unrelated or ambiguous PRs', () => {
@@ -55,12 +57,12 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
 
 test('elevated GitHub token only used for trusted production checkout, not PR HEAD', () => {
   const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
-  assert.match(yaml, /pull_request_target:/);
+  assert.doesNotMatch(yaml, /pull_request_target:/);
   assert.match(yaml, /permissions: \{\}/);
   assert.match(yaml, /actions: write/);
   assert.match(yaml, /pull-requests: read/);
-  assert.match(yaml, /ref: codex\/public-book-library/);
+  assert.match(yaml, /ref: \$\{\{ github.sha \}\}/);
   assert.match(yaml, /^  pull_request:/m);
   assert.match(yaml, /if: github\.event_name == 'pull_request'/);
-  assert.match(yaml, /github\.event_name != 'pull_request'/);
+  assert.match(yaml, /github\.event_name == 'push'/);
 });

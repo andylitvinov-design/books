@@ -1,7 +1,8 @@
 name: HH CI prune superseded queued runs
 
-# pull_request_target executes the trusted BASE-branch script. Never check out
-# untrusted PR HEAD while possessing a GITHUB_TOKEN with actions:write.
+# Elevated cleanup runs exclusively on trusted production PUSH.
+# PRs execute only a separate read-only policy job. Do not execute PR HEAD
+# with an actions:write token. The production branch is NOT GitHub default.
 on:
   pull_request:
     branches: ['codex/public-book-library']
@@ -9,15 +10,12 @@ on:
       - '.github/workflows/hh-ci-stale-run-prune.yml'
       - 'scripts/ci-prune-stale-runs.mjs'
       - 'tests/ci-prune-stale-runs.test.mjs'
-  pull_request_target:
-    branches: ['codex/public-book-library']
-    types: [synchronize, closed, reopened]
   push:
     branches: ['codex/public-book-library']
 
 permissions: {}
 concurrency:
-  group: hh-ci-prune-${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || github.ref }}
+  group: hh-ci-prune-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,7 +34,7 @@ jobs:
           node-version: '22'
       - run: node --test tests/ci-prune-stale-runs.test.mjs
   prune:
-    if: github.repository == 'andylitvinov-design/books' && github.event_name != 'pull_request'
+    if: github.repository == 'andylitvinov-design/books' && github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -47,8 +45,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          # A PR cannot substitute the privileged script with attacker code.
-          ref: codex/public-book-library
+          # Exact event commit was already merged into production.
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
