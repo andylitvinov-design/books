@@ -1108,7 +1108,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const video=premiumVideoRef.current;
     if(!activeFilm || !video || video.readyState>=2)return;
     video.muted=true;
-    video.load();
+    // A loaded/loading WebKit stream must not be reset mid-decode: only
+    // restart an empty or stalled-idle source on this explicit user gesture.
+    if(video.readyState < 2 &&
+      (video.networkState === video.NETWORK_EMPTY || video.networkState === video.NETWORK_IDLE))
+      video.load();
     void video.play().then(()=>{
       if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0)
         setPremiumReady(true);
