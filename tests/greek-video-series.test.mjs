@@ -2,14 +2,53 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import vm from "node:vm";
 
 const read = name => readFileSync(new URL("../" + name, import.meta.url), "utf8");
 const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
 const pointer = read("data/academy/greek-video-series.ts");
+const sourceRecords = JSON.parse(read("data/academy/sources.generated.json"));
 const supportPage = read("app/[locale]/holistic-support/mobile/page.tsx");
 const support = read("components/holistic-support-mobile.tsx");
 const library = read("components/library-hub.tsx");
 const feed = read("components/library-feed.tsx");
+
+test("execute the original source-page-to-PsiMaster-media join without empty Russian channels", () => {
+  // The canonical archive description is PsiTrends, while its video embeds
+  // were verified in PsiMaster. This executable test would fail if a future
+  // refactor incorrectly required record.sourceProvider === "psimaster".
+  const catalog = {
+    academyDisplayTitle: record => record.title,
+    findAcademyRecord: (key, locale) => sourceRecords.find(row => row.routeKey === key && row.sourceLocale === locale),
+    mediaForRecord: record => {
+      const exact = manifest.filter(row => row.logicalId === record.logicalId && row.sourceUrl === record.sourceUrl);
+      return exact.length ? exact : manifest.filter(row => row.logicalId === record.logicalId);
+    },
+    youtubeIdFromUrl: url => /youtube\.com\/embed\/([A-Za-z0-9_-]{11})/.exec(url)?.[1],
+  };
+  const compiled = ts.transpileModule(pointer, {
+    fileName: "greek-video-series.ts",
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const module = { exports: {} };
+  vm.runInNewContext(compiled, {
+    module, exports: module.exports, require: specifier => {
+      assert.equal(specifier, "@/data/academy/catalog");
+      return catalog;
+    },
+  }, { timeout: 2000 });
+  const ru = JSON.parse(JSON.stringify(module.exports.greekVideoSeries("ru")));
+  assert.deepEqual(ru.map(series => [series.id, series.lessons.length]), [
+    ["greek-dionysus", 7], ["greek-demeter", 5],
+  ]);
+  for (const series of ru) {
+    assert.equal(series.href, "/ru/academy/" + series.logicalId);
+    assert.deepEqual(series.lessons.map(video => video.order),
+      Array.from({ length: series.lessons.length }, (_, index) => index + 1));
+  }
+  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("en"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("es"))), []);
+});
 
 test("Dionysus and Demeter retain their own original, complete numbered episode sequences", () => {
   const expected = [
