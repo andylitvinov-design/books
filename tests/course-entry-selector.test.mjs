@@ -362,6 +362,98 @@ function assertCourseNavigationSurfaces(workspace) {
   assert.equal(attr(main[0].openingElement, 'className').expression.getText(ast).replace(/\s/g, ''), practiceInner
     ? "documentReader?'hh-apphh-app--document-reader':practiceInner?'hh-apphh-app--practice-inner':'hh-app'"
     : "documentReader?'hh-apphh-app--document-reader':'hh-app'")
+  // Pick the authored navigation profile from the actual imported and reachable
+  // account page, never from an optional array length or a loose 6-or-7 allowance.
+  const bindingNames = name => {
+    if (ts.isIdentifier(name)) return [name]
+    if (ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)) {
+      return name.elements.filter(ts.isBindingElement).flatMap(item => bindingNames(item.name))
+    }
+    return []
+  }
+  const progressNameBindings = all.flatMap(node => {
+    if (ts.isVariableDeclaration(node) || ts.isParameter(node)) return bindingNames(node.name)
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) ||
+        ts.isClassDeclaration(node) || ts.isClassExpression(node) ||
+        ts.isImportClause(node) || ts.isImportSpecifier(node) ||
+        ts.isNamespaceImport(node) || ts.isImportEqualsDeclaration(node)) return node.name ? [node.name] : []
+    return []
+  }).filter(name => ts.isIdentifier(name) && name.text === 'MyProgress')
+  const progressBindings = all.filter(node => ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'MyProgress')
+  const progressRoutes = all.filter(node =>
+    (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === 'MyProgress') ||
+    (ts.isJsxElement(node) && node.openingElement.tagName.getText(ast) === 'MyProgress'))
+  const progressProfile = progressNameBindings.length > 0 || progressRoutes.length > 0
+  if (progressProfile) {
+    assert.equal(progressBindings.length, 1, 'one MyProgress producer declaration')
+    const producer = progressBindings[0]
+    assert.equal(progressNameBindings.length, 1, 'no lexical MyProgress shadows')
+    assert.ok(progressNameBindings[0] === producer.name, 'the route name binds only to its imported producer')
+    const topDeclarations = ast.statements.filter(ts.isVariableStatement).flatMap(node => node.declarationList.declarations)
+    assert.ok(topDeclarations.includes(producer) && (producer.parent.flags & ts.NodeFlags.Const), 'MyProgress is a top-level constant')
+    const unparen = node => {
+      while (ts.isParenthesizedExpression(node)) node = node.expression
+      return node
+    }
+    const dynamicCall = unparen(producer.initializer)
+    assert.ok(ts.isCallExpression(dynamicCall) && !dynamicCall.questionDotToken && !dynamicCall.typeArguments?.length)
+    assert.ok(ts.isIdentifier(dynamicCall.expression) && dynamicCall.expression.text === 'dynamic')
+    assert.equal(dynamicCall.arguments.length, 2)
+    const loader = unparen(dynamicCall.arguments[0])
+    assert.ok(ts.isArrowFunction(loader) && loader.parameters.length === 0 && !loader.modifiers?.length)
+    const imported = unparen(loader.body)
+    assert.ok(ts.isCallExpression(imported) && imported.expression.kind === ts.SyntaxKind.ImportKeyword && !imported.typeArguments?.length)
+    assert.equal(imported.arguments.length, 1)
+    assert.ok(ts.isStringLiteral(imported.arguments[0]))
+    assert.equal(imported.arguments[0].text, '@/components/app/my-progress')
+    const options = unparen(dynamicCall.arguments[1])
+    assert.ok(ts.isObjectLiteralExpression(options) && options.properties.length === 1)
+    const ssr = options.properties[0]
+    assert.ok(ts.isPropertyAssignment(ssr) && (ts.isIdentifier(ssr.name) || ts.isStringLiteral(ssr.name)) && ssr.name.text === 'ssr')
+    assert.equal(unparen(ssr.initializer).kind, ts.SyntaxKind.FalseKeyword)
+    const dynamicImports = ast.statements.filter(node => ts.isImportDeclaration(node) && node.importClause?.name?.text === 'dynamic')
+    assert.equal(dynamicImports.length, 1)
+    assert.equal(dynamicImports[0].moduleSpecifier.text, 'next/dynamic')
+    assert.equal(progressRoutes.length, 1, 'one live MyProgress route')
+    const progressRoute = progressRoutes[0]
+    const progressOpening = ts.isJsxElement(progressRoute) ? progressRoute.openingElement : progressRoute
+    if (ts.isJsxElement(progressRoute)) assert.ok(progressRoute.children.every(node => ts.isJsxText(node) && !node.text.trim()),
+      'paired progress route has no extra content')
+    assert.ok(progressOpening.attributes.properties.every(ts.isJsxAttribute), 'progress props cannot be spread or hidden')
+    assert.deepEqual(progressOpening.attributes.properties.map(node => node.name.text), ['key', 'data', 'locale'])
+    for (const [name, value] of [['key','data.account.id'],['data','data'],['locale','locale']]) {
+      const prop = attr(progressOpening, name)
+      assert.ok(prop && ts.isJsxExpression(prop) && prop.expression)
+      assert.equal(prop.expression.getText(ast), value, 'progress stays bound to the active account: '+name)
+    }
+    const routeGuard = progressRoute.parent
+    assert.ok(ts.isBinaryExpression(routeGuard) && routeGuard.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken && routeGuard.right === progressRoute)
+    const pageCondition = unparen(routeGuard.left)
+    assert.ok(ts.isBinaryExpression(pageCondition) && pageCondition.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken)
+    const pageValue = unparen(pageCondition.left), progressValue = unparen(pageCondition.right)
+    assert.ok(ts.isIdentifier(pageValue) && pageValue.text === 'page')
+    assert.ok(ts.isStringLiteral(progressValue) && progressValue.text === 'progress')
+    const routeSlot = routeGuard.parent
+    assert.ok(ts.isJsxExpression(routeSlot) && routeSlot.expression === routeGuard)
+    const activeFragment = routeSlot.parent
+    assert.ok(ts.isJsxFragment(activeFragment), 'progress is a direct active-account route')
+    const activeBranch = activeFragment.parent
+    assert.ok(ts.isParenthesizedExpression(activeBranch) && activeBranch.expression === activeFragment)
+    const accountGuard = activeBranch.parent
+    assert.ok(ts.isConditionalExpression(accountGuard) && accountGuard.whenFalse === activeBranch)
+    const accountCondition = unparen(accountGuard.condition)
+    assert.ok(ts.isBinaryExpression(accountCondition) && accountCondition.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken)
+    const stateValue = unparen(accountCondition.left), activeValue = unparen(accountCondition.right)
+    assert.ok(ts.isPropertyAccessExpression(stateValue) && !stateValue.questionDotToken && stateValue.name.text === 'onboardingState')
+    const accountValue = unparen(stateValue.expression)
+    assert.ok(ts.isPropertyAccessExpression(accountValue) && !accountValue.questionDotToken && accountValue.name.text === 'account')
+    const dataValue = unparen(accountValue.expression)
+    assert.ok(ts.isIdentifier(dataValue) && dataValue.text === 'data')
+    assert.ok(ts.isStringLiteral(activeValue) && activeValue.text === 'active')
+    const accountSlot = accountGuard.parent
+    assert.ok(ts.isJsxExpression(accountSlot) && accountSlot.expression === accountGuard && accountSlot.parent === main[0],
+      'progress remains in the active-account branch of the actual returned main')
+  }
   const baseVisibility = practiceInner ? '!documentReader&&!practiceInner' : '!documentReader'
   const noHiding = opening => {
     assert.ok(opening.attributes.properties.every(ts.isJsxAttribute), 'JSX spreads cannot override verified navigation attributes')
@@ -394,9 +486,14 @@ function assertCourseNavigationSurfaces(workspace) {
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken) return evaluate(node.left,locale)===evaluate(node.right,locale)
     assert.fail('navigation fields must be pure locale/root expressions')
   }
+  const coreNav = [['portrait','Profile','Профиль','/app/portrait'],['tests','Tests','Тесты','/app/tests'],['portfolio','Reports','Отчёты','/app/portfolio'],['course','Courses','Курсы','/app/course?view=courses'],['practice','Practice','Практика','/practice'],['messages','Messages','Сообщения','/app/messages']]
   const expected = {
-    nav: [['portrait','Profile','Профиль','/app/portrait'],['tests','Tests','Тесты','/app/tests'],['portfolio','Reports','Отчёты','/app/portfolio'],['course','Courses','Курсы','/app/course?view=courses'],['practice','Practice','Практика','/practice'],['messages','Messages','Сообщения','/app/messages']],
-    mobileNav: [['practice','Practices','Практики','Prácticas','/practice'],['messages','Requests','Заявки','Solicitudes','/app/messages'],['portfolio','Progress','Прогресс','Progreso','/app/portfolio'],['settings','Settings','Настройки','Ajustes','/app/settings']],
+    nav: progressProfile
+      ? [...coreNav.slice(0,3), ['progress','My Progress','Мой прогресс','Mi progreso','/app/progress'], ...coreNav.slice(3)]
+      : coreNav,
+    mobileNav: progressProfile
+      ? [['practice','My practices','Мои практики','Mis prácticas','/practice'],['messages','Messages','Сообщения','Mensajes','/app/messages'],['progress','My progress','Мой прогресс','Mi progreso','/app/progress'],['settings','Settings','Настройки','Ajustes','/app/settings']]
+      : [['practice','Practices','Практики','Prácticas','/practice'],['messages','Requests','Заявки','Solicitudes','/app/messages'],['portfolio','Progress','Прогресс','Progreso','/app/portfolio'],['settings','Settings','Настройки','Ajustes','/app/settings']],
   }
   for (const [name, declaration] of [['nav',nav[0]],['mobileNav',mobile]]) {
     assert.equal(declaration.initializer.elements.length, expected[name].length, 'exact '+name+' destinations')
@@ -406,7 +503,7 @@ function assertCourseNavigationSurfaces(workspace) {
       assert.deepEqual(item.properties.map(prop=>prop.name.getText(ast)), ['id','label','href','icon'])
       const value = expected[name][index]
       assert.equal(evaluate(property(item,'id'),locale),value[0])
-      assert.equal(evaluate(property(item,'label'),locale),value[name==='nav' ? (locale==='ru'?2:1) : (locale==='ru'?2:locale==='es'?3:1)])
+      assert.equal(evaluate(property(item,'label'),locale),value[name==='nav' ? (locale==='ru'?2:locale==='es'&&value[0]==='progress'?3:1) : (locale==='ru'?2:locale==='es'?3:1)])
       assert.equal(evaluate(property(item,'href'),locale),'/'+locale+value.at(-1))
     })
   }
@@ -548,6 +645,34 @@ test('course navigation oracle rejects dead, unsafe and altered shared/mobile su
     ['const mobileNav = [', 'let mobileNav = ['],
     ['{nav.map(({ id, label, href })', '{nav.map(({ id, label, href }) => <Link href={href}>{label}</Link>)}{nav.map(({ id, label, href })'],
   ]
+  if (workspace.includes('const MyProgress =')) {
+    const shared = "{ id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', href: root + '/progress', icon: Activity },"
+    const mobile = "{ id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },"
+    const route = "{page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}"
+    changes.push(
+      [shared, ''], [shared, shared+shared], [shared, shared.replace("'/progress'", "'/portfolio'")],
+      [mobile, ''], [mobile, mobile+mobile], [mobile, mobile.replace("'/progress'", "'/portfolio'")],
+      [mobile, mobile.replace("'Mi progreso'", "'Progreso'")],
+      ["const MyProgress = dynamic", "const MyProgress = false && dynamic"],
+      ["@/components/app/my-progress", "@/components/app/other-progress"],
+      ["@/components/app/my-progress", "@/components/app/my - progress"],
+      ["page === 'progress' && <MyProgress", "page === 'pro gress' && <MyProgress"],
+      ["{data.account.onboardingState !== 'active' ? (", "{data.account.onboardingState !== 'act ive' ? ("],
+      ["import dynamic from 'next/dynamic'", "import dynamic from 'other-dynamic'"],
+      [route, ''], [route, route+route], [route, '{false && <>'+route+'</>}'],
+      [route, route+"{page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale}></MyProgress>}"],
+      ["const nav = [", "function MyProgress(){return null}\n  const nav = ["],
+      ["export default function AppWorkspace({ locale, path = [] })", "export default function AppWorkspace({ locale, path = [], MyProgress })"],
+      ["const nav = [", "const { replacement: MyProgress } = data;\n  const nav = ["],
+      ["const nav = [", "const [MyProgress] = [];\n  const nav = ["],
+      ["import dynamic from 'next/dynamic'", "import MyProgress from 'shadow-progress';\nimport dynamic from 'next/dynamic'"],
+      ["<MyProgress key={data.account.id}", "<MyProgress key={data.id}"],
+      ["<MyProgress key={data.account.id} data={data}", "<MyProgress key={data.account.id} data={null}"],
+      ["<MyProgress key={data.account.id} data={data} locale={locale}", "<MyProgress key={data.account.id} data={data} locale={'en'}"],
+      ["<MyProgress key={data.account.id}", "<MyProgress hidden key={data.account.id}"],
+      ["{data.account.onboardingState !== 'active' ? (", "{data.account.onboardingState === 'active' ? ("],
+    )
+  }
   if (workspace.includes("const practiceInner = page === 'practice'")) changes.push(
     ["const practiceInner = page === 'practice'", 'const practiceInner = false'],
     ['!documentReader && !practiceInner && <header', '!documentReader && <header'],

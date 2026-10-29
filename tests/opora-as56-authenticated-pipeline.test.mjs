@@ -72,7 +72,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       if(day===4){
         const field=nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
         assert.ok(field,'Day 4 emotion entry must exist')
-        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'calm'}})
+        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'fixture-private-emotion-en'}})
         await player.settle()
       }else await click(player,locale==='ru'?'Попробую позже':'I might try this')
       await advanceOporaTo(player,'recapFeedback',t.next)
@@ -108,7 +108,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
       assert.equal(saved.signals.opora54.answers.experienceEdition,'as-6.0-experiments-v1')
       if(day===4){
-        const answer=locale==='ru'?'спокойствие':'calm'
+        const answer=locale==='ru'?'спокойствие':'fixture-private-emotion-en'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
         assert.equal(saved.signals.practiceEmotion?.customText,undefined)
         assert.ok(saved.signals.practiceEmotion?.customTextCiphertext?.length>30)
