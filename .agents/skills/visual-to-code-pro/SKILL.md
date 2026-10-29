@@ -7,6 +7,15 @@ description: Rebuild or update an existing Holistic House page from an owner-app
 
 Use this skill whenever a request includes a website screenshot, photograph of a screen, reference image, mockup, or Figma export and asks to create, redesign, match, improve or publish a page. This is a **working UI implementation skill**, not a request to replace the UI with a generated picture.
 
+
+## Critical gate — identify the right screen BEFORE matching pixels
+
+A screenshot is a **page state**, not just a skin. Record the exact canonical route, query, role, guest/signed-in state, selected tab, and whether the screen is a dashboard, editor, detail page, dialog or flow step. Compare these invariants **before** measuring the screenshot: \`reference route + state + view\` must match \`actual route + state + view\`. If they differ, **STOP pixel matching and fix routing/OAuth/automatic navigation first**. Never copy a dashboard over a legitimate working editor or mislabel the editor as a failed dashboard screenshot.
+
+**Real owner example (28 Oct 2026):** the approved RU **Кабинет практика** is the existing \`/ru/practice\` \`PracticeShowcase\` dashboard with identity, six creation tiles, hero, offer rail and five-tab dock. The reported second screenshot shows the distinct protected **Мои услуги** three-step editor, normally reached via \`/ru/app/practice?panel=services&create=1&starter=session\`. Different route, function and image dimensions: do **not** calculate pixel fidelity between the two. Existing issue #55 and corrective PR #2498 address the Google-return / automatic-editor navigation; inspect and reconcile them rather than duplicating the fix. The editor still needs the same palette, navigation and typography, but retains its real form and save action.
+
+For an existing **live** source page, use read-only browser DOM and computed styles (box rectangles, CSS variables, fonts, background-image URLs, image object-position) alongside screenshots. A screenshot alone loses precise DOM and navigation facts. Use the approved website itself as the source of truth; Figma is optional, not a prerequisite. See [browser tool choices](references/browser-tools.md).
+
 ## 0. Identify the actual page and source of truth
 
 1. Identify the approved **reference** and the **current/broken screen**; when several images are supplied, label each and never reverse their roles. Record route(s), locale, guest/client/practitioner state, viewport content width and DPR when available.
@@ -46,10 +55,12 @@ Match the approved hierarchy; use existing design tokens and optimized assets. T
    node scripts/compare-ui-screenshots.mjs \
      --reference /tmp/approved.png \
      --actual /tmp/browser-capture.png \
+     --reference-view '/ru/practice|signed-in|dashboard' \
+     --actual-view '/ru/practice|signed-in|dashboard' \
      --out artifacts/visual-to-code/practice
    ~~~
 
-   It emits overlay.png, diff.png and comparison.json. Add repeated --mask x,y,width,height only for volatile content. --pixel-threshold 32 is the default channel threshold. Use --max-changed 0.08 as an **optional agreed gate only** for precisely controlled browser/DPR/font/data/crop conditions. Otherwise the difference percentage is diagnostic, not a pass/fail. Input files must be non-interlaced 8-bit RGB/RGBA PNG; convert other formats without changing dimensions.
+   It rejects mismatched reference/actual view identity before diffing; always pass both view arguments for screenshot-based UI work. It emits overlay.png, diff.png and comparison.json. Add repeated --mask x,y,width,height only for volatile content. --pixel-threshold 32 is the default channel threshold. Use --max-changed 0.08 as an **optional agreed gate only** for precisely controlled browser/DPR/font/data/crop conditions. Otherwise the difference percentage is diagnostic, not a pass/fail. Input files must be non-interlaced 8-bit RGB/RGBA PNG; convert other formats without changing dimensions.
 4. Fix the three largest visible discrepancies, capture again, and repeat. Geometry contract tests, source assertions, HTTP 200 or a green build do **not** establish visual fidelity.
 5. Add Playwright bounding-rectangle checks for section positions/size, overflow, clipping, scroll/fixed nav overlap and CTA visibility. For stable designs aim for major landmarks within approximately **8 CSS px** of the reference, subject to a documented tolerance. Where practical keep touch targets at least 44 CSS px. Cross-OS screenshots cannot promise pixel identity.
 
@@ -66,4 +77,4 @@ Existing reusable browser infrastructure: .github/workflows/hh-support-mobile-mo
 
 In Russian: actual changes → PR/commit → CI → production URL/SHA → visual widths and overlay evidence → real interactions verified → blockers → up to three owner actions. Distinguish **render verified**, **functional E2E verified**, **live verified**.
 
-Complete references/visual-spec-template.md for every owner-initiated screenshot redesign. No paid APIs or avoidable video renders/deploy loops for screenshot comparison.
+Complete references/visual-spec-template.md for every owner-initiated screenshot redesign. Record route/state parity and user journey explicitly; a failed page-identity gate blocks visual acceptance regardless of pixel score. No paid APIs or avoidable video renders/deploy loops for screenshot comparison.
