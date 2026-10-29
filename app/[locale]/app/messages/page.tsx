@@ -1,6 +1,6 @@
 import type {Metadata} from 'next'
 import Link from 'next/link'
-import {MessageCircle,ShoppingBag} from 'lucide-react'
+import {Bell,MessageCircle,ShoppingBag} from 'lucide-react'
 import {notFound} from 'next/navigation'
 import MessagesHub from '@/components/app/messages-hub'
 import MessagesOrdersClients from '@/components/app/messages-orders-clients'
@@ -33,6 +33,11 @@ export default async function MemberMessages({params,searchParams}:{
       </Link>
     </header>
     <nav className="hh-messages-context-nav" aria-label={locale==='ru'?'Дополнительные разделы':locale==='es'?'Secciones adicionales':'Additional sections'}>
+      <Link className="hh-messages-context-link" prefetch={false}
+        href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}>
+        <Bell size={16} aria-hidden="true"/>
+        <span>{locale==='ru'?'Уведомления':locale==='es'?'Avisos':'Notifications'}</span>
+      </Link>
       <Link prefetch={false} href={'/'+locale+'/app/messages?'+(showOrders?'tab=chats':'section=orders')}
         className="hh-messages-context-link">
         {showOrders?<MessageCircle size={17} aria-hidden="true"/>:<ShoppingBag size={17} aria-hidden="true"/>}
