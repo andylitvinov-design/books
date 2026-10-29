@@ -102,6 +102,7 @@ jobs:
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 90); do
+            echo "Public services readiness attempt ${i}/90"
             if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
             sleep 2
           done
