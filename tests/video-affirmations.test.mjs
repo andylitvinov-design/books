@@ -246,6 +246,8 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
+  assert.match(studio,/data-video-wish-disclosure/);
+  assert.match(studio,/<summary>\{ui\.wishTitle\}<\/summary>/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
   assert.match(compactCss,/@media\(max-width:360px\)/);
   assert.match(compactCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
