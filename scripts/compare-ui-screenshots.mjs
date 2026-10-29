@@ -183,7 +183,9 @@ export function compareImages(reference, actual, { pixelThreshold = 32, masks = 
   }
 }
 
-export async function compareScreenshotFiles({ reference, actual, out, pixelThreshold = 32, maxChanged, masks = [] }) {
+export async function compareScreenshotFiles({ reference, actual, out, pixelThreshold = 32, maxChanged, masks = [], referenceView, actualView }) {
+  if ((referenceView === undefined) !== (actualView === undefined)) throw new Error('Provide both --reference-view and --actual-view')
+  if (referenceView !== undefined && referenceView !== actualView) throw new Error('Different UI views: reference=' + referenceView + ', actual=' + actualView + '; fix route/navigation before pixel comparison')
   if (!reference || !actual || !out) throw new Error('Required: --reference FILE --actual FILE --out DIR')
   const [before, after] = await Promise.all([readFile(reference), readFile(actual)])
   const metrics = compareImages(decodePng(before), decodePng(after), { pixelThreshold, masks })
@@ -200,6 +202,8 @@ export async function compareScreenshotFiles({ reference, actual, out, pixelThre
       changedRatio: metrics.changedRatio,
       meanAbsoluteRgbError: metrics.meanAbsoluteRgbError,
       pixelThreshold,
+      referenceView: referenceView ?? null,
+      actualView: actualView ?? null,
       maxChanged: maxChanged ?? null,
       passesThreshold: maxChanged === undefined ? null : metrics.changedRatio <= maxChanged,
     }, null, 2) + '\n'),
@@ -214,7 +218,7 @@ function parseArgs(argv) {
     const [name, inline] = argv[i].slice(2).split('=', 2)
     const value = inline ?? argv[++i]
     if (!value || value.startsWith('--')) throw new Error('Missing value for --' + name)
-    if (name === 'reference' || name === 'actual' || name === 'out') options[name] = value
+    if (name === 'reference' || name === 'actual' || name === 'out' || name === 'reference-view' || name === 'actual-view') options[name === 'reference-view' ? 'referenceView' : name === 'actual-view' ? 'actualView' : name] = value
     else if (name === 'pixel-threshold') options.pixelThreshold = Number(value)
     else if (name === 'max-changed') options.maxChanged = Number(value)
     else if (name === 'mask') options.masks.push(value.split(',').map(Number))
