@@ -71,7 +71,9 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
-  assert.equal((nav.match(/id: '/g)||[]).length,6)
+  // Desktop includes Progress and Messages while the iPhone dock stays five-wide.
+  assert.deepEqual([...nav.matchAll(/id: '([^']+)'/g)].map(match=>match[1]),
+    ['portrait','tests','portfolio','progress','course','practice','messages'])
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
   assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
