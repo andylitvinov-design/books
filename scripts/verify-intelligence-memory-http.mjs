@@ -105,9 +105,14 @@ try {
   assert.equal((await call('save',a,input)).status,409)
   assert.equal((await call('export',a)).body.records.length,0)
   const require=createRequire(`${process.env.HH_INTELLIGENCE_BROWSER_TOOLS}/package.json`)
-  const browser=await require('playwright').chromium.launch({headless:true,...(process.env.HH_BROWSER_EXECUTABLE?{executablePath:process.env.HH_BROWSER_EXECUTABLE}:{})})
+  const browserName=process.env.HH_TEST_BROWSER||'chromium'
+  if(!['chromium','webkit'].includes(browserName))throw new Error('UNSUPPORTED_BROWSER')
+  const browser=await require('playwright')[browserName].launch({headless:true,...(process.env.HH_BROWSER_EXECUTABLE?{executablePath:process.env.HH_BROWSER_EXECUTABLE}:{})})
   try {
-    const context=await browser.newContext({viewport:{width:390,height:844}})
+    // The disabled-capability case below intercepts a request; Playwright
+    // cannot reliably intercept traffic controlled by a service worker.
+    // Service-worker privacy is exercised by verify-intelligence-owner-route.
+    const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
     try {
       await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
       await context.route('https://www.youtube.com/**',route=>route.abort())
@@ -159,12 +164,14 @@ try {
       await card.getByRole('button',{name:'Delete all saved feedback',exact:true}).click()
       await card.getByText('No saved feedback.',{exact:true}).waitFor()
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
-      await context.route('**/api/app/intelligence/feedback/status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({managementAvailable:true,saveEnabled:false})}))
+      let disabledIntercepted=0
+      await context.route('**/api/app/intelligence/feedback/status',route=>{disabledIntercepted++;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({managementAvailable:true,saveEnabled:false})})})
       const disabledPage=await context.newPage()
       await disabledPage.goto(origin+'/en/app/portfolio',{waitUntil:'networkidle',timeout:60000})
       await disabledPage.locator('#hh-portrait-tab-recommendations').click()
       const disabledCard=disabledPage.locator('[data-holistic-intelligence]')
       await disabledCard.getByRole('button',{name:'Manage saved feedback',exact:true}).waitFor()
+      assert.ok(disabledIntercepted>0,'disabled capability response must reach the browser')
       assert.equal(await disabledCard.getByRole('checkbox',{name:'Use saved “not useful” feedback for this request',exact:true}).count(),0)
       await context.unroute('**/api/app/intelligence/feedback/status')
       const russian=await context.newPage();await russian.setViewportSize({width:320,height:844})
@@ -176,5 +183,5 @@ try {
       assert.equal(await russian.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
     } finally {await context.close().catch(()=>{})}
   } finally {await browser.close().catch(()=>{})}
-  console.log(JSON.stringify({auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',feedbackAdjustment:'passed',revocation:'passed',cache:'passed',cabinetMobile:'passed'}))
+  console.log(JSON.stringify({browser:browserName,auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',feedbackAdjustment:'passed',revocation:'passed',cache:'passed',cabinetMobile:'passed'}))
 } finally {await closeDatabase();await new Promise(resolve=>provider.close(resolve))}
