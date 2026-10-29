@@ -6,7 +6,7 @@ import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart,
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
-import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations } from "@/lib/mandala/video-affirmations";
+import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
@@ -1347,16 +1347,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
           // This is preparation, NOT a render or a claimed downloadable video.
-          selectCategory(session.theme);
+          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
+          // First video: scenic meadow-morning master, not a generic money/energy clip.
+          selectCategory(session.videoTheme);
+          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
           setBackgroundOnly(true);
           setDuration(60);
           setSpeed("slow");
           setCaptionMode("custom");
           setCustomCaption(session.title);
-          // Resource-imagery invitations become visible, readable overlays;
-          // the actual footage/audio still comes from the existing local editor.
-          setAffirmations({...defaultAffirmations,enabled:true,selected:[0,1,2],
-            custom:session.scenes.map(line=>Array.from(line).slice(0,90).join("")).join("\n"),
+          // Preserve the chosen personal goal on the meadow visuals with
+          // original, user-readable supportive phrases from that goal's theme.
+          setAffirmations({...defaultAffirmations,enabled:true,selected:[],
+            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
             visibility:["large"]});
           setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
             locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
