@@ -2048,7 +2048,10 @@ test('private session share grants enforce per-consultation ownership under real
     await db.query('create schema if not exists storage')
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
     const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)
