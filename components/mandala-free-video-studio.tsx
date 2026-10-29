@@ -112,7 +112,7 @@ const translations = {
 
 const studioCopy = {
   en: {
-    title:"Video editor",renderMode:"Video output",withPortrait:"With my photo",backgroundOnly:"Animated background only",backgroundHint:"Reuse this moving background underneath your own footage.",sub:"Create your personal video",back:"Back to support",
+    title:"Video editor",includePhoto:"Use photo",pickGoalPhoto:"Add photo of me or my goal",replaceGoalPhoto:"Change photo of me or my goal",advancedChoices:"Extra video options",sub:"Create your personal video",back:"Back to support",
     myVideos:"Current video",stepPhoto:"1. Add a photo",stepTheme:"2. Choose a theme",
     videoUnavailable:"The cinematic MP4 is unavailable. Please refresh this page.",
     stepTemplate:"3. Choose a template",stepSettings:"4. Customize your video",
@@ -151,7 +151,7 @@ const studioCopy = {
     advanced:"Mandala & guided meditations",photoError:"Try a JPG, PNG or WebP image smaller than 10 MB.",
   },
   ru: {
-    title:"Видеоредактор",renderMode:"Вариант ролика",withPortrait:"С моим фото",backgroundOnly:"Только видеофон",backgroundHint:"Фон без портрета, который можно добавить в свой видеомонтаж.",sub:"Создай своё персональное видео",back:"К поддержке",
+    title:"Видеоредактор",includePhoto:"С фото",pickGoalPhoto:"Добавить фото себя или цели",replaceGoalPhoto:"Заменить фото себя или цели",advancedChoices:"Дополнительные параметры",sub:"Создай своё персональное видео",back:"К поддержке",
     myVideos:"Текущий ролик",stepPhoto:"1. Загрузите фото",stepTheme:"2. Выберите тему",
     videoUnavailable:"Не удалось загрузить HD-видеоролик. Обновите страницу.",
     stepTemplate:"3. Выберите шаблон",stepSettings:"4. Настройте видео",
@@ -190,7 +190,7 @@ const studioCopy = {
     advanced:"Мандала и авторские медитации",photoError:"Загрузите JPG, PNG или WebP до 10 МБ.",
   },
   es: {
-    title:"Editor de vídeo",renderMode:"Tipo de vídeo",withPortrait:"Con mi foto",backgroundOnly:"Solo fondo animado",backgroundHint:"Fondo animado para usar debajo de otro vídeo.",sub:"Crea tu vídeo personal",back:"Volver a apoyo",
+    title:"Editor de vídeo",includePhoto:"Con foto",pickGoalPhoto:"Añadir foto mía o de mi objetivo",replaceGoalPhoto:"Cambiar foto mía o de mi objetivo",advancedChoices:"Opciones adicionales",sub:"Crea tu vídeo personal",back:"Volver a apoyo",
     myVideos:"Vídeo actual",stepPhoto:"1. Sube una foto",stepTheme:"2. Elige un tema",
     videoUnavailable:"No se pudo cargar el vídeo HD. Actualiza la página.",
     stepTemplate:"3. Elige una plantilla",stepSettings:"4. Personaliza el vídeo",
@@ -587,7 +587,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoCategory, setVideoCategory] = useState<VideoCategory>("energy");
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
-  const [backgroundOnly,setBackgroundOnly]=useState(false);
+  const [backgroundOnly,setBackgroundOnly]=useState(true);
   const [otherScene, setOtherScene] = useState<LocalSceneId>("solar-surge");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
@@ -648,7 +648,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
   const [thumbnailPhoto, setThumbnailPhoto] = useState<{ url: string; image: HTMLImageElement } | null>(null);
-  const sharedThumbnailPhoto = thumbnailPhoto && thumbnailPhoto.url === photoUrl ? thumbnailPhoto.image : null;
+  const sharedThumbnailPhoto = !backgroundOnly && thumbnailPhoto && thumbnailPhoto.url === photoUrl ? thumbnailPhoto.image : null;
+  // A newly chosen local portrait opts in to photo output; unchecking it later
+  // keeps the photo private on this page but exports a background-only clip.
+  useEffect(() => { if (photoUrl) setBackgroundOnly(false); }, [photoUrl]);
   useEffect(() => {
     let disposed = false;
     if (!photoUrl) return;
@@ -1013,7 +1016,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
-    setPreviewPlaying(false);setBackgroundOnly(false);setThemeMenuOpen(false);
+    setPreviewPlaying(false);setThemeMenuOpen(false);
     if(next==="money")setMoneyScene("golden-rain");
     else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
   };
@@ -1130,6 +1133,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </div>
 
       <section className={videoStyles.catalogShell} data-video-catalog aria-labelledby="video-catalog-heading">
+        <div className={videoStyles.photoQuickRow} data-mandala-output-mode role="group" aria-label={ui.title}>
+          <label className={videoStyles.photoInclude}>
+            <input type="checkbox" data-video-photo-include
+              checked={!backgroundOnly} disabled={recording||preparing}
+              onChange={event=>setBackgroundOnly(!event.currentTarget.checked)}/>
+            <span>{ui.includePhoto}</span>
+          </label>
+          <button type="button" className={videoStyles.photoQuickLink} data-video-photo-link
+            disabled={recording||preparing} onClick={onPickPhoto}>
+            <Camera size={15} aria-hidden="true"/>{photoUrl?ui.replaceGoalPhoto:ui.pickGoalPhoto}
+          </button>
+        </div>
         <header className={videoStyles.catalogHeading}>
           <div>
             <h2 id="video-catalog-heading">{supportUi.catalogTitle}</h2>
@@ -1151,44 +1166,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>;
           })}
         </div>
-        <div className={videoStyles.catalogFilters} data-video-catalog-filters>
-          <label><span>{supportUi.filterStyle}</span>
-            <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
-              disabled={recording||preparing}
-              onChange={event=>{
-                setSuggestion("");setPreviewPlaying(false);
-                // The style selector includes scenes beyond the first four tiles.
-                // Reveal the selected film in the existing gallery, including legacy looks.
-                setShowAllMoney(true);
-                if(theme==="money")setMoneyScene(event.currentTarget.value as MoneySceneId);
-                else {
-                  const scene=event.currentTarget.value as LocalSceneId;
-                  setOtherScene(scene);
-                  // Wellness retains its independent category.
-                }
-              }}>
-              {theme==="money"
-                ? moneyTemplates.map(item=><option key={item.id} value={item.id}>
-                    {moneyTemplateLabels[item.id]?.[locale]||item.label[locale]}</option>)
-                : otherVideoScenes[theme].map(item=><option key={item.id} value={item.id}>{item.label[locale]}</option>)}
-            </select>
-          </label>
-          <label><span>{supportUi.filterMotion}</span>
-            <select data-video-motion value={speed} disabled={recording||preparing}
-              onChange={event=>setSpeed(event.currentTarget.value as Speed)}>
-              <option value="slow">{ui.slow}</option>
-              <option value="dynamic">{ui.dynamic}</option>
-            </select>
-          </label>
-          <label><span>{supportUi.filterDuration}</span>
-            <select data-video-length value={duration} disabled={recording||preparing}
-              onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
-              {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
-            </select>
-          </label>
-        </div>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
-        data-hero-promo={!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording?"true":"false"}
+        data-hero-promo={!photoUrl&&!previewPlaying&&!recording?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
         <div className={videoStyles.heroPromo} aria-hidden="true"
@@ -1250,17 +1229,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </div>
       </section>
-      {<fieldset className={videoStyles.backgroundMode} data-mandala-output-mode
-        disabled={recording||preparing}>
-        <legend>{ui.renderMode}</legend>
-        <div className={videoStyles.backgroundChoices}>
-          <button type="button" aria-pressed={!backgroundOnly} onClick={()=>setBackgroundOnly(false)}>
-            <Camera size={16} aria-hidden="true"/>{ui.withPortrait}</button>
-          <button type="button" aria-pressed={backgroundOnly} onClick={()=>setBackgroundOnly(true)}>
-            <Film size={16} aria-hidden="true"/>{ui.backgroundOnly}</button>
-        </div>
-        {backgroundOnly?<small>{ui.backgroundHint}</small>:null}
-      </fieldset>}
       {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
         {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
           locale==="es"?"Estos vídeos son para descansar y prestar atención, no son consejos médicos.":
@@ -1308,7 +1276,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                    title={other.label[locale]} photo={backgroundOnly?null:sharedThumbnailPhoto}
                    playing={otherScene===other.id&&previewPlaying&&!recording}/> :
                  <ThemedSceneThumbnail theme={theme} scene={other.id}
-                   title={other.label[locale]} photo={sharedThumbnailPhoto}/>}
+                   title={other.label[locale]} photo={backgroundOnly?null:sharedThumbnailPhoto}/>}
                {getThemedRealFilm(theme,other.id) ? <span className={videoStyles.filmBadge}>FULL HD</span> : null}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
@@ -1320,7 +1288,45 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <small>{ui.templateHint}</small>
         </div>
       </section>
-
+      <details className={videoStyles.advancedQuickFilters} data-video-advanced-filters>
+        <summary><SlidersHorizontal size={15} aria-hidden="true"/>{ui.advancedChoices}</summary>
+        <div className={videoStyles.catalogFilters} data-video-catalog-filters>
+          <label><span>{supportUi.filterStyle}</span>
+            <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
+              disabled={recording||preparing}
+              onChange={event=>{
+                setSuggestion("");setPreviewPlaying(false);
+                // The style selector includes scenes beyond the first four tiles.
+                // Reveal the selected film in the existing gallery, including legacy looks.
+                setShowAllMoney(true);
+                if(theme==="money")setMoneyScene(event.currentTarget.value as MoneySceneId);
+                else {
+                  const scene=event.currentTarget.value as LocalSceneId;
+                  setOtherScene(scene);
+                  // Wellness retains its independent category.
+                }
+              }}>
+              {theme==="money"
+                ? moneyTemplates.map(item=><option key={item.id} value={item.id}>
+                    {moneyTemplateLabels[item.id]?.[locale]||item.label[locale]}</option>)
+                : otherVideoScenes[theme].map(item=><option key={item.id} value={item.id}>{item.label[locale]}</option>)}
+            </select>
+          </label>
+          <label><span>{supportUi.filterMotion}</span>
+            <select data-video-motion value={speed} disabled={recording||preparing}
+              onChange={event=>setSpeed(event.currentTarget.value as Speed)}>
+              <option value="slow">{ui.slow}</option>
+              <option value="dynamic">{ui.dynamic}</option>
+            </select>
+          </label>
+          <label><span>{supportUi.filterDuration}</span>
+            <select data-video-length value={duration} disabled={recording||preparing}
+              onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
+              {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
+            </select>
+          </label>
+        </div>
+      </details>
       </section>
 
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">

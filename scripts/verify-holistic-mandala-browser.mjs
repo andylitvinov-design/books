@@ -92,7 +92,27 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const catalog=page.locator("[data-video-catalog]");
         await catalog.waitFor({state:"visible"});
         assert.equal(await catalog.locator("[data-video-category]").count(),6);
+        // The optional portrait choice precedes theme cards; advanced controls
+        // live below the hero and scene gallery, not between themes and video.
+        const photoChoice=page.locator("[data-video-photo-include]");
+        assert.equal(await photoChoice.isChecked(),false,"background-only is the quiet default");
+        const photoOrder=await page.evaluate(()=>{
+          const box=sel=>document.querySelector(sel)?.getBoundingClientRect();
+          return {photo:box("[data-mandala-output-mode]"),topics:box("[data-video-category-rail]"),
+            hero:box("[data-video-mandala-hero]"),gallery:box("#video-templates"),
+            advanced:box("[data-video-advanced-filters]")};
+        });
+        assert.ok(photoOrder.photo.bottom<=photoOrder.topics.top+2,"photo control above topics");
+        assert.ok(photoOrder.topics.bottom<=photoOrder.hero.top+2,"video immediately after topics");
+        assert.ok(photoOrder.gallery.bottom<=photoOrder.advanced.top+2,"filters below gallery");
+        await photoChoice.check();
+        assert.equal(await photoChoice.isChecked(),true);
+        await photoChoice.uncheck();
+        assert.equal(await photoChoice.isChecked(),false);
+        assert.equal(await page.locator("[data-video-advanced-filters]").getAttribute("open"),null,
+          "advanced filters start collapsed");
         assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
+        await page.locator("[data-video-advanced-filters] summary").click();
         await page.locator('[data-video-category="health"]').click();
         assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
         assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
@@ -100,6 +120,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-motion]").selectOption("dynamic");
         await page.locator("[data-video-length]").selectOption("30");
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-advanced-filters] summary").click();
+        assert.equal(await photoChoice.isChecked(),false,"theme changes do not force a photo");
         // Energy must play decoded Full HD MP4, not a still Canvas artwork.
         await page.locator('[data-video-category="energy"]').click();
         const energyTile=page.locator('[data-video-template="solar-surge"]');
@@ -147,6 +169,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const photo = document.querySelector('img[src^="blob:"]');
           return photo && photo.complete && photo.naturalWidth > 0;
         }, undefined, { timeout: 15000 });
+        await page.waitForFunction(()=>
+          document.querySelector("[data-video-photo-include]")?.checked===true,
+          undefined,{timeout:9000});
         assert.deepEqual(uploaded, [], engine + " synthetic photo must not be uploaded");
 
         const downloadLink = page.locator('a[download="holistic-house-mandala.png"]');
@@ -367,8 +392,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           },undefined,{timeout:30000});
           assert.equal(await page.locator('[data-video-duration="60"]').getAttribute("aria-pressed"),"true",
             "default guided course length is 60 seconds");
-          assert.equal(await page.locator("[data-mandala-output-mode] button").nth(1)
-            .getAttribute("aria-pressed"),"true");
+          assert.equal(await page.locator("[data-video-photo-include]").isChecked(),false,
+            "guided background-only course does not include a portrait");
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
           // Keep automated media verification bounded at 10s; the default
@@ -394,9 +419,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // clip that users can place underneath another video. No client
         // photo is submitted to a provider or required by this render mode.
         if (engine === "chromium" && locale === "en" && width === 390) {
-          const backgroundMode = page.locator("[data-mandala-output-mode] button").nth(1);
-          await backgroundMode.click();
-          assert.equal(await backgroundMode.getAttribute("aria-pressed"), "true");
+          const includePhoto = page.locator("[data-video-photo-include]");
+          await includePhoto.uncheck();
+          assert.equal(await includePhoto.isChecked(), false);
           await page.locator("[data-video-audio-upload]").setInputFiles({
             name:"my-local-sound.wav",mimeType:"audio/wav",buffer:syntheticAudioWav(),
           });

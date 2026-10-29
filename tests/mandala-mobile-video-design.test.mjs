@@ -194,7 +194,7 @@ test("mobile theme is a compact accessible menu, and hero returns to live select
   assert.match(studio,/setThemeMenuOpen\(false\)/);
   assert.match(studio,/aria-expanded=\{themeMenuOpen\}/);
   assert.match(studio,/aria-controls="video-hero-themes"/);
-  assert.match(studio,/data-hero-promo=\{!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording/);
+  assert.match(studio,/data-hero-promo=\{!photoUrl&&!previewPlaying&&!recording/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-theme-toggle/);
@@ -250,4 +250,31 @@ test("mandala header settings oracle rejects missing-label regression", async ()
     const tree = await renderMandalaDock(mutant, locale);
     assert.throws(() => assertMandalaHeaderName(tree, expected), /localized accessible name/);
   }
+});
+
+test("owner-requested compact photo choice and deeper options keep one functional editor",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  const photo=studio.indexOf("data-video-photo-include");
+  const categories=studio.indexOf("data-video-category-rail");
+  const hero=studio.indexOf("data-video-mandala-hero");
+  const gallery=studio.indexOf('id="video-templates"');
+  const filters=studio.indexOf("data-video-catalog-filters");
+  assert.ok(photo>0 && photo<categories && categories<hero && hero<gallery && gallery<filters,
+    "photo checkbox → topics → video → scenes → optional filters");
+  assert.match(studio,/checked=\{!backgroundOnly\}/);
+  assert.match(studio,/onChange=\{event=>setBackgroundOnly\(!event\.currentTarget\.checked\)\}/);
+  assert.match(studio,/data-video-photo-link[\s\S]*?onClick=\{onPickPhoto\}/);
+  assert.match(studio,/useEffect\(\(\) => \{ if \(photoUrl\) setBackgroundOnly\(false\); \}, \[photoUrl\]\)/);
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
+  assert.match(studio,/data-video-advanced-filters/);
+  assert.match(css,/\.photoQuickRow\{/);
+  assert.match(css,/\.advancedQuickFilters\{/);
+  for(const phrase of ["Добавить фото себя или цели","Add photo of me or my goal","Añadir foto mía o de mi objetivo"]) {
+    assert.ok(studio.includes(phrase),phrase);
+  }
+  assert.match(browser,/photoOrder\.photo\.bottom<=photoOrder\.topics\.top/);
+  assert.match(browser,/photoChoice\.uncheck\(\)/);
 });

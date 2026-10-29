@@ -112,14 +112,17 @@
 .templateArt{display:block;width:100%;height:100%;object-fit:cover}
 .download{display:inline-flex;align-items:center;justify-content:center}
 
-/* Preserve the live cinematic editor's background-only option. */
-.backgroundMode{padding:11px 12px;margin:0 0 12px;border:1px solid #d8e9d7;border-radius:15px;background:#fffdf5;color:#1e5845}
-.backgroundMode legend{font-weight:800;font-size:12px;padding:0 4px}
-.backgroundChoices{display:flex;flex-wrap:wrap;gap:7px}
-.backgroundChoices button{display:flex;flex:1 1 150px;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:9px;border:1px solid #cde1d1;border-radius:11px;background:#f3f8f1;color:#275745;font-weight:750;font-size:12px}
-.backgroundChoices button[aria-pressed="true"]{border-color:#139c74;background:#0a9e77;color:white}
-.backgroundMode small{display:block;margin-top:6px;color:#67796e;font-size:11px}
-
+/* Small, optional photo entry before the four primary topics. */
+.photoQuickRow{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;min-width:0;
+  margin:0 0 10px;padding:3px 10px;border:1px solid #e1e8db;border-radius:12px;background:#f6faf3}
+.photoInclude{display:inline-flex;align-items:center;gap:6px;min-height:40px;flex:none;
+  color:#286553;font:750 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.photoInclude input{width:18px;height:18px;flex:none;margin:0;accent-color:#07976e;cursor:pointer}
+.photoQuickLink{display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;min-height:40px;
+  min-width:0;padding:4px 0;border:0;background:transparent;color:#117e5e;
+  text-align:left;text-decoration:underline;text-underline-offset:3px;font:750 12px/1.2 Arial,Helvetica,sans-serif}
+.photoQuickLink svg{flex:none}
+.photoQuickLink:disabled{opacity:.55;cursor:not-allowed}
 /* Local wishes: existing editor, no client upload. */
 .wishPanel{display:grid;gap:8px;margin:0 0 12px;padding:13px;border:1px solid #cce8d9;border-radius:16px;background:#f2faf4;color:#194b3d}
 .wishPanel>label{font-size:14px;font-weight:800}
@@ -221,8 +224,6 @@
 .heroBody p{max-width:78%;margin:1px 0 5px;font-size:13px;line-height:1.25;color:#f3f8ee;text-shadow:0 2px 9px #0a201c}
 .heroCreate{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:min(100%,445px);min-height:50px;padding:9px 14px;border:2px solid #a4d5b7;border-radius:15px;background:linear-gradient(100deg,#04966d,#1ec092);color:white;font-size:15px;font-weight:850;box-shadow:0 3px 0 rgba(8,49,31,.5),0 5px 20px rgba(0,0,0,.2)}
 .heroCreate:disabled{opacity:.6}
-.hero+.backgroundMode{margin:10px 0 5px}
-.backgroundMode{border-radius:13px}
 .templates{padding:13px 11px 12px;margin:9px 0 12px;border-radius:0 0 22px 22px;border-top:0}
 .templates .sectionHeading{margin-bottom:8px}
 .templateRail{grid-auto-columns:clamp(80px,24%,142px);gap:7px;padding:2px 2px 8px}
@@ -418,6 +419,12 @@
 .categoryRail button[data-tone="goals"]{background:#f5edff;border-color:#e2c8ef;color:#9252c0}
 .categoryRail button[data-tone="health"]{background:#eef7f1;border-color:#c9e1d8;color:#148a6a}
 .categoryRail button[aria-pressed="true"]{border:3px solid currentColor;padding:10px 3px 7px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 3px 11px rgba(41,83,63,.15)}
+.advancedQuickFilters{margin:11px 0 0;padding:5px 0 0;border-top:1px solid #e3e4d7}
+.advancedQuickFilters summary{display:flex;align-items:center;gap:7px;min-height:40px;
+  width:max-content;max-width:100%;cursor:pointer;color:#427263;
+  font:750 12px/1.25 Arial,Helvetica,sans-serif;list-style:revert}
+.advancedQuickFilters[open] summary{color:#087d5d}
+.advancedQuickFilters .catalogFilters{margin:6px 0 2px}
 .catalogFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}
 .catalogFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:54px;padding:7px 9px;border:1px solid #dedfd6;border-radius:13px;background:#fdfcf7;color:#23483a;font-weight:800;font-size:11px}
 .catalogFilters label>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -453,8 +460,6 @@
 .catalogShell .heroActions{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,.82fr);gap:7px;margin-top:8px}
 .catalogShell .heroCreate{display:flex;width:100%;min-width:0;min-height:49px;padding:7px 11px;margin:0;font-size:14px;border:2px solid #b5e9cb;border-radius:13px;box-shadow:0 3px 0 rgba(2,40,26,.4)}
 .catalogShell .heroMore{display:flex;align-items:center;justify-content:center;min-width:0;min-height:49px;padding:8px 7px;border:1px solid rgba(209,237,224,.75);border-radius:13px;background:rgba(6,38,31,.56);color:#fff;text-decoration:none;font-weight:750;font-size:13px}
-.catalogShell .hero+.backgroundMode{margin:11px 0 10px}
-.catalogShell .backgroundMode{background:rgba(253,252,245,.9)}
 .catalogShell .templates{margin:10px 0 0;padding:12px 8px 4px;border:0;border-top:1px solid #e3e4d7;border-radius:0;background:transparent;box-shadow:none}
 .catalogShell .templates .sectionHeading h3{font-size:16px}
 .catalogShell .templateRail{grid-auto-columns:clamp(88px,24%,165px);gap:8px;padding-bottom:4px}
@@ -482,7 +487,10 @@
   .catalogHeading p{font-size:10px}
   .catalogHeading button{font-size:10px}
   .categoryRail{gap:6px;padding-bottom:8px}
-  .categoryRail button{flex-basis:77px;min-height:71px;gap:5px;border-radius:12px;font-size:10px}
+  .categoryRail button{flex-basis:max(61px,calc((100% - 18px)/4));min-height:73px;gap:5px;border-radius:12px;font-size:10px}
+  .photoQuickRow{gap:4px 8px;padding:3px 7px}
+  .photoInclude{font-size:11px}
+  .photoQuickLink{font-size:11px}
   .categoryRail button svg{width:20px;height:20px}
   .catalogFilters{gap:4px;margin-bottom:9px}
   .catalogFilters label{min-height:49px;padding:6px 5px;border-radius:10px;font-size:10px}

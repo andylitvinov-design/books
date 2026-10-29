@@ -144,7 +144,7 @@ test("background-only reusable clip preserved from live without photo or payment
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
-  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
@@ -152,6 +152,6 @@ test("background-only reusable clip preserved from live without photo or payment
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio,/if \(!art\) return/);
   assert.match(browser,/holistic-house-money-background/);
-  for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
+  for(const label of ['"Use photo"','"С фото"','"Con foto"'])
     assert.ok(studio.includes(label),label);
 });
