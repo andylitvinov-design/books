@@ -28,6 +28,7 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
       NODE_ENV: test
       HH_APP_TEST_RUNTIME: isolated
       HH_APP_ENABLED: 'true'
@@ -46,10 +47,15 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs scripts/verify-intelligence-memory-http.mjs
       - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
+      - name: Install isolated Chromium
+        run: |
+          npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium
       - name: Verify authenticated feedback API with synthetic owners
         env:
           NODE_ENV: development
           HH_INTELLIGENCE_MEMORY_ENABLED: 'true'
+          HH_INTELLIGENCE_BROWSER_TOOLS: /tmp/hh-intelligence-browser
         run: |
           node node_modules/next/dist/bin/next dev --port 3187 > /tmp/hh-intelligence-memory-server.log 2>&1 &
           server_pid=$!
