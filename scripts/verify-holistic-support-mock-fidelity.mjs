@@ -49,6 +49,13 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
+          assert.equal(await root.locator('[data-support-quick-goal]').count(),5,label+" five optional goals");
+          assert.equal(await root.locator('[data-support-quick-goal][aria-pressed="true"]').count(),0,label+" no default goal");
+          assert.ok((await root.locator('[data-support-active-focus]').innerText()).includes(
+            locale==="ru"?"Выберите цель":locale==="es"?"Elige un objetivo":"Choose a goal"),
+            label+" no false initial Energy focus");
+          assert.equal(await root.locator('[data-support-quick-goal-result]').count(),0,
+            label+" no recommendation without choice");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four top check-ins; Goals is part of Meaning");
           assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
@@ -92,6 +99,7 @@ for (const browserType of [chromium, webkit]) {
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
+               goals:measure('[data-support-quick-goals]'),
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
               toolsSection:measure('#support-tools'),
@@ -129,6 +137,10 @@ for (const browserType of [chromium, webkit]) {
           }
           assert.equal(geometry.guide.length,0,
             label+" personalized dialogue must not appear before the visitor starts it");
+          assert.ok(geometry.goals.length===1 &&
+            geometry.goals[0].y>=geometry.a[0].bottom-2 &&
+            geometry.hero[0].y>=geometry.goals[0].bottom-2,
+            label+" goals appear after scales and before player");
           assert.ok(geometry.hero[0].y>=geometry.a[0].bottom-2,
             label+" unchanged four-score dashboard precedes the scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
@@ -156,6 +168,23 @@ for (const browserType of [chromium, webkit]) {
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
 
+          // Real goal selection must not mutate a neutral score or start a video.
+          await root.locator('[data-support-quick-goal="stress"]').click();
+          assert.equal(await root.locator('[data-support-quick-goal="stress"]').getAttribute("aria-pressed"),
+            "true",label+" stress selected explicitly");
+          assert.equal(await root.locator('[data-support-quick-goal][aria-pressed="true"]').count(),1,
+            label+" exactly one selected goal");
+          assert.equal(await root.locator('[data-support-quick-goal-action="stress"]').getAttribute("href"),
+            "/"+locale+"/courses/antistress",label+" canonical OPORA");
+          assert.equal(await root.locator('[data-support-scale="energy"] output').innerText(),
+            "5",label+" stress does not rewrite Energy");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
+          if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-quick-goal-390.png",fullPage:true});
+          await root.locator('[data-support-quick-goal-skip]').click();
+          assert.equal(await root.locator('[data-support-quick-goal][aria-pressed="true"]').count(),0,
+            label+" skip clears choice");
+          assert.equal(await root.locator('[data-support-quick-goal-result]').count(),0,
+            label+" no stale recommendation");
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
           await current.focus();
