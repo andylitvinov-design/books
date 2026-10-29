@@ -111,6 +111,37 @@ try {
     assert.equal(await studio.locator('#guided-video-series').isVisible(),true)
     await studio.close()
   } finally { await checkinPage.close() }
+  const racePage=await browser.newPage({viewport:{width:390,height:844}})
+  try {
+    await racePage.route('https://www.youtube.com/**',route=>route.abort())
+    await racePage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
+    await racePage.locator('[data-meditation-finder-toggle]').click()
+    const card=racePage.locator('[data-holistic-intelligence]')
+    await card.locator('select').selectOption('energy')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.locator('#hh-intelligence-format-meditation').selectOption('video')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.symbolic,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    await card.locator('#hh-checkin-before-meditation').fill('3')
+    await card.getByRole('button',{name:'Use this answer',exact:true}).click()
+    const link=card.getByRole('link').first();await link.waitFor({state:'visible',timeout:15000})
+    const previous=await link.getAttribute('href')
+    const popup=racePage.waitForEvent('popup');await link.click();await (await popup).close()
+    await card.locator('#hh-checkin-after-meditation').fill('5')
+    // Dispatch both actions in the same task while the comparison import is pending.
+    await card.evaluate(element=>{
+      const buttons=[...element.querySelectorAll('button')]
+      buttons.find(button=>button.textContent==='Use this answer').click()
+      buttons.find(button=>button.textContent==='Another option').click()
+    })
+    await racePage.waitForFunction(old=>{
+      const link=document.querySelector('[data-holistic-intelligence] a')
+      return link && link.getAttribute('href')!==old
+    },previous)
+    assert.equal(await card.getByText('Change in your self-report:',{exact:false}).count(),0,'previous measurement must not appear under the new recommendation')
+  } finally {await racePage.close()}
   const secularPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
     await secularPage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
