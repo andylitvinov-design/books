@@ -78,7 +78,7 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 });
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
-  assert.match(studio,/MandalaHypnoCompact locale=\{locale\} theme=\{theme\}/);
+  assert.match(studio,/<MandalaHypnoCompact key=\{theme\} locale=\{locale\} theme=\{theme\}/);
   assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   assert.match(studio,/caption,affirmations\]\)/);
