@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, MessageCircle, RotateCcw, Send, Sparkles, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
-import { applyAgentMemoryForTurn, approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memory-policy.mjs";
+import { applyAgentMemoryForTurn, approvedMemoryForLocalPrompt, proposeAgentMemoryPreference } from "@/lib/holistic-support/agent-memory-policy.mjs";
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
 import { HolisticAgentMemoryPanel, type MyAgentMemory } from "@/components/holistic-agent-memory-panel";
@@ -76,6 +76,9 @@ export function HolisticLanguageConversation({
   const [modelProgress,setModelProgress] = useState(0);
   const [generating,setGenerating] = useState(false);
   const [savedMemory,setSavedMemory] = useState<MyAgentMemory[]>([]);
+  const [memoryProposal,setMemoryProposal] = useState<{kind:string;value:string}|null>(null);
+  const [memoryNotice,setMemoryNotice] = useState("");
+  const [memorySaving,setMemorySaving] = useState(false);
   const [modelError,setModelError] = useState("");
   const modelWorker=useRef<Worker | null>(null);
   const requestCounter=useRef(0);
@@ -135,7 +138,7 @@ export function HolisticLanguageConversation({
     audioCounter.current+=1;
     setEntries([{role:"agent",text:t.first}]);
     setState(createLanguageSession({locale,seedTopic,enabledFormats}));
-    setDraft("");
+    setDraft("");setMemoryProposal(null);setMemoryNotice("");
   }
   function startModel() {
     if(!modelExperiment || !hasGpu || modelWorker.current) return;
@@ -194,6 +197,10 @@ export function HolisticLanguageConversation({
       currentMessage:value,decision:result,locale,memory:savedMemory,
     });
     setState(plainResult.state); // do not persist memory-derived state across opt-out
+    setMemoryNotice("");
+    setMemoryProposal(process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED==="true" &&
+      !["safety_handoff","safety_check_required","stopped"].includes(result.status)
+      ?proposeAgentMemoryPreference(value):null);
     setEntries(prev=>[...prev,
       {role:"visitor",text:value.slice(0,4000)},
       {role:"agent",text:result.text,suggestions:result.suggestions as Suggestion[],
@@ -240,6 +247,37 @@ export function HolisticLanguageConversation({
     }
   }
 
+  async function saveProposedMemory() {
+    if(!memoryProposal||memorySaving)return;
+    setMemorySaving(true);setMemoryNotice("");
+    try{
+      const response=await fetch("/api/app/agent-memory",{
+        method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"set",kind:memoryProposal.kind,value:memoryProposal.value}),
+      });
+      if(!response.ok){
+        setMemoryNotice(locale==="ru"?"Чтобы запомнить, войдите в кабинет и разрешите сохранение в панели памяти."
+          :locale==="es"?"Para recordar, inicia sesión y autoriza la memoria en el panel."
+          :"To save this, sign in and enable memory in the memory panel.");
+        return;
+      }
+      const next=await fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"});
+      if(next.ok) {
+        const data=await next.json() as {
+          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[]
+        };
+        setSavedMemory(data.consent===true && data.useInDialogue===true
+          ?approvedMemoryForLocalPrompt(data.items):[]);
+      }
+      setMemoryProposal(null);
+      setMemoryNotice(locale==="ru"?"Пожелание сохранено в профиле."
+        :locale==="es"?"Preferencia guardada en tu perfil.":"Preference saved in your profile.");
+    }catch{
+      setMemoryNotice(locale==="ru"?"Не удалось сохранить пожелание."
+        :locale==="es"?"No se pudo guardar.":"Could not save preference.");
+    }finally{setMemorySaving(false);}
+  }
   return <div className={styles.root} data-holistic-language-conversation>
     <p className={styles.intro}><MessageCircle size={18} aria-hidden="true"/>{t.subtitle}</p>
     <div className={styles.history} role="log" aria-live="polite" aria-relevant="additions" ref={threadRef}>
@@ -286,6 +324,18 @@ export function HolisticLanguageConversation({
         </button>
       </div>
     </form>
+    {memoryProposal ? <div className={styles.memoryRequest} data-memory-proposal>
+      <p>{locale==="ru"?"Вы хотите сохранить это пожелание?":locale==="es"?
+        "¿Quieres guardar esta preferencia?":"Save this preference?"}
+        <strong>{memoryProposal.kind}: {memoryProposal.value}</strong></p>
+      <div>
+        <button type="button" disabled={memorySaving} onClick={()=>void saveProposedMemory()}>
+          {locale==="ru"?"Запомнить":locale==="es"?"Guardar":"Remember"}</button>
+        <button type="button" onClick={()=>{setMemoryProposal(null);setMemoryNotice("");}}>
+          {locale==="ru"?"Не сохранять":locale==="es"?"No guardar":"Not now"}</button>
+      </div>
+    </div> : null}
+    {memoryNotice?<p role="status" className={styles.memoryNotice}>{memoryNotice}</p>:null}
     <HolisticAgentMemoryPanel locale={locale} onUse={rows=>{stopAnswer();setSavedMemory(rows);}}/>
     {modelExperiment ? <div className={styles.experiment} data-local-model-experiment>
       <p><Volume2 size={16} aria-hidden="true"/>{t.gpu}</p>
