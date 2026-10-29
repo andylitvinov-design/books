@@ -3,6 +3,8 @@
  * Each preview and exported video uses this identical renderer.
  * No stock portrait, AI upload, health inference, client storage, or cost.
  */
+import {ovalPortraitCrop,paintOvalPortrait} from "./portrait-oval";
+
 export type VideoTheme = "money" | "energy" | "life" | "health" | "relationships" | "goals";
 export type OtherTheme = Exclude<VideoTheme, "money">;
 export type LocalSceneId =
@@ -94,30 +96,26 @@ function heart(c:CanvasRenderingContext2D,x:number,y:number,size:number,opacity:
   c.closePath();
   c.strokeStyle="rgba(255,221,222,"+opacity+")";c.lineWidth=.047;c.stroke();c.restore();
 }
-function composePortrait(c:CanvasRenderingContext2D,image:HTMLImageElement|null,w:number,h:number,t:number) {
-  const fw=Math.min(w*.62,h*.72),fh=Math.min(h*.62,w*.78);
-  const x=w*.5-fw*.5,y=h*.50-fh*.5;
+function composePortrait(
+  c:CanvasRenderingContext2D,image:HTMLImageElement|null,
+  w:number,h:number,t:number,theme:OtherTheme,
+){
+  // Reuse one oval mask for recorded video, animated preview and film tiles.
+  // The original rectangular crop covered the subject with the headline.
+  const tone=theme==="relationships"?"rose":theme==="energy"?"mint":"gold";
+  if(paintOvalPortrait(c,image,w,h,tone))return;
+
+  // Without a visitor photo show a symbolic oval, never a stock person.
+  const {cx,cy,rx,ry}=ovalPortraitCrop(600,800,w,h);
   c.save();
-  c.shadowColor="rgba(254,224,170,.6)";c.shadowBlur=w*.035;
-  c.fillStyle="rgba(253,240,203,.15)";c.beginPath();c.roundRect(x-5,y-5,fw+10,fh+10,fw*.08);c.fill();
+  c.beginPath();c.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+  c.fillStyle="rgba(26,66,57,.34)";c.fill();
+  c.strokeStyle="rgba(255,231,192,.70)";c.lineWidth=3;c.stroke();
+  radiance(c,cx,cy,rx*1.3,"255,223,163",.32);
+  c.textAlign="center";c.font="bold "+Math.max(32,Math.min(72,w*.10))+"px Georgia,serif";
+  c.fillStyle="rgba(255,244,220,.85)";c.fillText("✧",cx,cy+12);
   c.restore();
-  c.save();c.beginPath();c.roundRect(x,y,fw,fh,fw*.07);c.clip();
-  if(image?.naturalWidth&&image.naturalHeight) {
-    const scale=Math.max(fw/image.naturalWidth,fh/image.naturalHeight);
-    const pw=image.naturalWidth*scale,ph=image.naturalHeight*scale;
-    c.drawImage(image,w*.5-pw*.5,h*.50-ph*.5,pw,ph);
-  } else {
-    const background=c.createLinearGradient(x,y,x+fw,y+fh);
-    background.addColorStop(0,"#364c53");background.addColorStop(1,"#7c7d80");
-    c.fillStyle=background;c.fillRect(x,y,fw,fh);
-    radiance(c,w*.5,h*.52,fw*.56,"255,223,163",.42);
-    c.textAlign="center";c.font="bold "+Math.max(36,w*.13)+"px Georgia,serif";
-    c.fillStyle="rgba(255,244,220,.85)";c.fillText("✧",w*.5,h*.55);
-  }
-  c.restore();
-  c.strokeStyle="rgba(255,237,203,.7)";c.lineWidth=2.5;
-  c.beginPath();c.roundRect(x,y,fw,fh,fw*.07);c.stroke();
-  radiance(c,w*.5,h*.17,w*.46,"255,234,184",.18+.03*Math.sin(t));
+  radiance(c,cx,h*.17,w*.4,"255,234,184",.18+.03*Math.sin(t));
 }
 export function paintThemedVideoFrame(
   c:CanvasRenderingContext2D,image:HTMLImageElement|null,
@@ -181,7 +179,7 @@ export function paintThemedVideoFrame(
       line(c,[cx,y,cx+side*w*(.22+Math.sin(t*.13+i)*.03),y-h*.13],"rgba(233,208,150,.65)",2.5);
     }
   }
-  composePortrait(c,image,w,h,t);
+  composePortrait(c,image,w,h,t,theme);
   // Foreground only outside the approximate central face zone.
   c.save();c.beginPath();c.rect(0,0,w,h);
   c.ellipse(cx,h*.38,w*.19,h*.13,0,0,TAU,true);c.clip("evenodd");
@@ -234,7 +232,7 @@ export function paintRealThemedVideoFrame(
   vignette.addColorStop(1, "rgba(5,19,23,.46)");
   c.fillStyle = vignette;
   c.fillRect(0, 0, w, h);
-  if (image) composePortrait(c, image, w, h, time);
+  composePortrait(c, image, w, h, time, theme);
   const bottom = c.createLinearGradient(0, h * .75, 0, h);
   bottom.addColorStop(0, "rgba(4,22,26,0)");
   bottom.addColorStop(1, "rgba(4,19,26,.74)");
