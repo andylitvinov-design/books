@@ -84,3 +84,13 @@ test('new mobile layout retains the advisor and a visible photo affordance',()=>
   assert.match(ui,/photoSaved/)
   assert.match(css,/\.photoPlaceholder strong \{ display: block;/)
 })
+
+test('invalid replacement clears an older pending photo and a saved photo stays discoverable',()=>{
+  const pending=support.slice(support.indexOf('const onPhoto = async'),support.indexOf('const savePhoto = async'))
+  assert.ok(pending.includes('setPhotoBlob(null);') && pending.indexOf('setPhotoBlob(null);')<pending.indexOf('prepareBrowserPhoto(file)'))
+  assert.ok(pending.includes('setPhotoUrl(null);') && pending.indexOf('setPhotoUrl(null);')<pending.indexOf('prepareBrowserPhoto(file)'))
+  const cabinetSelect=cabinet.slice(cabinet.indexOf('async function select'),cabinet.indexOf('async function save'))
+  assert.ok(cabinetSelect.includes('setBlob(null);setPreview(null)') &&
+    cabinetSelect.indexOf('setBlob(null);setPreview(null)')<cabinetSelect.indexOf('prepareBrowserPhoto(file)'))
+  assert.match(support,/\(photoSaved \|\| storedPhotoUrl\) && <Link href/)
+})

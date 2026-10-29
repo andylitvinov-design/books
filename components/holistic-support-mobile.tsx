@@ -505,6 +505,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     event.currentTarget.value = "";
     if (!file) return;
     const epoch = ++photoEpoch.current;
+    // Discard a previous unsaved choice before asynchronously decoding a replacement.
+    // An invalid HEIC/JPEG must never leave the OLD blob eligible for Save.
+    setPhotoBlob(null);
+    setPhotoUrl(null);
     setPhotoBusy(true);
     setPhotoError("");
     setPhotoSaved(false);
@@ -777,7 +781,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             </label>
             {photoBlob && <button type="button" className={styles.photoSave} disabled={photoBusy}
               data-support-photo-save onClick={() => { void savePhoto(); }}>{photoBusy ? t.photoSaving : t.photoSave}</button>}
-            {photoSaved && <Link href={"/" + locale + "/app/videos"} className={styles.photoSaved}
+            {(photoSaved || storedPhotoUrl) && <Link href={"/" + locale + "/app/videos"} className={styles.photoSaved}
               data-support-photo-saved>{t.photoSaved}</Link>}
             {photoSignIn && <Link href={"/" + locale + "/app"} className={styles.photoSaved} data-support-photo-signin>{t.photoSignIn}</Link>}
             <button type="button" className={styles.testsShortcut} data-support-tool="tests"

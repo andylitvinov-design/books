@@ -41,6 +41,8 @@ export default function SupportPhotoCabinet({locale='en'}){
     const file=event.currentTarget.files?.[0]
     event.currentTarget.value=''
     if(!file)return
+    // A failed replacement must not keep an older, unsaved image ready for Save.
+    setBlob(null);setPreview(null)
     setBusy(true);setNotice('');setError('')
     try{
       const result=await prepareBrowserPhoto(file)
