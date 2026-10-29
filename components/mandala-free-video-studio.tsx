@@ -6,11 +6,14 @@ import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart,
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
+import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
+import { cinematicPreviewSeconds } from "@/lib/mandala/cinematic-director.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -677,6 +680,62 @@ function paint(
   }
 }
 
+// A genuine local multi-shot film, drawn by the existing Canvas recorder.
+// The client's picture and detailed request are never uploaded to a provider.
+function paintCinematicFrame(
+  ctx: CanvasRenderingContext2D, image: HTMLImageElement | null,
+  effect: Effect,time:number,aspect:Aspect,moneyScene:MoneySceneId|null,caption:string,
+  theme:VideoTheme,otherScene:LocalSceneId,speed:Speed,brightness:Brightness,
+  realVideo:HTMLVideoElement|null,storyboard:CinematicStoryboard|null,
+) {
+  const filmSecond=storyboard?cinematicPreviewSeconds(storyboard,time):time;
+  const shot=storyboard?.shots.find(s=>filmSecond>=s.startSeconds &&
+    filmSecond<s.startSeconds+s.durationSeconds) || storyboard?.shots.at(-1);
+  if(!storyboard || !shot){
+    paint(ctx,image,effect,time,aspect,moneyScene,caption,theme,otherScene,
+      speed,brightness,realVideo);
+    return;
+  }
+  const localTime=Math.max(0,filmSecond-shot.startSeconds);
+  paint(ctx,image,effect,localTime,aspect,
+    shot.theme==="money"?shot.sceneId as MoneySceneId:null,
+    caption,shot.theme,shot.sceneId as LocalSceneId,speed,brightness,null);
+  // The visitor's visual-style filter changes actual local rendered frames,
+  // not merely the premium-provider storyboard text. All four looks use
+  // portable Canvas gradients, identical in preview and MediaRecorder.
+  const w=ctx.canvas.width,h=ctx.canvas.height;
+  ctx.save();
+  if(storyboard.styleId==="warm"){
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(246,181,80,.11)");
+    grade.addColorStop(1,"rgba(122,63,15,.08)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="nature"){
+    const grade=ctx.createLinearGradient(0,h,0,0);
+    grade.addColorStop(0,"rgba(17,112,62,.18)");
+    grade.addColorStop(1,"rgba(135,209,170,.07)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="dream"){
+    const grade=ctx.createRadialGradient(w*.53,h*.36,0,w*.53,h*.45,Math.max(w,h)*.76);
+    grade.addColorStop(0,"rgba(211,171,255,.17)");
+    grade.addColorStop(.65,"rgba(91,87,172,.14)");
+    grade.addColorStop(1,"rgba(27,29,67,.20)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="minimal"){
+    ctx.fillStyle="rgba(224,221,202,.16)";
+    ctx.fillRect(0,0,w,h);
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(252,245,220,.04)");
+    grade.addColorStop(1,"rgba(5,24,24,.14)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }
+  ctx.restore();
+  const edge=Math.min(localTime,Math.max(0,shot.durationSeconds-localTime));
+  if(edge<.35){
+    ctx.fillStyle="rgba(17,36,30,"+(0.25*(1-edge/.35)).toFixed(3)+")";
+    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  }
+}
 function stopJob(job: Job, cancelled: boolean) {
   job.cancelled = cancelled;
   window.cancelAnimationFrame(job.animation);
@@ -847,6 +906,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [cinematicPlan,setCinematicPlan] = useState<CinematicStoryboard|null>(null);
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -867,7 +927,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
   const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
-  const activeFilm = activeMoneyFilm || activeThemedFilm;
+  const activeFilm = cinematicPlan ? null : activeMoneyFilm || activeThemedFilm;
   // These are the SAME original, source-backed scenes as the full gallery.
   // The compact Hypno video-design rail is a shortcut, not a second editor.
   const hypnoScenes = theme === "money"
@@ -889,7 +949,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations]);
+    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
+    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
