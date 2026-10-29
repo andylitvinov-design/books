@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const schema=src('supabase/migrations/20261029195501_hh_direct_message_push_claims.sql')
+const schema=src('supabase/migrations/20261029200428_hh_direct_message_push_claims_20261029.sql')
 const dispatch=src('lib/app/direct-message-push.js')
 const route=src('app/api/app/direct-messages/route.js')
 const cron=src('app/api/internal/direct-message-push/route.js')
