@@ -649,6 +649,97 @@ function stopJob(job: Job, cancelled: boolean) {
   job.musicSession?.close();
 }
 
+
+/** Six concise, first-party controls for the owner's approved cream/emerald
+ * mobile mock. Same state, films, native audio and MediaRecorder as below. */
+const quickVideoCopy = {
+  ru: {
+    title:"Создать видео",sub:"Персональное видео с нужной атмосферой, образами и звуком",
+    smart:"Умный подбор",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
+    wish:"Что я хочу получить или изменить?",image:"2. Моё изображение",
+    imageHelp:"Добавьте своё фото или выберите готовый сюжет (по желанию)",
+    pick:"Загрузить фото",scene:"Выбрать образ",photoOn:"Вставить моё фото в видео",
+    hypno:"3. Гипноаффирмации",hypnoHelp:"Короткие персональные фразы по теме и цели",
+    readyPhrases:"Готовые фразы",byTests:"По тестам",ownPhrases:"Свои фразы",
+    byTheme:"По теме",afterConsent:"Только с вашего согласия",write:"Написать вручную",
+    visual:"4. Визуальный стиль",visualHelp:"Выберите атмосферу и движение видео",
+    styles:["Природа","Золотой час","Сновидение","Минимализм","Поток воды","Свет и энергия"],
+    audio:"5. Аудио-трек",audioHelp:"Звуковое сопровождение для готового видео",
+    nature:"Природа",tones:"Медитация",pulse:"Ритм",all:"Все",
+    attach:"Прикрепить",attached:"В видео",silent:"Без звука",voice:"Голос и свой трек",
+    preview:"Прослушать выбранный трек",edit:"Изменить",montage:"6. Монтаж и формат",
+    montageHelp:"Продолжительность, надписи и размер видео",
+    format:"Формат",length:"Длительность",text:"Текст в видео",
+    large:"Крупный",small:"Мелкий",brief:"Краткий кадр",
+    experimental:"Краткие кадры — экспериментальная функция, эффект на убеждения не доказан.",
+    seconds:"с",create:"Создать видео бесплатно",creating:"Создаём видео…",
+    noAI:"Бесплатно · на устройстве · без платных AI-рендеров",
+    more:"Расширенный редактор, подробные фильтры и предпросмотр",
+    therapy:"Создать персональную программу видеотерапии",
+    loading:"Подготавливаем видеокадры. После загрузки нажмите ещё раз.",
+    disclaimer:"Практика для рефлексии, не медицинское лечение.",
+    sceneHint:"Обложки показывают сюжет; кадр видео формируется выбранным шаблоном.",
+  },
+  en: {
+    title:"Create video",sub:"Personal video with the right atmosphere, imagery and sound",
+    smart:"Smart match",theme:"1. Theme & goal",myGoals:"Choose from my goals",
+    wish:"What would I like to gain or change?",image:"2. My imagery",
+    imageHelp:"Add your photo or pick a ready-made scene (optional)",
+    pick:"Upload photo",scene:"Choose imagery",photoOn:"Include my photo in video",
+    hypno:"3. Hypnoaffirmations",hypnoHelp:"Short personal phrases based on your goal",
+    readyPhrases:"Ready phrases",byTests:"From tests",ownPhrases:"My phrases",
+    byTheme:"Theme & goal",afterConsent:"Only with your consent",write:"Write myself",
+    visual:"4. Visual style",visualHelp:"Choose the look and motion of your video",
+    styles:["Nature","Golden hour","Dream","Minimal","Water flow","Light & energy"],
+    audio:"5. Audio track",audioHelp:"Choose a soundtrack for your video",
+    nature:"Nature",tones:"Meditation",pulse:"Rhythm",all:"All",
+    attach:"Attach to video",attached:"In video",silent:"Silent",voice:"Voice / my track",
+    preview:"Listen to selected track",edit:"Edit",montage:"6. Editing & format",
+    montageHelp:"Duration, text and video dimensions",
+    format:"Format",length:"Duration",text:"On-screen text",
+    large:"Large",small:"Small",brief:"Brief frame",
+    experimental:"Brief frames are experimental; belief-change claims are unproven.",
+    seconds:"s",create:"Create free video",creating:"Recording video…",
+    noAI:"Free · on device · no paid AI renders",
+    more:"Advanced editor, detailed filters and video preview",
+    therapy:"Create a personal video therapy programme",
+    loading:"Preparing video frames. Tap again after they load.",
+    disclaimer:"A reflective practice, not medical treatment.",
+    sceneHint:"Scene covers are illustrative; the selected renderer produces the actual frames.",
+  },
+  es: {
+    title:"Crear vídeo",sub:"Vídeo personal con imágenes, ambiente y sonido adecuados",
+    smart:"Selección inteligente",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
+    wish:"¿Qué me gustaría conseguir o cambiar?",image:"2. Mis imágenes",
+    imageHelp:"Añade tu foto o elige una escena (opcional)",
+    pick:"Subir foto",scene:"Elegir imagen",photoOn:"Incluir mi foto en el vídeo",
+    hypno:"3. Hipnoafirmaciones",hypnoHelp:"Frases breves según tu tema y objetivo",
+    readyPhrases:"Frases listas",byTests:"Por tests",ownPhrases:"Mis frases",
+    byTheme:"Según el tema",afterConsent:"Solo con consentimiento",write:"Escribir mis frases",
+    visual:"4. Estilo visual",visualHelp:"Elige la atmósfera y el movimiento",
+    styles:["Naturaleza","Hora dorada","Sueño","Minimalista","Agua","Luz y energía"],
+    audio:"5. Audio",audioHelp:"Música de fondo para tu vídeo",
+    nature:"Naturaleza",tones:"Meditación",pulse:"Ritmo",all:"Todos",
+    attach:"Añadir al vídeo",attached:"En vídeo",silent:"Silencio",voice:"Voz / mi pista",
+    preview:"Escuchar pista elegida",edit:"Editar",montage:"6. Montaje y formato",
+    montageHelp:"Duración, frases y formato",
+    format:"Formato",length:"Duración",text:"Texto en vídeo",
+    large:"Grande",small:"Pequeño",brief:"Fotograma breve",
+    experimental:"Los fotogramas breves son experimentales; no hay evidencia de cambio de creencias.",
+    seconds:"s",create:"Crear vídeo gratis",creating:"Grabando vídeo…",
+    noAI:"Gratis · en tu dispositivo · sin IA de pago",
+    more:"Editor avanzado, filtros y vista previa",
+    therapy:"Crear un programa personal de videoterapia",
+    loading:"Preparando fotogramas. Toca de nuevo cuando estén listos.",
+    disclaimer:"Práctica reflexiva, no tratamiento médico.",
+    sceneHint:"Las portadas ilustran el tema; el vídeo utiliza el motor real elegido.",
+  },
+} as const;
+const quickStylePosters = [
+  "mountain-air","golden-harvest","desert-light","morning-dew","gentle-falls","solar-surge",
+] as const;
+const quickThemeOrder: VideoTheme[] = ["energy","money","relationships","goals","life","health"];
+
 export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
   onPickPhoto: () => void; photoError?: string;
@@ -658,6 +749,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioUi = audioCopy[locale];
   const supportUi = supportDesignCopy[locale];
   const layout = layoutCopy[locale];
+  const quick = quickVideoCopy[locale];
+  const [quickStyleIndex,setQuickStyleIndex] = useState(0);
+  const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -672,7 +766,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
   const [quality, setQuality] = useState<Quality>("hd");
-  const [duration, setDuration] = useState<(typeof durations)[number]>(20);
+  const [duration, setDuration] = useState<(typeof durations)[number]>(30);
   const [speed,setSpeed] = useState<Speed>("slow");
   const [brightness,setBrightness] = useState<Brightness>("soft");
   const [music,setMusic] = useState<AmbientMusic>("none");
@@ -1207,6 +1301,37 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setTherapyJumpRequested(false);
   },[studioMode,therapyJumpRequested]);
 
+
+  const quickPickStyle = (index:number) => {
+    if(recording||preparing)return;
+    setQuickStyleIndex(index);
+    setBrightness(index===1||index===5?"bright":"soft");
+    setSpeed(index===2||index===5?"dynamic":"slow");
+    const scene = activeTemplates[index % activeTemplates.length];
+    if(!scene)return;
+    if(theme==="money")setMoneyScene(scene.id as MoneySceneId);
+    else setOtherScene(scene.id as LocalSceneId);
+    setSuggestion("");
+    setPreviewPlaying(false);
+  };
+  const openQuickDetailed = (anchor:string) => {
+    setQuickDetailedOpen(true);
+    window.setTimeout(()=>{
+      document.getElementById(anchor)?.scrollIntoView({
+        behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+        block:"start",
+      });
+    },80);
+  };
+  const createQuickVideo = () => {
+    if(activeFilm&&!premiumReady){
+      primeNativeMasterFromUserGesture();
+      setNotice(quick.loading);
+      return;
+    }
+    startFromHero();
+  };
+
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
@@ -1226,6 +1351,244 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       /> : null}
 
 
+
+      <section className={videoStyles.quickBuilder} data-video-quick-builder
+        aria-labelledby="video-quick-heading">
+        <header className={videoStyles.quickHeader}>
+          <div><h2 id="video-quick-heading">{quick.title}</h2><p>{quick.sub}</p></div>
+          <button type="button" data-video-quick-smart disabled={recording||preparing}
+            onClick={()=>{setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);
+              suggestScene();}}>
+            <Sparkles size={18} aria-hidden="true"/>{quick.smart}
+          </button>
+        </header>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="1"
+          aria-labelledby="quick-theme-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{quick.theme}</h3>
+            <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
+          </div>
+          <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
+            {quickThemeOrder.map((value,index)=>{
+              const Icon=[Zap,Coins,Heart,Target,Sprout,HeartPulse][index];
+              return <button key={value} type="button" data-video-quick-theme={value}
+                data-tone={value} aria-pressed={theme===value} disabled={recording||preparing}
+                onClick={()=>{setQuickStyleIndex(0);selectCategory(value);}}>
+                <Icon size={18} aria-hidden="true"/><span>{ui.themes[value]}</span>
+              </button>;
+            })}
+          </div>
+          <label className={videoStyles.quickWish}>
+            <span className={videoStyles.srOnly}>{quick.wish}</span>
+            <Target size={18} aria-hidden="true"/>
+            <input data-video-quick-wish type="text" maxLength={160} value={wish}
+              disabled={recording||preparing} placeholder={quick.wish}
+              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}}/>
+          </label>
+        </section>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="2"
+          aria-labelledby="quick-image-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{quick.image}</h3>
+              <p>{quick.imageHelp}</p></div>
+            <button type="button" onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}
+              disabled={recording||preparing} className={videoStyles.quickEdit}>
+              <Camera size={15} aria-hidden="true"/>{quick.pick}
+            </button>
+          </div>
+          <div className={videoStyles.quickImageRail}>
+            <button type="button" className={videoStyles.quickImageUpload} data-video-quick-photo
+              disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+              {photoUrl ? <>
+                {/* Only user-owned local Blob, never submitted to AI or CRM. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photoUrl} alt="" draggable={false}/>
+              </> : <><Camera size={24} aria-hidden="true"/><span>{quick.pick}</span></>}
+            </button>
+            {activeTemplates.slice(0,5).map(scene=>{
+              const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
+              const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
+                getThemedRealFilm(theme,scene.id as LocalSceneId)?.poster||
+                "/videos/holistic-house/film-collection-v2/mountain-air.jpg";
+              return <button key={scene.id} type="button" className={videoStyles.quickImageTile}
+                data-video-quick-scene={scene.id} aria-pressed={current} disabled={recording||preparing}
+                aria-label={quick.scene+": "+(theme==="money"?
+                  moneyTemplateLabels[scene.id as MoneySceneId]?.[locale]||scene.label[locale]:scene.label[locale])}
+                onClick={()=>{setSuggestion("");setPreviewPlaying(false);
+                  if(theme==="money")setMoneyScene(scene.id as MoneySceneId);
+                  else setOtherScene(scene.id as LocalSceneId);}}>
+                {/* Source-backed original scene posters, not user portraits. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={poster} alt="" loading="lazy"/>
+                {current?<span className={videoStyles.quickTick}><Check size={14} aria-hidden="true"/></span>:null}
+              </button>;
+            })}
+          </div>
+          <label className={videoStyles.quickPhotoSwitch}>
+            <input type="checkbox" data-video-quick-photo-enabled checked={!backgroundOnly}
+              disabled={recording||preparing} onChange={event=>{
+                const enabled=event.currentTarget.checked;
+                setBackgroundOnly(!enabled);
+                if(enabled&&!photoUrl)onPickPhoto();
+              }}/><span>{quick.photoOn}</span>
+          </label>
+          {photoUrl&&!backgroundOnly?<label className={videoStyles.quickPhotoSwitch}>
+            <input type="checkbox" data-video-photo-consent checked={photoConsent}
+              disabled={recording||preparing} onChange={event=>{
+                setPhotoConsent(event.currentTarget.checked);
+                if(event.currentTarget.checked)primeNativeMasterFromUserGesture();
+              }}/><span>{ui.consent}</span>
+          </label>:null}
+          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
+        </section>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="3"
+          aria-labelledby="quick-hypno-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-hypno-title"><Sparkles size={21} aria-hidden="true"/>{quick.hypno}</h3>
+              <p>{quick.hypnoHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={()=>openQuickDetailed("video-hypnosis")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickHypnoOptions}>
+            <button type="button" data-video-quick-phrases="ready" aria-pressed={affirmations.enabled}
+              disabled={recording||preparing}
+              onClick={()=>setAffirmations(previous=>({...previous,enabled:!previous.enabled,
+                selected:previous.selected.length?previous.selected:[0,1,2]}))}>
+              <Sparkles size={23} aria-hidden="true"/><strong>{quick.readyPhrases}</strong><small>{quick.byTheme}</small>
+            </button>
+            <button type="button" data-video-quick-phrases="tests"
+              onClick={()=>openQuickDetailed("video-hypnosis")}>
+              <BarChart3 size={23} aria-hidden="true"/><strong>{quick.byTests}</strong><small>{quick.afterConsent}</small>
+            </button>
+            <button type="button" data-video-quick-phrases="own"
+              onClick={()=>openQuickDetailed("video-hypnosis")}>
+              <SlidersHorizontal size={23} aria-hidden="true"/><strong>{quick.ownPhrases}</strong><small>{quick.write}</small>
+            </button>
+          </div>
+        </section>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="4"
+          aria-labelledby="quick-visual-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{quick.visual}</h3>
+              <p>{quick.visualHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={()=>openQuickDetailed("video-templates")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
+            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
+              data-video-quick-style={index} aria-pressed={quickStyleIndex===index}
+              disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
+              {/* Curated first-party film artwork; no remote image requests. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={"/videos/holistic-house/film-collection-v2/"+poster+".jpg"}
+                loading="lazy" alt=""/>
+              <span>{quick.styles[index]}</span>
+            </button>)}
+          </div>
+          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
+        </section>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="5"
+          aria-labelledby="quick-audio-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-audio-title"><Music2 size={21} aria-hidden="true"/>{quick.audio}</h3>
+              <p>{quick.audioHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={()=>openQuickDetailed("video-audio")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickAudioFilters} role="group" aria-label={quick.audio}>
+            {([["nature",quick.nature],["tones",quick.tones],["pulse",quick.pulse],["all",quick.all]] as const)
+              .map(([id,label])=><button type="button" key={id}
+                aria-pressed={audioKind===id} disabled={recording||preparing}
+                onClick={()=>{setAudioKind(id);setAudioAuto(true);}}>{label}</button>)}
+          </div>
+          <div className={videoStyles.quickAudioItem}>
+            {/* No invented field recordings: audio files are first-party synthesized WAV. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/videos/holistic-house/film-collection-v2/ocean-pulse.jpg"
+              alt="" loading="lazy"/>
+            <div><strong>{uploadedAudio?.file.name||selectedAudio?.name[locale]||
+              mandalaAudioTracks.find(item=>item.id===recommendedAudioId)?.name[locale]||quick.silent}</strong>
+              <small>{uploadedAudio?quick.voice:(selectedAudio||recommendedAudioId)?
+                (selectedAudio?.detail[locale]||quick.audioHelp):quick.silent}</small></div>
+            <button type="button" className={videoStyles.quickAttach}
+              data-video-quick-attach disabled={recording||preparing||Boolean(uploadedAudio)}
+              onClick={()=>{setAudioAuto(false);chooseMusic(recommendedAudioId||"ocean");}}>
+              {music!=="none"||uploadedAudio?<Check size={16} aria-hidden="true"/>:
+                <Play size={16} fill="currentColor" aria-hidden="true"/>}
+              <span>{music!=="none"||uploadedAudio?quick.attached:quick.attach}</span>
+            </button>
+          </div>
+          <audio className={videoStyles.quickAudioPlayer} controls preload="none"
+            src={previewAudioUrl||"/audio/mandala/ocean.wav"}
+            aria-label={quick.preview}/>
+          <div className={videoStyles.quickAudioFooter}>
+            <button type="button" disabled={recording||preparing} onClick={()=>{setAudioAuto(false);chooseMusic("none");}}>{quick.silent}</button>
+            <button type="button" onClick={()=>openQuickDetailed("video-audio")}>{quick.voice}<ArrowRight size={15} aria-hidden="true"/></button>
+          </div>
+        </section>
+
+        <section className={videoStyles.quickSection} data-video-quick-section="6"
+          aria-labelledby="quick-format-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-format-title"><SlidersHorizontal size={21} aria-hidden="true"/>{quick.montage}</h3>
+              <p>{quick.montageHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={()=>openQuickDetailed("video-settings")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickMontageGrid}>
+            <fieldset><legend>{quick.format}</legend><div>
+              {(["portrait","landscape","square"] as const).map((value,index)=>
+                <button type="button" key={value} data-video-quick-aspect={value}
+                  disabled={recording||preparing} aria-pressed={aspect===value}
+                  onClick={()=>setAspect(value)}>{["9:16","16:9","1:1"][index]}</button>)}
+            </div></fieldset>
+            <fieldset><legend>{quick.length}</legend><div>
+              {durations.map(value=><button type="button" key={value}
+                data-video-quick-duration={value} disabled={recording||preparing}
+                aria-pressed={duration===value} onClick={()=>setDuration(value)}>
+                {value}{quick.seconds}</button>)}
+            </div></fieldset>
+            <fieldset className={videoStyles.quickMontageText}><legend>{quick.text}</legend><div>
+              {(["large","small","frame"] as const).map((value,index)=>
+                <button type="button" key={value} data-video-quick-text={value}
+                  disabled={recording||preparing} aria-pressed={affirmations.visibility.includes(value)}
+                  onClick={()=>setAffirmations(previous=>{
+                    const visibility=previous.visibility.includes(value)?
+                      previous.visibility.filter(v=>v!==value):[...previous.visibility,value];
+                    return {...previous,visibility,enabled:visibility.length>0};
+                  })}>{[quick.large,quick.small,quick.brief][index]}</button>)}
+            </div></fieldset>
+          </div>
+          {affirmations.visibility.includes("frame")?<small className={videoStyles.quickHint}>{quick.experimental}</small>:null}
+        </section>
+
+        {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
+        <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
+          disabled={recording||preparing} onClick={createQuickVideo}>
+          {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
+          {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
+        </button>
+        {recording?<div className={videoStyles.quickProgress} role="progressbar"
+          aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+          <span style={{width:progress+"%"}}/></div>:null}
+        {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
+        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
+        <button type="button" className={videoStyles.quickTherapy}
+          data-video-quick-therapy disabled={recording||preparing}
+          onClick={()=>{setStudioMode("therapy");setQuickDetailedOpen(true);
+            setTherapyJumpRequested(true);}}>
+          <HandHeart size={18} aria-hidden="true"/>{quick.therapy}
+        </button>
+      </section>
+
+      <details className={videoStyles.quickLegacy} data-video-quick-legacy
+        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
+        <summary><SlidersHorizontal size={18} aria-hidden="true"/>{quick.more}</summary>
       <nav className={videoStyles.dailyPicks} data-video-daily-picks
         aria-label={locale==="ru"?"Рекомендации на сегодня":locale==="es"?"Recomendaciones de hoy":"Recommendations for today"}>
         <strong>Picks of the Day</strong>
@@ -1831,17 +2194,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section>
       </details>
-      {photoUrl && !backgroundOnly ? (
-        <label className={videoStyles.consent}>
-          <input type="checkbox" data-video-photo-consent checked={photoConsent}
-            disabled={recording||preparing} onChange={event=>{
-              const approved=event.target.checked;
-              setPhotoConsent(approved);
-              if(approved)primeNativeMasterFromUserGesture();
-            }}/>
-          <span>{ui.consent}</span>
-        </label>
-      ) : null}
       {photoUrl&&!backgroundOnly&&!photoConsent?<p role="status" className={videoStyles.warning}>{ui.consentHelp}</p>:null}
 
       {recording ? (
@@ -1864,7 +2216,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
-      <section className={videoStyles.result} id="personal-video-result" data-video-result>
+      </details>
+      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}>
         <h3>{ui.videoPreview}</h3>
         {result ? (
           <>
