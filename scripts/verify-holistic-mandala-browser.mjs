@@ -179,11 +179,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-meditation-attention]").selectOption("external");
         await page.locator("[data-meditation-depth]").selectOption("reflective");
         await page.locator("[data-meditation-ending]").selectOption("small-step");
+        await page.locator("[data-meditation-topic]").selectOption("money");
+        await page.locator("[data-meditation-moment]").selectOption("evening");
         await page.locator('[data-meditation-accent="clarity"]').click();
         assert.equal(await page.locator('[data-meditation-accent="clarity"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-meditation-generate]").click();
-        assert.notEqual(await page.locator("[data-meditation-script]").inputValue(),firstMeditation,
+        const refinedMeditation=await page.locator("[data-meditation-script]").inputValue();
+        assert.notEqual(refinedMeditation,firstMeditation,
           "selected emphasis must change the generated script");
+        assert.ok(refinedMeditation.includes({en:"As the day settles",ru:"Когда день подходит к концу",es:"Al terminar el día"}[locale]),
+          "time-of-day filter must change real guidance");
+        assert.ok(refinedMeditation.includes({en:"work and money",ru:"работа и деньги",es:"trabajo y dinero"}[locale]),
+          "meditation topic override must change the text");
         await therapyButton.click();
         await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
