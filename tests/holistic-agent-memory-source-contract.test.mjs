@@ -40,3 +40,12 @@ test("local worker has no remote inference call or tool execution",()=>{
  assert.match(model,/browser-local|in-browser|on-device/i);
  assert.doesNotMatch(model,/OPENAI_API_KEY|ANTHROPIC_API_KEY|service_role|supabase\.from\(/u);
 });
+
+test("separate use-in-dialogue permission is durable and never implicit",()=>{
+ assert.match(sql,/use_in_dialogue boolean not null default false/u);
+ assert.match(store,/configureOwnAgentMemoryUse/u);
+ assert.match(store,/accepted=true returning use_in_dialogue/u);
+ assert.match(route,/body\.action==="use"/u);
+ assert.match(route,/body\.enabled/u);
+ assert.match(store,/useInDialogue:/u);
+});
