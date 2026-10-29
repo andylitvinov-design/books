@@ -486,6 +486,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           const link=page.locator('[data-video-editor-tab="'+tab+'"]');
           assert.equal(await link.getAttribute("href"),"#"+id);
           await link.click();
+          // The approved six-panel editor keeps legacy tools in a collapsed
+          // disclosure. These links must reveal the actual tool, not only
+          // update the URL hash while the target remains hidden.
+          await page.waitForFunction(() => document.querySelector('[data-video-quick-legacy]')?.open === true,
+            undefined,{timeout:8000});
           await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
           await page.waitForFunction(target=>{
             const rect=document.getElementById(target)?.getBoundingClientRect();
