@@ -47,6 +47,8 @@ jobs:
           # Full baseline syntax/expression audit: historical shell warnings are
           # inventoried separately; changed workflows still get strict shellcheck.
           actionlint -shellcheck= -color "${files[@]}"
+      - name: Regression checks for dynamic route filters and CI event scope
+        run: node --test tests/ci-workflow-globs.test.mjs
       - name: Validate all exact changed workflow definitions
         shell: bash
         env:
