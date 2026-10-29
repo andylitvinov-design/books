@@ -125,3 +125,10 @@ test('practitioner client inbox is unified without revealing owner-only CRM',()=
  assert.match(ui,/<DirectMessageInbox key=\{accountId/)
  assert.match(ui,/<PracticeRequestConversation key=\{selected.id\} inline autoOpen/)
 })
+
+test('direct messenger remains available when the optional request directory is down',()=>{
+ const hub=source('components/app/messages-hub.jsx')
+ assert.match(hub,/if\(embedded\)return <div className=\{styles.hub\} data-member-direct-fallback>/)
+ assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
+ assert.match(hub,/!loading&&!unauthenticated&&!bootstrapSignInRequired/)
+})
