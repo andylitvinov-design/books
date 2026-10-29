@@ -22,9 +22,13 @@ async function context(request,write=false){
   else requestOrigin(request,config)
   const auth=createRequestAuth(request,config)
   const actor=await auth.verified()
-  // Enforce active session and active account in the existing RLS-scoped
-  // application transaction before using privileged storage access.
-  await transaction(config,actor,async db=>db.query('select 1'))
+  // The transaction verifies the live auth session; explicitly require
+  // an active application account BEFORE the privileged private-storage client
+  // is created. A bare SELECT 1 cannot check account status.
+  await transaction(config,actor,async db=>{
+    const {rows}=await db.query('select app_private.account_active() as active')
+    if(rows[0]?.active!==true)throw new AppError('ACCOUNT_UNAVAILABLE',403)
+  })
   if(!config.secretKey)throw new AppError('MEDIA_STORAGE_NOT_CONFIGURED',503)
   return {config,auth,actor,storage:createPrivateStorageClient(config).storage.from(BUCKET)}
 }
