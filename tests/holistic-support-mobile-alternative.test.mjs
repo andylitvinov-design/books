@@ -271,6 +271,7 @@ test("all support modes share scenic hero → actual miniature choices without f
 
 test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, not duplicated video manifests", () => {
   const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const greekSource = read("data/academy/greek-video-series.ts");
   const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
   const count = new Map([
     ["videos/maya-archetypes", 6],
@@ -293,7 +294,7 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
     assert.equal(lessons.length, expected, id);
     assert.equal(new Set(lessons.map(entry => entry.videoId)).size, expected, "unique original lessons");
     assert.ok(lessons.every(entry => entry.status === "verified_legacy_public_embed"), id);
-    assert.ok(route.includes('"' + id + '"'), id + " links to original manifest");
+    assert.ok(route.includes('"' + id + '"') || greekSource.includes('"' + id + '"'), id + " links to original manifest");
   }
   assert.match(route, /findAcademyRecord\(entry\.programId, "ru"\)/);
   assert.match(route, /findAcademyRecord\(logicalId, "ru"\)/);
@@ -314,7 +315,7 @@ test("Russian course media picker returns in Courses while the four profiles liv
   assert.match(client, /data-support-active-course-link/);
   assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
-  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.seriesHref \?\? course\.href\} prefetch=\{false\} key=\{course\.id\}/);
   assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
   assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
   assert.match(courseProfiles, /src=\{course\.poster\}/);
@@ -370,10 +371,13 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
     assert.ok(gallery.includes(key + ":"), "real intent " + key);
     assert.ok(gallery.includes(method), "practice label " + method);
   }
-  for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
+  for (const title of ["Поддержка энергии", "Поддержка любви", "Поддержка цели", "Поддержка сознания"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /const supportedMethods = kind === "healing" && reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\] : null/);
+  assert.match(gallery, /const supportedMethods = kind !== "healing" \? null/);
+  assert.match(gallery, /reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\]/);
+  assert.doesNotMatch(gallery, /<small>\{option\.method\}<\/small>/);
+  assert.match(gallery, /<strong>\{option\.label\}<\/strong>/);
   assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
@@ -448,7 +452,11 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(gallery, /price > 100/);
   assert.match(gallery, /priceOptions: matchingPriceOptions/);
   assert.match(gallery, /REIKI_FREE_COURSE_PATH/);
-  assert.match(gallery, /free-initiation#initiation-choices/);
+  assert.match(gallery, /listPublicReikiAcademyOffers\(locale\)\.filter\(offer => offer\.kind === "initiation"\)/);
+  assert.match(gallery, /const selectedInitiation = reikiInitiations\.find\(offer => offer\.id === reikiInitiationId\) \|\| null/);
+  assert.match(gallery, /selectedInitiation\?\.href \|\| reikiInitiations\[0\]\?\.href/);
+  assert.match(gallery, /data-support-reiki-initiation-types/);
+  assert.doesNotMatch(gallery, /free-initiation#initiation-choices/);
   assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);

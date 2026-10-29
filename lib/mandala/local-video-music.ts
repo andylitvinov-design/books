@@ -4,6 +4,13 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation";
+/** Cacheable first-party files: Safari in-app browsers cannot reliably open
+ * synthetic blob: audio, even when WAV bytes are valid.
+ * HTTPS /audio/mandala/*.wav lets WebKit request the actual media using Range.
+ */
+export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
+  return "/audio/mandala/" + preset + ".wav";
+}
 export type AmbientSession = {
   track: MediaStreamTrack;
   close: () => void;
@@ -124,11 +131,12 @@ export async function startAmbientMusic(
 }
 
 
-/** Native HTML <audio> playback on iOS works even if Web Audio is silenced by
- * an in-app browser. These 8-second PCM waves are GENERATED ON THE DEVICE,
- * not pre-recorded songs and never sent to a service. */
+/** Audio export uses the same deterministic PCM bytes as the checked-in
+ * HTTPS WAV files. Do not use generated blob: URLs for iPhone preview:
+ * the original screenshot showed native media "Error" for that source.
+ */
 export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): Blob {
-  const sampleRate = 22050;
+  const sampleRate = 44100;
   const duration = 8;
   const length = sampleRate * duration;
   const bytes = new ArrayBuffer(44 + length * 2);

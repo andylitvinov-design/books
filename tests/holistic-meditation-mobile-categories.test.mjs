@@ -53,7 +53,7 @@ test("Compact 320–430px cards stay readable while retaining original playback,
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)/);
   assert.match(mobile, /youtube-nocookie\.com\/embed/);
   assert.match(mobile, /onClick=\{startVideo\}/);
-  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
+  assert.match(mobile, /const relevantVideos = choice === "pump" && program !== "all" \? catalogVideos : catalogVideos\.slice\(0, 4\)/);
   assert.doesNotMatch(mobile, /<audio|autoplay=\{true\}|localStorage|navigator\.sendBeacon|fetch\(/);
   const parsed = ts.transpileModule(mobile, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
