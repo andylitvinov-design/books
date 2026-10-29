@@ -14,15 +14,15 @@ type Props = { params: Promise<{ locale: string }> };
 const meta = {
   en: {
     title: "Free Personal Video Editor",
-    description: "Choose one of four themes, animated video templates, your own photo, format, music and caption. Create and download a real video locally for free.",
+    description: "Choose from six themes, preview your video mandala, then expand your personal photo, imagery, affirmations, audio and format settings. Create and download locally for free.",
   },
   ru: {
     title: "Бесплатный редактор личного видео",
-    description: "Четыре темы, анимированные видеошаблоны, ваше фото, формат, звуковой фон и подпись. Создайте и скачайте настоящее видео бесплатно.",
+    description: "Шесть тем, предпросмотр видео-мандалы и раскрывающиеся настройки: фото, визуальный стиль, гипноаффирмации, звук и формат. Создайте видео на своём устройстве бесплатно.",
   },
   es: {
     title: "Editor de vídeo personal gratis",
-    description: "Cuatro temas, plantillas animadas, tu foto, formatos, audio y subtítulos. Crea y guarda tu vídeo gratis y sin subir la foto.",
+    description: "Seis temas, mandala en vídeo y ajustes desplegables de foto, imágenes, afirmaciones, audio y formato. Crea y guarda el vídeo gratis en tu dispositivo.",
   },
 } as const;
 
