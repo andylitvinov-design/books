@@ -306,8 +306,17 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await formats.count(),9,label+" nine real recommendation formats");
           assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
             label+" all formats are checked by default");
-          await filter.locator('[data-support-goal-format="consultation"] input').uncheck();
-          await filter.locator('[data-support-goal-format="initiations"] input').uncheck();
+          // WebKit may commit a controlled React checkbox in a later frame.
+          // Click the real control and wait for the actual unchecked DOM state;
+          // never force-click or bypass the user's selection requirement.
+          await filter.locator('[data-support-goal-format="consultation"] input').click();
+          await page.waitForFunction(() =>
+            document.querySelector('[data-support-goal-format="consultation"] input')?.checked === false,
+            undefined, {timeout:6000});
+          await filter.locator('[data-support-goal-format="initiations"] input').click();
+          await page.waitForFunction(() =>
+            document.querySelector('[data-support-goal-format="initiations"] input')?.checked === false,
+            undefined, {timeout:6000});
           assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
             label+" visitor can remove unwanted consultation and initiation formats");
           // The third measure must finish BEFORE the buttons begin: no

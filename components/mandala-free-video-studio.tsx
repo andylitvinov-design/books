@@ -789,7 +789,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // and final recording. A muted video may play on iPhone without audio
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
-    setPremiumReady(false);
+    // Safari can fire canplay before this passive effect when a previously
+    // decoded same-origin MP4 is reused. Do not erase valid readiness.
+    const video = premiumVideoRef.current;
+    setPremiumReady(Boolean(video && video.readyState >= 2 && video.videoWidth > 0));
+    // Offscreen muted masters are sometimes left NETWORK_EMPTY by WebKit even
+    // with preload=auto. Explicitly request the real source; never fake ready.
+    if (video && video.networkState === video.NETWORK_EMPTY) video.load();
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
