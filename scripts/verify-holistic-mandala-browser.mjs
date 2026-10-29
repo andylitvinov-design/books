@@ -507,7 +507,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
-          await create.click();
+          // The approved compact green Create button must initiate a real
+          // MediaRecorder session, not just the legacy Generate control.
+          await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
           const filename = await videoLink.getAttribute("download");
