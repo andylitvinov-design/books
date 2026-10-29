@@ -483,3 +483,45 @@
 .page .libraryTile{color:var(--progress-ink)}
 .page .videoEmpty a,.page .mandalaEmpty a{color:#177c59}
 .page .identityCopy a{color:#107e61}
+
+/* The entire account history is organized by existing site rubrics. Each rail
+   is newest-first and scrolls horizontally toward older account records. */
+.topicNav{display:flex;align-items:center;gap:7px;margin:17px -4px 0;padding:3px 4px 8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.topicNav>span{flex:0 0 auto;font-size:11px;font-weight:780;color:#557568;text-transform:uppercase;letter-spacing:.08em;margin-right:3px}
+.page .topicNav button{flex:0 0 auto;white-space:nowrap;min-height:41px;padding:8px 12px;border-radius:999px;border:1px solid #d4e2d6;background:#fffdf8;color:#385f4b;font-size:12px;font-weight:740;cursor:pointer}
+.page .topicNav button[aria-pressed="true"]{background:#087e62;color:white;border-color:#087e62}
+.quickLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px}
+.page .quickLinks a{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:45px;padding:8px 9px;border-radius:14px;border:1px solid #d6e6d8;color:#225e48;background:#f0f7f0;font-size:11.5px;font-weight:780;text-decoration:none;line-height:1.2;text-align:center}
+.quickLinks a>svg{flex-shrink:0}
+.quickLinks a>svg:last-child{width:13px}
+.quickLinks a>span{overflow-wrap:anywhere;min-width:0}
+.rubricCollection{margin:22px 0 0;min-width:0}
+.rubricCollectionHead{display:flex;gap:10px;align-items:baseline;justify-content:space-between;margin:0 3px 9px}
+.page .rubricCollectionHead h2{font-size:clamp(21px,4.2vw,28px);color:#253e33;margin:0}
+.rubricCollectionHead small{color:#708276;font-size:11px}
+.rubricSection{min-width:0;margin:17px 0 0;scroll-margin-top:16px}
+.page .rubricSection .sectionHead{display:flex;align-items:center;margin:0;padding:0 3px 9px}
+.page .rubricSection h3{font-size:clamp(17px,3.6vw,21px);font-weight:800;color:#294437;margin:0}
+.rubricSection h3 small{font-size:11px;color:#7a887d;font-weight:680}
+.rubricRail{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(168px,23vw,225px);gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:1px 3px 11px;scrollbar-width:thin}
+.rubricRail>div{min-width:0;scroll-snap-align:start}
+.rubricCard{width:100%;min-width:0}
+.page .rubricCard a{display:flex;flex-direction:column;gap:5px;color:#293e32;text-decoration:none;min-width:0}
+.rubricCover{display:grid;place-items:center;position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:17px;color:#297e62;background:linear-gradient(126deg,#dcefe4,#f5eee1);border:1px solid #e6e8dd}
+.rubricCover[data-category="courses"]{background:linear-gradient(130deg,#d8eadd,#f7e8cb);color:#806036}
+.rubricCover[data-category="tests"]{background:linear-gradient(130deg,#e1eee6,#e5f4e7);color:#276a56}
+.rubricCover[data-category="practices"]{background:linear-gradient(130deg,#e5ede0,#eee4f4);color:#9070a4}
+.rubricCover[data-category="services"]{background:linear-gradient(130deg,#ece9db,#faf1e2);color:#96734b}
+.rubricCover[data-category="reports"],.rubricCover[data-category="notes"]{background:linear-gradient(130deg,#e3f0f1,#faf5ec);color:#557a79}
+.rubricCover>svg{width:34px;height:34px}
+.rubricOpen{display:grid;place-items:center;position:absolute;right:7px;bottom:7px;width:27px;height:27px;background:#fffdf3e8;border-radius:50%;color:#345b4a}
+.rubricCard strong{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-height:2.6em;font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.rubricCard small{display:flex;gap:5px;align-items:center;font-size:11px;color:#738175}
+.rubricCard small svg{flex:none}
+.rubricCard .status{align-self:flex-start;margin-top:2px}
+.topicEmpty{padding:15px;border:1px dashed #cbdaca;border-radius:14px;background:#fbf9f1;color:#607166;font-size:12px}
+.page .fullHistoryToggle{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;margin-bottom:9px;padding:12px 15px;border:1px solid #d5e3d7;border-radius:16px;background:#edf5ee;color:#285f46;font-size:13px;font-weight:800;cursor:pointer}
+.fullHistoryToggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+@media(max-width:750px){.quickLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.rubricRail{margin-right:-12px;padding-right:12px;grid-auto-columns:minmax(162px,48%)}} 
+@media(max-width:350px){.rubricCollectionHead{flex-wrap:wrap}.rubricRail{grid-auto-columns:minmax(158px,73%)}.quickLinks a{font-size:11px;padding:8px 6px}}
+@media(prefers-reduced-motion:reduce){.rubricRail{scroll-behavior:auto}.fullHistoryToggle svg{transition:none}}
