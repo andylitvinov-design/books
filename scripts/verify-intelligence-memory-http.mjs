@@ -73,6 +73,20 @@ try {
   assert.equal((await call('save',a,input)).status,200)
   assert.equal((await call('save',a,input)).status,200)
   assert.equal((await call('save',a,{...input,feedback:'useful'})).status,409)
+  const planBody={requestId:randomUUID(),surface:'cabinet',intent:{language:'en',audioLanguage:'en',selectedTopics:['energy'],formats:['video']},
+    symbolicInterest:'include',preflight:{immediateDanger:'no',selfHarmThoughts:'no'}}
+  async function plan(cookies,body){
+    const response=await fetch(`${origin}/api/app/intelligence/plan`,{method:'POST',headers:{origin,'content-type':'application/json',cookie:cookies},body:JSON.stringify(body)})
+    assert.equal(response.status,200);return response.json()
+  }
+  const offered=result=>[result.primary,...result.alternatives].filter(Boolean).map(row=>row.id)
+  const unfiltered=await plan(a,planBody)
+  assert.equal(offered(unfiltered).includes(input.itemId),true)
+  const filtered=await plan(a,{...planBody,feedbackHistory:'avoid_not_useful'})
+  const otherPlan=await plan(b,{...planBody,feedbackHistory:'avoid_not_useful'})
+  assert.equal(offered(filtered).includes(input.itemId),false)
+  assert.equal(offered(otherPlan).includes(input.itemId),true)
+  assert.equal(JSON.stringify(filtered).includes(input.operationId),false)
   assert.equal((await call('export',a)).body.records.some(row=>row.operationId===input.operationId),true)
   assert.equal((await call('export',b)).body.records.length,0)
   assert.equal((await call('delete',b,{operationId:input.operationId,expectedRevision:otherBefore.body.revision})).body.deleted,false)
@@ -80,5 +94,5 @@ try {
   assert.equal((await call('delete',a,{all:true,expectedRevision:before.body.revision})).body.deleted,true)
   assert.equal((await call('save',a,input)).status,409)
   assert.equal((await call('export',a)).body.records.length,0)
-  console.log(JSON.stringify({auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',revocation:'passed',cache:'passed'}))
+  console.log(JSON.stringify({auth:'synthetic-loopback-provider',database:'isolated-postgresql',owners:2,consent:'passed',isolation:'passed',feedbackAdjustment:'passed',revocation:'passed',cache:'passed'}))
 } finally {await closeDatabase();await new Promise(resolve=>provider.close(resolve))}
