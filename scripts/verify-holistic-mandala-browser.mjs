@@ -345,11 +345,30 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.
         // Wait for the actual master canplay event rather than testing a stale state.
-        await page.waitForFunction(() => {
-          const button=document.querySelector("[data-mandala-video-generate]");
-          const master=document.querySelector("[data-mandala-master-mp4]");
-          return Boolean(button && !button.disabled && master && master.readyState >= 2);
-        },undefined,{timeout:25000});
+        try {
+          await page.waitForFunction(() => {
+            const button=document.querySelector("[data-mandala-video-generate]");
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            return Boolean(button && !button.disabled && master && master.readyState >= 2 && master.videoWidth > 0);
+          },undefined,{timeout:25000});
+        } catch (error) {
+          // Do not waive actual H.264 decoding in WebKit. Preserve safe
+          // diagnostic states so the exact failing scene can be repaired.
+          const state=await page.evaluate(() => {
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            const button=document.querySelector("[data-mandala-video-generate]");
+            return {
+              source:master?.getAttribute("src") || null,
+              readyState:master?.readyState ?? null,
+              networkState:master?.networkState ?? null,
+              decodedWidth:master?.videoWidth ?? 0,
+              mediaError:master?.error?.code ?? null,
+              buttonDisabled:button?.disabled ?? null,
+              visibility:document.visibilityState,
+            };
+          });
+          throw new Error(engine+" "+locale+"/"+width+" real master MP4 did not decode: "+JSON.stringify(state)+"; "+String(error));
+        }
         assert.equal(await create.isEnabled(), true);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator("[data-video-extra-settings] > summary").click();

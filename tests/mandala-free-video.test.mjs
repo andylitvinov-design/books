@@ -156,3 +156,16 @@ test("background-only reusable clip is the default, with an explicit photo check
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
 });
+
+// Regress the real Safari/WebKit suspended-media recovery. It must never
+// turn a poster or unplayed MP4 into a fake successful video recording.
+test("HD master retries only undecoded idle media on user preview, retaining strict browser decode", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio, /video\.readyState < 2 &&[\s\S]*?video\.NETWORK_IDLE/);
+  assert.match(studio, /film\.readyState < 2 &&[\s\S]*?film\.NETWORK_IDLE/);
+  assert.match(studio, /onLoadedData=\{event=>\{if\(event\.currentTarget\.videoWidth>0\)setPremiumReady\(true\);\}\}/);
+  assert.match(studio, /if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
+  assert.match(browser, /master\.readyState >= 2 && master\.videoWidth > 0/);
+  assert.match(browser, /real master MP4 did not decode/);
+});

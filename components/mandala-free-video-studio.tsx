@@ -793,9 +793,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // decoded same-origin MP4 is reused. Do not erase valid readiness.
     const video = premiumVideoRef.current;
     setPremiumReady(Boolean(video && video.readyState >= 2 && video.videoWidth > 0));
-    // Offscreen muted masters are sometimes left NETWORK_EMPTY by WebKit even
-    // with preload=auto. Explicitly request the real source; never fake ready.
-    if (video && video.networkState === video.NETWORK_EMPTY) video.load();
+    // WebKit can suspend an invisible muted MP4 at NETWORK_IDLE without a
+    // decoded frame. Re-request only an undecoded, non-loading master; do
+    // not treat loaded metadata or a poster as an actual video frame.
+    if (video && video.readyState < 2 &&
+      (video.networkState === video.NETWORK_EMPTY || video.networkState === video.NETWORK_IDLE))
+      video.load();
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
@@ -1118,6 +1121,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const film = premiumVideoRef.current;
     if (film && activeFilm) {
       film.muted = true;
+      // A preview tap is a user gesture: retry a suspended WebKit master
+      // before asking it to play. The recorder still requires real decoded
+      // frames (readyState >= 2); no synthetic or poster fallback.
+      if (film.readyState < 2 &&
+        (film.networkState === film.NETWORK_EMPTY || film.networkState === film.NETWORK_IDLE))
+        film.load();
       void film.play().catch(() => {
         if (aliveRef.current) setNotice(ui.videoUnavailable);
       });
@@ -1147,7 +1156,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
         data-mandala-master-mp4={activeFilm.src}
-        onCanPlay={()=>setPremiumReady(true)}
+        onLoadedData={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
+        onCanPlay={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
         style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
