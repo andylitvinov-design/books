@@ -14,7 +14,7 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
        └─ Free conversation tab
             ├─ language-agent.mjs           [pure, deterministic RU/EN/ES]
             │   ├─ reviewed guide-dialogue safety resolver
-            │   ├─ session-local topic + format + negative constraints
+            │   ├─ session-local topic + format + negative constraints + actual compact/detailed/informal response style
             │   └─ validated approved video/test/audio catalog subset
             ├─ HolisticLanguageConversation [React, one mobile panel]
             │   ├─ bounded chat (ephemeral tab state only)
@@ -35,9 +35,9 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
 - `components/holistic-language-conversation.tsx`: opt-in free-text conversation within the existing guide, including stop/reset and optional WebGPU UI.
 - `components/holistic-language-conversation.module.css`: mobile accessible interface.
 - `public/holistic-mind/webllm-worker.mjs`: experimental browser-only WebLLM; no tokens or server inference.
-- `tests/holistic-language-agent.test.mjs`: multilingual, negative constraints, safety, approved-only behavior.
+- `tests/holistic-language-agent.test.mjs`: 29 multilingual, negative constraint, safety, dialogue-style and approved-only scenarios.
 - `lib/holistic-support/public-reiki-audio-client.{mjs,d.mts}`: locale- and theme-matched, source-validated public Reiki introduction audio only; no new media catalog.
-- `tests/holistic-reiki-audio-language-agent.test.mjs`: approved-only audio link and URL rejection.
+- `tests/holistic-reiki-audio-language-agent.test.mjs`: 4 approved-only audio, language, duration and URL rejection scenarios.
 
 ## Contract and precedence
 1. **Input safety**: bounded input length; fail-closed when long, urgent routing using the reviewed Home Guide preflight; no model rephrasing of urgent or long messages.
