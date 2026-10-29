@@ -11,6 +11,7 @@ const service=read('components/app/my-services-dashboard.jsx')
 const serviceCss=read('components/app/my-services-dashboard.module.css')
 const practice=read('components/app/practice-workspace.jsx')
 const account=read('components/app/app-workspace.jsx')
+const innerNav=read('components/app/practice-inner-navigation.jsx')
 
 test('Google login returns to the very same practitioner dashboard and identical five-tab menu',()=>{
  assert.match(callback,/continueTo === 'practice-preview'/)
@@ -70,6 +71,33 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.doesNotMatch(service,/fakePayment|new SupabaseClient|createServiceForGuest/)
 })
 
+test('web Google sign-in returns to original Practice, with editor only after explicit Continue',()=>{
+ assert.match(account,/const publicPracticeAction = proPanel === 'services'/)
+ assert.match(account,/native\s*\? \{ continueTo: 'my-practice'/)
+ assert.match(account,/continueTo: 'practice-preview', \.\.\.\(publicPracticeAction \?/)
+ assert.match(account,/\['diagnostic','energy','personal','reiki'\]\.includes\(proStarter\)/)
+ assert.match(account,/\['clients','requests','analytics','profile'\]\.includes\(proPanel\)/)
+ assert.match(front,/data-practice-after-google/)
+ assert.match(front,/onClick=\{continueAction\}/)
+ assert.doesNotMatch(front,/router\.replace\(destination\(locale, ready\)\)/)
+ assert.match(callback,/continueTo === 'practice-preview'/)
+ assert.match(callback,/'\?ready='\+encodeURIComponent\(profi\)/)
+})
+
+test('viewing an empty My Services does not open the wizard without an explicit create request',()=>{
+ assert.match(service,/const \[creating,setCreating\]=useState\(false\)/)
+ assert.doesNotMatch(service,/useState\(items\.length===0&&canAdd\)/)
+ assert.match(service,/if\(createRequest>0&&canAdd\)setCreating\(true\)/)
+ assert.match(service,/onClick=\{toggleComposer\}/)
+ assert.match(service,/items\.length===0&&!creating&&canAdd/)
+ assert.match(service,/renderEditor\(null,setCreateDirty,setMediaBusy\)/)
+ assert.match(innerNav,/data-practice-original-home-link/)
+ assert.match(innerNav,/showcaseStyles\.eyebrow/)
+ assert.match(innerNav,/href=\{'\/'\+locale\+'\/practice'\}/)
+ for(const label of ['Кабинет практика','Practitioner workspace','Espacio profesional'])
+   assert.ok(innerNav.includes(label),label)
+})
+
 test('strict OAuth whitelist remains server-side and preserves cancel-to-guest behavior',()=>{
  assert.match(callback,/validPracticeContinuation\(continueTo,profi\)/)
  assert.match(callback,/Object\.hasOwn\(PRACTICE_PREVIEW_ACTIONS,profi\)/)
@@ -86,6 +114,7 @@ test('strict OAuth whitelist remains server-side and preserves cancel-to-guest b
 test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>{
  for(const path of ['components/practice-showcase.jsx',
    'components/app/my-services-dashboard.jsx','components/app/practice-workspace.jsx',
+   'components/app/app-workspace.jsx','components/app/practice-inner-navigation.jsx',
    'app/api/app/[...path]/route.js']){
   const result=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
     compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}})
