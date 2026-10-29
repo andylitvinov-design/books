@@ -11,6 +11,16 @@ const body = { requestId: 'd4502108-a8b8-4d3b-813f-c255b452bde4', surface: 'cabi
 const videoBody = {...body,symbolicInterest:'include'};
 const loader = async () => ({ videos, publishedSourceIds: [sourceId] });
 
+test('audio without an approved playable source is clearly a no-match in each language', async () => {
+  for (const language of ['en','ru','es']) {
+    const result = await planIntelligenceRequest({...body,intent:{...intent,language,formats:['audio']}},{});
+    assert.equal(result.status,'no_match');
+    assert.equal(result.primary,undefined);
+    assert.match(result.explanation, language==='en' ? /no .*audio/i : language==='ru' ? /аудио/i : /audio/i);
+    assert.notEqual(result.explanation, 'Suggestions are temporarily unavailable.');
+  }
+});
+
 test('plans one real, eligible meditation and returns a private-data-free response', async () => {
   assert.equal((await planIntelligenceRequest(body, { loadCatalog:loader })).status,'no_match');
   const result = await planIntelligenceRequest(videoBody, { loadCatalog: loader });

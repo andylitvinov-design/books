@@ -117,6 +117,26 @@ try {
     const link=card.getByRole('link').first()
     if(await link.count()) assert.doesNotMatch(await link.getAttribute('href'),/(HqfixazXqRY|80xZ7jN6o2Y|_IOX0E8N-To)/)
   } finally { await secularPage.close() }
+  for (const locale of ['en','ru','es']) {
+    const audioPage=await browser.newPage({viewport:{width:390,height:844}}), t=copy[locale]
+    try {
+      await audioPage.goto(`${base}/${locale}/holistic-support`,{waitUntil:'networkidle'})
+      await audioPage.locator('[data-meditation-finder-toggle]').click()
+      const card=audioPage.locator('[data-holistic-intelligence]')
+      await card.locator('select').selectOption('energy')
+      await card.getByRole('button',{name:t.next,exact:true}).click()
+      await card.locator('select').selectOption('audio')
+      await card.getByRole('button',{name:t.next,exact:true}).click()
+      await card.getByRole('button',{name:t.no,exact:true}).click()
+      await card.getByRole('button',{name:t.no,exact:true}).click()
+      await card.locator('[class*="result"]').waitFor({state:'visible'})
+      assert.match(await card.locator('[class*="result"]').innerText(),/audio|аудио/i)
+      assert.equal(await card.getByRole('link').count(),0)
+      const edit={en:'Change topic or format',ru:'Изменить тему или формат',es:'Cambiar tema o formato'}[locale]
+      await card.getByRole('button',{name:edit,exact:true}).click()
+      assert.equal(await card.locator('#hh-intelligence-topic-meditation').isVisible(),true)
+    } finally { await audioPage.close() }
+  }
   const testPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
     const privateCalls=[]
