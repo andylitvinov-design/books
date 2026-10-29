@@ -5,7 +5,7 @@ import { approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memor
 import styles from "./holistic-agent-memory-panel.module.css";
 
 export type MyAgentMemory = {kind:string;value:string;updatedAt?:string};
-type MemoryReply = {consent?:boolean;items?:MyAgentMemory[];error?:string;saved?:boolean;deleted?:boolean};
+type MemoryReply = {consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[];error?:string;saved?:boolean;deleted?:boolean};
 const kindLabels={
   ru:{preferred_name:"Как ко мне обращаться",communication_style:"Обращение",response_length:"Длина ответа",avoid_format:"Не предлагать формат",personal_accent:"Что ещё учитывать"},
   en:{preferred_name:"Preferred name",communication_style:"Address style",response_length:"Answer length",avoid_format:"Avoid this format",personal_accent:"Another preference"},
@@ -51,9 +51,10 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
       const data=await response.json() as MemoryReply;
       const rows=Array.isArray(data.items)?data.items:[];
       setItems(rows);setConsent(data.consent===true);
+      const active=data.consent===true && data.useInDialogue===true;
+      setUseSaved(active);onUse(active?approvedMemoryForLocalPrompt(rows):[]);
       setDrafts({...emptyDraft,...Object.fromEntries(rows.map(row=>[row.kind,row.value]))});
       setStatus("ready");
-      if(useSaved)onUse(data.consent===true?approvedMemoryForLocalPrompt(rows):[]);
     }catch{
       setUseSaved(false);onUse([]);setConsent(false);setItems([]);
       setStatus("unavailable");
@@ -100,7 +101,8 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
           </label>
           {consent ? <>
             <label className={styles.check}><input type="checkbox" checked={useSaved}
-              onChange={e=>{setUseSaved(e.target.checked);onUse(e.target.checked?approvedMemoryForLocalPrompt(items):[]);}}/>
+              disabled={busy}
+              onChange={e=>void action({action:"use",enabled:e.target.checked})}/>
               {copy.use}
             </label>
             {keys.map(kind=>{
