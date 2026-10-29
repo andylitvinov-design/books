@@ -597,13 +597,27 @@ for (const browserType of [chromium, webkit]) {
             label+" original video lessons are reachable");
           if(locale==="ru") {
             const mysteryPicker=root.locator('[data-support-mystery-courses]');
-            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),3,
-              label+" three Russian original Maya/Egypt/Greek courses restored");
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),4,
+              label+" four Russian original Maya/Egypt/Dionysus/Demeter series restored");
             await mysteryPicker.locator('[data-support-mystery-course="egypt"]').click();
             assert.equal(await mysteryPicker.locator('[data-support-mystery-course="egypt"]').getAttribute('aria-pressed'),"true",
               label+" Egypt programme selection works");
             assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
               /^\/ru\/academy\//,label+" source Academy programme link");
+            for (const [channel,total] of [["greek-dionysus",7],["greek-demeter",5]]) {
+              await mysteryPicker.locator('[data-support-mystery-course="'+channel+'"]').click();
+              const episodes=root.locator('[data-support-meditation-gallery] [data-support-video]');
+              assert.equal(await episodes.count(), total, label+" "+channel+" retains all episodes");
+              assert.deepEqual(await episodes.evaluateAll(nodes=>nodes.map(el=>Number(el.getAttribute("data-source-order")))),
+                Array.from({length:total},(_,i)=>i+1),label+" "+channel+" has original 1-based order");
+              assert.equal(await root.locator('[data-support-lesson-navigation]').count(),1,
+                label+" "+channel+" provides accessible next/previous controls");
+              assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
+                new RegExp("^/ru/academy/videos/greek-mysteries-"+(channel==="greek-dionysus"?"dionysus":"demeter")+"$"),
+                label+" opens this channel's original course only");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" switching original channels never starts playback");
+            }
           }
           const academyHrefs=await root.locator('[data-support-courses-panel] a')
             .evaluateAll(links => links.map(a => a.getAttribute("href")));
