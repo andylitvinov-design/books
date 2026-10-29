@@ -1455,6 +1455,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
+    setCinematicPlan(null);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     setPreviewPlaying(false); // Theme changes preserve the user's photo checkbox choice.
     if(next==="money")setMoneyScene("golden-rain");
@@ -1470,6 +1471,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
+    setCinematicPlan(null);
     setPreviewPlaying(false);
   };
   // iPhone WebKit can defer HD decoding for the hidden same-origin master.
@@ -1639,7 +1641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Target size={18} aria-hidden="true"/>
             <input data-video-quick-wish type="text" maxLength={160} value={wish}
               disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}}/>
+              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
           </label>
         </section>
 
@@ -1812,12 +1814,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","landscape","square"] as const).map((value,index)=>
                 <button type="button" key={value} data-video-quick-aspect={value}
                   disabled={recording||preparing} aria-pressed={aspect===value}
-                  onClick={()=>setAspect(value)}>{["9:16","16:9","1:1"][index]}</button>)}
+                  onClick={()=>{setAspect(value);setCinematicPlan(null);}}>{["9:16","16:9","1:1"][index]}</button>)}
             </div></fieldset>
             <fieldset><legend>{quick.length}</legend><div>
               {durations.map(value=><button type="button" key={value}
                 data-video-quick-duration={value} disabled={recording||preparing}
-                aria-pressed={duration===value} onClick={()=>setDuration(value)}>
+                aria-pressed={duration===value} onClick={()=>{setDuration(value);setCinematicPlan(null);}}>
                 {value}{quick.seconds}</button>)}
             </div></fieldset>
             <fieldset className={videoStyles.quickMontageText}><legend>{quick.text}</legend><div>
@@ -1847,7 +1849,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
           data-video-quick-therapy disabled={recording||preparing}
-          onClick={()=>{setStudioMode("therapy");setQuickDetailedOpen(true);
+          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setQuickDetailedOpen(true);
             setTherapyJumpRequested(true);}}>
           <HandHeart size={18} aria-hidden="true"/>{quick.therapy}
         </button>
@@ -1940,7 +1942,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.videoMandalaChoice}
             data-video-therapy-toggle aria-pressed={studioMode==="therapy"}
             disabled={recording||preparing}
-            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setNotice("");}}>
+            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setCinematicPlan(null);setNotice("");}}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
           </button>
         </section>
@@ -2039,7 +2041,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
         onPointerUp={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}
-        onClick={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}>
+        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
         <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
       </button>
       <MandalaGuidedCourse locale={locale} theme={theme}
@@ -2100,7 +2102,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <button type="button" data-video-therapy-start
           disabled={recording||preparing}
-          onClick={()=>{setStudioMode("therapy");setTherapyJumpRequested(true);}}>
+          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setTherapyJumpRequested(true);}}>
           {layout.therapyBannerAction}<ArrowRight size={19} aria-hidden="true"/>
         </button>
       </section>
@@ -2293,7 +2295,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <strong>{audioUi.videoLength}</strong>
               <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.videoLength}>
                 {durations.map(n=><button type="button" key={n} data-video-audio-length={n}
-                  aria-pressed={duration===n} onClick={()=>setDuration(n)}>
+                  aria-pressed={duration===n} onClick={()=>{setDuration(n);setCinematicPlan(null);}}>
                   {n} {ui.seconds}</button>)}
               </div>
             </div>
@@ -2485,7 +2487,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
         <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
           value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}} />
+          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
         <p>{ui.wishHelp}</p>
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
@@ -2513,7 +2515,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <legend>{ui.duration}</legend>
             <div className={videoStyles.pills}>
               {durations.map(n=><button key={n} type="button" aria-pressed={duration===n}
-                data-video-duration={n} onClick={()=>setDuration(n)}>{n} {ui.seconds}</button>)}
+                data-video-duration={n} onClick={()=>{setDuration(n);setCinematicPlan(null);}}>{n} {ui.seconds}</button>)}
             </div>
           </fieldset>
           <fieldset className={videoStyles.settingCard} disabled={recording||preparing}>
@@ -2522,7 +2524,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","square","landscape"] as Aspect[]).map((format,i)=>
                 <button type="button" key={format} data-video-aspect={format}
                   aria-pressed={aspect===format}
-                  onClick={()=>setAspect(format)} onPointerUp={()=>setAspect(format)}>
+                  onClick={()=>{setAspect(format);setCinematicPlan(null);}} onPointerUp={()=>{setAspect(format);setCinematicPlan(null);}}>
                   <span className={videoStyles.formatIcon} data-format={format} aria-hidden="true"/>
                   {["9:16","1:1","16:9"][i]}
                 </button>)}
