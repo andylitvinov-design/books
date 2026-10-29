@@ -107,7 +107,7 @@ const video = consultPsychologistMind({task:"video_course",locale:"ru",
 const meditation = consultPsychologistMind({task:"meditation",locale:"ru",
   intent:{focus:"stress",intentionCode:"clarity",durationMinutes:10,
           motifId:"small_light",symbolId:"tree"},
-  ...scope,consent:{...scope.consent,resourceImagery:true}});
+  ...scope}); // scope.consent.resourceImagery must already be server-verified
 const motifs = consultPsychologistMind({task:"kip_library",locale:"ru",
   intent:{focus:"stress",selfGuidedOnly:true},...scope});
 const symbol = consultPsychologistMind({task:"symbol_explore",locale:"ru",
