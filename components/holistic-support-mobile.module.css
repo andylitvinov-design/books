@@ -1074,3 +1074,17 @@
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
 }
+
+/* Local check-in is NOT the authenticated account history. Offer a clear
+   route to the private My Progress cabinet without persisting local ratings. */
+.accountProgressLink {
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  min-height:48px;margin-top:11px;padding:10px 14px;
+  border:1px solid #a6d5bb;border-radius:15px;
+  background:linear-gradient(120deg,#e7f5eb,#d5eee3);
+  color:#126348;font-size:14px;font-weight:800;text-align:center;text-decoration:none;
+}
+.accountProgressLink svg{flex:none}
+.accountProgressLink span{min-width:0;overflow-wrap:anywhere}
+.accountProgressLink:hover{background:#cae9da}
+@media(max-width:640px){.accountProgressLink{min-height:46px;margin-top:9px;font-size:12px}}
