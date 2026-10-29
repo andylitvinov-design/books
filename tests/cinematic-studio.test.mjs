@@ -83,6 +83,10 @@ test("theoretical paid gate requires server quote, owner cap, commercial rights 
   assert.equal(evaluateCinematicSpend(base).allowed,true);
   assert.equal(evaluateCinematicSpend({...base,quote:{...base.quote,totalMinor:900}}).allowed,false);
   assert.equal(evaluateCinematicSpend({...base,order:{...base.order,verifiedByServer:false}}).allowed,false);
+  for(const totalMinor of [Infinity,NaN,'400',0,-1,400.5,1000001]) {
+    assert.equal(evaluateCinematicSpend({...base,order:{...base.order,totalMinor}}).allowed,false,
+      'paid gate requires a finite positive bounded integer amount: '+String(totalMinor));
+  }
   assert.equal(evaluateCinematicSpend({...base,commercialRightsVerified:false}).allowed,false);
 });
 test("job state machine requires real provider id, hash, owner approval and delivery proof",()=>{
@@ -93,6 +97,10 @@ test("job state machine requires real provider id, hash, owner approval and deli
   assert.throws(()=>advanceCinematicJob(quoted,"approved"),/owner_approval_required/);
   const approved=advanceCinematicJob(quoted,"approved",{ownerApproved:true});
   assert.throws(()=>advanceCinematicJob(approved,"payment_verified"),/verified_payment_required/);
+  assert.throws(()=>advanceCinematicJob(approved,"payment_verified",
+    {verifiedPayment:true}),/payment_receipt_required/);
+  assert.throws(()=>advanceCinematicJob(approved,"payment_verified",
+    {verifiedPayment:true,receiptId:"bad"}),/payment_receipt_required/);
   const verified=advanceCinematicJob(approved,"payment_verified",
     {verifiedPayment:true,receiptId:"receipt_server_1234"});
   assert.throws(()=>advanceCinematicJob(verified,"submitted"),/provider_job_receipt_required/);
