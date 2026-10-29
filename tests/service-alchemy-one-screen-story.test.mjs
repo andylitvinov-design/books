@@ -54,4 +54,13 @@ test("Alchemy browser waits for semantic DOM readiness, preserving every release
  assert.match(source,/data\.panels\.length !== chapters\.length/);
  assert.match(source,/data\.documentWidth > width \+ 1/);
  assert.match(source,/assert\.deepEqual\(failures, \[\]/);
+ assert.match(source,/data-session-booking-flow/);
+ assert.match(source,/data-booking-sku="personal-session-60"/);
+ assert.match(source,/data-booking-step="contact"/);
+ assert.match(source,/booking reply-only opt-in consent missing/);
+ assert.match(source,/payment opened without confirmed booking/);
+ assert.match(source,/booking submit enabled before phone and consent/);
+ assert.doesNotMatch(source,/data-compact-phone-trigger/);
+ const css=read("components/alchemy-soul-landing.module.css");
+ assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
 });

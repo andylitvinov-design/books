@@ -109,20 +109,25 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
-      // Read-only interaction: the hero CTA reveals the approved one-field,
-      // opt-in phone capture. Do not submit any contact or open a messenger.
+      // Read-only interaction: the current paid-session hero uses the approved
+      // booking flow (not the older compact enquiry). A request must be opt-in,
+      // and payment must stay locked until a practitioner-confirmed booking.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');
-        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
-        await trigger.waitFor({state:"visible"});
+        const booking = hero.locator('[data-session-booking-flow][data-booking-sku="personal-session-60"]');
+        const trigger = booking.locator('[data-contact-order][data-booking-cta="book"]');
+        await trigger.waitFor({state:"visible",timeout:12000});
         await trigger.click();
-        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
-        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
-          issues.push("compact Telegram option missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
-          issues.push("compact opt-in consent missing");
-        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
-          issues.push("long email capture incorrectly expanded from the hero");
+        await booking.locator('[data-booking-step="contact"]').waitFor({state:"visible",timeout:12000});
+        if (await booking.locator('input[type="checkbox"][required]').count() !== 1)
+          issues.push("booking reply-only opt-in consent missing");
+        if (await booking.locator('input[type="tel"]').count() !== 1)
+          issues.push("booking phone input missing");
+        if (await booking.locator('[data-booking-payment-options]').count() !== 0)
+          issues.push("payment opened without confirmed booking");
+        if (await booking.locator('[data-booking-step="contact"] button[type="submit"]').isEnabled())
+          issues.push("booking submit enabled before phone and consent");
+        // Never create a synthetic CRM lead or navigate to a payment provider.
         await trigger.click();
       }
       report.push({locale,width,height,...data,issues});
