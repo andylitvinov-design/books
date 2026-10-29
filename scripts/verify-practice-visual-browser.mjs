@@ -2,13 +2,14 @@
 // Not a substitute for real Google sign-in, private API, upload or payment E2E.
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile, readFile } from 'node:fs/promises'
 const require = createRequire(import.meta.url)
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
 const origin = process.env.HH_PRACTICE_QA_ORIGIN || 'http://127.0.0.1:3119'
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw Error('Synthetic browser test requires loopback')
 const out = 'artifacts/practice-visual'
 await mkdir(out, { recursive:true })
+const approved = JSON.parse(await readFile(new URL('./fixtures/practice-approved-reference-20261028.json', import.meta.url),'utf8'))
 
 // Data is synthetic, never copied from a real account, browser or Supabase.
 const bootstrap = {
@@ -103,6 +104,18 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[class*="hero"] button').first().isVisible(),true,label+' real create CTA')
           const g = await measure(page)
           assert.equal(g.state,expected,label+' proper auth/view state')
+          if (locale==='ru' && item.width===390 && item.state==='synthetic-signed' && !item.ready) {
+            assert.equal(g.url,approved.referenceRoute,label+' exactly the approved main dashboard, not an editor')
+            for (const [landmark,setting] of Object.entries(approved.landmarksCssPx)) {
+              const metric = ({
+                headerY:g.header.y,identityY:g.identity.y,gridY:g.grid.y,
+                heroY:g.hero.y,offersY:g.offers.y,
+              })[landmark]
+              assert.ok(Math.abs(metric-setting.value)<=setting.tolerance,
+                label+' reference screenshot landmark '+landmark+' expected '+setting.value+
+                '±'+setting.tolerance+' CSS px; actual '+metric)
+            }
+          }
           assert.ok(g.documentWidth <= g.viewport+3,label+' unexpected horizontal overflow: '+JSON.stringify(g))
           for (const key of ['header','identity','grid','hero','offers','nav'])
             assert.ok(g[key] && g[key].width>0,label+' missing original region '+key)
