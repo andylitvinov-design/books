@@ -55,7 +55,7 @@ const locales = {
   },
 } as const;
 export function HolisticLanguageConversation({
-  locale, seedTopic, videos, tests, enabledFormats, onVideo,
+  locale, seedTopic, videos, tests, enabledFormats, onVideo, active = true,
 }: {
   locale: PublicLocale;
   seedTopic?: string | null;
@@ -63,6 +63,7 @@ export function HolisticLanguageConversation({
   tests: Record<string, GuideTest[]>;
   enabledFormats?: string[];
   onVideo: (id: string | null) => void;
+  active?: boolean;
 }) {
   const t=locales[locale];
   const [state,setState] = useState(() => createLanguageSession({locale,seedTopic,enabledFormats}));
@@ -87,6 +88,13 @@ export function HolisticLanguageConversation({
   useEffect(()=>{
     if(threadRef.current) threadRef.current.scrollTop=threadRef.current.scrollHeight;
   },[entries]);
+  useEffect(()=>{
+    if(active)return;
+    // Returning to the guided workflow must stop hidden GPU/remote downloads.
+    modelWorker.current?.terminate();modelWorker.current=null;
+    activeLocalContext.current=null;requestCounter.current+=1;
+    setGenerating(false);setModelMode("off");setModelProgress(0);
+  },[active]);
 
   function haltModel() {
     modelWorker.current?.terminate();
