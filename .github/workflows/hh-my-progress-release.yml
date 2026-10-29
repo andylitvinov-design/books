@@ -15,7 +15,7 @@ on:
       - 'supabase/migrations/20261029013500_hh_my_progress_video_marks_20261028.sql'
       - '.github/workflows/hh-my-progress-release.yml'
   push:
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/my-progress-unified-history-20261028']
     paths:
       - 'components/app/my-progress.*'
       - 'components/app/academy-video-progress.jsx'
