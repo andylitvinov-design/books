@@ -161,12 +161,14 @@ export default function MessagesHub({locale='en',embedded=false,onClientsCount=u
     websiteUnavailable={!usableData&&!loading}
     onClientsCount={onClientsCount} onDetailChange={onDetailChange}
     onReload={()=>setRefreshKey(value=>value+1)}/>
-  if(embedded)return <p className={styles.authNotice}
-    role={unauthenticated||bootstrapSignInRequired?'alert':'status'}>
-    {unauthenticated||bootstrapSignInRequired?t.sessionRequired:loading?t.loading:t.failure}{' '}
-    {(unauthenticated||bootstrapSignInRequired)&&
-      <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>}
-  </p>
+  // If the optional consultation-directory request fails, the standalone
+  // private messenger still uses its own verified account API. Never hide
+  // existing direct conversations just because one listing endpoint is down.
+  if(embedded)return <div className={styles.hub} data-member-direct-fallback>
+    {!loading&&!unauthenticated&&!bootstrapSignInRequired&&
+      <p className={styles.authNotice} role="alert">{t.failure}</p>}
+    <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
+  </div>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
