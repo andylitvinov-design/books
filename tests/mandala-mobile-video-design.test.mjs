@@ -72,11 +72,11 @@ test("approved mobile video design is the one canonical Mandala editor with six 
   assert.match(ui,/\.templateRail\{display:grid/);
   assert.match(ui,/\.templateArt\{/);
   assert.match(ui,/\.download\{/);
-  assert.match(ui,/\.heroQuickFilters\{/);
+  assert.match(ui,/\.previewChoices\{/);
   assert.match(studio,/data-video-mode-switch/);
   assert.match(studio,/data-video-mode=\{mode\}/);
   assert.match(studio,/data-video-photo-enabled/);
-  assert.match(studio,/data-video-hero-aspect/);
+  assert.match(studio,/data-video-advanced-aspect/);
   assert.match(studio,/data-video-advanced-filters/);
   assert.match(studio,/data-hero-promo=/);
   assert.match(studio,/support-reference-avatar\.webp/);
@@ -231,8 +231,12 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/data-video-mode-switch/);
   assert.match(studio,/data-video-photo-enabled/);
   assert.match(studio,/setBackgroundOnly\(!enabled\)/);
-  assert.match(studio,/data-video-hero-filters/);
-  assert.match(studio,/data-video-hero-aspect/);
+  assert.match(studio,/data-video-preview-choices/);
+   assert.match(studio,/data-video-affirmations-feature/);
+   assert.match(studio,/data-video-therapy-start/);
+   assert.match(studio,/data-video-hero-actions/);
+   assert.doesNotMatch(studio,/data-video-hero-filters/);
+  assert.match(studio,/data-video-advanced-aspect/);
   assert.match(studio,/data-video-audio-section/);
   assert.match(studio,/data-video-hypnosis-section/);
   assert.match(studio,/studioMode==="therapy"/);
@@ -303,4 +307,28 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   assert.match(css,/\.audioSection,\.hypnosisSection\{scroll-margin-top:84px\}/);
   assert.match(browser,/data-video-affirmation-preview/);
   assert.match(browser,/data-video-editor-tab/);
+});
+
+test("clean smaller video player binds two independent opt-ins and opens the existing eight-session planner",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const switches=studio.slice(studio.indexOf('data-video-preview-choices'),studio.indexOf('id="video-hero"'));
+  const hero=studio.slice(studio.indexOf('id="video-hero"'),studio.indexOf('data-video-editor-nav'));
+  assert.match(switches,/data-video-photo-enabled/);
+  assert.match(switches,/data-video-affirmations-feature/);
+  assert.match(switches,/checked=\{affirmations\.enabled\}/);
+  assert.match(switches,/setAffirmations\(previous=>/);
+  assert.doesNotMatch(hero,/<select|<p[ >]/,"film is visual-only with no selectors or copy");
+  assert.match(hero,/data-mandala-cinematic-canvas/);
+  assert.match(hero,/data-video-preview-toggle/);
+  assert.match(hero,/className=\{videoStyles\.heroPlay\}/);
+  assert.match(studio,/useState<CaptionMode>\("none"\)/,"no default text burnt into the film");
+  assert.match(studio,/data-video-advanced-aspect/);
+  assert.match(studio,/data-video-therapy-banner/);
+  assert.match(studio,/setStudioMode\("therapy"\);setTherapyJumpRequested\(true\)/);
+  for(const phrase of ["Своё фото / цель","Аффирмации","Создать персональную программу видеотерапии",
+    "My photo / goal","Affirmations","Mi foto / objetivo","Afirmaciones"])assert.ok(studio.includes(phrase),phrase);
+  assert.match(css,/\.catalogShell \.heroPlay\{/);
+  assert.match(css,/\.previewChoices\{display:grid/);
+  assert.match(css,/\.therapyBanner\{display:flex/);
 });
