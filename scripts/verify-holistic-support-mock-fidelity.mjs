@@ -274,6 +274,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-task="closeness"] input').check();
           // The explicit Save button remains independently useful.
           await filter.locator('[data-support-goal-save]').click();
+          // React may flush the Accepted badges after the click resolves in WebKit.
+          // Wait for the actual saved state; do not treat a paint race as lost data.
+          await page.waitForFunction(() => document.querySelectorAll('[data-goal-accepted]').length === 2,
+            null, { timeout: 6000 });
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
             label+" independent Save and auto-Next keep separate Accepted marks");
           await filter.locator('[data-goal-sector="money"]').click();
