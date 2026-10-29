@@ -10,9 +10,9 @@ Use this skill whenever a request includes a website screenshot, photograph of a
 
 ## Critical gate — identify the right screen BEFORE matching pixels
 
-A screenshot is a **page state**, not just a skin. Record the exact canonical route, query, role, guest/signed-in state, selected tab, and whether the screen is a dashboard, editor, detail page, dialog or flow step. Compare these invariants **before** measuring the screenshot: \`reference route + state + view\` must match \`actual route + state + view\`. If they differ, **STOP pixel matching and fix routing/OAuth/automatic navigation first**. Never copy a dashboard over a legitimate working editor or mislabel the editor as a failed dashboard screenshot.
+A screenshot is a **page state**, not just a skin. Record the exact canonical route, query, role, guest/signed-in state, selected tab, and whether the screen is a dashboard, editor, detail page, dialog or flow step. Compare these invariants **before** measuring the screenshot: `reference route + state + view` must match `actual route + state + view`. If they differ, **STOP pixel matching and fix routing/OAuth/automatic navigation first**. Never copy a dashboard over a legitimate working editor or mislabel the editor as a failed dashboard screenshot.
 
-**Real owner example (28 Oct 2026):** the approved RU **Кабинет практика** is the existing \`/ru/practice\` \`PracticeShowcase\` dashboard with identity, six creation tiles, hero, offer rail and five-tab dock. The reported second screenshot shows the distinct protected **Мои услуги** three-step editor, normally reached via \`/ru/app/practice?panel=services&create=1&starter=session\`. Different route, function and image dimensions: do **not** calculate pixel fidelity between the two. Existing issue #55 and corrective PR #2498 address the Google-return / automatic-editor navigation; inspect and reconcile them rather than duplicating the fix. The editor still needs the same palette, navigation and typography, but retains its real form and save action.
+**Real owner example (28 Oct 2026):** the approved RU **Кабинет практика** is the existing `/ru/practice` `PracticeShowcase` dashboard with identity, six creation tiles, hero, offer rail and five-tab dock. The reported second screenshot shows the distinct protected **Мои услуги** three-step editor, normally reached via `/ru/app/practice?panel=services&create=1&starter=session`. Different route, function and image dimensions: do **not** calculate pixel fidelity between the two. Existing issue #55 and corrective PR #2498 address the Google-return / automatic-editor navigation; inspect and reconcile them rather than duplicating the fix. The editor still needs the same palette, navigation and typography, but retains its real form and save action.
 
 For an existing **live** source page, use read-only browser DOM and computed styles (box rectangles, CSS variables, fonts, background-image URLs, image object-position) alongside screenshots. A screenshot alone loses precise DOM and navigation facts. Use the approved website itself as the source of truth; Figma is optional, not a prerequisite. See [browser tool choices](references/browser-tools.md).
 
@@ -66,6 +66,20 @@ Match the approved hierarchy; use existing design tokens and optimized assets. T
 
 Existing reusable browser infrastructure: .github/workflows/hh-support-mobile-mock-browser.yml and scripts/verify-holistic-support-mock-fidelity.mjs. Extend it for the target page instead of duplicating browser installs.
 
+### Automatic public reference capture (all public pages)
+
+When the approved source is a live, anonymous public Holistic House page, use Chrome DevTools MCP for real CSS/DOM when connected. Otherwise capture the reference and candidate with the same browser/viewport using the project's read-only, guest-only public capture script. It denies private `/app`, `/admin`, `/client`, auth, checkout and query/token routes.
+
+~~~bash
+node scripts/capture-public-ui-reference.mjs --origin=https://holistichouse.vercel.app --route=/ru/practice --width=390 --browser=webkit --out=artifacts/visual-to-code/reference
+node scripts/capture-public-ui-reference.mjs --origin=http://127.0.0.1:3119 --route=/ru/practice --width=390 --browser=webkit --out=artifacts/visual-to-code/candidate
+~~~
+
+Inspect both generated JSON DOM/style measurements and same-view screenshots, then use compare-ui-screenshots.mjs for PNG overlay and heatmap with view-identity arguments. The source image and candidate must be cropped to the same content viewport and represent the same role/state. Do not publish any private screenshot or call a guest capture real authenticated E2E.
+
+**Always add a page-specific browser workflow or extend an existing one** whenever the target is a new page family. The first built example is `.github/workflows/practice-visual-browser.yml`: Chromium/WebKit 320/354/390/430, original six actions/hero/five-tab dock, synthetic signed-in and guest behavior, and approximate screenshot landmarks. Generic capture is a reusable inspector, not a substitute for route-specific acceptance tests.
+
+Official setup and versions for Codex, VS Code and WebStorm: `docs/design/VISUAL_MCP_AUTO_QA.md`. Do not claim MCPs are globally installed until a client actually starts them.
 ## 5. Functional and release gates
 
 - Run focused tests, ESLint, TypeScript, browser QA and Next build. Check real navigation, Google OAuth continuation, photo/file upload, saves, course actions, CTAs, disabled/error states, EN/RU/ES and protected access as relevant.
