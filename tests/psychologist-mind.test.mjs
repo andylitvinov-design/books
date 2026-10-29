@@ -267,3 +267,16 @@ test("clinician-only KIP and psychodynamic options are discussed but never runna
   const guided = programFor("relationships");
   assert.ok(guided.sessions.every(s => s.clinicianDiscussionIds.length === 0));
 });
+
+test("client tone is genuinely different for current concise and structured preferences", () => {
+  const base = { ...safe, locale: "ru",
+    intent: { focus: "stress" }, state: { sessionNumber: 2, phase: "checkin" } };
+  const warm = buildPsychologyDialogueTurn(base);
+  const concise = buildPsychologyDialogueTurn({ ...base,
+    intent: { ...base.intent, style: "concise" } });
+  const structured = buildPsychologyDialogueTurn({ ...base,
+    intent: { ...base.intent, style: "structured" } });
+  assert.notEqual(warm.message, concise.message);
+  assert.notEqual(structured.message, concise.message);
+  assert.match(structured.message, /Тема текущего шага/);
+});
