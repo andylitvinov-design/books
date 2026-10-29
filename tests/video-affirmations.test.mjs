@@ -32,11 +32,11 @@ test("three locales and all four site themes have five ready-to-select, non-clin
 test("selected presets and custom lines are local-only, normalized and bounded", () => {
   const settings={...defaultAffirmations,enabled:true,selected:[0,1,1,2,3,4,10],custom:"  Моя фраза\n\n<личная> фраза\n" + "а".repeat(500)};
   const lines=linesForVideoAffirmations("ru","energy",settings);
-  assert.equal(lines.length,7);
+  assert.equal(lines.length,8);
   assert.equal(lines[0],suggestedVideoAffirmations.ru.energy[0]);
-  assert.equal(lines[4],"Моя фраза");
-  assert.equal(lines[5],"личная фраза");
-  assert.equal(lines[6].length,90);
+  assert.equal(lines[5],"Моя фраза");
+  assert.equal(lines[6],"личная фраза");
+  assert.equal(lines[7].length,90);
   assert.ok(lines.every(line=>!/[<>]/.test(line)));
 });
 
