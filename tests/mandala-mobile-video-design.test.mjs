@@ -266,24 +266,25 @@ test("mandala header settings oracle rejects missing-label regression", async ()
 });
 
 
-test("mobile composer uses the approved mode → themes → optional photo → preview → templates → audio → affirmations hierarchy", () => {
+test("two video tabs share the secure renderer while therapy puts its programme directly under the player", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const locations=[
-    "data-video-mode-switch","data-video-category-rail","data-video-photo-enabled",
-    "data-video-hero-filters","id=\"video-templates\"","data-video-audio-section",
-    "data-video-hypnosis-section","data-video-extra-settings",
+    "data-video-mode-switch","data-video-category-rail","data-video-preview-choices",
+    'id="video-hero"','id="guided-video-series"',"data-video-editor-nav",
+    'id="video-templates"',"data-video-audio-section","data-video-hypnosis-section",
   ].map(marker=>studio.indexOf(marker));
-  assert.ok(locations.every(pos=>pos>0));
+  assert.ok(locations.every(pos=>pos>0),"every video landmark must exist");
   for(let i=1;i<locations.length;i++)assert.ok(locations[i]>locations[i-1],"out of order: "+i);
-  for(const title of ["Видео-подкачка","Видео-терапия","Добавить фото себя / цели",
+  for(const title of ["Видео-подкачка","Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video boost","Video therapy","Videoterapia"]){
     assert.ok(studio.includes(title),title);
   }
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
+  assert.match(studio,/data-video-therapy-preview/);
   assert.match(css,/@media\(max-width:355px\)/);
-  assert.match(css,/\.photoToggle input\{/);
+  assert.match(css,/\.previewChoiceLabel input\{/);
 });
 
 test("affirmation preview CTA starts the existing hero and local jump links reach design, audio, affirmations", () => {
