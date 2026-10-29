@@ -1136,3 +1136,13 @@
 @media (prefers-reduced-motion: reduce) {
   .quickGoalCard,.quickGoalAction { transition: none; }
 }
+
+
+/* .page button {font:inherit} has higher specificity than plain goal class. */
+.page .quickGoalCard { font-size: 15px; line-height: 1.25; font-weight: 800; }
+.page .quickGoalSkip { font-size: 13px; font-weight: 700; }
+@media (max-width: 640px) {
+  .page .quickGoalCard { font-size: clamp(10px,2.88vw,12px); line-height: 1.17; }
+  .page .quickGoalSkip { font-size: clamp(10px,2.8vw,12px); }
+}
+@media (max-width: 350px) { .page .quickGoalCard { font-size: 10px; } }
