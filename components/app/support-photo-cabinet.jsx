@@ -1,5 +1,5 @@
 'use client'
-import {useCallback,useEffect,useState} from 'react'
+import {useEffect,useState} from 'react'
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from '@/lib/mandala/prepare-browser-photo'
 
 const COPY={
@@ -28,12 +28,6 @@ export default function SupportPhotoCabinet({locale='en'}){
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
-  const reload=useCallback(async()=>{
-    const response=await fetch('/api/app/support-photo',{credentials:'same-origin',cache:'no-store'})
-    if(!response.ok)throw new Error('PHOTO_READ_FAILED')
-    const data=await response.json()
-    setUrl(typeof data.url==='string'?data.url:null)
-  },[])
   useEffect(()=>{
     let mounted=true
     fetch('/api/app/support-photo',{credentials:'same-origin',cache:'no-store'})
@@ -66,8 +60,9 @@ export default function SupportPhotoCabinet({locale='en'}){
       const result=await response.json()
       if(!result.saved||typeof result.url!=='string')throw new Error('PHOTO_SAVE_FAILED')
       setBlob(null);setPreview(null);setUrl(result.url)
+      // A successful POST already returned the signed URL of the stored object.
+      // A second GET could fail or lag and falsely label a completed save as failed.
       setNotice(t.saved)
-      await reload()
     }catch{setError(t.error)}finally{setBusy(false)}
   }
   async function remove(){
