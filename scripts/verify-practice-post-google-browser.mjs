@@ -17,7 +17,14 @@ const practice={practitioner:{id:'synthetic-practitioner',status:'approved',
   profile:{displayName:'Synthetic Practitioner'},draftProfile:{displayName:'Synthetic Practitioner'}},
   practiceActivated:true,serviceQuota:{canAdd:true,used:0,limit:10},
   newServices:{recent:[]},services:[],requests:[]}
-function respond(route,status,body){return route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)})}
+function respond(route,status,body){
+  // WebKit enforces CORS for intercepted navigation-time requests as well.
+  // This allowance exists ONLY in the synthetic loopback fixture; never in
+  // the application's real authenticated API response headers.
+  return route.fulfill({status,contentType:'application/json',
+    headers:{'access-control-allow-origin':origin,'access-control-allow-credentials':'true',
+      vary:'Origin'},body:JSON.stringify(body)})
+}
 async function api(page,signed){
   await page.route('**/api/app/**',async route=>{
     const path=new URL(route.request().url()).pathname
@@ -126,7 +133,7 @@ for(const engine of [chromium,webkit]){
           assert.ok(layout.feeHidden,label+' no commission card under the wizard')
           assert.ok(layout.labels.every(x=>x.scrollWidth<=x.clientWidth+2&&x.scrollHeight<=x.clientHeight+2),
             label+' no truncated three-step headings '+JSON.stringify(layout.labels))
-          assert.ok(layout.photo.height>=80&&layout.photo.height<=105,label+' compact photo control')
+          assert.ok(layout.photo.height>=125&&layout.photo.height<=155,label+' scenic service cover fits mobile '+JSON.stringify(layout.photo))
           if(width===390)await page.screenshot({
             path:out+'/'+engine.name()+'-'+locale+'-390-service-editor.png',fullPage:false})
           // SSR markup can be visible before React event handlers are ready.
