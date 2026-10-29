@@ -12,6 +12,10 @@ const serviceCss=read('components/app/my-services-dashboard.module.css')
 const practice=read('components/app/practice-workspace.jsx')
 const account=read('components/app/app-workspace.jsx')
 const innerNav=read('components/app/practice-inner-navigation.jsx')
+const editor=read('components/app/simple-service-editor.jsx')
+const editorCss=read('components/app/simple-service-editor.module.css')
+const practiceCss=read('components/app/practice-dashboard.css')
+const editorBrowser=read('scripts/verify-practice-post-google-browser.mjs')
 
 test('Google login keeps the same Practice dashboard without an extra Continue panel',()=>{
  assert.match(callback,/continueTo === 'practice-preview'/)
@@ -70,6 +74,28 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.doesNotMatch(service,/fakePayment|new SupabaseClient|createServiceForGuest/)
 })
 
+test('the signed-in service editor is rendered and mobile-safe, not merely reached by URL',()=>{
+ assert.match(editorBrowser,/editor\.waitFor\(\{state:'visible'/)
+ assert.match(editorBrowser,/synthetic account only/)
+ assert.match(editorBrowser,/no truncated three-step headings/)
+ assert.match(editorBrowser,/Save\/Next actually rests at the iPhone bottom/)
+ assert.match(editorBrowser,/no commission card under the wizard/)
+ assert.match(editorBrowser,/input\.fill\('Synthetic service title'\)/)
+ assert.match(editor,/stageShortLabels/)
+ assert.match(editor,/Формат и цена/)
+ assert.match(editor,/Formato y precio/)
+ assert.match(editor,/Format & price/)
+ assert.match(editor,/aria-label=\{label\}/)
+ assert.match(innerNav,/hh-practice-service-editor-heading/)
+ assert.match(innerNav,/servicesEditTitle:'Новая услуга'/)
+ assert.match(editorCss,/bottom:calc\(8px \+ env\(safe-area-inset-bottom,0px\)\)/)
+ assert.doesNotMatch(editorCss,/bottom:calc\(74px \+ env\(safe-area-inset-bottom,0px\)\)/)
+ assert.match(editorCss,/overflow:visible;white-space:normal;text-overflow:clip/)
+ assert.match(practiceCss,/Service-editor visual continuity: approved practitioner home/)
+ assert.match(practiceCss,/\.hh-practice-fee-notice\{display:none!important\}/)
+ assert.match(serviceCss,/\.editor\[data-service-composer-focus\]\{\s*order:3;padding:0/)
+})
+
 test('legacy web Google sign-in returns to clean original Practice with no layout-shifting Continue banner',()=>{
  assert.match(account,/const proPanel = page === 'practice' \? searchParams\.get\('panel'\)/)
  assert.match(account,/native\s*\?\s*\{ continueTo: 'my-practice'/)
@@ -124,6 +150,7 @@ test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>
  for(const path of ['components/practice-showcase.jsx',
    'components/app/my-services-dashboard.jsx','components/app/practice-workspace.jsx',
    'components/app/app-workspace.jsx','components/app/practice-inner-navigation.jsx',
+   'components/app/simple-service-editor.jsx',
    'app/api/app/[...path]/route.js']){
   const result=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
     compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}})
