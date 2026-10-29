@@ -11,6 +11,8 @@ export type AffirmationSettings = {
   density: AffirmationDensity;
   frequency: AffirmationFrequency;
   visibility: AffirmationVisibility[];
+  position?: "top" | "center" | "bottom";
+  textScale?: "small" | "medium" | "large";
   presetOverride?: string[];
 };
 
@@ -21,6 +23,8 @@ export const defaultAffirmations: AffirmationSettings = {
   density: "medium",
   frequency: 2,
   visibility: ["large"],
+  position: "center",
+  textScale: "medium",
 };
 
 export const suggestedVideoAffirmations: Record<VideoLocale, Record<VideoTheme, readonly string[]>> = {
@@ -208,6 +212,8 @@ export function paintVideoAffirmations(
   const count = settings.density === "high" ? 3 : settings.density === "low" ? 1 : 2;
   const baseIndex = cycle % lines.length;
   const size = Math.min(width, height);
+  const position = settings.position === "top" ? 0.35 : settings.position === "bottom" ? 0.76 : 0.6;
+  const textScale = settings.textScale === "small" ? 0.78 : settings.textScale === "large" ? 1.22 : 1;
   const fade = Math.max(0.22, Math.min(1, phase / 0.5, (period - phase) / 0.55));
 
   function write(phrase: string, y: number, fontSize: number, opacity: number, plate: boolean) {
@@ -228,15 +234,15 @@ export function paintVideoAffirmations(
 
   if (settings.visibility.includes("small")) {
     for (let i = 0; i < count; i++) {
-      write(lines[(baseIndex + i) % lines.length], height * (0.26 + i * 0.095),
-        Math.max(15, size * 0.025), 0.48 * fade, false);
+      write(lines[(baseIndex + i) % lines.length], height * (position - 0.29 + i * 0.095),
+        Math.max(15, size * 0.025 * textScale), 0.48 * fade, false);
     }
   }
 
   if (settings.visibility.includes("large")) {
     for (let i = 0; i < count; i++) {
-      write(lines[(baseIndex + i) % lines.length], height * (0.6 + i * 0.075),
-        Math.max(24, size * (count === 3 ? 0.038 : 0.045)), 0.93 * fade, true);
+      write(lines[(baseIndex + i) % lines.length], height * Math.min(0.92, position + i * 0.075),
+        Math.max(24, size * (count === 3 ? 0.038 : 0.045) * textScale), 0.93 * fade, true);
     }
   }
 
