@@ -80,6 +80,21 @@ jobs:
             sleep 2
           done
           node scripts/verify-practice-visual-browser.mjs
+      - name: Generate reproducible Chromium-vs-WebKit visual overlays
+        run: |
+          node scripts/compare-ui-screenshots.mjs \
+            --reference artifacts/practice-visual/chromium-ru-390-guest-home.png \
+            --actual artifacts/practice-visual/webkit-ru-390-guest-home.png \
+            --reference-view '/ru/practice|guest|dashboard' \
+            --actual-view '/ru/practice|guest|dashboard' \
+            --out artifacts/practice-visual/cross-engine-guest
+          node scripts/compare-ui-screenshots.mjs \
+            --reference artifacts/practice-visual/chromium-ru-390-synthetic-signed-home.png \
+            --actual artifacts/practice-visual/webkit-ru-390-synthetic-signed-home.png \
+            --reference-view '/ru/practice|synthetic-signed|dashboard' \
+            --actual-view '/ru/practice|synthetic-signed|dashboard' \
+            --out artifacts/practice-visual/cross-engine-synthetic
+      # Cross-engine pixel scores are diagnostic only: OS/engine/font differences are expected.
       - name: Upload synthetic geometry and browser screenshots only
         if: always()
         uses: actions/upload-artifact@v4
