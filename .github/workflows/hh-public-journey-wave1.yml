@@ -5,6 +5,7 @@ on:
     paths:
       - 'components/public-pathway-strip.*'
       - 'components/public-journey-refresh.module.css'
+      - 'components/personal-testimonials.module.css'
       - 'app/**/about/page.tsx'
       - 'app/\[locale\]/contact/**'
       - 'tests/public-pathway-migration.test.mjs'
