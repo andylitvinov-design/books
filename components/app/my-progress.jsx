@@ -7,7 +7,7 @@ import {
   Activity, ArrowRight, BookOpen, CalendarDays, CheckCircle2,
   ChevronRight, ClipboardCheck, Clock3, FileText, Flower2,
   GraduationCap, Leaf, Play, PlaySquare, RotateCw, ShieldCheck,
-  Sparkles, UserRound, Video, NotebookPen,
+  Sparkles, UserRound, NotebookPen,
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { buildMyProgress } from '@/lib/app/my-progress.mjs'
@@ -30,7 +30,7 @@ const COPY = {
     noMandalas:'Your saved video mandalas will appear here.',
     mandalaCreate:'Create a mandala', mandalaOpen:'Open my videos',
     resume:'Continue where you left off', resumeNow:'Continue', resumeEmpty:'Explore a course or take a test',
-    recentActivity:'All activity', recentIntro:'The records below are based on actual saves and confirmations.',
+    recentActivity:'All activity', activityEyebrow:'ACTIVITY JOURNAL', recentIntro:'The records below are based on actual saves and confirmations.',
     saved:'Saved', completed:'Completed', watched:'Marked watched',
     mastered:'Marked as mastered', in_progress:'In progress',
     active:'In progress', paused:'Paused', draft:'Draft', closed:'Closed', archived:'Archived',
@@ -63,7 +63,7 @@ const COPY = {
     noMandalas:'Здесь появятся ваши сохранённые видео-мандалы.',
     mandalaCreate:'Создать мандалу', mandalaOpen:'Открыть мои видео',
     resume:'Продолжить с того места', resumeNow:'Продолжить', resumeEmpty:'Выбрать курс или тест',
-    recentActivity:'Вся активность', recentIntro:'Только фактические сохранения и подтверждённые вами действия.',
+    recentActivity:'Вся активность', activityEyebrow:'ДНЕВНИК АКТИВНОСТИ', recentIntro:'Только фактические сохранения и подтверждённые вами действия.',
     saved:'Сохранено', completed:'Завершено', watched:'Отмечено просмотренным',
     mastered:'Отмечено освоенным', in_progress:'В процессе',
     active:'В процессе', paused:'Приостановлено', draft:'Черновик', closed:'Закрыто', archived:'В архиве',
@@ -96,7 +96,7 @@ const COPY = {
     noMandalas:'Tus videomandalas guardadas aparecerán aquí.',
     mandalaCreate:'Crear mandala', mandalaOpen:'Abrir mis vídeos',
     resume:'Continúa donde lo dejaste', resumeNow:'Continuar', resumeEmpty:'Elegir un curso o test',
-    recentActivity:'Toda la actividad', recentIntro:'Solo acciones realmente guardadas o confirmadas por ti.',
+    recentActivity:'Toda la actividad', activityEyebrow:'DIARIO DE ACTIVIDAD', recentIntro:'Solo acciones realmente guardadas o confirmadas por ti.',
     saved:'Guardado', completed:'Completado', watched:'Marcado visto',
     mastered:'Marcado aprendido', in_progress:'En curso',
     active:'En curso', paused:'Pausado', draft:'Borrador', closed:'Cerrado', archived:'Archivado',
@@ -228,8 +228,8 @@ export default function MyProgress({ data, locale='en' }) {
   const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'),[progress])
   const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'),[progress])
   const lastActivity=useMemo(()=>progress.entries.filter(entry=>
-    entry.category==='tests'&&entry.status==='in_progress'
-    || entry.category==='courses'&&['active','paused','draft'].includes(entry.status)
+    (entry.category==='tests'&&entry.status==='in_progress')
+    || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status))
   )[0], [progress])
   const filtered=useMemo(()=>filter==='all' ? progress.entries
     : progress.entries.filter(entry=>entry.category===filter),[progress,filter])
@@ -347,13 +347,14 @@ export default function MyProgress({ data, locale='en' }) {
 
     <section className={styles.section} id="hh-progress-activity" aria-labelledby="hh-progress-activity-title">
       <div className={styles.sectionHead}>
-        <div><span className={styles.sectionEyebrow}>{t.recentIntro}</span>
+        <div><span className={styles.sectionEyebrow}>{t.activityEyebrow}</span>
           <h2 id="hh-progress-activity-title">{t.recentActivity}</h2></div>
         <button type="button" className={styles.refresh} disabled={sources.loading}
           onClick={()=>setReloadKey(key=>key+1)} aria-label={t.refresh}>
           <RotateCw size={18} aria-hidden="true"/>
         </button>
       </div>
+      <p className={styles.activityIntro}>{t.recentIntro}</p>
       <nav className={styles.filters} aria-label={t.recentActivity}>
         {FILTERS.map(id=><button key={id} type="button" aria-pressed={filter===id}
           className={filter===id?styles.filterActive:''}
