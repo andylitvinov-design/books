@@ -374,10 +374,12 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // and the live scene rail changes the original (not a mock) scene.
         await compactHypno.locator("[data-hypno-request-edit]").click();
         await compactHypno.locator('[data-hypno-problem="1"]').click();
-        await compactHypno.locator('[data-hypno-goal="recovery"]').click();
+        // The earlier real-film test selected MONEY. Match its actual goal catalogue.
+        assert.equal(await hero.getAttribute("data-video-theme-active"),"money");
+        await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I allow myself rest|Я выбираю отдых|Me permito descansar/i);
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
