@@ -1475,7 +1475,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const openQuickDetailed = (anchor:string) => {
     setQuickDetailedOpen(true);
     window.setTimeout(()=>{
-      document.getElementById(anchor)?.scrollIntoView({
+      const section = document.getElementById(anchor);
+      if (!section) return;
+      // Opening the collapsed disclosure can replace the clicked anchor
+      // before WebKit performs its default navigation. Retain a real URL
+      // fragment for mobile deep links and back/forward, then scroll.
+      if (window.location.hash !== "#" + anchor) window.location.hash = anchor;
+      section.scrollIntoView({
         behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
         block:"start",
       });
