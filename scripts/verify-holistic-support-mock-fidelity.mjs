@@ -281,11 +281,24 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await filter.locator('[data-goal-axis]').count(),6,
             label+" merged Meaning has six independent editable indicators");
           await filter.locator('[data-goal-sector="money"]').click();
+          // On touch WebKit, the 18px input may move during automatic scrolling.
+          // Tap its full visible label (actual 44px+ finger target), then verify
+          // that React committed the real checkbox state. Never force-check.
+          const tapChoice = async (kind, id) => {
+            const labelRow = filter.locator('[data-goal-'+kind+'="'+id+'"]');
+            const input = labelRow.locator('input');
+            if (await input.isChecked()) return;
+            await labelRow.click();
+            await page.waitForFunction(({kind,id}) => {
+              const el=document.querySelector('[data-goal-'+kind+'="'+id+'"] input');
+              return el instanceof HTMLInputElement && el.checked;
+            }, {kind,id}, {timeout:6500});
+          };
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
-            await filter.locator('[data-goal-concern="'+concern+'"] input').check();
+            await tapChoice("concern", concern);
           }
           for (const goal of ["stableIncome","moneyConfidence","growth","clearPlan"]) {
-            await filter.locator('[data-goal-task="'+goal+'"] input').check();
+            await tapChoice("task", goal);
           }
           assert.equal(await filter.locator('[data-goal-concern] input:checked').count(),4,
             label+" more than three problems can be selected");
