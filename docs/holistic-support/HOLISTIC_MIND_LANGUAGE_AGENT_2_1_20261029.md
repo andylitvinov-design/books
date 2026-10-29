@@ -8,7 +8,7 @@ This changes the **existing** Holistic Support Guide via an optional "Free conve
 
 ## Layer diagram
 
-\`\`\`text
+```text
 HolisticSupportMobile (existing authenticated/public page and approved feeds)
   └─ HolisticSupportInlineGuide (existing guided wizard, untouched by default)
        └─ Free conversation tab
@@ -27,15 +27,15 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
                 ├─ no raw message, private history, profile or health scores sent
                 ├─ one editorial response-rephrasing operation only
                 └─ abort/terminate + deterministic fallback
-\`\`\`
+```
 
 ## New files and exact roles
-- \`lib/holistic-support/language-agent.mjs\`: ephemeral state/intent/risk/constraint/candidate selection.
-- \`lib/holistic-support/language-agent.d.mts\`: stable public contract for TypeScript callers.
-- \`components/holistic-language-conversation.tsx\`: opt-in free-text conversation within the existing guide, including stop/reset and optional WebGPU UI.
-- \`components/holistic-language-conversation.module.css\`: mobile accessible interface.
-- \`public/holistic-mind/webllm-worker.mjs\`: experimental browser-only WebLLM; no tokens or server inference.
-- \`tests/holistic-language-agent.test.mjs\`: multilingual, negative constraints, safety, approved-only behavior.
+- `lib/holistic-support/language-agent.mjs`: ephemeral state/intent/risk/constraint/candidate selection.
+- `lib/holistic-support/language-agent.d.mts`: stable public contract for TypeScript callers.
+- `components/holistic-language-conversation.tsx`: opt-in free-text conversation within the existing guide, including stop/reset and optional WebGPU UI.
+- `components/holistic-language-conversation.module.css`: mobile accessible interface.
+- `public/holistic-mind/webllm-worker.mjs`: experimental browser-only WebLLM; no tokens or server inference.
+- `tests/holistic-language-agent.test.mjs`: multilingual, negative constraints, safety, approved-only behavior.
 
 ## Contract and precedence
 1. **Input safety**: bounded input length; fail-closed when long, urgent routing using the reviewed Home Guide preflight; no model rephrasing of urgent or long messages.
@@ -49,14 +49,14 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
 
 ## Feature controls / costs
 - Free conversation: always reachable from the existing guide via its new toggle. It operates without added model packages or API calls.
-- \`NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL\`: **unset/false by default**. Do not flip for production until the gates below are satisfied. Only changes client code delivery; does not activate a paid API.
-- On model click, the browser imports the pinned CDN WebLLM runtime \`@mlc-ai/web-llm@0.2.86\`, verifies the selected model ID exists, and downloads the selected prebuilt Qwen2.5-0.5B weights to browser cache. The chosen variant requires roughly 1 GB of usable GPU memory, plus RAM/disk; actual transferred weight size, browser CSP and time must be measured, not assumed. The exact external runtime build/asset integrity is **not yet SRI-attested**. For production, move to a verified and locked NPM/bundled runtime and supply-chain-reviewed model assets.
+- `NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL`: **unset/false by default**. Do not flip for production until the gates below are satisfied. Only changes client code delivery; does not activate a paid API.
+- On model click, the browser imports the pinned CDN WebLLM runtime `@mlc-ai/web-llm@0.2.86`, verifies the selected model ID exists, and downloads the selected prebuilt Qwen2.5-0.5B weights to browser cache. The chosen variant requires roughly 1 GB of usable GPU memory, plus RAM/disk; actual transferred weight size, browser CSP and time must be measured, not assumed. The exact external runtime build/asset integrity is **not yet SRI-attested**. For production, move to a verified and locked NPM/bundled runtime and supply-chain-reviewed model assets.
 - Weak devices, missing WebGPU, download failure or model error: deterministic mode is still available.
 - API cost target: $0 for P0/P1; device/network cost is real. Never silently switch to paid hosted inference.
 - This is a **public text guide**, not an independent licensed therapist, medical chatbot or trauma-processing program.
 
 ## MCP / AG-UI / A2A decisions
-- MCP: future *server-side* capability registry for trusted functions \`getMyVerifiedTestSummaries\`, \`listApprovedAudio\`, \`listPublishedVideo\`, \`viewCourses\`, \`submitSessionInquiry\`; never expose Supabase service role or secrets in browser.
+- MCP: future *server-side* capability registry for trusted functions `getMyVerifiedTestSummaries`, `listApprovedAudio`, `listPublishedVideo`, `viewCourses`, `submitSessionInquiry`; never expose Supabase service role or secrets in browser.
 - AG-UI: **candidate** to standardize state/event streaming later. This PR uses the existing React guide instead of introducing a heavyweight second frontend runtime.
 - A2A: defer until independent agents genuinely need interoperable cross-agent tasks. No value in pretending existing code already uses A2A.
 - Mastra / LangGraph: selective future work orchestration for multi-step video sessions; do not duplicate existing state machines.
@@ -64,19 +64,19 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
 - Dify / Open WebUI: research reference; full product/UI adoption requires license and branding review. No copying their UI into our product.
 
 ## Secure personal memory (P2 contract; not activated in this PR)
-Client memories are separate from raw chat transcripts. Define a future \`AgentMemory\` with:
-\`\`\`json
+Client memories are separate from raw chat transcripts. Define a future `AgentMemory` with:
+```json
 {"id":"uuid","user_id":"server-verified","kind":"preferred_name|speech_style|format_preference|confirmed_goal|user_note","value":"validated minimal text","source":"explicit_user_request","confirmed_at":"ISO UTC","expires_at":null,"scope":"recommendations","consent_version":"v1","revoked_at":null}
-\`\`\`
+```
 Store only with authenticated owner/RLS + explicit, revocable purpose-specific consent. Use existing Unified Profile service, not a duplicate summary scorer; filter out implicit private or medical information. Client needs list/edit/delete/export; removal must cover derived context, not just UI labels. Never set authenticated/ownerScoped from request JSON. Profile memory integration requires independent migrations and two-account IDOR/RLS tests; do not fake completion now.
 
 ## P2 validated catalogue adapters
 Implement a server-owned factory that passes only approved items to the browser. Recommended source interfaces:
-- \`getApprovedVideos(locale, topic, duration, rights)\`;
-- \`getApprovedAudio(locale, topic, duration, manifest)\` (Reiki course intros only when verified);
-- \`getGuestTests(locale, topic)\`;
-- \`getConfirmedSessions(locale, practice)\` (offers != reservations);
-- \`getPublishedCourses(locale, topic)\`.
+- `getApprovedVideos(locale, topic, duration, rights)`;
+- `getApprovedAudio(locale, topic, duration, manifest)` (Reiki course intros only when verified);
+- `getGuestTests(locale, topic)`;
+- `getConfirmedSessions(locale, practice)` (offers != reservations);
+- `getPublishedCourses(locale, topic)`.
 All must reuse existing rankers and published-content gates; no independent catalog or arbitrary URL constructed by the language model. Audio is not silently replaced by a video soundtrack.
 
 ## P3 personalized journeys and client sessions
@@ -100,7 +100,7 @@ For an authenticated session: explicit purpose-specific profile consent → revi
 
 ## Implementation follow-up priorities
 1. Fix any actual CI/type errors at exact head before declaring mergeable.
-2. Add producer adapter for verified audio from \`publishedReikiAudioRecommendations\`, preserving published manifest gates.
+2. Add producer adapter for verified audio from `publishedReikiAudioRecommendations`, preserving published manifest gates.
 3. Add owner-consented memory within existing profile/RLS (requires migration + consent UI).
 4. Replace remote CDN worker import with locked, SRI-attested/bundled WebLLM runtime, CSP review and mobile performance metrics.
 5. Extend NLU with annotated 200+ test conversations, corrections, speech personalization, and confidence calibration.
