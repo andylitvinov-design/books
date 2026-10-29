@@ -7,6 +7,7 @@ on:
       - 'lib/holistic-support/client-reasoning-bridge.mjs'
       - 'lib/holistic-support/intelligence-request.mjs'
       - 'tests/intelligence-request.test.mjs'
+      - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'tests/client-reasoning-core.test.mjs'
       - 'tests/client-reasoning-bridge.test.mjs'
       - 'lib/holistic-support/axis-offer-ranker.mjs'
@@ -52,9 +53,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs
+        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs tests/intelligence-request.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: TypeScript check
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
