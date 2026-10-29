@@ -16,11 +16,11 @@
 .emblem { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border: 1px solid #abd7c4; border-radius: 11px; background: #e7f5e9; color: #008c67; }
 .enable { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .enable input, .visibilityChoices input { accent-color: #009b73; width: 18px; height: 18px; flex: none; }
-.description { margin: 4px 0 12px; color: #638274; font-size: 12px; line-height: 1.4; }
+.description { margin: 4px 0 12px; color: #4b6d5c; font-size: 12px; line-height: 1.4; }
 .controls { display: flex; flex-direction: column; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .controls:disabled { opacity: .76; }
 .sectionLabel { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; padding: 0; margin: 7px 0 4px; color: #225342; font-size: 14px; line-height: 1.35; font-weight: 800; }
-.sectionLabel small { flex: none; color: #628a77; font-size: 11px; font-weight: 650; }
+.sectionLabel small { flex: none; color: #577d6a; font-size: 11px; font-weight: 650; }
 .suggestions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; min-width: 0; }
 .suggestion { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; min-width: 0; min-height: 68px; padding: 10px 9px; border: 1px solid #d5dfd7; border-radius: 13px; background: #f8fbf6; color: #345649; text-align: left; font-size: 12px; font-weight: 680; line-height: 1.3; overflow-wrap: anywhere; cursor: pointer; }
 .suggestion[aria-pressed="true"] { border: 2px solid #049a73; padding: 9px 8px; background: #e8f6ed; color: #136347; }
@@ -35,9 +35,9 @@
 .modeHeading svg { flex: none; color: #008d68; }
 .density { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
 .density button { min-width: 0; min-height: 44px; padding: 5px; border: 1px solid #d9e2d8; border-radius: 11px; background: #fffcf6; color: #4d6c5d; font-size: 12px; font-weight: 750; cursor: pointer; }
-.density button[aria-pressed="true"] { background: #0d9d75; border-color: #0d9d75; color: white; }
+.density button[aria-pressed="true"] { background: #087f5e; border-color: #087f5e; color: white; }
 .modeGroup input[type="range"] { display: block; width: 100%; min-height: 36px; margin: 0; accent-color: #0a9f75; cursor: pointer; }
-.frequencyLabels { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; color: #698577; font-size: 10px; }
+.frequencyLabels { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; color: #5c796a; font-size: 10px; }
 .frequencyLabels strong { color: #0b8968; }
 .visibility { margin-top: 2px; }
 .visibilityChoices { display: grid; gap: 7px; }
@@ -48,7 +48,7 @@
 .previewTitle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #25765b; }
 .previewText { overflow-wrap: anywhere; font-size: clamp(15px,3.4vw,20px); line-height: 1.27; font-weight: 800; color: #155540; }
 .preview small { color: #608675; font-size: 10px; }
-.privacy { margin: 10px 1px 0; color: #678a77; font-size: 11px; line-height: 1.45; }
+.privacy { margin: 10px 1px 0; color: #507262; font-size: 11px; line-height: 1.45; }
 @media (min-width: 600px) {
   .suggestions { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .modeGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }

@@ -17,9 +17,9 @@ const exposed = {};
 new Function("exports",transpile.outputText)(exposed);
 const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations} = exposed;
 
-test("three locales and all four site themes have five ready-to-select, non-clinical phrases", () => {
+test("three locales and all six site themes have five ready-to-select, non-clinical phrases", () => {
   for(const locale of ["en","ru","es"]){
-    for(const theme of ["energy","money","relationships","goals"]){
+    for(const theme of ["energy","money","relationships","goals","life","health"]){
       const choices=suggestedVideoAffirmations[locale][theme];
       assert.equal(choices.length,5,locale+" "+theme);
       assert.ok(choices.every(text=>text.trim().length>10 && text.length<=90));
@@ -83,7 +83,7 @@ test("existing video preview and export use identical overlays; frame mode reque
 
 test("affirmation panel uses original light cream and green UI with narrow iPhone controls", () => {
   assert.match(css,/background:\s*#fffdf6/);
-  assert.match(css,/background:\s*#0d9d75/);
+  assert.match(css,/background:\s*#087f5e/);
   assert.match(css,/@media \(max-width: 360px\)/);
   assert.match(css,/min-width:\s*0/);
   assert.match(css,/grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
