@@ -32,7 +32,7 @@ test('My Orders / Clients shell uses real cards, order-specific existing private
   const hub=read('components/app/messages-orders-clients.jsx')
   assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
   assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
-  assert.match(page,/query\?\.section==='orders'/)
+  assert.match(hub,/q\.get\('section'\)==='clients'/)
   assert.doesNotMatch(page,/showOrders\?/)
   assert.match(hub,/data-orders-clients-hub/)
   assert.match(hub,/section==='orders'/)
