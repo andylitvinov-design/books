@@ -6,12 +6,26 @@
 
 - Approved reference: public/sanitized URL or private file reference
 - Current/broken screenshot (if available):
+- Reference exact route + query (verified), user role and view type (dashboard/editor/dialog/etc.):
+- Actual exact route + query (verified), user role and view type:
+- **Page identity gate:** PASS (same route/state/view) / FAIL (fix OAuth/navigation; do not run pixel comparison)
 - Canonical route(s), EN/RU/ES:
 - React owner component / CSS module:
 - Verified production branch, SHA and Vercel deployment:
 - Reference viewport content width × height (CSS px), DPR, browser and crop:
 - Guest / client / practitioner state; synthetic fixture:
 - Existing auth, API, RLS, payment, media and navigation to preserve:
+
+## Screen and navigation mapping (MANDATORY)
+
+| Entry | Real start route | Trigger/button | Expected resulting route and page type | Actual observed route and page type | Status |
+| --- | --- | --- | --- | --- | --- |
+| Guest → Google → dashboard | | | | | |
+| Dashboard → service listing | | | | | |
+| Explicit Add → protected editor | | | | | |
+| Editor → original Practice home | | | | | |
+
+Do not compare screenshot pixels across different UI view types. A service creation form is not a failed screenshot of the main dashboard; broken redirects and unrequested editor opening are navigation defects.
 
 ## Visual block map
 
@@ -48,6 +62,7 @@
 
 ## Acceptance
 
+- [ ] **Page identity gate PASS:** same route, query intent, auth state, selected view, and viewport (else fix navigation before visual comparison).
 - [ ] Correct sections/order; no extra shell, banner or duplicate bottom tabs.
 - [ ] Accurate image crop, spacing, density, type and visible CTAs.
 - [ ] No unintended horizontal scrolling or safe-area overlap.
