@@ -30,10 +30,10 @@ test('separate account-authenticated read-only endpoint does not authorize cross
 test('My Orders / Clients shell uses real cards, order-specific existing private conversation, not fake payment',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const hub=read('components/app/messages-orders-clients.jsx')
-  assert.match(page,/<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/)
-  assert.match(page,/showOrders\?<MessagesOrdersClients/)
+  assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
+  assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
   assert.match(page,/query\?\.section==='orders'/)
-  assert.match(page,/href=\{'\/'\+locale\+'\/app\/messages\?'\+\(showOrders\?'tab=chats':'section=orders'\)\}/)
+  assert.doesNotMatch(page,/showOrders\?/)
   assert.match(hub,/data-orders-clients-hub/)
   assert.match(hub,/section==='orders'/)
   assert.match(hub,/section==='clients'/)
