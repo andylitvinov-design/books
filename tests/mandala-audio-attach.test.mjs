@@ -90,10 +90,10 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
   assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
-test("sound-only covers reuse 13 real local first-party illustration files",()=>{
+test("34 illustrated sound-only rows reuse verified first-party JPG assets and each has Play",()=>{
   const covers=[...styles.matchAll(/\.audioTrackRow\[data-audio-id="([a-z-]+)"\] \.audioTileGlyph\{background-image:url\('([^']+)'\)\}/g)];
-  assert.equal(covers.length,13,"all thirteen site audio sounds have honest illustrative cover art");
-  assert.equal(new Set(covers.map(x=>x[1])).size,13);
+  assert.equal(covers.length,34,"all 34 site sounds have first-party illustrative covers");
+  assert.equal(new Set(covers.map(x=>x[1])).size,34);
   for(const [,id,url] of covers){
     assert.match(url,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.jpg$/);
     assert.ok(existsSync(new URL("../public"+url,import.meta.url)),id+" first-party cover must exist");
@@ -101,6 +101,12 @@ test("sound-only covers reuse 13 real local first-party illustration files",()=>
   assert.match(studio,/data-video-audio-theme=\{item\}/);
   assert.match(studio,/aria-pressed=\{audioTheme===item\}/);
   assert.match(studio,/data-video-audio-favorite=\{track.id\}/);
+  assert.match(studio,/data-video-audio-play=\{track.id\}/);
+  assert.match(studio,/function playAudioTrack\(choice:/);
+  assert.match(studio,/flushSync\(\(\)=>\{/);
+  assert.match(studio,/player\.play\(\)\.catch/);
+  assert.match(styles,/\.audioPlayButton\{display:grid;place-items:center/);
+  assert.match(styles,/\.audioPlayButton\[aria-pressed="true"\]/);
   assert.match(studio,/setAudioFavorites\(list=>/);
   assert.match(styles,/\.audioFilterRow\{display:grid/);
   assert.match(styles,/\.audioChipRail button\{flex:none;min-height:42px/);

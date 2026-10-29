@@ -1100,3 +1100,53 @@
   .audioFilterRow{grid-template-columns:104px minmax(0,1fr)}
   .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Enlarged original audio library · every playable row starts with an
+   independent real Play/Pause button. No media files or videos are embedded
+   in the list; illustrative images below are existing first-party JPGs. */
+.audioTrackRow{grid-template-columns:46px minmax(0,1fr) 44px;gap:0}
+.audioPlayButton{display:grid;place-items:center;align-self:center;justify-self:center;
+  width:44px;height:48px;min-width:44px;border:0;border-radius:11px;
+  background:#e4f4e9;color:#126d53;cursor:pointer;transition:background .15s ease}
+.audioPlayButton[aria-pressed="true"]{background:#1c8d68;color:#fff}
+.audioPlayButton:focus-visible{outline:3px solid #dbaf63;outline-offset:2px}
+.audioTrackRow .audioTrackSelect{grid-template-columns:49px minmax(0,1fr) auto;gap:6px;
+  padding:7px 3px 7px 0;min-width:0}
+.audioTrackRow .audioTrackSelect[aria-pressed="true"]{padding:7px 3px 7px 0}
+.audioTrackRow .audioTileGlyph{width:49px;height:53px}
+.audioTrackRow .audioTrackPick{min-width:0;font-size:11px;max-width:47px}
+.audioTrackRow .audioTileText strong{font-size:14px;line-height:1.2}
+.audioTrackRow .audioNewTag{display:inline-flex;align-items:center;min-height:18px;
+  padding:2px 5px;border-radius:999px;background:#e3f6e8;color:#176b4d;
+  font-size:9px;line-height:1;font-weight:850;flex:none}
+.audioTrackRow .audioTileText small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.audioTrackRow[data-audio-id="soft-piano"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="kalimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="harp"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="flute"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="celesta"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="strings"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="marimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/golden-harvest.jpg')}
+.audioTrackRow[data-audio-id="lullaby"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="handpan"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="forest"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/fern-awakening.jpg')}
+.audioTrackRow[data-audio-id="stream"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="waterfall"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/gentle-falls.jpg')}
+.audioTrackRow[data-audio-id="fireplace"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/desert-light.jpg')}
+.audioTrackRow[data-audio-id="night"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="birdsong"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/morning-dew.jpg')}
+.audioTrackRow[data-audio-id="singing-bowl"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="wind-chimes"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="crystal"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="cosmos"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="soft-beat"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/solar-surge.jpg')}
+.audioTrackRow[data-audio-id="earth-drum"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/river-power.jpg')}
+@media(max-width:380px){
+  .audioTrackRow{grid-template-columns:44px minmax(0,1fr) 44px}
+  .audioTrackRow .audioTrackSelect{grid-template-columns:40px minmax(0,1fr) auto;gap:5px;padding:6px 2px 6px 0}
+  .audioTrackRow .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 0}
+  .audioTrackRow .audioTileGlyph{width:40px;height:46px}
+  .audioTrackRow .audioTileText strong{font-size:13px}
+  .audioTrackRow .audioTrackPick{font-size:10px;max-width:35px}
+}
+@media(prefers-reduced-motion:reduce){.audioPlayButton{transition:none}}

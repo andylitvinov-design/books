@@ -19,14 +19,17 @@ function audioApi() {
   return exports;
 }
 
-test("13 original soundtrack presets have distinct site-local playable masters matching the video export source",async()=>{
-  assert.equal(mandalaAudioTracks.length,13);
+test("34 original soundtrack presets have distinct site-local WAV masters matching video export",async()=>{
+  assert.equal(mandalaAudioTracks.length,34);
+  assert.equal(mandalaAudioTracks.filter(x=>x.new).length,21);
   assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,13);
   const api=audioApi();
   for(const track of mandalaAudioTracks){
-    assert.ok(["tones","pulse","nature"].includes(track.kind),track.id);
+    assert.ok(["melody","tones","pulse","nature"].includes(track.kind),track.id);
     assert.ok(["slow","steady","active"].includes(track.pace),track.id);
     assert.ok(track.themes.length && track.moods.length,track.id);
+    assert.ok([8,16].includes(track.durationSeconds),track.id);
+    assert.equal(track.new,track.durationSeconds===16,track.id);
     for(const lang of ["en","ru","es"]) {
       assert.ok(track.name[lang]&&track.detail[lang],track.id+" "+lang);
     }
@@ -43,6 +46,7 @@ test("13 original soundtrack presets have distinct site-local playable masters m
     assert.equal(file.readUInt16LE(34),16);
     const original=["harmony","prosperity","energy","love","meditation"].includes(track.id);
     assert.equal(file.readUInt32LE(24),original?44100:22050);
+    assert.equal(file.length,44+track.durationSeconds*file.readUInt32LE(24)*2,track.id+" encoded length");
     let sum=0;
     for(let i=44;i<file.length;i+=2){const a=file.readInt16LE(i)/32768;sum+=a*a}
     assert.ok(Math.sqrt(sum/((file.length-44)/2))>.028,track.id+" must contain audible sound");
@@ -52,12 +56,15 @@ test("13 original soundtrack presets have distinct site-local playable masters m
 test("smart selection ranks the current theme rather than inventing profile or test data",()=>{
   for(const theme of ["energy","money","relationships","goals","life","health"]){
     const recommended=recommendMandalaAudio({theme});
-    assert.equal(recommended.length,13);
+    assert.equal(recommended.length,34);
     assert.ok(recommended[0].themes.includes(theme),theme+" should have relevant first pick");
   }
   assert.equal(recommendMandalaAudio({theme:"money"})[0].id,"prosperity");
   assert.equal(recommendMandalaAudio({theme:"relationships"})[0].id,"love");
   assert.ok(recommendMandalaAudio({theme:"energy",kind:"nature"}).every(x=>x.kind==="nature"));
+  assert.equal(recommendMandalaAudio({kind:"melody"}).length,9);
+  assert.equal(recommendMandalaAudio({kind:"nature"}).length,9);
+  assert.equal(recommendMandalaAudio({kind:"pulse"}).length,5);
   assert.ok(recommendMandalaAudio({theme:"money",mood:"focus"}).every(x=>x.moods.includes("focus")));
   assert.ok(recommendMandalaAudio({pace:"slow"}).every(x=>x.pace==="slow"));
   assert.ok(recommendMandalaAudio({voiceFriendly:true}).every(x=>x.voiceSafe));
@@ -75,6 +82,10 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
     "data-video-audio-player","data-video-audio-rights","data-video-audio-source",
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const audioMatches = recommendMandalaAudio/);
+  assert.match(studio,/data-video-audio-play=\{track.id\}/);
+  assert.match(studio,/function playAudioTrack\(/);
+  assert.match(studio,/flushSync\(\(\)=>\{/);
+  assert.match(studio,/audioUi\.play/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
