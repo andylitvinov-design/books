@@ -434,6 +434,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.equal(await page.locator("[data-guided-profile-import]").isDisabled(),true,
             "saved scores require explicit consent");
           await goals.locator('[data-guided-goal="relationships"]').click();
+          assert.equal(await goals.locator("[data-guided-focus-goal]").count(),12);
+          await goals.locator('[data-guided-focus-goal="boundaries"]').click();
           assert.equal(await goals.locator('[data-guided-goal="relationships"]').getAttribute("aria-pressed"),"true");
           await page.locator("[data-guided-create-plan]").click();
           assert.equal(await page.locator("[data-guided-session]").count(),8);
@@ -442,6 +444,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const firstScript=await page.locator('[data-guided-session="1"] details p').innerText();
           assert.match(firstScript,/Мне трудно расслабиться/);
           assert.match(firstScript,/Я хочу больше спокойствия/);
+          assert.match(firstScript,/Личные границы/);
           assert.equal(await page.locator("[data-guided-score-provenance]").count(),0,
             "no private profile imported without consent");
           await page.locator("[data-guided-free-video]").click();
