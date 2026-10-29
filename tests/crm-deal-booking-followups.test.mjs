@@ -98,6 +98,8 @@ test('opportunity linkage is owner/contact restricted and visible in existing ta
   const manager=read('components/app/crm-opportunities.jsx')
   assert.match(manager,/result\.taskPlanned===true/)
   assert.match(manager,/result\.taskSkipped==='capacity'/)
+  assert.ok(manager.includes("if(result.taskPlanned===true)onCrmChange?.()"))
+  assert.ok(read('components/app/crm-manager.jsx').includes('onCrmChange={retry}'))
   const workflow=read('.github/workflows/hh-crm-source-check.yml')
   assert.match(workflow,/crm-deal-booking-followups\.test\.mjs/)
 })
