@@ -14,6 +14,9 @@ on:
       - "tests/holistic-reiki-audio-language-agent.test.mjs"
       - ".github/workflows/hh-language-agent.yml"
   workflow_dispatch:
+concurrency:
+  group: hh-language-agent-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
