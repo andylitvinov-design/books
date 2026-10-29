@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -28,7 +28,7 @@ const COPY = {
     exploreVideos:'Explore videos', videoSource:'Academy', replay:'Watch again',
     myMandalas:'My video mandalas', mandalaCollection:'Your privately saved MP4 videos',
     noMandalas:'Your saved video mandalas will appear here.',
-    mandalaCreate:'Create a mandala', mandalaOpen:'Open my videos',
+    mandalaCreate:'Create a mandala', mandalaOpen:'Open my videos', mandalaPlay:'Play saved video', mandalaClose:'Close video', mandalaBusy:'Opening securely…', mandalaError:'Video unavailable. Open My Videos to retry.',
     resume:'Continue where you left off', resumeNow:'Continue', resumeEmpty:'Explore a course or take a test',
     recentActivity:'All activity', activityEyebrow:'ACTIVITY JOURNAL', recentIntro:'The records below are based on actual saves and confirmations.',
     saved:'Saved', completed:'Completed', watched:'Marked watched',
@@ -61,7 +61,7 @@ const COPY = {
     exploreVideos:'Смотреть видео', videoSource:'Академия', replay:'Смотреть снова',
     myMandalas:'Мои видео-мандалы', mandalaCollection:'Готовые MP4 в личном хранилище',
     noMandalas:'Здесь появятся ваши сохранённые видео-мандалы.',
-    mandalaCreate:'Создать мандалу', mandalaOpen:'Открыть мои видео',
+    mandalaCreate:'Создать мандалу', mandalaOpen:'Открыть мои видео', mandalaPlay:'Смотреть видео', mandalaClose:'Закрыть видео', mandalaBusy:'Открываем безопасно…', mandalaError:'Видео недоступно. Повторите в «Мои видео».',
     resume:'Продолжить с того места', resumeNow:'Продолжить', resumeEmpty:'Выбрать курс или тест',
     recentActivity:'Вся активность', activityEyebrow:'ДНЕВНИК АКТИВНОСТИ', recentIntro:'Только фактические сохранения и подтверждённые вами действия.',
     saved:'Сохранено', completed:'Завершено', watched:'Отмечено просмотренным',
@@ -94,7 +94,7 @@ const COPY = {
     exploreVideos:'Explorar vídeos', videoSource:'Academia', replay:'Ver otra vez',
     myMandalas:'Mis videomandalas', mandalaCollection:'MP4 guardados de forma privada',
     noMandalas:'Tus videomandalas guardadas aparecerán aquí.',
-    mandalaCreate:'Crear mandala', mandalaOpen:'Abrir mis vídeos',
+    mandalaCreate:'Crear mandala', mandalaOpen:'Abrir mis vídeos', mandalaPlay:'Reproducir vídeo', mandalaClose:'Cerrar vídeo', mandalaBusy:'Abriendo de forma segura…', mandalaError:'Vídeo no disponible. Abre Mis vídeos para reintentar.',
     resume:'Continúa donde lo dejaste', resumeNow:'Continuar', resumeEmpty:'Elegir un curso o test',
     recentActivity:'Toda la actividad', activityEyebrow:'DIARIO DE ACTIVIDAD', recentIntro:'Solo acciones realmente guardadas o confirmadas por ti.',
     saved:'Guardado', completed:'Completado', watched:'Marcado visto',
@@ -159,16 +159,22 @@ function VideoHistoryCard({entry,lang,t}) {
     </a>
   </article>
 }
-function MandalaCard({entry,lang,t}) {
-  return <article className={styles.mandalaCard}>
-    <Link href={entry.href || '/'+lang+'/app/videos'} prefetch={false} aria-label={entry.title+' · '+t.open}>
-      <div className={styles.mandalaCover}>
-        <Sparkles size={36} strokeWidth={1.5} aria-hidden="true"/>
-        <span className={styles.mandalaPlay}><Play size={17} fill="currentColor"/></span>
-      </div>
-      <strong>{entry.title}</strong>
-      <small>{entry.detail} · {dateLabel(entry.at,lang)}</small>
-    </Link>
+function MandalaCard({entry,lang,t,player,onToggle}) {
+  const active=player?.id===entry.id ? player : null
+  return <article className={styles.mandalaCard} data-progress-saved-mandala>
+    <div className={styles.mandalaCover}>
+      <Sparkles size={36} strokeWidth={1.5} aria-hidden="true"/>
+      <span className={styles.mandalaPlay}><Play size={17} fill="currentColor"/></span>
+    </div>
+    <strong>{entry.title}</strong>
+    <small>{entry.detail} · {dateLabel(entry.at,lang)}</small>
+    <button type="button" className={styles.mandalaButton}
+      onClick={onToggle} disabled={active?.loading} aria-expanded={Boolean(active?.url)}>
+      {active?.loading?t.mandalaBusy:active?.url?t.mandalaClose:t.mandalaPlay}
+    </button>
+    {active?.url && <video src={active.url} controls playsInline preload="metadata"
+      className={styles.privateVideo} aria-label={entry.title}/>}
+    {active?.error && <p role="alert" className={styles.mandalaError}>{t.mandalaError}</p>}
   </article>
 }
 function ActivityRow({entry,lang,t}) {
@@ -201,6 +207,8 @@ export default function MyProgress({ data, locale='en' }) {
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
+  const mandalaEpoch=useRef(0)
+  const [mandalaPlayer,setMandalaPlayer]=useState({id:null,url:null,loading:false,error:false})
 
   useEffect(()=>{
     if(!accountId) return
@@ -240,6 +248,29 @@ export default function MyProgress({ data, locale='en' }) {
     {id:'videos',number:progress.totals.watchedVideos,caption:t.countVideos,Icon:PlaySquare},
     {id:'practices',number:progress.totals.practices,caption:t.countPractices,Icon:Flower2},
   ]
+  async function toggleMandala(entry) {
+    const id=entry.id.startsWith('mandalas:')?entry.id.slice(9):''
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+      return
+    }
+    const epoch=++mandalaEpoch.current
+    if(mandalaPlayer.id===entry.id) {
+      setMandalaPlayer({id:null,url:null,loading:false,error:false})
+      return
+    }
+    setMandalaPlayer({id:entry.id,url:null,loading:true,error:false})
+    try {
+      const result=await appFetch('personal-videos/'+id,undefined,'GET',{accountId})
+      if(epoch!==mandalaEpoch.current)return
+      if(typeof result?.url!=='string'||!result.url.startsWith('https://'))throw new Error('INVALID_PRIVATE_URL')
+      setMandalaPlayer({id:entry.id,url:result.url,loading:false,error:false})
+    } catch {
+      if(epoch===mandalaEpoch.current)setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+    }
+  }
+  // Invalidate outstanding signed-URL requests on account switch / unmount.
+  useEffect(()=>()=>{mandalaEpoch.current+=1},[accountId])
   const countFor=id=>progress.entries.filter(entry=>entry.category===id).length
   const jumpTo=id=>{setFilter(id);setShown(24)}
   return <section className={styles.page} data-my-progress data-account-progress-loaded={!sources.loading}>
@@ -337,7 +368,8 @@ export default function MyProgress({ data, locale='en' }) {
         </Link>
       </div>
       {mandalas.length?<div className={styles.mandalaRail}>
-        {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}/>)}
+        {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}
+          player={mandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
       </div>:<div className={styles.mandalaEmpty}>
         <Sparkles size={23} aria-hidden="true"/>
         <span>{t.noMandalas}</span>
