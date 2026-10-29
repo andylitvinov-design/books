@@ -202,6 +202,21 @@ function MandalaCard({entry,lang,t,player,onToggle}) {
     {active?.error && <p role="alert" className={styles.mandalaError}>{t.mandalaError}</p>}
   </article>
 }
+function RubricCard({entry,lang,t}) {
+  const Icon=ICONS[entry.category] || Activity
+  return <article className={styles.rubricCard} data-progress-rubric-card={entry.category}>
+    <Link href={entry.href||SECTION_HREF(entry.category,lang)} prefetch={false}
+      aria-label={t.open+' · '+entry.title}>
+      <div className={styles.rubricCover} data-category={entry.category}>
+        <Icon size={30} strokeWidth={1.6} aria-hidden="true"/>
+        <span className={styles.rubricOpen}><ChevronRight size={19}/></span>
+      </div>
+      <strong>{entry.title}</strong>
+      <small><Clock3 size={12} aria-hidden="true"/>{dateLabel(entry.at,lang)}</small>
+      <Status status={entry.status} t={t}/>
+    </Link>
+  </article>
+}
 function ActivityRow({entry,lang,t}) {
   const Icon=ICONS[entry.category] || Activity
   return <li className={styles.entry} data-category={entry.category}>
@@ -265,14 +280,21 @@ export default function MyProgress({ data, locale='en' }) {
     videoTopics:Object.fromEntries(freeMeditationVideos(lang).map(video=>[video.id,video.topics])),
     orders:sources.orders,locale:lang,
   }),[data,sources,lang])
-  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'),[progress])
-  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'),[progress])
+  const matchesTopic=entry=>selectedTopic==='all'||entry.topics?.includes(selectedTopic)
+  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'&&matchesTopic(entry)),[progress,selectedTopic])
+  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'&&matchesTopic(entry)),[progress,selectedTopic])
+  const rubrics=useMemo(()=>LIBRARY.filter(({id})=>id!=='videos'&&id!=='mandalas')
+    .map(({id,Icon})=>({id,Icon,items:progress.entries.filter(entry=>
+      entry.category===id&&(selectedTopic==='all'||entry.topics?.includes(selectedTopic)))
+    })).filter(group=>group.items.length>0),[progress,selectedTopic])
   const lastActivity=useMemo(()=>progress.entries.filter(entry=>
     (entry.category==='tests'&&entry.status==='in_progress')
     || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status))
   )[0], [progress])
-  const filtered=useMemo(()=>filter==='all' ? progress.entries
-    : progress.entries.filter(entry=>entry.category===filter),[progress,filter])
+  const filtered=useMemo(()=>progress.entries.filter(entry=>
+    (filter==='all'||entry.category===filter)
+    &&(selectedTopic==='all'||entry.topics?.includes(selectedTopic))
+  ),[progress,filter,selectedTopic])
   const mastered=videos.filter(entry=>entry.status==='mastered').length
   const overview=[
     {id:'tests',number:progress.totals.tests,caption:t.countTests,Icon:ClipboardCheck},
@@ -304,7 +326,15 @@ export default function MyProgress({ data, locale='en' }) {
   // Invalidate outstanding signed-URL requests on account switch / unmount.
   useEffect(()=>()=>{mandalaEpoch.current+=1},[accountId])
   const countFor=id=>progress.entries.filter(entry=>entry.category===id).length
-  const jumpTo=id=>{setFilter(id);setShown(24)}
+  const jumpTo=id=>{setFilter(id);setShown(24);setHistoryExpanded(true)}
+  const topicChange=id=>{setSelectedTopic(id);setFilter('all');setShown(24)}
+  const practitioner=Boolean(data?.practitioner||data?.practice)
+  const quickDestinations=[
+    {id:'profile',title:t.profileShortcut,href:root+'/portrait',Icon:UserRound},
+    {id:'orders',title:t.ordersShortcut,href:root+'/messages?section=orders',Icon:CalendarDays},
+    {id:'messages',title:t.messagesShortcut,href:root+'/messages',Icon:Activity},
+    ...(practitioner?[{id:'services',title:t.servicesShortcut,href:root+'/practice?panel=services',Icon:Leaf}]:[]),
+  ]
   return <section className={styles.page} data-my-progress data-account-progress-loaded={!sources.loading}>
     <header className={styles.hero}>
       <div className={styles.heroEyebrow}><Leaf size={14} aria-hidden="true"/>{t.eyebrow}</div>
@@ -327,6 +357,16 @@ export default function MyProgress({ data, locale='en' }) {
           <span>{t[id]}</span>
           <small>{caption}</small>
         </button>)}
+      </div>
+      <nav className={styles.topicNav} aria-label={t.topicsHeader} data-progress-topic-filters>
+        <span>{t.topicsHeader}</span>
+        {TOPIC_IDS.map(id=><button type="button" key={id} aria-pressed={selectedTopic===id}
+          onClick={()=>topicChange(id)}>{id==='all'?t.allTopics:t[id]}</button>)}
+      </nav>
+      <div className={styles.quickLinks} aria-label={t.library} data-progress-existing-function-links>
+        {quickDestinations.map(({id,title,href,Icon})=><Link href={href} key={id} prefetch={false}>
+          <Icon size={17} aria-hidden="true"/><span>{title}</span><ChevronRight size={15} aria-hidden="true"/>
+        </Link>)}
       </div>
     </header>
 
@@ -363,15 +403,41 @@ export default function MyProgress({ data, locale='en' }) {
           <h2 id="hh-progress-library-title">{t.library}</h2></div>
       </div>
       <div className={styles.library}>
-        {LIBRARY.map(({id,Icon,tone})=><a key={id} href="#hh-progress-activity"
+        {LIBRARY.map(({id,Icon,tone})=><a key={id} href={countFor(id)
+          ? '#'+(id==='videos'?'hh-progress-watch-title':id==='mandalas'?'hh-progress-mandalas-title':'hh-progress-rail-'+id)
+          : SECTION_HREF(id,lang)}
           className={styles.libraryTile} data-tone={tone}
-          onClick={()=>jumpTo(id)} aria-label={t[id]+': '+countFor(id)}>
+          onClick={()=>{setFilter(id);setShown(24)}} aria-label={t[id]+': '+countFor(id)}>
           <span className={styles.libraryIcon}><Icon size={25} strokeWidth={1.8} aria-hidden="true"/></span>
           <span className={styles.libraryCopy}><strong>{t[id]}</strong>
             <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':countFor(id)} {t.itemCount}</small></span>
           <ChevronRight className={styles.libraryArrow} size={18} aria-hidden="true"/>
         </a>)}
       </div>
+    </section>
+
+    <section className={styles.rubricCollection} data-progress-horizontal-history aria-label={t.sectionsHistory}>
+      <div className={styles.rubricCollectionHead}>
+        <h2>{t.sectionsHistory}</h2>
+        <small>{t.recentByTopic}</small>
+      </div>
+      {rubrics.length ? rubrics.map(({id,items})=>
+        <section className={styles.rubricSection} key={id} id={'hh-progress-rail-'+id}
+          aria-labelledby={'hh-progress-rail-heading-'+id}>
+          <div className={styles.sectionHead}>
+            <h3 id={'hh-progress-rail-heading-'+id}>{t[id]} <small>({items.length})</small></h3>
+            <Link href={SECTION_HREF(id,lang)} prefetch={false} className={styles.sectionLink}>
+              {t.viewSection}<ArrowRight size={17}/>
+            </Link>
+          </div>
+          <div className={styles.rubricRail} role="list" aria-label={t[id]}>
+            {items.slice(0,14).map(entry=><div role="listitem" key={entry.id}>
+              <RubricCard entry={entry} lang={lang} t={t}/>
+            </div>)}
+          </div>
+        </section>
+      ) : !sources.loading && selectedTopic!=='all'
+        ? <p className={styles.topicEmpty}>{t.noTopicHistory}</p> : null}
     </section>
 
     <section className={styles.section} aria-labelledby="hh-progress-resume-title">
@@ -410,6 +476,11 @@ export default function MyProgress({ data, locale='en' }) {
     </section>
 
     <section className={styles.section} id="hh-progress-activity" aria-labelledby="hh-progress-activity-title">
+      <button type="button" className={styles.fullHistoryToggle}
+        aria-expanded={historyExpanded} onClick={()=>setHistoryExpanded(value=>!value)}>
+        {historyExpanded?t.collapseHistory:t.expandHistory}<ChevronRight size={18} aria-hidden="true"/>
+      </button>
+      {historyExpanded && <>
       <div className={styles.sectionHead}>
         <div><span className={styles.sectionEyebrow}>{t.activityEyebrow}</span>
           <h2 id="hh-progress-activity-title">{t.recentActivity}</h2></div>
@@ -435,6 +506,7 @@ export default function MyProgress({ data, locale='en' }) {
       </div>}
       {filtered.length>shown&&<button type="button" className={styles.more}
         onClick={()=>setShown(count=>count+24)}>{t.more}<ChevronRight size={16}/></button>}
+      </>}
     </section>
     <footer className={styles.footer}>
       <ShieldCheck size={17} aria-hidden="true"/>
