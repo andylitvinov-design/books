@@ -1329,6 +1329,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <details className={videoStyles.moreFilters} data-video-advanced-filters>
         <summary>{layout.extraFilters}</summary>
         <div className={videoStyles.catalogFilters} data-video-catalog-filters>
+          <label><span>{ui.format}</span>
+            <select data-video-advanced-aspect value={aspect} disabled={recording||preparing}
+              onChange={event=>setAspect(event.currentTarget.value as Aspect)}>
+              <option value="portrait">9:16</option>
+              <option value="square">1:1</option>
+              <option value="landscape">16:9</option>
+            </select>
+          </label>
           <label><span>{supportUi.filterStyle}</span>
             <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
               disabled={recording||preparing}
