@@ -217,7 +217,11 @@ test("no medical inference, URL health params, storage, hidden CRM send or fabri
   assert.match(editor, /data-support-goal-checkin=\{sector\}/);
   assert.match(editor, /data-support-goal-checkin-input value=\{currentCheckin\}/);
   assert.match(editor, /onCheckinChange\(sector, Number\(event\.target\.value\)\)/);
-  assert.match(editor, /accepted\[id\]\?\.checkin === scores\[goalSectorCheckinKey\[id\]\]/);
+  // Parent state is authoritative after an atomic WebKit Save + Next.
+  // A dirty or globally changed check-in must still invalidate the badge.
+  assert.match(editor, /const snapshot = savedSectors\[id\] \?\? accepted\[id\]/);
+  assert.match(editor, /snapshot\.checkin === scores\[goalSectorCheckinKey\[id\]\]/);
+  assert.match(editor, /snapshot && !dirty\[id\]/);
   assert.match(editor, /checkin: currentCheckin/);
   assert.match(css, /\.sharedCheckin \{ display: grid;/);
   assert.match(client, /rankSupportGoalVideos/);
