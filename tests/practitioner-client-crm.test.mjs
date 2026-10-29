@@ -82,7 +82,7 @@ test('message send uses real server session, exact request participant and immut
   assert.match(server,/r\.account_id/)
   assert.match(server,/p\.trusted_auth_user_id/)
   assert.match(server,/const scope=await participant\(db,actor,input\.requestId,\{lock:true\}\)/)
-  assert.match(server,/old!==text/)
+  assert.match(server,/old\.text!==text/)
   assert.match(server,/original\.visibility!==visibility/)
   assert.match(server,/openSealed\(row\.body_ciphertext,bodyContext/)
   assert.match(server,/seal\(\{text\},bodyContext/)
