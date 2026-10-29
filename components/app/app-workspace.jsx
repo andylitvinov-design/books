@@ -262,9 +262,24 @@ export default function AppWorkspace({ locale, path = [] }) {
         : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
           ? 'course'
           : proPanel === 'profile' ? 'profile' : proPanel === 'requests' ? 'requests' : null
+      // Website sign-in always returns to the ORIGINAL Practice showcase.
+      // Only an explicit second click may enter a private editor. Native
+      // handoff keeps its established deep-link semantics and secure PKCE.
+      const publicPracticeAction = proPanel === 'services'
+        ? proCreate
+          ? (['diagnostic','energy','personal','reiki'].includes(proStarter) ? proStarter : 'service')
+          : 'services'
+        : proPanel === 'materials'
+          ? searchParams.get('materialTab') === 'courses'
+            ? (proCreate ? 'course' : 'courseList') : 'materials'
+          : ['clients','requests','analytics','profile'].includes(proPanel) ? proPanel : null
       const result = await appFetch('auth/start', {
         locale,
-        ...(page === 'practice' ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) } : {}),
+        ...(page === 'practice'
+          ? native
+            ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
+            : { continueTo: 'practice-preview', ...(publicPracticeAction ? { profi: publicPracticeAction } : {}) }
+          : {}),
         ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
