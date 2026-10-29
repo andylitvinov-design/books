@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  buildPersonalImageryCourse, COURSE_THEMES, COURSE_PLAN_VERSION, selectVerifiedCourseEvidence,
+  buildPersonalImageryCourse, COURSE_THEMES, COURSE_PLAN_VERSION, selectVerifiedCourseEvidence, suggestGuidedGoalsFromProfile,
 } from "../lib/mandala/personal-guided-course.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -90,6 +90,21 @@ test("profile import accepts only scoped, dated, validated directional interpret
   assert.deepEqual(selectVerifiedCourseEvidence({axes:{}},["money"],today),[]);
 });
 
+test("profile-derived topic suggestions depend on provenance and recency, never comparative score severity",()=>{
+  const now=Date.parse("2026-10-28T18:00:00Z");
+  const row={mode:"directional",percent:25,resultId:"r1",definitionKey:"a1",
+    sourceTitle:"Original scale",measuredAt:"2026-10-25T18:00:00Z"};
+  const portrait={axes:{
+    clarity:{...row,measuredAt:"2026-10-27T18:00:00Z"},
+    energy:row,
+    relationships:{...row,measuredAt:"2024-01-01T00:00:00Z"},
+  }};
+  assert.deepEqual(suggestGuidedGoalsFromProfile(portrait,now),["money","goals","energy"]);
+  const varied={axes:{...portrait.axes,clarity:{...portrait.axes.clarity,percent:90}}};
+  assert.deepEqual(suggestGuidedGoalsFromProfile(varied,now),["money","goals","energy"]);
+  assert.deepEqual(suggestGuidedGoalsFromProfile({axes:{}},now),[]);
+});
+
 test("no composite psychometric index, diagnostic interpretation or false package fulfilment",()=>{
   const p=buildPersonalImageryCourse({locale:"en",goals:["money"],evidence:[
     {axis:"clarity",sourceTitle:"Work focus scale",measuredAt:"2026-10-20T18:00:00Z",percent:24,definitionKey:"w-01"},
@@ -109,7 +124,10 @@ test("consent before same-origin profile access; withdraw/goal changes invalidat
   assert.match(ui,/fetch\("\/api\/app\/bootstrap\?view=portrait"/);
   assert.match(ui,/credentials:"same-origin",cache:"no-store",redirect:"error"/);
   assert.match(ui,/buildPsychPortrait\(data\.results\)/);
-  assert.match(ui,/selectVerifiedCourseEvidence\(portrait,actualGoals\)/);
+  assert.match(ui,/COURSE_THEMES\.flatMap\(goal=>selectVerifiedCourseEvidence\(portrait,\[goal\]\)\)/);
+  assert.match(ui,/suggestGuidedGoalsFromProfile\(portrait\)/);
+  assert.match(ui,/data-guided-apply-suggestions/);
+  assert.match(ui,/setGoals\(suggestedGoals\)/);
   assert.match(ui,/profileRequestRef\.current\+\+/);
   assert.match(ui,/if\(requestId!==profileRequestRef\.current\)return/);
   assert.match(ui,/const withdraw=\(\)=>\{/);
