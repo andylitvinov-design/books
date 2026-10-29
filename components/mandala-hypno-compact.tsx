@@ -182,7 +182,7 @@ export function MandalaHypnoCompact({
           <button type="button" data-hypno-ready disabled={disabled}
             aria-pressed={selectionSource==="ready"} onClick={ready}>{ui.ready}</button>
           <button type="button" data-hypno-tests disabled={disabled}
-            aria-pressed={selectionSource==="tests"} onClick={()=>{setSelectionSource("tests");setOpen("phrases");setShowHint(true);}}>{ui.tests}</button>
+            aria-pressed={selectionSource==="tests"} onClick={()=>{setOpen("phrases");setShowHint(true);}}>{ui.tests}</button>
         </div>
         <div className={css.phraseCounter}>{selectedCount}/5 {ui.selected}<span>{selectionSource==="smart"?ui.byRequest:""}</span></div>
         <div className={css.selectedPhrases}>
@@ -193,8 +193,15 @@ export function MandalaHypnoCompact({
           <Link href={"/"+locale+"/tests"} prefetch={false}>{locale==="ru"?"Пройти тест":locale==="es"?"Hacer una prueba":"Take a test"}</Link>
         </div>
         {open==="phrases"&&<div className={css.legacyEditor} id="hypno-phrase-options" data-hypno-phrase-editor>
-          {showHint&&<p className={css.contextNote}>{ui.testsHelp}</p>}
-          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}/>
+          {showHint&&<div className={css.testEntry}>
+            <p className={css.contextNote}>{ui.testsHelp}</p>
+            <div className={css.designFoot}>
+              <Link href={"/"+locale+"/tests"} prefetch={false}>{locale==="ru"?"Пройти тест":locale==="es"?"Hacer una prueba":"Take a test"}</Link>
+              <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
+            </div>
+          </div>}
+          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
+            onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
       </section>
 
