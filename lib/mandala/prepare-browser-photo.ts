@@ -46,11 +46,15 @@ export async function prepareBrowserPhoto(file: File): Promise<Blob> {
   try {
     const image = new Image();
     image.src = objectUrl;
+    // Observe the real image load before calling decode(). On iPhone WebKit
+    // a HEIC decode() promise can remain pending even after <img> has loaded.
+    // The first verified load/decode wins; a rejected decode still needs
+    // a genuine load, and the load path fails closed after 15 seconds.
+    const loaded = waitForBrowserImageLoad(image);
     if (typeof image.decode === "function") {
-      try { await image.decode(); }
-      catch { await waitForBrowserImageLoad(image); }
+      await Promise.race([loaded, image.decode().catch(() => loaded)]);
     } else {
-      await waitForBrowserImageLoad(image);
+      await loaded;
     }
     const width = image.naturalWidth;
     const height = image.naturalHeight;
