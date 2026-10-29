@@ -149,6 +149,33 @@ test("goals and sourced axes yield five local, editable sentences in RU EN ES",(
   }
 });
 
+test("Hypnoaffirmations has precise user-facing EN/RU/ES copy and two real choices",()=>{
+  const personal=read("components/mandala-personal-affirmations.tsx");
+  for(const word of ["Hypnoaffirmations","Гипноаффирмации","Hipnoafirmaciones"]) {
+    assert.ok(panel.includes(word),"missing locale heading: "+word);
+  }
+  assert.match(panel,/25-го кадра/);
+  assert.match(panel,/научно не доказано/);
+  assert.match(panel,/lasting effects on beliefs are not scientifically established/);
+  assert.match(panel,/data-video-hypno-intro/);
+  assert.match(personal,/data-video-choice-mode/); // Child owns its two actual buttons.
+  assert.match(personal,/data-video-manual-select/);
+  assert.match(personal,/data-video-personal-suggest/);
+  assert.match(personal,/aria-pressed=\{selectionMethod==="manual"\}/);
+  assert.match(personal,/aria-pressed=\{selectionMethod==="tests"\}/);
+  assert.match(personal,/onClick=\{onManualSelect\}/);
+  assert.match(personal,/apply\(fresh,goals\);onTestsSelected\(\);/);
+  assert.match(panel,/setSelectionMethod\("manual"\)/);
+  assert.match(panel,/setSelectionMethod\("tests"\)/);
+  assert.match(panel,/presetOverride: undefined/);
+  assert.match(panel,/id="video-hypno-manual"/);
+  assert.match(personal,/await appFetch\("video-affirmation-focus"\)/);
+  assert.match(css,/\.hypnoIntro/);
+  assert.match(css,/\.choiceBar/);
+  assert.match(css,/\.personalManual/);
+  assert.doesNotMatch(panel+personal,/\bsetInterval\s*\(|autoPlay|sendBeacon|localStorage|sessionStorage/i);
+});
+
 test("personal matching is click-only, auth-gated and no scores leave the server",()=>{
   const personal=read("components/mandala-personal-affirmations.tsx");
   const focus=read("lib/mandala/video-affirmation-focus.mjs");
