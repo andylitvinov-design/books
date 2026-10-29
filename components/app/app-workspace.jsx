@@ -571,9 +571,9 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.
   const mobileNav = [
-    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: '/' + locale + '/practice', icon: Users },
-    { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
-    { id: 'progress', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/progress', icon: Activity },
+    { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
+    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
   ]
   const navIsActive = (id) => page === id ||
