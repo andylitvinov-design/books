@@ -1158,6 +1158,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-mandala-master-mp4={activeFilm.src}
         onLoadedData={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
         onCanPlay={event=>{if(event.currentTarget.videoWidth>0)setPremiumReady(true);}}
+        // Safari may discard a decoded source under media-memory pressure;
+        // never keep the generation button enabled for an emptied master.
+        onEmptied={()=>setPremiumReady(false)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
         style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}

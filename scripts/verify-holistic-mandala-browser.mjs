@@ -42,9 +42,13 @@ const bufferFromStream = async stream => {
 
 let passes = 0;
 for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]) {
-  const browser = await browserType.launch({ headless: true });
-  try {
-    for (const { locale, width } of viewports) {
+  for (const { locale, width } of viewports) {
+    // Real H.264 decoders in WebKit can release a previously decoded master
+    // after earlier large video/export scenarios. Give every viewport its
+    // own browser process, not just a new context in an exhausted process.
+    // Preserve all ten real video/PNG/photo assertions without stubbing.
+    const browser = await browserType.launch({ headless: true });
+    try {
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -608,9 +612,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
       } finally {
         await context.close();
       }
+    } finally {
+      await browser.close();
     }
-  } finally {
-    await browser.close();
   }
 }
 assert.equal(passes, 10);

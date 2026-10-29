@@ -169,3 +169,15 @@ test("HD master retries only undecoded idle media on user preview, retaining str
   assert.match(browser, /master\.readyState >= 2 && master\.videoWidth > 0/);
   assert.match(browser, /real master MP4 did not decode/);
 });
+
+// A previous 10-case browser loop reused one WebKit process and failed on
+// the fourth WebKit context after it discarded an otherwise decoded master.
+test("real video acceptance isolates each WebKit viewport and resets an emptied master",()=>{
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  assert.match(browser,/for \(const \[engine, browserType\][\s\S]*?for \(const \{ locale, width \} of viewports\) \{[\s\S]*?const browser = await browserType\.launch/);
+  assert.match(browser,/await context\.close\(\);[\s\S]*?await browser\.close\(\);/);
+  assert.match(browser,/assert\.equal\(passes, 10\)/);
+  assert.match(studio,/onEmptied=\{\(\)=>setPremiumReady\(false\)\}/);
+  assert.match(browser,/master\.readyState >= 2 && master\.videoWidth > 0/);
+});
