@@ -103,6 +103,8 @@ test("recommendation UX keeps one primary CTA, relevant alternatives, and honest
   assert.match(guide, /data-support-guide-primary-title/);
   assert.match(guide, /data-support-guide-context/);
   assert.match(guide, /data-support-guide-time-preference/);
+  assert.match(guide, /data-support-guide-fit-note/);
+  assert.match(guide, /t\.ux\.supportFit/);
   assert.match(guide, /t\.ux\.benefit\[format\]/);
   assert.match(guide, /t\.ux\.durationWarning/);
   assert.match(guide, /const alternativeOrder: Format\[\] = topic === "money"/);
