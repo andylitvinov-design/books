@@ -246,6 +246,10 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
+    "opt-in must be visible before preview/create");
+
   assert.match(studio,/data-video-wish-disclosure/);
   assert.match(studio,/<summary>\{ui\.wishTitle\}<\/summary>/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
