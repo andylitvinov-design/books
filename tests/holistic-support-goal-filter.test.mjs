@@ -270,3 +270,17 @@ test("WebKit stale input events cannot corrupt the next goal sector after atomic
   assert.match(editor, /function reset\(\) \{\s*activeSectorRef\.current = "energy";/);
   assert.match(editor, /setAccepted\(previous => \(\{ \.\.\.previous, \[sector\]: snapshot \}\)\)/);
 });
+
+test("Safari keeps real Save and Next clicks when a focused money field blurs", () => {
+  // WebKit pointerdown must not blur/re-render a focused number input before
+  // the browser dispatches click. Real click handlers still do the saving;
+  // keyboard/assistive activation is unaffected by a mouse-only guard.
+  for (const [control, handler] of [["save", "saveCurrent"], ["next", "nextSector"]]) {
+    const source = editor.match(new RegExp(
+      'data-support-goal-' + control + '\\s+onMouseDown=\\{event => event\\.preventDefault\\(\\)\\}\\s+onClick=\\{' + handler + '\\}'
+    ));
+    assert.ok(source, control + " must preserve mouse-down focus and keep its real click action");
+  }
+  assert.match(editor, /function nextSector\\(\\) \\{[^]*?flushSync\\(\\(\\) => \\{/,
+    "Next must still commit accepted snapshot and navigation atomically");
+});
