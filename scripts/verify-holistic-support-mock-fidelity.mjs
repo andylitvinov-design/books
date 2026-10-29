@@ -965,8 +965,20 @@ for (const browserType of [chromium, webkit]) {
             label+" tests hero has a real CTA");
           assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
             label+" Tests do not mix with a consultation/CRM booking");
-          assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
-            '/'+locale+'/client/tests',label+" actual free Test Explorer");
+          // The Test Explorer remains the same existing free route. After
+          // accepted goals the optional `focus` query is intentionally ranked
+          // from allowlisted editorial facets, not an invented account score.
+          const testsHref=await testsPanel.locator('[data-support-open-tests]').getAttribute('href');
+          const testsUrl=new URL(testsHref,"https://holistichouse.vercel.app");
+          assert.equal(testsUrl.pathname,'/'+locale+'/client/tests',
+            label+" actual free Test Explorer");
+          assert.deepEqual([...testsUrl.searchParams.keys()].filter(key=>key!=="focus"),[],
+            label+" no private or unknown fields in Test Explorer URL");
+          const facets=(testsUrl.searchParams.get('focus')||'').split(',').filter(Boolean);
+          const allowed=new Set(["body","resources","clarity","function",
+            "relationships","intimacy","meaning","health","stress","sleep","attention"]);
+          assert.ok(facets.length<=4&&facets.every(facet=>allowed.has(facet)),
+            label+" only reviewed editorial topics, never raw scores/answers: "+testsHref);
           if(width===390) await page.screenshot({
             path:output+"/"+browserType.name()+"-"+locale+"-tests-390.png",fullPage:true});
           const testOverflow=await page.evaluate(() =>
