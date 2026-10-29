@@ -208,6 +208,9 @@ test('the UI waits for user relevance before offers and renders only three choic
   assert.match(ui,/phase!=='safety'/)
   assert.match(workspace,/history=\{data\.results \|\| \[\]\}/)
   assert.match(workspace,/discussionLoadedId === result.id/)
+  assert.match(workspace,/sourceReport\.verified !== false/)
+  assert.match(workspace,/!sourceReport\.sections\?\.some\(section => section\.recommendedReview === true\)/)
+  assert.match(workspace,/allowOptionalConsultation && <ResultConsultationCta/)
   assert.doesNotMatch(ui,/navigator\.sendBeacon|fetch\(|appFetch\(|localStorage|sessionStorage|POST|autoEnroll/i)
 })
 
