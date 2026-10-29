@@ -9,7 +9,7 @@ import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X3fEiQAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGN87e3mFCXH4J339cN1NwAlvwXzqWxvIQAAAABJRU5ErkJggg==",
   "base64",
 );
 
