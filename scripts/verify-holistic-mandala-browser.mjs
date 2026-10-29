@@ -158,7 +158,27 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.ok(composerBounds.writerTop>=composerBounds.resultBottom,
           "meditation block must be below the video's finished result");
         assert.ok(composerBounds.buttonHeight>=44,"meditation generation needs a phone-sized touch target");
+        // A real method and length choice must alter guided paragraphs and
+        // timed pauses, not simply the editor metadata or button label.
+        assert.equal(await page.locator("[data-meditation-method]").inputValue(),"imagery");
+        await page.locator("[data-meditation-method]").selectOption("grounding");
+        await page.locator("[data-meditation-length]").selectOption("12");
+        await page.locator("[data-meditation-generate]").click();
+        const grounded=await page.locator("[data-meditation-script]").inputValue();
+        assert.ok(grounded!==firstMeditation,"selected method changes the actual generated body");
+        const expectedGrounding={en:"actual room",ru:"реальную комнату",es:"habitación real"}[locale];
+        assert.ok(grounded.includes(expectedGrounding),"grounding must describe the actual method");
+        assert.ok(grounded.length>firstMeditation.length,
+          "a twelve-minute session must include more content than the five-minute version");
+        assert.ok(await page.locator("[data-meditation-listen]").isVisible(),
+          "actual local-voice narration control must exist for generated text");
+        const quickTargets=await page.locator("[data-meditation-main-filters] select").evaluateAll(
+          items=>items.map(el=>Math.round(el.getBoundingClientRect().height)));
+        assert.ok(quickTargets.every(px=>px>=44),"main method and length must remain easy to tap");
         await page.locator("[data-meditation-accents] > summary").click();
+        await page.locator("[data-meditation-attention]").selectOption("external");
+        await page.locator("[data-meditation-depth]").selectOption("reflective");
+        await page.locator("[data-meditation-ending]").selectOption("small-step");
         await page.locator('[data-meditation-accent="clarity"]').click();
         assert.equal(await page.locator('[data-meditation-accent="clarity"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-meditation-generate]").click();
