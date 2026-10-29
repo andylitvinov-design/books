@@ -167,7 +167,9 @@ test("HD master retries only undecoded idle media on user preview, retaining str
   assert.match(studio, /onLoadedData=\{event=>\{[\s\S]*?event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio, /if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
   assert.match(browser, /master\.readyState\s*>=\s*2 && master\.videoWidth\s*>\s*0/);
-  assert.match(browser, /real master MP4 did not decode/);
+  assert.match(browser, /decoded MP4 gate:/);
+  assert.match(browser, /videoWidth:master\?\.videoWidth\?\?0/);
+  assert.match(browser, /mediaError:master\?\.error\?\.code\?\?null/);
 });
 
 // A previous 10-case browser loop reused one WebKit process and failed on
