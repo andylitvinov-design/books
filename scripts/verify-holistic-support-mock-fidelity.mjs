@@ -251,7 +251,10 @@ for (const browserType of [chromium, webkit]) {
               document.querySelector('[data-goal-sector="money"]')];
             return controls.every(node => {
               if (!node) return false;
-              const key=Object.keys(node).find(name => name.startsWith('__reactProps
+              const key=Object.keys(node).find(name => name.startsWith('__reactProps'));
+              return Boolean(key && typeof node[key]?.onClick === 'function');
+            });
+          },null,{timeout:30000});
           // Regression for real iPhone screenshot: heading must not sit behind
           // the iOS status bar after the programmatic scroll to this panel.
           await page.waitForFunction(() => {
