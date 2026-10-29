@@ -1,0 +1,40 @@
+name: Holistic House Messages wellness two-folder release
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/[locale]/app/messages/**'
+      - 'components/app/messages-orders-clients.*'
+      - 'components/app/messages-simple-inbox.*'
+      - 'components/app/messages-hub.*'
+      - 'components/app/practice-request-conversation.*'
+      - 'lib/practitioners/request-media*'
+      - 'lib/practitioners/client-messages.js'
+      - 'tests/messages-*.test.mjs'
+      - 'tests/practitioner-request-voice.test.mjs'
+      - 'docs/design/MESSAGES_WELLNESS_ORDERS_CLIENTS_20261029.md'
+      - '.github/workflows/hh-messages-wellness-v2.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-messages-wellness-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Protected orders and owner Messages regression contracts
+        run: |
+          node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs
+      - name: New wellness layout and private flow contracts
+        run: node --conditions=react-server --test tests/messages-wellness-v2.test.mjs
+      - name: Lint edited Messages components and route
+        run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx tests/messages-wellness-v2.test.mjs
+      - name: TypeScript check
+        run: npx --no-install tsc --noEmit
