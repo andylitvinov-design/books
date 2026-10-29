@@ -111,3 +111,15 @@ test('late initial private-image GET cannot restore a deleted portrait or overri
   const photoSave=support.slice(support.indexOf('const savePhoto = async'),support.indexOf('// Quick matching'))
   assert.ok(photoSave.indexOf('photoStorageEpoch.current += 1')<photoSave.indexOf('setStoredPhotoUrl(data.url)'))
 })
+
+test('concurrent photo choices never let an older iPhone decode replace the newest draft',()=>{
+  const select=cabinet.slice(cabinet.indexOf('async function select'),cabinet.indexOf('async function save'))
+  assert.match(cabinet,/const photoChoiceEpoch=useRef\(0\)/)
+  assert.match(cabinet,/photoChoiceEpoch\.current\+=1/)
+  assert.match(select,/const choiceEpoch=\+\+photoChoiceEpoch\.current/)
+  assert.match(select,/if\(choiceEpoch!==photoChoiceEpoch\.current\)return/)
+  assert.ok(select.indexOf('if(choiceEpoch!==photoChoiceEpoch.current)return')<
+    select.indexOf('setBlob(result)'), 'outdated decode must be discarded before setting the save candidate')
+  assert.match(select,/if\(choiceEpoch===photoChoiceEpoch\.current\)setError\(t\.invalid\)/)
+  assert.match(select,/if\(choiceEpoch===photoChoiceEpoch\.current\)setBusy\(false\)/)
+})
