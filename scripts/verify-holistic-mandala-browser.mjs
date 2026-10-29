@@ -42,7 +42,8 @@ const bufferFromStream = async stream => {
 };
 
 let passes = 0;
-for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]) {
+// WebKit runs first so iPhone-specific release blockers fail fast.
+for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]) {
   const browser = await browserType.launch({ headless: true });
   try {
     for (const { locale, width } of viewports) {
