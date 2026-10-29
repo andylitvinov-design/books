@@ -7,6 +7,14 @@ on:
       - 'components/app/my-services-dashboard.*'
       - 'components/app/practice-dashboard.css'
       - 'components/app/practice-workspace.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'components/home-master-path.*'
+      - 'components/profi-hub.*'
+      - 'tests/practice-public-private-unified.test.mjs'
+      - 'tests/practice-google-return-and-services-v5.test.mjs'
+      - 'tests/home-master-path.test.mjs'
+      - 'tests/profi-hub.test.mjs'
       - 'components/app/practice-inner-navigation.jsx'
       - 'components/app/practitioner-client-profiles.*'
       - 'components/app/practice-materials.*'
@@ -47,7 +55,7 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Auth, service editor, quota, media and workflow contracts
-        run: node --test tests/practice-inner-mock-parity.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/practice-reiki-offer-parity.test.mjs tests/practice-service-mobile-one-screen.test.mjs tests/practice-service-visual-blocks.test.mjs tests/practice-service-editor-simplified.test.mjs tests/practice-hobby-service-quota.test.mjs tests/practice-photo-upload.test.mjs tests/practitioner-presentation-video.test.mjs tests/practice-services-search.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-materials-action-first.test.mjs tests/practitioner-preview-auth.test.mjs
+        run: node --test tests/practice-google-return-and-services-v5.test.mjs tests/practice-public-private-unified.test.mjs tests/home-master-path.test.mjs tests/profi-hub.test.mjs tests/practice-inner-mock-parity.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/practice-reiki-offer-parity.test.mjs tests/practice-service-mobile-one-screen.test.mjs tests/practice-service-visual-blocks.test.mjs tests/practice-service-editor-simplified.test.mjs tests/practice-hobby-service-quota.test.mjs tests/practice-photo-upload.test.mjs tests/practitioner-presentation-video.test.mjs tests/practice-services-search.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-materials-action-first.test.mjs tests/practitioner-preview-auth.test.mjs
       - name: Remote goal support pricing, privacy and scheduling
         run: node --test tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs tests/practitioner-remote-energy-support.test.mjs
       - name: Lint all changed components

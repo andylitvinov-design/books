@@ -25,14 +25,19 @@ export default async function YoutubeUploadPage({searchParams}) {
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
+  let telegramVisibilityConnected = false
   if(telegramVideoConfigured)try{
     // Avoid importing the large Telegram/DB/media service into the phone uploader
     // when video OAuth has not been set up; the standalone uploader must work.
-    const [{getAppConfig},{ownerVideoYoutubeConnected}] = await Promise.all([
+    const [{getAppConfig},{ownerVideoYoutubeConnected,ownerVideoVisibilityConnected}] = await Promise.all([
       import('@/lib/app/config'),
       import('@/lib/practitioners/owner-telegram-video-service')
     ])
-    telegramVideoConnected = await ownerVideoYoutubeConnected(getAppConfig())
+    const appConfig=getAppConfig()
+    ;[telegramVideoConnected,telegramVisibilityConnected]=await Promise.all([
+      ownerVideoYoutubeConnected(appConfig),
+      ownerVideoVisibilityConnected(appConfig)
+    ])
   }catch{/* Authorisation remains unconfirmed. */}
   // The client ID is public; the separate server-side OAuth secret never
   // reaches the browser. Reuse the validated Web client to avoid double setup.
@@ -99,6 +104,20 @@ export default async function YoutubeUploadPage({searchParams}) {
           :'🔐 Сначала настройте отдельный Google OAuth Web Client для серверной загрузки Telegram-видео.'}</p>
       {telegramVideoConfigured&&<Link prefetch={false} href="/api/admin/telegram-video/youtube/start" style={{fontSize:14}}>
         {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
+      {telegramVideoConnected&&<div data-youtube-visibility-permission style={{fontSize:13,marginTop:10,
+        padding:10,background:'#f8f1e6',border:'1px solid #c9b89e',borderRadius:9}}>
+        <strong>{locale==='ru'?'Доступ к видео: По ссылке / Для всех':'Video visibility: Unlisted / Public'}</strong>
+        <p style={{margin:'6px 0'}}>{telegramVisibilityConnected
+          ?locale==='ru'?'✅ Право изменения видимости подключено. В Dot: /video_visibility':
+            '✅ Visibility permission is connected. In Dot: /video_visibility'
+          :locale==='ru'?'Google требует дополнительное разрешение: оно даёт приложению право редактировать и удалять видео. Функция Holistic House использует его ТОЛЬКО для смены видимости конкретного подтверждённого ролика; удаление видео не выполняет.':
+            'Google requires an additional permission that can edit and delete videos. This Holistic House feature uses it ONLY to change visibility of one specifically approved video; it never deletes videos.'}</p>
+        {!telegramVisibilityConnected&&<Link prefetch={false}
+          href="/api/admin/telegram-video/youtube/start?visibility=1">
+          {locale==='ru'?'🔐 Однократно разрешить управление видимостью':
+            'Authorize visibility management once'}
+        </Link>}
+      </div>}
     </section>
     <AdminYoutubePublications locale={locale}/>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}

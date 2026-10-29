@@ -25,6 +25,10 @@ const LOOK: Record<MoneySceneId, Palette> = {
   "golden-shield": ["#151f2f", "#584328", "#ffd273", "#f9efd5"],
   "abundance-circle": ["#18332b", "#6c5633", "#f6c864", "#faf1c9"],
   "life-gifts": ["#403047", "#b36d69", "#ffcf67", "#fff3da"],
+  "wealth-sunrise": ["#2e2f42", "#cc8b4e", "#ffcc76", "#fff4c7"],
+  "golden-harvest": ["#263a28", "#bf9341", "#f8db8a", "#fff7ce"],
+  "radiant-portal": ["#5b2d1d", "#dfb77c", "#ffea9f", "#fff6d5"],
+  "prosperity-coast": ["#233f45", "#9abf9a", "#f9dc90", "#fdf6e1"],
   dreams: ["#254b60", "#c78662", "#f9d57f", "#ebffff"],
 };
 
@@ -361,16 +365,20 @@ function portrait(ctx:Ctx,image:HTMLImageElement|null,w:number,h:number,t:number
     glint(ctx,w*.5,py,w*.035,.90);
     return;
   }
+  // Keep the face as a central medallion: the surrounding moving video
+  // must remain visible, not become a full-screen portrait.
+  const radius=Math.min(w*.27,h*.205);
   const src=getPortraitLayer(image);
-  const ph=Math.min(h*.57,w*.96);
-  const pw=ph*.93;
-  const scale=1+.019*Math.sin(t*.19);
-  ctx.save();
-  ctx.translate(w*.50,py+h*.015);
-  ctx.scale(scale,scale);
-  ctx.shadowColor="#ffe1a1";ctx.shadowBlur=25;
-  ctx.drawImage(src,-pw/2,-ph*.55,pw,ph);
+  ctx.save();ctx.translate(w*.5,py);
+  ctx.shadowColor="rgba(255,208,120,.7)";ctx.shadowBlur=Math.max(10,radius*.17);
+  ctx.beginPath();ctx.arc(0,0,radius+7,0,Math.PI*2);
+  ctx.fillStyle="rgba(250,236,196,.9)";ctx.fill();
+  ctx.shadowBlur=0;ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
+  const scale=Math.max(radius*2/src.width,radius*2/src.height);
+  ctx.drawImage(src,-src.width*scale/2,-src.height*scale/2,src.width*scale,src.height*scale);
   ctx.restore();
+  ctx.save();ctx.beginPath();ctx.arc(w*.5,py,radius+4,0,Math.PI*2);
+  ctx.strokeStyle="rgba(255,229,158,.95)";ctx.lineWidth=4;ctx.stroke();ctx.restore();
 }
 
 function movingCoins(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,front:boolean){

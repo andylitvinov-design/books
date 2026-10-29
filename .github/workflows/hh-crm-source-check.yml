@@ -78,6 +78,12 @@ on:
       - 'lib/practitioners/direct-*.mjs'
       - 'components/app/direct-message-inbox.*'
       - 'app/[locale]/app/messages/**'
+      - 'components/app/messages-simple-inbox.jsx'
+      - 'components/app/messages-bottom-navigation.jsx'
+      - 'tests/messages-approved-entry.test.mjs'
+      - 'tests/messages-orders-clients.test.mjs'
+      - 'tests/messages-simple-inbox.test.mjs'
+      - 'tests/messages-inbox-*.test.mjs'
       - 'app/api/app/direct-messages/**'
       - 'app/api/masters/**/shared-audio/**'
       - 'supabase/migrations/*practitioner_direct_media*'
@@ -179,6 +185,8 @@ jobs:
         run: node --test tests/practitioner-request-voice.test.mjs
       - name: Lint request-bound audio service and streaming endpoints
         run: npx eslint --ext .js,.jsx lib/practitioners/request-media.js lib/practitioners/client-messages.js components/app/practice-request-conversation.jsx app/api/app/practitioner-client-messages/route.js app/api/app/practitioner-client-messages/media/route.js 'app/api/app/practitioner-client-messages/media/[assetId]/route.js'
+      - name: Approved Messenger default entry, orders fallback, CRM and private inbox
+        run: node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs
       - name: Native member-to-practitioner media inbox, encryption and outsider-denial
         run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs
       - name: Lint member inbox backend, privacy route and EN/RU/ES UI

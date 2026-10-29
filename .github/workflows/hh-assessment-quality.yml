@@ -8,6 +8,8 @@ on:
       - 'data/assessments/**'
       - 'lib/assessments/**'
       - 'components/app/test-explorer.*'
+      - 'components/app/test-result-discussion.*'
+      - 'tests/test-result-discussion.test.mjs'
       - 'scripts/audit-hh-author-items-2026.mjs'
       - 'scripts/audit-psychometric-quality-2026.mjs'
       - 'tests/*assessment*.test.mjs'
@@ -36,6 +38,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci --no-audit --no-fund
+      - name: Private result conversation — original measures, crisis gating, EN/RU/ES routes
+        run: node --conditions=react-server --test tests/test-result-discussion.test.mjs
       - name: Exact source evidence, 73 authored families, 150 groups and safe reports
         run: >-
           node --conditions=react-server --test

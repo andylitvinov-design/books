@@ -83,3 +83,78 @@ test("quick three-way Reiki type switch shares the real session/initiations/prog
   assert.match(css,/\.viewer \.reikiQuickFormat button\[aria-pressed="true"\]/);
   assert.match(css,/min-height:44px/);
 });
+
+test("Reiki support is a service marketplace with one concise picker and genuine booking paths", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const galleryCss=read("components/holistic-support-master-gallery.module.css");
+  const shelf=read("components/holistic-reiki-offer-shelf.tsx");
+  const shelfCss=read("components/holistic-reiki-offer-shelf.module.css");
+  const browse=parent.indexOf('data-support-reiki-marketplace');
+  const formats=parent.indexOf('data-support-reiki-quick-format');
+  const foci=parent.indexOf('data-support-reiki-filters');
+  const hero=parent.indexOf('data-support-reiki-sales-hero');
+  const offers=parent.indexOf('kind === "healing" ? <HolisticReikiOfferShelf');
+  assert.ok(browse !== -1 && browse < formats && formats < foci && foci < offers);
+  assert.ok(hero > 0 && hero < browse, "hero definition is reused, not duplicated");
+  assert.match(parent,/data-support-reiki-find aria-expanded=\{reikiTab === "filter"\}/);
+  assert.match(parent,/aria-controls="reiki-active-panel" onClick=\{\(\) => setReikiTab\("filter"\)\}/);
+  for(const value of ["session","initiation","course"]) {
+    assert.ok(parent.includes('data-support-reiki-quick-kind={value}'));
+    assert.ok(parent.includes('value === "'+value+'"') || value==="course");
+  }
+  assert.match(parent,/reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(parent,/chooseReikiFormat\(value, true\)/);
+  assert.match(parent,/filterPublicReikiAcademyOffers\(locale/);
+  assert.match(parent,/matchingReikiOptions\(master\)/);
+  assert.match(parent,/data-support-reiki-request/);
+  assert.match(parent,/setOrderOpen\(true\)/);
+  assert.match(parent,/<RemoteEnergySupportBooking/);
+  assert.match(galleryCss,/\.reikiBrowseHeading/);
+  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 0; margin-top: 0;/);
+  assert.match(galleryCss,/@media\(max-width:640px\)/);
+  assert.match(galleryCss,/@media\(max-width:350px\)/);
+  assert.match(shelfCss,/grid-template-columns:116px minmax\(0,1fr\)/);
+  assert.match(shelf,/data-reiki-service-card=\{master\.serviceId\}/);
+  assert.match(shelf,/data-reiki-academy-offer=\{offer\.id\}/);
+  assert.match(shelf,/master\.serviceHref/);
+  assert.match(shelf,/option\.amountEur === null \? t\.unknownPrice/);
+  assert.doesNotMatch(shelf,/createPayment|autoSubmit|fake(?:Track|Price)|hardcoded(?:Booking|Slot)/);
+  assert.doesNotMatch(parent,/Треки поддержки|Поддержка за 21 день/);
+});
+
+test("Reiki initiation switches reveal source-backed types below formats, never new service rows", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  for (const locale of ["ru","en","es"]) {
+    const types=listPublicReikiAcademyOffers(locale).filter(offer=>offer.kind==="initiation");
+    assert.deepEqual(types.map(offer=>offer.id).sort(),
+      ["kundalini-initiation","tantra-initiation","yggdrasil-initiation"]);
+    assert.equal(new Set(types.map(offer=>offer.method)).size,3);
+    assert.ok(types.every(offer=>offer.href.startsWith("/"+locale+"/academy/reiki/")));
+  }
+  assert.match(parent,/reikiFormat === "initiation" && <div className=\{styles\.reikiInitiationPicker\}/);
+  assert.match(parent,/data-support-reiki-initiation-types/);
+  assert.match(parent,/data-support-reiki-initiation-id="all"/);
+  assert.match(parent,/data-support-reiki-initiation-id=\{offer\.id\}/);
+  assert.match(parent,/listPublicReikiAcademyOffers\(locale\)\.filter\(offer => offer\.kind === "initiation"\)/);
+  assert.match(parent,/\.filter\(offer => !selectedInitiation \|\| offer\.id === selectedInitiation\.id\)/);
+  assert.match(parent,/reikiFormat === "initiation" && selectedInitiation \? \[selectedInitiation\.method\] : null/);
+  assert.match(parent,/selectedInitiation\?\.href/);
+  assert.match(parent,/setReikiInitiationId\(null\)/);
+  assert.match(css,/\.reikiInitiationTypes \{[\s\S]*?grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.viewer \.reikiInitiationTypes button\[aria-pressed="true"\]/);
+  assert.doesNotMatch(parent,/autoSubmit|createPaymentIntent/);
+});
+
+test("the scenic Reiki tabs are above content and only one low CTA remains", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 0; margin-top: 0; \}/);
+  assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageContent \{ order: 1;/);
+  assert.doesNotMatch(parent,/className=\{styles\.reikiSecondary\}/);
+  assert.match(parent,/data-support-reiki-tab=\{tab\}/);
+  assert.match(parent,/data-support-reiki-hero-filter onClick=\{\(\) => setReikiTab\("filter"\)\}/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?position: absolute; z-index: 3; top: 77px/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?top: 61px; left: 10px/);
+  assert.doesNotMatch(parent,/\{r\.choose\}<Filter size=\{17\}/);
+});

@@ -137,7 +137,29 @@
 .musicTools button:disabled{opacity:.5;cursor:not-allowed}
 .musicTools label{display:flex;flex:1 1 150px;flex-direction:column;gap:3px;color:#456c5b;font-size:12px;font-weight:700}
 .musicTools input{accent-color:#07976e;width:100%;min-height:24px}
+.audioUpload{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0 8px}
+.audioUploadLabel{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 12px;border:1px solid #b6dbca;border-radius:12px;background:#eefaf3;color:#146249;font-size:12px;font-weight:800;cursor:pointer}
+.audioUpload input[type=file]{flex:1 1 155px;min-width:0;width:100%;max-width:100%;font-size:11px;color:#456c5b}
+.audioUpload input[type=file]::file-selector-button{background:#fff;border:1px solid #d1ded4;border-radius:8px;padding:7px 9px;color:#165d46;cursor:pointer}
+.audioUpload small{flex-basis:100%;line-height:1.5}
+.audioSelection{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%;min-width:0;padding:8px 10px;border-radius:10px;background:#f5f8f0;color:#235447;font-size:11px;overflow-wrap:anywhere}
+.audioSelection strong{font-weight:800}
+.audioSelection button{border:1px solid #c8d9ce;border-radius:8px;background:#fff;color:#476359;padding:7px 9px;min-height:36px;font-size:11px;font-weight:800}
+.musicCard audio[data-video-audio-player]{display:block;width:100%;min-height:48px;max-width:100%;margin:9px 0;border-radius:10px;background:#f4f8f2}
+.audioRecovery{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px}
+.audioDirectLink{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 8px;padding:8px 11px;border:1px solid #c0d5c9;border-radius:11px;background:#f3faf5;color:#116847;font-size:12px;font-weight:750;text-decoration:underline}
+.audioRights{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:#235246;font-size:12px;line-height:1.5}
+.audioRights input{width:19px;height:19px;min-width:19px;accent-color:#088d6c;margin-top:0}
+@media(max-width:380px){.audioUpload input[type=file]{flex-basis:100%}.audioUploadLabel{width:100%}.audioSelection{align-items:flex-start}}
 
+/* Native file inputs and media controls have their own intrinsic iOS width.
+   They must not extend a 320–430px viewport beyond the editor card. */
+@media(max-width:759px){
+  .studio{width:100%;overflow-x:clip}
+  .musicCard,.audioUpload,.audioSelection{max-width:100%;min-width:0}
+  .audioUpload input[type=file]{min-width:0;max-width:100%;overflow:hidden}
+  .musicCard audio[data-video-audio-player]{max-width:100%;min-width:0}
+}
 /* Home/Support visual parity — one existing editor, one real media canvas.
    On 320–430px the three-column check-in/portrait/tools matches the site's
    compact support home, while the actual video takes the whole hero. */
@@ -279,4 +301,417 @@
   .heroBody h2{font-size:25px}
   .settingCard .pills{gap:3px}
   .settings .pills button{font-size:9px;padding:4px 2px}
+}
+
+/* Approved iPhone mandala hierarchy: theme chips above, clear player below. */
+@media(max-width:759px){.hero{margin-top:60px;overflow:visible;border-radius:20px;min-height:365px}.heroCanvas,.heroShade,.heroOverlay{border-radius:inherit;overflow:hidden}.heroOverlay{min-height:365px;padding:11px 12px 12px}.heroThemes{position:absolute;left:0;right:0;top:-52px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;z-index:3}.heroThemes button{min-height:44px;border-radius:12px;background:#eaf4eb;color:#165944;border:1px solid #bbd8c8;font-size:clamp(9px,2.6vw,11px);font-weight:800}.heroThemes button[aria-pressed="true"]{background:#069e76;color:#fff}.heroTabs{display:flex;gap:5px}.heroTabs>*{flex:1;min-height:36px;font-size:clamp(9px,2.6vw,11px)}.heroTabs>a:last-child{display:none}.heroBody{padding:12px 2px 0}.heroBody h2{font-size:clamp(24px,6.2vw,30px);max-width:95%}.heroBody p{max-width:94%}.heroShade{background:linear-gradient(0deg,rgba(7,29,23,.92),rgba(8,30,25,.55) 40%,transparent 76%)}.heroCreate{width:100%;min-height:48px;border-radius:12px}.templates{border:1px solid #e2e7dc;border-radius:19px;margin-top:12px}}
+@media(max-width:350px){.hero{margin-top:67px}.heroThemes{top:-59px}.heroThemes button{min-height:51px;font-size:8.5px;flex-direction:column}}
+
+/* 28 Oct design parity: the user's approved Support reference keeps the
+   three-part header very compact and gives the cinematic background space. */
+.centerProfile .photoEmpty{position:absolute;inset:0;display:block;overflow:hidden;border-radius:50%}
+.centerProfile .referencePortrait{display:block!important;width:100%;height:100%;border-radius:50%;object-fit:cover;opacity:.96}
+.referencePhotoLabel{position:absolute;left:10%;right:10%;bottom:8px;display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 2px;border-radius:8px;background:rgba(13,68,53,.85);color:#fff;font-size:9px;line-height:1.1;font-weight:800}
+.referencePhotoLabel svg{width:12px;height:12px}
+.toolCompact{display:none}
+.hero{background:#1d2b27}
+.heroPromo{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background-image:linear-gradient(105deg,rgba(16,37,27,.20),rgba(38,27,14,.08)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg');
+  background-size:cover;background-position:center;transition:opacity .22s ease}
+.heroPromo::after{content:"";position:absolute;right:-3%;top:0;bottom:0;width:65%;background:url('/images/holistic-house/mandala-gold-reference.webp') 27% 45% / cover no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);
+  filter:sepia(.34) saturate(1.35) brightness(1.11)}
+.hero[data-hero-promo="true"] .heroPromo{opacity:1}
+.hero[data-hero-promo="true"] .heroCanvas{opacity:0}
+.heroCanvas{transition:opacity .22s ease}
+.heroShade{z-index:2;background:linear-gradient(90deg,rgba(9,30,24,.91) 0%,rgba(14,38,31,.77) 41%,rgba(13,37,27,.13) 86%),linear-gradient(0deg,rgba(6,28,22,.42),transparent 73%)}
+.heroOverlay{z-index:3}
+.heroTabs{position:relative;z-index:4}
+.heroTabs button{font:inherit;cursor:pointer}
+.heroThemes[hidden]{display:none!important}
+.heroThemes:not([hidden]){position:absolute;top:70px;left:11px;right:11px;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+  padding:8px;border:1px solid rgba(234,245,223,.58);border-radius:15px;background:rgba(14,44,36,.93);box-shadow:0 7px 25px rgba(0,0,0,.3);backdrop-filter:blur(12px)}
+.heroThemes:not([hidden]) button{min-width:0;min-height:37px;padding:4px 3px;font-size:10px}
+.heroBody h2{max-width:76%;text-wrap:balance}
+.heroBody p{max-width:73%}
+.heroCreate{width:min(77%,440px)}
+@media(max-width:760px){
+  .assessmentCard,.supportTools{padding:9px 7px}
+  .assessmentCard>p{margin:4px 0}
+  .assessmentScales{gap:3px;margin:3px 0 6px}
+  .assessmentScale{gap:0}
+  .supportToolGrid a{min-height:60px}
+  .centerProfile .photoPortrait{width:min(95%,106px)}
+  .videoMandalaChoice{min-height:33px}
+  .profileFocus{min-height:33px}
+  .recommendButton{min-height:35px}
+  .supportShortcuts{margin-top:5px}
+  .supportShortcuts a{min-height:29px}
+  .heroBody{padding-top:9px;gap:6px}
+  .heroBody h2{font-size:30px}
+  .heroBody p{font-size:12px}
+  .heroTabs>*{min-height:41px}
+}
+@media(max-width:430px){
+  .supportTop{grid-template-columns:minmax(0,1fr) minmax(0,.83fr) minmax(0,1fr);gap:5px}
+  .assessmentCard,.supportTools{padding:7px 6px}
+  .assessmentCard h2,.supportTools h2{font-size:11px;line-height:1.12}
+  .assessmentCard>p{margin:4px 0 5px;font-size:9px}
+  .assessmentScales{gap:3px;margin:0 0 6px}
+  .assessmentScale{font-size:9px}
+  .scaleControls{gap:3px}
+  .scaleControls output{min-width:21px;height:19px;font-size:10px}
+  .supportTestLink{min-height:30px;font-size:10px}
+  .centerProfile{gap:5px}
+  .centerProfile .photoPortrait{width:min(97%,96px)}
+  .videoMandalaChoice{min-height:33px;font-size:10px}
+  .profileFocus{min-height:32px}
+  .profileFocus small{font-size:9px}
+  .profileFocus strong{font-size:10px}
+  .recommendButton{min-height:34px;font-size:10px}
+  .supportTools h2{margin-bottom:6px}
+  .supportToolGrid{gap:4px}
+  .supportToolGrid a{min-height:58px;padding:4px 2px;gap:3px;font-size:9px;overflow-wrap:normal;word-break:normal}
+  .supportToolGrid a svg{height:21px;width:21px}
+  .toolFull{display:none}
+  .toolCompact{display:block}
+  .supportShortcuts{margin-top:5px;gap:4px}
+  .supportShortcuts a{min-height:25px;font-size:9px}
+  .hero{border-radius:19px;min-height:325px}
+  .heroOverlay{min-height:325px;padding:10px 9px 12px}
+  .heroTabs{gap:5px;margin-bottom:0}
+  .heroTabs>*{min-height:41px;font-size:9.5px;padding:4px 2px}
+  .heroTabs button{font-size:9.5px}
+  .heroThemes:not([hidden]){top:61px;left:8px;right:8px}
+  .heroThemes:not([hidden]) button{font-size:9px}
+  .heroBody{padding-top:18px;gap:7px}
+  .heroBody h2{font-size:clamp(25px,7.8vw,30px);max-width:82%}
+  .heroBody p{font-size:11px;max-width:73%;line-height:1.23}
+  .heroCreate{width:min(79%,450px);font-size:12.5px;min-height:46px}
+}
+@media(max-width:350px){
+  .supportTop{gap:4px}
+  .assessmentCard,.supportTools{padding:6px 4px}
+  .assessmentScale{font-size:8.5px}
+  .scaleControls svg{width:12px;height:12px}
+  .centerProfile .photoPortrait{width:min(100%,82px)}
+  .videoMandalaChoice,.profileFocus,.recommendButton{min-height:30px;font-size:9px}
+  .supportToolGrid a{min-height:52px;font-size:8.5px}
+  .supportToolGrid a svg{height:18px;width:18px}
+  .heroTabs>*{font-size:9px}
+  .heroBody h2{max-width:82%}
+}
+@media(prefers-reduced-motion:reduce){.heroPromo,.heroCanvas{transition:none}}
+
+
+/* Video catalog — aligned with the approved Talisman card hierarchy.
+   Existing renderer and controls remain untouched; only presentation changes. */
+.catalogShell{min-width:0;margin:13px 0 14px;padding:14px 13px 13px;border:1px solid #e6e1d3;border-radius:23px;background:linear-gradient(150deg,#fffaf0 0%,#f9f7ee 75%,#f4f4e9 100%);box-shadow:0 8px 25px rgba(28,53,38,.08)}
+.catalogHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 11px}
+.catalogHeading>div{min-width:0}
+.catalogHeading h2{font:800 clamp(21px,3.3vw,30px)/1.1 Arial,Helvetica,sans-serif;color:#1d3932;letter-spacing:-.028em}
+.catalogHeading p{margin-top:4px;color:#788177;font-size:12px;line-height:1.25}
+.catalogHeading button{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:none;border:0;background:transparent;color:#14795c;font-weight:750;font-size:12px;padding:7px 0;text-align:right}
+.categoryRail{display:flex;align-items:stretch;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding:4px;padding:3px 3px 10px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+.categoryRail button{display:flex;flex:0 0 clamp(91px,20%,135px);align-items:center;justify-content:center;flex-direction:column;gap:7px;min-width:0;min-height:86px;padding:12px 5px 9px;scroll-snap-align:start;border:1px solid #d9e4dc;border-radius:16px;background:#eef7f2;color:#098869;font-size:12px;font-weight:800;line-height:1.15;transition:box-shadow .15s ease,transform .15s ease;text-align:center}
+.categoryRail button:active{transform:scale(.98)}
+.categoryRail button[data-tone="money"]{background:#fffaeb;border-color:#ecd69b;color:#bd8b20}
+.categoryRail button[data-tone="relationships"]{background:#fff0f3;border-color:#efc2d3;color:#d94e75}
+.categoryRail button[data-tone="goals"]{background:#f5edff;border-color:#e2c8ef;color:#9252c0}
+.categoryRail button[data-tone="health"]{background:#eef7f1;border-color:#c9e1d8;color:#148a6a}
+.categoryRail button[aria-pressed="true"]{border:3px solid currentColor;padding:10px 3px 7px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 3px 11px rgba(41,83,63,.15)}
+.catalogFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}
+.catalogFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:54px;padding:7px 9px;border:1px solid #dedfd6;border-radius:13px;background:#fdfcf7;color:#23483a;font-weight:800;font-size:11px}
+.catalogFilters label>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalogFilters select{width:100%;min-width:0;padding:3px 13px 3px 0;border:0;outline:none;background:transparent;color:#6f7a6f;font:500 11px/1.2 Arial,Helvetica,sans-serif;text-overflow:ellipsis;cursor:pointer}
+.catalogFilters select:focus-visible{outline:2px solid #009a75;outline-offset:2px;border-radius:4px}
+.catalogFilters select:disabled{opacity:.5;cursor:not-allowed}
+.catalogShell .hero{position:relative;min-height:318px;margin:0;border-radius:22px;border-color:#506858;background:#0c302a}
+.catalogShell .heroPromo{background-image:linear-gradient(105deg,rgba(10,49,38,.38),rgba(8,40,31,.38)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp');background-position:center;background-size:cover}
+.catalogShell .heroPromo::after{display:none}
+.catalogShell .hero[data-video-theme-active="money"] .heroPromo{background-image:linear-gradient(90deg,rgba(25,36,27,.22),rgba(13,32,26,.44)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg')}
+.catalogShell .hero[data-video-theme-active="relationships"] .heroPromo{background-image:linear-gradient(120deg,rgba(57,30,46,.42),rgba(11,44,36,.48)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .heroPromo{background-image:linear-gradient(105deg,rgba(10,46,43,.39),rgba(16,35,55,.42)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-video-theme-active="health"] .heroPromo{background-image:linear-gradient(105deg,rgba(15,45,32,.37),rgba(7,48,38,.37)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.catalogShell .heroShade{background:linear-gradient(90deg,rgba(4,27,22,.24),rgba(7,35,28,.38) 46%,rgba(4,30,25,.87)),linear-gradient(0deg,rgba(4,25,21,.55),transparent 48%)}
+.catalogShell .heroOverlay{display:flex;flex-direction:column;min-height:318px;gap:6px;padding:12px 14px 14px;overflow:visible}
+.catalogShell .heroTabs{display:flex;justify-content:flex-end;gap:5px;margin:0 0 3px}
+.catalogShell .heroTabs>*{flex:0 1 auto;min-width:0;min-height:29px;padding:4px 9px;border-color:rgba(219,243,228,.48);font:750 10px/1.15 Arial,Helvetica,sans-serif;background:rgba(10,54,43,.52)}
+.catalogShell .heroTabs>.heroMode{background:linear-gradient(110deg,#079a72,#11b389)}
+.catalogShell .heroThemes:not([hidden]){top:50px;left:10px;right:10px}
+.catalogShell .heroMain{display:grid;grid-template-columns:minmax(0,.90fr) minmax(0,1.10fr);gap:14px;align-items:center;flex:1;min-width:0}
+.catalogShell .heroVisual{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;min-width:0}
+.catalogShell .videoOrb{width:min(100%,200px);aspect-ratio:1;border-radius:50%;border:8px double rgba(255,220,141,.9);box-shadow:0 0 0 2px rgba(244,211,124,.54),0 0 22px rgba(255,202,106,.57),inset 0 0 18px rgba(252,214,124,.5);background:radial-gradient(circle,transparent 10%,rgba(12,56,36,.12) 70%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') 50% 50% / cover;transition:opacity .2s ease}
+.catalogShell .hero[data-video-theme-active="money"] .videoOrb{background-image:radial-gradient(circle,transparent 35%,rgba(84,44,9,.18)),url('/images/holistic-house/mandala-gold-reference.webp')}
+.catalogShell .hero[data-video-theme-active="relationships"] .videoOrb{background-image:radial-gradient(circle,rgba(251,158,188,.14),rgba(33,58,42,.1)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .videoOrb{background-image:radial-gradient(circle,transparent 25%,rgba(10,55,45,.1)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-hero-promo="false"] .videoOrb{opacity:0}
+.catalogShell .heroAudio{justify-content:center;min-height:31px;max-width:100%;padding:5px 10px;font-size:10px;font-weight:800;background:rgba(8,39,31,.81);white-space:normal;text-align:center;line-height:1.12}
+.catalogShell .heroDetails{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;gap:6px;min-width:0}
+.catalogShell .heroGoal{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid rgba(240,213,135,.5);background:rgba(13,55,42,.5);color:#ecd69d;font-size:10px;font-weight:750;line-height:1.15}
+.catalogShell .heroDetails h2{margin:0;color:#fff;font:800 clamp(21px,3.2vw,34px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.03em;overflow-wrap:normal;text-wrap:balance;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.catalogShell .heroDetails p{margin:0;color:#f2f3e8;font-size:12px;line-height:1.32;max-width:32ch}
+.catalogShell .heroFeature,.catalogShell .heroSound{display:inline-flex;align-items:center;gap:4px;width:auto;max-width:100%;min-height:20px;padding:2px 7px;border-radius:99px;border:1px solid rgba(221,249,231,.42);background:rgba(5,39,29,.59);color:#e4f5e9;font:700 10px/1.15 Arial,Helvetica,sans-serif;white-space:normal}
+.catalogShell .heroActions{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,.82fr);gap:7px;margin-top:8px}
+.catalogShell .heroCreate{display:flex;width:100%;min-width:0;min-height:49px;padding:7px 11px;margin:0;font-size:14px;border:2px solid #b5e9cb;border-radius:13px;box-shadow:0 3px 0 rgba(2,40,26,.4)}
+.catalogShell .heroMore{display:flex;align-items:center;justify-content:center;min-width:0;min-height:49px;padding:8px 7px;border:1px solid rgba(209,237,224,.75);border-radius:13px;background:rgba(6,38,31,.56);color:#fff;text-decoration:none;font-weight:750;font-size:13px}
+.catalogShell .hero+.backgroundMode{margin:11px 0 10px}
+.catalogShell .backgroundMode{background:rgba(253,252,245,.9)}
+.catalogShell .templates{margin:10px 0 0;padding:12px 8px 4px;border:0;border-top:1px solid #e3e4d7;border-radius:0;background:transparent;box-shadow:none}
+.catalogShell .templates .sectionHeading h3{font-size:16px}
+.catalogShell .templateRail{grid-auto-columns:clamp(88px,24%,165px);gap:8px;padding-bottom:4px}
+.catalogShell .templateTile{border-radius:13px}
+@media(max-width:760px){
+  .catalogShell{padding:12px 10px}
+  .catalogHeading h2{font-size:23px}
+  .catalogHeading p{font-size:11px}
+  .catalogHeading button{font-size:11px}
+  .categoryRail button{flex-basis:clamp(78px,24%,112px);min-height:76px;padding:9px 4px;font-size:11px}
+  .catalogShell .hero{min-height:315px;margin-top:0;border-radius:19px;overflow:hidden}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 10px 11px}
+  .catalogShell .heroMain{gap:9px}
+  .catalogShell .heroTabs>*{min-height:26px;padding:3px 6px;font-size:9px}
+  .catalogShell .videoOrb{width:min(100%,154px);border-width:6px}
+  .catalogShell .heroDetails h2{font-size:clamp(20px,5.8vw,29px)}
+  .catalogShell .heroDetails p{font-size:11px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:45px;font-size:12px}
+  .catalogShell .heroThemes:not([hidden]){top:43px}
+}
+@media(max-width:390px){
+  .catalogShell{padding:10px 8px}
+  .catalogHeading{gap:5px;margin-bottom:8px}
+  .catalogHeading h2{font-size:22px}
+  .catalogHeading p{font-size:10px}
+  .catalogHeading button{font-size:10px}
+  .categoryRail{gap:6px;padding-bottom:8px}
+  .categoryRail button{flex-basis:77px;min-height:71px;gap:5px;border-radius:12px;font-size:10px}
+  .categoryRail button svg{width:20px;height:20px}
+  .catalogFilters{gap:4px;margin-bottom:9px}
+  .catalogFilters label{min-height:49px;padding:6px 5px;border-radius:10px;font-size:10px}
+  .catalogFilters select{font-size:10px}
+  .catalogShell .hero{min-height:315px}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 7px}
+  .catalogShell .heroTabs{gap:3px}
+  .catalogShell .heroTabs>*{min-height:27px;padding:3px 4px;font-size:8.5px}
+  .catalogShell .heroMain{grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr);gap:6px}
+  .catalogShell .videoOrb{width:min(100%,133px);border-width:5px}
+  .catalogShell .heroDetails{gap:5px}
+  .catalogShell .heroGoal{padding:4px 6px;font-size:9px}
+  .catalogShell .heroDetails h2{font-size:clamp(18px,5.5vw,23px)}
+  .catalogShell .heroDetails p{font-size:10px}
+  .catalogShell .heroFeature,.catalogShell .heroSound{font-size:9px;min-height:18px}
+  .catalogShell .heroAudio{font-size:9px;padding:5px 6px}
+  .catalogShell .heroActions{gap:5px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:44px;padding:6px 5px;font-size:11px}
+  .catalogShell .heroCreate svg{width:15px;height:15px}
+  .catalogShell .templates .sectionHeading h3{font-size:14px}
+}
+@media(max-width:345px){
+  .catalogHeading h2{font-size:20px}
+  .catalogHeading button{font-size:9px}
+  .catalogShell .heroDetails h2{font-size:18px}
+  .catalogShell .heroDetails p{font-size:9px}
+  .catalogShell .heroMain{gap:4px}
+  .catalogShell .heroTabs>*{font-size:8px;padding:3px}
+  .catalogShell .heroGoal{font-size:8px}
+  .catalogShell .heroAudio{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.catalogShell .videoOrb,.categoryRail button{transition:none}}
+
+/* Licensed Full HD clips enhance the current approved mobile video layout. */
+.categoryRail button[data-tone="life"]{background:#edf7e9;border-color:#c5debf;color:#3c8354}
+.filmBadge{position:absolute;top:7px;left:7px;z-index:2;border:1px solid rgba(255,248,215,.68);border-radius:7px;background:rgba(17,43,39,.82);color:#fff7db;padding:4px 6px;font:800 9px/1 Arial,sans-serif;letter-spacing:.06em;pointer-events:none}
+.healthNote{margin:0 0 11px;padding:10px 12px;border:1px solid #bedbd6;border-radius:12px;background:#edf9f5;color:#406a61;font:600 11.5px/1.4 Arial,sans-serif}
+
+
+/* 29 Oct 2026: one-screen video entry; photo optional by default.
+   The existing renderer/recorder remains the single source of truth. */
+.quickStart{display:grid;gap:10px;margin:2px 0 12px;min-width:0}
+.modePicker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #e4e5d9;border-radius:17px;background:#eeefe7}
+.modePicker button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:46px;padding:7px 8px;border:1px solid transparent;border-radius:13px;background:transparent;color:#50665b;font-size:clamp(11px,2.8vw,14px);font-weight:800}
+.modePicker button[aria-pressed="true"]{border-color:#70c9a7;background:linear-gradient(105deg,#078b6c,#11b28a);color:white;box-shadow:0 3px 10px #06533d21}
+.modePicker button:disabled{opacity:.6}
+.therapyHint{padding:9px 12px;border-radius:12px;background:#ebf3ec;border:1px solid #cfdfd4;color:#365d4f;font-size:12px;line-height:1.4}
+.therapyHint a{color:#08694f;font-weight:800;text-underline-offset:3px}
+.quickStart .categoryRail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;overflow:visible;margin:0;padding:0}
+.quickStart .categoryRail button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:76px;padding:8px 4px;border:1px solid #c7dfd5;border-radius:15px;font-size:clamp(10px,2.65vw,13px);line-height:1.15;text-align:center;white-space:normal}
+.quickStart .categoryRail button span{display:block;max-width:100%;overflow-wrap:anywhere}
+.quickStart .categoryRail button[aria-pressed="true"]{border:3px solid #0a9172;box-shadow:0 0 0 2px white,0 3px 9px #256b4b23;padding:6px 2px}
+.quickStart .categoryRail button svg{flex:none;width:23px;height:23px}
+.photoChoice{display:flex;align-items:center;gap:5px;min-width:0;padding:0 4px}
+.photoToggle{display:grid;place-items:center;flex:none;width:44px;height:44px;cursor:pointer}
+.photoToggle input{width:22px;height:22px;margin:0;accent-color:#079b79;cursor:pointer}
+.photoLink{display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;min-height:44px;padding:5px 3px;border:0;background:transparent;color:#08795c;font-size:clamp(12px,3.1vw,14px);font-weight:800;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.photoLink svg{flex:none}
+.photoChoice small{margin-left:auto;color:#677e70;font-size:10px;line-height:1.25;max-width:80px;text-align:right}
+.catalogShell{margin-top:4px}
+.catalogHeading{margin-bottom:9px}
+.catalogHeading h2{font-size:clamp(18px,4.2vw,23px)}
+.catalogHeading p{font-size:11px}
+.catalogShell .hero{min-height:350px}
+.catalogShell .heroOverlay{min-height:350px;gap:8px;padding:11px 12px 13px}
+.heroQuickFilters{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border:1px solid #e5efe0a6;border-radius:12px;background:#092c26cc;backdrop-filter:blur(9px)}
+.heroQuickFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;color:#d8f1e5;font-weight:750;font-size:10px;line-height:1.2}
+.heroQuickFilters select{display:block;width:100%;min-width:0;min-height:34px;padding:4px 19px 4px 6px;border:1px solid #c3d5c9a8;border-radius:8px;background:#fffdf6;color:#173c32;font:700 13px/1.1 Arial,Helvetica,sans-serif}
+.heroQuickFilters select:disabled{opacity:.6}
+.heroQuickFilters select:focus-visible{outline:3px solid #f0c76e;outline-offset:1px}
+.catalogShell .heroMain{align-self:stretch;min-height:185px}
+.catalogShell .heroDetails{gap:5px}
+.catalogShell .heroDetails h2{max-width:100%}
+.catalogShell .heroActions{margin-top:4px}
+.catalogShell .templates{margin-top:12px}
+.moreFilters,.extraControls,.supportMore{margin:10px 0 0;border:1px solid #dce6da;border-radius:14px;background:#fffcf6;overflow:hidden}
+.moreFilters>summary,.extraControls>summary,.supportMore>summary{display:flex;align-items:center;min-height:44px;padding:10px 13px;color:#275c48;font-size:13px;font-weight:800;cursor:pointer}
+.moreFilters[open]>summary,.extraControls[open]>summary,.supportMore[open]>summary{border-bottom:1px solid #e2e8dc}
+.moreFilters .catalogFilters{padding:11px 10px 4px;margin:0}
+.extraCategoryRail{display:flex;align-items:center;gap:8px;padding:7px 10px 11px}
+.extraCategoryRail button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:42px;padding:7px 12px;border:1px solid #d2ded2;border-radius:12px;background:#eef6ed;color:#315949;font-size:12px;font-weight:750}
+.extraCategoryRail button[aria-pressed="true"]{border-color:#068968;background:#d8f0e4;color:#08674e}
+.audioSection,.hypnosisSection{display:grid;gap:9px;min-width:0;margin-top:13px;padding:14px 11px;border:1px solid #e2e8dc;border-radius:19px;background:linear-gradient(155deg,#fffefb,#faf8ef);box-shadow:0 4px 16px #183c300b}
+.blockHeading{display:grid;gap:4px}
+.blockHeading h3{color:#204b3d;font-size:17px}
+.blockHeading p{color:#617b6d;font-size:12px;line-height:1.35}
+.audioSection .musicCard{margin:0;padding:9px 8px;background:#fffefa}
+.hypnosisSection .wishPanel{margin:0}
+.hypnosisSection>section{min-width:0}
+/* In-page navigation directly beneath the main live video preview. */
+.editorJumpNav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0 2px}
+.editorJumpNav a{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:46px;padding:9px 5px;border:1px solid #d7e2d4;border-radius:13px;background:linear-gradient(135deg,#fffef9,#f4f3eb);box-shadow:0 2px 7px #193c2b12;color:#205744;text-align:center;text-decoration:none;font:800 clamp(11px,3vw,13px)/1.2 Arial,Helvetica,sans-serif}
+.editorJumpNav a svg{flex:none}
+.editorJumpNav a:hover{background:#e6f4eb;border-color:#83bc9f}
+.catalogShell .templates,.audioSection,.hypnosisSection{scroll-margin-top:84px}
+/* Deliberate, full-width preview action: never claims to save or render. */
+.affirmationPreviewAction{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;margin:4px 0 0;border:0;border-radius:15px;background:linear-gradient(110deg,#087253,#08aa7d);box-shadow:0 8px 20px #0c6c4a30;color:#fff;font:800 clamp(15px,4vw,18px)/1.2 Arial,Helvetica,sans-serif}
+.affirmationPreviewAction svg{flex:none}
+.affirmationPreviewAction:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.affirmationPreviewHelp{display:block;color:#668071;text-align:center;font-size:11px;line-height:1.35}
+@media(max-width:355px){.editorJumpNav{gap:5px}.editorJumpNav a{gap:4px;padding:9px 3px;font-size:10px}.editorJumpNav a svg{width:14px;height:14px}.affirmationPreviewAction{min-height:55px}}
+.therapyCourse{margin-top:13px;scroll-margin-top:12px}
+.extraControls{margin-top:13px}
+.extraControls .settings{margin:10px;border:0;box-shadow:none;background:transparent;padding:5px 1px 10px}
+.extraControls .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.supportMore .supportTop{padding:12px}
+@media(max-width:430px){
+  .quickStart{gap:8px;margin-bottom:10px}
+  .quickStart .categoryRail{gap:5px}
+  .quickStart .categoryRail button{min-height:73px;padding:7px 2px;border-radius:13px}
+  .quickStart .categoryRail button svg{width:21px;height:21px}
+  .catalogShell{padding:10px 8px}
+  .catalogShell .hero,.catalogShell .heroOverlay{min-height:370px}
+  .catalogShell .heroOverlay{padding:9px 9px 12px}
+  .catalogShell .heroMain{min-height:192px}
+  .catalogShell .heroDetails h2{font-size:clamp(19px,5.5vw,26px)}
+  .heroQuickFilters{gap:4px;padding:5px}
+  .heroQuickFilters label{font-size:10px}
+  .heroQuickFilters select{font-size:16px;padding-left:5px}
+}
+@media(max-width:355px){
+  .modePicker button{font-size:11px;padding:5px 2px;gap:4px}
+  .photoChoice small{display:none}
+  .catalogShell .hero,.catalogShell .heroOverlay{min-height:390px}
+  .catalogShell .heroMain{grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr)}
+  .catalogShell .heroDetails h2{font-size:18px}
+  .catalogShell .heroDetails p{font-size:10px}
+  .catalogShell .heroFeature,.catalogShell .heroSound{font-size:9px}
+  .catalogShell .videoOrb{width:min(100%,114px)}
+  .catalogShell .heroActions{grid-template-columns:minmax(0,1.7fr) minmax(0,.8fr)}
+  .catalogShell .heroCreate{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.modePicker button{transition:none}}
+
+
+/* 29 Oct owner refinement: two opt-ins above a *clean*, smaller real-video
+   preview. The same Canvas/MediaRecorder feed is retained, no fake thumbnail. */
+.previewChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:1px 0 11px}
+.previewChoice{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;min-width:0;min-height:78px;gap:2px;padding:10px 11px;border:1px solid #cfe3d4;border-radius:15px;background:linear-gradient(135deg,#f3faf3,#fffefa)}
+.previewChoiceLabel{display:flex;align-items:center;gap:8px;min-width:0;min-height:30px;cursor:pointer;color:#235744;font-size:clamp(12px,3.05vw,14px);line-height:1.2;font-weight:800}
+.previewChoiceLabel input{flex:none;width:21px;height:21px;margin:0;accent-color:#078f6b;cursor:pointer}
+.previewChoiceLabel span{min-width:0;overflow-wrap:anywhere}
+.previewChoiceLink{display:inline-flex;align-items:center;gap:5px;min-height:28px;max-width:100%;padding:2px 0;border:0;background:transparent;color:#168363;text-decoration:underline;text-underline-offset:3px;font-size:11px;line-height:1.2;font-weight:750;text-align:left;cursor:pointer}
+.previewChoiceLink svg{flex:none}
+.previewChoiceLink:focus-visible,.previewChoiceLabel input:focus-visible,.heroPlay:focus-visible,
+.therapyBanner button:focus-visible{outline:3px solid #dfbf62;outline-offset:3px}
+.catalogShell .hero{width:100%;min-height:205px;max-height:340px;aspect-ratio:16 / 9;border-radius:20px;overflow:hidden}
+.catalogShell .heroCanvas{z-index:0}
+.catalogShell .heroShade{z-index:2;background:radial-gradient(circle at center,rgba(3,28,23,.06) 16%,rgba(3,29,24,.28) 100%);pointer-events:none}
+.catalogShell .heroPromo{z-index:1}
+.catalogShell .heroPlay{position:absolute;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:76px;height:76px;padding:0;border:2px solid #fff9e9;border-radius:50%;background:rgba(7,98,74,.83);box-shadow:0 0 0 7px rgba(255,255,255,.21),0 10px 30px rgba(1,29,22,.36);backdrop-filter:blur(6px);color:#fff;cursor:pointer;transition:background .2s ease,box-shadow .2s ease,opacity .2s ease}
+.catalogShell .heroPlay svg{margin-left:3px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
+.catalogShell .hero[data-preview-playing="true"] .heroPlay{background:rgba(4,50,40,.65);opacity:.65}
+.catalogShell .hero[data-preview-playing="true"] .heroPlay svg{margin-left:0}
+.catalogShell .heroPlay:hover{opacity:1;background:rgba(6,133,98,.95);box-shadow:0 0 0 9px rgba(255,255,255,.25),0 10px 30px rgba(1,29,22,.38)}
+.catalogShell .heroPlay:disabled{opacity:.5;cursor:not-allowed}
+.postHeroActions{display:flex;margin:9px 0 1px}
+.catalogShell .postHeroActions .heroCreate{width:100%;min-height:48px;margin:0;font-size:14px}
+.therapyBanner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 3px;padding:15px;border:1px solid #c4dfce;border-radius:18px;background:linear-gradient(115deg,#e4f5eb,#fff9ea);box-shadow:0 5px 15px rgba(23,79,54,.08)}
+.therapyBannerCopy{min-width:0;flex:1}
+.therapyBannerCopy small{display:block;color:#148463;font-size:10px;font-weight:850;letter-spacing:.09em}
+.therapyBannerCopy h3{margin:4px 0;color:#214a3b;font-size:clamp(15px,3.5vw,20px);line-height:1.2;letter-spacing:-.01em}
+.therapyBannerCopy p{margin:0;color:#668071;font-size:11px;line-height:1.35}
+.therapyBanner button{display:flex;align-items:center;justify-content:center;gap:6px;max-width:48%;min-height:48px;padding:10px 12px;border:0;border-radius:12px;background:#087f60;color:#fff;text-align:center;font-size:clamp(11px,2.4vw,13px);font-weight:850;line-height:1.2}
+.therapyBanner button svg{flex:none}
+.therapyBanner button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:430px){
+  .previewChoices{gap:6px;margin-bottom:9px}
+  .previewChoice{min-height:74px;padding:8px 7px;border-radius:12px}
+  .previewChoiceLabel{gap:6px;min-height:29px;font-size:clamp(11px,3vw,13px)}
+  .previewChoiceLabel input{width:20px;height:20px}
+  .previewChoiceLink{font-size:10.5px}
+  .catalogShell .hero{min-height:178px;max-height:none;aspect-ratio:16 / 9}
+  .catalogShell .heroPlay{width:67px;height:67px}
+  .catalogShell .heroPlay svg{width:28px;height:28px}
+  .therapyBanner{flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+  .therapyBanner button{max-width:none;width:100%;min-height:46px;font-size:12px}
+}
+@media(max-width:350px){
+  .previewChoiceLabel{font-size:10.5px}
+  .previewChoiceLink{font-size:10px}
+  .catalogShell .hero{min-height:157px}
+}
+@media(prefers-reduced-motion:reduce){.catalogShell .heroPlay{transition:none}}
+
+/* The four accessible choices now live in the disclosure, not over the film. */
+.moreFilters .catalogFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+
+/* Therapy is a separate cinematic tab, reusing the same private Canvas player. */
+.quickStart .previewChoices{margin:2px 0 2px}
+.studio[data-video-studio-mode="therapy"] .modePicker button[data-video-mode="therapy"][aria-pressed="true"]{
+  background:linear-gradient(120deg,#0d736b,#125e70);border-color:#78beb6;box-shadow:0 3px 13px #0a6e752e
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell{
+  border:1px solid #c8e2d6;border-radius:25px;
+  background:linear-gradient(150deg,#f2faf4 0%,#fffef8 45%,#f9fcf3 100%);
+  box-shadow:0 10px 25px rgba(26,85,64,.07)
+}
+.studio[data-video-studio-mode="therapy"] .catalogHeading{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:4px 3px}
+.studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:clamp(20px,5vw,27px);line-height:1.16;letter-spacing:-.025em;color:#174d41}
+.studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:12px;line-height:1.5;color:#608679}
+.courseIndicator{flex:none;align-self:center;display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border:1px solid #c3dfce;border-radius:99px;background:#e6f4e8;color:#197b60;font-size:11px;font-weight:850;letter-spacing:.035em}
+.studio[data-video-studio-mode="therapy"] .catalogShell .hero{
+  min-height:230px;max-height:440px;aspect-ratio:1.72;border-radius:23px;
+  border:1px solid #9bbcb6;box-shadow:0 13px 25px rgba(6,46,38,.15)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{
+  width:78px;height:78px;background:rgba(8,88,80,.8);border-color:#f4eecf;
+  box-shadow:0 0 0 7px rgba(237,252,243,.2),0 9px 25px rgba(4,32,33,.35)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroShade{
+  background:radial-gradient(circle at center,transparent 22%,rgba(3,39,36,.29) 100%)
+}
+.studio[data-video-studio-mode="therapy"] .therapyCourse{margin:13px 0 4px;scroll-margin-top:12px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav{margin-top:14px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a{border-color:#c0dccd;background:#f2faf5}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a:focus-visible{outline:3px solid #a0d1ad;outline-offset:2px}
+@media(max-width:430px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell{padding:12px 9px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:206px;max-height:none;aspect-ratio:1.6}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading{padding:2px 4px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:19px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:11px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{width:68px;height:68px}
+}
+@media(max-width:350px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:190px}
+  .courseIndicator{font-size:10px;padding:6px}
 }
