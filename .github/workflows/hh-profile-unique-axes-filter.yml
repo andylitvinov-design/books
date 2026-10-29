@@ -1,0 +1,83 @@
+name: HH profile — distinct wellbeing axes and compact guest test filter
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/personality-profiles-builder.tsx'
+      - 'components/personality-profiles-builder.module.css'
+      - 'lib/profile/profile-scale-selection.js'
+      - 'tests/profile-construct-axes.test.mjs'
+      - 'tests/profile-scale-hierarchy.test.mjs'
+      - 'tests/personality-profiles-builder.test.mjs'
+      - 'tests/personality-profiles-focus-filter.test.mjs'
+      - 'tests/profile-wizard-scales-topics-separation.test.mjs'
+      - 'tests/profile-unique-axes-compact-test-filter.test.mjs'
+      - 'scripts/verify-profile-unique-axes-filter-browser.mjs'
+      - '.github/workflows/hh-profile-unique-axes-filter.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-profile-filter-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  guest-profile-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 36
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PROFILE_QA_ORIGIN: http://127.0.0.1:3119
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-profile-playwright/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Source rights, localized semantics, and actual React handler acceptance
+        run: >-
+          node --test
+          tests/profile-construct-axes.test.mjs
+          tests/profile-scale-hierarchy.test.mjs
+          tests/personality-profiles-builder.test.mjs
+          tests/personality-profiles-focus-filter.test.mjs
+          tests/profile-wizard-scales-topics-separation.test.mjs
+          tests/profile-unique-axes-compact-test-filter.test.mjs
+      - name: Lint, scripts syntax and typecheck
+        run: |
+          node --check scripts/verify-profile-unique-axes-filter-browser.mjs
+          npx --no-install eslint components/personality-profiles-builder.tsx lib/profile/profile-scale-selection.js scripts/verify-profile-unique-axes-filter-browser.mjs tests/profile-unique-axes-compact-test-filter.test.mjs
+          npx --no-install tsc --noEmit --pretty false
+      - name: Production-equivalent Next build
+        timeout-minutes: 15
+        run: |
+          npm run build > /tmp/hh-profile-filter-build.log 2>&1 || { tail -n 160 /tmp/hh-profile-filter-build.log; exit 1; }
+      - name: Install pinned Playwright client (browser binaries from container)
+        run: npm install --prefix /tmp/hh-profile-playwright --no-package-lock --ignore-scripts --no-audit --no-fund playwright@1.63.0
+      - name: Real anonymous EN/RU/ES wizard at iPhone widths, Chromium and WebKit
+        timeout-minutes: 12
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3119 > /tmp/hh-profile-filter-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3119/ru/personality-profiles >/dev/null; then break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -n 150 /tmp/hh-profile-filter-next.log; exit 1; fi
+            sleep 2
+          done
+          node scripts/verify-profile-unique-axes-filter-browser.mjs
+      - name: Upload anonymous guest screenshots and geometry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-profile-distinct-axes-filter-browser
+          path: artifacts/profile-unique-axes-filter/
+          retention-days: 3
+          if-no-files-found: warn
