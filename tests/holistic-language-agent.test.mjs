@@ -124,3 +124,22 @@ test("zero enabled formats blocks offers",()=>{
 test("locale is constrained to supported set",()=>{
   assert.equal(createLanguageSession({locale:"xx"}).locale,"en");
 });
+
+test("standalone negative video command blocks older video request",()=>{
+  const a=go("Я устал, хочу видео");
+  const b=go("Не видео. Лучше аудио.",a.state);
+  assert.equal(b.state.format,"audio");
+  assert.deepEqual(b.state.excluded,["video"]);
+  assert.deepEqual(b.suggestions,[]);
+});
+test("instead-of A B follows the newer format",()=>{
+  const a=go("Устал, вместо видео аудио");
+  const b=go("Теперь вместо аудио видео",a.state);
+  assert.equal(a.state.format,"audio");
+  assert.equal(b.state.format,"video");
+});
+test("privacy / no content claims on empty verified catalog",()=>{
+  const r=go("Я устал, хочу видео",createLanguageSession({locale:"ru"}),{videos:[]});
+  assert.equal(r.status,"no_match");assert.deepEqual(r.suggestions,[]);
+  assert.equal(Object.hasOwn(r.state,"rawUtterance"),false);
+});
