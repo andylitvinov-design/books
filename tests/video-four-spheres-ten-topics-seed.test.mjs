@@ -36,7 +36,7 @@ test("two new RU video candidates per each of 10 topical subcategories", () => {
     assert.ok(seconds > 0 && seconds <= 600, id + " is over 10 minutes");
     assert.equal(hint, Math.ceil(seconds / 60));
 
-    const group = row.match(/::jsonb, ARRAY\['([^']+)', '([^']+)'\]::text\[\]/);
+    const group = row.match(/::jsonb,\s*ARRAY\['([^']+)',\s*'([^']+)'\]::text\[\]/);
     assert.ok(group, id + " requires two hierarchy tags");
     const [, area, topic] = group;
     assert.ok(topics[area]?.includes(topic), "unregistered discovery topic " + area + "/" + topic);
