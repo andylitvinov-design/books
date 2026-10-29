@@ -36,6 +36,8 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
 - `components/holistic-language-conversation.module.css`: mobile accessible interface.
 - `public/holistic-mind/webllm-worker.mjs`: experimental browser-only WebLLM; no tokens or server inference.
 - `tests/holistic-language-agent.test.mjs`: multilingual, negative constraints, safety, approved-only behavior.
+- `lib/holistic-support/public-reiki-audio-client.{mjs,d.mts}`: locale- and theme-matched, source-validated public Reiki introduction audio only; no new media catalog.
+- `tests/holistic-reiki-audio-language-agent.test.mjs`: approved-only audio link and URL rejection.
 
 ## Contract and precedence
 1. **Input safety**: bounded input length; fail-closed when long, urgent routing using the reviewed Home Guide preflight; no model rephrasing of urgent or long messages.
@@ -64,6 +66,7 @@ HolisticSupportMobile (existing authenticated/public page and approved feeds)
 - Dify / Open WebUI: research reference; full product/UI adoption requires license and branding review. No copying their UI into our product.
 
 ## Secure personal memory (P2 contract; not activated in this PR)
+The current production Supabase project already exposes `app.accounts`, `app.consent_events`, encrypted `app.context_events` and `app_private.development_goals` as distinct data models. **Do not misuse the dated context-event journal as unbounded conversational memory.** Any persistent agent memory needs separate purpose-specific authorization, encryption, limits and owner-scoped policies; no user memory table was created or modified by this PR.
 Client memories are separate from raw chat transcripts. Define a future `AgentMemory` with:
 ```json
 {"id":"uuid","user_id":"server-verified","kind":"preferred_name|speech_style|format_preference|confirmed_goal|user_note","value":"validated minimal text","source":"explicit_user_request","confirmed_at":"ISO UTC","expires_at":null,"scope":"recommendations","consent_version":"v1","revoked_at":null}
@@ -83,7 +86,7 @@ All must reuse existing rankers and published-content gates; no independent cata
 For an authenticated session: explicit purpose-specific profile consent → reviewed source summary → one voluntary question → existing meditation/test/course/session option → optional T0 check-in → practice/video with actual player → optional same-scale T1 → client-owned edit/save feedback → next step. Never turn an optional self-rating into a medical effect claim. Human clinician retains clinical authority and crisis pathways.
 
 ## Required QA before release or merge
-- node --test tests/holistic-language-agent.test.mjs + existing holistic-support guided regression tests.
+- node --test tests/holistic-language-agent.test.mjs tests/holistic-reiki-audio-language-agent.test.mjs + existing holistic-support guided regression tests.
 - Node 22 JS syntax checks, npx tsc --noEmit, scoped lint, Next production build **at exact HEAD**.
 - Real mobile Playwright (320/390/430), Safari/WebKit, Chrome; keyboard/screenreader, no scroll trap, text zoom 200%.
 - Red-team: long prompt and late crisis string; prompt injection in user text and catalog title; negative format constraints across turns and language switches; cross-language audio mismatch; blank catalog; user change of mind.
@@ -96,11 +99,11 @@ For an authenticated session: explicit purpose-specific profile consent → revi
 - Guest: click guide → Free conversation → type naturally → immediate deterministic multilingual reply → real resource card if eligible → user click opens actual item. "No video" never yields a video.
 - Visitor may manually choose a model experiment **only** when enabled by staff flag and device compatible; the site explains a large model download and data boundaries.
 - Returning account holder: **not yet** allowed to assume these public messages are synced with My House profile.
-- Audio: if the current part of the site has no verified source, an honest "not available here yet" is the correct response.
+- Audio: for explicit EN/RU requests, a bounded read-only adapter queries existing public `/api/reiki-intro-audio` (at most two matched lessons); only currently published manifest-backed URLs are offered, clearly labeled **course introductions**. No reported duration is invented; when a maximum duration is requested, the audio option abstains. If no published intro exists, it says "not available here yet". Spanish is not silently given Russian or English audio.
 
 ## Implementation follow-up priorities
 1. Fix any actual CI/type errors at exact head before declaring mergeable.
-2. Add producer adapter for verified audio from `publishedReikiAudioRecommendations`, preserving published manifest gates.
+2. DONE (public-scope adapter): validate existing `/api/reiki-intro-audio` publication output via `public-reiki-audio-client.mjs`, offer only published course introductions with explicit EN/RU and no duration claims. Future: unify this adapter with the server `publishedReikiAudioRecommendations` via source-validated canonical IDs.
 3. Add owner-consented memory within existing profile/RLS (requires migration + consent UI).
 4. Replace remote CDN worker import with locked, SRI-attested/bundled WebLLM runtime, CSP review and mobile performance metrics.
 5. Extend NLU with annotated 200+ test conversations, corrections, speech personalization, and confidence calibration.
