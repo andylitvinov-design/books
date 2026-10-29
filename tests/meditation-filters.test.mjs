@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildMeditationNarrativeBlocks,MEDITATION_TECHNIQUES,MEDITATION_ATTENTION,MEDITATION_DEPTHS,MEDITATION_ENDINGS
+  buildMeditationNarrativeBlocks,MEDITATION_TECHNIQUES,MEDITATION_ATTENTION,MEDITATION_DEPTHS,MEDITATION_ENDINGS,MEDITATION_MOMENTS
 } from "../lib/mandala/meditation-narrative-blocks.mjs";
 import {buildPersonalMeditationScript} from "../lib/mandala/personal-meditation-script.mjs";
 import {parseMeditationNarration,meditationNarrationEstimate} from "../lib/mandala/meditation-narration.mjs";
@@ -36,6 +36,14 @@ test("8 settings meaningfully change the imagery in all 3 locales",()=>{
     assert.equal(new Set(bodies).size,settings.length,locale);
   }
 });
+test("independent meditation topic and time-of-day change real paragraphs",()=>{
+  const independent=buildPersonalMeditationScript({...opts,theme:"money",moment:"evening"});
+  assert.match(independent,/работа и деньги/);
+  assert.match(independent,/Когда день подходит к концу/);
+  assert.equal(MEDITATION_MOMENTS.length,4);
+  const variants=MEDITATION_MOMENTS.map(moment=>buildPersonalMeditationScript({...opts,moment}));
+  assert.equal(new Set(variants).size,4);
+});
 test("3/5/8/12 minutes have increasing real spoken steps and timed pauses",()=>{
   const lengths=[3,5,8,12];
   const scripts=lengths.map(length=>buildPersonalMeditationScript({...opts,length,technique:"grounding"}));
@@ -45,6 +53,8 @@ test("3/5/8/12 minutes have increasing real spoken steps and timed pauses",()=>{
   assert.deepEqual(estimates.slice().sort((a,b)=>a-b),estimates);
   assert.ok(speech[3]>speech[0],"longer format must include more real guidance");
   assert.ok(estimates[3]>estimates[0]+180,"longer format must actually last longer in supported voice estimate");
+  lengths.forEach((minutes,index)=>assert.ok(Math.abs(estimates[index]-minutes*60)<40,
+    "real estimated narration should approximate "+minutes+" minutes"));
 });
 test("crisis-related requests, including free text and affirmations, do not produce a guided exercise",()=>{
   for(const locale of ["en","ru","es"]){
