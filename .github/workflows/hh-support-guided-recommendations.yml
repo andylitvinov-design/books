@@ -1,9 +1,13 @@
-name: Holistic Support guided recommendation card — focused acceptance
+name: Holistic Support AI guide — scored intake and WhatsApp dialogue
 on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-inline-guide.tsx'
+      - 'components/holistic-support-inline-guide.module.css'
+      - 'lib/holistic-support/guide-dialogue.mjs'
+      - 'tests/holistic-support-conversation-intents.test.mjs'
       - 'components/holistic-support-mobile.module.css'
       - 'tests/holistic-support-guided-recommendations.test.mjs'
       - 'scripts/verify-holistic-support-guided-card.mjs'
@@ -28,12 +32,12 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Five clickable steps and existing recommendation contracts
+      - name: Grounded goal-led conversation and existing recommendation contracts
         run: |
           node --check scripts/verify-holistic-support-guided-card.mjs
-          node --test tests/holistic-support-guided-recommendations.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs
+          node --test tests/holistic-support-conversation-intents.test.mjs tests/holistic-support-guided-recommendations.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs
       - name: Scoped lint
-        run: npx --no-install eslint components/holistic-support-mobile.tsx scripts/verify-holistic-support-guided-card.mjs tests/holistic-support-guided-recommendations.test.mjs
+        run: npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-inline-guide.tsx lib/holistic-support/guide-dialogue.mjs tests/holistic-support-conversation-intents.test.mjs scripts/verify-holistic-support-guided-card.mjs tests/holistic-support-guided-recommendations.test.mjs
       - name: Typecheck
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build
@@ -58,7 +62,7 @@ jobs:
         run: |
           npm install --prefix /tmp/hh-support-guide-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-support-guide-tools/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Real clicks and layout on EN/RU/ES × 320/390/430
+      - name: Score-first multi-turn dialog on EN/RU/ES × 320/390/430
         run: |
           set -euo pipefail
           mkdir -p artifacts/holistic-guided-recommendations

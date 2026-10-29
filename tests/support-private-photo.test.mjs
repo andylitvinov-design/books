@@ -20,7 +20,7 @@ test('support photo is never uploaded without an explicit Save click',()=>{
   assert.match(support,/data-support-photo-saved/)
   assert.match(support,/photoSignIn/)
   assert.match(support,/\/app\/videos/)
-  assert.match(support,/privateInfo: "Шкалы и история/)
+  assert.match(support,/privateInfo: "Оценки и история/)
 })
 
 test('private photo API is session-bound and does not expose public media URLs',()=>{
@@ -73,4 +73,13 @@ test('strict CSP exposes blob previews on Support and signed images only in My V
   assert.ok(policy.includes('directMessageStorageOrigin + privateSupportPhotoOrigin'))
   assert.ok(policy.includes('if (!privateSupportPhotoCabinet) return'))
   assert.ok(policy.includes('url.origin'))
+})
+
+test('new mobile layout retains the advisor and a visible photo affordance',()=>{
+  const css=read('components/holistic-support-mobile.module.css')
+  const ui=read('components/holistic-support-mobile.tsx')
+  assert.match(ui,/HolisticSupportInlineGuide/)
+  assert.match(ui,/photoUrl \|\| storedPhotoUrl/)
+  assert.match(ui,/photoSaved/)
+  assert.match(css,/\.photoPlaceholder strong \{ display: block;/)
 })

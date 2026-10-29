@@ -95,7 +95,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /const \[outputWidth, outputHeight\] = formatDimensions\(aspect, quality\)/);
   assert.match(studio, /quality === "fullhd" \? 1080 : 720/);
   assert.match(studio, /type Aspect = "square" \| "portrait" \| "landscape"/);
-  assert.match(studio, /source = theme==="money" && backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
+  assert.match(studio, /source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
   assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
@@ -104,9 +104,8 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
   assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
-  // The renderer now preserves decoded portrait aspect ratio instead of
-  // forcing fixed width/height offsets; keep the actual image-layer contract.
-  assert.ok(renderer.includes("ctx.drawImage(src,-src.width*scale/2,-src.height*scale/2,src.width*scale,src.height*scale);"));
+  assert.match(renderer, /ctx\.arc\(0,0,radius,0,Math\.PI\*2\);ctx\.clip\(\)/);
+  assert.match(renderer, /ctx\.drawImage\(src,-src\.width\*scale\/2,-src\.height\*scale\/2,src\.width\*scale,src\.height\*scale\)/);
   assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
@@ -145,10 +144,10 @@ test("background-only reusable clip preserved from live without photo or payment
   assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
-  assert.match(studio,/theme==="money" && backgroundOnly \? BACKGROUND_CLIP/);
+  assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
-  assert.match(studio,/backgroundOnly\?"money-background":"personal-mandala"/);
+  assert.match(studio,/backgroundOnly\?\(theme==="money"\?"money-background":theme\+"-background"\)/);
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio,/if \(!art\) return/);
   assert.match(browser,/holistic-house-money-background/);

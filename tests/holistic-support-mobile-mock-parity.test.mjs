@@ -71,16 +71,15 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\\.sendBeacon/);
-  const photoCalls = client.split('fetch("/api/app/support-photo"').length - 1;
-  assert.ok(photoCalls >= 2, "private image read and explicit photo Save");
-  assert.equal(client.split("fetch(").length - 1, photoCalls,
-    "image persistence must not send self-ratings or viewing history to another API");
+  assert.equal(client.split("fetch(").length - 1, 2, "only owner photo GET/POST");
+  assert.ok(client.includes('fetch("/api/app/support-photo"'), "private photo endpoint only");
 });
 
-test("progress is derived from local opens and four self-ratings, never fake streaks", () => {
+test("progress is derived from opens and four self-ratings, never fake streaks", () => {
   assert.match(client, /progressTotal = relevantVideos\.length/);
   assert.match(client, /progressCount = relevantVideos\.filter/);
-  assert.match(client, /averageScore = \(focusOrder\.reduce/);
+  assert.match(client, /averageScore = \(checkinOrder\.reduce/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
   assert.match(client, /className=\{styles\.progressStarted\}/);
   assert.match(client, /className=\{styles\.progressAverage\}/);
   assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);

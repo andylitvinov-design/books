@@ -20,11 +20,12 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support\\\/mobile/);
+  assert.match(nav, /holistic-support/);
+  assert.match(nav, /\(\?:mobile\|mandala\)/);
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
-test("personal scores stay local and photos save privately only by explicit opt-in; no fake payment", () => {
+test("personal ratings stay local; only opted-in photos enter the private Cabinet", () => {
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
   assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
@@ -32,11 +33,11 @@ test("personal scores stay local and photos save privately only by explicit opt-
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
   assert.match(read("lib/mandala/prepare-browser-photo.ts"), /25_000_000/);
   assert.match(client, /data-support-photo-save/);
-  assert.match(client, /\/api\/app\/support-photo/);
   assert.match(client, /data-support-recommendations/);
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
   assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
+  assert.equal(client.split("fetch(").length - 1, 2, "only GET and explicit POST to private photo endpoint");
   assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
@@ -137,7 +138,10 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
   assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
-  assert.match(client, /setRecommendation\(\{ \.\.\.scores \}\)/);
+  assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
+  assert.match(client, /goals: values\.meaning/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.doesNotMatch(client, /energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5/);
   assert.match(client, /setRecommendation\(null\)/);
   assert.match(client, /data-support-meditation-basis role="status"/);
   assert.match(client, /suggested\.priorities\.map\(/);
@@ -155,7 +159,7 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
   assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
@@ -302,10 +306,13 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+test("Russian course media picker returns in Courses while the four profiles live in Tests", () => {
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
   const courseCss = read("components/holistic-support-course-profiles.module.css");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /const scene = choice === "meditation" \|\| choice === "pump"/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
+  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
+  assert.match(client, /data-support-active-course-link/);
   assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
   assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
@@ -314,9 +321,8 @@ test("original Russian mysteries remain Academy links beside the four profile Co
   assert.match(courseProfiles, /src=\{course\.poster\}/);
   assert.match(courseProfiles, /\/academy\`/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
-  // The original route/manifests remain covered separately above. The new
-  // profile screen links to those originals rather than pretending its old,
-  // now-unreachable inline course picker is still a visible UI.
+  // Original manifests remain single-source. The course picker is reachable
+  // again, while the four self-rating profile cards belong to Tests.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
@@ -368,7 +374,8 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /kind === "healing" && reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
+  assert.match(gallery, /const supportedMethods = kind === "healing" && reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\] : null/);
+  assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
@@ -423,7 +430,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
 test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/holistic-support-master-gallery.module.css");
-  for (const label of ["Сессия","Инициация","Курс обучения","Краткий",
+  for (const label of ["Сессия","Инициация","Программа","Краткий",
     "Личный разбор текстом","Личный разбор голосом",
     "В течение суток","В течение 3 дней","В выбранный час",
     "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);

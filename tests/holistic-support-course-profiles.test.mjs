@@ -9,9 +9,11 @@ const profiles = read("components/holistic-support-course-profiles.tsx");
 const style = read("components/holistic-support-course-profiles.module.css");
 const filter = read("components/holistic-support-goal-filter.tsx");
 
-test("Courses shortcut opens four real profile tabs in the same mobile shell", () => {
+test("Tests shortcut opens four profile categories in the existing mobile shell", () => {
   assert.match(home, /data-support-tool="pump"/);
-  assert.match(home, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(home, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
+  assert.match(home, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
+  assert.doesNotMatch(home, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
   for (const sector of ["energy", "money", "love", "meaning"]) {
     assert.match(profiles, new RegExp('id: "' + sector + '"'));
     assert.match(profiles, new RegExp('data-support-profile=\\{id\\}'));
@@ -42,10 +44,11 @@ test("three hero actions are real, localized, and preserve existing diagnostic f
     "Hacer un test", "Completar perfil", "Ver recomendaciones"]) {
     assert.ok(profiles.includes(label), label);
   }
-  assert.match(home, /onTests=\{\(\) => changeChoice\("tests"\)\}/);
+  assert.match(home, /onTests=\{\(\) => window\.location\.assign\("\/" \+ locale \+ "\/client\/tests"\)\}/);
   assert.match(home, /onFillProfile=\{openCourseProfileFilter\}/);
   assert.match(home, /onRecommendations=\{showCourseProfileRecommendations\}/);
-  assert.match(home, /if \(!saved\) \{ openCourseProfileFilter\(sector\); return; \}/);
+  assert.match(home, /if \(!saved \|\| saved\.checkin !== scores\[goalSectorCheckinKey\[sector\]\]\) \{/);
+  assert.match(home, /openCourseProfileFilter\(sector\); return;/);
   assert.match(home, /applyGoalFilter\(\{ \.\.\.saved, sector, savedSectors: goalSavedSectors/);
   assert.match(filter, /preferredSector\?: GoalSector/);
   assert.match(filter, /initialSector = preferredSector \?\? initial\?\.sector/);

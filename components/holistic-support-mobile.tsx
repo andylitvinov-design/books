@@ -6,14 +6,16 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
-  Settings2, ShieldCheck, Sparkles, Target, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
+  Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
+import { HolisticSupportInlineGuide } from "@/components/holistic-support-inline-guide";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
-import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter, goalSectorFocus, summarizeGoalSelection,
+import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
+  goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
@@ -49,6 +51,9 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
+// Meaning is a separate fifth check-in; the published video topic engine
+// continues to use the original four-focus ranking.
+type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
@@ -56,11 +61,14 @@ type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
+const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"];
 // Existing public Test Explorer recognizes these non-sensitive editorial journey IDs.
-const journeyCategory: Record<Focus, string> = {
-  energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
-};
-const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Target };
+const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Flower2, meaning: Flower2 };
+// The historical recommendation engine calls the fourth focus "goals".
+// It receives the single Meaning score, never a second or synthetic Goals slider.
+const asFocusScores = (values: Record<CheckinArea, number>): Record<Focus, number> => ({
+  energy: values.energy, money: values.money, relationships: values.relationships, goals: values.meaning,
+});
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
   { id: "consultation", Icon: MessageCircle },
@@ -94,7 +102,7 @@ const copy = {
         "energy": "Energy & wellbeing tests",
         "money": "Work & money reflection tests",
         "relationships": "Relationship tests",
-        "goals": "Focus & motivation tests"
+        "goals": "Meaning, focus & motivation tests"
       },
       "testHint": "Browse actual free questionnaires",
       "videoHint": "Published original recording",
@@ -131,15 +139,15 @@ const copy = {
     },
     goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
     goalExternalOnly: "Use the selected links above to explore these published formats.",
-    goalSector: { energy: "Energy", money: "Money", love: "Love", goals: "Goals", meaning: "Meaning" },
-    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", goals: "Take the next step", meaning: "Find your inner direction" },
+    goalSector: { energy: "Energy", money: "Money", love: "Love", meaning: "Meaning" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore meaning and direction" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
     goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Meaning" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
@@ -148,7 +156,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", greek: "Greek mysteries" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
-    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Focus on your direction" },
+    heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
     youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
@@ -165,7 +173,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Sliders and viewing history stay on this device. Your photo is uploaded to your private account only after you choose Save.",
+    private: "Private on this page", privateInfo: "Ratings and viewing history stay on your device. Your photo enters your private Cabinet only when you choose Save.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
@@ -194,7 +202,7 @@ const copy = {
         "energy": "Тесты: энергия и самочувствие",
         "money": "Тесты: работа и деньги",
         "relationships": "Тесты: отношения",
-        "goals": "Тесты: фокус и мотивация"
+        "goals": "Тесты: смыслы, фокус и мотивация"
       },
       "testHint": "Реальные бесплатные опросники",
       "videoHint": "Опубликованная авторская запись",
@@ -231,15 +239,15 @@ const copy = {
     },
     goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
     goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
-    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", goals: "Цели", meaning: "Смыслы" },
-    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", goals: "Двигайся к своей цели", meaning: "Найди внутренний смысл" },
+    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", meaning: "Смыслы" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Найди смыслы и направление" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
     goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Смыслы" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
@@ -248,7 +256,7 @@ const copy = {
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", greek: "Мистерии Греции" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
-    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Сосредоточься на цели" },
+    heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
     youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
@@ -265,7 +273,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Шкалы и история просмотра остаются на устройстве. Фото отправляется в приватный кабинет только после нажатия «Сохранить».",
+    private: "Лично на этом экране", privateInfo: "Оценки и история просмотра остаются на устройстве. Фото сохраняется в закрытом кабинете только после нажатия «Сохранить».",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
@@ -294,7 +302,7 @@ const copy = {
         "energy": "Pruebas de energía y bienestar",
         "money": "Pruebas de trabajo y dinero",
         "relationships": "Pruebas de relaciones",
-        "goals": "Pruebas de atención y motivación"
+        "goals": "Pruebas de sentido, atención y motivación"
       },
       "testHint": "Cuestionarios gratuitos disponibles",
       "videoHint": "Grabación original publicada",
@@ -331,15 +339,15 @@ const copy = {
     },
     goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
     goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
-    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", goals: "Metas", meaning: "Sentido" },
-    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", goals: "Da el siguiente paso", meaning: "Encuentra tu dirección interior" },
+    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", meaning: "Sentido" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Encuentra sentido y dirección" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
     goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Sentido" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
@@ -348,7 +356,7 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", greek: "Misterios griegos" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
-    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Enfoca tu camino" },
+    heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
     youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
@@ -365,7 +373,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial se quedan en tu dispositivo. La foto se sube de forma privada solo al pulsar Guardar.",
+    private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial se quedan en el dispositivo. Tu foto se guarda en privado solo al pulsar Guardar.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
@@ -392,11 +400,17 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
-  const [scores, setScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
+  // Single owner for the five synchronized check-ins in both UI locations.
+  const [scores, setScores] = useState<Record<CheckinArea, number>>({
+    energy: 5, money: 5, relationships: 5, meaning: 5,
+  });
   const [choice, setChoice] = useState<Choice>(initialChoice);
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
   const [recommendation, setRecommendation] = useState<Record<Focus, number> | null>(null);
+  const [editedCheckins, setEditedCheckins] = useState<CheckinArea[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideVersion, setGuideVersion] = useState(0);
   const [goalFilterOpen, setGoalFilterOpen] = useState(false);
   const [profileSector, setProfileSector] = useState<GoalSector>("energy");
   const [activeCourseProfile, setActiveCourseProfile] = useState<CourseProfileSector>("energy");
@@ -414,6 +428,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [photoSignIn, setPhotoSignIn] = useState(false);
   const photoEpoch = useRef(0);
   const [photoError, setPhotoError] = useState("");
+
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
   const [theme, setTheme] = useState<Theme>("all");
@@ -424,8 +439,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Google returns to the same public page with a one-use non-personal
-  // OAuth continuation flag. The client-side scoring/photo dashboard never
-  // touches browser storage, CRM, private notes or account identity.
+  // OAuth continuation flag. Ratings and viewing history never
+  // enter browser storage, CRM or private notes; photo Save is explicit.
   useEffect(() => {
     if (window.location.search.includes("hh_enquiry=google"))
       setChoice(pendingBrowserTalismanGoogleReturn() ? "talisman" : "healing");
@@ -486,8 +501,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
 
   // Quick matching follows the lowest self-ratings. An explicitly applied goal
   // overrides the browsing focus without changing the existing scoring engine.
+  const focusScores = asFocusScores(scores);
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
-    scores[domain] < scores[lowest] ? domain : lowest, focusOrder[0]);
+    focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
@@ -524,7 +540,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     }
     return eligible.slice(0, 4);
   }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
-  const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
+  const selected = relevantVideos.find(video => video.id === selectedId) ??
+    videos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
@@ -535,21 +552,30 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
     }));
+  const onCheckinChange = (id: CheckinArea, value: number) => {
+    if (!Number.isInteger(value) || value < 1 || value > 10) return;
+    setScores(previous => ({ ...previous, [id]: value }));
+    setEditedCheckins(previous => previous.includes(id) ? previous : [...previous, id]);
+    // Invalidate previously applied ranking; keep accepted category answers.
+    setGuideOpen(false);
+    setRecommendation(null); setGoalSelection(null);
+  };
   const onRecommendations = () => {
-    // Keep the user's chosen focus and formats; recommend only verified content.
-    setRecommendation({ ...scores });
+    // No unsolicited analysis: launch dialogue from the user's actual inputs.
+    setRecommendation(asFocusScores(scores));
     setGoalFilterOpen(false);
+    setGuideVersion(previous => previous + 1); setGuideOpen(true);
     scrollToSupport("support-goal-results");
   };
   const openGoalFilter = () => {
     setProfileSector(goalSelection?.sector ?? ({ energy: "energy", money: "money",
-      relationships: "love", goals: "goals" } as Record<Focus, GoalSector>)[focus]);
-    setPlaying(false); setGoalFilterOpen(true);
+      relationships: "love", goals: "meaning" } as Record<Focus, GoalSector>)[focus]);
+    setPlaying(false); setGuideOpen(false); setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
   const openCourseProfileFilter = (sector: GoalSector) => {
-    if (sector !== "goals") setActiveCourseProfile(sector);
+    setActiveCourseProfile(sector);
     setProfileSector(sector);
     setPlaying(false);
     setGoalFilterOpen(true);
@@ -570,18 +596,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     };
     const firstInline = GOAL_RECOMMENDATION_FORMATS.find(id =>
       formats.includes(id) && inlineChoice[id]);
-    // Never infer a 1–10 self-rating from income or reserve amounts. Meaning
-    // remains separate from Goals; Money uses its own stability rating.
-    const nextScores = { ...scores };
-    const primary = { energy: "vitality", money: "incomeStability",
-      love: "connection", goals: "goalClarity" } as const;
-    if (value.sector !== "meaning") {
-      const now = value.ratings[primary[value.sector]]?.current;
-      if (Number.isInteger(now) && now >= 1 && now <= 10) {
-        nextScores[goalSectorFocus[value.sector]] = now;
-      }
-    }
-    setScores(nextScores); setRecommendation(nextScores); setGoalSelection(value);
+    // Three "Now → Want" measures remain independent. Applying them must
+    // never overwrite the dedicated check-in, which syncs on every drag.
+    setRecommendation(asFocusScores(scores));
+    setGoalSelection(value);
+    setGuideVersion(previous => previous + 1); setGuideOpen(true);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
@@ -592,15 +611,17 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const saved = goalSavedSectors[sector];
     // Do not claim a tailored report before the visitor accepts the
     // relevant self-rating. Reuse the existing consent-free local editor.
-    if (!saved) { openCourseProfileFilter(sector); return; }
-    if (sector !== "goals") setActiveCourseProfile(sector);
+    if (!saved || saved.checkin !== scores[goalSectorCheckinKey[sector]]) {
+      openCourseProfileFilter(sector); return;
+    }
+    setActiveCourseProfile(sector);
     setProfileSector(sector);
     applyGoalFilter({ ...saved, sector, savedSectors: goalSavedSectors,
       recommendationFormats: goalRecommendationFormats });
   };
   const resetGoalFilter = () => {
     setGoalSavedSectors({}); setGoalRecommendationFormats([...GOAL_RECOMMENDATION_FORMATS]);
-    setGoalSelection(null); setRecommendation(null); setTheme("all");
+    setGoalSelection(null); setRecommendation(null); setTheme("all"); setGuideOpen(false);
   };
   const startVideo = () => {
     if (!selected) return;
@@ -626,59 +647,29 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
-  const averageScore = (focusOrder.reduce((sum, id) => sum + scores[id], 0) / focusOrder.length).toFixed(1);
+  const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
   const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
   const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
   const goalHasInlineFormat = activeGoalFormats.some(id =>
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
-  // Single recommendation guide: only already published videos and existing routes.
-  // Scores/photo never leave this page; no automatic enrollments or bookings.
-  const quickRanked = useMemo(() => recommendSupportByLowestScores({ scores, videos, locale }),
-    [scores, videos, locale]);
-  const journeyVideo = goalMatch?.videos[0] ?? quickRanked.videos[0] ?? null;
-  const journeyVideoAllowed = !goalSelection || activeGoalFormats.includes("meditation");
-  const journeySupportFormat = (["healing", "consultation", "courses", "masters",
-    "talismans", "initiations", "mandala"] as GoalRecommendationFormat[])
-    .find(id => activeGoalFormats.includes(id));
-  const journeySupportHref = journeySupportFormat === "courses"
-    ? "/" + locale + (focus === "money" ? "/explore/business" : "/academy")
-    : journeySupportFormat === "initiations"
-      ? "/" + locale + "/academy/reiki/tantra-reiki/discover"
-      : journeySupportFormat === "mandala"
-        ? "/" + locale + "/holistic-support/mandala" : null;
-  const JourneySupportIcon = journeySupportFormat === "courses" ? BookOpen
-    : journeySupportFormat === "consultation" ? MessageCircle : HandHeart;
-  const showJourneyVideo = () => {
-    if (!journeyVideoAllowed) { openGoalFilter(); return; }
-    setRecommendation({ ...scores }); setChoice("meditation"); setGoalFilterOpen(false);
+  // Real catalogue and published player reused by the conversation; no paid AI call.
+  const guidePreferredVideo = goalMatch?.videos[0] ?? null;
+  const openGuideVideo = (id: string | null) => {
+    if (goalSelection && !activeGoalFormats.includes("meditation")) { openGoalFilter(); return; }
+    setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
-    setSelectedId(journeyVideo?.id ?? null); setPlaying(false);
+    setSelectedId(id); setPlaying(false);
     scrollToSupport("support-meditation-player");
   };
-  const openJourneySupport = () => {
-    const inline: Partial<Record<GoalRecommendationFormat, Choice>> = {
-      healing: "healing", consultation: "consultation", masters: "masters", talismans: "talisman",
-    };
-    const selectedChoice = journeySupportFormat && inline[journeySupportFormat];
-    if (!selectedChoice) { openGoalFilter(); return; }
+  const openGuideChoice = (selectedChoice: "meditation" | "tests" | "pump" | "consultation" | "healing") => {
     changeChoice(selectedChoice);
-    // Jump to the requested service, not to the top of the recommendation card.
-    scrollToSupport(selectedChoice === "talisman" ? "support-talisman-panel"
-      : selectedChoice === "consultation" ? "support-consultation-panel"
-        : "support-healing-panel");
+    scrollToSupport(selectedChoice === "consultation" ? "support-consultation-panel"
+      : selectedChoice === "healing" ? "support-healing-panel" : "support-mobile-experience");
   };
-  const supportCardBody = <>
-    <span className={styles.journeyThumb}><JourneySupportIcon size={23} aria-hidden="true" /></span>
-    <span className={styles.journeyContent}>
-      <strong>{journeySupportFormat ? t.goalResultLabels[journeySupportFormat] : t.journey.supportMissing}</strong>
-      <small>{journeySupportFormat ? t.goalResultHints[journeySupportFormat] : t.goalNoFormats}</small>
-      <em>{t.journey.actions[3]} <ArrowRight size={13} aria-hidden="true" /></em>
-    </span>
-    <ChevronRight size={17} aria-hidden="true" />
-  </>;
-  const scene = choice === "meditation";
+  // Courses reuse the published video player; the four check-in profiles belong to Tests.
+  const scene = choice === "meditation" || choice === "pump";
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
@@ -699,15 +690,16 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
             <p className={styles.subText}>{t.scoreGuide}</p>
             <div className={styles.scaleList}>
-              {focusOrder.map(id => {
+              {checkinOrder.map(id => {
                 const Icon = scoreIcons[id];
+                const label = id === "meaning" ? t.goalSector.meaning : t.foci[id];
                 return <label className={styles.scaleRow} key={id} data-support-scale={id}>
                   <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
                   <span className={styles.scaleDetail}>
-                    <span className={styles.scaleLabel}>{t.foci[id]}</span>
+                    <span className={styles.scaleLabel}>{label}</span>
                     <input type="range" min="1" max="10" step="1" value={scores[id]}
-                      aria-label={t.foci[id]} aria-valuetext={scores[id] + " / 10"}
-                      onChange={event => { setRecommendation(null); setGoalSelection(null); setScores(previous => ({ ...previous, [id]: Number(event.target.value) })); }} />
+                      aria-label={label} aria-valuetext={scores[id] + " / 10"}
+                      onChange={event => onCheckinChange(id, Number(event.target.value))} />
                   </span>
                   <output className={styles.scaleValue} data-tone={id}>{scores[id]}</output>
                 </label>;
@@ -789,166 +781,23 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </div>
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
-          {!goalFilterOpen ? <section className={styles.goalResults}
-            id="support-goal-results" data-support-goal-results aria-labelledby="support-goal-results-title">
-            <div className={styles.journeyHeading}>
-              <div className={styles.goalResultsHeading}>
-                <h2 id="support-goal-results-title"><Sparkles size={21} aria-hidden="true" />{t.goalResultsTitle}</h2>
-                <p>{t.journey.intro} {t.goalResultsNote}</p>
-              </div>
-              <button type="button" className={styles.journeyAdjust} onClick={openGoalFilter}>
-                <Settings2 size={16} aria-hidden="true" />{t.goalAdjust}
-              </button>
-            </div>
-            <div className={styles.journeyFocus} data-support-journey-focus>
-              <ActiveFocusIcon size={16} aria-hidden="true" />{t.journey.focus}: <strong>{activeFocusLabel}</strong>
-              {!goalSelection || goalSelection.sector !== "meaning" ? <span>{scores[focus]}/10</span> : null}
-            </div>
-            <div className={styles.journeyRows} aria-label={t.goalResultsTitle}>
-              <div className={styles.journeyRow} data-support-journey-step="1">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>1</span>
-                  <MessageCircle size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[0]}</strong></div>
-                <button type="button" className={styles.journeyTarget} onClick={openGoalFilter}
-                  data-support-journey-action="question">
-                  <span className={styles.journeyThumb}><MessageCircle size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.questionTitle}</strong>
-                    <small>{t.journey.questionHint}</small><em>{t.journey.actions[0]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="2">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>2</span>
-                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[1]}</strong></div>
-                <Link className={styles.journeyTarget} prefetch={false}
-                  href={"/" + locale + "/client/tests?journey=" + journeyCategory[focus]}
-                  data-support-journey-action="tests">
-                  <span className={styles.journeyThumb}><TestTubeDiagonal size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.testTitles[focus]}</strong>
-                    <small>{t.journey.testHint}</small><em>{t.journey.actions[1]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </Link>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="3">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>3</span>
-                  <Play size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[2]}</strong></div>
-                <button type="button" className={styles.journeyTarget} onClick={showJourneyVideo}
-                  data-support-journey-action="video" data-support-journey-video={journeyVideoAllowed && journeyVideo ? journeyVideo.id : "none"}>
-                  <span className={styles.journeyThumb}>
-                    {journeyVideo && journeyVideoAllowed ? <Image alt="" loading="lazy" unoptimized
-                      src={"https://i.ytimg.com/vi/" + encodeURIComponent(journeyVideo.id) + "/mqdefault.jpg"}
-                      width={112} height={74} /> : <Play size={23} aria-hidden="true" />}
-                  </span>
-                  <span className={styles.journeyContent}>
-                    <strong>{!journeyVideoAllowed ? t.journey.videoExcluded :
-                      journeyVideo ? shortVideoTitle(journeyVideo.title, locale) : t.journey.videoMissing}</strong>
-                    <small>{goalSelection && goalMatch && !goalMatch.matchedVideo ? t.journey.related : t.journey.videoHint}</small>
-                    <em>{t.journey.actions[2]} <ArrowRight size={13} aria-hidden="true" /></em>
-                  </span><ChevronRight size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="4">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>4</span>
-                  <HandHeart size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[3]}</strong></div>
-                {journeySupportHref ? <Link href={journeySupportHref} prefetch={false}
-                  data-support-journey-action="support" className={styles.journeyTarget}>{supportCardBody}</Link> :
-                  <button type="button" className={styles.journeyTarget}
-                    data-support-journey-action="support" onClick={openJourneySupport}>{supportCardBody}</button>}
-              </div>
-              <div className={styles.journeyRow} data-support-journey-step="5">
-                <div className={styles.journeyStep}><span className={styles.journeyNumber}>5</span>
-                  <BarChart3 size={20} aria-hidden="true" /><strong>{t.journey.stepLabels[4]}</strong></div>
-                <a className={styles.journeyTarget} href="#support-progress" data-support-journey-action="progress">
-                  <span className={styles.journeyThumb}><BarChart3 size={23} aria-hidden="true" /></span>
-                  <span className={styles.journeyContent}><strong>{t.journey.progressTitle}</strong>
-                    <small>{t.journey.progressHint}</small><em>{t.journey.actions[4]} <ArrowRight size={13} aria-hidden="true" /></em></span>
-                  <ChevronRight size={17} aria-hidden="true" />
-                </a>
-              </div>
-            </div>
-            <button type="button" className={styles.journeyStart} onClick={openGoalFilter}>
-              <Sparkles size={17} aria-hidden="true" />{t.journey.start}<ArrowRight size={17} aria-hidden="true" />
-            </button>
-            {goalSelection ? <details className={styles.journeyMore} data-support-journey-other>
-              <summary>{t.journey.other} <ChevronDown size={16} aria-hidden="true" /></summary>
-            <div className={styles.goalResultGrid}>
-              {activeGoalFormats.includes("meditation") ? <button type="button"
-                data-support-goal-action="meditation" aria-pressed={choice === "meditation"}
-                onClick={() => { changeChoice("meditation"); window.requestAnimationFrame(() =>
-                  document.getElementById("support-meditation-gallery")?.scrollIntoView({
-                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-                    block: "start",
-                  })); }}>
-                <Play size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.meditation}</strong><small>{t.goalResultHints.meditation}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("consultation") ? <button type="button"
-                data-support-goal-action="consultation" aria-pressed={choice === "consultation"}
-                onClick={() => changeChoice("consultation")}>
-                <MessageCircle size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.consultation}</strong><small>{t.goalResultHints.consultation}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("tests") ? <button type="button"
-                data-support-goal-action="tests" aria-pressed={choice === "tests"}
-                aria-controls="support-tests-panel" onClick={() => changeChoice("tests")}>
-                <TestTubeDiagonal size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.tests}</strong><small>{t.goalResultHints.tests}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("courses") ? <Link
-                href={goalSelection.sector === "money" ? "/" + locale + "/explore/business"
-                  : "/" + locale + "/academy"} prefetch={false} data-support-goal-action="courses">
-                <BookOpen size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.courses}</strong><small>{t.goalResultHints.courses}</small></span>
-              </Link> : null}
-              {activeGoalFormats.includes("talismans") ? <button type="button"
-                data-support-goal-action="talismans" aria-pressed={choice === "talisman"}
-                onClick={() => changeChoice("talisman")}>
-                <Sparkles size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.talismans}</strong><small>{t.goalResultHints.talismans}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("healing") ? <button type="button"
-                data-support-goal-action="healing" aria-pressed={choice === "healing"}
-                onClick={() => changeChoice("healing")}>
-                <HandHeart size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.healing}</strong><small>{t.goalResultHints.healing}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("masters") ? <button type="button"
-                data-support-goal-action="masters" aria-pressed={choice === "masters"}
-                onClick={() => changeChoice("masters")}>
-                <UserRound size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.masters}</strong><small>{t.goalResultHints.masters}</small></span>
-              </button> : null}
-              {activeGoalFormats.includes("initiations") ? <Link
-                href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}
-                data-support-goal-action="initiations">
-                <Zap size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.initiations}</strong><small>{t.goalResultHints.initiations}</small></span>
-              </Link> : null}
-              {activeGoalFormats.includes("mandala") ? <Link
-                href={"/" + locale + "/holistic-support/mandala"} prefetch={false}
-                data-support-goal-action="mandala">
-                <Flower2 size={21} aria-hidden="true" />
-                <span><strong>{t.goalResultLabels.mandala}</strong><small>{t.goalResultHints.mandala}</small></span>
-              </Link> : null}
-            </div>
-            {activeGoalFormats.length === 0 ? <p className={styles.goalEmptyNotice}
-              role="status" data-support-goal-empty>{t.goalNoFormats}</p> : null}
-            </details> : null}
-          </section> : null}
+          {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
+            key={guideVersion} locale={locale} scores={scores} editedCheckins={editedCheckins}
+            goalSelection={goalSelection} videos={videos} preferredVideo={guidePreferredVideo}
+            onClose={() => setGuideOpen(false)} onRefine={openGoalFilter}
+            onVideo={openGuideVideo} onChoice={openGuideChoice} /> : null}
           {goalFilterOpen ? <HolisticSupportGoalFilter locale={locale} scores={scores}
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
+            onCheckinChange={(sector, value) => onCheckinChange(goalSectorCheckinKey[sector], value)}
             selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
-            onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat ? (
+            onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat && choice !== "pump" && choice !== "tests" ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
-              <p>{activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}</p>
+              <p data-support-goal-empty={activeGoalFormats.length === 0 ? "true" : undefined}>
+                {activeGoalFormats.length ? t.goalExternalOnly : t.goalNoFormats}
+              </p>
               <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
             </div>
-          ) : choice === "pump" ? (
-            <HolisticSupportCourseProfiles locale={locale} courses={courses}
-              savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
-              onTests={() => changeChoice("tests")}
-              onFillProfile={openCourseProfileFilter}
-              onRecommendations={showCourseProfileRecommendations} />
           ) : scene ? (
             <>
               {goalSelection ? <div className={styles.activeGoalStrip} data-support-applied-goal>
@@ -958,6 +807,23 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
+              {choice === "pump" && courses.length > 0 ? (
+                <div className={styles.mysteryPicker} data-support-mystery-courses>
+                  <div className={styles.mysteryPickerHeading}>
+                    <strong>{t.mysteryCourses}</strong><span>{t.mysterySource}</span>
+                  </div>
+                  <div className={styles.mysteryPickerGrid} role="group" aria-label={t.mysteryCourses}>
+                    {courses.map(course => (
+                      <button key={course.id} type="button" className={styles.mysteryPickerCard}
+                        data-support-mystery-course={course.id} aria-pressed={activeMystery?.id === course.id}
+                        onClick={() => { setProgram(course.id); setMaster("all"); setTheme("all"); setPlaying(false); setSelectedId(null); }}>
+                        <Image src={course.poster} alt="" width={300} height={180} unoptimized loading="lazy" />
+                        <span><strong>{course.shortTitle}</strong><small>{course.videoCount} {t.lessonCount}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
@@ -973,7 +839,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </label>
                   <label className={styles.heroFilter} data-support-filter="program"><BookOpen size={18} aria-hidden="true" /><span>{t.program}</span>
                     <strong className={styles.filterValue}>{program === "all" ? t.all : t.programs[program]}</strong>
-                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); }}>
+                    <select value={program} aria-label={t.program} onChange={event => { setProgram(event.target.value as Program); setPlaying(false); setSelectedId(null); if (choice === "pump") { setMaster("all"); setTheme("all"); } }}>
                       <option value="all">{t.all}</option>
                       {activeProgramValues.map(key => <option key={key} value={key}>{t.programs[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
@@ -1007,10 +873,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
+                    <h2>{choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
                     <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
                     {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{t.play}</button> :
+                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{choice === "pump" ? t.watchLesson : t.play}</button> :
                       <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
                     {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
                       data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
@@ -1019,8 +885,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               </div>
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
-                  <h3>{activeMystery ? t.originalCourseVideos : t.gallery}</h3>
-                  <Link href={activeMystery?.videoGroups[0]?.href ?? ("/" + locale + "/holistic-support#meditation-practices")}
+                  <h3>{activeMystery ? t.originalCourseVideos : choice === "pump" ? t.energyTitle : t.gallery}</h3>
+                  <Link href={activeMystery?.videoGroups[0]?.href ?? (choice === "pump" ? "/" + locale + "/academy?view=videos" : "/" + locale + "/holistic-support#meditation-practices")}
                     prefetch={false} className={styles.seeAll}>{t.seeAll}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
                 {goalSelection && goalMatch && choice === "meditation" ?
@@ -1051,10 +917,26 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
               </div>
+              {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
+                <p>{t.energyIntro}</p>
+                <div className={styles.courseLinks}>
+                  <Link href={"/" + locale + "/academy"} prefetch={false}>{t.coursesAll}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  <Link href={"/" + locale + "/academy/reiki/tantra-reiki/discover"} prefetch={false}>{t.coursesReiki}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  {activeMystery ? <Link href={activeMystery.href} prefetch={false}>{t.openCourse}: {activeMystery.title}<ArrowRight size={18} aria-hidden="true" /></Link> : null}
+                  {activeMystery?.videoGroups.map(group => (
+                    <Link href={group.href} key={group.href} prefetch={false}>{group.title} · {group.count} {t.lessonCount}<ArrowRight size={18} aria-hidden="true" /></Link>
+                  ))}
+                </div>
+              </div> : null}
             </>
           ) : choice === "tests" ? (
             <section className={styles.testsPanel} id="support-tests-panel"
               data-support-tests-panel aria-labelledby="support-tests-title">
+              <HolisticSupportCourseProfiles locale={locale} courses={courses}
+                savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
+                onTests={() => window.location.assign("/" + locale + "/client/tests")}
+                onFillProfile={openCourseProfileFilter}
+                onRecommendations={showCourseProfileRecommendations} />
               <div className={styles.testsHero}>
                 <span className={styles.testsEyebrow}><TestTubeDiagonal size={18} aria-hidden="true" />{t.testsShort}</span>
                 <h2 id="support-tests-title">{t.testsTitle}</h2>

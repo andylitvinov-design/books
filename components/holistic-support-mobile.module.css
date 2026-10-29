@@ -46,10 +46,6 @@
 .fileInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 3; cursor: pointer; border-radius: 50%; }
 .photo:focus-within { outline: 3px solid #dc9c37; outline-offset: 6px; }
 .photoError { margin: 0; color: #a12d32; font-size: 13px; }
-.photoSave { max-width: 180px; min-height: 37px; padding: 5px 9px; border: 1px solid #1a916f; border-radius: 12px; background: #078764; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.18; overflow-wrap: anywhere; }
-.photoSave:disabled { opacity: .66; cursor: progress; }
-.photoSaved { max-width: 180px; color: #11664f; font-size: 12px; font-weight: 750; line-height: 1.25; overflow-wrap: anywhere; }
-
 .focusSelector { display: grid; gap: 3px; width: 100%; max-width: 252px; padding: 10px 14px; border: 1px solid #e6e3d7; border-radius: 19px; background: #fffdf8; text-align: left; box-shadow: 0 3px 12px #15261b0d; }
 .focusCaption { color: #666b60; font-size: 12px; }
 .focusValue { display: flex; align-items: center; gap: 7px; color: #279957; }
@@ -299,9 +295,6 @@
   .camera { width: 29px; height: 29px; right: 0; bottom: 0; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
   .photoError { margin: 0; font-size: 10px; line-height: 1.14; overflow-wrap: anywhere; }
-  .photoSave { min-width: 0; width: 100%; min-height: 33px; padding: 4px 2px; border-radius: 9px; font-size: clamp(9px,2.45vw,11px); }
-  .photoSaved { font-size: 10px; line-height: 1.15; }
-
   .focusSelector { width: 100%; max-width: none; min-width: 0; padding: 6px 2px;
     border-radius: 13px; gap: 2px; text-align: center; background: #fffdfa; }
   .focusCaption { font-size: clamp(9.5px,2.65vw,11px); line-height: 1.08; }
@@ -956,4 +949,82 @@
   .journeyStep strong { font-size: 10.5px; }
   .journeyContent small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .journeyHeading .goalResultsHeading h2 { font-size: 14px; }
+}
+
+
+/* Meaning is the fourth assessment; it includes purpose and goals.
+   There is no fifth Goals slider or duplicate score. */
+.scaleIcon[data-tone="meaning"] { color: #7654b6; background: #e9e2f5; }
+.scaleValue[data-tone="meaning"] { background: #e9e2f5; }
+.scaleRow[data-support-scale="meaning"] input { accent-color: #8059bf; }
+@media (max-width: 640px) {
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 13px 18px; min-height: 31px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10px,2.95vw,12px); }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 19px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .page .assessment .scaleRow { grid-template-rows: 13px 17px; min-height: 30px; }
+  .page .assessment .scaleLabel { font-size: 10.3px; }
+  .page .assessment .scaleRow input { height: 17px; }
+}
+
+/* Restore the original broad, short iPhone dashboard proportions with
+   four synchronized assessments: Energy, Money, Relationships, Meaning. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr);
+  }
+}
+@media (max-width: 640px) {
+  .page .assessment { padding-top: 7px; padding-bottom: 6px; }
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 14px 18px; min-height: 33px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10.6px, 2.95vw, 12.5px); }
+  .page .assessment .scaleIcon { width: 19px; height: 19px; }
+  .page .assessment .scaleIcon svg { width: 15px; height: 15px; }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 20px; font-size: 12px; }
+  .page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }
+}
+@media (max-width: 350px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr);
+  }
+  .page .assessment .scaleRow {
+    grid-template-rows: 12px 17px; min-height: 30px;
+  }
+  .page .assessment .scaleIcon { height: 17px; }
+  .page .assessment .scaleRow input { height: 17px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; }
+}
+
+
+/* The real iPhone three-column row must not stretch the check-in card.
+   At 390px the original 77px action tiles made the entire header 291px tall
+   although the check-in CTA finished by 255px. Keep the same four action tiles,
+   all labels and the bottom Video Mandala shortcut; just recover 18px. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .tools .toolGrid { grid-template-rows: repeat(2, minmax(0, 68px)); }
+  .page .tools .toolButton,
+  .page .tools .toolButton:last-child {
+    min-height: 68px;
+    padding-block: 3px;
+    gap: 3px;
+  }
+}
+
+/* Private photo Save stays secondary to the recommendation CTA. */
+.photoSave { max-width: 180px; min-height: 37px; padding: 5px 9px; border: 1px solid #1a916f; border-radius: 12px; background: #078764; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.18; overflow-wrap: anywhere; }
+.photoSave:disabled { opacity: .66; cursor: progress; }
+.photoSaved { max-width: 180px; color: #11664f; font-size: 12px; font-weight: 750; line-height: 1.25; overflow-wrap: anywhere; }
+@media (max-width:640px) {
+  .profile > .photoSave { min-width: 0; width: 100%; min-height: 33px; padding: 4px 2px; border-radius: 9px; font-size: clamp(9px,2.45vw,11px); }
+  .profile > .photoSaved { font-size: 10px; line-height: 1.15; }
+  .photoPlaceholder strong { display: block; padding: 4px 2px 3px; bottom: 3px; font-size: clamp(9px,2.2vw,11px); line-height: 1.05; }
 }
