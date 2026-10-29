@@ -3048,6 +3048,9 @@ function ResultPage({ id, locale, data }) {
   if (error) return <p role="alert">{message(error, c)}</p>
   if (!result) return <p>{c.loading}</p>
   const changeSummary = resultChangeSummary(result, data.results, locale)
+  const sourceReport = buildAssessmentResultReport(result, locale)
+  const allowOptionalConsultation = sourceReport.verified !== false &&
+    !sourceReport.sections?.some(section => section.recommendedReview === true)
   const series = seriesFor(data.results, result),
     previous = series
       .filter(
@@ -3198,7 +3201,7 @@ function ResultPage({ id, locale, data }) {
         </aside>
       )}
 
-      <ResultConsultationCta locale={locale} />
+      {allowOptionalConsultation && <ResultConsultationCta locale={locale} />}
 
       <footer className="hh-result-footer">
         <p className="hh-result-source">
