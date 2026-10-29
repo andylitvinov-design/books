@@ -9,6 +9,7 @@ on:
       - 'tests/client-reasoning-core.test.mjs'
       - 'tests/client-reasoning-bridge.test.mjs'
       - 'lib/holistic-support/holistic-guide-adapter.mjs'
+      - 'lib/holistic-support/holistic-guide-adapter.d.mts'
       - 'tests/holistic-guide-adapter.test.mjs'
       - 'lib/holistic-support/holistic-intelligence.mjs'
       - 'lib/holistic-support/holistic-intelligence.d.mts'

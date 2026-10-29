@@ -100,3 +100,12 @@ test("unsafe or unpublished catalogues cannot create a next step", () => {
   ] } };
   assert.equal(buildHolisticGuidedTurn(plan).status, "no_match");
 });
+
+test("null or malformed inputs fail closed", () => {
+  const result = buildHolisticGuidedTurn({ locale: "ru", intent: null,
+    access: null, safety: null, feedback: null, catalogs: null,
+    profile: null, consent: null, history: null });
+  assert.equal(result.status, "safety_check_required");
+  assert.deepEqual(result.suggestions, []);
+  assert.equal(buildHolisticGuidedTurn({ safety: { status: "clear" }, intent: null }).status, "clarify");
+});

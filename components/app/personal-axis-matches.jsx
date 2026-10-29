@@ -210,7 +210,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
               prefetch={false}>{t.result}<ArrowRight size={14} aria-hidden="true"/></Link>
           </div>)}
           <small>{t.noAverage}</small>
-        </div> : <small>{t.none}</small>}
+        </div> : showMeasurements ? <small>{t.none}</small> : null}
       </div>
       <div className={styles.goalGap} data-axis-personal-gap>
         <div><label htmlFor="hh-axis-self-now">{t.now}</label>
