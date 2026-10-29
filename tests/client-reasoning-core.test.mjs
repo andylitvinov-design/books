@@ -61,6 +61,16 @@ test('current user focus overrides remembered, owner-approved focus', () => {
   assert.deepEqual(context.selectedTopics, ['focus']);
   assert.equal(context.language, 'es');
 });
+test('a newly selected topic does not silently retain an old profile facet or area', () => {
+  const context = prepareReasoningContext({
+    intent: { selectedTopics: ['focus'] },
+    profile: { authenticated: true, ownerScoped: true, confirmedFacets: ['emotions::stress'], confirmedLifeAreas: ['relationships'] },
+    consent: { profilePersonalization: true },
+  });
+  assert.deepEqual(context.selectedTopics, ['focus']);
+  assert.deepEqual(context.selectedFacets, []);
+  assert.deepEqual(context.lifeAreas, []);
+});
 test('no ranker returns unavailable rather than unreviewed fallback', () => {
   assert.equal(planClientNextStep({ ...base, rankOffers: undefined }).status, 'unavailable');
 });
