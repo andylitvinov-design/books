@@ -134,6 +134,12 @@ for(const engine of [chromium,webkit]){
               .some(key=>key.startsWith('__reactProps$')))
             return hydrated(field) && hydrated(next)
           },null,{timeout:30000})
+          // Photo controls must work, not merely resemble the owner's mockup.
+          const photoToggle=editor.locator('[data-service-visual-canvas] button[aria-expanded]').first()
+          await photoToggle.click()
+          await editor.locator('[data-service-photo-tools]').waitFor({state:'visible'})
+          await editor.locator('[data-service-photo-tools] button').first().click()
+          await editor.locator('[data-service-photo-tools]').waitFor({state:'hidden'})
           const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
           await input.fill('Synthetic service title')
           // Regression: blur must not teleport the fixed footer before pointerup.
@@ -169,6 +175,14 @@ for(const engine of [chromium,webkit]){
           await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
             ?.getAttribute('data-service-stage')==='1',null,{timeout:10000})
           assert.equal(await editor.getAttribute('data-service-stage'),'1',label+' Next opens booking')
+          await editor.locator('[data-service-step-controls] button').last().click()
+          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
+            ?.getAttribute('data-service-stage')==='2',null,{timeout:10000})
+          assert.equal(await editor.locator('[data-service-slide="details"]').count(),1,
+            label+' third step has real details')
+          await editor.locator('[data-service-step-controls] button').first().click()
+          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
+            ?.getAttribute('data-service-stage')==='1',null,{timeout:10000})
           await editor.locator('[data-service-step-controls] button').first().click()
           await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
             ?.getAttribute('data-service-stage')==='0',null,{timeout:10000})
