@@ -1,14 +1,15 @@
 'use client'
-import {useCallback,useEffect,useMemo,useState} from 'react'
+import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,Inbox,MessageCircle,PackageCheck,RefreshCw,ShoppingBag} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,Inbox,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
- en:{title:'Requests',subtitle:'Your orders and conversations with practitioners, all in one place.',
-  orders:'My orders',clients:'Clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
+ en:{title:'Messages',subtitle:'Orders and conversations in one place.',
+  introOrders:'Your orders and conversations with practitioners',introOrdersBody:'Status, messages and materials together.',introClients:'Your incoming client messages',introClientsBody:'Answer requests through existing protected conversations.',searchOrders:'Search orders, services or practitioners',filterOrders:'Filter by status',chatIndicator:'Order conversation',
+  orders:'My orders',clients:'My clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
   all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',
   explore:'Explore services',error:'Could not load your orders.',retry:'Try again',loading:'Loading your orders…',
   open:'Open order',back:'My orders',number:'Request',practitioner:'Practitioner',details:'Order details',
@@ -20,8 +21,9 @@ const TEXT={
   myPractice:'My practices',payment:'Payment',paymentInfo:'A request is not a confirmed booking or payment.',
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
- ru:{title:'Заявки',subtitle:'Ваши заказы и переписка с мастерами в одном месте.',
-  orders:'Мои заказы',clients:'Клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
+ ru:{title:'Сообщения',subtitle:'Заказы и общение',
+  introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
+  orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
   all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',
   explore:'Выбрать услугу',error:'Не удалось загрузить заказы.',retry:'Повторить',loading:'Загружаем ваши заказы…',
   open:'Открыть заказ',back:'Мои заказы',number:'Заявка',practitioner:'Мастер',details:'Детали заказа',
@@ -33,8 +35,9 @@ const TEXT={
   myPractice:'Мои практики',payment:'Оплата',paymentInfo:'Заявка ещё не означает запись или подтверждённую оплату.',
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
- es:{title:'Solicitudes',subtitle:'Tus pedidos y conversaciones con profesionales en un solo lugar.',
-  orders:'Mis pedidos',clients:'Clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
+ es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
+  introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
+  orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
   all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',
   explore:'Explorar servicios',error:'No se pudieron cargar tus pedidos.',retry:'Reintentar',loading:'Cargando pedidos…',
   open:'Abrir pedido',back:'Mis pedidos',number:'Solicitud',practitioner:'Profesional',details:'Detalles del pedido',
@@ -86,6 +89,10 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [signedOut,setSignedOut]=useState(false)
   const [generation,setGeneration]=useState(0)
   const [filter,setFilter]=useState('all')
+  const [filtersOpen,setFiltersOpen]=useState(false)
+  const [search,setSearch]=useState('')
+  const [clientCount,setClientCount]=useState(0)
+  const [clientDetailOpen,setClientDetailOpen]=useState(false)
   const [selectedId,setSelectedId]=useState('')
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
@@ -109,7 +116,12 @@ export default function MessagesOrdersClients({locale='en',children}){
     return()=>controller.abort()
   },[generation,locale])
   const orders=ordersData?.orders||[]
-  const visible=useMemo(()=>orders.filter(row=>filter==='all'||category(row)===filter),[orders,filter])
+  const visible=useMemo(()=>{
+    const term=search.trim().toLocaleLowerCase()
+    return orders.filter(row=>(filter==='all'||category(row)===filter)&&
+      (!term||[titleOf(row,locale),row.practitionerName,status[row.status],
+        row.remoteBooking?.serviceTitle].some(value=>String(value||'').toLocaleLowerCase().includes(term))))
+  },[orders,filter,search,locale,status])
   const selected=orders.find(order=>order.id===selectedId)||null
   const unread=orders.reduce((sum,order)=>sum+Math.max(0,Number(order.unread)||0),0)
   function chooseSection(value){
@@ -118,6 +130,8 @@ export default function MessagesOrdersClients({locale='en',children}){
     if(value==='orders')url.searchParams.set('section','orders')
     else url.searchParams.set('section','clients')
     if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to')}
+    if(value==='clients'){url.searchParams.delete('order');setSelectedId('')}
+    setClientDetailOpen(false)
     window.history.replaceState(window.history.state,'',url)
   }
   function chooseOrder(id){
@@ -128,26 +142,48 @@ export default function MessagesOrdersClients({locale='en',children}){
     window.history.replaceState(window.history.state,'',url)
   }
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
-  return <section className={styles.root} data-orders-clients-hub>
+  const detailMode=Boolean(selected)||(section==='clients'&&clientDetailOpen)
+  return <section className={styles.root} data-orders-clients-hub
+    data-detail-open={detailMode||undefined} data-section={section}>
     <header className={styles.head}>
-      <div><span className={styles.eyebrow}>HOLISTIC HOUSE</span><h1>{t.title}</h1><p>{t.subtitle}</p></div>
+      <div><h1>{t.title}</h1><p>{section==='clients'&&ordersData?.hasPractice?
+        (locale==='ru'?'Клиенты и входящие':locale==='es'?'Clientes y mensajes':'Clients and messages'):t.subtitle}</p></div>
       <button type="button" onClick={reload} className={styles.refresh} aria-label={t.retry} title={t.retry}>
         <RefreshCw size={19} aria-hidden="true"/>
       </button>
     </header>
+    {!detailMode&&<div className={styles.introCard}>
+      <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
+      <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
+        <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
+      <img src="/images/holistic-house/ideas-zen-landscape.svg" alt="" aria-hidden="true"
+        loading="lazy" width="118" height="104" className={styles.introArt}/>
+    </div>}
     <div className={styles.sections} role="tablist" aria-label={t.title}>
       <button type="button" role="tab" aria-controls="hh-orders-panel" aria-selected={section==='orders'}
         onClick={()=>chooseSection('orders')}><ShoppingBag size={23} aria-hidden="true"/>
-        <span><strong>{t.orders}</strong><small>{t.iOrder}</small></span>
-        {unread>0&&<b className={styles.count} aria-label={t.newer}>{unread>99?'99+':unread}</b>}
+        <span><strong>{t.orders}</strong></span>
+        {!loading&&orders.length>0&&<b className={styles.count} aria-label={t.orders}>
+          {orders.length>99?'99+':orders.length}</b>}
       </button>
       <button type="button" role="tab" aria-controls="hh-clients-panel" aria-selected={section==='clients'}
-        onClick={()=>chooseSection('clients')}><Inbox size={23} aria-hidden="true"/>
-        <span><strong>{clientTab}</strong><small>{ordersData?.hasPractice?t.incoming:t.conversations}</small></span>
+        onClick={()=>chooseSection('clients')}><UsersRound size={22} aria-hidden="true"/>
+        <span><strong>{clientTab}</strong></span>
+        {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
       </button>
     </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
-      {!selected&&<div className={styles.filters} aria-label={t.orders}>
+      {!selected&&<div className={styles.orderToolbar}>
+        <label className={styles.search}><Search size={19} aria-hidden="true"/>
+          <span className={styles.visuallyHidden}>{t.searchOrders}</span>
+          <input type="search" value={search} autoComplete="off"
+            placeholder={t.searchOrders} onChange={e=>setSearch(e.target.value)}/>
+        </label>
+        <button type="button" className={styles.filterToggle} aria-expanded={filtersOpen}
+          aria-label={t.filterOrders} title={t.filterOrders}
+          onClick={()=>setFiltersOpen(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>
+      </div>}
+      {!selected&&filtersOpen&&<div className={styles.filters} aria-label={t.orders}>
         {[['all',t.all],['waiting',t.waiting],['working',t.working],['finished',t.finished]].map(([key,label])=>
           <button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}
             <span>{key==='all'?orders.length:orders.filter(order=>category(order)===key).length}</span>
@@ -159,21 +195,27 @@ export default function MessagesOrdersClients({locale='en',children}){
       {!loading&&!error&&!orders.length&&<div className={styles.empty}>
         <ShoppingBag size={38} aria-hidden="true"/><p>{t.empty}</p>
         <Link href={'/'+locale+'/masters'}>{t.explore}<ArrowRight size={18}/></Link></div>}
+      {!loading&&!error&&!selected&&orders.length>0&&!visible.length&&
+        <p className={styles.notice}>{locale==='ru'?'По этому запросу заказов не найдено.':
+          locale==='es'?'No se encontraron pedidos.':'No matching orders.'}</p>}
       {!loading&&!error&&!selected&&visible.map(order=>
         <button key={order.id} className={styles.order} type="button"
           onClick={()=>chooseOrder(order.id)} aria-label={t.open+': '+titleOf(order,locale)}>
           <img src={imageOf(order,locale)} alt="" width="88" height="92" loading="lazy"/>
           <span className={styles.orderText}>
-            <strong>{titleOf(order,locale)}</strong>
-            <small>{t.practitioner}: {order.practitionerName}</small>
-            <b className={styles.price}>{priceOf(order,t)}</b>
-            <span className={styles.orderFoot}>
+            <span className={styles.orderMain}>
+              <strong>{titleOf(order,locale)}</strong>
               <em data-kind={category(order)}>{status[order.status]||order.status}</em>
+            </span>
+            <small>{t.practitioner}: {order.practitionerName||'—'}</small>
+            <span className={styles.orderFoot}>
+              <MessageCircle size={15} aria-hidden="true"/>
+              <span>{t.chatIndicator}</span>
+              {order.unread>0&&<b className={styles.unread}>{order.unread}</b>}
               <small>{dateOf(order.createdAt,locale)}</small>
             </span>
           </span>
-          {order.unread>0&&<span className={styles.unread}>{order.unread}</span>}
-          <ArrowRight aria-hidden="true" size={18} className={styles.openArrow}/>
+          <ChevronRight aria-hidden="true" size={19} className={styles.openArrow}/>
         </button>)}
       {!loading&&!error&&!selected&&ordersData?.hasMore&&<p className={styles.notice}>
         {t.more} <Link href={'/'+locale+'/app/consultations'}>{t.back}</Link></p>}
@@ -189,14 +231,14 @@ export default function MessagesOrdersClients({locale='en',children}){
             <div><em data-kind={category(selected)}>{status[selected.status]||selected.status}</em></div>
           </div>
         </article>
-        <div className={styles.factBox}>
-          <h3><PackageCheck size={18} aria-hidden="true"/>{t.details}</h3>
+        <details className={styles.factBox}>
+          <summary><PackageCheck size={18} aria-hidden="true"/>{t.details}</summary>
           <p><b>{t.status}:</b> {status[selected.status]||selected.status}</p>
           {selected.durationMinutes&&<p><b>{t.conditions}:</b> {selected.durationMinutes} {t.minutes}</p>}
           {selected.remoteBooking?.date&&<p>{selected.remoteBooking.date} {selected.remoteBooking.time||''} ({selected.remoteBooking.timezone||'Toronto'})</p>}
           <p><Clock3 size={15} aria-hidden="true"/>{dateOf(selected.createdAt,locale)}</p>
           <p className={styles.note}><Bell size={15} aria-hidden="true"/>{t.paymentInfo}</p>
-        </div>
+        </details>
         <div className={styles.conversation}>
           <h3><MessageCircle size={19} aria-hidden="true"/>{t.chat}</h3>
           <PracticeRequestConversation key={selected.id} requestId={selected.id} accountId={ordersData.accountId}
@@ -211,8 +253,8 @@ export default function MessagesOrdersClients({locale='en',children}){
       </div>}
     </div>}
     {section==='clients'&&<div id="hh-clients-panel" role="tabpanel" className={styles.clients}>
-      <p className={styles.clientHint}>{t.incomingHelp}</p>
-      {children}
+      {isValidElement(children)?cloneElement(children,{
+        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children}
     </div>}
   </section>
 }
