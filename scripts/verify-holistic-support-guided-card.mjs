@@ -135,6 +135,8 @@ for (const engine of [chromium, webkit]) {
           await guide.locator("[data-support-guide-recommendations]").waitFor({state:"visible"});
           assert.ok((await guide.locator("[data-support-guide-primary-title]").innerText()).includes("Рейки"),
             tag+" explicitly chosen support remains the primary format");
+          assert.ok((await guide.locator("[data-support-guide-fit-note]").innerText()).includes("а не курс про работу и деньги"),
+            tag+" chosen Reiki support is not misrepresented as a business course");
           assert.equal(await guide.locator("[data-support-guide-alternative]").first().getAttribute("data-support-guide-alternative"),
             "courses",tag+" business course outranks generic video as alternative");
           assert.equal(await guide.locator('a[href="/ru/explore/business"]').count(),1,
