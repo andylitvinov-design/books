@@ -212,7 +212,7 @@ function ReviewCard({ row, locale, onUpdated }) {
       <div className={styles.buttons}>
         <button type="button" onClick={() => submit('accept')} disabled={!canSave} className={styles.accept}>
           <ThumbsUp size={17} aria-hidden="true"/>{t.approve}</button>
-        <button type="button" onClick={() => submit('reject')} disabled={!canSave} className={styles.reject}>
+        <button type="button" onClick={() => submit('reject')} disabled={pending} className={styles.reject}>
           <ThumbsDown size={17} aria-hidden="true"/>{t.decline}</button>
         <button type="button" onClick={() => submit('save')} disabled={!canSave}>{t.save}</button>
         <button type="button" onClick={checkListing} disabled={pending}>
