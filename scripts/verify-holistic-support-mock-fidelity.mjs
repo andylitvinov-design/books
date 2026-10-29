@@ -673,6 +673,17 @@ for (const browserType of [chromium, webkit]) {
             mainTabPosition.tabsBottom <= mainTabPosition.contentTop+2,
             label+" Main / Filter / Description / Video tabs must sit ABOVE the scenic hero content: "+
               JSON.stringify(mainTabPosition));
+          const topFilterPosition = await healing.locator('[data-support-reiki-hero-filter]')
+            .evaluate(element => {
+              const box=element.getBoundingClientRect();
+              const stage=element.closest('[data-support-reiki-central]').getBoundingClientRect();
+              return {top:box.top,bottom:box.bottom,stageTop:stage.top,stageHeight:stage.height};
+            });
+          assert.ok(topFilterPosition.top >= mainTabPosition.tabsBottom-1 &&
+            topFilterPosition.top - mainTabPosition.tabsBottom <= 25 &&
+            topFilterPosition.bottom <= topFilterPosition.stageTop+topFilterPosition.stageHeight/2,
+            label+" large Filter CTA must be at the top of the photo, not beside the lower hero copy: "+
+              JSON.stringify(topFilterPosition));
           // Screenshot regression: shared .page button {font:inherit} used to inflate
           // every Reiki tab into a huge two-line block on real iPhone Safari.
           const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
