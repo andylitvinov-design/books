@@ -237,7 +237,7 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false,his
         </div>
         <div className={styles.thread} ref={threadRef} role="log" aria-live="polite"
           aria-relevant="additions" aria-label={t.guide}>
-          <Bubble role="guide">{model.verified?t.intro:t.unverified}</Bubble>
+          <Bubble role="guide">{model.verified?model.summary||t.intro:t.unverified}</Bubble>
           {model.verified&&<Bubble role="guide">
             <ul className={styles.measureList}>{model.highlights.map(row=>
               <li key={row.key}><strong>{row.label}</strong>{row.score&&<span>{row.score}</span>}</li>)}</ul>
@@ -249,34 +249,75 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false,his
           {turns.map((turn,index)=><Bubble role={turn.role} key={index}>{turn.text}</Bubble>)}
         </div>
       </div>
-      {model.verified&&phase!=='safety'&&<>
-        <div className={styles.choices} role="group" aria-label={t.choose}>
-          {model.highlights.map(row=><button type="button" key={row.key} onClick={()=>selectMeasure(row)}>
-            {row.label}<ArrowRight size={14} aria-hidden="true"/></button>)}
+      {model.verified&&phase==='choose'&&<div className={styles.choices} role="group"
+        aria-label={t.choose} data-discussion-choose-scale>
+        {model.highlights.map(row=><button type="button" key={row.key}
+          data-discussion-scale={row.key} onClick={()=>selectMeasure(row)}>
+          <span>{row.label}</span><small>{row.score}</small><ArrowRight size={14} aria-hidden="true"/>
+        </button>)}
+      </div>}
+      {model.verified&&!model.needsProfessional&&phase==='reflect'&&<div
+        className={styles.reflection} role="group" aria-label={selected?.reflectionQuestion||t.choose}
+        data-discussion-relevance>
+        <p>{selected?.reflectionQuestion||t.choose}</p>
+        <div className={styles.choices}>
+          {[
+            ['yes',t.same],['unsure',t.uncertain],['no',t.different],
+          ].map(([key,label])=><button type="button" key={key}
+            data-discussion-relevance-choice={key} onClick={()=>chooseRelevance(key)}>
+            {label}<ArrowRight size={14} aria-hidden="true"/></button>)}
         </div>
-        <form className={styles.question} onSubmit={submitQuestion}>
-          <label htmlFor="hh-test-discussion-question">{t.question}</label>
-          <div className={styles.inputRow}>
-            <input id="hh-test-discussion-question" maxLength={240} autoComplete="off"
-              type="text" value={question} onChange={event=>setQuestion(event.target.value)}
-              placeholder={t.placeholder}/>
-            <button type="submit" disabled={!question.trim()} aria-label={t.send}>
-              <Send size={16} aria-hidden="true"/><span>{t.send}</span></button>
-          </div>
-        </form>
-      </>}
-      {model.verified&&!model.needsProfessional&&phase==='offers'&&<div className={styles.recommendations}
-        data-test-result-offers aria-label={t.next}>
-        <div className={styles.offerGrid}>{offers.filter(offer=>offer.id!=='test').slice(0,3).map(offer=>
+      </div>}
+      {model.verified&&!model.needsProfessional&&phase==='format'&&<div
+        className={styles.formatPicker} role="group" aria-label={t.format}
+        data-discussion-format>
+        <strong>{t.format}</strong>
+        <p>{t.formatNote}</p>
+        <div className={styles.choices}>
+          {['video','course','test','session'].map(kind=><button
+            type="button" key={kind} data-discussion-format-choice={kind}
+            onClick={()=>chooseFormat(kind)}>{t[kind]}<ArrowRight size={14} aria-hidden="true"/></button>)}
+        </div>
+        <button type="button" className={styles.restart} onClick={discussAnother}>{t.change}</button>
+      </div>}
+      {model.verified&&model.needsProfessional&&phase==='review'&&<aside
+        className={styles.professional} role="note" data-discussion-professional-review>
+        <ShieldCheck size={18} aria-hidden="true"/>
+        <p>{model.reviewNote||t.professional}</p>
+        <button type="button" onClick={discussAnother}>{t.change}</button>
+      </aside>}
+      {model.verified&&!model.needsProfessional&&phase==='offers'&&<section
+        className={styles.recommendations} data-test-result-offers aria-label={t.next}>
+        <p className={styles.offerReason}>{t.formatNote}</p>
+        <div className={styles.offerGrid}>{offers.slice(0,3).map(offer=>
           <Link key={offer.id} href={offer.href} prefetch={false}
             className={styles.offer} data-discussion-offer={offer.id}>
             <strong>{offer.title}<ArrowRight size={15} aria-hidden="true"/></strong>
             <small>{offer.description}</small>
           </Link>)}</div>
-        <Link className={styles.otherLink} prefetch={false}
-          href={offers.find(offer=>offer.id==='test')?.href||'/'+lang+'/client/tests'}>
-          {t.more}<ArrowRight size={15} aria-hidden="true"/></Link>
+        <button type="button" className={styles.restart} onClick={discussAnother}>
+          {t.change}<ArrowRight size={14} aria-hidden="true"/>
+        </button>
+      </section>}
+      {model.verified&&phase!=='safety'&&phase!=='review'&&<form
+        className={styles.question} onSubmit={submitQuestion} data-discussion-compose>
+        <label htmlFor="hh-test-discussion-question">{t.question}</label>
+        <div className={styles.inputRow}>
+          <input id="hh-test-discussion-question" maxLength={240} autoComplete="off"
+            type="text" value={question} onChange={event=>setQuestion(event.target.value)}
+            placeholder={t.placeholder}/>
+          <button type="submit" disabled={!question.trim()} aria-label={t.send}>
+            <Send size={16} aria-hidden="true"/><span>{t.send}</span></button>
+        </div>
+      </form>}
+      {phase==='safety'&&<div className={styles.professional} role="alert">
+        <ShieldCheck size={18} aria-hidden="true"/><p>{t.urgent}</p>
       </div>}
+      <details className={styles.methodology} data-discussion-method>
+        <summary>{t.method}</summary>
+        <p>{model.verified?model.sourceNote:t.unverified}</p>
+        <p>{t.disclaimer}</p>
+      </details>
       {turns.length>0&&phase!=='safety'&&<button type="button" className={styles.restart} onClick={reset}>
         <RotateCcw size={15} aria-hidden="true"/>{t.reset}</button>}
       <p className={styles.privacy}><ShieldCheck size={14} aria-hidden="true"/>{t.privacy}</p>
