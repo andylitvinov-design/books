@@ -3,6 +3,7 @@ on:
   push:
     branches: ['feature/practitioner-video-presentations-20261017']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'lib/practitioners/**'
@@ -35,6 +36,7 @@ permissions:
   contents: read
 jobs:
   presentation-contract:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

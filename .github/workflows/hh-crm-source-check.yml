@@ -2,6 +2,7 @@ name: Holistic House CRM source checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'lib/crm/**'
@@ -118,6 +119,7 @@ permissions:
 
 jobs:
   crm:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -222,6 +224,7 @@ jobs:
   # Run Next production build independently of older application unit suites.
   # This protects a CRM release even when unrelated app tests are red.
   build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

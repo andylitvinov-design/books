@@ -82,3 +82,37 @@ test('browser readiness polling preserves 120 Bash attempts without unused itera
     assert.ok(!read(name).includes('for i in $(seq 1 120); do'));
   }
 });
+
+const draftStageWorkflows = [
+  'hh-crm-source-check.yml',
+  'hh-private-audio-e2e.yml',
+  'practice-google-browser.yml',
+  'practice-visual-browser.yml',
+  'practitioner-presentations.yml',
+];
+
+for (const name of draftStageWorkflows) {
+  test(name + ': Draft skips costly jobs but Ready and subsequent commits run them', () => {
+    const source = read(name);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]'));
+    assert.match(source, /^  pull_request:[\s\S]*?^    paths:/m);
+    const jobs = source.split(/^jobs:\s*$/m)[1];
+    assert.ok(jobs, 'jobs missing: ' + name);
+    const jobNames = [...jobs.matchAll(/^  ([a-z][a-z0-9-]*):\s*$/gm)].map(item => item[1]);
+    assert.ok(jobNames.length >= 1, 'no job names: ' + name);
+    const stage = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+    for (const job of jobNames) {
+      assert.ok(jobs.includes('  ' + job + ':\n' + stage), 'Draft gate missing: ' + name + '/' + job);
+    }
+    assert.match(source, /^concurrency:\s*\n  group:/m);
+    assert.ok(source.includes("  cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  });
+}
+
+test('Draft staging retains release and manual verification events', () => {
+  for (const name of ['hh-private-audio-e2e.yml', 'practice-google-browser.yml', 'practice-visual-browser.yml', 'practitioner-presentations.yml']) {
+    assert.match(read(name), /^  push:/m, 'push audit must remain: ' + name);
+  }
+  assert.match(read('hh-crm-source-check.yml'), /^  workflow_dispatch:/m);
+});

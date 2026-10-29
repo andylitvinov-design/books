@@ -1,6 +1,7 @@
 name: Practice after Google — original dashboard browser acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'app/api/app/**/route.js'
@@ -30,6 +31,7 @@ permissions:
   contents: read
 jobs:
   signed-in-mock-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:

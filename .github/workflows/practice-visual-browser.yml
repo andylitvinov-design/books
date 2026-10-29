@@ -1,6 +1,7 @@
 name: Practice reference design — Chromium and WebKit screenshots
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.agents/skills/visual-to-code-pro/**'
@@ -44,6 +45,7 @@ permissions:
   contents: read
 jobs:
   practice-visual-parity:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 24
     env:
