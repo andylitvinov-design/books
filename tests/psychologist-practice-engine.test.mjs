@@ -188,6 +188,12 @@ test("disabled imagery, saved no-imagery and user avoidMethods cannot be overrid
   assert.equal(ask("meditation").status,"imagery_consent_required");
   assert.equal(ask("meditation",{consent:{resourceImagery:true},
     intent:{focus:"stress",noImagery:true}}).status,"imagery_consent_required");
+  const userPreference=ask("meditation",{
+    consent:{resourceImagery:true},preferences:{noImagery:true}});
+  assert.equal(userPreference.status,"imagery_consent_required");
+  const options=ask("course_options",{
+    consent:{resourceImagery:true},preferences:{noImagery:true}});
+  assert.ok(!options.formats.some(item=>item.id==="imagery_resources"));
   const saved=ask("meditation",{access:{authenticated:true,ownerScoped:true},
     consent:{resourceImagery:true,profilePersonalization:true,agentMemory:true},
     profile:{noImagery:true}});
