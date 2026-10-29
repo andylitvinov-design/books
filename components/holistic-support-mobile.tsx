@@ -471,6 +471,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [photoSaved, setPhotoSaved] = useState(false);
   const [photoSignIn, setPhotoSignIn] = useState(false);
   const photoEpoch = useRef(0);
+  // A late initial GET must not undo a successful Save to the private Cabinet.
+  const photoStorageEpoch = useRef(0);
   const [photoError, setPhotoError] = useState("");
 
   const [master, setMaster] = useState<Author>("all");
@@ -493,10 +495,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
   useEffect(() => {
     let mounted = true;
+    const readEpoch = photoStorageEpoch.current;
     // Reading an already saved image requires server-authenticated ownership.
     void fetch("/api/app/support-photo", { credentials:"same-origin", cache:"no-store" })
       .then(response => response.ok ? response.json() : null)
-      .then(data => { if (mounted && typeof data?.url === "string") setStoredPhotoUrl(data.url); })
+      .then(data => { if (mounted && readEpoch === photoStorageEpoch.current && typeof data?.url === "string")
+          setStoredPhotoUrl(data.url); })
       .catch(() => {});
     return () => { mounted = false; photoEpoch.current += 1; };
   }, []);
@@ -538,6 +542,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       if (response.status === 401) { setPhotoSignIn(true); return; }
       const data = await response.json().catch(() => null);
       if (!response.ok || typeof data?.url !== "string") throw new Error("PHOTO_SAVE_FAILED");
+      photoStorageEpoch.current += 1;
       setStoredPhotoUrl(data.url);
       setPhotoUrl(null);
       setPhotoBlob(null);

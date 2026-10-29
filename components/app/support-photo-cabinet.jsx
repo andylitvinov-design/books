@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from '@/lib/mandala/prepare-browser-photo'
 
 const COPY={
@@ -28,11 +28,15 @@ export default function SupportPhotoCabinet({locale='en'}){
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
+  // Ignore mount-time signed URL reads that finish after Save or Delete.
+  const photoStorageEpoch=useRef(0)
   useEffect(()=>{
     let mounted=true
+    const readEpoch=photoStorageEpoch.current
     fetch('/api/app/support-photo',{credentials:'same-origin',cache:'no-store'})
       .then(r=>r.ok?r.json():null).then(data=>{
-        if(mounted&&data)setUrl(typeof data.url==='string'?data.url:null)
+        if(mounted&&readEpoch===photoStorageEpoch.current&&data)
+          setUrl(typeof data.url==='string'?data.url:null)
       }).catch(()=>{})
     return()=>{mounted=false}
   },[])
@@ -61,6 +65,7 @@ export default function SupportPhotoCabinet({locale='en'}){
       if(!response.ok)throw new Error('PHOTO_SAVE_FAILED')
       const result=await response.json()
       if(!result.saved||typeof result.url!=='string')throw new Error('PHOTO_SAVE_FAILED')
+      photoStorageEpoch.current+=1
       setBlob(null);setPreview(null);setUrl(result.url)
       // A successful POST already returned the signed URL of the stored object.
       // A second GET could fail or lag and falsely label a completed save as failed.
@@ -75,6 +80,7 @@ export default function SupportPhotoCabinet({locale='en'}){
       if(!response.ok)throw new Error('PHOTO_DELETE_FAILED')
       const result=await response.json()
       if(result.removed!==true)throw new Error('PHOTO_DELETE_FAILED')
+      photoStorageEpoch.current+=1
       setUrl(null);setPreview(null);setBlob(null);setNotice(t.removed)
     }catch{setError(t.error)}finally{setBusy(false)}
   }

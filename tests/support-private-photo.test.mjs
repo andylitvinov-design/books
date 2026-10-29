@@ -94,3 +94,20 @@ test('invalid replacement clears an older pending photo and a saved photo stays 
     cabinetSelect.indexOf('setBlob(null);setPreview(null)')<cabinetSelect.indexOf('prepareBrowserPhoto(file)'))
   assert.match(support,/\(photoSaved \|\| storedPhotoUrl\) && <Link href/)
 })
+
+
+test('late initial private-image GET cannot restore a deleted portrait or override a fresh Save',()=>{
+  // A private signed GET is asynchronous. Any successful write advances a
+  // monotonic epoch before applying its result; older responses are ignored.
+  assert.match(cabinet,/const photoStorageEpoch=useRef\(0\)/)
+  assert.match(cabinet,/const readEpoch=photoStorageEpoch\.current/)
+  assert.match(cabinet,/if\(mounted&&readEpoch===photoStorageEpoch\.current&&data\)/)
+  const save=cabinet.slice(cabinet.indexOf('async function save'),cabinet.indexOf('async function remove'))
+  const remove=cabinet.slice(cabinet.indexOf('async function remove'),cabinet.indexOf('return <section'))
+  assert.ok(save.indexOf('photoStorageEpoch.current+=1')<save.indexOf('setUrl(result.url)'))
+  assert.ok(remove.indexOf('photoStorageEpoch.current+=1')<remove.indexOf('setUrl(null)'))
+  assert.match(support,/const photoStorageEpoch = useRef\(0\)/)
+  assert.match(support,/readEpoch === photoStorageEpoch\.current/)
+  const photoSave=support.slice(support.indexOf('const savePhoto = async'),support.indexOf('// Quick matching'))
+  assert.ok(photoSave.indexOf('photoStorageEpoch.current += 1')<photoSave.indexOf('setStoredPhotoUrl(data.url)'))
+})
