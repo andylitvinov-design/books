@@ -70,3 +70,13 @@ test('client link release requires owner, duration, independent listing and scre
   assert.deepEqual(videoReviewChecks(linkCandidate),
     { duration: true, oembed: true, content: true, embed: false })
 })
+
+// Source contract for the private server-only write path. Keep this separate from
+// browser mocks: an owner checkbox confirms manual screening, not a risk override.
+test('screening never downgrades independently flagged risk or bypasses link-only guards', () => {
+  const store = readFileSync(new URL('../lib/site-videos/review-store.js', import.meta.url), 'utf8')
+  assert.match(store, /const claimsRisk\s*=\s*before\.claims_risk\b/)
+  assert.doesNotMatch(store, /const claimsRisk\s*=\s*review\.screened\s*\?\s*['"]low['"]/) 
+  assert.equal(videoLinkEligible({ ...linkCandidate, claims_risk: 'high' }), false)
+  assert.equal(videoLinkEligible({ ...linkCandidate, owner_review_status: 'pending' }), false)
+})
