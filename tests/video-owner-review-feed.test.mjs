@@ -31,6 +31,7 @@ test('owner choices translate to original catalog goals and subtopics', () => {
     ...review, areas: ['business', 'personal_growth'], topics: ['money', 'goal'],
   }).goals, ['money', 'meaning', 'goals'])
   assert.equal(prepareVideoReview({ ...review, action: 'reject' }).screened, false)
+  assert.deepEqual(prepareVideoReview({ ...review, action: 'reject', areas: [], topics: [] }).goals, [])
   assert.equal(prepareVideoReview({ ...review, action: 'save' }).screened, false)
 })
 
