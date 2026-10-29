@@ -70,23 +70,23 @@ export const suggestedVideoAffirmations: Record<VideoLocale, Record<VideoTheme, 
   },
   "ru": {
     "energy": [
-      "Я спокоен",
-      "Я полон сил",
+      "Мне спокойно",
+      "У меня есть силы",
       "Я дышу свободно",
       "Я выбираю отдых",
       "Я в равновесии"
     ],
     "money": [
       "Я ценю свой труд",
-      "Я открыт возможностям",
-      "Я уверен в выборе",
+      "Я вижу возможности",
+      "Я выбираю осознанно",
       "Я создаю достаток",
       "Я действую разумно"
     ],
     "life": [
       "Я люблю жизнь",
       "Я здесь и сейчас",
-      "Я открыт переменам",
+      "Я принимаю перемены",
       "Я выбираю радость",
       "Я вижу хорошее"
     ],
@@ -98,9 +98,9 @@ export const suggestedVideoAffirmations: Record<VideoLocale, Record<VideoTheme, 
       "Я прошу поддержку"
     ],
     "relationships": [
-      "Я открыт любви",
+      "Я выбираю любовь",
       "Я уважаю границы",
-      "Я достоин заботы",
+      "Я принимаю заботу",
       "Я слышу другого",
       "Я говорю о важном"
     ],
@@ -276,7 +276,7 @@ export const affirmationGoalCatalog: Record<VideoLocale, GoalCopy[]> = {
     {id:"value",label:"Ценность моего труда",sentence:"Мой труд важен"},
     {id:"planning",label:"Планирование денег",sentence:"Я планирую бюджет"},
     {id:"stability",label:"Финансовые решения",sentence:"Я выбираю разумно"},
-    {id:"connection",label:"Тёплые отношения",sentence:"Я открыт близости"},
+    {id:"connection",label:"Тёплые отношения",sentence:"Я выбираю близость"},
     {id:"boundaries",label:"Личные границы",sentence:"Я сохраняю границы"},
     {id:"dialogue",label:"Открытый диалог",sentence:"Я говорю искренне"},
     {id:"clarity",label:"Ясность направления",sentence:"Я вижу главное"},
@@ -326,12 +326,12 @@ const measuredAxisCopy: Record<VideoLocale, Record<string, string>> = {
     "mood": "Я принимаю чувства",
     "emotional_regulation": "Я делаю паузу",
     "resource": "Я нахожу поддержку",
-    "self_support": "Я добр к себе",
+    "self_support": "Я берегу себя",
     "clarity": "Я ищу ясность",
     "focus": "Я держу фокус",
     "functioning": "Я действую по шагам",
     "meaning": "Я выбираю важное",
-    "relationships": "Я открыт контакту",
+    "relationships": "Я выбираю контакт",
     "boundaries": "Я уважаю границы"
   },
   "es": {
