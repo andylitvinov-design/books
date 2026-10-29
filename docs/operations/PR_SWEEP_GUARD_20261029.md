@@ -62,3 +62,19 @@ Lease parsing also accepts the historical GitHub comment format containing a
 single fenced ```json block after the marker; arbitrary prose and malformed
 blocks are rejected. This restores mutual exclusion with already posted
 Work/Chat/DOT lease comments.
+
+## Minimum positive CI evidence (not complete coverage)
+
+When core is not installed on the exact base, an empty list of failures is not
+CI readiness. NO_POSITIVE_EXACT_HEAD_CI blocks a report with no successful
+exact-head check, relevant workflow run, or explicitly SHA-bound commit status.
+Legacy status objects lacking a SHA do not independently prove exact-head
+execution. Installed or PR-introduced core gates still require release-ready.
+
+This fixes the zero-evidence false-ready case only. The specialist path map is
+NOT a complete workflow inventory: missing suites can still be overlooked when
+an unrelated job succeeds. That separate P1 remains unresolved, including mixed
+known/unknown paths. A positive CI-ready result therefore must not be used as a
+complete specialist aggregate or merge authorization. Preserve independent
+inspection of all applicable exact-head checks/workflow runs and existing
+review/branch rules. No CLI override, receipt input or lease behavior changes.

@@ -140,3 +140,72 @@ test('core rollout: manual evidence never masks an installed or proposed core ga
   assert.equal(r.ci_ready,false);
   assert.ok(r.blockers.includes('FAILED:unit-build:failure'));
 });
+
+test('core absent and zero exact-head CI evidence cannot report ready',()=>{
+  for(const paths of [['docs/manual.md'],['lib/mandala/cinematic-director.mjs'],['lib/ci/pr-sweep-guard.mjs'],['components/app/app-workspace.jsx'],['lib/ci/pr-sweep-guard.mjs','lib/mandala/cinematic-director.mjs']]){
+    const result=analyzeCI({pr:pr(),paths,required:requiredCoreChecks({baseHasCore:false,paths})});
+    assert.equal(result.ci_ready,false);
+    assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+    assert.ok(!result.blockers.includes('MISSING:release-ready'));
+  }
+});
+
+test('queued, skipped, failed, cancelled and wrong-head evidence are not positive success',()=>{
+  for(const [status,conclusion] of [['queued',null],['completed','skipped'],['completed','failure'],['completed','cancelled']]){
+    const result=analyzeCI({pr:pr(),paths:['docs/manual.md'],required:[],checks:[check('other',status,conclusion)]});
+    assert.equal(result.ci_ready,false);assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+  }
+  const result=analyzeCI({pr:pr(),paths:['docs/manual.md'],required:[],checks:[{...check('other'),head_sha:sha('c')}]});
+  assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));assert.ok(result.blockers.includes('WRONG_HEAD:other'));
+});
+
+test('positive evidence uses exact SHA and preserves existing successful contracts',()=>{
+  const input={pr:pr(),paths:['docs/manual.md'],required:[]};
+  assert.equal(analyzeCI({...input,checks:[check('existing-success')]}).ci_ready,true);
+  assert.equal(analyzeCI({...input,workflowRuns:[{id:1,event:'pull_request',head_sha:sha('a'),status:'completed',conclusion:'success'}]}).ci_ready,true);
+  assert.equal(analyzeCI({...input,statuses:[{context:'external',state:'success',sha:sha('a')}]}).ci_ready,true);
+  for(const extra of [{},{sha:sha('c')}]){
+    const result=analyzeCI({...input,statuses:[{context:'external',state:'success',...extra}]});
+    assert.equal(result.ci_ready,false);assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+  }
+  const installed=analyzeCI({...input,required:requiredCoreChecks({baseHasCore:true,paths:input.paths}),checks:[check('existing-success')]});
+  assert.equal(installed.ci_ready,false);assert.ok(installed.blockers.includes('MISSING:release-ready'));
+});
+
+
+test('current legacy status alone determines positive evidence per context', () => {
+  const good = {context:'legacy',state:'success',sha:sha('a')};
+  for (const newest of [{...good,sha:sha('c')}, {context:'legacy',state:'success'}, {...good,state:'pending'}, {...good,state:'failure'}, {...good,state:'error'}, {...good,state:'skipped'}, {...good,state:'queued'}, {...good,state:null}]) {
+    const result=analyzeCI({pr:pr(),paths:['docs/a.md'],required:[],statuses:[newest,good]});
+    assert.equal(result.ci_ready,false);
+    assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+  }
+  assert.equal(analyzeCI({pr:pr(),paths:['docs/a.md'],required:[],statuses:[good,{...good,state:'failure'}]}).ci_ready,true);
+});
+test('malformed status rows are not positive evidence and do not throw', () => {
+  for (const statuses of [[null],[undefined],[{}],[{state:'success',sha:sha('a')}],[{context:'legacy',sha:sha('a')}]] ) {
+    const result=analyzeCI({pr:pr(),paths:['docs/a.md'],required:[],statuses});
+    assert.equal(result.ci_ready,false);
+    assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+  }
+});
+test('non-success workflow and check evidence cannot satisfy minimum guard', () => {
+  for(const status of ['queued','in_progress','completed']) for(const conclusion of ['skipped','failure',null]) {
+    for(const kind of ['checks','workflowRuns']) {
+      const row=kind==='checks'?check('unrelated',status,conclusion):{id:1,event:'pull_request',head_sha:sha('a'),status,conclusion};
+      const result=analyzeCI({pr:pr(),paths:['docs/a.md'],required:[],[kind]:[row]});
+      assert.equal(result.ci_ready,false);
+      assert.ok(result.blockers.includes('NO_POSITIVE_EXACT_HEAD_CI'));
+    }
+  }
+});
+test('malformed check and workflow evidence never enables readiness', () => {
+  for (const checks of [[null],[{}],[{name:'other',status:'completed',conclusion:'success'}]]) {
+    assert.equal(analyzeCI({pr:pr(),required:[],paths:['docs/a.md'],checks}).ci_ready,false);
+  }
+  for (const workflowRuns of [[null],[{}],[{event:'pull_request',head_sha:sha('a'),status:'completed',conclusion:'success'}],[{id:1,event:'pull_request',status:'completed',conclusion:'success'}]]) {
+    assert.equal(analyzeCI({pr:pr(),required:[],paths:['docs/a.md'],workflowRuns}).ci_ready,false);
+  }
+  const result=analyzeCI({pr:pr(),required:[],paths:['docs/a.md'],statuses:[{context:'legacy',state:'failure',sha:sha('a')},{context:'legacy',state:'success',sha:sha('a')}]});
+  assert.ok(result.blockers.includes('COMMIT_STATUS:legacy:failure'));
+});
