@@ -85,13 +85,20 @@ test('message send uses real server session, exact request participant and immut
   assert.match(server,/old\.text!==text/)
   assert.match(server,/original\.visibility!==visibility/)
   assert.match(server,/openSealed\(row\.body_ciphertext,bodyContext/)
-  assert.match(server,/seal\(\{text\},bodyContext/)
+  // Attachments are optional; both text and the attachment binding remain
+  // sealed to the exact requester/message context and idempotency key.
+  assert.match(server,/const cipher=seal\(\{text,\.\.\.\(assetId\?\{assetId\}:\{\}\)\},\s*bodyContext\(scope\.requester,input\.operationId\),config\)/)
+  assert.match(server,/if\(assetId!==null\)requireUUID\(assetId\)/)
+  assert.match(server,/if\(assetId&&visibility!=='participants'\)throw new AppError\('INVALID_MESSAGE',400\)/)
+  assert.match(server,/\(old\.assetId\|\|null\)!==assetId/)
+  assert.match(server,/where id=\$1 and request_id=\$2 and uploader_account_id=\$3\s+and status='ready' and message_id is null/)
+  assert.match(server,/if\(linked\.rowCount!==1\)throw new AppError\('ATTACHMENT_NOT_READY',409\)/)
   assert.match(server,/PRACTICE_MESSAGE_DAILY_LIMIT/)
   assert.doesNotMatch(server,/sendOneMessengerMessage|Telegram|WhatsApp|service_role/i)
   assert.match(route,/requireSameOrigin\(request,config\)/)
   assert.match(route,/auth\.verified\(\)/)
   assert.match(route,/x-hh-account-id/)
-  assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility'\]\)/)
+  assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility','assetId'\]\)/)
 })
 test('only active participant correspondence, not closed requests, may create shared replies',()=>{
   const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
