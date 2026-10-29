@@ -469,3 +469,8 @@
 .page .mandalaButton:disabled{opacity:.55;cursor:wait}
 .privateVideo{display:block;width:100%;max-height:320px;margin-top:10px;border-radius:12px;background:#172a24}
 .mandalaError{margin:8px 0 0;color:#86582e;font-size:11px;line-height:1.4}
+
+.skeletonRail{display:flex;gap:12px;overflow:hidden;padding:2px 3px 10px}
+.skeletonRail span{display:block;flex:0 0 min(48%,220px);height:132px;border:1px solid #e2e8dc;border-radius:19px;background:linear-gradient(110deg,#edf3e9 20%,#fbfaf2 45%,#edf3e9 70%);background-size:200% 100%;animation:hh-progress-shimmer 2s linear infinite}
+@keyframes hh-progress-shimmer{to{background-position-x:-200%}}
+@media(prefers-reduced-motion:reduce){.skeletonRail span{animation:none}}
