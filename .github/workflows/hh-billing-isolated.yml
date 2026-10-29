@@ -2,6 +2,29 @@ name: Holistic House isolated billing database verification
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'app/**/cart/**'
+      - 'app/api/payments/**'
+      - 'app/api/billing/**'
+      - 'app/api/services/**'
+      - 'components/commerce/**'
+      - 'components/*cart*'
+      - 'lib/commerce/**'
+      - 'lib/billing/**'
+      - 'lib/checkout/**'
+      - 'tests/billing-*.mjs'
+      - 'tests/square-*.mjs'
+      - 'tests/service-*.mjs'
+      - 'tests/paypal-*.mjs'
+      - 'tests/consultation-cart*.mjs'
+      - 'tests/personal-cart*.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'AGENTS.md'
+      - '.github/workflows/hh-billing-isolated.yml'
 permissions:
   contents: read
 concurrency:

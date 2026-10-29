@@ -2,6 +2,21 @@ name: Holistic House interpretation registry database verification
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'app/api/app/**'
+      - 'app/api/assessments/**'
+      - 'lib/assessments/**'
+      - 'lib/app/**'
+      - 'lib/interpretation/**'
+      - 'data/assessments/**'
+      - 'tests/interpretation-*.mjs'
+      - 'tests/assessment-interpretation*.mjs'
+      - 'scripts/verify-interpretation*.mjs'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'AGENTS.md'
+      - '.github/workflows/hh-interpretation-database.yml'
 permissions:
   contents: read
 concurrency:
