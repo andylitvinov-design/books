@@ -284,7 +284,7 @@ const layoutCopy = {
 } as const;
 const audioCopy = {
   en: {
-    context:"For your video theme",automatic:"Match to theme",autoOn:"Auto-match on",
+    context:"For your video theme",automatic:"Match to theme",autoOn:"Auto-match on",topic:"Theme",favorite:"Favorite",unfavorite:"Remove favorite",byFavorites:"Favorites first",
     type:"Sound type",mood:"Mood",pace:"Tempo",
     types:{all:"All sounds",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
     moods:{all:"Any mood",calm:"Calm",focus:"Focus",uplift:"Inspiration"},
@@ -305,7 +305,7 @@ const audioCopy = {
     fileReady:"Voice recorded locally. Confirm audio permission and attach it to the video.",helpTitle:"Audio playback help",
   },
   ru: {
-    context:"Под вашу тему",automatic:"Подобрать по теме",autoOn:"Автоподбор включён",
+    context:"Под вашу тему",automatic:"Подобрать по теме",autoOn:"Автоподбор включён",topic:"Тема",favorite:"В избранное",unfavorite:"Убрать из избранного",byFavorites:"Сначала избранные",
     type:"Тип звука",mood:"Настрой",pace:"Темп",
     types:{all:"Все звуки",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
     moods:{all:"Любой",calm:"Успокоение",focus:"Концентрация",uplift:"Вдохновение"},
@@ -326,7 +326,7 @@ const audioCopy = {
     fileReady:"Голос записан на устройстве. Подтвердите право и прикрепите его к видео.",helpTitle:"Если звук не слышен",
   },
   es: {
-    context:"Para el tema elegido",automatic:"Elegir por tema",autoOn:"Selección activa",
+    context:"Para el tema elegido",automatic:"Elegir por tema",autoOn:"Selección activa",topic:"Tema",favorite:"Favorito",unfavorite:"Quitar favorito",byFavorites:"Primero favoritos",
     type:"Tipo de sonido",mood:"Ambiente",pace:"Ritmo",
     types:{all:"Todos",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
     moods:{all:"Cualquiera",calm:"Calma",focus:"Concentración",uplift:"Inspiración"},
@@ -718,7 +718,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [audioVoiceFriendly,setAudioVoiceFriendly] = useState(false);
   const [audioAuto,setAudioAuto] = useState(false);
   const [audioSearch,setAudioSearch] = useState("");
-  const [audioSort,setAudioSort] = useState<"best"|"name">("best");
+  const [audioSort,setAudioSort] = useState<"best"|"name"|"favorites">("best");
+  const [audioThemeOverride,setAudioThemeOverride] = useState<VideoTheme|null>(null);
+  const [audioFavorites,setAudioFavorites] = useState<string[]>([]);
   const [showAllAudio,setShowAllAudio] = useState(false);
   const [audioDurationInvalid,setAudioDurationInvalid] = useState(false);
   const [attachedAudio,setAttachedAudio] = useState<AttachedAudio|null>(null);
@@ -776,8 +778,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
+  const audioTheme=audioThemeOverride||theme;
   const audioMatches = recommendMandalaAudio({
-    theme,kind:audioKind,mood:audioMood,pace:audioPace,
+    theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,wish,
   });
   const recommendedAudioId = audioMatches[0]?.id as AmbientMusic | undefined;
@@ -790,8 +793,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       .some(label=>label.toLocaleLowerCase(locale).includes(searchTerm)));
   const filteredAudio=audioSort==="name"
     ?[...searchedAudio].sort((a,b)=>a.name[locale].localeCompare(b.name[locale],locale))
-    :searchedAudio;
-  const visibleAudio=showAllAudio?filteredAudio:filteredAudio.slice(0,4);
+    :audioSort==="favorites"?[...searchedAudio].sort((a,b)=>
+      Number(audioFavorites.includes(b.id))-Number(audioFavorites.includes(a.id))):searchedAudio;
+  const visibleAudio=showAllAudio?filteredAudio:filteredAudio.slice(0,5);
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -838,6 +842,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => {
     if (audioAuto && !uploadedAudio) setMusic(recommendedAudioId||"none");
   },[audioAuto,uploadedAudio,recommendedAudioId]);
+  // A new visual video topic resets the optional local audio-only suggestion override.
+  useEffect(()=>setAudioThemeOverride(null),[theme]);
   // Built-in presets come from stable HTTPS WAV files, not a generated
   // blob: URL: Safari's in-app player reported a native "Error" for blobs.
   // The actual selected user audio remains a private, local File object.
@@ -1258,7 +1264,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
     setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
-    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);
+    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
@@ -1735,31 +1741,52 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 if(recommendedAudioId){chooseMusic(recommendedAudioId);setAudioAuto(true);}
               }}>{audioAuto?audioUi.autoOn:audioUi.automatic}</button>
           </div>
-          <div className={videoStyles.audioFilters} data-video-audio-filters>
-            <label>{audioUi.type}
-              <select data-video-audio-kind value={audioKind}
-                onChange={event=>{setAudioKind(event.currentTarget.value);setShowAllAudio(false);}}>
-                {Object.entries(audioUi.types).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-              </select>
-            </label>
-            <label>{audioUi.mood}
-              <select data-video-audio-mood value={audioMood}
-                onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
-                {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-              </select>
-            </label>
-            <label>{audioUi.pace}
-              <select data-video-audio-pace value={audioPace}
-                onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
-                {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-              </select>
-            </label>
-            <label>{audioUi.videoLength}
-              <select data-video-audio-length value={duration}
-                onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
-                {durations.map(n=><option key={n} value={n}>{n} {ui.seconds}</option>)}
-              </select>
-            </label>
+          <div className={videoStyles.audioChipFilters} data-video-audio-filters>
+            <div className={videoStyles.audioFilterRow}>
+              <strong>{audioUi.topic}</strong>
+              <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.topic}>
+                {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(item=>
+                  <button key={item} type="button" data-video-audio-theme={item}
+                    aria-pressed={audioTheme===item} onClick={()=>{
+                      setAudioThemeOverride(item);setAudioAuto(false);setShowAllAudio(false);
+                    }}>{ui.themes[item]}</button>)}
+              </div>
+            </div>
+            <div className={videoStyles.audioFilterRow}>
+              <strong>{audioUi.type}</strong>
+              <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.type}>
+                {Object.entries(audioUi.types).map(([id,name])=>
+                  <button type="button" key={id} data-video-audio-kind={id}
+                    aria-pressed={audioKind===id} onClick={()=>{setAudioKind(id);setShowAllAudio(false);}}>
+                    {name}</button>)}
+              </div>
+            </div>
+            <div className={videoStyles.audioFilterRow}>
+              <strong>{audioUi.mood}</strong>
+              <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.mood}>
+                {Object.entries(audioUi.moods).map(([id,name])=>
+                  <button type="button" key={id} data-video-audio-mood={id}
+                    aria-pressed={audioMood===id} onClick={()=>{setAudioMood(id);setShowAllAudio(false);}}>
+                    {name}</button>)}
+              </div>
+            </div>
+            <div className={videoStyles.audioFilterRow}>
+              <strong>{audioUi.pace}</strong>
+              <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.pace}>
+                {Object.entries(audioUi.paces).map(([id,name])=>
+                  <button type="button" key={id} data-video-audio-pace={id}
+                    aria-pressed={audioPace===id} onClick={()=>{setAudioPace(id);setShowAllAudio(false);}}>
+                    {name}</button>)}
+              </div>
+            </div>
+            <div className={videoStyles.audioFilterRow}>
+              <strong>{audioUi.videoLength}</strong>
+              <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.videoLength}>
+                {durations.map(n=><button type="button" key={n} data-video-audio-length={n}
+                  aria-pressed={duration===n} onClick={()=>setDuration(n)}>
+                  {n} {ui.seconds}</button>)}
+              </div>
+            </div>
           </div>
           <label className={videoStyles.audioVoiceOption}>
             <input data-video-audio-voice type="checkbox" checked={audioVoiceFriendly}
@@ -1781,9 +1808,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <label className={videoStyles.audioSort}>
               <span className={videoStyles.srOnly}>{audioUi.sort}</span>
               <select data-video-audio-sort value={audioSort}
-                onChange={event=>setAudioSort(event.currentTarget.value as "best"|"name")}>
+                onChange={event=>setAudioSort(event.currentTarget.value as "best"|"name"|"favorites")}>
                 <option value="best">{audioUi.byTopic}</option>
                 <option value="name">{audioUi.byName}</option>
+                <option value="favorites">{audioUi.byFavorites}</option>
               </select>
             </label>
           </div>
@@ -1793,21 +1821,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           {filteredAudio.length?<div className={videoStyles.audioTrackList} data-video-audio-tracks>
             {visibleAudio.map((track,index)=><div className={videoStyles.audioTrackRow}
-              key={track.id} data-audio-kind={track.kind}>
+              key={track.id} data-audio-id={track.id} data-audio-kind={track.kind}>
               <button type="button" className={videoStyles.audioTrackSelect}
                 data-video-music={track.id} aria-pressed={!uploadedAudio&&music===track.id}
                 onClick={()=>{setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
-                <span className={videoStyles.audioTileGlyph} aria-hidden="true"><AudioLines size={23}/></span>
+                <span className={videoStyles.audioTileGlyph} aria-hidden="true"/>
                 <span className={videoStyles.audioTileText}>
-                  <strong>{track.name[locale]}{index===0&&audioSort==="best"?<Sparkles size={13} aria-label={audioUi.suggested}/>:null}</strong>
+                  <strong>{track.name[locale]}{index===0&&audioSort==="best"?<Sparkles size={14} aria-label={audioUi.suggested}/>:null}</strong>
                   <small>{track.detail[locale]}</small>
-                </span>
-                <span className={videoStyles.audioWave} aria-hidden="true">
-                  {Array.from({length:9},(_,i)=><i key={i}/>)}
+                  <span className={videoStyles.audioWave} aria-hidden="true">
+                    {Array.from({length:15},(_,i)=><i key={i}/>)}
+                  </span>
                 </span>
                 <span className={videoStyles.audioTrackPick}>
                   {!uploadedAudio&&music===track.id?<><Check size={15} aria-hidden="true"/>{audioUi.picked}</>:audioUi.pick}
                 </span>
+              </button>
+              <button type="button" className={videoStyles.audioFavorite}
+                aria-pressed={audioFavorites.includes(track.id)}
+                aria-label={(audioFavorites.includes(track.id)?audioUi.unfavorite:audioUi.favorite)+" — "+track.name[locale]}
+                data-video-audio-favorite={track.id}
+                onClick={()=>setAudioFavorites(list=>list.includes(track.id)
+                  ?list.filter(x=>x!==track.id):[...list,track.id])}>
+                <Heart size={19} fill={audioFavorites.includes(track.id)?"currentColor":"none"}
+                  aria-hidden="true"/>
               </button>
             </div>)}
           </div>:<div className={videoStyles.audioEmpty} role="status">
@@ -1816,7 +1853,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {audioUi.clear}
             </button>
           </div>}
-          {filteredAudio.length>4?<button type="button" data-video-audio-more
+          {filteredAudio.length>5?<button type="button" data-video-audio-more
             className={videoStyles.audioMore} aria-expanded={showAllAudio}
             onClick={()=>setShowAllAudio(value=>!value)}>
             {showAllAudio?audioUi.showLess:audioUi.showMore} · {filteredAudio.length}
