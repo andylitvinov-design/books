@@ -1074,3 +1074,10 @@
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
 }
+
+/* Immersive personal-video editor uses the same compact mobile app masthead
+   as Support. Its header precedes content in DOM and remains visible on scroll. */
+@media (max-width: 640px) {
+  .mandalaAppHeader { position: sticky; top: 0; z-index: 55; min-height: 56px; padding-inline: max(12px, env(safe-area-inset-left)); box-shadow: 0 2px 12px rgba(17,57,43,.07); }
+}
+@media (min-width: 641px) { .mandalaAppHeader { display: none; } }
