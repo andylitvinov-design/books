@@ -9,7 +9,7 @@
   width: min(100%, 1080px);
   min-width: 0;
   margin: 0 auto;
-  padding: 14px clamp(12px, 3vw, 26px) calc(110px + env(safe-area-inset-bottom, 0px));
+  padding: 14px clamp(12px, 3vw, 26px) 30px;
   color: var(--progress-ink);
   font-family: inherit;
 }
@@ -430,7 +430,7 @@
 .footer p { margin: 0 0 5px; font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 750px) {
-  .page { padding: 12px 12px calc(102px + env(safe-area-inset-bottom, 0px)); }
+  .page { padding: 12px 12px 26px; }
   .hero { padding: 16px; }
   .metrics { gap: 6px; }
   .page .metric { min-height: 95px; padding: 9px; border-radius: 14px; }
@@ -474,3 +474,12 @@
 .skeletonRail span{display:block;flex:0 0 min(48%,220px);height:132px;border:1px solid #e2e8dc;border-radius:19px;background:linear-gradient(110deg,#edf3e9 20%,#fbfaf2 45%,#edf3e9 70%);background-size:200% 100%;animation:hh-progress-shimmer 2s linear infinite}
 @keyframes hh-progress-shimmer{to{background-position-x:-200%}}
 @media(prefers-reduced-motion:reduce){.skeletonRail span{animation:none}}
+
+/* The surrounding authenticated .hh-app already reserves safe area for the
+   bottom dock; avoid a second 100px spacer inside My Progress itself. */
+.page .sectionLink,.page .resumeAction,.page .libraryTile{color:var(--progress-ink)}
+.page .sectionLink{color:#24765a}
+.page .resumeAction{color:#16654a}
+.page .libraryTile{color:var(--progress-ink)}
+.page .videoEmpty a,.page .mandalaEmpty a{color:#177c59}
+.page .identityCopy a{color:#107e61}
