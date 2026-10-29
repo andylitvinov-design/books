@@ -264,6 +264,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          // WebKit can resolve a click before React commits accepted/next state.
+          // Wait for actual acceptance and navigation; never bypass either gate.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
