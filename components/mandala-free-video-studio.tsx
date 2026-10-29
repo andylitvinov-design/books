@@ -301,7 +301,7 @@ const audioCopy = {
     recordVoice:"Record my voice",stopVoice:"Finish recording",recordUnavailable:"Microphone is unavailable here. Try Safari or upload an audio file.",
     recordFailed:"Could not record audio. Check microphone permission or use Files.",
     recordTooLarge:"Recording exceeded 15 MB or 3 minutes. Please make a shorter recording.",
-    fileReady:"Voice recorded locally. Confirm audio permission and attach it to the video.",
+    fileReady:"Voice recorded locally. Confirm audio permission and attach it to the video.",helpTitle:"Audio playback help",
   },
   ru: {
     context:"Под вашу тему",automatic:"Подобрать по теме",autoOn:"Автоподбор включён",
@@ -321,7 +321,7 @@ const audioCopy = {
     recordVoice:"Записать голос",stopVoice:"Завершить запись",recordUnavailable:"Микрофон недоступен. Откройте Safari или загрузите аудио из «Файлов».",
     recordFailed:"Записать голос не удалось. Проверьте разрешение на микрофон или загрузите файл.",
     recordTooLarge:"Запись больше 15 МБ или 3 минут. Попробуйте короче.",
-    fileReady:"Голос записан на устройстве. Подтвердите право и прикрепите его к видео.",
+    fileReady:"Голос записан на устройстве. Подтвердите право и прикрепите его к видео.",helpTitle:"Если звук не слышен",
   },
   es: {
     context:"Para el tema elegido",automatic:"Elegir por tema",autoOn:"Selección activa",
@@ -341,7 +341,7 @@ const audioCopy = {
     recordVoice:"Grabar voz",stopVoice:"Terminar grabación",recordUnavailable:"El micrófono no está disponible. Prueba Safari o sube un archivo.",
     recordFailed:"No se pudo grabar. Revisa los permisos o utiliza Archivos.",
     recordTooLarge:"La grabación supera 15 MB o 3 minutos. Hazla más corta.",
-    fileReady:"Voz grabada localmente. Confirma los derechos y adjúntala al vídeo.",
+    fileReady:"Voz grabada localmente. Confirma los derechos y adjúntala al vídeo.",helpTitle:"Ayuda con el sonido",
   },
 } as const;
 
@@ -1285,6 +1285,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
       return;
     }
+    if(audioNeedsAttachment){
+      setNotice(audioUi.needsAttach);
+      document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
     if(uploadedAudio && !audioRights){
       setNotice(ui.audioRightsHelp);
       document.querySelector("[data-video-audio-rights]")?.scrollIntoView({behavior:"smooth",block:"center"});
@@ -1905,7 +1910,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <span>{ui.audioRights}</span>
           </label> : null}
           <details className={videoStyles.audioHelpDetails}>
-            <summary>{ui.audioDeviceHelp}</summary>
+            <summary>{audioUi.helpTitle}</summary>
+            <small>{ui.audioDeviceHelp}</small>
             <small>{ui.originalAudio}</small>
           </details>
         </fieldset>
