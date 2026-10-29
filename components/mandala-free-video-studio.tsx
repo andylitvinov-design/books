@@ -1583,7 +1583,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setLocation(false);
       const section=document.getElementById(anchor);
       if(section && section.getClientRects().length)
-        section.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"start"});
+        section.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"nearest"});
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
@@ -2098,14 +2098,41 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <nav className={videoStyles.editorJumpNav} data-video-editor-nav data-video-current-tab={quickNavTarget} aria-label={layout.editorNavLabel}>
         <a href="#video-templates" data-video-editor-tab="design"
+          onPointerDown={event=>{
+            // In WebKit, a fast second mouse click can be dropped while
+            // the previous tab is still scrolling. Activate on down for
+            // unmodified primary mouse clicks; the native click remains
+            // the keyboard, touch and accessibility fallback.
+            if(event.pointerType==="mouse"&&event.button===0&&
+              !event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey)
+              openQuickDetailed("video-templates");
+          }}
           onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>
           <Film size={17} aria-hidden="true"/>{layout.designTab}
         </a>
         <a href="#video-audio" data-video-editor-tab="audio"
+          onPointerDown={event=>{
+            // In WebKit, a fast second mouse click can be dropped while
+            // the previous tab is still scrolling. Activate on down for
+            // unmodified primary mouse clicks; the native click remains
+            // the keyboard, touch and accessibility fallback.
+            if(event.pointerType==="mouse"&&event.button===0&&
+              !event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey)
+              openQuickDetailed("video-audio");
+          }}
           onClick={event=>{event.preventDefault();openQuickDetailed("video-audio");}}>
           <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
         </a>
         <a href="#video-hypnosis" data-video-editor-tab="affirmations"
+          onPointerDown={event=>{
+            // In WebKit, a fast second mouse click can be dropped while
+            // the previous tab is still scrolling. Activate on down for
+            // unmodified primary mouse clicks; the native click remains
+            // the keyboard, touch and accessibility fallback.
+            if(event.pointerType==="mouse"&&event.button===0&&
+              !event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey)
+              openQuickDetailed("video-hypnosis");
+          }}
           onClick={event=>{event.preventDefault();openQuickDetailed("video-hypnosis");}}>
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
