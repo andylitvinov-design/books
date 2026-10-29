@@ -8,6 +8,7 @@
  * portrait remains a still photograph (no synthetic identity motion).
  */
 import type { MoneySceneId } from "./money-flow-effects";
+import {ovalPortraitCrop,paintOvalPortrait} from "./portrait-oval";
 
 export type CinematicAspect = "portrait" | "square" | "landscape";
 type Ctx = CanvasRenderingContext2D;
@@ -41,7 +42,6 @@ const mod = (n: number, m: number) => ((n % m) + m) % m;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 let metallicCoin: HTMLCanvasElement | null = null;
-const portraitLayers = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
 
 function coinTexture(): HTMLCanvasElement {
   if (metallicCoin) return metallicCoin;
@@ -324,61 +324,14 @@ function backdrop(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number){
   }
 }
 
-function getPortraitLayer(image:HTMLImageElement):HTMLCanvasElement{
-  const existing=portraitLayers.get(image);
-  if(existing)return existing;
-  const c=document.createElement("canvas");
-  c.width=560;c.height=600;
-  const ctx=c.getContext("2d");
-  if(!ctx)return c;
-  const iw=image.naturalWidth, ih=image.naturalHeight;
-  const boxRatio=c.width/c.height, originalRatio=iw/ih;
-  // Crop closer than square mandala's tiny 37%-diameter inset. Keep the
-  // upper 60% of the photo available for faces in vertical compositions.
-  let sx=0,sy=0,sw=iw,sh=ih;
-  if(originalRatio>boxRatio){
-    sw=ih*boxRatio;sx=(iw-sw)*.5;
-  }else{
-    sh=iw/boxRatio;sy=Math.max(0,(ih-sh)*.30);
-  }
-  ctx.drawImage(image,sx,sy,sw,sh,0,0,c.width,c.height);
-  ctx.globalCompositeOperation="destination-in";
-  const radial=ctx.createRadialGradient(280,280,100,280,300,395);
-  radial.addColorStop(0,"rgba(255,255,255,1)");
-  radial.addColorStop(.62,"rgba(255,255,255,1)");
-  radial.addColorStop(.85,"rgba(255,255,255,.73)");
-  radial.addColorStop(1,"rgba(255,255,255,0)");
-  ctx.fillStyle=radial;ctx.fillRect(0,0,c.width,c.height);
-  ctx.globalCompositeOperation="source-over";
-  portraitLayers.set(image,c);
-  return c;
-}
-
 function portrait(ctx:Ctx,image:HTMLImageElement|null,w:number,h:number,t:number){
-  const py=h*.52;
-  light(ctx,w*.50,py,w*.56,"255,207,119",.47);
-  if(!image){
-    // No invented person or replacement face: abstract symbol until user
-    // uploads a source photo or an image of a goal.
-    ellipse(ctx,w*.5,py,w*.25,w*.30,0,.65,4);
-    light(ctx,w*.5,py,w*.2,"255,231,164",.30);
-    glint(ctx,w*.5,py,w*.035,.90);
-    return;
-  }
-  // Keep the face as a central medallion: the surrounding moving video
-  // must remain visible, not become a full-screen portrait.
-  const radius=Math.min(w*.27,h*.205);
-  const src=getPortraitLayer(image);
-  ctx.save();ctx.translate(w*.5,py);
-  ctx.shadowColor="rgba(255,208,120,.7)";ctx.shadowBlur=Math.max(10,radius*.17);
-  ctx.beginPath();ctx.arc(0,0,radius+7,0,Math.PI*2);
-  ctx.fillStyle="rgba(250,236,196,.9)";ctx.fill();
-  ctx.shadowBlur=0;ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.clip();
-  const scale=Math.max(radius*2/src.width,radius*2/src.height);
-  ctx.drawImage(src,-src.width*scale/2,-src.height*scale/2,src.width*scale,src.height*scale);
-  ctx.restore();
-  ctx.save();ctx.beginPath();ctx.arc(w*.5,py,radius+4,0,Math.PI*2);
-  ctx.strokeStyle="rgba(255,229,158,.95)";ctx.lineWidth=4;ctx.stroke();ctx.restore();
+  const {cx,cy,rx,ry}=ovalPortraitCrop(600,800,w,h);
+  light(ctx,cx,cy,w*.48,"255,207,119",.38+.06*Math.sin(t*.2));
+  if(paintOvalPortrait(ctx,image,w,h,"gold"))return;
+  // When no photo is supplied, do not invent a user or render stock faces.
+  ellipse(ctx,cx,cy,rx,ry,0,.66,3);
+  light(ctx,cx,cy,rx*1.5,"255,231,164",.30);
+  glint(ctx,cx,cy,Math.max(4,rx*.20),.88);
 }
 
 function movingCoins(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,front:boolean){
