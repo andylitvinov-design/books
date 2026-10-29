@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
-import {randomUUID} from 'node:crypto'
+import {readFileSync,readdirSync} from 'node:fs'
 import {seal} from '../lib/app/crypto.js'
 import {CRM_OPPORTUNITY_STAGES,CRM_OPPORTUNITY_SERVICES,canAdvanceOpportunity,
   validateOpportunityCreate,validateOpportunityChange} from '../lib/crm/opportunity-contract.mjs'
@@ -151,7 +150,10 @@ test('API, release gate and schema never leak deals across owners or imply payme
   assert.match(route,/\.withOwner\(actor,/)
   assert.match(repo,/createCrmOpportunityStore/)
   assert.match(workflow,/crm-opportunities\.test\.mjs/)
-  const migration=read('supabase/migrations/20261029_crm_opportunities_v1.sql')
+  const migrationName=readdirSync(new URL('../supabase/migrations/',import.meta.url))
+    .find(name=>/^\\d{14}_hh_crm_opportunities_v1\\.sql$/.test(name))
+  assert.ok(migrationName,'expected generated Supabase migration for opportunities')
+  const migration=read('supabase/migrations/'+migrationName)
   for(const table of ['crm_opportunities','crm_opportunity_events']){
     assert.match(migration,new RegExp('alter table app\\.'+table+' force row level security'))
     assert.match(migration,new RegExp('revoke all on app\\.'+table))
