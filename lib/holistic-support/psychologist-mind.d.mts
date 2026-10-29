@@ -43,6 +43,7 @@ export type PsychologySession = {
   number: number; id: string; title: string; objectiveCode: string;
   focus: PsychologistFocus; methodIds: string[]; approachIds: string[];
   durationMinutes: number; editable: true; optional: true;
+  clinicianDiscussionIds: string[]; clinicianMethodsRunnableByAI: false;
   stage: "orientation" | "practice" | "integration";
   requiresHumanApproval: boolean;
   canPauseOrSkip: true; needsSessionSafetyCheck: true;
@@ -68,6 +69,7 @@ export type PsychologyProgram = {
   formulation: PsychologyCaseFormulation | null;
   primaryApproach: string | null; sessions: PsychologySession[];
   requiresHumanReview: boolean; publishable: false; saved: false;
+  specialistDiscussionOptions: string[]; clinicalAssessmentRequired: boolean;
   modelUsed: false; clinicalTreatment: false;
   reviewBeforeDelivery?: true;
   releaseGate?: "review_and_content_approval_required";
