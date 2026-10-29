@@ -1446,7 +1446,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div> : null}
           </div>
           <div className={videoStyles.musicTools}>
-            <button type="button" data-video-music-preview disabled={!previewAudioUrl||recording||preparing}
+            <button type="button" data-video-music-preview disabled={!previewAudioUrl||audioPlaybackError||recording||preparing}
               onClick={toggleSoundPreview} aria-pressed={soundPreview}>
               {soundPreview?ui.soundStop:ui.soundPreview}
             </button>
