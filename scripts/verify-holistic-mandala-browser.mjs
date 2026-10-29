@@ -413,6 +413,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
           await page.locator('[data-video-audio-kind="all"]').click();
           await page.locator('[data-video-audio-mood="all"]').click();
+          const localFavorite=page.locator("[data-video-audio-tracks] [data-video-audio-favorite]").first();
+          await localFavorite.click();
+          assert.equal(await localFavorite.getAttribute("aria-pressed"),"true","local heart is a working control");
+          await localFavorite.click();
+          assert.equal(await localFavorite.getAttribute("aria-pressed"),"false","favorite can be undone");
           assert.equal(await page.locator("[data-video-audio-mic]").count(),1,
             "microphone recording must be an actual control, not decorative");
           assert.equal(await page.locator("[data-video-audio-attach]").count(),1,
