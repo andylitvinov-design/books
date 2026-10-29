@@ -52,6 +52,7 @@ export default function DirectVideoRecorder({locale='en',disabled=false,onRecord
    stopTracks(session.stream)
    if(preview.current)preview.current.srcObject=null
    current.current=null
+   if(mounted.current){setPhase('idle');report.current?.(false)}
  }
  function finish(discard=false){
    const session=current.current
@@ -62,8 +63,9 @@ export default function DirectVideoRecorder({locale='en',disabled=false,onRecord
      stopTracks(session.stream)
      current.current=null
      if(mounted.current){setPhase('idle');report.current?.(false)}
+     return
    }
-   if(mounted.current)setPhase(discard?'idle':'finalizing')
+   if(mounted.current)setPhase('finalizing')
  }
  async function begin(){
    if(disabled||phase!=='idle')return
@@ -100,8 +102,8 @@ export default function DirectVideoRecorder({locale='en',disabled=false,onRecord
        if(session.timer)clearTimeout(session.timer)
        stopTracks(stream)
        if(preview.current)preview.current.srcObject=null
-       if(current.current===session)current.current=null
-       if(!mounted.current)return
+       if(current.current!==session||!mounted.current)return
+       current.current=null
        setPhase('idle')
        report.current?.(false)
        if(session.discard)return
