@@ -123,16 +123,19 @@ for(const engine of [chromium,webkit]){
           assert.ok(layout.photo.height>=80&&layout.photo.height<=105,label+' compact photo control')
           if(width===390)await page.screenshot({
             path:out+'/'+engine.name()+'-'+locale+'-390-service-editor.png',fullPage:false})
-          // SSR makes the controls visible before React has installed click/input
-          // handlers. Require the real hydrated editor before exercising Next:
-          // otherwise filling a native input and clicking unhydrated HTML can
-          // silently leave the browser on step one (Chromium RU/320 failure).
-          // practice-editor hydration before clicking
+          // SSR markup can be visible before React event handlers are ready.
+          // Require hydration of BOTH the input and Next button, then exercise
+          // the real protected editor. Never count visible SSR alone as E2E.
           await page.waitForFunction(() => {
-            const form=document.querySelector('[data-service-slide-editor]');
-            const field=form?.querySelector('[data-service-slide="presentation"] input[type="text"]');
-            const next=form?.querySelector('[data-service-step-controls] button:last-child');
-            const hydrated=node=>Boolean(node&&Object.keys(node).some(key=>key.startsWith('__reactProps
+            const form=document.querySelector('[data-service-slide-editor]')
+            const field=form?.querySelector('[data-service-slide="presentation"] input[type="text"]')
+            const next=form?.querySelector('[data-service-step-controls] button:last-child')
+            const hydrated=node=>Boolean(node && Object.keys(node)
+              .some(key=>key.startsWith('__reactProps$')))
+            return hydrated(field) && hydrated(next)
+          },null,{timeout:30000})
+          const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
+          await input.fill('Synthetic service title')
           await page.evaluate(()=>{
             window.__practiceEditorClickTrace=[]
             document.addEventListener('click',event=>{
