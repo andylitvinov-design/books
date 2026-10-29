@@ -1011,7 +1011,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         <GuestTestJourneyProgress locale={locale} plan={activePlan}
           definition={definition} answeredCount={answeredCount} phase={phase} />
         {phase === 'questions' && definition ? (
-          <header className="cabinet-tests-heading cabinet-tests-heading--compact">
+          <header className="cabinet-tests-heading cabinet-tests-heading--compact hh-test-heading-accessible">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>
           </header>
         ) : (
@@ -1033,7 +1033,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
 
         {phase === 'questions' && definition && question && run && traumaContextReady(definition, run.context || {}) && (
-          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode}`}>
+          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode} hh-test-experience`} data-test-card-system="v1">
             <div className="hh-runner-topline">
               <p className="cabinet-test-progress">
                 {mode === 'quick'
@@ -1071,12 +1071,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (
-                  <fieldset key={item.id} className="cabinet-quick-question" disabled={busy || recoveryPending}>
-                    <legend>
-                      <span className="cabinet-question-number">{c.question} {step + 1} / {definition.questions.length}</span>
-                      <TraumaSectionInstructions question={item} />
-                      <h3>{item.text}</h3>
+                  <fieldset key={item.id} className="cabinet-quick-question hh-test-question-card"
+                    data-answer-state={Object.prototype.hasOwnProperty.call(answers, item.id) ? 'answered' : 'pending'}
+                    disabled={busy || recoveryPending}>
+                    <legend className="hh-test-question-caption">
+                      <span className="hh-test-question-number" aria-hidden="true">{step + 1}</span>
+                      <span className="hh-test-question-label">{c.question} {step + 1} / {definition.questions.length}</span>
+                      {Object.prototype.hasOwnProperty.call(answers, item.id) && <span className="hh-test-question-check" aria-label={locale === 'ru' ? 'Отвечено' : locale === 'es' ? 'Respondida' : 'Answered'}>✓</span>}
                     </legend>
+                    <TraumaSectionInstructions question={item} />
+                    <h3 lang={definition.instrumentLocale}>{item.text}</h3>
                     {definition.key === 'mini-ipip-20' && step === 0 && <p className="cabinet-test-note">{c.traitNotice}</p>}
                     {definition.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && answers['hrqol4.02'] === 0 && answers['hrqol4.03'] === 0 && (
                       <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
@@ -1106,16 +1110,22 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 )}
               </div>
             ) : (
-              <div className="cabinet-guided-question">
+              <fieldset className="cabinet-guided-question hh-test-question-card hh-test-question-card--guided"
+                data-answer-state={selected !== undefined ? 'answered' : 'pending'} disabled={busy || recoveryPending}>
+                <legend className="hh-test-question-caption">
+                  <span className="hh-test-question-number" aria-hidden="true">{index + 1}</span>
+                  <span className="hh-test-question-label">{c.question} {index + 1} / {definition.questions.length}</span>
+                  {selected !== undefined && <span className="hh-test-question-check" aria-label={locale === 'ru' ? 'Отвечено' : locale === 'es' ? 'Respondida' : 'Answered'}>✓</span>}
+                </legend>
                 <TraumaSectionInstructions question={question} />
-                  <h3>{question.text}</h3>
+                <h3 lang={definition.instrumentLocale}>{question.text}</h3>
                 {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
                 {definition.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && answers['hrqol4.02'] === 0 && answers['hrqol4.03'] === 0 && (
                   <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
                 )}
                 <GuestAnswerChoices definition={definition} question={question} selected={selected}
                   onChoose={value => choose(value)} disabled={busy || recoveryPending} locale={locale} />
-              </div>
+              </fieldset>
             )}
             <p className="cabinet-test-note hh-runner-save-state" role="status" aria-live="polite">{saveState}</p>
             <div className="cabinet-test-actions">
