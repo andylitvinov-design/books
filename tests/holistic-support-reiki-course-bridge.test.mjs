@@ -21,6 +21,9 @@ test("selected lesson updates hero, displays price pills and opens existing cour
   assert.ok(mobile.includes(s),s);
  assert.ok(read("lib/academy/reiki-free-course.ts").includes("principles-of-energywork/learn"));
  assert.ok(read("components/holistic-support-mobile.module.css").includes("max-width:350px"));
+ assert.ok(mobile.includes("data-support-video-mode={choice}"));
+ assert.match(read("components/holistic-support-mobile.module.css"),
+   /\.videoSection\[data-support-video-mode="pump"\] \.videoCard::after \{ display:none; \}/);
 });
 test("changed TSX parses",()=>{
  for (const name of ["app/[locale]/holistic-support/mobile/page.tsx","components/holistic-support-mobile.tsx"]){

@@ -1062,3 +1062,9 @@
  .hero:has(.reikiStartCourse) .heroDescription { font-size:12px; }
  .videoMetaPills>small { font-size:8.5px; }
 }
+
+/* In Courses display the real video source thumbnails, not the four scenic
+   meditation mock posters (which otherwise hide the original on iPhone). */
+@media (max-width:640px) {
+  .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
+}

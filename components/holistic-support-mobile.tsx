@@ -882,7 +882,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </Link>
                 </div> : null}
               </div>
-              <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
+              <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery
+                data-support-video-mode={choice}>
                 <div className={styles.videoHeading}>
                   <h3>{activeMystery ? t.originalCourseVideos : choice === "pump" ? t.energyTitle : t.gallery}</h3>
                   <Link href={activeMystery?.videoGroups[0]?.href ?? (choice === "pump" ? "/" + locale + "/academy?view=videos" : "/" + locale + "/holistic-support#meditation-practices")}
