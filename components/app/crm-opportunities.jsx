@@ -84,7 +84,7 @@ const getDate=(value,locale)=>{
   ).format(new Date(ms)):''
 }
 export default function CrmOpportunities({
-  accountId,locale='en',contacts=[],onOpenContact,initialContactId='',
+  accountId,locale='en',contacts=[],onOpenContact,onCrmChange,initialContactId='',
 }){
   const t=COPY[locale]||COPY.en
   const [data,setData]=useState(null)
@@ -169,6 +169,7 @@ export default function CrmOpportunities({
       const result=await command(accountId,'change',{id:item.id,expectedRevision:item.revision,stage},controller.signal)
       if(controller.signal.aborted||accountRef.current!==accountId)return
       setHistories({})
+      if(result.taskPlanned===true)onCrmChange?.()
       setNotice(result.taskPlanned===true?t.taskPlanned:result.taskSkipped==='capacity'?t.taskFull:t.updated)
       await load(null)
     }catch(e){
