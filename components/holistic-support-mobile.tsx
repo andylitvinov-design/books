@@ -597,9 +597,13 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, videos, locale]);
-  const goalMatch = useMemo(() => activeGoal
-    ? rankSupportGoalVideos({ selection: activeGoal, videos, locale })
-    : null, [activeGoal, videos, locale]);
+  // Preserve the exact reviewed advanced-goal matcher contract.
+  // The quick preset is an additional voluntary route into the same ranker.
+  const goalMatch = useMemo(() => goalSelection
+    ? rankSupportGoalVideos({ selection: goalSelection, videos, locale })
+    : quickSelection
+    ? rankSupportGoalVideos({ selection: quickSelection, videos, locale })
+    : null, [goalSelection, quickSelection, videos, locale]);
   const recommended = useMemo(() => recommendation
     ? recommendSupportContent({ focus, scores: recommendation, videos,
       talismans: TAOIST_TALISMANS, locale })
