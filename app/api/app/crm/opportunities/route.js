@@ -26,13 +26,14 @@ export async function POST(request){
     if(!practitionerEmailAllowed(actor))throw new AppError('ACCESS_DENIED',403)
     const body=await readBody(request,2048)
     onlyKeys(body,['action','payload'])
-    if(!['list','create','change'].includes(body.action)||
+    if(!['list','create','change','history'].includes(body.action)||
       body.payload===null||
       (body.payload!==undefined&&(typeof body.payload!=='object'||Array.isArray(body.payload))))
       throw new AppError('INVALID_OPPORTUNITY',400)
     const data=await createCrmRepository(config).withOwner(actor,async store=>{
       if(body.action==='list')return store.listOpportunities(body.payload||{})
       if(body.action==='create')return store.createOpportunity(body.payload)
+      if(body.action==='history')return store.listOpportunityHistory(body.payload)
       return store.changeOpportunity(body.payload)
     })
     return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}))
