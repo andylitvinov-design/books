@@ -49,7 +49,10 @@ export async function POST(request) {
   let auth;
   try {
     // Off by default: installing source code does not publish a clinical agent.
-    if (process.env.HH_AGENT_CHAT_ENABLED !== "true") throw new AppError("AGENT_DISABLED",503);
+    if (process.env.HH_AGENT_CHAT_ENABLED !== "true" ||
+      (process.env.VERCEL_ENV === "production" &&
+        process.env.HH_AGENT_PRODUCTION_APPROVED !== "true"))
+      throw new AppError("AGENT_DISABLED",503);
     const config = getAppConfig();
     requireSameOrigin(request,config);
     auth = createRequestAuth(request,config);
