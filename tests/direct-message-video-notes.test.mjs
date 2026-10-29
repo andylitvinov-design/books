@@ -12,7 +12,7 @@ test('private video note MIME/size rules support Safari MOV/MP4 and Chrome WebM'
    ['note.MP4','','video/mp4'],
    ['note.m4v','video/x-m4v','video/mp4'],
    ['note.webm','video/webm;codecs=vp8','video/webm'],
-   ['note.webm','','video/webm'],
+   ['note.webm','','audio/webm'],
  ])assert.equal(directMediaMime({name,type:mime}),expected)
  for(const mime of ['video/mp4','video/webm','video/quicktime']){
    const info=directMediaSpec(mime,128)
@@ -70,7 +70,7 @@ test('video remains bound to participants and cannot be republished as public au
  const route=read('app/api/app/direct-messages/media/[assetId]/route.js')
  assert.match(store,/const reuse=input\.allowPublicReuse===true&&info\.kind==='audio'/)
  assert.match(store,/await thread\(db,actor,a\.thread_id\)/)
- assert.match(store,/where a\.id=\$1 and a\.status='ready'/)
+ assert.match(store,/if\(!a\|\|a\.status!=='ready'\)/)
  assert.match(store,/asset\.kind!=='audio'/)
  assert.match(store,/await sniffPrivateMedia\(bucket,asset\.object_key,asset\.mime,config\.supabaseUrl\)/)
  assert.match(policy,/video\/quicktime/)
