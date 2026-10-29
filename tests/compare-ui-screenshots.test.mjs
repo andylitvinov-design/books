@@ -56,3 +56,24 @@ test('CLI writes overlays and can gate an identical-viewport comparison', async 
   assert.equal(cli.status, 1, cli.stderr)
   assert.match(cli.stdout, /Changed 25\.00%/)
 })
+
+
+test('different route/state views fail closed before a misleading screenshot diff', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'visual-identity-'))
+  const before = join(dir, 'reference.png')
+  const after = join(dir, 'actual.png')
+  await writeFile(before, encodePng(white(2, 2)))
+  await writeFile(after, encodePng(white(2, 2)))
+  await assert.rejects(
+    compareScreenshotFiles({ reference:before, actual:after, out:join(dir,'blocked'), referenceView:'/ru/practice|signed-in|dashboard', actualView:'/ru/app/practice?panel=services|signed-in|editor' }),
+    /Different UI views/,
+  )
+  await assert.rejects(
+    compareScreenshotFiles({ reference:before, actual:after, out:join(dir,'blocked'), referenceView:'/ru/practice|guest|dashboard' }),
+    /Provide both/,
+  )
+  const pass = await compareScreenshotFiles({ reference:before, actual:after, out:join(dir,'correct'), referenceView:'/ru/practice|guest|dashboard', actualView:'/ru/practice|guest|dashboard' })
+  assert.equal(pass.changedRatio,0)
+  const report=JSON.parse(await readFile(join(dir,'correct','comparison.json'),'utf8'))
+  assert.equal(report.referenceView,'/ru/practice|guest|dashboard')
+})
