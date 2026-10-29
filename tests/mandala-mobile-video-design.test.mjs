@@ -273,6 +273,9 @@ test("all three video editor deep links cancel native hash navigation before exp
   assert.match(studio,/token!==quickNavTokenRef\.current/);
   assert.match(studio,/setQuickDetailedOpen\(true\)/);
   assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
+  assert.match(studio,/data-video-current-tab=\{quickNavTarget\}/);
+  assert.match(studio,/behavior:"instant" as ScrollBehavior/);
+  assert.doesNotMatch(studio,/window\.setTimeout\(jump,/);
 });
 
 test("mandala header settings actual JSX has an accessible name in all three locales", async () => {
