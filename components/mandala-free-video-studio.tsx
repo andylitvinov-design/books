@@ -2517,7 +2517,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
         <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate data-video-hero-create data-mandala-video-generate
-          disabled={recording||preparing||photoPending} onClick={createQuickVideo}>
+          disabled={recording||preparing||photoPending||audioNeedsAttachment||audioDurationInvalid||micRecording||(Boolean(uploadedAudio)&&!audioRights)} onClick={createQuickVideo}>
           {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
           {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
         </button>
