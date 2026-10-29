@@ -67,6 +67,11 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   const styles = read("components/mandala-meditation.module.css");
   assert.match(client, /setFocusMode\(/);
   assert.match(client, /onPointerUp=\{onFocusPointerUp\}/);
+  assert.match(client, /event\.pointerType !== "touch" && event\.pointerType !== "pen"/,
+    "mouse pointerup must not toggle focus before the native click");
+  assert.match(client, /pointerHandledRef\.current = true/,
+    "real touch/pen pointerup may still activate the focus when Safari omits click");
+
   assert.match(client, /onClick=\{onFocusClick\}/);
   assert.match(client, /if \(pointerHandledRef\.current\)/);
   assert.match(client, /pointerHandledRef\.current = false/);
