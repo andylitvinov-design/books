@@ -47,6 +47,14 @@ test('iPhone Photos and Files use full tap-target and decoded metadata-stripped 
   assert.match(helper,/image\/heif/)
   assert.match(helper,/image\/\*/)
   assert.match(helper,/image\.decode\(\)/)
+  // Safari may load a valid iPhone image through <img> after decode() rejects.
+  // The fallback must still require real pixels and fail closed on timeout/error.
+  assert.match(helper,/function waitForBrowserImageLoad\(image:/)
+  assert.match(helper,/image\.addEventListener\("load"/)
+  assert.match(helper,/image\.addEventListener\("error"/)
+  assert.match(helper,/if \(image\.complete\) finish\(valid\(\)\)/)
+  assert.match(helper,/window\.setTimeout\(\(\) => finish\(false\), 15_000\)/)
+  assert.match(helper,/catch \{ await waitForBrowserImageLoad\(image\); \}/)
   assert.match(helper,/canvas\.toBlob\(resolve, "image\/jpeg"/)
   assert.match(helper,/URL\.revokeObjectURL/)
   assert.match(support,/accept=\{SUPPORT_PHOTO_ACCEPT\}/)
