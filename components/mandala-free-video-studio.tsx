@@ -674,7 +674,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
-    (backgroundOnly || !photoUrl || photoConsent) &&
+    (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (tonePreview?.preset===music ? tonePreview.url : null);
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
@@ -740,6 +740,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   // A new visitor's photo must never inherit another person's consent.
   useEffect(() => { setPhotoConsent(false); }, [photoUrl]);
+  // Native Photos/Files uploads also activate the photo overlay if the file
+  // picker was used directly (not only through the compact photo toggle).
+  // Unchecking the toggle later does not delete the local photo.
+  const previousPhotoUrl = useRef(photoUrl);
+  useEffect(() => {
+    if (photoUrl && photoUrl !== previousPhotoUrl.current) setBackgroundOnly(false);
+    previousPhotoUrl.current = photoUrl;
+  }, [photoUrl]);
+
   useEffect(() => {
     if (!recording) return;
     const onBackground = () => {
