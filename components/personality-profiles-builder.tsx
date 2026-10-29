@@ -13,7 +13,7 @@ import { PROFILE_AREA_AXES, profileAreasWithTests,
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning" | "goal";
-type TestMode = "questionnaires" | "pro";
+type TestMode = "all" | "questionnaires" | "pro";
 type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
 type PublicTest = { key: string; version: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
@@ -72,7 +72,7 @@ const copy = {
       support: ["Resources & self-support", "Support · self-kindness"],
       emotions: ["Emotions & stress", "Mood · regulation"],
       recovery: ["Energy & rest", "Recovery · sleep"],
-      body: ["Body signals & energy", "Sensations · vitality"],
+      body: ["Body sensations", "Awareness · comfort"],
       connection: ["Relationships", "Connection · communication"],
       work: ["Work & focus", "Clarity · daily actions"],
       money: ["Money decisions", "Choices · habits, not income"],
@@ -86,11 +86,12 @@ const copy = {
     fullTestNote: "Only topics are selected here. One topic can have several eligible questionnaires; on the Tests step you choose which complete tests to take.",
     scaleSelected: "topics selected", scalePerTopic: "topics", scaleSourceCount: "topic options", scaleMore: "More topics", scaleFewer: "Fewer topics",
     scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one topic to continue.",
+    modeAll: "All", modeCheckinsShort: "Scales", modeProShort: "Professional",
     modeCheckins: "Questionnaires / check-ins", modePro: "Professional tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
-    modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
-    modeOverview: "Filter by test type", modeEstimated: "estimated total", modeSource: "Test questions",
+    modeNoTests: "No more tests match this filter. Try All or another type.",
+    modeOverview: "Other tests by type", modeEstimated: "estimated total", modeSource: "Test questions",
     selectedTests: "selected", coveredScales: "scales covered",
-    mainThree: "3 key recommended tests", nextFive: "5 more tests ranked by topic match",
+    mainThree: "3 key recommended tests", nextFive: "More matching tests",
     fit: "match", fitInfo: "Catalogue relevance: 80% coverage of selected research facets + 20% exact selected source scales. Not a health score, clinical probability or validated accuracy.",
     noneSelected: "Select at least one test to continue. Unticked tests remain available.",
     testTitle: "Your recommended free test selection",
@@ -162,7 +163,7 @@ const copy = {
       support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
       emotions: ["Эмоции и стресс", "Настроение · регуляция"],
       recovery: ["Энергия и отдых", "Восстановление · сон"],
-      body: ["Ощущения и энергия тела", "Самочувствие · энергия"],
+      body: ["Телесные ощущения", "Контакт с телом · самочувствие"],
       connection: ["Отношения", "Связь · общение"],
       work: ["Работа и фокус", "Ясность · действия"],
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
@@ -176,11 +177,12 @@ const copy = {
     fullTestNote: "Здесь выбираются только темы. По одной теме может быть несколько подходящих опросников; конкретные тесты выбираются на следующем шаге.",
     scaleSelected: "тем выбрано", scalePerTopic: "тем", scaleSourceCount: "вариантов тем", scaleMore: "Больше тем", scaleFewer: "Меньше тем",
     scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну тему.",
+    modeAll: "Все", modeCheckinsShort: "Шкалы", modeProShort: "Профессиональные",
     modeCheckins: "Опросники / мониторинг", modePro: "Профессиональные тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
-    modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
-    modeOverview: "Фильтр по типу теста", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
+    modeNoTests: "В этом фильтре больше нет подходящих тестов. Выберите «Все» или другой тип.",
+    modeOverview: "Тип других тестов", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
     selectedTests: "выбрано", coveredScales: "шкал охвачено",
-    mainThree: "3 основных рекомендованных теста", nextFive: "Ещё 5 тестов по проценту соответствия",
+    mainThree: "3 основных рекомендованных теста", nextFive: "Другие подходящие тесты",
     fit: "соответствие", fitInfo: "Соответствие каталога: 80% охвата выбранных исследовательских направлений + 20% точных выбранных шкал-источников. Не оценка здоровья, клинический прогноз или подтверждённая точность.",
     noneSelected: "Отметьте хотя бы один тест. Снятые с выбора тесты остаются в списке.",
     testTitle: "Предложенный набор бесплатных тестов",
@@ -252,7 +254,7 @@ const copy = {
       support: ["Recursos y apoyo", "Apoyo · autocompasión"],
       emotions: ["Emociones y estrés", "Ánimo · regulación"],
       recovery: ["Energía y descanso", "Recuperación · sueño"],
-      body: ["Señales del cuerpo y energía", "Sensaciones · vitalidad"],
+      body: ["Sensaciones corporales", "Conciencia · bienestar"],
       connection: ["Relaciones", "Conexión · comunicación"],
       work: ["Trabajo y enfoque", "Claridad · acciones"],
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
@@ -266,11 +268,12 @@ const copy = {
     fullTestNote: "Aquí solo se eligen temas. Un tema puede tener varios cuestionarios adecuados; las pruebas completas se eligen en el paso siguiente.",
     scaleSelected: "temas elegidos", scalePerTopic: "temas", scaleSourceCount: "temas disponibles", scaleMore: "Más temas", scaleFewer: "Menos temas",
     scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos un tema.",
+    modeAll: "Todas", modeCheckinsShort: "Escalas", modeProShort: "Profesionales",
     modeCheckins: "Cuestionarios / seguimiento", modePro: "Pruebas profesionales", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
-    modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
-    modeOverview: "Filtrar por tipo de prueba", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
+    modeNoTests: "No hay más pruebas para este filtro. Elige «Todas» u otro tipo.",
+    modeOverview: "Más pruebas por tipo", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
     selectedTests: "seleccionadas", coveredScales: "escalas cubiertas",
-    mainThree: "3 pruebas principales recomendadas", nextFive: "5 pruebas más, ordenadas por coincidencia",
+    mainThree: "3 pruebas principales recomendadas", nextFive: "Otras pruebas recomendadas",
     fit: "coincidencia", fitInfo: "Afinidad del catálogo: 80% de cobertura de los ejes elegidos + 20% de las escalas de origen exactas elegidas. No es una medida de salud, probabilidad clínica ni precisión validada.",
     noneSelected: "Selecciona al menos una prueba. Las desmarcadas permanecen visibles.",
     testTitle: "Tus pruebas gratuitas recomendadas",
@@ -422,8 +425,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [focuses, setFocuses] = useState<Focus[]>([]);
   const [selectedResearchIds, setSelectedResearchIds] = useState<string[]>([]);
   const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
-  const [batteryMode, setBatteryMode] = useState<TestMode>("questionnaires");
-  const [selectedByMode, setSelectedByMode] = useState<Record<TestMode, string[]>>({ questionnaires: [], pro: [] });
+  const [batteryMode, setBatteryMode] = useState<TestMode>("all");
+  // One selected set survives filter switches and keeps mixed questionnaires.
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [batterySignature, setBatterySignature] = useState("");
   const [showMore, setShowMore] = useState(false);
   const [timeFilter, setTimeFilter] = useState("all");
@@ -448,46 +452,41 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     }));
   const selectedAxes = selectedProfileAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedAxisRefs = selectedProfileResearchAxes(scaleGroups, selectedScaleIds) as string[];
-  const selectedKeys = selectedByMode[batteryMode];
   const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key &&
-    test.testKind === (batteryMode === "pro" ? "professional" : "monitoring")));
-  // Coverage is by researched construct, not by a broad scorer axis such as "personality".
-  // Choosing a questionnaire never creates a new or interchangeable clinical score.
+    ["monitoring", "professional"].includes(test.testKind)));
+  // Only source-backed research facets count toward coverage, never a new score.
   const coverage = new Set(scaleGroups.flatMap(group => group.scales
     .filter(scale => selectedKeys.includes(scale.testKey) &&
       selectedAxisRefs.includes(scale.researchAxisId)).map(scale => scale.researchAxisId)));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
-  const modeTotals = {
-    questionnaires: profileBatteryTotals(tests, selectedByMode.questionnaires),
-    pro: profileBatteryTotals(tests, selectedByMode.pro),
-  };
-  const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  // The visible catalogue is derived only from selected topics/scales, never
-  // from checked test keys. Unchecking changes the plan, not the recommendation.
+  // The first three remain stable; filter only additional matching tests.
   const rankedCandidates: ReadonlyArray<NonNullable<ReturnType<typeof rankProfileAxisTests>[number]>> =
-    rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)
+    rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, "all")
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
   const recommendedKeys = recommendProfileTopThreeTests(tests, scaleGroups,
-    selectedScaleIds, batteryMode);
+    selectedScaleIds, "all");
   const recommendedTests = rankedCandidates
     .filter(candidate => recommendedKeys.includes(candidate.key))
-    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key &&
+      ["monitoring", "professional"].includes(test.testKind))
       .map(test => ({ test, matchPercent: candidate.matchPercent })));
-  const fiveMoreTests = rankedCandidates
+  const additionalCandidates = rankedCandidates
     .filter(candidate => !recommendedKeys.includes(candidate.key))
-    .slice(0, 5)
-    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+    .filter(candidate => batteryMode === "all" || tests.some(test => test.key === candidate.key &&
+      test.testKind === (batteryMode === "pro" ? "professional" : "monitoring")));
+  const fiveMoreTests = additionalCandidates.slice(0, 5)
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key)
       .map(test => ({ test, matchPercent: candidate.matchPercent })));
   const featuredTestKeys = new Set([...recommendedKeys, ...fiveMoreTests.map(item => item.test.key)]);
-  // Every list shares the same chosen-facet eligibility and discovery relevance.
-  // Only explicit expansion/filters change visible rows; checkbox state never does.
+  // Only source eligibility, not selection, controls discoverability/rank.
   const eligibleTestKeys = new Set(rankedCandidates.map(candidate => candidate.key));
   const fitByKey = new Map(rankedCandidates.map(candidate => [candidate.key, candidate.matchPercent]));
   const extraMatchPercent = (key: string) => fitByKey.get(key) ?? 0;
-  const remainingTestKeys = new Set(rankedCandidates
+  const remainingTestKeys = new Set(additionalCandidates
     .filter(candidate => !featuredTestKeys.has(candidate.key)).map(candidate => candidate.key));
   const extraMatches = tests
-    .filter(test => remainingTestKeys.has(test.key) && test.testKind === modeKind)
+    .filter(test => remainingTestKeys.has(test.key) &&
+      ["monitoring", "professional"].includes(test.testKind))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
       [test.title, ...scaleGroups.flatMap(group => group.scales
@@ -507,7 +506,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     // Other directions must not contribute stale topics, scales or plans.
     setSelectedResearchIds([]);
     setSelectedScaleIds([]);
-    setSelectedByMode({ questionnaires: [], pro: [] });
+    setSelectedKeys([]);
     setBatterySignature("");
     setShowMore(false);
   }
@@ -524,7 +523,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       ? previous.filter(id => !ids.includes(id))
       : [...new Set([...previous, ...ids])]);
     setSelectedScaleIds([]);
-    setSelectedByMode({ questionnaires: [], pro: [] });
+    setSelectedKeys([]);
     setBatterySignature("");
     setShowMore(false);
   }
@@ -539,7 +538,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setSelectedScaleIds(previous => selected
       ? previous.filter(id => !ids.includes(id))
       : [...new Set([...previous, ...ids])]);
-    setSelectedByMode({ questionnaires: [], pro: [] });
+    setSelectedKeys([]);
     setBatterySignature("");
     setShowMore(false);
   }
@@ -550,7 +549,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       ? previous.filter(item => item !== id) : [...previous, id]);
     // A changed construct invalidates only the downstream topic/test draft.
     setSelectedScaleIds([]);
-    setSelectedByMode({ questionnaires: [], pro: [] });
+    setSelectedKeys([]);
     setBatterySignature("");
     setShowMore(false);
   }
@@ -560,26 +559,22 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setSelectedScaleIds(previous => previous.includes(id)
       ? previous.filter(item => item !== id) : [...previous, id]);
     setBatterySignature("");
-    setSelectedByMode({ questionnaires: [], pro: [] });
+    setSelectedKeys([]);
     setShowMore(false);
   }
 
   function toggleTest(key: string) {
-    // Eligibility includes the current mode, cleared guest rights and chosen source facets.
     if (!eligibleTestKeys.has(key)) return;
-    setSelectedByMode(previous => {
-      const keys = previous[batteryMode];
-      return { ...previous, [batteryMode]: keys.includes(key)
-        ? keys.filter(item => item !== key)
-        : keys.length < 12 ? [...keys, key] : keys };
-    });
+    setSelectedKeys(previous => previous.includes(key)
+      ? previous.filter(item => item !== key)
+      : previous.length < 12 ? [...previous, key] : previous);
   }
 
   function goForward() {
     if (step === 0 && focuses.length) {
       setSelectedResearchIds([]);
       setSelectedScaleIds([]);
-      setSelectedByMode({ questionnaires: [], pro: [] });
+      setSelectedKeys([]);
       setBatterySignature("");
       setShowMore(false);
       setStep(1);
@@ -589,17 +584,12 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
       const signature = [...selectedScaleIds].sort().join("|");
       if (batterySignature !== signature) {
-        // A selected *source scale* resolves to a particular research construct.
-        // Big Five extraversion cannot be substituted with an unrelated trait.
-        // The selector returns immutable suggestions; React keeps editable
-        // per-mode selections as its own mutable arrays.
-        const questionnaires = [...recommendProfileTopThreeTests(tests, scaleGroups,
-          selectedScaleIds, "questionnaires")];
-        const pro = [...recommendProfileTopThreeTests(tests, scaleGroups,
-          selectedScaleIds, "pro")];
-        setSelectedByMode({ questionnaires, pro });
+        // Never recheck manually unticked tests when returning without topic edits.
+        const suggested = [...recommendProfileTopThreeTests(tests, scaleGroups,
+          selectedScaleIds, "all")];
+        setSelectedKeys(suggested);
         setBatterySignature(signature);
-        setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
+        setBatteryMode("all");
       }
       setShowMore(false);
       setStep(3);
@@ -805,19 +795,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       {step === 3 && <section aria-labelledby="profile-builder-step-title" data-profile-tests-step>
         <h2 id="profile-builder-step-title">{t.testTitle}</h2>
         <p className={styles.help}>{t.testHelp}</p>
-        <fieldset className={styles.batteryModes} data-profile-test-mode>
-          <legend>{t.modeOverview}</legend>
-          <div className={styles.batteryModeChoices}>
-            {(["questionnaires", "pro"] as const).map(mode => <button type="button" key={mode}
-                aria-pressed={batteryMode === mode} data-profile-mode={mode}
-                onClick={() => { setBatteryMode(mode); setShowMore(false); }}>
-              <strong>{mode === "pro" ? t.modePro : t.modeCheckins}</strong>
-              <small>{modeTotals[mode].count} {t.selectedTests} · ~{modeTotals[mode].minutes} {t.minutes}
-                {modeTotals[mode].questions ? " · " + modeTotals[mode].questions + " " + t.questions : ""}</small>
-            </button>)}
-          </div>
-          <p>{t.modeMeaning}</p>
-        </fieldset>
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
           <strong>{chosenTests.length} {t.testCount}</strong>
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
@@ -833,7 +810,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   onChange={() => toggleTest(test.key)} />
                 <span className={styles.testText}>
                   <strong>{test.title}</strong>
-                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  <small>{test.testKind === "professional" ? t.modeProShort : t.modeCheckinsShort} · {test.questions ? test.questions + " " + t.questions : ""}
                     {test.questions && test.minutes ? " · " : ""}
                     {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
                   <span>{[...new Set(scaleGroups.flatMap(group => group.scales
@@ -846,7 +823,21 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 </span>
               </label>)}
           </div>
-        </div> : <p className={styles.caution} role="status">{t.modeNoTests}</p>}
+        </div> : <p className={styles.caution} role="status">{t.noTests}</p>}
+        <div className={styles.batteryModes} role="group" aria-label={t.modeOverview}
+          data-profile-test-mode data-profile-additional-kind-filter>
+          <span className={styles.batteryModesLabel}>{t.modeOverview}</span>
+          <div className={styles.batteryModeChoices}>
+            {(["all", "questionnaires", "pro"] as const).map(mode => <button type="button" key={mode}
+                aria-pressed={batteryMode === mode} data-profile-mode={mode}
+                onClick={() => { setBatteryMode(mode); setShowMore(false); }}>
+              {mode === "all" ? t.modeAll : mode === "pro" ? t.modeProShort : t.modeCheckinsShort}
+            </button>)}
+          </div>
+          <p className={styles.batteryModeHint}>{t.modeMeaning}</p>
+        </div>
+        {fiveMoreTests.length === 0 && remainingTestKeys.size === 0 &&
+          <p className={styles.extraEmpty} data-profile-filter-empty>{t.modeNoTests}</p>}
         {fiveMoreTests.length > 0 && <div className={styles.fiveMore} data-profile-five-more-tests>
           <h3 className={styles.testSectionHeading}>{t.nextFive}</h3>
           <div className={styles.testList}>
@@ -857,7 +848,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   onChange={() => toggleTest(test.key)} />
                 <span className={styles.testText}>
                   <strong>{test.title}</strong>
-                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  <small>{test.testKind === "professional" ? t.modeProShort : t.modeCheckinsShort} · {test.questions ? test.questions + " " + t.questions : ""}
                     {test.questions && test.minutes ? " · " : ""}
                     {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
                   <span>{[...new Set(scaleGroups.flatMap(group => group.scales
@@ -929,7 +920,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
                 onChange={() => toggleTest(test.key)} aria-label={test.title} />
               <span className={styles.testText}><strong>{test.title}</strong>
-                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                <small>{test.testKind === "professional" ? t.modeProShort : t.modeCheckinsShort} · {test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
                 <span>{[...new Set(scaleGroups.flatMap(group => group.scales
@@ -965,7 +956,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <span className={styles.reviewNumber} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
               <span className={styles.reviewTestText}>
                 <strong>{test.title}</strong>
-                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                <small>{test.testKind === "professional" ? t.modeProShort : t.modeCheckinsShort} · {test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? "~" + test.minutes + " " + t.minutes : ""}</small>
               </span>
