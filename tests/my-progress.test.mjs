@@ -122,7 +122,13 @@ test('My Progress YouTube-library design maps to the existing private account sc
   assert.match(css,/@media \(max-width:\s*750px\)/)
   assert.match(css,/@media \(max-width:\s*390px\)/)
   assert.match(css,/@media \(max-width:\s*350px\)/)
-  assert.match(css,/env\(safe-area-inset-bottom/)
+  // The authenticated Cabinet shell owns the fixed mobile dock and the
+  // associated iOS safe-area bottom reservation. Adding it again in this
+  // child page would create a second empty footer under My Progress.
+  const shellCss=readFileSync(new URL('../app/[locale]/app/[[...path]]/workspace.css',import.meta.url),'utf8')
+  assert.match(shellCss,/\\.hh-app\\{width:min\\(100% - 24px,1120px\\);padding-top:14px;padding-bottom:calc\\(105px \\+ env\\(safe-area-inset-bottom\\)\\)\\}/)
+  assert.match(shellCss,/\\.hh-mobile-app-nav[\\s\\S]*?padding:8px max\\(10px,env\\(safe-area-inset-left\\)\\) calc\\(8px \\+ env\\(safe-area-inset-bottom\\)\\)/)
+  assert.doesNotMatch(css,/env\\(safe-area-inset-bottom/)
   assert.match(workspace,/label: locale === 'ru' \? 'Мой прогресс'/)
   assert.match(workspace,/icon: BarChart3/)
   assert.doesNotMatch(view,/autoplay[="]1/)
