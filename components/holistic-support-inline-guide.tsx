@@ -35,7 +35,7 @@ const formats: { id: Format; filter: string; choice?: Choice }[] = [
 
 const copy = {
   en: {
-    title: "Your AI guide", close: "Close guide", step: "Step",
+    title: "Your personal guide", close: "Close guide", step: "Step",
     areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning" },
     ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
     editedIntro: "You changed your self-rating for",
@@ -79,9 +79,31 @@ const copy = {
     sourceReason: "Priority: your stated goal or ratings. Focus: your confirmed choice. Format: your preference.",
     timeReason: "Your available time is a preference, not a verified media duration.",
     private: "Answers stay in this browser; no external AI request, lead, booking or payment is created.",
+    ux: {
+      ready: "Your route is ready", focus: "Your focus", primary: "RECOMMENDED FIRST STEP",
+      duration: "Time you have", durationWarning: "This is your preference, not the duration of a recording or practitioner session.",
+      preferred: "Your chosen format", local: "Based on your answers", planStart: "Explore",
+      benefit: {
+        meditation: "Try an available recording. Check its actual duration before starting.",
+        tests: "A free self-check to explore your current priorities.",
+        courses: "Explore the existing learning path and decide if it fits.",
+        consultation: "Review personal session options. An enquiry is not a booking.",
+        healing: "Explore practitioner Reiki support. Timing and terms must be confirmed separately.",
+        mandala: "Explore the personal visual-practice studio.",
+      },
+      firstAction: {
+        meditation: "Open a published recording or browse available videos.",
+        tests: "Open the available free self-checks.",
+        courses: "Review the existing course and lessons.",
+        consultation: "Review sessions and send an enquiry only if you choose.",
+        healing: "Review practitioner options and terms before requesting support.",
+        mandala: "Explore the video-mandala studio.",
+      },
+    },
+
   },
   ru: {
-    title: "Ваш ИИ-проводник", close: "Закрыть проводника", step: "Шаг",
+    title: "Ваш проводник", close: "Закрыть проводника", step: "Шаг",
     areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы" },
     ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
     editedIntro: "Вы изменили показатель",
@@ -125,9 +147,31 @@ const copy = {
     sourceReason: "Основа: ваши оценки или заполненный фильтр. Тема: ваш подтверждённый выбор. Формат: ваше предпочтение.",
     timeReason: "Указанное время — пожелание, а не проверенная длительность видеозаписи.",
     private: "Ответы остаются в браузере. Внешний ИИ, CRM, запись и оплата не запускаются.",
+    ux: {
+      ready: "Маршрут подобран", focus: "Ваш запрос", primary: "РЕКОМЕНДУЕМЫЙ ПЕРВЫЙ ШАГ",
+      duration: "У вас есть", durationWarning: "Это ваше пожелание, а не длительность записи или сессии мастера.",
+      preferred: "Выбранный формат", local: "На основе ваших ответов", planStart: "Откройте",
+      benefit: {
+        meditation: "Попробуйте опубликованную практику. Длительность записи уточняется при открытии.",
+        tests: "Бесплатная самопроверка поможет прояснить текущие приоритеты.",
+        courses: "Посмотрите существующую программу и решите, подходит ли она вам.",
+        consultation: "Посмотрите варианты личной встречи. Заявка не означает запись.",
+        healing: "Узнайте о Рейки-поддержке мастера. Время и условия согласуются отдельно.",
+        mandala: "Исследуйте студию персональных визуальных практик.",
+      },
+      firstAction: {
+        meditation: "Откройте опубликованное видео или каталог.",
+        tests: "Откройте доступный бесплатный тест.",
+        courses: "Познакомьтесь с существующим курсом и уроками.",
+        consultation: "Посмотрите сессии и при желании отправьте заявку.",
+        healing: "Посмотрите варианты и условия поддержки до заявки.",
+        mandala: "Откройте студию видео-мандал.",
+      },
+    },
+
   },
   es: {
-    title: "Tu guía de IA", close: "Cerrar guía", step: "Paso",
+    title: "Tu guía personal", close: "Cerrar guía", step: "Paso",
     areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     editedIntro: "Has cambiado tu puntuación de",
@@ -171,6 +215,28 @@ const copy = {
     sourceReason: "Base: tus valoraciones o filtro de objetivos. Tema: tu elección. Formato: tu preferencia.",
     timeReason: "El tiempo es tu preferencia, no la duración verificada del vídeo.",
     private: "Las respuestas se quedan en el navegador. No se envían a IA externa, CRM ni pagos.",
+    ux: {
+      ready: "Tu ruta está lista", focus: "Tu objetivo", primary: "PRIMER PASO RECOMENDADO",
+      duration: "Tiempo disponible", durationWarning: "Es tu preferencia, no la duración de una grabación o sesión.",
+      preferred: "Formato elegido", local: "Según tus respuestas", planStart: "Explora",
+      benefit: {
+        meditation: "Prueba una grabación publicada. Comprueba su duración al abrirla.",
+        tests: "Una autoevaluación gratuita para explorar tus prioridades.",
+        courses: "Descubre el programa existente y decide si encaja contigo.",
+        consultation: "Consulta las sesiones personales. Una solicitud no es una reserva.",
+        healing: "Conoce el apoyo Reiki profesional. Los tiempos y condiciones se confirman aparte.",
+        mandala: "Explora el estudio de prácticas visuales personales.",
+      },
+      firstAction: {
+        meditation: "Abre una grabación publicada o explora el catálogo.",
+        tests: "Abre una autoevaluación gratuita disponible.",
+        courses: "Revisa el curso y las lecciones existentes.",
+        consultation: "Revisa las sesiones y solicita información solo si quieres.",
+        healing: "Revisa las opciones y condiciones antes de solicitar apoyo.",
+        mandala: "Explora el estudio de vídeo mandala.",
+      },
+    },
+
   },
 } as const;
 
@@ -579,9 +645,24 @@ export function HolisticSupportInlineGuide({
     );
   }
 
-  const alternatives = available.filter(item => item.id !== format)
-    .sort((a, b) => ["tests", "meditation", "courses", "mandala", "healing", "consultation"].indexOf(a.id) -
-      ["tests", "meditation", "courses", "mandala", "healing", "consultation"].indexOf(b.id))
+  const primaryTitle: Record<Format, string> = {
+    meditation: selectedVideo?.title ?? t.videoBrowse,
+    tests: t.testsTitle,
+    courses: t.courseTitle,
+    consultation: t.sessionTitle,
+    healing: t.healingTitle,
+    mandala: t.mandalaTitle,
+  };
+  // Respect the user's chosen format, but rank optional alternatives by the topic.
+  // Do not recommend a topic-specific recording if none is actually published.
+  const alternativeOrder: Format[] = topic === "money"
+    ? ["courses", "tests", "meditation", "mandala", "consultation", "healing"]
+    : topic === "energy"
+      ? ["meditation", "tests", "courses", "mandala", "healing", "consultation"]
+      : ["tests", "meditation", "courses", "mandala", "consultation", "healing"];
+  const alternatives = available
+    .filter(item => item.id !== format && (item.id !== "meditation" || !!selectedVideo))
+    .sort((a, b) => alternativeOrder.indexOf(a.id) - alternativeOrder.indexOf(b.id))
     .slice(0, 2);
 
   return (
@@ -591,12 +672,17 @@ export function HolisticSupportInlineGuide({
         <span className={styles.title} id="support-guide-heading">
           <Sparkles size={18} aria-hidden="true" />{t.title}
         </span>
-        <span className={styles.progress}>{t.step} {progress}/5</span>
+        <span className={styles.progress} data-support-guide-progress>{phase === "recommendations" ? t.ux.ready : t.step + " " + progress + "/5"}</span>
         <button type="button" className={styles.close} onClick={onClose} aria-label={t.close}>
           <X size={18} aria-hidden="true" />
         </button>
       </header>
-      <div className={styles.dialogue}>
+      <div className={styles.progressTrack} aria-hidden="true">
+        {Array.from({ length: 5 }, (_, index) => (
+          <span key={index} className={index < progress ? styles.progressActive : undefined} />
+        ))}
+      </div>
+      <div className={[styles.dialogue, phase === "recommendations" ? styles.dialogueComplete : ""].join(" ")}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
           <Image alt="" src="/images/holistic-house/support-reference-avatar.webp"
             width={128} height={160} sizes="(max-width: 390px) 75px, 100px" />
@@ -673,11 +759,10 @@ export function HolisticSupportInlineGuide({
             </div>
           </div>
         ) : phase === "recommendations" ? (
-          <div className={styles.confirm}>
-            <strong>{talk.results}</strong>
-            <p>{talk.preview}: {summary}</p>
-            <button type="button" className={styles.textLink} onClick={() =>
-              speak(talk.returnToChat, t.formatQuestion, "format")}>{talk.returnToChat}</button>
+          <div className={styles.context} data-support-guide-context>
+            <span>{t.ux.focus}</span>
+            <strong>{t.areas[topic]}</strong>
+            {need ? <span>· {need}</span> : null}
           </div>
         ) : (
           <div className={styles.confirm} role="alert">
@@ -697,14 +782,29 @@ export function HolisticSupportInlineGuide({
       {phase === "recommendations" ? (
         <section className={styles.recommendations} data-support-guide-recommendations ref={resultsRef}
           id="support-guide-recommendations" aria-labelledby="support-guide-recommendations-title">
-          <h3 id="support-guide-recommendations-title">{talk.results}</h3>
-          <p className={styles.reason}>{talk.resultNote}</p>
+          <div className={styles.recommendationHeading}>
+            <div>
+              <span className={styles.eyebrow}>{t.ux.local}</span>
+              <h3 id="support-guide-recommendations-title">{talk.results}</h3>
+            </div>
+          </div>
           <div className={styles.result} data-support-guide-recommendation>
-            <strong>{t.resultTitle} · {t.formatLabels[format]} · {t.areas[topic]}</strong>
+            <div className={styles.resultTop}>
+              <span className={styles.eyebrow}>{t.ux.primary}</span>
+              <span className={styles.formatTag}>{t.formatLabels[format]}</span>
+            </div>
+            <h4 data-support-guide-primary-title>{primaryTitle[format]}</h4>
+            <p className={styles.benefit}>{t.ux.benefit[format]}</p>
+            {minutes !== null ? (
+              <p className={styles.timeNote} data-support-guide-time-preference>
+                <Clock3 size={15} aria-hidden="true" />
+                <span>{t.ux.duration}: {minutes} min. {t.ux.durationWarning}</span>
+              </p>
+            ) : null}
             {offer(format)}
             <details className={styles.why}>
               <summary>{talk.whyLabel}<ChevronDown size={15} aria-hidden="true" /></summary>
-              <p>{t.sourceReason} «{need}»{detail ? " · " + detail : ""}. {t.timeReason} {t.notDiagnosis}</p>
+              <p>{t.sourceReason} «{need}»{detail ? " · " + detail : ""}. {t.notDiagnosis}</p>
             </details>
           </div>
           {alternatives.length ? (
@@ -720,12 +820,15 @@ export function HolisticSupportInlineGuide({
           <div className={styles.plan} data-support-guide-program>
             <strong>{t.planTitle}</strong>
             <ol>
-              <li><b>{t.planToday}:</b> {t.formatLabels[format]} — {need} {minutes !== null ? " · " + minutes + " min" : ""}</li>
-              <li><b>{t.planThen}:</b> {t.planCheck}</li>
-              <li><b>{t.planContinue}:</b> {t.planContinueText}</li>
+              <li><span className={styles.planNumber} aria-hidden="true">1</span>
+                <span><b>{t.planToday}</b>{t.ux.firstAction[format]}</span></li>
+              <li><span className={styles.planNumber} aria-hidden="true">2</span>
+                <span><b>{t.planThen}</b>{t.planCheck}</span></li>
+              <li><span className={styles.planNumber} aria-hidden="true">3</span>
+                <span><b>{t.planContinue}</b>{t.planContinueText}</span></li>
             </ol>
           </div>
-          <p className={styles.next}>{talk.nextStep}</p>
+          <p className={styles.reason}>{talk.resultNote}</p>
           <button type="button" className={styles.textLink} onClick={() =>
             speak(talk.returnToChat, t.formatQuestion, "format")}>{talk.returnToChat}</button>
         </section>
