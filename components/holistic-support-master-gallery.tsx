@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Filter, HandHeart, Headphones, PlayCircle, ShieldCheck, Sparkles, TestTube2, UserRound, X, BriefcaseBusiness, Eye, Leaf, MessageCircle, ShoppingCart, SlidersHorizontal, Users, CalendarDays, Clock3, GraduationCap, Mic, Zap } from "lucide-react";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
-import { filterPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
+import { filterPublicReikiAcademyOffers, listPublicReikiAcademyOffers } from "@/lib/academy/reiki-public-offers.mjs";
 import { HolisticReikiOfferShelf } from "@/components/holistic-reiki-offer-shelf";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -66,10 +66,10 @@ const words = {
     galleryMasters: "Choose a master", galleryOffers: "Other services",
     reikiFocus: "Reiki support intention",
     reikiOptions: {
-      strength: { label: "Strength support", method: "Kundalini Reiki" },
-      love: { label: "Love support", method: "Tantra Reiki" },
-      purpose: { label: "Purpose support", method: "Runic Reiki / Tarot" },
-      balance: { label: "Balance support", method: "Reiki Yggdrasil" },
+      strength: { label: "Energy support" },
+      love: { label: "Love support" },
+      purpose: { label: "Goal support" },
+      balance: { label: "Consciousness support" },
     },
     reikiUnavailable: "No published practitioner offer for this Reiki method yet. No session can be booked for it here.",
     reikiSeeAvailable: "See available Reiki methods",
@@ -90,10 +90,10 @@ const words = {
     galleryMasters: "Выбери мастера", galleryOffers: "Другие услуги",
     reikiFocus: "Цель Рейки поддержки",
     reikiOptions: {
-      strength: { label: "Поддержка силы", method: "Кундалини Рейки" },
-      love: { label: "Поддержка любви", method: "Тантра Рейки" },
-      purpose: { label: "Поддержка цели", method: "Рейки рун / Таро" },
-      balance: { label: "Поддержка баланса", method: "Рейки Иггдрасиль" },
+      strength: { label: "Поддержка энергии" },
+      love: { label: "Поддержка любви" },
+      purpose: { label: "Поддержка цели" },
+      balance: { label: "Поддержка сознания" },
     },
     reikiUnavailable: "Для выбранной практики пока нет опубликованного предложения. Запись и цена не подтверждены.",
     reikiSeeAvailable: "Доступные практики Рейки",
@@ -114,10 +114,10 @@ const words = {
     galleryMasters: "Elige un profesional", galleryOffers: "Otros servicios",
     reikiFocus: "Objetivo del apoyo Reiki",
     reikiOptions: {
-      strength: { label: "Apoyo a la fuerza", method: "Kundalini Reiki" },
-      love: { label: "Apoyo al amor", method: "Tantra Reiki" },
-      purpose: { label: "Apoyo a las metas", method: "Reiki rúnico / Tarot" },
-      balance: { label: "Apoyo al equilibrio", method: "Reiki Yggdrasil" },
+      strength: { label: "Apoyo a la energía" },
+      love: { label: "Apoyo al amor" },
+      purpose: { label: "Apoyo a las metas" },
+      balance: { label: "Apoyo a la conciencia" },
     },
     reikiUnavailable: "Todavía no hay una oferta publicada para esta práctica. No se puede reservar aquí.",
     reikiSeeAvailable: "Ver prácticas Reiki disponibles",
@@ -155,7 +155,7 @@ const reikiUi = {
     learn: "View original programme", details: "About this support",
     mediaNone: "No approved video or audio introduction has been published for this provider.",
     mediaOpen: "Open", provider: "Provider profile", request: "Request published session",
-    choose: "Select filters",
+    choose: "Select filters", initiationType: "Reiki tradition", allInitiations: "All types",
   },
   ru: {
     tabs: { main: "Главное", filter: "Фильтр", description: "Описание", media: "Видео / аудио" },
@@ -177,7 +177,7 @@ const reikiUi = {
     learn: "Открыть программу", details: "О поддержке",
     mediaNone: "У исполнителя пока нет опубликованной видео- или аудиопрезентации.",
     mediaOpen: "Открыть", provider: "Профиль исполнителя", request: "Запросить сессию",
-    choose: "Подобрать по фильтру",
+    choose: "Подобрать по фильтру", initiationType: "Вид Рейки", allInitiations: "Все виды",
   },
   es: {
     tabs: { main: "Inicio", filter: "Filtro", description: "Descripción", media: "Vídeo / audio" },
@@ -199,7 +199,7 @@ const reikiUi = {
     learn: "Ver el programa", details: "Sobre el apoyo",
     mediaNone: "Aún no hay presentación de vídeo o audio publicada.",
     mediaOpen: "Abrir", provider: "Perfil del profesional", request: "Solicitar sesión",
-    choose: "Elegir filtros",
+    choose: "Elegir filtros", initiationType: "Tipo de Reiki", allInitiations: "Todos",
   },
 } as const;
 
@@ -377,6 +377,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const categoryRailRef = useRef<HTMLDivElement>(null);
   const [reikiTab, setReikiTab] = useState<ReikiTab>("main");
   const [reikiFormat, setReikiFormat] = useState<ReikiFormat>("session");
+  const [reikiInitiationId, setReikiInitiationId] = useState<string | null>(null);
   const [reikiPrice, setReikiPrice] = useState<ReikiPrice>("all");
   const [reikiTime, setReikiTime] = useState<ReikiTime>("any");
   const [reikiReport, setReikiReport] = useState<ReikiReport>("brief");
@@ -439,7 +440,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
     if (!orderOpen && dialog.open) dialog.close();
   }, [orderOpen]);
 
-  const supportedMethods = kind === "healing" && reikiFormat === "session" ? REIKI_METHODS[reikiFocus] : null;
+  // The Academy catalogue is the single source of truth for real initiation types and links.
+  const reikiInitiations = kind === "healing"
+    ? listPublicReikiAcademyOffers(locale).filter(offer => offer.kind === "initiation") : [];
+  const selectedInitiation = reikiInitiations.find(offer => offer.id === reikiInitiationId) || null;
+  const supportedMethods = kind !== "healing" ? null
+    : reikiFormat === "session" ? REIKI_METHODS[reikiFocus]
+    : reikiFormat === "initiation" && selectedInitiation ? [selectedInitiation.method] : null;
   const offersMethod = (value: string) => !supportedMethods ||
     supportedMethods.some(name => name.toLowerCase() === value.toLowerCase());
   const methods = [...new Set((masters || []).flatMap(master => master.methods || [])
@@ -520,12 +527,13 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   // Academy pages do not promise certificates. Only verified structured service
   // variants qualify when the visitor explicitly requests one.
   const reikiAcademyOffers = kind === "healing" && reikiFormat !== "session" && !reikiCertificate
-    ? filterPublicReikiAcademyOffers(locale, { kind: reikiFormat, price: reikiPrice }) : [];
+    ? filterPublicReikiAcademyOffers(locale, { kind: reikiFormat, price: reikiPrice })
+      .filter(offer => !selectedInitiation || offer.id === selectedInitiation.id) : [];
   const reikiCount = visibleMasters.length + reikiAcademyOffers.length;
   const reikiLearningPath = reikiFormat === "course" ? REIKI_FREE_COURSE_PATH
-    : "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#initiation-choices";
-  const reikiLearningLabel = reikiFormat === "course" ? r.course : r.initiation;
-  const reikiLearningIntro = reikiFormat === "course" ? r.courseNote : r.initiationNote;
+    : selectedInitiation?.href || reikiInitiations[0]?.href || "/" + locale + "/academy/reiki/tantra-reiki#tantra-next-steps";
+  const reikiLearningLabel = reikiFormat === "course" ? r.course : selectedInitiation?.title || r.initiation;
+  const reikiLearningIntro = reikiFormat === "course" ? r.courseNote : selectedInitiation?.description || r.initiationNote;
   const filteredRequest = [
     r.report + ": " + r.reports[reikiReport],
     ...(reikiTime === "any" ? [] : [r.time + ": " + r.times[reikiTime]]),
@@ -534,14 +542,18 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   const resetReikiFilters = () => {
     setReikiFormat("session"); setReikiPrice("all"); setReikiTime("any");
     setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
-    setMethod(""); setSelectedId(null); setOrderOpen(false);
+    setReikiInitiationId(null); setMethod(""); setSelectedId(null); setOrderOpen(false);
   };
   // Both type selectors drive the existing published-offer filters, not a new booking flow.
   const chooseReikiFormat = (value: ReikiFormat, showMain = false) => {
     setReikiFormat(value); setReikiPrice("all"); setReikiTime("any");
     setReikiReport("brief"); setReikiRole("any"); setReikiCertificate(false);
-    setMethod(""); setSelectedId(null); setOrderOpen(false);
+    setReikiInitiationId(null); setMethod(""); setSelectedId(null); setOrderOpen(false);
     if (showMain) setReikiTab("main");
+  };
+  const chooseReikiInitiation = (id: string | null) => {
+    setReikiInitiationId(id); setMethod(""); setSelectedId(null); setOrderOpen(false);
+    setReikiTab("main");
   };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-support-reiki-sales-hero data-active-tab={reikiTab}
@@ -727,15 +739,29 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
               <span>{r.formats[value]}</span>
             </button>)}
         </div>
+        {reikiFormat === "initiation" && <div className={styles.reikiInitiationPicker}
+          data-support-reiki-initiation-types>
+          <span>{r.initiationType}</span>
+          <div className={styles.reikiInitiationTypes} role="group" aria-label={r.initiationType}>
+            <button type="button" data-support-reiki-initiation-id="all"
+              aria-pressed={reikiInitiationId === null} onClick={() => chooseReikiInitiation(null)}>
+              {r.allInitiations}
+            </button>
+            {reikiInitiations.map(offer => <button type="button" key={offer.id}
+              data-support-reiki-initiation-id={offer.id}
+              aria-pressed={reikiInitiationId === offer.id}
+              onClick={() => chooseReikiInitiation(offer.id)}>{offer.method}</button>)}
+          </div>
+        </div>}
         {reikiFormat === "session" && <div className={styles.reikiFocusBar} role="group"
           aria-label={t.reikiFocus} data-support-reiki-filters>
           {REIKI_FOCI.map(value => {
             const option = t.reikiOptions[value];
             return <button type="button" key={value} className={styles.reikiFocusButton}
               data-support-reiki-focus={value} aria-pressed={reikiFocus === value}
-              aria-label={option.label + " · " + option.method}
+              aria-label={option.label}
               onClick={() => { setReikiFocus(value); setMethod(""); setSelectedId(null); setOrderOpen(false); }}>
-              <strong>{option.label}</strong><small>{option.method}</small>
+              <strong>{option.label}</strong>
             </button>;
           })}
         </div>}
