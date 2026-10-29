@@ -95,7 +95,7 @@ routeSource = routeSource
   .replace(/import \{ getAppConfig, requireSameOrigin, requestOrigin \} from '@\/lib\/app\/config'/,
     `import { requireSameOrigin, requestOrigin } from '${new URL('../lib/app/config.js', import.meta.url)}'; const getAppConfig = () => (${JSON.stringify({...config, origins:[origin]})})`)
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
-    'export const accountWrites = []; const createAppRepository = () => ({ensureAccount: async actor => accountWrites.push(actor.id)})')
+    'export const accountWrites = []; export let syntheticOnboardingState = "active"; export const setSyntheticOnboardingState = value => { syntheticOnboardingState = value }; const createAppRepository = () => ({ensureAccount: async actor => { accountWrites.push(actor.id); return { onboardingState: syntheticOnboardingState } }})')
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
   .replace(/from '(@\/[^']+)'/g, (_, name) => { const file=name.slice(2); return `from '${new URL('../' + file + (/\.mjs$/.test(file)?'':'.js'),import.meta.url)}'` })
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
@@ -129,6 +129,28 @@ test('real Google OAuth returns to the exact master chat after a mobile sign-in'
   assert(response.cookies.getAll().some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
 })
 
+test('first-time account consent returns to the chosen practitioner, not a blocked inbox',async t=>{
+  route.setSyntheticOnboardingState('pending')
+  try{
+    const flow=await routeStart([],null,'direct-messages',{locale:'ru',recipientSlug:'master-anna'})
+    provider(t,flow.challenge)
+    const response=await routeCallback(flow,flow.cookies)
+    assert.equal(response.status,303)
+    assert.equal(response.headers.get('location'),
+      origin+'/ru/app/portrait?afterSignIn=messages&chatLocale=ru&to=master-anna')
+  }finally{route.setSyntheticOnboardingState('active')}
+})
+test('Spanish new-user messenger consent uses existing English Cabinet, then Spanish chat',async t=>{
+  route.setSyntheticOnboardingState('pending')
+  try{
+    const flow=await routeStart([],null,'direct-messages',{locale:'es',recipientSlug:'master-ana'})
+    provider(t,flow.challenge)
+    const response=await routeCallback(flow,flow.cookies)
+    assert.equal(response.status,303)
+    assert.equal(response.headers.get('location'),
+      origin+'/en/app/portrait?afterSignIn=messages&chatLocale=es&to=master-ana')
+  }finally{route.setSyntheticOnboardingState('active')}
+})
 test('native OAuth transfers public master slug only; PKCE is exchanged in-app',async()=>{
   const flow=await routeStart([],null,'direct-messages',{locale:'es',recipientSlug:'master-ana',native:true})
   const response=await routeCallback(flow,flow.cookies)
