@@ -324,8 +324,15 @@
   .footerControls .actions>.pause{grid-column:1/-1;grid-row:2}
   .footerControls:has(.stepNavigation>button:first-child:disabled) .stepNavigation>button:first-child{display:none}
   .footerControls:has(.stepNavigation>button:first-child:disabled) .actions>.draft{grid-column:1/3}
+  /* Do NOT reposition the action dock when an input loses focus.
+     Pointerdown on Next blurs the field; switching static→fixed before
+     pointerup cancels the click (reproduced Chromium RU/320). Keep it
+     anchored so typing → Continue works on the first tap on iPhone. */
   .quickForm:has(:is(input,textarea,select):focus) .footerControls{
-    position:static;margin:5px 0 0;box-shadow:none;
+    position:fixed;
+  }
+  .quickForm :is(input,textarea,select){
+    scroll-margin-bottom:calc(112px + env(safe-area-inset-bottom,0px));
   }
   .fine{margin:0!important;font-size:.65rem!important;line-height:1.3!important;text-align:center}
 }
