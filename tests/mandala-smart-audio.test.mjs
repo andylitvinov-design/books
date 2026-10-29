@@ -64,7 +64,7 @@ test("smart selection ranks the current theme rather than inventing profile or t
   assert.ok(recommendMandalaAudio({theme:"energy",kind:"nature"}).every(x=>x.kind==="nature"));
   assert.equal(recommendMandalaAudio({kind:"melody"}).length,9);
   assert.equal(recommendMandalaAudio({kind:"nature"}).length,9);
-  assert.equal(recommendMandalaAudio({kind:"pulse"}).length,4);
+  assert.equal(recommendMandalaAudio({kind:"pulse"}).length,5);
   assert.ok(recommendMandalaAudio({theme:"money",mood:"focus"}).every(x=>x.moods.includes("focus")));
   assert.ok(recommendMandalaAudio({pace:"slow"}).every(x=>x.pace==="slow"));
   assert.ok(recommendMandalaAudio({voiceFriendly:true}).every(x=>x.voiceSafe));
