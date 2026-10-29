@@ -84,6 +84,8 @@ import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/mater
 const PRACTICE_PREVIEW_ACTIONS = Object.freeze({
   create:'/app/practice?panel=services&create=1&starter=session',
   service:'/app/practice?panel=services&create=1&starter=session',
+  intro:'/app/practice?panel=services&create=1&starter=intro',
+  workshop:'/app/practice?panel=services&create=1&starter=workshop',
   diagnostic:'/app/practice?panel=services&create=1&starter=diagnostic',
   energy:'/app/practice?panel=services&create=1&starter=energy',
   personal:'/app/practice?panel=services&create=1&starter=personal',

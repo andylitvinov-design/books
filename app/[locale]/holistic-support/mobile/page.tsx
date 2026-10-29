@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 
 import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo, type SupportMobileChoice } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { GREEK_VIDEO_SERIES } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
 
@@ -48,13 +50,14 @@ const mysteryCollections = [
     shortTitle: "Египет",
     topics: ["energy", "health"],
   },
-  {
-    id: "greek",
+  // Each Greek channel has its own complete ordered source videos.
+  ...GREEK_VIDEO_SERIES.map(series => ({
+    id: series.id,
     programId: "mysteries/greece-rome/beauty-and-power",
-    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
-    shortTitle: "Греция",
-    topics: ["love", "energy"],
-  },
+    videoIds: [series.logicalId],
+    shortTitle: series.shortTitle,
+    topics: ["love", "energy"] as MeditationTopic[],
+  })),
 ] as const;
 
 const pageTitle = {
@@ -116,6 +119,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
           courseVideos.push({
             id,
             title: media.lessonTitle || academyDisplayTitle(record, "ru"),
+            lessonOrder: media.order ?? courseVideos.length + 1,
             topics: [...entry.topics],
             program: entry.id,
             author: "psimaster",
@@ -137,6 +141,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         // A verified first lesson provides a truthful source thumbnail.
         poster: "https://i.ytimg.com/vi/" + encodeURIComponent(courseVideos[0].id) + "/hqdefault.jpg",
         href: "/ru/academy/" + curriculum.routeKey,
+        seriesHref: entry.id.startsWith("greek-") ? videoGroups[0]?.href : undefined,
         videoCount: courseVideos.length,
         videoGroups,
         videos: courseVideos,
@@ -144,7 +149,20 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
     }
   }
 
-  const videos: SupportMobileVideo[] = locale === "ru"
+  // Verified English originals are available in RU/EN/ES, retaining Russian meditations.
+  const englishVideos: SupportMobileVideo[] = englishGuidedMeditations
+    .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
+    .map((video): SupportMobileVideo => ({
+      id: video.youtubeId!,
+      title: video.title,
+      topics: englishThemes[video.key] ?? ["energy"],
+      program: video.key === "flight-to-sun" ? "sun" : "reiki",
+      author: "andrey",
+      sourceLanguage: "en",
+      courseKey: video.key,
+      masterProfile: andreyMasterProfile(locale),
+    }));
+  const russianVideos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
         ...video,
         program: index < 3 ? "sun" : "energy",
@@ -152,19 +170,16 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         sourceLanguage: "ru",
         masterProfile: andreyMasterProfile("ru"),
       }))
-    : englishGuidedMeditations
-      .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
-      .map((video): SupportMobileVideo => ({
-        id: video.youtubeId!,
-        title: video.title,
-        topics: englishThemes[video.key] ?? ["energy"],
-        program: video.key === "flight-to-sun" ? "sun" : "reiki",
-        author: "andrey",
-        sourceLanguage: "en",
-        masterProfile: andreyMasterProfile(locale),
-      }));
+    : [];
+  const englishIds = new Set(englishVideos.map(video => video.id));
+  const videos: SupportMobileVideo[] = [
+    ...russianVideos.filter(video => !englishIds.has(video.id)), ...englishVideos,
+  ];
 
+  // Public, verified catalogue metadata only; no user test results in this prop.
+  const guideTests = buildSupportGuideTestShortlists({ locale });
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
+      initialChoice={initialChoice} guideTests={guideTests} />
   );
 }

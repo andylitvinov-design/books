@@ -91,20 +91,32 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // New Talisman-style controls drive the same local renderer and settings.
         const catalog=page.locator("[data-video-catalog]");
         await catalog.waitFor({state:"visible"});
-        assert.equal(await catalog.locator("[data-video-category]").count(),5);
+        assert.equal(await catalog.locator("[data-video-category]").count(),6);
         assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
         await page.locator('[data-video-category="health"]').click();
         assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
         assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
-        assert.equal(await page.locator("[data-video-style]").inputValue(),"gentle-shield");
+        assert.equal(await page.locator("[data-video-style]").inputValue(),"calm-sea");
         await page.locator("[data-video-motion]").selectOption("dynamic");
         await page.locator("[data-video-length]").selectOption("30");
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        // Energy must play decoded Full HD MP4, not a still Canvas artwork.
+        await page.locator('[data-video-category="energy"]').click();
+        const energyTile=page.locator('[data-video-template="solar-surge"]');
+        await energyTile.click();
+        const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
+        assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
+        await page.waitForFunction(() => {
+          const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
+          return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
+        },undefined,{timeout:30000});
+        await page.locator('[data-video-category="life"]').click();
+        assert.equal(await page.locator('[data-video-style]').inputValue(),"wildflower-dance");
         await page.locator('[data-video-category="energy"]').click();
         await page.locator("[data-video-style]").selectOption("green-vortex");
         assert.equal(await page.locator('[data-video-template="green-vortex"]').getAttribute("aria-pressed"),"true");
         const categoryControls=page.locator("[data-video-theme]");
-        assert.equal(await categoryControls.count(),4,"exactly four actual themes");
+        assert.equal(await categoryControls.count(),6,"six actual movie themes");
         for(const id of ["money","energy","relationships","goals"]){
           await page.locator("[data-video-theme-toggle]").click();
           assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"true");
@@ -195,7 +207,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
-          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
+          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 16);
           const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
           await infinity.click();
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
@@ -206,6 +218,26 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        // Public iPhone control E2E: local affirmations change the live preview
+        // and are included by the same canvas renderer in final recordings.
+        const affirmationsPanel = page.locator("[data-video-affirmations]");
+        await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        await page.locator("[data-video-affirmations-enable]").check();
+        await page.locator('[data-video-affirmation-preset="3"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-preset="3"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-affirmation-density="high"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-affirmation-frequency]").focus();
+        await page.locator("[data-video-affirmation-frequency]").press("End");
+        assert.equal(await page.locator("[data-video-affirmation-frequency]").inputValue(),"3");
+        await page.locator('[data-video-affirmation-visibility="small"] input').check();
+        await page.locator('[data-video-affirmation-visibility="frame"] input').check();
+        assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
+        await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
+        await page.locator("[data-video-custom-affirmations]").fill("I choose a small, kind step");
+        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/5.*phrases|5.*фраз|5.*frases/i);
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.

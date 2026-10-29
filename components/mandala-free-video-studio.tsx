@@ -2,12 +2,17 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, Leaf, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
+import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations } from "@/lib/mandala/video-affirmations";
+import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
-import { otherVideoScenes, paintThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
+import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
+import type { FilmSource } from "@/lib/mandala/film-collection-v2";
+import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { acquirePlaybackSession, createAmbientPreviewWav, isSupportedLocalAudio, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
@@ -63,7 +68,7 @@ const translations = {
     photoNote: "Фото остаётся неподвижным, движутся монеты и окружение. Лучше подходит портрет или PNG без фона.",
     quality: "Качество видео", hd: "HD · 720p (быстрее)", fullhd: "Full HD · 1080p",
     landscape: "Горизонтальный · 16:9",
-    moneyHeading: "Денежный поток · 12 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
+    moneyHeading: "Денежный поток · 16 сюжетов", moneyIntro: "Выберите движение золотого света вокруг своего фото. Сначала четыре популярных.",
     allMoney: "Показать все 12 вариантов", lessMoney: "Свернуть до четырёх", moneyNote: "Образная практика внимания, не обещание заработка.",
     previewPlay: "Посмотреть движение", previewPause: "Пауза",
     effect: "Эффект", effects: ["Золотой свет", "Поток энергии", "Символы процветания", "Сияние храма"],
@@ -85,8 +90,8 @@ const translations = {
     photoNote: "Tu foto permanece inmóvil; se mueven las monedas y el entorno. Usa un retrato claro o un PNG sin fondo.",
     quality: "Calidad de vídeo", hd: "HD · 720p (más rápido)", fullhd: "Full HD · 1080p",
     landscape: "Horizontal · 16:9",
-    moneyHeading: "Flujo de prosperidad · 12 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
-    allMoney: "Ver las 12 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
+    moneyHeading: "Flujo de prosperidad · 16 escenas", moneyIntro: "Elige un movimiento simbólico alrededor de tu foto. Cuatro favoritos primero.",
+    allMoney: "Ver las 16 escenas", lessMoney: "Mostrar cuatro favoritos", moneyNote: "Una práctica simbólica, no una promesa de ingresos.",
     previewPlay: "Ver movimiento", previewPause: "Pausar vista previa",
     effect: "Animación", effects: ["Luz dorada", "Flujo de energía", "Símbolos de prosperidad", "Luz del templo"],
     aspect: "Formato", square: "Cuadrado · 1:1", portrait: "Vertical · 9:16",
@@ -110,7 +115,7 @@ const studioCopy = {
     myVideos:"Current video",stepPhoto:"1. Add a photo",stepTheme:"2. Choose a theme",
     videoUnavailable:"The cinematic MP4 is unavailable. Please refresh this page.",
     stepTemplate:"3. Choose a template",stepSettings:"4. Customize your video",
-    themes:{money:"Money",relationships:"Relationships",energy:"Energy",goals:"Goals & meaning"},
+    themes:{money:"Money",relationships:"Relationships",energy:"Energy",life:"Life",health:"Wellbeing",goals:"Goals & meaning"},
     replace:"Replace photo",addPhoto:"Add photo",noPhoto:"Your photo here",photoPrivate:"Only on your device",
     allTemplates:"All templates",fewTemplates:"Show less",templateHint:"Moving scenery; your face stays unchanged",
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
@@ -149,7 +154,7 @@ const studioCopy = {
     myVideos:"Текущий ролик",stepPhoto:"1. Загрузите фото",stepTheme:"2. Выберите тему",
     videoUnavailable:"Не удалось загрузить HD-видеоролик. Обновите страницу.",
     stepTemplate:"3. Выберите шаблон",stepSettings:"4. Настройте видео",
-    themes:{money:"Деньги",relationships:"Отношения",energy:"Энергия",goals:"Цели и смыслы"},
+    themes:{money:"Деньги",relationships:"Отношения",energy:"Энергия",life:"Жизнь",health:"Здоровье",goals:"Цели и смыслы"},
     replace:"Заменить фото",addPhoto:"Загрузить фото",noPhoto:"Ваше фото",photoPrivate:"Только на устройстве",
     allTemplates:"Все шаблоны",fewTemplates:"Свернуть",templateHint:"Анимируется фон; лицо на фото не меняется",
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
@@ -188,7 +193,7 @@ const studioCopy = {
     myVideos:"Vídeo actual",stepPhoto:"1. Sube una foto",stepTheme:"2. Elige un tema",
     videoUnavailable:"No se pudo cargar el vídeo HD. Actualiza la página.",
     stepTemplate:"3. Elige una plantilla",stepSettings:"4. Personaliza el vídeo",
-    themes:{money:"Dinero",relationships:"Relaciones",energy:"Energía",goals:"Metas y sentido"},
+    themes:{money:"Dinero",relationships:"Relaciones",energy:"Energía",life:"Vida",health:"Bienestar",goals:"Metas y sentido"},
     replace:"Cambiar foto",addPhoto:"Subir foto",noPhoto:"Tu foto",photoPrivate:"Solo en tu dispositivo",
     allTemplates:"Todas las plantillas",fewTemplates:"Mostrar menos",templateHint:"Se anima el entorno; tu rostro no se altera",
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
@@ -234,9 +239,10 @@ const supportDesignCopy = {
     catalogTitle:"Video mandala",catalogIntro:"Choose a theme and create your own video",allScenes:"All scenes",health:"Wellbeing",
     filterStyle:"Visual style",filterMotion:"Movement",filterDuration:"Length",forGoal:"For your chosen theme",
     featureAnimation:"Moving scenery",more:"Details",categoryTitles:{
-      energy:"Energy and harmony",money:"A flow of inspiration",relationships:"Warmth and connection",goals:"A path to your goals",health:"A gentle mindful pause"
+      energy:"Energy and harmony",money:"A flow of inspiration",relationships:"Warmth and connection",goals:"A path to your goals",life:"A celebration of life",health:"A gentle mindful pause"
     },categoryDescriptions:{
       energy:"A luminous visual scene for slowing down and finding your focus.",
+      life:"Real nature footage for inspiration, renewal and reflection.",
       money:"Golden imagery for reflection on your intentions and plans.",
       relationships:"Warm light and gentle motion for a moment of reflection.",
       goals:"A moving landscape to help keep your intention in view.",
@@ -258,9 +264,10 @@ const supportDesignCopy = {
     catalogTitle:"Видео-мандала",catalogIntro:"Выбери тему и создай своё видео",allScenes:"Все сюжеты",health:"Здоровье",
     filterStyle:"Стиль",filterMotion:"Анимация",filterDuration:"Длительность",forGoal:"По выбранной цели",
     featureAnimation:"Живой видеофон",more:"Подробнее",categoryTitles:{
-      energy:"Источник энергии и гармонии",money:"Золотой поток вдохновения",relationships:"Тепло и близость",goals:"Путь к своим целям",health:"Бережная пауза"
+      energy:"Источник энергии и гармонии",money:"Золотой поток вдохновения",relationships:"Тепло и близость",goals:"Путь к своим целям",life:"Красота и движение жизни",health:"Бережная пауза"
     },categoryDescriptions:{
       energy:"Светлая видео-мандала для спокойной паузы, внимания и внутреннего равновесия.",
+      life:"Живые кадры природы для вдохновения, обновления и созерцания.",
       money:"Образы золотого света для размышления о желаниях и планах.",
       relationships:"Мягкое движение и тёплые образы для личной практики внимания.",
       goals:"Движущийся пейзаж как напоминание о выбранном намерении.",
@@ -282,9 +289,10 @@ const supportDesignCopy = {
     catalogTitle:"Vídeo mandala",catalogIntro:"Elige un tema y crea tu vídeo",allScenes:"Todas las escenas",health:"Bienestar",
     filterStyle:"Estilo",filterMotion:"Animación",filterDuration:"Duración",forGoal:"Según tu tema",
     featureAnimation:"Escena animada",more:"Detalles",categoryTitles:{
-      energy:"Energía y armonía",money:"Flujo de inspiración",relationships:"Calidez y conexión",goals:"Camino hacia tus metas",health:"Una pausa amable"
+      energy:"Energía y armonía",money:"Flujo de inspiración",relationships:"Calidez y conexión",goals:"Camino hacia tus metas",life:"Belleza y movimiento vital",health:"Una pausa amable"
     },categoryDescriptions:{
       energy:"Una escena luminosa para hacer una pausa y concentrar la atención.",
+      life:"Paisajes reales para inspirarte, renovarte y reflexionar.",
       money:"Imágenes doradas para reflexionar sobre tus intenciones y planes.",
       relationships:"Luz cálida y movimiento suave para reflexionar.",
       goals:"Un paisaje animado que acompaña tu intención personal.",
@@ -297,7 +305,7 @@ const supportDesignCopy = {
     quickPreview:"Ver animación",pausePreview:"Pausar animación",heroConsent:"Confirma el permiso para usar la foto antes de crear.",
   }
 } as const;
-const checkOrder: VideoTheme[] = ["energy","money","relationships","goals"];
+const checkOrder = ["energy","money","relationships","goals"] as const;
 
 const musicChoices: AmbientMusic[] = ["none","harmony","prosperity","energy","love","meditation"];
 const preferredMoney = ["golden-rain","abundance-tree","cosmic-flow","path-to-goals"] as const;
@@ -315,9 +323,9 @@ const moneyTemplates = [
 
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
 const durations = [10, 20, 30, 60] as const;
-const themeChoices: VideoTheme[] = ["money","relationships","energy","goals"];
+const themeChoices: VideoTheme[] = ["money","relationships","energy","life","health","goals"];
 // Health reuses the real, locally rendered gentle-shield Energy scene.
-const videoCategories = ["energy","money","relationships","goals","health"] as const;
+const videoCategories = ["energy","money","relationships","goals","life","health"] as const;
 type VideoCategory = (typeof videoCategories)[number];
 const themeMusic: Exclude<AmbientMusic,"none">[] = ["harmony","prosperity","energy","love","meditation"];
 const musicBackgrounds = [
@@ -382,6 +390,34 @@ function ThemedSceneThumbnail({ theme, scene, photo, title }: {
   return <canvas ref={ref} width={176} height={228} className={videoStyles.templateArt} aria-hidden="true"/>;
 }
 
+// Only one visible, explicitly selected real MP4 decodes in the gallery.
+function ThemedFilmThumbnail({film,scene,photo,title,playing}: {
+  film:Pick<FilmSource,"src"|"poster">;scene:LocalSceneId;
+  photo:HTMLImageElement|null;title:string;playing:boolean;
+}) {
+  const ref=useRef<HTMLVideoElement>(null);
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    if(typeof IntersectionObserver==="undefined"){setVisible(true);return;}
+    const observer=new IntersectionObserver(([entry])=>setVisible(Boolean(entry?.isIntersecting)),
+      {threshold:.05,rootMargin:"100px"});
+    observer.observe(el);return ()=>observer.disconnect();
+  },[]);
+  useEffect(()=>{
+    const video=ref.current;if(!video)return;
+    if(!playing||!visible){video.pause();return;}
+    video.muted=true;
+    void video.play().catch(()=>{/* iOS may require another direct tap. */});
+    return ()=>video.pause();
+  },[playing,visible,film.src]);
+  return <video ref={ref} muted playsInline loop preload="none" src={film.src} poster={film.poster}
+    aria-label={title} data-mandala-scene-preview={scene} data-real-mp4={film.src}
+    data-photo-overlay-available={photo?"true":"false"}
+    data-scene-playing={playing&&visible?"true":"false"}
+    className={styles.moneyFlowThumb}/>;
+}
+
 // A video-only codec string can silently drop the selected audio track on
 // Safari. Prefer codecs that explicitly include AAC/Opus, then let the
 // actual MediaRecorder constructor validate each candidate with this stream.
@@ -425,7 +461,11 @@ function paint(
   const height = ctx.canvas.height;
   const adjustedTime = time * (speed === "dynamic" ? 1.45 : .76);
   if (theme !== "money") {
-    paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
+    if (realVideo && realVideo.readyState >= 2 && realVideo.videoWidth > 0 && getThemedRealFilm(theme, otherScene)) {
+      paintRealThemedVideoFrame(ctx,art,theme,adjustedTime,title,realVideo);
+    } else {
+      paintThemedVideoFrame(ctx, art, theme, otherScene, adjustedTime, title);
+    }
     if(brightness === "bright"){
       ctx.fillStyle="rgba(255,246,197,.075)";ctx.fillRect(0,0,width,height);
     }
@@ -540,13 +580,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const t = translations[locale];
   const ui = studioCopy[locale];
   const supportUi = supportDesignCopy[locale];
-  const [scores,setScores] = useState<Record<VideoTheme,number>>({energy:5,money:5,relationships:5,goals:5});
+  const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
   const [theme, setTheme] = useState<VideoTheme>("energy");
   const [videoCategory, setVideoCategory] = useState<VideoCategory>("energy");
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(false);
-  const [otherScene, setOtherScene] = useState<LocalSceneId>("sun-flight");
+  const [otherScene, setOtherScene] = useState<LocalSceneId>("solar-surge");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [themeMenuOpen,setThemeMenuOpen] = useState(false);
@@ -568,6 +608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("theme");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -580,6 +621,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
+  const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
+  const activeFilm = activeMoneyFilm || activeThemedFilm;
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
@@ -590,11 +633,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     : otherVideoScenes[theme].find(item => item.id === otherScene)?.label[locale] || "";
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
+  const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption]);
+    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption,affirmations]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
-  const canGenerate = Boolean(source) && (theme!=="money" || premiumReady) &&
+  const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (backgroundOnly || !photoUrl || photoConsent) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (tonePreview?.preset===music ? tonePreview.url : null);
@@ -686,18 +730,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
     setPremiumReady(false);
-  },[activeMoneyFilm?.src]);
+  },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
     if(!video)return;
-    if(!activeMoneyFilm || (!previewPlaying && !recording && !preparing)){
+    if(!activeFilm || (!previewPlaying && !recording && !preparing)){
       video.pause();
       return;
     }
     video.muted=true;
     video.loop=true;
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
-  },[activeMoneyFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
+  },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
   // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
   // tapped: selection itself is the explicit playback gesture.
@@ -726,12 +770,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
           paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
           lastFrame = now;
         }
         animation = window.requestAnimationFrame(draw);
@@ -739,7 +785,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -762,7 +808,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
-      if(theme==="money") {
+      if(activeFilm) {
         const master=premiumVideoRef.current;
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
         await master.play();
@@ -779,7 +825,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
-      const framesPerSecond = quality === "fullhd" ? 12 : 15;
+      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
+      const framesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
+        ? 25 : quality === "fullhd" ? 12 : 15;
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
@@ -851,6 +899,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
@@ -961,11 +1010,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
-    const actual: VideoTheme = next==="health" ? "energy" : next;
-    setTheme(actual);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
+    setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     setPreviewPlaying(false);setBackgroundOnly(false);setThemeMenuOpen(false);
-    if(actual==="money")setMoneyScene("golden-rain");
-    else {setMoneyScene(null);setOtherScene(next==="health" ? "gentle-shield" : otherVideoScenes[actual][0].id);}
+    if(next==="money")setMoneyScene("golden-rain");
+    else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
   };
 
   const resetVideoSettings=()=>{
@@ -973,6 +1021,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
     setMusic("none");setSoundVolume(75);setCaptionMode("theme");setCustomCaption("");setQuality("hd");
+    setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
   const startFromHero=()=>{
@@ -995,11 +1044,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
-      {activeMoneyFilm ? <video
-        key={activeMoneyFilm.src} ref={premiumVideoRef}
-        src={activeMoneyFilm.src} poster={activeMoneyFilm.poster}
+      {activeFilm ? <video
+        key={activeFilm.src} ref={premiumVideoRef}
+        src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
-        data-mandala-master-mp4={activeMoneyFilm.src}
+        data-mandala-master-mp4={activeFilm.src}
         onCanPlay={()=>setPremiumReady(true)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
@@ -1091,7 +1140,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </header>
         <div className={videoStyles.categoryRail} data-video-category-rail role="group" aria-label={supportUi.topThemes}>
           {videoCategories.map(item=>{
-            const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:Leaf;
+            const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:item==="life"?Sprout:HeartPulse;
             return <button type="button" key={item} data-video-category={item} data-tone={item}
               aria-pressed={videoCategory===item} disabled={recording||preparing}
               onClick={()=>selectCategory(item)}>
@@ -1106,11 +1155,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing}
               onChange={event=>{
                 setSuggestion("");setPreviewPlaying(false);
+                // The style selector includes scenes beyond the first four tiles.
+                // Reveal the selected film in the existing gallery, including legacy looks.
+                setShowAllMoney(true);
                 if(theme==="money")setMoneyScene(event.currentTarget.value as MoneySceneId);
                 else {
                   const scene=event.currentTarget.value as LocalSceneId;
                   setOtherScene(scene);
-                  if(videoCategory==="health"&&scene!=="gentle-shield")setVideoCategory("energy");
+                  // Wellness retains its independent category.
                 }
               }}>
               {theme==="money"
@@ -1137,7 +1189,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-hero-promo={!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
-        <div className={videoStyles.heroPromo} aria-hidden="true" />
+        <div className={videoStyles.heroPromo} aria-hidden="true"
+          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.30),rgba(6,28,29,.53)),url("${activeFilm.poster}")`} : undefined} />
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
           <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
             height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
@@ -1206,6 +1259,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {backgroundOnly?<small>{ui.backgroundHint}</small>:null}
       </fieldset>}
+      {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
+        {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
+          locale==="es"?"Estos vídeos son para descansar y prestar atención, no son consejos médicos.":
+          "These calm videos support reflection and rest; they are not medical advice."}
+      </p>}
       <section className={videoStyles.templates} id="video-templates" data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
@@ -1231,7 +1289,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 playing={moneyScene===money.id&&previewPlaying&&!recording}/>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{name}</span>
-              {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
+              {getRealMoneyFilm(money.id).src.includes("/film-collection-v2/") ? <span className={videoStyles.filmBadge}>FULL HD</span> : null}
+               {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
               <span className={videoStyles.srOnly}>{index+1}</span>
             </button>;
           }) : visibleTemplates.map(scene=>{
@@ -1241,9 +1300,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
               onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
-                if(videoCategory==="health"&&other.id!=="gentle-shield")setVideoCategory("energy");}}>
-              <ThemedSceneThumbnail theme={theme} scene={other.id}
-                title={other.label[locale]} photo={sharedThumbnailPhoto}/>
+                }}>
+              {getThemedRealFilm(theme,other.id) ?
+                 <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
+                   title={other.label[locale]} photo={backgroundOnly?null:sharedThumbnailPhoto}
+                   playing={otherScene===other.id&&previewPlaying&&!recording}/> :
+                 <ThemedSceneThumbnail theme={theme} scene={other.id}
+                   title={other.label[locale]} photo={sharedThumbnailPhoto}/>}
+               {getThemedRealFilm(theme,other.id) ? <span className={videoStyles.filmBadge}>FULL HD</span> : null}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
               {otherScene===other.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
@@ -1273,6 +1337,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
+
+      <MandalaVideoAffirmations locale={locale} theme={theme} settings={affirmations}
+        onChange={setAffirmations} disabled={recording||preparing}/>
 
       <section id="video-settings" className={videoStyles.settings} aria-labelledby="video-settings-heading">
         <div className={videoStyles.sectionHeading}>
