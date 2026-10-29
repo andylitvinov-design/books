@@ -34,11 +34,12 @@ test("public mandala adapts original seven Power Place geometries and stone-mosa
   assert.match(mosaic, /id="pebbles"/);
 });
 
-test("private photo never leaves the browser and can be cropped or removed", () => {
+test("private mandala photo is decoded locally and can be cropped or removed", () => {
   const client = read("components/mandala-meditation-client.tsx");
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /image\.size > 10 \* 1024 \* 1024/);
-  assert.match(client, /URL\.createObjectURL\(image\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(read("lib/mandala/prepare-browser-photo.ts"), /25_000_000/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /URL\.createObjectURL\(prepared\)/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
   assert.match(client, /setZoom\(/);
@@ -66,10 +67,11 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   const client = read("components/mandala-meditation-client.tsx");
   const styles = read("components/mandala-meditation.module.css");
   assert.match(client, /setFocusMode\(/);
-  assert.match(client, /onPointerUp=\{onFocusPointerUp\}/);
-  assert.match(client, /onClick=\{onFocusClick\}/);
-  assert.match(client, /if \(pointerHandledRef\.current\)/);
-  assert.match(client, /pointerHandledRef\.current = false/);
+  // One handler for physical touch, mouse and synthetic keyboard click:
+  // the prior pointerup + click pair could double-toggle in WebKit.
+  assert.match(client, /aria-pressed=\{focusMode\} onClick=\{toggleFocusMode\}/);
+  assert.match(client, /function toggleFocusMode\(\) \{ setFocusMode\(value => !value\); \}/);
+  assert.doesNotMatch(client, /onPointerUp=\{onFocusPointerUp\}|onFocusClick|pointerHandledRef/);
   assert.doesNotMatch(client, /lastFocusPress/);
   assert.match(client, /event\.key === "Escape"/);
   assert.match(client, /document\.body\.style\.overflow = "hidden"/);

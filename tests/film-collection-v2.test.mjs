@@ -65,6 +65,10 @@ test("EN RU ES scene selectors share native MP4 and local photo compositor acros
    }
  }
  assert.match(studio,/data-real-mp4=\{film\.src\}/);
+ // A selected Full HD clip must start inside the actual visitor tap,
+ // instead of relying solely on a delayed effect that Safari may reject.
+ assert.match(studio,/event\.currentTarget\.querySelector\("video"\)/);
+ assert.match(studio,/clip\.muted=true;void clip\.play\(\)\.catch/);
  assert.match(studio,/getThemedRealFilm\(theme, otherScene\)/);
  assert.match(studio,/paintRealThemedVideoFrame/);
  assert.match(studio,/data-video-health-disclaimer/);

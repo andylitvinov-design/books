@@ -37,13 +37,13 @@
 .scaleValue[data-tone="relationships"] { background: #fae3e0; }
 .scaleValue[data-tone="goals"] { background: #eee3f8; }
 .profile { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; min-width: 0; padding: 6px 0; text-align: center; }
-.photo { position: relative; display: grid; place-items: center; flex: none; width: clamp(130px, 17vw, 195px); height: clamp(130px, 17vw, 195px); padding: 6px; border: 4px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #c9ece2, #f3eadd); box-shadow: 0 0 0 3px #83b9ca, 0 0 0 12px rgb(255 255 255 / 31%), 0 13px 36px rgb(40 87 76 / 22%); cursor: pointer; overflow: hidden; }
+.photo { position: relative; display: grid; place-items: center; flex: none; width: clamp(130px, 17vw, 195px); height: clamp(130px, 17vw, 195px); padding: 6px; border: 4px solid #fff; border-radius: 50%; background: linear-gradient(135deg, #c9ece2, #f3eadd); box-shadow: 0 0 0 3px #83b9ca, 0 0 0 12px rgb(255 255 255 / 31%), 0 13px 36px rgb(40 87 76 / 22%); cursor: pointer; overflow: visible; }
 .photoPreview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .photoPlaceholder { display: grid; place-items: center; gap: 5px; padding: 10px; color: #477d72; text-align: center; }
 .photoPlaceholder strong { max-width: 120px; font-size: 14px; line-height: 1.1; }
 .camera { position: absolute; right: 9px; bottom: 12px; display: grid; place-items: center; width: 39px; height: 39px; border: 2px solid white; border-radius: 50%; background: #264a41; color: white; box-shadow: 0 3px 10px #0003; transition: transform .15s; }
 .photo:hover .camera, .photo:focus-within .camera { transform: scale(1.12); }
-.fileInput { position: absolute; width: 1px; height: 1px; opacity: 0; bottom: 24px; right: 24px; }
+.fileInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 3; cursor: pointer; border-radius: 50%; }
 .photo:focus-within { outline: 3px solid #dc9c37; outline-offset: 6px; }
 .photoError { margin: 0; color: #a12d32; font-size: 13px; }
 .focusSelector { display: grid; gap: 3px; width: 100%; max-width: 252px; padding: 10px 14px; border: 1px solid #e6e3d7; border-radius: 19px; background: #fffdf8; text-align: left; box-shadow: 0 3px 12px #15261b0d; }
@@ -198,11 +198,11 @@
 /* The portrait shown before upload is illustrative, not a saved client photo. */
 .photoReference { position: absolute; inset: 0; width: 100%; height: 100%;
   border-radius: inherit; object-fit: cover; object-position: 50% 42%; }
-.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; }
+.photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; border-radius: 50%; overflow: hidden; }
 .photoPlaceholder strong { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1;
   padding: 8px 18px 7px 6px; max-width: none; background: linear-gradient(0deg,#112f2ccf,#112f2c00);
   color: white; text-shadow: 0 1px 3px #133b2a; font-size: 12px; }
-.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; }
+.photoPreview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 34%; border-radius: 50%; }
 .camera { z-index: 2; }
 .focusCaptionLong { display: inline; }
 .focusCaptionShort { display: none; }
@@ -236,7 +236,7 @@
 .progressAverage span { color: #5d6a60; }
 .progressGrid { grid-template-columns: minmax(0,1.32fr) minmax(0,.85fr) minmax(0,.85fr); }
 .photoReference { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.photo:has(.photoReference) .camera { display: none; }
+.photo:has(.photoReference) .camera { display: grid; }
 @media (min-width: 641px) and (max-width: 900px) {
   .topGrid { grid-template-columns: minmax(0,1.05fr) minmax(0,.77fr) minmax(0,1.05fr); gap: 10px; }
   .assessment,.tools { padding: 15px 12px; }
@@ -296,7 +296,7 @@
   .photoReference { inset: 0; border-radius: 50%; width: 100%; height: 100%; object-fit: cover; }
   .photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; gap: 0; padding: 0; }
   .photoPlaceholder strong { display: none; }
-  .photo:has(.photoReference) .camera { display: none; }
+  .photo:has(.photoReference) .camera { display: grid; }
   .photo:has(.photoPreview) .camera { display: grid; }
   .camera { width: 29px; height: 29px; right: 0; bottom: 0; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
@@ -1073,4 +1073,22 @@
    meditation mock posters (which otherwise hide the original on iPhone). */
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
+}
+
+/* Private photo Save stays secondary to the recommendation CTA. */
+.photoSave { max-width: 180px; min-height: 37px; padding: 5px 9px; border: 1px solid #1a916f; border-radius: 12px; background: #078764; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.18; overflow-wrap: anywhere; }
+.photoSave:disabled { opacity: .66; cursor: progress; }
+.photoSaved { max-width: 180px; color: #11664f; font-size: 12px; font-weight: 750; line-height: 1.25; overflow-wrap: anywhere; }
+@media (max-width:640px) {
+  .profile > .photoSave { min-width: 0; width: 100%; min-height: 33px; padding: 4px 2px; border-radius: 9px; font-size: clamp(9px,2.45vw,11px); }
+  .profile > .photoSaved { font-size: 10px; line-height: 1.15; }
+  .photoPlaceholder strong { display: block; padding: 4px 2px 3px; bottom: 3px; font-size: clamp(9px,2.2vw,11px); line-height: 1.05; }
+}
+
+/* The portrait is clipped to the ring, while its camera chip stays OUTSIDE
+   the face so eyes, forehead and chin remain readable on 320–430px iPhones. */
+.photoPreview, .photoReference { object-position: 50% 34%; }
+@media (max-width: 640px) {
+  .profile .camera { right: -5px; bottom: -4px; z-index: 4; }
+  .profile .photo { overflow: visible; }
 }

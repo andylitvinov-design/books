@@ -9,7 +9,7 @@ import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X3fEiQAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGN87e3mFCXH4J339cN1NwAlvwXzqWxvIQAAAABJRU5ErkJggg==",
   "base64",
 );
 
@@ -42,9 +42,13 @@ const bufferFromStream = async stream => {
 
 let passes = 0;
 for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]) {
-  const browser = await browserType.launch({ headless: true });
-  try {
-    for (const { locale, width } of viewports) {
+  for (const { locale, width } of viewports) {
+    // Real H.264 decoders in WebKit can release a previously decoded master
+    // after earlier large video/export scenarios. Give every viewport its
+    // own browser process, not just a new context in an exhausted process.
+    // Preserve all ten real video/PNG/photo assertions without stubbing.
+    const browser = await browserType.launch({ headless: true });
+    try {
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -213,6 +217,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           undefined,{timeout:10000});
         assert.equal(await page.locator("[data-video-photo-consent]").isChecked(),false,
           "selecting a photo must not imply permission to export it");
+        // The visible wide hero must frame the WHOLE oval medallion. A 9:16
+        // source canvas stretched by object-fit:cover previously cropped out
+        // the face in the 320–430px public video editor.
+        const landscapeFrame=await page.locator('[data-mandala-cinematic-canvas][data-preview-layout="landscape"]')
+          .evaluate(el=>({w:el.width,h:el.height}));
+        assert.ok(landscapeFrame.w>landscapeFrame.h,
+          engine+" "+locale+" "+width+"px preview uses a full cinematic oval, not a portrait crop");
+
 
         const downloadLink = page.locator('a[download="holistic-house-mandala.png"]');
         await downloadLink.waitFor({ state: "visible", timeout: 30000 });
@@ -374,11 +386,28 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.
         // Wait for the actual master canplay event rather than testing a stale state.
-        await page.waitForFunction(() => {
-          const button=document.querySelector("[data-mandala-video-generate]");
-          const master=document.querySelector("[data-mandala-master-mp4]");
-          return Boolean(button && !button.disabled && master && master.readyState >= 2);
-        },undefined,{timeout:25000});
+        try {
+          await page.waitForFunction(() => {
+            const button=document.querySelector("[data-mandala-video-generate]");
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            return Boolean(button && !button.disabled && master && master.readyState >= 2 && master.videoWidth>0);
+          },undefined,{timeout:25000});
+        } catch (error) {
+          const state=await page.evaluate(() => {
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            const button=document.querySelector("[data-mandala-video-generate]");
+            return {
+              src:master?.getAttribute("src")??null,
+              readyState:master?.readyState??null,
+              networkState:master?.networkState??null,
+              videoWidth:master?.videoWidth??0,
+              mediaError:master?.error?.code??null,
+              disabled:button?.disabled??null,
+              visibility:document.visibilityState,
+            };
+          });
+          throw new Error(engine+" "+locale+"/"+width+" decoded MP4 gate: "+JSON.stringify(state)+"; "+String(error));
+        }
         assert.equal(await create.isEnabled(), true);
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
@@ -681,9 +710,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
       } finally {
         await context.close();
       }
+    } finally {
+      await browser.close();
     }
-  } finally {
-    await browser.close();
   }
 }
 assert.equal(passes, 10);

@@ -103,10 +103,9 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(parent, /photoUrl=\{imageUrl\}/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
-  assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
-  assert.match(renderer, /ctx\.arc\(0,0,radius,0,Math\.PI\*2\);ctx\.clip\(\)/);
-  assert.match(renderer, /ctx\.drawImage\(src,-src\.width\*scale\/2,-src\.height\*scale\/2,src\.width\*scale,src\.height\*scale\)/);
+  assert.match(renderer, /paintOvalPortrait\(ctx,image,w,h,"gold"\)/);
+  assert.match(read("lib/mandala/portrait-oval.ts"), /ctx\.ellipse\(cx,cy,rx,ry,0,0,Math\.PI\*2\)/);
   assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
@@ -156,4 +155,45 @@ test("background-only reusable clip is the default, with an explicit photo check
   assert.match(browser,/holistic-house-money-background/);
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
+});
+
+// Regress the real Safari/WebKit suspended-media recovery. It must never
+// turn a poster or unplayed MP4 into a fake successful video recording.
+test("HD master retries only undecoded idle media on user preview, retaining strict browser decode", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(studio, /if\(video\.readyState < 2 &&[\s\S]*?video\.NETWORK_IDLE/);
+  assert.match(studio, /film\.readyState < 2 &&[\s\S]*?film\.NETWORK_IDLE/);
+  assert.match(studio, /onLoadedData=\{event=>\{[\s\S]*?event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
+  assert.match(studio, /if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
+  assert.match(browser, /master\.readyState\s*>=\s*2 && master\.videoWidth\s*>\s*0/);
+  assert.match(browser, /decoded MP4 gate:/);
+  assert.match(browser, /videoWidth:master\?\.videoWidth\?\?0/);
+  assert.match(browser, /mediaError:master\?\.error\?\.code\?\?null/);
+});
+
+// A previous 10-case browser loop reused one WebKit process and failed on
+// the fourth WebKit context after it discarded an otherwise decoded master.
+test("real video acceptance isolates each WebKit viewport and resets an emptied master",()=>{
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  assert.match(browser,/for \(const \[engine, browserType\][\s\S]*?for \(const \{ locale, width \} of viewports\) \{[\s\S]*?const browser = await browserType\.launch/);
+  assert.match(browser,/await context\.close\(\);[\s\S]*?await browser\.close\(\);/);
+  assert.match(browser,/assert\.equal\(passes, 10\)/);
+  assert.match(studio,/onEmptied=\{\(\)=>setPremiumReady\(false\)\}/);
+  assert.match(browser,/master\.readyState\s*>=\s*2 && master\.videoWidth\s*>\s*0/);
+});
+
+
+test("Safari evicted master can reload on the visitor's explicit photo consent without faking decode",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  assert.match(studio,/data-video-photo-consent checked=\{photoConsent\}/);
+  assert.match(studio,/const approved=event\.target\.checked/);
+  assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
+  assert.match(studio,/setPremiumReady\(false\)/);
+  assert.match(studio,/video\.networkState === video\.NETWORK_IDLE\)\)\s*video\.load\(\)/);
+  assert.match(studio,/void video\.play\(\)\.then/);
+  // Even after a retry, export remains unavailable until real decoded frames exist.
+  assert.match(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });

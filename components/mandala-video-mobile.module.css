@@ -19,7 +19,7 @@
 .photoCard,.themeCard{padding:12px 13px;min-height:224px}
 .studio h3{font:800 clamp(14px,1.8vw,20px)/1.22 Arial,Helvetica,sans-serif;letter-spacing:-.02em;color:#123e35}
 .photoPortrait{position:relative;display:grid;place-items:center;width:min(100%,132px);aspect-ratio:1;overflow:hidden;margin:13px auto 9px;padding:5px;border-radius:50%;border:3px solid #9bdbca;background:#e4f4e7;color:#236b58;box-shadow:0 0 0 4px #fff,0 3px 10px rgba(27,70,50,.12)}
-.photoPortrait img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.photoPortrait img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 34%}
 .photoEmpty{display:flex;align-items:center;flex-direction:column;gap:3px;text-align:center;color:#729e8d}
 .photoEmpty small{font-size:11px;line-height:1.16}
 .cameraCircle{position:absolute;right:0;bottom:1px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#10594b;color:white;border:2px solid white}
@@ -715,6 +715,10 @@
   .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:190px}
   .courseIndicator{font-size:10px;padding:6px}
 }
+
+/* Portrait preview for the separate mandala editor uses the same head-safe
+   focal point as the original mobile Support dashboard. */
+.centerProfile .photoPortrait img { object-position: 50% 34%; }
 
 
 /* Owner 29 Oct: slim Picks rail, restored visible Support header, and one

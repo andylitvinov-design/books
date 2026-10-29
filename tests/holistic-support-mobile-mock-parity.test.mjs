@@ -70,7 +70,9 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\\.sendBeacon/);
+  assert.equal(client.split("fetch(").length - 1, 2, "only owner photo GET/POST");
+  assert.ok(client.includes('fetch("/api/app/support-photo"'), "private photo endpoint only");
 });
 
 test("progress is derived from opens and four self-ratings, never fake streaks", () => {

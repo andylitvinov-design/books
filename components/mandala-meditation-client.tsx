@@ -12,6 +12,7 @@ import { renderMandalaPng } from "@/lib/mandala/export-png";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
+import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from "@/lib/mandala/prepare-browser-photo";
 
 /**
  * Public, lightweight adaptation of Reiki Yggdrasil's Power Place constructor.
@@ -42,7 +43,7 @@ const copy = {
     intro: "Choose an existing mandala, place your own photo or a picture of your goal in the centre, then listen to an original video meditation.",
     upload: "Add your photo or goal", change: "Replace image", remove: "Remove",
     privacy: "Your picture stays on this device while this page is open. No upload, account or CRM entry.",
-    invalid: "Please choose a JPG, PNG or WebP image up to 10 MB.",
+    invalid: "Choose a JPG, PNG, WebP or supported HEIC photo up to 25 MB.",
     intent: "Your intention (optional)", intentPlaceholder: "What would you like to give attention to?",
     photoAlt: "Your chosen photo or goal", empty: "Your image or intention",
     selection: "Choose your mandala", imageAdjust: "Adjust image", advanced: "Mandala settings and original guided meditations",
@@ -62,7 +63,7 @@ const copy = {
     intro: "Выберите готовую мандалу, поместите внутрь своё фото или образ цели и слушайте оригинальную авторскую видеомедитацию.",
     upload: "Загрузить фото или цель", change: "Заменить изображение", remove: "Удалить",
     privacy: "Фото остаётся на этом устройстве, пока открыта страница. Нет загрузки на сервер, регистрации или записи в CRM.",
-    invalid: "Выберите JPG, PNG или WebP размером до 10 МБ.",
+    invalid: "Выберите JPG, PNG, WebP или поддерживаемый HEIC до 25 МБ.",
     intent: "Ваше намерение (необязательно)", intentPlaceholder: "Чему вы хотите уделить внимание?",
     photoAlt: "Ваше фото или изображение цели", empty: "Ваш образ или цель",
     selection: "Выберите мандалу", imageAdjust: "Настроить изображение", advanced: "Дополнительно: мандала и авторские медитации",
@@ -82,7 +83,7 @@ const copy = {
     intro: "Elige un mandala, coloca una foto tuya o de tu meta en el centro y escucha una videomeditación original.",
     upload: "Añadir foto u objetivo", change: "Cambiar imagen", remove: "Quitar",
     privacy: "Tu foto permanece en este dispositivo mientras la página esté abierta. Sin subirla al servidor ni guardarla en el CRM.",
-    invalid: "Elige una imagen JPG, PNG o WebP de hasta 10 MB.",
+    invalid: "Elige JPG, PNG, WebP o HEIC compatible de hasta 25 MB.",
     intent: "Tu intención (opcional)", intentPlaceholder: "¿A qué quieres prestar atención?",
     photoAlt: "Tu foto o imagen del objetivo", empty: "Tu imagen u objetivo",
     selection: "Elige un mandala", imageAdjust: "Ajustar imagen", advanced: "Más opciones: mandala y meditaciones originales",
@@ -195,26 +196,16 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const [preparedPng, setPreparedPng] = useState<{signature: string; url: string} | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  // A second iPhone Photos/Files choice must invalidate an earlier async decode.
+  const photoChoiceEpoch = useRef(0);
   const closeButton = useRef<HTMLButtonElement | null>(null);
-  // WebKit may dispatch a synthetic click (detail 0) after pointerup. If
-  // both events toggle state, fullscreen opens and immediately closes.
-  // Record the pointer activation, consume its following click once, and
-  // still support keyboard/screen-reader click without a preceding pointer.
-  const pointerHandledRef = useRef(false);
+  // One native click works for mouse, touch and keyboard/assistive technology.
+  // Running pointerup AND click state changes can instantly undo the focus
+  // transition on WebKit after a React render. Never toggle twice per gesture.
   function toggleFocusMode() { setFocusMode(value => !value); }
-  function onFocusPointerUp() {
-    pointerHandledRef.current = true;
-    toggleFocusMode();
-  }
-  function onFocusClick() {
-    if (pointerHandledRef.current) {
-      pointerHandledRef.current = false;
-      return;
-    }
-    toggleFocusMode();
-  }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
+  useEffect(() => () => { photoChoiceEpoch.current += 1; }, []);
 
   useEffect(() => {
     if (!focusMode) return;
@@ -283,20 +274,25 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
     }
   }
 
-  function handleImage(event: ChangeEvent<HTMLInputElement>) {
+  async function handleImage(event: ChangeEvent<HTMLInputElement>) {
     const image = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!image) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(image.type) || image.size > 10 * 1024 * 1024 || !image.size) {
-      setImageError(t.invalid);
-      return;
-    }
+    const choiceEpoch = ++photoChoiceEpoch.current;
+    // Never export an older local portrait after a failed or superseded choice.
+    setImageUrl(null);
+    setPreparedPng(null);
     setImageError("");
-    setImageUrl(URL.createObjectURL(image));
-    setZoom(1);
-    setOffsetX(50);
-    setOffsetY(50);
+    try {
+      const prepared = await prepareBrowserPhoto(image);
+      if (choiceEpoch !== photoChoiceEpoch.current) return;
+      setImageUrl(URL.createObjectURL(prepared));
+      setZoom(1);
+      setOffsetX(50);
+      setOffsetY(50);
+    } catch {
+      if (choiceEpoch === photoChoiceEpoch.current) setImageError(t.invalid);
+    }
   }
 
   function selectTopic(topic: Topic) {
@@ -309,8 +305,8 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       data-mandala-meditation data-mandala-focus={focusMode ? "true" : "false"}
       role={focusMode ? "dialog" : undefined} aria-modal={focusMode ? true : undefined}
       aria-label={focusMode ? t.focus : undefined}>
-      <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
-        className={styles.hiddenPhotoInput} onChange={handleImage}/>
+      <input ref={fileInput} id="mandala-photo" type="file" accept={SUPPORT_PHOTO_ACCEPT}
+        className={styles.hiddenPhotoInput} onChange={event => { void handleImage(event); }}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
         onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
       <details className={styles.advancedWorkbench} data-mandala-advanced>
@@ -320,8 +316,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}
-          aria-pressed={focusMode} onPointerDown={() => { pointerHandledRef.current = false; }}
-          onPointerUp={onFocusPointerUp} onClick={onFocusClick}>
+          aria-pressed={focusMode} onClick={toggleFocusMode}>
           {focusMode ? <Minimize2 size={18} aria-hidden="true" /> : <Expand size={18} aria-hidden="true" />}
           {focusMode ? t.leave : t.focus}
         </button>
@@ -379,7 +374,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
                   {imageUrl ? t.change : t.upload}
                 </button>
                 {imageUrl ? <button type="button" className={styles.removeButton}
-                  onClick={() => { setImageUrl(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
+                  onClick={() => { photoChoiceEpoch.current += 1; setImageUrl(null); setPreparedPng(null); setImageError(""); if (fileInput.current) fileInput.current.value = ""; }}>
                   <Trash2 size={16} aria-hidden="true" />{t.remove}
                 </button> : null}
               </div>

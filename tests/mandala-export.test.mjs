@@ -22,7 +22,8 @@ test("mandala export preserves local-only image and no external upload", () => {
   assert.match(exporter, /ctx\.clip\(\)/);
   assert.match(css, /\.focus \.exportButton\{display:none\}/);
   assert.match(middleware, /const publicMandalaLocalImages/);
-  assert.match(middleware, /ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:'/);
+  // Scoped mobile photo-picker and private Cabinet preview now also use blob:.
+  assert.ok(middleware.includes("ownerMessengerImages || publicMandalaLocalImages || supportMobilePublishedMedia || privateSupportPhotoCabinet ? ' blob:'"));
   assert.doesNotMatch(exporter + client, /fetch\(|XMLHttpRequest|navigator\.sendBeacon|FormData|localStorage|sessionStorage/);
 });
 

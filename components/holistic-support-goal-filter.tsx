@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { flushSync } from "react-dom";
 import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -283,16 +283,32 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  // A WebKit input may dispatch a late change after Save + Next. Do not let
+  // that event dirty the accepted sector or mutate inputs of the next one.
+  const activeSectorRef = useRef(sector);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
-  const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
-  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id] &&
-    accepted[id]?.checkin === scores[goalSectorCheckinKey[id]]);
+  const markDirty = () => {
+    if (activeSectorRef.current !== sector) return;
+    setDirty(previous => ({ ...previous, [sector]: true }));
+  };
+  const isAccepted = (id: GoalSector) => {
+    // Keep edited, unsaved categories unaccepted. WebKit may dispatch the
+    // previous number field's blur/change AFTER an atomic Save + Next and mark
+    // the now-inactive sector dirty again. If its saved in-page draft is
+    // byte-for-byte the accepted snapshot, this is not a new unsaved edit.
+    const snapshot = savedSectors[id] ?? accepted[id];
+    const savedInactiveDraft = id !== sector && Boolean(dirty[id]) &&
+      drafts[id] !== undefined && JSON.stringify(drafts[id]) === JSON.stringify(snapshot);
+    return Boolean(snapshot && (!dirty[id] || savedInactiveDraft) &&
+      snapshot.checkin === scores[goalSectorCheckinKey[id]]);
+  };
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
     setDrafts(previous => ({ ...previous, [sector]: snapshotCurrent() }));
     const next = drafts[value] ?? accepted[value];
+    activeSectorRef.current = value;
     setSector(value);
     setConcerns(next?.concerns ?? []);
     setTasks(next?.tasks ?? []);
@@ -301,6 +317,7 @@ export function HolisticSupportGoalFilter({
     setCurrency(next?.currency ?? "CAD");
   }
   function toggle(id: string, values: string[], update: (next: string[]) => void) {
+    if (activeSectorRef.current !== sector) return;
     update(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
     markDirty();
   }
@@ -310,6 +327,7 @@ export function HolisticSupportGoalFilter({
     return ratings[id] ?? { current, desired: Math.max(current, 8) };
   }
   function updateRating(id: string, index: number, field: keyof GoalRating, value: number) {
+    if (activeSectorRef.current !== sector) return;
     setRatings(previous => ({
       ...previous, [id]: { ...getRating(id, index), ...previous[id], [field]: value },
     }));
@@ -317,6 +335,7 @@ export function HolisticSupportGoalFilter({
   }
   // Blank money values remain blank; no fabricated income or target is stored.
   function updateAmount(id: string, field: keyof GoalAmount, raw: string, max: number) {
+    if (activeSectorRef.current !== sector) return;
     const numeric = raw === "" ? null : Number(raw);
     if (numeric !== null && (!Number.isFinite(numeric) || numeric < 0 || numeric > max)) return;
     setAmounts(previous => ({
@@ -346,20 +365,31 @@ export function HolisticSupportGoalFilter({
     onSave(sector, snapshot); // no API, session storage, or analytics
   }
   function nextSector() {
-    // Advance is an explicit acceptance: commit the current snapshot BEFORE
-    // switching. Works even when the visitor never clicked the separate Save.
-    // React batches Save and Next; commit the accepted snapshot before the
-    // next sector is mounted, so Safari/WebKit never loses the checkmark.
-    // Only a deliberate click invokes this synchronous UI transition.
-    flushSync(() => {
-      saveCurrent();
-    });
+    // Save and navigate together: splitting these into a synchronous Save
+    // followed by a second render can leave WebKit with a stale Accepted
+    // badge on narrow phones after parent onSave causes a rerender.
+    const snapshot = snapshotCurrent();
     const index = sectorOrder.findIndex(item => item.id === sector);
-    changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
+    const nextId = sectorOrder[(index + 1) % sectorOrder.length].id;
+    const next = drafts[nextId] ?? accepted[nextId];
+    activeSectorRef.current = nextId;
+    flushSync(() => {
+      setDrafts(previous => ({ ...previous, [sector]: snapshot }));
+      setAccepted(previous => ({ ...previous, [sector]: snapshot }));
+      setDirty(previous => ({ ...previous, [sector]: false }));
+      onSave(sector, snapshot); // still local-only, never silently persisted
+      setSector(nextId);
+      setConcerns(next?.concerns ?? []);
+      setTasks(next?.tasks ?? []);
+      setRatings(next?.ratings ?? {});
+      setAmounts(next?.amounts ?? {});
+      setCurrency(next?.currency ?? "CAD");
+    });
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto" : "smooth", block: "start" }));
   }
+
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const snapshot = snapshotCurrent();
@@ -369,6 +399,7 @@ export function HolisticSupportGoalFilter({
       recommendationFormats: [...selectedFormats] });
   }
   function reset() {
+    activeSectorRef.current = "energy";
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     setDrafts({}); setAccepted({}); setDirty({});
     onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);

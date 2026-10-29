@@ -12,7 +12,7 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("
 const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
 const evidence = [];
-const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
+const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGN87e3mFCXH4J339cN1NwAlvwXzqWxvIQAAAABJRU5ErkJggg==", "base64");
 for (const browserType of [chromium, webkit]) {
   const browser = await browserType.launch({ headless: true });
   try {
@@ -306,8 +306,17 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await formats.count(),9,label+" nine real recommendation formats");
           assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
             label+" all formats are checked by default");
-          await filter.locator('[data-support-goal-format="consultation"] input').uncheck();
-          await filter.locator('[data-support-goal-format="initiations"] input').uncheck();
+          // WebKit may commit a controlled React checkbox in a later frame.
+          // Click the real control and wait for the actual unchecked DOM state;
+          // never force-click or bypass the user's selection requirement.
+          await filter.locator('[data-support-goal-format="consultation"] input').click();
+          await page.waitForFunction(() =>
+            document.querySelector('[data-support-goal-format="consultation"] input')?.checked === false,
+            undefined, {timeout:6000});
+          await filter.locator('[data-support-goal-format="initiations"] input').click();
+          await page.waitForFunction(() =>
+            document.querySelector('[data-support-goal-format="initiations"] input')?.checked === false,
+            undefined, {timeout:6000});
           assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
             label+" visitor can remove unwanted consultation and initiation formats");
           // The third measure must finish BEFORE the buttons begin: no
@@ -565,9 +574,28 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-inline-guide]').count(),0,
             label+" after resetting the filter the default dashboard remains without invented advice");
           if(width===390) {
-            await root.locator('[data-support-photo] input[type="file"]')
-              .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
+            // Mobile Photos and Files use the whole circle; no upload before Save.
+            let privatePhotoWrites=0;
+            await page.route("**/api/app/support-photo",async route=>{
+              if(route.request().method()==="POST")privatePhotoWrites++;
+              await route.fulfill({status:401,contentType:"application/json",body:'{"error":"SIGN_IN_REQUIRED"}'});
+            });
+            const inputBox=await root.locator('[data-support-photo] input[type="file"]').boundingBox();
+            const circleBox=await root.locator('[data-support-photo]').boundingBox();
+            assert.ok(inputBox && circleBox && inputBox.width >= circleBox.width - 10 &&
+              inputBox.height >= circleBox.height - 10,label+" iPhone native picker hit target");
+            const chooserPromise=page.waitForEvent("filechooser",{timeout:8000});
+            await root.locator('[data-support-photo]').click({position:{
+              x: circleBox.width/2, y: circleBox.height/2
+            }});
+            const chooser=await chooserPromise;
+            await chooser.setFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
             await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
+            await root.locator('[data-support-photo-save]').waitFor({state:"visible",timeout:8000});
+            assert.equal(privatePhotoWrites,0,label+" selection remains local");
+            await root.locator('[data-support-photo-save]').click();
+            await root.locator('[data-support-photo-signin]').waitFor({state:"visible",timeout:8000});
+            assert.equal(privatePhotoWrites,1,label+" anonymous storage mutation rejected");
             // Selecting a thumb changes the player, but only explicit Play opens YouTube.
             const target=root.locator('[data-support-video]').last();
             await target.click();

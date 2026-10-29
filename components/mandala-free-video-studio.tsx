@@ -822,10 +822,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || jobRef.current) return;
-    const [w,h] = formatDimensions(aspect, "hd");
+    const [w,h] = formatDimensions("landscape", "hd");
     if(canvas.width !== w) canvas.width=w;
     if(canvas.height !== h) canvas.height=h;
-  }, [aspect]);
+  }, [aspect, recording]);
 
   // Invalidate the result when the client photo, composition or preset changes.
   // The selected, SAME-ORIGIN MP4 is the sole footage source for preview
@@ -866,6 +866,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
+  // The hero is a wide cinematic slide. A portrait canvas CSS-covered into
+  // the wide preview previously zoomed in until the head disappeared. The
+  // recording still uses the visitor-selected aspect ratio.
   useEffect(() => {
     if (!source || jobRef.current) return;
     let cancelled = false;
@@ -876,18 +879,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const [width,height] = formatDimensions(aspect,"hd");
+      const [width,height] = formatDimensions("landscape","hd");
       canvas.width=width;canvas.height=height;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      paint(ctx,image,effect,0,"landscape",moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paint(ctx,image,effect,(now-startedAt)/1000,"landscape",moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -896,7 +899,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, recording]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -1151,7 +1154,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const video=premiumVideoRef.current;
     if(!activeFilm || !video || video.readyState>=2)return;
     video.muted=true;
-    video.load();
+    // A loaded/loading WebKit stream must not be reset mid-decode: only
+    // restart an empty or stalled-idle source on this explicit user gesture.
+    if(video.readyState < 2 &&
+      (video.networkState === video.NETWORK_EMPTY || video.networkState === video.NETWORK_IDLE))
+      video.load();
     void video.play().then(()=>{
       if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0)
         setPremiumReady(true);
@@ -1186,6 +1193,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const film = premiumVideoRef.current;
     if (film && activeFilm) {
       film.muted = true;
+      // A preview tap is a user gesture: retry a suspended WebKit master
+      // before asking it to play. The recorder still requires real decoded
+      // frames (readyState >= 2); no synthetic or poster fallback.
+      if (film.readyState < 2 &&
+        (film.networkState === film.NETWORK_EMPTY || film.networkState === film.NETWORK_IDLE))
+        film.load();
       void film.play().catch(() => {
         if (aliveRef.current) setNotice(ui.videoUnavailable);
       });
@@ -1220,6 +1233,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setPremiumReady(true);
         }}
         onCanPlay={()=>setPremiumReady(true)}
+        onEmptied={()=>setPremiumReady(false)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
         style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
@@ -1390,8 +1404,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.heroPromo} aria-hidden="true"
           style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
-          <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
-            height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
+          <canvas key={aspect} ref={canvasRef} width={formatDimensions("landscape","hd")[0]}
+            height={formatDimensions("landscape","hd")[1]} data-mandala-cinematic-canvas data-preview-layout="landscape"
             aria-label={layout.previewTitle}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
@@ -1506,7 +1520,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+              onClick={event=>{
+                setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+                // Start the selected real MP4 within the visitor’s tap gesture.
+                // In Safari the later React effect alone may not retain that gesture.
+                const clip=event.currentTarget.querySelector("video");
+                if(clip){clip.muted=true;void clip.play().catch(()=>{/* normal player error path remains active */});}
                 }}>
               {getThemedRealFilm(theme,other.id) ?
                  <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
