@@ -4,6 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
+import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations } from "@/lib/mandala/video-affirmations";
+import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -605,6 +608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("theme");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -629,8 +633,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     : otherVideoScenes[theme].find(item => item.id === otherScene)?.label[locale] || "";
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
+  const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption]);
+    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption,affirmations]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
@@ -765,12 +770,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
           paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
           lastFrame = now;
         }
         animation = window.requestAnimationFrame(draw);
@@ -778,7 +785,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -818,7 +825,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
-      const framesPerSecond = quality === "fullhd" ? 12 : 15;
+      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
+      const framesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
+        ? 25 : quality === "fullhd" ? 12 : 15;
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
@@ -890,6 +899,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           paint(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
@@ -1011,6 +1021,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
     setMusic("none");setSoundVolume(75);setCaptionMode("theme");setCustomCaption("");setQuality("hd");
+    setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
   const startFromHero=()=>{
@@ -1326,6 +1337,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
+
+      <MandalaVideoAffirmations locale={locale} theme={theme} settings={affirmations}
+        onChange={setAffirmations} disabled={recording||preparing}/>
 
       <section id="video-settings" className={videoStyles.settings} aria-labelledby="video-settings-heading">
         <div className={videoStyles.sectionHeading}>
