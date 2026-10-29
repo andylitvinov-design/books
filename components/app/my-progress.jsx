@@ -480,7 +480,7 @@ export default function MyProgress({ data, locale='en' }) {
       </div>}
     </section>
 
-    <section className={styles.section} id="hh-progress-activity" aria-labelledby="hh-progress-activity-title">
+    <section className={styles.section} id="hh-progress-activity" aria-label={t.recentActivity}>
       <button type="button" className={styles.fullHistoryToggle}
         aria-expanded={historyExpanded} onClick={()=>setHistoryExpanded(value=>!value)}>
         {historyExpanded?t.collapseHistory:t.expandHistory}<ChevronRight size={18} aria-hidden="true"/>
