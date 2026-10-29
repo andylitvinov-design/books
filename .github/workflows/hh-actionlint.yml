@@ -31,6 +31,20 @@ jobs:
           printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check --status
           tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
           printf '%s\n' "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Validate all registered workflows (including unchanged baseline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=()
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+          if (( ${#files[@]} == 0 )); then
+            echo 'No workflow YAML files found; refusing empty validation' >&2
+            exit 1
+          fi
+          printf 'Full workflow validation: %s definitions\n' "${#files[@]}" >> "$GITHUB_STEP_SUMMARY"
+          actionlint -color "${files[@]}"
       - name: Validate all exact changed workflow definitions
         shell: bash
         env:
