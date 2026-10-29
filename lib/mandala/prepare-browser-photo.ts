@@ -11,9 +11,10 @@ const FILE_EXT = /\.(jpe?g|png|webp|heic|heif)$/i;
 // decoding check, never a bypass for unsupported or corrupt images.
 function waitForBrowserImageLoad(image: HTMLImageElement): Promise<void> {
   const valid = () => image.naturalWidth > 0 && image.naturalHeight > 0;
-  if (image.complete) {
-    return valid() ? Promise.resolve() : Promise.reject(new Error("PHOTO_FILE_INVALID"));
-  }
+  // WebKit may transiently report complete=true with no natural dimensions
+  // right after setting a blob URL. Wait for an actual load/error instead of
+  // rejecting a valid HEIC/JPEG before Safari has decoded its first pixels.
+  if (image.complete && valid()) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     const finish = (ok: boolean) => {
@@ -31,7 +32,7 @@ function waitForBrowserImageLoad(image: HTMLImageElement): Promise<void> {
     image.addEventListener("load", onLoad);
     image.addEventListener("error", onError);
     // Image may finish decoding between our first ready check and listeners.
-    if (image.complete) finish(valid());
+    if (image.complete && valid()) finish(true);
   });
 }
 
@@ -52,7 +53,7 @@ export async function prepareBrowserPhoto(file: File): Promise<Blob> {
     // a genuine load, and the load path fails closed after 15 seconds.
     const loaded = waitForBrowserImageLoad(image);
     if (typeof image.decode === "function") {
-      await Promise.race([loaded, image.decode().catch(() => loaded)]);
+      await Promise.race([loaded, Promise.resolve().then(() => image.decode()).catch(() => loaded)]);
     } else {
       await loaded;
     }
