@@ -7,6 +7,11 @@ on:
       - '.agents/skills/visual-to-code-pro/**'
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
+      - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'scripts/fixtures/practice-approved-reference-20261028.json'
+      - '.codex/config.toml'
+      - '.vscode/mcp.json'
+      - 'docs/design/VISUAL_MCP_AUTO_QA.md'
       - '.github/workflows/visual-to-code-skill.yml'
   push:
     branches: ['codex/public-book-library']
@@ -15,6 +20,11 @@ on:
       - '.agents/skills/visual-to-code-pro/**'
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
+      - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'scripts/fixtures/practice-approved-reference-20261028.json'
+      - '.codex/config.toml'
+      - '.vscode/mcp.json'
+      - 'docs/design/VISUAL_MCP_AUTO_QA.md'
       - '.github/workflows/visual-to-code-skill.yml'
 permissions:
   contents: read
@@ -32,4 +42,4 @@ jobs:
       - name: Verify dependency-free screenshot comparator
         run: |
           node --check scripts/compare-ui-screenshots.mjs
-          node --test tests/compare-ui-screenshots.test.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs
