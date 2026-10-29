@@ -11,7 +11,7 @@ import styles from "./holistic-support-inline-guide.module.css";
 
 type Focus = "energy" | "money" | "relationships" | "goals";
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
-type Phase = "review" | "topic" | "test-invite" | "test-pick" | "test-return" | "practice-invite" | "time" | "media-pick" | "media-return" | "exercise" | "feedback" | "path-confirm" | "recommendations" | "safety";
+type Phase = "review" | "topic" | "test-invite" | "test-pick" | "test-return" | "reflection" | "practice-invite" | "time" | "media-pick" | "media-return" | "exercise" | "feedback" | "path-confirm" | "recommendations" | "safety";
 type Format = "meditation" | "tests" | "courses" | "consultation" | "healing" | "mandala";
 type Message = { role: "guide" | "user"; text: string };
 type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru" };
@@ -350,6 +350,8 @@ const journeyCopy = {
     inviteTest: "Would a quick self-check help us find a direction? I can show you a couple of genuine free tests. Or we can go straight to a practice — no pressure.",
     inviteTestEmpty: "There isn't a short, guest-accessible test for that topic in our verified catalogue right now. We can move straight to a practice.",
     tests: "Show short tests", practice: "Let's try a practice", talk: "Let's talk first",
+    reflectAsk: "Of course. What feels most important to change about this topic? A few words are enough.",
+    reflectThanks: "Thanks, I understand your direction a little better.",
     testPick: "Here are two published tests related to this topic. Which one feels more useful? You can also skip them.",
     testUnit: "min", questions: "questions", free: "Free", titleTest: "Short self-checks",
     testLanguage: "Questionnaire language", englishOriginal: "English original",
@@ -386,6 +388,8 @@ const journeyCopy = {
     inviteTest: "Как насчёт небольшой самопроверки, чтобы понять, куда двигаться? У меня есть несколько коротких бесплатных тестов. Или сразу перейдём к практике — как тебе удобнее.",
     inviteTestEmpty: "По этой теме сейчас нет подтверждённого короткого теста для гостей. Можем сразу перейти к практике.",
     tests: "Посмотреть тесты", practice: "Давай к практике", talk: "Сначала поговорим",
+    reflectAsk: "Конечно. А что в этой теме тебе сейчас больше всего хочется изменить? Можно ответить своими словами.",
+    reflectThanks: "Спасибо, я чуть лучше понимаю твою цель.",
     testPick: "Вот два настоящих теста из нашей библиотеки по твоей теме. Какой тебе ближе? Можно и пропустить.",
     testUnit: "мин", questions: "вопросов", free: "Бесплатно", titleTest: "Короткие тесты",
     testLanguage: "Язык теста", englishOriginal: "Оригинал на английском",
@@ -422,6 +426,8 @@ const journeyCopy = {
     inviteTest: "¿Qué te parece una prueba breve y gratuita para aclarar el siguiente paso? También podemos ir directamente a una práctica.",
     inviteTestEmpty: "Ahora mismo no hay un test corto verificado para invitados sobre este tema. Podemos pasar a una práctica.",
     tests: "Ver pruebas", practice: "Ir a la práctica", talk: "Primero conversar",
+    reflectAsk: "Claro. ¿Qué te gustaría cambiar sobre este tema? Basta con unas palabras.",
+    reflectThanks: "Gracias, ahora entiendo un poco mejor tu objetivo.",
     testPick: "Encontré dos pruebas reales de nuestra biblioteca sobre este tema. ¿Cuál prefieres? Puedes omitirlas.",
     testUnit: "min", questions: "preguntas", free: "Gratis", titleTest: "Pruebas breves",
     testLanguage: "Idioma del test", englishOriginal: "Original en inglés",
@@ -475,6 +481,7 @@ export function HolisticSupportInlineGuide({
   const [phase,setPhase] = useState<Phase>(initial.phase);
   const [topic,setTopic] = useState<GoalSector>(initial.topic);
   const [draft,setDraft] = useState("");
+  const [need,setNeed] = useState("");
   const [minutes,setMinutes] = useState<number | null>(null);
   const [format,setFormat] = useState<Format>("meditation");
   const [selectedTest,setSelectedTest] = useState<SupportGuideTest | null>(null);
@@ -525,7 +532,7 @@ export function HolisticSupportInlineGuide({
     setDraft("");
   }
   function enterTopic(next:GoalSector,answer:string=t.areas[next]) {
-    setTopic(next);setSelectedTest(null);setSelectedVideoId(null);
+    setTopic(next);setNeed("");setSelectedTest(null);setSelectedVideoId(null);
     const availableForTopic=allowed.some(item=>item.id==="tests")&&(guideTests[next]??[]).some(item=>item&&/^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key));
     say(answer,availableForTopic?journey.inviteTest:journey.inviteTestEmpty,"test-invite");
   }
@@ -542,6 +549,7 @@ export function HolisticSupportInlineGuide({
     setSelectedTest(row);setFormat("tests");
     say(row.title,journey.testOpened+" "+journey.waitingHint,"test-return");
   }
+  function beginReflection(){say(journey.talk,journey.reflectAsk,"reflection");}
   function goPractice(answer:string=journey.practice) {
     say(answer,journey.practiceInvite,"practice-invite");
   }
@@ -566,7 +574,7 @@ export function HolisticSupportInlineGuide({
   function askFeedback(answer:string) {
     say(answer,journey.feedbackAsk,"feedback");
   }
-  function pathPrompt(answer:string) {say(answer,journey.finalAsk,"path-confirm");}
+  function pathPrompt(answer:string) {say(answer,journey.feedbackThanks+" "+journey.finalAsk,"path-confirm");}
   function showRecommendations(){say(journey.seePath,journey.finalIntro,"recommendations");}
   function answerQuestion(kind:"why"|"price"|"compare"|"identity"|"process") {
     const messages={why:journey.questionWhy,price:talk.priceAnswer,compare:journey.questionTests,
@@ -598,6 +606,7 @@ export function HolisticSupportInlineGuide({
       }
       reply(answer,journey.unknown);return;
     }
+    if(phase==="reflection"){setNeed(answer);say(answer,journey.reflectThanks+" "+journey.inviteTest,"test-invite");return;}
     if(phase==="test-return") {
       if(/другой|another|otro/i.test(answer)){showTests();return;}
       goPractice(answer);return;
@@ -651,7 +660,7 @@ export function HolisticSupportInlineGuide({
     </button>;
   }
   const alternatives=allowed.filter(row=>row.id!==format).slice(0,2);
-  const stageSummary=t.areas[topic]+(selectedTest?" · "+selectedTest.title:"")+
+  const stageSummary=t.areas[topic]+(need?" · "+need:"")+(selectedTest?" · "+selectedTest.title:"")+
     (primaryVideo&&selectedVideoId?" · "+primaryVideo.title:"");
   return (
     <section id="support-goal-results" className={styles.card} data-support-inline-guide aria-labelledby="support-guide-heading">
@@ -684,7 +693,10 @@ export function HolisticSupportInlineGuide({
           {testCards.length>0 ? <button type="button" data-guide-open-test-choice
             className={styles.primary} onClick={showTests}>{journey.tests}</button> : null}
           <button type="button" data-guide-skip-test onClick={()=>goPractice(journey.practice)}>{journey.practice}</button>
-          <button type="button" onClick={()=>reply(journey.talk,journey.inviteTest)}>{journey.talk}</button>
+          <button type="button" data-guide-talk-first onClick={beginReflection}>{journey.talk}</button>
+        </div> : phase==="reflection" ? <div className={styles.options}>
+          <button type="button" className={styles.primary} onClick={showTests}>{journey.tests}</button>
+          <button type="button" onClick={()=>goPractice(journey.practice)}>{journey.practice}</button>
         </div> : phase==="test-pick" ? <div className={styles.inlineChoices} data-guide-test-options>
           <strong>{journey.titleTest}</strong>
           {testCards.map(item=><div className={styles.inlineOffer} key={item.key} data-guide-test-card={item.key}>
