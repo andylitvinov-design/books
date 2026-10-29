@@ -187,7 +187,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   const chooseShot=(number:number,sceneId:string)=>{
     try{
       const next=customizeCinematicShot(plan,number,sceneId);
-      setCustomPlan(next);setApplied(false);onInvalidateStoryboard();
+      setCustomPlan(next as CinematicStoryboard);setApplied(false);onInvalidateStoryboard();
     }catch{
       // A forged/obsolete scene option never reaches the recorder or provider.
       setCustomPlan(null);setGenerated(false);onInvalidateStoryboard();
