@@ -5,7 +5,7 @@ import { PRIVATE_HEADERS,readBody,safeError } from "@/lib/app/http";
 import { AppError } from "@/lib/assessments/contracts";
 import {
   readMyAgentMemory,consentToAgentMemory,saveOwnAgentMemory,
-  deleteOwnAgentMemory,eraseAllOwnAgentMemory,
+  deleteOwnAgentMemory,eraseAllOwnAgentMemory,configureOwnAgentMemoryUse,
 } from "@/lib/holistic-support/agent-memory-store";
 
 export const runtime="nodejs";
@@ -32,10 +32,12 @@ async function endpoint(request) {
       data=await eraseAllOwnAgentMemory(config,actor);
     } else if(request.method==="POST") {
       const body=await readBody(request,2048);
-      if(!body || Object.keys(body).some(x=>!["action","accepted","kind","value"].includes(x)))
+      if(!body || Object.keys(body).some(x=>!["action","accepted","enabled","kind","value"].includes(x)))
         throw new AppError("INVALID_MEMORY_REQUEST",400);
       if(body.action==="consent" && Object.keys(body).every(x=>["action","accepted"].includes(x)))
         data=await consentToAgentMemory(config,actor,body.accepted);
+      else if(body.action==="use" && Object.keys(body).every(x=>["action","enabled"].includes(x)))
+        data=await configureOwnAgentMemoryUse(config,actor,body.enabled);
       else if(body.action==="set" && Object.keys(body).every(x=>["action","kind","value"].includes(x)))
         data=await saveOwnAgentMemory(config,actor,body.kind,body.value);
       else if(body.action==="remove" && Object.keys(body).every(x=>["action","kind"].includes(x)))
