@@ -686,7 +686,7 @@ export function HolisticSupportInlineGuide({
         <HolisticLanguageConversation locale={locale}
           seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)}
           videos={videos} tests={guideTests} enabledFormats={languageFormats}
-          onVideo={onVideo}/>
+          onVideo={onVideo} active={freeMode}/>
       </div>
       {!freeMode ? <>
       <div className={styles.dialogue}>
