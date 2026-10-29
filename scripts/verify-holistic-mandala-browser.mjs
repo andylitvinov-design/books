@@ -91,20 +91,32 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // New Talisman-style controls drive the same local renderer and settings.
         const catalog=page.locator("[data-video-catalog]");
         await catalog.waitFor({state:"visible"});
-        assert.equal(await catalog.locator("[data-video-category]").count(),5);
+        assert.equal(await catalog.locator("[data-video-category]").count(),6);
         assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
         await page.locator('[data-video-category="health"]').click();
         assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
         assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
-        assert.equal(await page.locator("[data-video-style]").inputValue(),"gentle-shield");
+        assert.equal(await page.locator("[data-video-style]").inputValue(),"calm-sea");
         await page.locator("[data-video-motion]").selectOption("dynamic");
         await page.locator("[data-video-length]").selectOption("30");
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        // Energy must play decoded Full HD MP4, not a still Canvas artwork.
+        await page.locator('[data-video-category="energy"]').click();
+        const energyTile=page.locator('[data-video-template="solar-surge"]');
+        await energyTile.click();
+        const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
+        assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
+        await page.waitForFunction(() => {
+          const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
+          return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
+        },undefined,{timeout:30000});
+        await page.locator('[data-video-category="life"]').click();
+        assert.equal(await page.locator('[data-video-style]').inputValue(),"wildflower-dance");
         await page.locator('[data-video-category="energy"]').click();
         await page.locator("[data-video-style]").selectOption("green-vortex");
         assert.equal(await page.locator('[data-video-template="green-vortex"]').getAttribute("aria-pressed"),"true");
         const categoryControls=page.locator("[data-video-theme]");
-        assert.equal(await categoryControls.count(),4,"exactly four actual themes");
+        assert.equal(await categoryControls.count(),6,"six actual movie themes");
         for(const id of ["money","energy","relationships","goals"]){
           await page.locator("[data-video-theme-toggle]").click();
           assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"true");
@@ -195,7 +207,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
-          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
+          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 16);
           const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
           await infinity.click();
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
@@ -206,6 +218,54 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        // Eight resource-imagery sessions stay within this ONE video editor.
+        // Browsing and planning do not send saved tests or call a provider.
+        const guided=page.locator("[data-video-guided-course]");
+        await guided.waitFor({state:"visible",timeout:12000});
+        assert.equal(await page.locator("[data-video-personal-pick]").count(),1);
+        assert.equal(await page.locator("[data-video-goal-accents]").count(),1);
+        assert.equal(await page.locator("[data-guided-profile-consent]").count(),0,
+          "private profile consent remains unmounted before opening goals");
+        assert.equal(await page.locator("[data-guided-profile-import]").count(),0,
+          "private test access remains hidden before choosing goals");
+
+        // Public iPhone control E2E: local affirmations change the live preview
+        // and are included by the same canvas renderer in final recordings.
+        const affirmationsPanel = page.locator("[data-video-affirmations]");
+        await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
+        // A short, scannable mobile panel: longer controls are collapsed until asked for.
+        assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
+        assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
+        assert.ok((await affirmationsPanel.locator('[data-video-affirmation-preset="0"]').innerText()).length<=26);
+        const collapsedHeight=await affirmationsPanel.evaluate(el=>el.getBoundingClientRect().height);
+        assert.ok(collapsedHeight<650, engine+" "+locale+" "+width+"px panel too tall: "+collapsedHeight);
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        await page.locator("[data-video-affirmations-enable]").check();
+        await page.locator('[data-video-affirmation-preset="3"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-preset="3"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-affirmations-settings] summary").click();
+        assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),"");
+        await page.locator('[data-video-affirmation-density="high"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-affirmation-frequency="3"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-frequency="3"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-affirmation-visibility="small"] input').check();
+        await page.locator('[data-video-affirmation-visibility="frame"] input').check();
+        assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
+        await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
+        await page.locator("[data-video-affirmations-custom] summary").click();
+        await page.locator("[data-video-custom-affirmations]").fill("I choose a small, kind step");
+        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/5.*phrases|5.*фраз|5.*frases/i);
+        assert.equal(await page.locator("[data-video-personal-suggest]").count(),1);
+        await page.locator("[data-video-goals-toggle]").click();
+        assert.equal(await page.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"true");
+        await page.locator('[data-video-goal="recovery"]').click();
+        await page.locator('[data-video-goal="clarity"]').click();
+        assert.equal(await page.locator('[data-video-goal="recovery"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-goals-apply]").click();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.
@@ -277,6 +337,57 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           }
           assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
+        }
+
+        // A free guided-imagery first video uses the REAL first-party meadow
+        // MP4 and personal goal affirmations, then the SAME local recorder and
+        // downloadable playable media as the existing video studio.
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          await page.locator("[data-video-goal-accents]").click();
+          const goals=page.locator("[data-video-goals-filter]");
+          await goals.waitFor({state:"visible"});
+          assert.equal(await goals.locator("[data-guided-goal]").count(),6);
+          assert.equal(await page.locator("[data-guided-profile-consent]").isChecked(),false,
+            "private profile access is strictly opt-in even after opening goals");
+          assert.equal(await page.locator("[data-guided-profile-import]").isDisabled(),true,
+            "saved scores require explicit consent");
+          await goals.locator('[data-guided-goal="relationships"]').click();
+          assert.equal(await goals.locator('[data-guided-goal="relationships"]').getAttribute("aria-pressed"),"true");
+          await page.locator("[data-guided-create-plan]").click();
+          assert.equal(await page.locator("[data-guided-session]").count(),8);
+          assert.equal(await page.locator("[data-guided-free-video]").count(),1);
+          assert.equal(await page.locator("[data-guided-score-provenance]").count(),0,
+            "no private profile imported without consent");
+          await page.locator("[data-guided-free-video]").click();
+          await page.waitForFunction(()=>{
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            const generate=document.querySelector("[data-mandala-video-generate]");
+            return master?.getAttribute("src")?.endsWith("/meadow-morning.mp4")
+              && master.readyState>=2 && Boolean(generate && !generate.disabled);
+          },undefined,{timeout:30000});
+          assert.equal(await page.locator('[data-video-duration="60"]').getAttribute("aria-pressed"),"true",
+            "default guided course length is 60 seconds");
+          assert.equal(await page.locator("[data-mandala-output-mode] button").nth(1)
+            .getAttribute("aria-pressed"),"true");
+          assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
+            /Я открыт общению|границы|Я достоин/);
+          // Keep automated media verification bounded at 10s; the default
+          // 60-second duration is verified above and remains available to users.
+          await page.locator('[data-video-duration="10"]').click();
+          await create.click();
+          const guidedDownload=page.locator("[data-mandala-video-download]");
+          await guidedDownload.waitFor({state:"visible",timeout:35000});
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:15000}),guidedDownload.click(),
+          ]);
+          const bytes=await bufferFromStream(await download.createReadStream());
+          assert.ok(bytes.length>10000,"free symbolic meadow movie has encoded bytes");
+          const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+            "-of","json","-"],{input:bytes,encoding:"utf8"});
+          assert.equal(probe.status,0,"guided free video decodes: "+(probe.stderr||""));
+          assert.ok(JSON.parse(probe.stdout).streams.some(row=>row.codec_type==="video"),
+            "guided video has a real moving video track");
+          assert.deepEqual(uploaded,[],"no private tests, portraits or audio were POSTed");
         }
 
         // A second real browser recording tests the reusable atmospheric

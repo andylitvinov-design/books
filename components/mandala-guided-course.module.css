@@ -1,0 +1,66 @@
+/* New guided-imagery programme belongs to the original Holistic House
+   cream / emerald video studio. No separate editor or generic dashboard. */
+.panel{margin:15px 0;padding:clamp(12px,3vw,19px);border:1px solid #cde3d4;border-radius:22px;background:#fffdf6;color:#234e3c;box-shadow:0 5px 18px rgb(24 75 51 / 5%);min-width:0}
+.header{display:flex;align-items:center;gap:10px;min-width:0}
+.emblem{display:grid;place-items:center;flex:none;width:38px;height:38px;background:#e5f5e9;color:#078662;border:1px solid #a6d8be;border-radius:13px}
+.heading{min-width:0}.heading small{display:block;color:#5e8670;font-size:10px;font-weight:800;letter-spacing:.085em}
+.heading h3{font-size:clamp(19px,4.2vw,25px);line-height:1.2;font-weight:800;letter-spacing:-.025em;color:#174c3a;margin:3px 0}
+.intro{font-size:13px;line-height:1.5;color:#526b5d;margin:9px 0 14px}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.actions button,.planButton,.profileActions button,.goalChips button,.apply,.secondaryActions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:44px;padding:9px 11px;border:1px solid #c5d9cc;background:#f5faf4;border-radius:12px;color:#295a43;font-size:12px;line-height:1.35;font-weight:750;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.actions button svg,.planButton svg,.goalChips svg,.profileActions svg,.apply svg,.secondaryActions svg{flex:none}
+.actions .primary,.planButton,.apply{background:#087e5e;color:white;border-color:#087e5e}
+.actions button:disabled,.planButton:disabled,.profileActions button:disabled,.apply:disabled{opacity:.52;cursor:not-allowed}
+.actions button:focus-visible,.planButton:focus-visible,.profileActions button:focus-visible,.goalChips button:focus-visible,.apply:focus-visible,.secondaryActions button:focus-visible,.consent input:focus-visible,.script summary:focus-visible{outline:3px solid #42b997;outline-offset:2px}
+.goalsPanel{margin-top:12px;padding:12px;border:1px solid #d4e6d8;border-radius:16px;background:#f6faf4;min-width:0}
+.goalsPanel>strong{font-size:14px;line-height:1.4;color:#234b37}
+.goalsPanel>p{margin:6px 0 9px;color:#587765;font-size:12px;line-height:1.4}
+.goalChips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.goalChips button{padding:7px;min-height:44px;font-size:12px}
+.goalChips button[aria-pressed=true]{color:#fff;background:#087e5e;border-color:#087e5e}
+.consent{display:flex;gap:9px;align-items:flex-start;margin:13px 0 10px;padding:11px;border-radius:12px;background:#fff;cursor:pointer;font-size:12px;line-height:1.45;color:#345645}
+.consent input{flex:none;margin:2px 0 0;width:18px;height:18px;accent-color:#087e5e}
+.profileActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px}
+.profileActions button{background:#fdf9e9;min-height:40px}
+.profileActions small{font-size:11px;line-height:1.4;color:#6c755e;flex:1 1 145px}
+.goalsPanel a{font-size:12px;color:#087e5e;font-weight:800;text-decoration:underline}
+.suggestions{margin:10px 0;padding:10px;border:1px solid #c7dfc9;border-radius:12px;background:#ecf5ea;display:grid;gap:7px}
+.suggestions>small{font-size:11px;line-height:1.4;color:#54765c}
+.suggestions>div{display:flex;flex-wrap:wrap;gap:5px}
+.suggestions>div>span{background:#fffdf7;border:1px solid #d4e5d3;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:750;color:#2e654a}
+.suggestions>button{justify-self:start;min-height:42px;padding:7px 12px;background:#087e5e;border:1px solid #087e5e;color:white;font-size:12px;font-weight:800;border-radius:11px;cursor:pointer}
+.suggestions>button:focus-visible{outline:3px solid #42b997;outline-offset:2px}
+.sources{padding-left:20px;list-style:disc;max-width:100%;overflow-wrap:anywhere;margin:10px 0 6px;font-size:11px;line-height:1.5;color:#537261}
+.sources li{list-style:disc}.self{display:block;color:#687d6b;line-height:1.4;margin-top:10px;font-size:11px}
+.planButton{width:100%;margin:13px 0 0;font-size:13px;min-height:46px}
+.programme{padding-top:14px;min-width:0}
+.programme>h4,.package h4{margin:0 0 12px;font-size:16px;line-height:1.3;color:#174c3a}
+.sessionList{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.sessionCard{min-width:0;padding:12px;border:1px solid #dde8df;border-radius:15px;background:#fff}
+.sessionHeader{display:grid;grid-template-columns:33px minmax(0,1fr) 18px;align-items:flex-start;gap:9px}
+.number{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#e7f4e9;color:#087e5e;font-size:14px;font-weight:850}
+.sessionHeader small{display:block;color:#607c66;font-size:11px}
+.sessionHeader h5{margin:3px 0 3px;color:#25563f;font-size:14px;line-height:1.25;font-weight:800}
+.sessionHeader p{margin:0;color:#64806e;font-size:12px;line-height:1.3}
+.sessionHeader>svg{color:#69977d}
+.first{margin:13px 0 0 0;border-top:1px solid #e0eae2;padding-top:12px}
+.free{display:inline-block;padding:4px 8px;border-radius:99px;background:#e6f2df;color:#426c31;font-size:11px;font-weight:800}
+.first>p{font-size:12px;line-height:1.55;color:#486655}
+.apply{margin-top:3px;min-height:45px;width:100%}
+.help{color:#547a68!important;font-size:11px!important}
+.script{margin-top:9px;border:1px solid #d8e5da;border-radius:11px;padding:9px 11px;color:#2c6048}
+.script summary{cursor:pointer;font-size:12px;font-weight:800}
+.script p{white-space:pre-wrap;color:#345946;font-size:12px;line-height:1.65}
+.secondaryActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.secondaryActions button{font-size:11px;min-height:43px}
+.first>small{display:block;margin-top:7px;font-size:11px;color:#69806d;line-height:1.4}
+.locked{margin:10px 0 0 42px;font-size:11px;color:#7a806f}
+.package{margin-top:14px;padding:15px;background:#f1f7ef;border:1px solid #cfe1ce;border-radius:15px}
+.package p{font-size:12px;color:#476854;line-height:1.5;margin:0 0 10px}
+.package a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
+.safeguard{padding:11px 12px;background:#fbf4e8;border-radius:13px;font-size:12px;line-height:1.5;color:#82633e}
+.privacy{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#5a806d;font-size:11px;line-height:1.5}
+.privacy svg{flex:none;margin-top:1px;color:#218564}
+@media(max-width:360px){.panel{padding:11px}.actions button{font-size:11px;padding:8px 6px}.goalChips{grid-template-columns:repeat(2,minmax(0,1fr))}.secondaryActions button{font-size:10.5px}}
+@media(min-width:740px){.sessionList{grid-template-columns:repeat(2,minmax(0,1fr))}.sessionCard:first-child{grid-column:1/-1}.actions{max-width:530px}}
+@media(prefers-reduced-motion:reduce){.panel button,.panel a{transition:none}}

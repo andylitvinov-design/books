@@ -3,167 +3,166 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
 import { getTopicJourney } from "../lib/assessments/topic-journeys.js";
-import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat }
-  from "../lib/holistic-support/guide-dialogue.mjs";
+import { interpretSupportUtterance } from "../lib/holistic-support/guide-dialogue.mjs";
 
-const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const parent = read("components/holistic-support-mobile.tsx");
-const guide = read("components/holistic-support-inline-guide.tsx");
-const css = read("components/holistic-support-inline-guide.module.css");
-const mainCss = read("components/holistic-support-mobile.module.css");
+const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
+const parent=read("components/holistic-support-mobile.tsx");
+const guide=read("components/holistic-support-inline-guide.tsx");
+const css=read("components/holistic-support-inline-guide.module.css");
+const page=read("app/[locale]/holistic-support/mobile/page.tsx");
+const source=read("lib/assessments/support-guide-tests.js");
 
-test("guide is optional, within existing three-column layout rather than duplicate app", () => {
-  for (const text of ["className={styles.topGrid}", "className={styles.assessment}",
-    "className={styles.profile}", "className={styles.tools}",
-    "data-support-recommendations", "data-support-mobile-bottom-nav"]) assert.ok(parent.includes(text), text);
+test("original four-scale three-column dashboard and lower player stay intact",()=>{
+  for(const value of ["className={styles.topGrid}","className={styles.assessment}",
+    "className={styles.profile}","className={styles.tools}","data-support-recommendations",
+    "data-support-mobile-bottom-nav","support-meditation-player","support-healing-panel"]) assert.ok(parent.includes(value),value);
+  assert.match(parent, /const checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
   assert.match(parent, /guideOpen && !goalFilterOpen \? <HolisticSupportInlineGuide/);
   assert.match(parent, /onClick=\{onRecommendations\}/);
-  assert.match(parent, /setGuideOpen\(true\)/);
-  assert.match(parent, /onClose=\{\(\) => setGuideOpen\(false\)\}/);
-  assert.doesNotMatch(parent, /data-support-journey-step="[1-5]"/);
+  assert.doesNotMatch(parent,/data-support-journey-step="[1-5]"/);
 });
 
-test("starting context honors the goal filter then only four real user-edited domain ratings", () => {
-  assert.ok(guide.indexOf("if (goal)") < guide.indexOf("if (editedCheckins.length)"));
-  assert.match(guide, /summarizeGoalSelection\(locale, goal\)/);
-  assert.match(guide, /Math\.min\(\.\.\.editedCheckins\.map\(id => scores\[id\]\)\)/);
-  assert.match(guide, /if \(low\.length !== 1\)/);
-  assert.match(guide, /phase: "topic" as Phase, message: t\.noData/);
-  assert.match(parent, /setEditedCheckins\(previous => previous\.includes\(id\)/);
-  assert.match(parent, /checkinOrder\.map\(id =>/);
-  assert.match(parent, /onCheckinChange\(id, Number\(event\.target\.value\)\)/);
-  assert.match(guide, /type CheckinArea = Exclude<Focus, "goals"> \| "meaning"/);
-  assert.match(guide, /meaning: "Смыслы"/);
-  assert.match(parent, /setGuideVersion\(previous => previous \+ 1\); setGuideOpen\(true\)/);
-  assert.ok(guide.includes("По заполненному фильтру целей"));
+test("intro greets visitor without pretending private tests are readable",()=>{
+  assert.match(guide,/journey\.hi/);
+  assert.match(guide,/Рада тебя видеть/);
+  assert.match(guide,/if \(goal\)/);
+  assert.ok(guide.indexOf("if (goal)")<guide.indexOf("if (editedCheckins.length)"));
+  assert.match(guide,/Math\.min\(\.\.\.editedCheckins\.map\(id => scores\[id\]\)\)/);
+  assert.match(guide,/if \(low\.length !== 1\)/);
+  assert.match(guide,/phase: "topic" as Phase, message: t\.noData/);
+  assert.match(guide,/noPersonalData/);
+  assert.match(parent,/setEditedCheckins\(previous => previous\.includes\(id\)/);
+  assert.match(parent,/onCheckinChange\(id, Number\(event\.target\.value\)\)/);
 });
 
-test("same portrait on left, persistent scrolling WhatsApp-like messages on right, not new page", () => {
-  assert.match(guide, /data-support-guide-fixed-portrait/);
-  assert.match(guide, /support-reference-avatar\.webp/);
-  assert.match(guide, /className=\{styles\.thread\} ref=\{threadRef\}/);
-  assert.match(guide, /role="log" aria-label=\{t\.title\} aria-live="polite"/);
-  assert.match(guide, /el\.scrollTop = el\.scrollHeight/);
-  assert.match(guide, /\{ role: "user", text: answer \}, \{ role: "guide", text: reply \}/);
-  assert.match(css, /\.dialogue\s*\{\s*display:\s*grid; grid-template-columns:\s*90px minmax\(0, 1fr\)/);
-  assert.match(css, /\.thread\s*\{\s*display:\s*flex; flex-direction: column/);
-  assert.match(css, /overflow-y: auto; overflow-x: hidden/);
-  assert.match(css, /\.bubbleUser\s*\{\s*animation: guide-message-in/);
-  assert.match(css, /\.bubbleGuide\s*\{\s*animation: guide-message-in/);
-  assert.match(css, /@media \(max-width: 340px\)/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
+test("left avatar stays fixed and WhatsApp-like dialogue history scrolls inside the card",()=>{
+  assert.match(guide,/data-support-guide-fixed-portrait/);
+  assert.match(guide,/support-reference-avatar\.webp/);
+  assert.match(guide,/className=\{styles\.thread\} ref=\{threadRef\}/);
+  assert.match(guide,/node\.scrollTop=node\.scrollHeight/);
+  assert.match(guide,/role="log" aria-label=\{t\.title\} aria-live="polite"/);
+  assert.match(guide,/setMessages\(prev=>\[\.\.\.prev,\.\.\.pair\]\.slice\(-42\)\)/);
+  assert.match(css,/\.dialogue \{ display: grid; grid-template-columns: 100px minmax\(0,1fr\)/);
+  assert.match(css,/overflow-y: auto; overflow-x: hidden/);
+  assert.match(css,/@media \(max-width: 340px\)/);
+  assert.match(css,/prefers-reduced-motion: reduce/);
 });
 
-test("assistant adapts questions to answers; at any step user can type, ask or change topic", () => {
-  for (const phase of ['"review"','"topic"','"need"','"detail"','"time"','"format"','"confirm"','"recommendations"','"safety"'])
-    assert.ok(guide.includes(phase), phase);
-  for (const key of ["energy", "money", "love", "meaning"])
-    assert.match(guide, new RegExp('"' + key + '"'));
-  for (const format of ["meditation","tests","courses","consultation","healing","mandala"])
-    assert.match(guide, new RegExp('"' + format + '"'));
-  assert.match(guide, /talk\.detailOptions\[topic\]\.map/);
-  assert.match(guide, /t\.needs\[topic\]\.map/);
-  assert.match(guide, /talk\.detailAck/);
-  assert.match(guide, /interpretSupportUtterance\(value, locale\)/);
-  assert.match(guide, /maxLength=\{240\}/);
-  assert.match(guide, /onSubmit=\{event => \{ event\.preventDefault\(\); submitText\(draft\); \}\}/);
-  assert.match(guide, /onClick=\{changeTopic\}/);
-  assert.match(guide, /phase !== "safety"/);
-  assert.equal(interpretSupportUtterance("Почему именно эта тема?", "ru").question, "why");
-  assert.equal(interpretSupportUtterance("Хочу поговорить про отношения", "ru").topic, "love");
-  assert.equal(parseSupportMinutes("15 минут"), 15);
-  assert.equal(chooseSupportFormat({available:["tests","meditation"],minutes:5,need:"Больше энергии"}), "meditation");
+test("V2 conversational order is optional test, practice, feedback, then My Path",()=>{
+  for(const phase of ["review","topic","test-invite","test-pick","test-return","practice-invite",
+    "time","media-pick","media-return","exercise","feedback","path-confirm","recommendations","safety"])
+    assert.ok(guide.includes('"'+phase+'"'),phase);
+  assert.match(guide,/data-guide-open-test-choice/);
+  assert.match(guide,/data-guide-skip-test/);
+  assert.match(guide,/data-guide-test-options/);
+  assert.match(guide,/data-guide-continue-after-test/);
+  assert.match(guide,/data-guide-go-meditations/);
+  assert.match(guide,/data-guide-short-practice/);
+  assert.match(guide,/data-guide-media-options/);
+  assert.match(guide,/data-guide-inline-practice/);
+  assert.match(guide,/data-guide-self-report-watched/);
+  assert.match(guide,/data-support-guide-show-recommendations/);
+  assert.match(guide,/phase==="recommendations"/);
+  assert.match(guide,/data-support-guide-recommendation/);
+  assert.match(guide,/data-support-guide-program/);
+  assert.match(guide,/data-support-guide-recommendations/);
+  assert.ok(guide.indexOf('phase==="path-confirm"')<guide.indexOf('phase==="recommendations"'),
+    "final path requires explicit confirmation");
 });
 
-test("empty goal filter formats show a visible explanation before any suggestion", () => {
-  assert.match(guide, /goalSelection\?\.recommendationFormats\?\.length === 0/);
-  assert.match(guide, /message: result\.message \+ " " \+ conversation\[locale\]\.emptyFormat/);
-  assert.match(guide, /available\.length \? available\.map/);
-  assert.match(guide, /talk\.emptyFormat/);
+test("test suggestions come from genuine published rights-cleared short items",()=>{
+  assert.match(page,/buildSupportGuideTestShortlists\(\{ locale \}\)/);
+  assert.match(parent,/guideTests=\{guideTests\}/);
+  for(const term of [
+    "buildExplorerEntries", "rankPublicTestMatches", "item?.selectable === true",
+    "item?.startable === true", "item?.guestEligible === true", "item?.free === true",
+    "item?.rightsStatus === 'cleared'", "item?.explicitOptIn !== true",
+    "item.durationMinutes <= 3", "const candidates = topical",
+  ]) assert.ok(source.includes(term),term);
+  assert.match(source,/slice\(0,2\)/);
+  assert.match(source,/\/client\?startTests=/);
+  assert.match(guide,/data-guide-test-card=\{item\.key\}/);
+  assert.match(guide,/href=\{item\.href\} target="_blank" rel="noopener noreferrer"/);
+  assert.match(guide,/journey\.testOpened/);
+  assert.match(guide,/journey\.waitingHint/);
+  assert.doesNotMatch(guide,/testCompleted\s*=\s*true|saveTestResult\(|onTestCompleted\(\)/);
 });
 
-test("recommendation cards become visible ONLY after explicit final user confirmation", () => {
-  assert.match(guide, /phase === "confirm" \? \(/);
-  assert.match(guide, /data-support-guide-show-recommendations/);
-  assert.match(guide, /function showRecommendations\(\)/);
-  assert.match(guide, /"recommendations"\)/);
-  assert.match(guide, /phase === "recommendations" \? \(/);
-  assert.match(guide, /data-support-guide-recommendations ref=\{resultsRef\}/);
-  assert.match(guide, /data-support-guide-recommendation/);
-  assert.match(guide, /data-support-guide-alternative=\{item\.id\}/);
-  assert.match(guide, /data-support-guide-program/);
-  assert.match(guide, /window\.requestAnimationFrame/);
-  assert.match(guide, /resultsRef\.current\?\.scrollIntoView/);
-  assert.match(css, /\.recommendations\s*\{\s*display:\s*grid/);
-  assert.match(guide, /t\.planContinueText/);
-  assert.doesNotMatch(parent, /data-support-journey-step/);
+test("published videos only, playback requires a separate explicit Play, no invented runtime",()=>{
+  assert.match(guide,/videoThemes\[topic\]\.some\(tag=>v\.topics\.includes\(tag\)\)/);
+  assert.match(guide,/\.slice\(0,3\)/);
+  assert.match(guide,/encodeURIComponent\(item\.id\)/);
+  assert.match(guide,/data-guide-media-card=\{item\.id\}/);
+  assert.match(guide,/data-guide-watch-video=\{item\.id\}/);
+  assert.match(guide,/onVideo\(id\)/);
+  assert.match(parent,/setSelectedId\(id\); setPlaying\(false\)/);
+  assert.match(guide,/journey\.timeNote/);
+  assert.match(guide,/journey\.noAutoplay/);
+  assert.match(guide,/journey\.mediaWait/);
 });
 
-test("recommendation UX keeps one primary CTA, relevant alternatives, and honest timing", () => {
-  assert.match(guide, /data-support-guide-primary-title/);
-  assert.match(guide, /data-support-guide-context/);
-  assert.match(guide, /data-support-guide-time-preference/);
-  assert.match(guide, /data-support-guide-fit-note/);
-  assert.match(guide, /t\.ux\.supportFit/);
-  assert.match(guide, /t\.ux\.benefit\[format\]/);
-  assert.match(guide, /t\.ux\.durationWarning/);
-  assert.match(guide, /const alternativeOrder: Format\[\] = topic === "money"/);
-  assert.match(guide, /item\.id !== "meditation" \|\| !!selectedVideo/);
-  assert.match(guide, /t\.ux\.firstAction\[format\]/);
-  assert.match(guide, /className=\{styles\.progressTrack\}/);
-  assert.match(css, /scroll-margin-top:\s*calc\(108px \+ env\(safe-area-inset-top/);
-  assert.match(css, /\.alternative\s*\{\s*display: grid; grid-template-columns:/);
-  assert.doesNotMatch(guide, /t\.formatLabels\[format\] — \{need\}/);
-  for (const phrase of [
-    "An enquiry is not a booking", "Заявка не означает запись", "Una solicitud no es una reserva",
-    "Timing and terms must be confirmed", "Время и условия согласуются отдельно",
-  ]) assert.ok(guide.includes(phrase), phrase);
+test("free text, topic changes and unknown questions never force an AI call or a booking",()=>{
+  assert.match(guide,/interpretSupportUtterance\(text,locale\)/);
+  assert.match(guide,/intent\.kind==="switch-topic"/);
+  assert.match(guide,/intent\.kind==="safety"/);
+  assert.match(guide,/data-support-guide-compose/);
+  assert.match(guide,/maxLength=\{240\}/);
+  assert.match(guide,/setPhase\(next\)/);
+  assert.match(guide,/onChoice\(kind==="healing"\?"healing":"consultation"\)/);
+  assert.match(guide,/journey\.noPersonalData/);
+  assert.equal(interpretSupportUtterance("Другая тема","ru").kind,"switch-topic");
+  assert.equal(interpretSupportUtterance("Хочу Рейки","ru").format,"healing");
+  assert.doesNotMatch(guide,/fetch\(|autoplay=1|localStorage|sessionStorage|sendBeacon|\/api\/payments\/charge/);
 });
 
-test("recommendations use published video IDs and existing verified routes; no autoplay/booking", () => {
-  assert.match(guide, /videos\.find\(item => \/\^\[A-Za-z0-9_-\]\{11\}/);
-  assert.match(guide, /encodeURIComponent\(selectedVideo\.id\)/);
-  assert.match(guide, /onVideo\(selectedVideo\.id\)/);
-  assert.match(guide, /\/client\/tests\?journey=/);
-  for (const id of ["energy", "business", "relationships", "effectiveness"]) assert.ok(getTopicJourney(id));
-  for (const dest of ["/explore/business", "/academy", "/holistic-support/mandala"]) assert.ok(guide.includes(dest));
-  assert.match(guide, /onChoice\(kind === "healing" \? "healing" : "consultation"\)/);
-  assert.match(parent, /setSelectedId\(id\); setPlaying\(false\)/);
-  assert.doesNotMatch(guide, /autoplay=1|fetch\(|localStorage|sessionStorage|sendBeacon\(|\/api\/create-booking/);
+test("real optional next-step routes use established test explorer, academy and studio",()=>{
+  for(const id of ["energy","business","relationships","effectiveness"])assert.ok(getTopicJourney(id));
+  assert.match(guide,/client\/tests\?journey=/);
+  assert.match(guide,/\/explore\/business/);
+  assert.match(guide,/\/academy/);
+  assert.match(guide,/\/holistic-support\/mandala/);
+  assert.match(guide,/t\.formatLabels\[x\.id\]/);
 });
 
-test("privacy, non-clinical explanations and EN/RU/ES support are explicit", () => {
-  for (const l of ["en", "ru", "es"]) assert.match(guide, new RegExp("^  "+l+": \\{", "m"));
-  for (const phrase of ["not a diagnosis", "не диагноз", "no es un diagnóstico"]) assert.ok(guide.includes(phrase));
-  assert.match(guide, /t\.private/);
-  assert.match(guide, /talk\.identityAnswer/);
-  assert.match(guide, /talk\.safetyAnswer/);
-  assert.match(css, /:focus-visible/);
-  assert.match(css, /min-height: 44px/);
+test("localized stage messages are available EN/RU/ES; mobile buttons and accessibility remain",()=>{
+  for(const locale of ["en","ru","es"]){
+    assert.match(guide,new RegExp("^  "+locale+": \\{","m"));
+  }
+  for(const sentence of ["Hi! So good to see you","Привет! Рада тебя видеть","¡Hola! Me alegra verte"])
+    assert.ok(guide.includes(sentence),sentence);
+  assert.match(guide,/journey\.questionWhy/);
+  assert.match(guide,/journey\.missingTests/);
+  assert.match(guide,/journey\.finalAsk/);
+  assert.match(guide,/role="log"/);
+  assert.match(css,/min-height: 44px/);
+  assert.match(css,/:focus-visible/);
 });
 
-test("both TSX components parse without syntax diagnostics", () => {
-  for (const [fileName, source] of [["holistic-support-mobile.tsx", parent], ["holistic-support-inline-guide.tsx", guide]]) {
-    const result=ts.transpileModule(source,{fileName,reportDiagnostics:true,
+test("all touched TSX modules parse",()=>{
+  for(const [path,text] of [
+    ["components/holistic-support-inline-guide.tsx",guide],
+    ["components/holistic-support-mobile.tsx",parent],
+    ["app/[locale]/holistic-support/mobile/page.tsx",page]
+  ]){
+    const out=ts.transpileModule(text,{fileName:path,reportDiagnostics:true,
       compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}});
-    const errors=(result.diagnostics??[]).filter(x=>x.category===ts.DiagnosticCategory.Error);
-    assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText," ")),[],fileName);
+    const errors=(out.diagnostics||[]).filter(x=>x.category===ts.DiagnosticCategory.Error);
+    assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText," ")),[],path);
   }
 });
 
-test("current four-domain mobile header remains wide, compact and touch-safe", () => {
-  assert.ok(parent.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'));
-  assert.match(parent, /checkinOrder\.map\(id =>/);
-  assert.doesNotMatch(parent, /energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5/);
-  assert.ok(mainCss.indexOf("The real iPhone three-column row") >
-    mainCss.indexOf("Restore the original broad"), "latest compact override wins");
-  assert.match(mainCss, /\.page \.tools \.toolGrid \{ grid-template-rows: repeat\(2, minmax\(0, 68px\)\); \}/);
-  assert.match(mainCss, /\.page \.tools \.toolButton:last-child \{[\s\S]*?min-height: 68px;/);
-  for (const selector of [
-    "minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr)",
-    "minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr)",
-    "grid-template-rows: 14px 18px; min-height: 33px",
-    "grid-template-rows: 12px 17px; min-height: 30px",
-    ".page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }",
-  ]) assert.ok(mainCss.includes(selector), selector);
+test("V2 compact recommendation preserves real resource and distinguishes time preference from confirmed length",()=>{
+  for(const marker of ["data-support-guide-primary-title","data-support-guide-context","data-support-guide-time-preference",
+    "data-support-guide-fit-note","t.ux.benefit[format]","t.ux.durationWarning","data-support-guide-program"])
+    assert.ok(guide.includes(marker),marker);
+  for(const sentence of ["not the duration","не длительность","no es la duración"])
+    assert.ok(guide.includes(sentence),sentence);
+  assert.match(css,/\.resultTop\s*\{/);
+  assert.match(css,/\.context\s*\{/);
+  assert.match(css,/\.timeNote\s*\{/);
+  assert.match(guide,/phase==="recommendations"\s*\?\s*<p className=\{styles\.context\}/);
+  assert.match(guide,/data-guide-open-test-choice/);
+  assert.match(guide,/data-guide-go-meditations/);
+  assert.match(guide,/data-guide-self-report-watched/);
+  assert.doesNotMatch(guide,/autoplay=1|sendBeacon|localStorage/);
 });
