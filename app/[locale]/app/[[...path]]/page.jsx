@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { englishCabinetTarget } from '@/lib/app/spanish-cabinet-bridge.mjs'
 import AppWorkspace from '@/components/app/app-workspace'
 import './workspace.css'
 import './assessment-dashboard.css'
@@ -38,6 +39,13 @@ export async function generateMetadata({ params, searchParams }) {
 }
 export default async function AppPage({ params, searchParams }) {
   const { locale, path = [] } = await params
+  // Spanish Home Screen shortcuts use one verified EN/RU account until ES
+  // account/OAuth parity is ready. Keep the Spanish Messages route intact.
+  if (locale === 'es') {
+    const target = englishCabinetTarget(path, await searchParams)
+    if (!target) notFound()
+    redirect(target)
+  }
   if (!['en', 'ru'].includes(locale)) notFound()
   // Personal reports are the first stop in the signed-in Cabinet.
   if (path.length === 0) redirect('/' + locale + '/app/portrait')
