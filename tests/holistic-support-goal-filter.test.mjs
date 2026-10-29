@@ -34,10 +34,16 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(editor, /saveCurrent\(\)/);
   assert.match(editor, /nextSector\(\)/);
   const nextBody = editor.split("function nextSector() {")[1]?.split("function apply(")[0];
-  assert.ok(nextBody && nextBody.indexOf("saveCurrent();") < nextBody.indexOf("changeSector("),
+  assert.ok(nextBody, "Next transition handler must exist");
+  // Atomic Save + Next: assert the real snapshot, acceptance, parent callback
+  // and navigation happen in one React commit, with no bypass of consent.
+  assert.match(nextBody, /const snapshot = snapshotCurrent\(\);/);
+  assert.match(nextBody, /flushSync\(\(\) => \{[\s\S]*setAccepted\(previous => \(\{ \.\.\.previous, \[sector\]: snapshot \}\)\);[\s\S]*setDirty\(previous => \(\{ \.\.\.previous, \[sector\]: false \}\)\);[\s\S]*onSave\(sector, snapshot\);[\s\S]*setSector\(nextId\);/,
+    "WebKit must commit Accepted, notify the parent and switch categories atomically");
+  assert.ok(nextBody.indexOf("onSave(sector, snapshot)") < nextBody.indexOf("setSector(nextId)"),
     "Next must commit current sector before switching");
-  assert.match(nextBody, /flushSync\(\(\) => \{\s*saveCurrent\(\);\s*\}\)/,
-    "WebKit must see the accepted badge before Next switches sectors");
+  assert.doesNotMatch(nextBody, /changeSector\(/,
+    "Next cannot perform an additional unbatched category transition");
   assert.match(editor, /savedSectors: all/);
   assert.match(client, /goalSavedSectors/);
   assert.match(client, /onSave=\{saveGoalSector\}/);
