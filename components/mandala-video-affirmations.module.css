@@ -149,9 +149,10 @@
 }
 .goalsToggle[aria-expanded="true"] { background: #eaf7ee; border-color: #83c7a9; }
 .goalsToggle svg { flex: none; }
-/* The 320px RU layout previously measured 701px with the extra explanation.
-   Reduce non-interactive whitespace, not visibility or minimum tap targets. */
-@media (max-width: 360px) {
+/* The extra explanation exceeded the 650px compact-panel gate at 390px
+   (CI measured 690px), not just at 320px. Share the proven narrow spacing
+   through 430px without hiding explanations or shrinking 44px tap targets. */
+@media (max-width: 430px) {
   .panel { padding: 8px; margin: 8px 0; }
   .titleGroup h3 { font-size: 16px; }
   .hypnoIntro { padding: 7px 8px; margin: 5px 0 6px; }
