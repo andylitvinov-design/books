@@ -1,15 +1,18 @@
 name: HH Quest Validation
 on:
+  # Only a PR build for feature branches; never trigger duplicate push + PR jobs.
+  # After merge, verify the production commit through this same workflow.
   push:
     branches:
-      - codex/support-quest-seven-steps-20261028
+      - codex/public-book-library
   pull_request:
     branches:
       - codex/meditation-category-rail-20261028
       - codex/public-book-library
+      - codex/public-book-library
 concurrency:
   # Cancel stale queued checks after each reviewed PR update; save runner minutes.
-  group: hh-support-quest-${{ github.workflow }}-${{ github.ref }}
+  group: hh-support-quest-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   focused-quest:
