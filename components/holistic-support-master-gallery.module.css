@@ -739,6 +739,19 @@
 }
 .reikiStage[data-active-tab="main"] .reikiStageContent { order: 1; min-height: 285px; align-items: flex-end; }
 .reikiStage[data-active-tab="main"] .reikiStageTabs { order: 0; margin-top: 0; }
+/* The filter ACTION itself sits just below the tabs at the photo's top, not on the lower portrait. */
+.viewer[data-support-directory-kind="healing"] .reikiStageTopFilter {
+  position: absolute; z-index: 3; top: 77px; left: 19px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; max-width: calc(100% - 38px); padding: 8px 12px;
+  color: #fff; background: #057e61e8; border: 1px solid #b7efdc;
+  border-radius: 13px; box-shadow: 0 3px 11px #042d2465;
+  font: 800 12px/1.16 Arial,Helvetica,sans-serif; cursor: pointer;
+}
+.reikiStageTopFilter svg { flex: none; }
+.viewer[data-support-directory-kind="healing"] .reikiStageTopFilter:focus-visible {
+  outline: 3px solid #f5cc81; outline-offset: 2px;
+}
 .reikiStage[data-active-tab="main"] .reikiTabCopy { max-width: min(72%,570px); gap: 10px; padding-bottom: 14px; }
 .reikiStage[data-active-tab="main"] .reikiTabCopy h2 { font-size: clamp(32px,4.2vw,48px); line-height: 1.06; }
 .reikiStage[data-active-tab="main"] .reikiTabCopy p { font-size: clamp(14px,1.85vw,18px); line-height: 1.32; }
@@ -790,6 +803,10 @@
   }
   .reikiStage[data-active-tab="main"] .reikiStageContent {
     order: 1; min-height: 280px; flex: 1 1 auto; overflow: visible;
+  }
+  .viewer[data-support-directory-kind="healing"] .reikiStageTopFilter {
+    top: 61px; left: 10px; max-width: calc(100% - 20px); min-height: 44px;
+    padding: 7px 11px; border-radius: 11px; font-size: 11.5px;
   }
   .reikiStage[data-active-tab="main"] .reikiTabCopy {
     width: 80%; max-width: 80%; gap: 7px; padding: 6px 0 10px;
