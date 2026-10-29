@@ -261,7 +261,7 @@ export function HolisticLanguageConversation({
         </button>
       </div>
     </form>
-    <HolisticAgentMemoryPanel locale={locale} onUse={setSavedMemory}/>
+    <HolisticAgentMemoryPanel locale={locale} onUse={rows=>{stopAnswer();setSavedMemory(rows);}}/>
     {modelExperiment ? <div className={styles.experiment} data-local-model-experiment>
       <p><Volume2 size={16} aria-hidden="true"/>{t.gpu}</p>
       <small>{t.pilot} {t.modelNotice}</small>
