@@ -45,7 +45,7 @@ export function GuestTestJourneyProgress({ locale = 'en', plan = null, definitio
         <strong>{finished ? c.allDone : `${c.test} ${metrics.position + 1} ${c.of} ${metrics.total}`}</strong>
         {activeTitle && !finished && <span className={styles.testName}>{activeTitle}</span>}
       </div>
-      <div className={styles.percent} aria-hidden="true"><strong>{metrics.percent}%</strong><span>{c.complete}</span></div>
+      <div className={styles.percent} style={{ '--hh-complete': metrics.percent + '%' }} aria-hidden="true"><strong>{metrics.percent}%</strong><span>{c.complete}</span></div>
     </div>
     <div className={styles.track} role="progressbar" aria-label={c.progress} aria-valuemin="0"
       aria-valuemax="100" aria-valuenow={metrics.percent}>
@@ -59,7 +59,8 @@ export function GuestTestJourneyProgress({ locale = 'en', plan = null, definitio
         return <li key={ids[index] || index} className={completed ? styles.done : current ? styles.current : styles.pending}
           aria-current={current ? 'step' : undefined}
           aria-label={`${c.test} ${index + 1} ${c.of} ${metrics.total}${title ? ': ' + title : ''}${completed ? ', ' + c.completed : ''}`}>
-          <span>{completed ? <Check size={13} aria-hidden="true" /> : index + 1}</span>
+          <span className={styles.stepDot}>{completed ? <Check size={15} aria-hidden="true" /> : index + 1}</span>
+          {metrics.total <= 4 && <small aria-hidden="true">{c.test} {index + 1}</small>}
         </li>
       })}
     </ol>
