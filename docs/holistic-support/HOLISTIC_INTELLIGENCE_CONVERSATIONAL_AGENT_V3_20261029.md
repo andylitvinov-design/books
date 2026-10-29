@@ -347,3 +347,26 @@ LLM не управляет каталогами, не ставит safety=clear
 - Vercel Function runtime: https://vercel.com/docs/functions/configuring-functions/duration
 
 **Недостаточный критерий:** наличие PR, типов, локальной генерации заглушек или README НЕ доказывает, что в production отвечает настоящая модель.
+
+
+## 14. Добавленный end-to-end preview (feature-gated, не public release)
+
+В stacked PR #2532 добавлены также:
+- app/api/holistic-agent/turn/route.js: private same-origin POST; verified Supabase Auth; existing account check; rate 10/min и 100/day; server-only safety preflight; публичный проверенный services catalog; отдельное согласие на owned inference; bounded Ollama request; no-store. Ответ без хранения.
+- components/holistic-agent-chat.tsx + CSS: RU/EN/ES, режимы rules / device / owned, явная опция серверной передачи, stop, карточки только из verified decision.
+- app/[locale]/holistic-support/agent/page.tsx: экспериментальная страница; по умолчанию 404 пока флаг UI не включён.
+
+Пример env для preview (значения токена/хоста определяет владелец):
+
+~~~text
+HH_AGENT_CHAT_ENABLED=true
+HH_AGENT_CHAT_UI_ENABLED=true
+HH_AGENT_OWNED_ENABLED=true
+HH_AGENT_OLLAMA_ENDPOINT=https://owned-agent.example.org/api/chat
+HH_AGENT_OLLAMA_MODEL=qwen3:4b
+HH_AGENT_OLLAMA_TOKEN=(server-only opaque secret >=20 chars)
+~~~
+
+Первые два флага открывают приватный pilot. Без HH_AGENT_OWNED_ENABLED и реального сервера owned inference не происходит; ответ deterministic. Для browser/device Native LanguageModel в Chrome используется только при доступности конкретного языка и железа. Он не является полноценной RU/mobile стратегией.
+
+**Важно:** этот preview ограничен authenticated users и не имеет долговременной памяти, streaming, видео-программ и UI управления согласиями на private test history. Авторизация, safety preflight, human red-team, full Next build, mobile E2E, реальная Ollama RU генерация и production READY НЕ подтверждены. Не включать оба UI/API флага на live до завершения release gates. Сканирование рисковых слов — только ранний защитный фильтр, НЕ полноценная клиническая оценка риска.
