@@ -1144,6 +1144,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing}
               onChange={event=>{
                 setSuggestion("");setPreviewPlaying(false);
+                // The style selector includes scenes beyond the first four tiles.
+                // Reveal the selected film in the existing gallery, including legacy looks.
+                setShowAllMoney(true);
                 if(theme==="money")setMoneyScene(event.currentTarget.value as MoneySceneId);
                 else {
                   const scene=event.currentTarget.value as LocalSceneId;
