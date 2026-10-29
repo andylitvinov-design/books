@@ -29,8 +29,6 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
-      - 'AGENTS.md'
-      - '.github/workflows/ia-v2.yml'
   workflow_dispatch:
 permissions:
   contents: read

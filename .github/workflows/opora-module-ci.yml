@@ -26,8 +26,6 @@ on:
       - 'middleware.ts'
       - 'package.json'
       - 'package-lock.json'
-      - 'AGENTS.md'
-      - '.github/workflows/opora-module-ci.yml'
 permissions:
   contents: read
 concurrency:

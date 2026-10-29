@@ -167,3 +167,25 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+
+test('policy-only YAML edits and AGENTS.md do not fan out into seven product acceptance suites', () => {
+  // A workflow definition is checked by the dedicated actionlint+core policy gates.
+  // A change to product, auth, billing, DB, test, or harness paths still exercises its suites.
+  const actionlint = workflow('hh-actionlint.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(actionlint, /^  pull_request:/m);
+  assert.match(actionlint, /^      - '\.github\/workflows\/\*\*'$/m);
+  assert.match(actionlint, /actionlint -color/);
+  assert.match(core, /^  pull_request:/m);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /node --test tests\/pr-fast-lane\.test\.mjs/);
+  for (const name of scoped) {
+    const s = workflow(name);
+    const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
+    const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+    assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
+    assert.ok(!patterns.includes('.github/workflows/' + name), name + ' must use core/actionlint for YAML-only changes');
+    assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
+    assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
+  }
+});

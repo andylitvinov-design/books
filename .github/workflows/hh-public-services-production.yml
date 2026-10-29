@@ -53,8 +53,6 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
-      - 'AGENTS.md'
-      - '.github/workflows/hh-public-services-production.yml'
 permissions:
   contents: read
 concurrency:

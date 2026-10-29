@@ -35,8 +35,6 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
-      - 'AGENTS.md'
-      - '.github/workflows/hh-app-browser.yml'
 permissions:
   contents: read
 concurrency:

@@ -21,8 +21,6 @@ on:
       - 'supabase/migrations/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'AGENTS.md'
-      - '.github/workflows/hh-interpretation-database.yml'
 permissions:
   contents: read
 concurrency:
