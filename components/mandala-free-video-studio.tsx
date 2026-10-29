@@ -731,7 +731,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // and final recording. A muted video may play on iPhone without audio
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
+    // WebKit may defer preload for the visually hidden first-party MP4.
+    // Explicitly start loading the new scene; never mark it ready until the
+    // browser has actually decoded a frame (loadeddata / canplay).
     setPremiumReady(false);
+    const master=premiumVideoRef.current;
+    if(activeFilm && master && master.readyState<2)master.load();
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
@@ -1051,6 +1056,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
         data-mandala-master-mp4={activeFilm.src}
+        onLoadedData={event=>{
+          if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
+            setPremiumReady(true);
+        }}
         onCanPlay={()=>setPremiumReady(true)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
