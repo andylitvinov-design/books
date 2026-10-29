@@ -23,7 +23,7 @@ These are simple navigational choices, NOT inferred personal health, financial o
 | Wave | Routes / components | Target change | Gate / dependency |
 | --- | --- | --- | --- |
 | 1, current PR | /en/about, /ru/about, /es/about, /{locale}/contact | Reusable 4-sphere pathway, shared warm public styling, preserve biography, media, forms, privacy notes | local source contracts + lint + typecheck + build + Chromium/WebKit 320/390/430 + preview + production SHA |
-| 2, pending | /{locale}/tests, /{locale}/client/tests, /{locale}/personality-profiles, signed-in My Tests/Insights | Guided test selection, post-test discussion, axes and honest recommendations, one canonical test engine | Reconcile active PRs #2482, #2485, #2486, #2487, #2489; no duplicates |
+| 1b, stacked PR | /{locale}/toronto | Existing Toronto personal-service landing: warm public shell and canonical four-sphere pathway while preserving original practitioner portrait, local SEO, free written-review and real messenger enquiry | Blocked by wave 1 merge; then Chromium/WebKit EN/RU/ES mobile, contact truth, CI, Preview, production readback |\n| 2, pending | /{locale}/tests, /{locale}/client/tests, /{locale}/personality-profiles, signed-in My Tests/Insights | Guided test selection, post-test discussion, axes and honest recommendations, one canonical test engine | Reconcile active PRs #2482, #2485, #2486, #2487, #2489; no duplicates |
 | 3, pending | /{locale}/services, /services/catalog, /services/*, /shop, /services/checkout, /thank-you | One service page language, server-confirmed lead flow and real order status | Coordinate with #990 CRM #985; preserve €50/30m and €100/60m only where applicable |
 | 4, pending | /{locale}/academy/*, /courses/*, /holistic-support/mobile, /holistic-support/mandala, My Courses | Single catalogue/lesson pattern, existing player and assets, real progress | Integrate #2467, #2483 then #2484; preserve private media and published course sources |
 | 5, pending | /library, /books, /articles/*, /masters/*, /events/*, /homeopathy, /wu-xing, /dao/*, /temple-insights | Common catalog/read/lesson shells without turning long text into cards | Preserve canonical SEO/hreflang, rights and existing source records |
@@ -43,3 +43,6 @@ Keep previous production deployment ID and commit before merge; rollback is to r
 
 ## Evidence ledger
 Wave 1 base at PR creation: a94efddc6b6c41c4d53dcee71b0d428a156d234e; Vercel READY matched that SHA. New PR/CI, Preview and exact LIVE verification must be appended only when obtained. No other wave is claimed complete by this document.
+
+### Wave 1b change isolation
+Toronto landing is edited only in its existing `app/[locale]/toronto` files and the already introduced shared `PublicPathwayStrip`; the personal consultation booking and `FreeReviewQuickRequest` processes are unchanged. PR is intentionally stacked after #2493, so it is not a claim that wave 1 has shipped. Toronto SEO PR #2287 touches the systemic-constellations service page, not this Toronto landing (file-list checked). Verify any later overlap before merging.

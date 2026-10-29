@@ -1,0 +1,60 @@
+name: HH public journey Toronto wave 2
+on:
+  pull_request:
+    branches:
+      - codex/public-journey-wave1-20261028
+      - codex/public-book-library
+    paths:
+      - 'app/[locale]/toronto/**'
+      - 'tests/public-pathway-toronto.test.mjs'
+      - 'scripts/verify-public-pathway-toronto-mobile.mjs'
+      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
+permissions:
+  contents: read
+jobs:
+  toronto-wave2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Isolated public contracts and syntax
+        run: |
+          node --check scripts/verify-public-pathway-toronto-mobile.mjs
+          node --test tests/public-pathway-migration.test.mjs tests/public-pathway-toronto.test.mjs
+      - name: Lint and typecheck
+        run: |
+          npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
+          npx --no-install tsc --noEmit
+      - name: Production-mode Next build
+        run: npm run build
+      - name: Install browser tools in isolated directory
+        run: |
+          npm install --prefix /tmp/toronto-wave2-playwright --no-audit --no-fund --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/toronto-wave2-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/toronto-wave2-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Verify Toronto read-only Chromium/WebKit EN/RU/ES
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3104 >/tmp/toronto-wave2-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 75); do
+            if curl --silent --fail http://127.0.0.1:3104/en/toronto >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then tail -n 120 /tmp/toronto-wave2-next.log; exit 1; fi
+          node scripts/verify-public-pathway-toronto-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: toronto-public-wave2-browser
+          path: artifacts/public-toronto-wave2/
+          retention-days: 7
+          if-no-files-found: warn
