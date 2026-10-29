@@ -83,24 +83,43 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-photo-picker]").count(),1);
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
-        assert.equal(await hero.locator("[data-video-hero-filters] select").count(),3);
-        assert.equal(await page.locator("[data-video-hero-aspect]").inputValue(),"portrait");
+        assert.equal(await hero.locator("select").count(),0,"no filters over video");
+        assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
+        assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
         assert.equal(await hero.getAttribute("data-hero-promo"),"true");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
+        assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
+        await page.locator("[data-video-affirmations-feature]").check();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        await page.locator("[data-video-affirmations-feature]").uncheck();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        const heroGeometry=await hero.boundingBox();
+        assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
+          "the film frame is compact at "+width+"px");
         const landmarks=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
           return ["[data-video-mode-switch]","[data-video-category-rail]",
-            "[data-video-photo-enabled]","[data-video-mandala-hero]",
-            "#video-templates","[data-video-audio-section]","[data-video-hypnosis-section]"]
+            "[data-video-preview-choices]","[data-video-mandala-hero]",
+            "[data-video-therapy-banner]","#video-templates",
+            "[data-video-audio-section]","[data-video-hypnosis-section]"]
             .map(top);
         });
         assert.ok(landmarks.every(Number.isFinite),"all key video blocks must be rendered");
         for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
           engine+" "+locale+" "+width+"px hierarchy "+i+": "+landmarks);
-        await page.locator("[data-video-hero-aspect]").selectOption("landscape");
+        // Banner must activate the actual existing 8-session planner without
+        // rendering, downloading, buying or contacting third-party providers.
+        await page.locator("[data-video-therapy-start]").click();
+        await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
+        assert.equal(await page.locator('[data-video-mode="therapy"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-mode="pump"]').click();
+        await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
+        await page.locator("[data-video-advanced-filters] > summary").click();
+        await page.locator("[data-video-advanced-aspect]").selectOption("landscape");
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
-        await page.locator("[data-video-hero-aspect]").selectOption("portrait");
+        await page.locator("[data-video-advanced-aspect]").selectOption("portrait");
+        await page.locator("[data-video-advanced-filters] > summary").click();
         await page.locator("[data-video-support-more] > summary").click();
         const supportTop=page.locator("[data-video-support-layout]");
         await supportTop.waitFor({state:"visible",timeout:12000});
@@ -114,7 +133,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await catalog.waitFor({state:"visible"});
         assert.equal(await page.locator("[data-video-category]").count(),6);
         await page.locator("[data-video-advanced-filters] > summary").click();
-        assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
+        assert.equal(await page.locator("[data-video-catalog-filters] select").count(),4);
         await page.locator('[data-video-category="health"]').click();
         assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
         assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
@@ -262,6 +281,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.ok(collapsedHeight<650, engine+" "+locale+" "+width+"px panel too tall: "+collapsedHeight);
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
         await page.locator("[data-video-affirmations-enable]").check();
+        assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
+          "settings and top opt-in must always stay synchronized");
         await page.locator('[data-video-affirmation-preset="3"]').click();
         assert.equal(await page.locator('[data-video-affirmation-preset="3"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-video-affirmations-settings] summary").click();
