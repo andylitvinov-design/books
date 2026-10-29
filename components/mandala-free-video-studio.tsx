@@ -1436,7 +1436,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const recommended = suggestPersonalVideoScene({
       theme,wish,locale,availableScenes:options,
     });
-    setPreviewPlaying(false);
+    setPreviewPlaying(false);setCinematicPlan(null);
     if (recommended.theme === "money") setMoneyScene(recommended.sceneId as MoneySceneId);
     else setOtherScene(recommended.sceneId as LocalSceneId);
     const matchLabel = recommended.theme === "money"
@@ -1545,6 +1545,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const quickPickStyle = (index:number) => {
     if(recording||preparing)return;
+    setCinematicPlan(null);
     setQuickStyleIndex(index);
     setBrightness(index===1||index===5?"bright":"soft");
     setSpeed(index===2||index===5?"dynamic":"slow");
@@ -2131,7 +2132,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-mandala-money-option={money.id} data-video-template={money.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={moneyScene===money.id}
-              onClick={()=>{setSuggestion("");if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
+              onClick={()=>{setSuggestion("");setCinematicPlan(null);if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
                 else{setMoneyScene(money.id);setPreviewPlaying(true);}}}>
               <CinematicSceneThumbnail scene={money.id} title={name}
                 photo={backgroundOnly?null:sharedThumbnailPhoto}
@@ -2148,7 +2149,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+              onClick={()=>{setSuggestion("");setCinematicPlan(null);setOtherScene(other.id);setPreviewPlaying(true);
                 }}>
               {getThemedRealFilm(theme,other.id) ?
                  <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
@@ -2183,7 +2184,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
               disabled={recording||preparing}
               onChange={event=>{
-                setSuggestion("");setPreviewPlaying(false);
+                setSuggestion("");setPreviewPlaying(false);setCinematicPlan(null);
                 // The style selector includes scenes beyond the first four tiles.
                 // Reveal the selected film in the existing gallery, including legacy looks.
                 setShowAllMoney(true);
@@ -2209,7 +2210,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </label>
           <label><span>{supportUi.filterDuration}</span>
             <select data-video-length value={duration} disabled={recording||preparing}
-              onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
+              onChange={event=>{setDuration(Number(event.currentTarget.value) as (typeof durations)[number]);setCinematicPlan(null);}}>
               {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
             </select>
           </label>
@@ -2477,6 +2478,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
         activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
         onSelectScene={id=>{
+          setCinematicPlan(null);
           if(theme==="money")setMoneyScene(id as MoneySceneId);
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
