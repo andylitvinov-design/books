@@ -76,7 +76,8 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
 test("progress is derived from opens and four self-ratings, never fake streaks", () => {
   assert.match(client, /progressTotal = relevantVideos\.length/);
   assert.match(client, /progressCount = relevantVideos\.filter/);
-  assert.match(client, /averageScore = \(checkinOrder\.reduce/);
+  assert.match(client, /averageScore = editedCheckins\.length === checkinOrder\.length/);
+  assert.match(client, /averageScore === null \? "—"/);
   assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
   assert.match(client, /className=\{styles\.progressStarted\}/);
   assert.match(client, /className=\{styles\.progressAverage\}/);
