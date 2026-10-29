@@ -132,6 +132,27 @@ test('My Progress YouTube-library design maps to the existing private account sc
   assert.match(workspace,/icon: BarChart3/)
   assert.doesNotMatch(view,/autoplay[="]1/)
 })
+test('video mark normalizes titles and handles simultaneous first Watch taps',()=>{
+  const source=readFileSync(new URL('../lib/app/video-progress.js',import.meta.url),'utf8')
+  const match=source.match(/function validate\(input\) \{[\s\S]*?\n\}/)?.[0]
+  assert.ok(match)
+  class InputError extends Error { constructor(code,status){super(code);this.status=status} }
+  const restrict=(input,keys)=>{
+    if(Object.keys(input).some(key=>!keys.includes(key)))throw new InputError('UNKNOWN_KEYS',400)
+  }
+  const verify=new Function('AppError','onlyKeys','input',match+'\nreturn validate(input)')
+  const sanitized=verify(InputError,restrict,{
+    videoId:'abcdefghijk',title:'  Calm   focus  ',status:'watched',
+  })
+  assert.equal(sanitized.title,'Calm focus')
+  assert.throws(()=>verify(InputError,restrict,{
+    videoId:'abcdefghijk',title:'z'.repeat(161),status:'watched',
+  }),/INVALID_VIDEO_TITLE/)
+  assert.match(source,/on conflict \(account_id,video_id\) do nothing returning \*/)
+  assert.match(source,/if \(!updated\) \{[\s\S]*?return view\(concurrent\)/)
+  assert.match(source,/if \(!previous && status === 'mastered'\)/)
+})
+
 test('saved personal video preview requests a signed, owner-scoped URL on explicit action only',()=>{
   const view=readFileSync(new URL('../components/app/my-progress.jsx',import.meta.url),'utf8')
   const backend=readFileSync(new URL('../app/api/app/personal-videos/[id]/route.js',import.meta.url),'utf8')

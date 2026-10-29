@@ -9,7 +9,7 @@
   width: min(100%, 1080px);
   min-width: 0;
   margin: 0 auto;
-  padding: 14px clamp(12px, 3vw, 26px) max(30px, env(safe-area-inset-bottom));
+  padding: 14px clamp(12px, 3vw, 26px) 30px;
   color: var(--progress-ink);
   font-family: inherit;
 }
