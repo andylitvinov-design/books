@@ -146,6 +146,7 @@
 .audioSelection strong{font-weight:800}
 .audioSelection button{border:1px solid #c8d9ce;border-radius:8px;background:#fff;color:#476359;padding:7px 9px;min-height:36px;font-size:11px;font-weight:800}
 .musicCard audio[data-video-audio-player]{display:block;width:100%;min-height:48px;max-width:100%;margin:9px 0;border-radius:10px;background:#f4f8f2}
+.audioDirectLink{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 8px;padding:8px 11px;border:1px solid #c0d5c9;border-radius:11px;background:#f3faf5;color:#116847;font-size:12px;font-weight:750;text-decoration:underline}
 .audioRights{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:#235246;font-size:12px;line-height:1.5}
 .audioRights input{width:19px;height:19px;min-width:19px;accent-color:#088d6c;margin-top:0}
 @media(max-width:380px){.audioUpload input[type=file]{flex-basis:100%}.audioUploadLabel{width:100%}.audioSelection{align-items:flex-start}}
