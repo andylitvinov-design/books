@@ -141,8 +141,16 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator('[data-video-category="life"]').click();
         assert.equal(await page.locator('[data-video-style]').inputValue(),"wildflower-dance");
         await page.locator('[data-video-category="energy"]').click();
+        // The owner moved the Style/Motion/Duration row behind a deliberate
+        // disclosure below the hero. Exercise that real visible control instead
+        // of trying to select an option in a closed <details> (CI timeout).
+        assert.equal(await page.locator("[data-video-advanced-filters]").getAttribute("open"),null);
+        await page.locator("[data-video-advanced-filters] summary").click();
+        assert.equal(await page.locator("[data-video-advanced-filters]").getAttribute("open"),"");
         await page.locator("[data-video-style]").selectOption("green-vortex");
         assert.equal(await page.locator('[data-video-template="green-vortex"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-advanced-filters] summary").click();
+        assert.equal(await page.locator("[data-video-advanced-filters]").getAttribute("open"),null);
         const categoryControls=page.locator("[data-video-theme]");
         assert.equal(await categoryControls.count(),6,"six actual movie themes");
         for(const id of ["money","energy","relationships","goals"]){
