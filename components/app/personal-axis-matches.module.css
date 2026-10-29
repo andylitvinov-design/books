@@ -49,3 +49,20 @@
 .goalGap small{grid-column:1/-1;color:#75695d;font-size:11px}
 .matchedAxes{color:#745b3e!important}
 @media(max-width:360px){.extraGrid{grid-template-columns:minmax(0,1fr)}}
+
+/* Holistic Intelligence: one compact opt-in control and genuine public-audio
+   playback. Preserve the existing profile layout and source disclosure. */
+.consent{display:flex;align-items:center;gap:9px;min-height:44px;margin:10px 0 2px;
+  padding:9px 10px;border:1px solid #e8dfd2;border-radius:10px;background:#fffcf7;
+  color:#65533d;font-size:12px;line-height:1.45;cursor:pointer}
+.consent input{width:18px;height:18px;flex:0 0 auto;accent-color:#82603b}
+.audioLookup{display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin:12px 0}
+.audioLookup button{display:inline-flex;gap:8px;align-items:center;justify-content:center;
+  padding:10px 12px;min-height:44px;border:1px solid #ccb697;border-radius:10px;
+  background:#fff8ec;color:#603c1b;font:650 13px/1.35 system-ui;cursor:pointer}
+.audioLookup button:focus-visible,.consent:focus-within{outline:3px solid #9b744e;outline-offset:2px}
+.audioLookup button:disabled{opacity:.65;cursor:progress}
+.audioLookup small{color:#75695d;font-size:12px}
+.group[data-axis-offer-kind="audio"]{grid-column:1/-1}
+.group audio{display:block;width:100%;min-height:44px;max-width:100%;margin-top:4px}
+@media(max-width:440px){.groupGrid{grid-template-columns:1fr}}
