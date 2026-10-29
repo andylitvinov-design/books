@@ -530,7 +530,7 @@ const initiationPhotoSlide: EnergyworkSlide = {
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
     title: l("Choose your Reiki initiation format", "Выберите формат Рейки-инициации"),
-    body: l("Choose one free Level 1 initiation in chat. Add other Reiki systems by donation, or request a personal 30-minute (€50) or 60-minute (€100) session. No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Другие системы — за донейшн; личная сессия — 30 минут (€50) или 60 минут (€100). Здесь нет оплаты."),
+    body: l("Choose one free Level 1 initiation in chat. You may add other systems by donation, an optional Level 1 certificate ($50), or a personal session (30 min €50 / 60 min €100). No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Можно дополнительно запросить другие системы за донейшн, сертификат I ступени ($50) или личную сессию (30 мин €50 / 60 мин €100). Здесь нет оплаты."),
     question: { type: "text", prompt: l("My Reiki initiation request and motivation", "Моя заявка на Рейки-инициацию и мотивация") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
