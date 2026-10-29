@@ -9,7 +9,7 @@ import { buildPersonalImageryCourse, COURSE_THEMES, selectVerifiedCourseEvidence
 import css from "./mandala-guided-course.module.css";
 
 type Evidence = {axis:string;sourceTitle:string;measuredAt:string;definitionKey:string;percent:number};
-type Session = {id:string;number:number;theme:VideoTheme;title:string;motif:string;scenes:string[];script:string;videoDurationSeconds:number};
+type Session = {id:string;number:number;theme:VideoTheme;videoTheme:VideoTheme;videoScene:string;title:string;motif:string;scenes:string[];script:string;videoDurationSeconds:number};
 type Status = "idle"|"loading"|"ready"|"empty"|"signin"|"error";
 type Props = {
   locale:PublicLocale; theme:VideoTheme; selfRatings:Partial<Record<VideoTheme,number>>;
