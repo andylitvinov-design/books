@@ -15,6 +15,11 @@ on:
       - 'lib/holistic-support/psychologist-mind.mjs'
       - 'lib/holistic-support/psychologist-mind.d.mts'
       - 'tests/psychologist-mind.test.mjs'
+      - 'tests/psychologist-practice-engine.test.mjs'
+      - 'lib/holistic-support/kip-symbol-registry.mjs'
+      - 'lib/holistic-support/psychologist-video-curricula.mjs'
+      - 'lib/holistic-support/psychologist-meditation-composer.mjs'
+      - 'docs/holistic-support/PSYCHOLOGIST_PRACTICE_ENGINE_V1_20261029.md'
       - 'docs/holistic-support/PSYCHOLOGIST_MIND_V1_20261029.md'
       - 'lib/holistic-support/holistic-intelligence.d.mts'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
@@ -58,9 +63,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/natural-dialogue.test.mjs tests/psychologist-mind.test.mjs tests/client-request-relevance-v2.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs
+        run: node --test tests/axis-offer-matcher.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/natural-dialogue.test.mjs tests/psychologist-mind.test.mjs tests/psychologist-practice-engine.test.mjs tests/client-request-relevance-v2.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/holistic-intelligence.mjs lib/holistic-support/natural-dialogue.mjs lib/holistic-support/owned-ollama.mjs tests/natural-dialogue.test.mjs lib/holistic-support/holistic-guide-adapter.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs lib/holistic-support/psychologist-mind.mjs tests/psychologist-mind.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/holistic-intelligence.mjs lib/holistic-support/natural-dialogue.mjs lib/holistic-support/owned-ollama.mjs tests/natural-dialogue.test.mjs lib/holistic-support/holistic-guide-adapter.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs lib/holistic-support/psychologist-mind.mjs lib/holistic-support/kip-symbol-registry.mjs lib/holistic-support/psychologist-video-curricula.mjs lib/holistic-support/psychologist-meditation-composer.mjs tests/psychologist-mind.test.mjs tests/psychologist-practice-engine.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: TypeScript check
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
