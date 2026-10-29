@@ -11,6 +11,8 @@ export type AffirmationSettings = {
   density: AffirmationDensity;
   frequency: AffirmationFrequency;
   visibility: AffirmationVisibility[];
+  position?: "top" | "center" | "bottom";
+  textScale?: "small" | "medium" | "large";
   presetOverride?: string[];
 };
 
@@ -21,6 +23,8 @@ export const defaultAffirmations: AffirmationSettings = {
   density: "medium",
   frequency: 2,
   visibility: ["large"],
+  position: "center",
+  textScale: "medium",
 };
 
 export const suggestedVideoAffirmations: Record<VideoLocale, Record<VideoTheme, readonly string[]>> = {
@@ -208,6 +212,8 @@ export function paintVideoAffirmations(
   const count = settings.density === "high" ? 3 : settings.density === "low" ? 1 : 2;
   const baseIndex = cycle % lines.length;
   const size = Math.min(width, height);
+  const position = settings.position === "top" ? 0.35 : settings.position === "bottom" ? 0.76 : 0.6;
+  const textScale = settings.textScale === "small" ? 0.78 : settings.textScale === "large" ? 1.22 : 1;
   const fade = Math.max(0.22, Math.min(1, phase / 0.5, (period - phase) / 0.55));
 
   function write(phrase: string, y: number, fontSize: number, opacity: number, plate: boolean) {
@@ -228,15 +234,15 @@ export function paintVideoAffirmations(
 
   if (settings.visibility.includes("small")) {
     for (let i = 0; i < count; i++) {
-      write(lines[(baseIndex + i) % lines.length], height * (0.26 + i * 0.095),
-        Math.max(15, size * 0.025), 0.48 * fade, false);
+      write(lines[(baseIndex + i) % lines.length], height * (position - 0.29 + i * 0.095),
+        Math.max(15, size * 0.025 * textScale), 0.48 * fade, false);
     }
   }
 
   if (settings.visibility.includes("large")) {
     for (let i = 0; i < count; i++) {
-      write(lines[(baseIndex + i) % lines.length], height * (0.6 + i * 0.075),
-        Math.max(24, size * (count === 3 ? 0.038 : 0.045)), 0.93 * fade, true);
+      write(lines[(baseIndex + i) % lines.length], height * Math.min(0.92, position + i * 0.075),
+        Math.max(24, size * (count === 3 ? 0.038 : 0.045) * textScale), 0.93 * fade, true);
     }
   }
 
@@ -367,4 +373,46 @@ export function personalizedVideoAffirmations(
     ...suggestedVideoAffirmations[locale].goals,
   ];
   return [...new Set(phrases.map(cleanLine).filter(Boolean))].slice(0,5);
+}
+
+
+// Compact Hypnoaffirmations editor: a small, first-party, fully local request
+// vocabulary. Narrative text stays private in the form and is not interpreted
+// as a diagnosis or sent to an AI service. Selected options drive this shortlist.
+export const hypnoRequestProblems: Record<VideoLocale, Record<VideoTheme, readonly {label:string;phrase:string}[]>> = {
+  en: {
+    energy:[{label:"Tension",phrase:"I can pause"},{label:"Fatigue",phrase:"I allow myself rest"},{label:"Rushing",phrase:"I choose my pace"}],
+    money:[{label:"Fear of pricing",phrase:"My work has value"},{label:"Uncertainty",phrase:"I can seek clarity"},{label:"Self-doubt",phrase:"I can take a step"}],
+    relationships:[{label:"Fear of rejection",phrase:"My needs matter"},{label:"Boundaries",phrase:"I can say no"},{label:"Difficult conversations",phrase:"I can speak gently"}],
+    goals:[{label:"Unclear direction",phrase:"I can choose one step"},{label:"Procrastination",phrase:"A small step counts"},{label:"Fear of mistakes",phrase:"I am allowed to learn"}],
+    life:[{label:"Change",phrase:"I can move gradually"},{label:"Uncertainty",phrase:"I can pause and choose"},{label:"Lack of joy",phrase:"I notice small moments"}],
+    health:[{label:"Overload",phrase:"I can ask for help"},{label:"Low energy",phrase:"Rest is allowed"},{label:"Tension",phrase:"I can slow down"}],
+  },
+  ru: {
+    energy:[{label:"Напряжение",phrase:"Мне можно замедлиться"},{label:"Усталость",phrase:"Я выбираю отдых"},{label:"Спешка",phrase:"Я выбираю свой ритм"}],
+    money:[{label:"Страх назвать цену",phrase:"Мой труд ценен"},{label:"Неопределённость",phrase:"Я могу искать ясность"},{label:"Сомнения в себе",phrase:"Я могу сделать шаг"}],
+    relationships:[{label:"Страх отказа",phrase:"Мои потребности важны"},{label:"Личные границы",phrase:"Я могу сказать нет"},{label:"Трудный разговор",phrase:"Я могу говорить мягко"}],
+    goals:[{label:"Нет ясного пути",phrase:"Я могу выбрать шаг"},{label:"Откладываю дела",phrase:"Даже малый шаг важен"},{label:"Страх ошибки",phrase:"Мне можно учиться"}],
+    life:[{label:"Перемены",phrase:"Я могу идти постепенно"},{label:"Неопределённость",phrase:"Я могу сделать паузу"},{label:"Мало радости",phrase:"Я замечаю хорошее"}],
+    health:[{label:"Перегрузка",phrase:"Я могу попросить помощь"},{label:"Мало сил",phrase:"Мне можно отдыхать"},{label:"Напряжение",phrase:"Я могу снизить темп"}],
+  },
+  es: {
+    energy:[{label:"Tensión",phrase:"Puedo hacer una pausa"},{label:"Cansancio",phrase:"Me permito descansar"},{label:"Prisa",phrase:"Elijo mi ritmo"}],
+    money:[{label:"Miedo a cobrar",phrase:"Mi trabajo tiene valor"},{label:"Incertidumbre",phrase:"Puedo buscar claridad"},{label:"Dudas",phrase:"Puedo dar un paso"}],
+    relationships:[{label:"Miedo al rechazo",phrase:"Mis necesidades importan"},{label:"Límites",phrase:"Puedo decir que no"},{label:"Conversación difícil",phrase:"Puedo hablar con calma"}],
+    goals:[{label:"Sin rumbo",phrase:"Puedo elegir un paso"},{label:"Posponer tareas",phrase:"Un paso pequeño cuenta"},{label:"Miedo al error",phrase:"Puedo aprender"}],
+    life:[{label:"Cambios",phrase:"Puedo ir poco a poco"},{label:"Incertidumbre",phrase:"Puedo parar y elegir"},{label:"Poca alegría",phrase:"Noto lo bueno"}],
+    health:[{label:"Sobrecarga",phrase:"Puedo pedir apoyo"},{label:"Poca energía",phrase:"Me permito descansar"},{label:"Tensión",phrase:"Puedo bajar el ritmo"}],
+  },
+};
+
+export function buildHypnoRequestPhrases(
+  locale: VideoLocale, theme: VideoTheme, problemIndex: number, goal: VideoAffirmationGoal,
+): string[] {
+  const issues = hypnoRequestProblems[locale][theme];
+  const issue = issues[Number.isInteger(problemIndex) && problemIndex>=0 && problemIndex<issues.length ? problemIndex : 0];
+  const chosenGoal = affirmationGoalCatalog[locale].find(item=>item.id===goal);
+  const base = suggestedVideoAffirmations[locale][theme];
+  return [...new Set([issue.phrase,chosenGoal?.sentence,...base].filter((value):value is string=>Boolean(value))
+    .map(cleanLine).filter(Boolean))].slice(0,5);
 }

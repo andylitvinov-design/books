@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
-import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
@@ -816,6 +816,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
   const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
   const activeFilm = activeMoneyFilm || activeThemedFilm;
+  // These are the SAME original, source-backed scenes as the full gallery.
+  // The compact Hypno video-design rail is a shortcut, not a second editor.
+  const hypnoScenes = theme === "money"
+    ? moneyScenes.slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getRealMoneyFilm(item.id).poster}))
+    : otherVideoScenes[theme].slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getThemedRealFilm(theme,item.id)?.poster||null}));
   const jobRef = useRef<Job | null>(null);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
@@ -1799,6 +1804,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
+        onPointerUp={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}
         onClick={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}>
         <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
       </button>
@@ -2128,8 +2134,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
-      <MandalaVideoAffirmations locale={locale} theme={theme} settings={affirmations}
-        onChange={setAffirmations} disabled={recording||preparing}/>
+      <MandalaHypnoCompact key={theme} locale={locale} theme={theme} settings={affirmations}
+        onChange={setAffirmations} disabled={recording||preparing}
+        scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
+        activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
+        onSelectScene={id=>{
+          if(theme==="money")setMoneyScene(id as MoneySceneId);
+          else setOtherScene(id as LocalSceneId);
+          setPreviewPlaying(false);
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+      <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
+        <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
         <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
@@ -2146,13 +2161,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
       </section>
-      <button type="button" className={videoStyles.affirmationPreviewAction}
-        data-video-affirmation-preview disabled={recording||preparing} onClick={openAffirmationPreview}>
-        <Play size={20} fill="currentColor" aria-hidden="true"/>
-        {layout.previewCta}
-        <ArrowRight size={20} aria-hidden="true"/>
-      </button>
-      <small className={videoStyles.affirmationPreviewHelp}>{layout.previewHelp}</small>
+      </details>
       </section>
 
       <details className={videoStyles.extraControls} data-video-extra-settings>
