@@ -865,6 +865,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => () => {
     if (result?.url) URL.revokeObjectURL(result.url);
   }, [result]);
+  // A finished real recording must be easy to find below the compact editor.
+  // Do not scroll on preview, errors, or a mere "Create" click.
+  useEffect(() => {
+    if (!result) return;
+    document.getElementById("personal-video-result")?.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start",
+    });
+  }, [result]);
   useEffect(() => {
     if (audioAuto && !uploadedAudio) setMusic(recommendedAudioId||"none");
   },[audioAuto,uploadedAudio,recommendedAudioId]);
