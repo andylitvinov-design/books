@@ -37,9 +37,18 @@ ALTER TABLE public.hh_meditation_catalog_v1
 ALTER TABLE public.hh_meditation_catalog_v1
   ADD CONSTRAINT hh_meditation_catalog_v1_duration_basis_check
     CHECK (duration_basis IN ('unknown','title_only','metadata_checked','owner_checked'));
-ALTER TABLE public.hh_meditation_catalog_v1
-  ADD CONSTRAINT hh_video_owner_checked_seconds_guard
+DO $duration_guard$
+BEGIN
+ IF NOT EXISTS (
+  SELECT 1 FROM pg_constraint
+  WHERE conrelid='public.hh_meditation_catalog_v1'::regclass
+  AND conname='hh_video_owner_checked_seconds_guard'
+ ) THEN
+  ALTER TABLE public.hh_meditation_catalog_v1
+   ADD CONSTRAINT hh_video_owner_checked_seconds_guard
     CHECK (duration_basis <> 'owner_checked' OR duration_verified_seconds BETWEEN 1 AND 600);
+ END IF;
+END $duration_guard$;
 COMMENT ON COLUMN public.hh_meditation_catalog_v1.owner_review_status IS
  'Explicit owner moderation decision. Accepted alone does NOT authorize YouTube embed or public visibility.';
 COMMENT ON COLUMN public.hh_meditation_catalog_v1.owner_review_version IS
