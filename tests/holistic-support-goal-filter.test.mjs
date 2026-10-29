@@ -217,11 +217,13 @@ test("no medical inference, URL health params, storage, hidden CRM send or fabri
   assert.match(editor, /data-support-goal-checkin=\{sector\}/);
   assert.match(editor, /data-support-goal-checkin-input value=\{currentCheckin\}/);
   assert.match(editor, /onCheckinChange\(sector, Number\(event\.target\.value\)\)/);
-  // Parent state is authoritative after an atomic WebKit Save + Next.
-  // A dirty or globally changed check-in must still invalidate the badge.
+  // The accepted parent snapshot cannot be hidden by an asynchronous
+  // WebKit blur AFTER Next, but true unsaved edits and changed scores still are.
   assert.match(editor, /const snapshot = savedSectors\[id\] \?\? accepted\[id\]/);
   assert.match(editor, /snapshot\.checkin === scores\[goalSectorCheckinKey\[id\]\]/);
-  assert.match(editor, /snapshot && !dirty\[id\]/);
+  assert.match(editor, /const savedInactiveDraft = id !== sector && Boolean\(dirty\[id\]\)/);
+  assert.match(editor, /JSON\.stringify\(drafts\[id\]\) === JSON\.stringify\(snapshot\)/);
+  assert.match(editor, /snapshot && \(!dirty\[id\] \|\| savedInactiveDraft\)/);
   assert.match(editor, /checkin: currentCheckin/);
   assert.match(css, /\.sharedCheckin \{ display: grid;/);
   assert.match(client, /rankSupportGoalVideos/);
@@ -233,4 +235,24 @@ test("new TSX parses with no diagnostics", () => {
   });
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")),[]);
+});
+
+test("WebKit late-change acceptance is precise: saved inactive only, never unsaved or stale score", () => {
+  const saved={checkin:5,concerns:["income"],tasks:["clearPlan"],ratings:{confidence:{current:5,desired:8}},
+    amounts:{monthlyIncome:{current:2000,desired:4000}},currency:"EUR"};
+  const same={...saved,concerns:[...saved.concerns],tasks:[...saved.tasks],
+    ratings:{...saved.ratings},amounts:{...saved.amounts}};
+  const changed={...same,amounts:{monthlyIncome:{current:2000,desired:5000}}};
+  const acceptedBadge=(draft,{dirty,active,checkin})=>
+    Boolean(saved && (!dirty || (!active && draft!==undefined &&
+      JSON.stringify(draft)===JSON.stringify(saved))) && saved.checkin===checkin);
+  assert.equal(acceptedBadge(same,{dirty:true,active:false,checkin:5}),true,
+    "delayed inactive blur after atomic Save + Next is not a new edit");
+  assert.equal(acceptedBadge(changed,{dirty:true,active:false,checkin:5}),false,
+    "unaccepted money edits remain visibly unaccepted");
+  assert.equal(acceptedBadge(same,{dirty:true,active:true,checkin:5}),false,
+    "dirty active category never gains a false accepted badge");
+  assert.equal(acceptedBadge(same,{dirty:true,active:false,checkin:6}),false,
+    "a new check-in invalidates previously accepted goals");
+  assert.equal(acceptedBadge(undefined,{dirty:true,active:false,checkin:5}),false);
 });
