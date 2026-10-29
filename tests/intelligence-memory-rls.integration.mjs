@@ -7,7 +7,7 @@ import { getAppConfig } from '../lib/app/config.js'
 import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal, openSealed } from '../lib/app/crypto.js'
-import { saveIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback, intelligenceFeedbackStatus } from '../lib/app/intelligence-feedback.js'
+import { saveIntelligenceFeedback, editIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback, intelligenceFeedbackStatus } from '../lib/app/intelligence-feedback.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
@@ -81,6 +81,22 @@ test('explicit save is default off, idempotent, owner scoped and deletable even 
   await assert.rejects(rawAs(a,'authenticated',db=>db.query('select * from app_private.intelligence_feedback_state')),/permission denied/)
   assert.equal((await exportIntelligenceFeedback(off,b)).revision,0)
   assert.equal((await exportIntelligenceFeedback(off,b)).records.length,1)
+})
+test('editing feedback is explicit, owner scoped and invalidates stale operations',async()=>{
+  const on={...config,intelligenceMemoryEnabled:true}, off={...config,intelligenceMemoryEnabled:false}
+  const snapshot=await exportIntelligenceFeedback(on,a)
+  const edit={operationId:first,expectedRevision:snapshot.revision,consent:true,feedback:'not_useful'}
+  await assert.rejects(editIntelligenceFeedback(off,a,edit),/INTELLIGENCE_MEMORY_DISABLED/)
+  await assert.rejects(editIntelligenceFeedback(on,a,{...edit,consent:false}),/CONSENT_REQUIRED/)
+  await assert.rejects(editIntelligenceFeedback(on,b,{...edit,expectedRevision:0}),/NOT_FOUND/)
+  const changed=await editIntelligenceFeedback(on,a,edit)
+  assert.equal(changed.revision,snapshot.revision+1)
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,a,['youtube:HqfixazXqRY']),{dismissedIds:['youtube:HqfixazXqRY']})
+  await assert.rejects(editIntelligenceFeedback(on,a,edit),/INTELLIGENCE_MEMORY_STALE/)
+  await assert.rejects(deleteIntelligenceFeedback(on,a,{operationId:first,expectedRevision:snapshot.revision}),/INTELLIGENCE_MEMORY_STALE/)
+  await editIntelligenceFeedback(on,a,{...edit,expectedRevision:changed.revision,feedback:'useful'})
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,a,['youtube:HqfixazXqRY']),{dismissedIds:[]})
+  assert.equal((await exportIntelligenceFeedback(on,b)).records[0].feedback,'useful')
 })
 test('owner deletion removes only own feedback, and account deletion cascades',async()=>{
   const removed=await rawAs(a,'hh_app_backend',db=>db.query('delete from app_private.intelligence_feedback_memory where account_id=$1',[A]))
