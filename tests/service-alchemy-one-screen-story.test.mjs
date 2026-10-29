@@ -42,3 +42,16 @@ test("Very short iPhone keeps session descriptions and prices through progressiv
  assert.match(css,/\.heroPortrait\{height:74px\}/);
  assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
 });
+
+// This browser contract avoids per-viewport 45s network-idle timeouts on healthy
+// streaming pages, but does not turn a route or geometry failure into a pass.
+test("Alchemy browser waits for semantic DOM readiness, preserving every release assertion",()=>{
+ const source=read("scripts/verify-alchemy-one-screen.mjs");
+ assert.match(source,/page\.goto\([^\n]+waitUntil:"domcontentloaded",timeout:45000/);
+ assert.doesNotMatch(source,/waitUntil:"networkidle"/);
+ assert.match(source,/assert\.equal\(response\?\.status\(\), 200/);
+ assert.match(source,/root\.locator\('h1'\)\.waitFor/);
+ assert.match(source,/data\.panels\.length !== chapters\.length/);
+ assert.match(source,/data\.documentWidth > width \+ 1/);
+ assert.match(source,/assert\.deepEqual\(failures, \[\]/);
+});
