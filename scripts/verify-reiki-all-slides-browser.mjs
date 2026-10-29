@@ -275,6 +275,11 @@ async function installLocalAccountMock(page) {
   await page.route("**/api/app/academy-energywork/photo", async route => {
     if (route.request().method() === "POST") {
       const upload = route.request().postDataBuffer();
+      console.log("REIKI_MOCK_PHOTO_UPLOAD", JSON.stringify({
+        engine: engineName, bytes: upload?.length,
+        filename: Boolean(upload?.includes(Buffer.from("initiation.jpg"))),
+        jpeg: Boolean(upload?.includes(Buffer.from([0xff,0xd8,0xff]))),
+      }));
       assert.ok(upload?.includes(Buffer.from("initiation.jpg")),
         "The iPhone photo picker sends a named JPEG to the private API");
       assert.ok(upload?.includes(Buffer.from([0xff,0xd8,0xff])),
@@ -525,6 +530,10 @@ async function verifyPrivatePhonePhoto(page, locale, width) {
       assert.equal(route.request().headers()["x-hh-account-id"],accountId,
         "Private upload is bound to this learner's account");
       const body=route.request().postDataBuffer();
+      console.log("REIKI_MOCK_PHONE_POST",JSON.stringify({
+        engine:engineName, headerMatches:route.request().headers()["x-hh-account-id"]===accountId,
+        bytes:body?.length, jpeg:Boolean(body?.includes(Buffer.from([0xff,0xd8,0xff]))),
+      }));
       assert.ok(body?.includes(Buffer.from([0xff,0xd8,0xff])),
         "Safari uploads a re-encoded JPEG, not an original phone HEIC");
       assert.ok(body.length < 2_520_000,"Photo multipart request stays bounded");
