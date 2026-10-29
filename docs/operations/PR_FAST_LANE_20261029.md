@@ -4,7 +4,7 @@
 
 ## Observed blockers and correction
 
-- 90 GitHub Actions workflow files; some heavy suites fire for every PR, even when unrelated. All **seven** previously unscoped PR workflows are now **path-scoped conservatively**: App R1, App Browser, Billing Isolated, Interpretation Database, OPORA, IA v2 and Public Services. Their jobs and assertions remain intact on relevant changes.
+- 90 GitHub Actions workflow files; some heavy suites fire for every PR, even when unrelated. All **seven** previously unscoped PR workflows are now **path-scoped conservatively**: App R1, App Browser, Billing Isolated, Interpretation Database, OPORA, IA v2 and Public Services. Their jobs and assertions remain intact on relevant changes. `tests/pr-fast-lane.test.mjs` guards these triggers and the fail-closed core workflow contract.
 - Add `.github/workflows/hh-pr-core-release.yml`, which runs on **every** production-targeted PR: explicit one-status `release-ready`, narrow documentation-only shortcut, otherwise changed-file ESLint, whole-project TypeScript and full production build (including prebuild tests).
 - Scope job fails closed on unexpected inputs; merge_group and workflow_dispatch always run code checks. No skip for SQL, workflow, auth or application changes.
 - This core gate is **necessary but not sufficient**: applicable specialist workflow jobs, security/privacy/auth/RLS/payment checks, unresolved reviews and actual E2E requirements still apply. Never consider a red, queued, canceled, unknown, or mismatched-head specialist result green.

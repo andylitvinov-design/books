@@ -64,6 +64,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Assert fast-lane workflow contracts
+        run: node --test tests/pr-fast-lane.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
         shell: bash
         env:
