@@ -153,4 +153,8 @@ test("the scenic Reiki tabs are above content and only one low CTA remains", () 
   assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageContent \{ order: 1;/);
   assert.doesNotMatch(parent,/className=\{styles\.reikiSecondary\}/);
   assert.match(parent,/data-support-reiki-tab=\{tab\}/);
+  assert.match(parent,/data-support-reiki-hero-filter onClick=\{\(\) => setReikiTab\("filter"\)\}/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?position: absolute; z-index: 3; top: 77px/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?top: 61px; left: 10px/);
+  assert.doesNotMatch(parent,/\{r\.choose\}<Filter size=\{17\}/);
 });
