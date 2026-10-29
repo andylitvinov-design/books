@@ -532,6 +532,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
                 wanted:'#'+target,href:window.location.href,hash:window.location.hash,
                 nativeHref:link?.getAttribute('href'),targetPresent:Boolean(selected),
                 detailsOpen:document.querySelector('[data-video-quick-legacy]')?.open,
+                lastReactTab:document.querySelector('[data-video-editor-nav]')?.getAttribute('data-video-current-tab'),
                 rect:rect?{top:Math.round(rect.top),bottom:Math.round(rect.bottom)}:null,
                 viewport:window.innerHeight,
               };
