@@ -218,3 +218,31 @@ test("unified Holistic Intelligence reexports one callable persona entry for pro
     intent: { focus: "meaning" } }).status, "dialogue");
   assert.equal(consultPsychologistMind({ task: "unknown" }).status, "unsupported_task");
 });
+
+test("dialogue respects a client's stop and complaint of worsening, independent of phase", () => {
+  for (const [locale, stop, worse] of [
+    ["ru", "Стоп. Хватит.", "После упражнения мне стало хуже"],
+    ["en", "Please stop.", "I feel worse now"],
+    ["es", "Basta, para.", "Me siento peor"],
+  ]) {
+    const common = { ...safe, locale, intent: { focus: "stress" },
+      state: { phase: "practice_intro", sessionNumber: 3 } };
+    const stopped = buildPsychologyDialogueTurn({ ...common, text: stop });
+    assert.equal(stopped.status, "client_paused");
+    assert.equal(stopped.question, null);
+    assert.equal(stopped.canStartExercise, false);
+    const uncomfortable = buildPsychologyDialogueTurn({ ...common, text: worse });
+    assert.equal(uncomfortable.status, "paused_for_review");
+    assert.equal(uncomfortable.question, null);
+    assert.deepEqual(uncomfortable.suggestedMethodIds, []);
+  }
+});
+test("uncertainty or a why-question changes phrasing without hallucinating a cause", () => {
+  const common = { ...safe, locale: "ru", intent: { focus: "relationships" } };
+  const unsure = buildPsychologyDialogueTurn({ ...common, text: "Не знаю" });
+  const why = buildPsychologyDialogueTurn({ ...common, text: "Почему?" });
+  assert.equal(unsure.status, "dialogue");
+  assert.match(unsure.message, /Необязательно/);
+  assert.equal(why.status, "dialogue");
+  assert.match(why.message, /не с диагнозом/);
+});
