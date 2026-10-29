@@ -3,9 +3,9 @@ on:
   # Run the same gate on this isolated dependency branch while its PR targets
   # another draft rather than the production branch.
   push:
-    branches: ['codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029', 'codex/hh-intelligence-client-card-20261029']
+    branches: ['codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029', 'codex/hh-intelligence-client-card-20261029', 'codex/hh-intelligence-coaching-context-20261029']
   pull_request:
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/hh-intelligence-*']
     paths:
       - 'lib/holistic-support/client-reasoning-core.mjs'
       - 'lib/holistic-support/client-reasoning-bridge.mjs'
