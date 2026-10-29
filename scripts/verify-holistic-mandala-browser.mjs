@@ -313,6 +313,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         }
         const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
         assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isDisabled(),true);
         assert.equal(await compactHypno.locator("[data-hypno-request-edit]").getAttribute("aria-expanded"),"false");
         await compactHypno.locator("[data-hypno-phrases-edit]").click();
         const affirmationsPanel = page.locator("[data-video-affirmations]");
@@ -343,6 +344,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"true");
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
         await page.locator("[data-video-affirmations-enable]").check();
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isEnabled(),true);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
           "settings and top opt-in must always stay synchronized");
         await page.locator('[data-video-affirmation-preset="3"]').click();
