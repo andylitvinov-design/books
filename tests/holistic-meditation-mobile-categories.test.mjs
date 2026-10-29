@@ -64,6 +64,9 @@ test("Compact 320–430px cards stay readable while retaining original playback,
 });
 
 test("Full feed follows the four featured cards, uses one filtered catalogue and never auto-plays", () => {
+  for (const label of ["Популярные медитации", "Popular meditations", "Meditaciones populares"]) {
+    assert.ok(mobile.includes(label), "featured shelf label: " + label);
+  }
   const gallery = mobile.indexOf('id="support-meditation-gallery"');
   const featured = mobile.indexOf('data-support-video={video.id}', gallery);
   const feed = mobile.indexOf('data-support-meditation-feed aria-labelledby=', featured);
@@ -84,8 +87,8 @@ test("Full feed follows the four featured cards, uses one filtered catalogue and
   assert.match(css, /\.videoFeedList \{[^}]*display: grid/);
   assert.match(css, /\.videoFeedItem\[aria-pressed="true"\]/);
   assert.match(css, /\.videoFeedDescription \{[^}]*-webkit-line-clamp: 3/);
-  for (const label of ["Лента медитаций", "Листай вниз", "Выбрать", "Explore all meditations",
-    "Select", "Explora todas las meditaciones", "Elegir"]) assert.ok(mobile.includes(label), label);
+  for (const label of ["Все подходящие медитации", "Выбрать", "All matching meditations",
+    "Select", "Todas las meditaciones relacionadas", "Elegir"]) assert.ok(mobile.includes(label), label);
 });
 
 test("Feed summaries come from existing source titles, with Spanish copy and original language noted", () => {
@@ -93,7 +96,9 @@ test("Feed summaries come from existing source titles, with Spanish copy and ori
   assert.match(source, /const originalRuDescriptions = \[/);
   assert.match(source, /description: originalRuDescriptions\[index\]/);
   assert.match(source, /description: englishSun\.description/);
-  assert.match(route, /description: locale === "es" \? spanishMeditationDescriptions\[video\.key\] : video\.description/);
+  assert.match(route, /const russianMeditationDescriptions: Record<string, string>/);
+  assert.match(route, /description: locale === "ru" \? russianMeditationDescriptions\[video\.key\]/);
+  assert.match(route, /locale === "es" \? spanishMeditationDescriptions\[video\.key\] : video\.description/);
   assert.match(mobile, /video\.sourceLanguage === "ru" \? t\.feedAudioRu : t\.feedAudioEn/);
   assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon|autoplay=\{true\}/);
 });
