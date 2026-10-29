@@ -209,3 +209,41 @@ test('malformed check and workflow evidence never enables readiness', () => {
   const result=analyzeCI({pr:pr(),required:[],paths:['docs/a.md'],statuses:[{context:'legacy',state:'failure',sha:sha('a')},{context:'legacy',state:'success',sha:sha('a')}]});
   assert.ok(result.blockers.includes('COMMIT_STATUS:legacy:failure'));
 });
+
+test('unrelated green core check cannot hide missing high-fanout specialist jobs', () => {
+  const cases = [
+    ['lib/crm/salesbot-operator.mjs', ['crm','build']],
+    ['components/app/my-services-dashboard.jsx', ['signed-in-mock-browser','practice-visual-parity','service-editor']],
+    ['lib/practitioners/conversation-policy.js', ['presentation-contract']],
+    ['components/session-audio-recorder.jsx', ['private-audio']],
+    ['scripts/verify-practice-visual-browser.mjs', ['practice-visual-parity']],
+    ['components/app/simple-service-editor.jsx', ['service-editor']],
+    ['lib/app/my-progress.mjs', ['private-progress']],
+    ['lib/app/messenger-notification-policy.js', ['notification-build']],
+    ['lib/kling-video.mjs', ['kling']],
+    ['lib/personal-coaching/session.js', ['focused-verification']],
+    ['.github/workflows/hh-crm-source-check.yml', ['crm','build','actionlint-changed']],
+    ['.github/workflows/practice-google-browser.yml', ['signed-in-mock-browser','actionlint-changed']],
+    ['.github/workflows/practice-visual-services.yml', ['service-editor','actionlint-changed']],
+    ['.github/workflows/hh-private-audio-e2e.yml', ['private-audio','actionlint-changed']],
+  ];
+  for (const [path, names] of cases) {
+    const expected = productionSpecialists([path]);
+    const result = analyzeCI({pr:pr(),paths:[path],checks:[check('release-ready')]});
+    assert.equal(result.ci_ready,false, path);
+    for (const name of names) {
+      assert.ok(expected.includes(name), path + ' misses ' + name);
+      assert.ok(result.blockers.includes('MISSING:' + name), path + ' falsely green without ' + name);
+    }
+  }
+  assert.deepEqual(productionSpecialists(['docs/operations/notes.md']), []);
+});
+
+test('high-fanout CRM pass requires both source and build; wrong or failed job never qualifies',()=>{
+  const input={pr:pr(),paths:['lib/crm/salesbot-operator.mjs'],checks:[check('release-ready'),check('crm'),check('build')]};
+  assert.equal(analyzeCI(input).ci_ready,true);
+  for (const broken of [check('build','completed','failure'), check('build','queued',null), {...check('build'),head_sha:sha('f')}]) {
+    const out=analyzeCI({...input,checks:[check('release-ready'),check('crm'),broken]});
+    assert.equal(out.ci_ready,false);
+  }
+});

@@ -78,3 +78,21 @@ known/unknown paths. A positive CI-ready result therefore must not be used as a
 complete specialist aggregate or merge authorization. Preserve independent
 inspection of all applicable exact-head checks/workflow runs and existing
 review/branch rules. No CLI override, receipt input or lease behavior changes.
+
+## CI P1: high-fanout specialist coverage extension (2026-10-29)
+
+`productionSpecialists` now also requires exact-HEAD, completed SUCCESS
+checks for ten additional already-existing **path-scoped** workflow surfaces:
+CRM source (`crm` + `build`), Google return, practitioner
+presentations, private audio, practice visual parity, visual service editor,
+private progress, messenger notifications, Kling video and personal coaching.
+Coverage applies to matching changed application files and workflow YAML edits.
+Regression tests prove a green `release-ready` cannot hide a missing, pending,
+failed or wrong-HEAD specialist check on these surfaces. This is read-only
+policy; no new Actions workflow, runner, rerun, provider call or merge override.
+
+**Not a complete inventory:** other domain-specific workflows remain unmapped.
+Never treat this positive policy report as native auto-merge authorization.
+The Work Merge agent must still inspect all applicable executed CI checks and
+review requirements; do not switch on native auto-merge or branch rules using
+only this policy.
