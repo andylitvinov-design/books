@@ -1,0 +1,85 @@
+name: Practice reference design — Chromium and WebKit screenshots
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.agents/skills/visual-to-code-pro/**'
+      - '.codex/config.toml'
+      - '.vscode/mcp.json'
+      - 'AGENTS.md'
+      - 'app/[locale]/practice/page.jsx'
+      - 'components/practice-showcase.jsx'
+      - 'components/practice-showcase.module.css'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/my-services-dashboard.jsx'
+      - 'components/app/practice-inner-navigation.jsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'scripts/verify-practice-visual-browser.mjs'
+      - 'scripts/compare-ui-screenshots.mjs'
+      - 'tests/practice-google-return-and-services-v5.test.mjs'
+      - 'tests/compare-ui-screenshots.test.mjs'
+      - '.github/workflows/practice-visual-browser.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/[locale]/practice/page.jsx'
+      - 'components/practice-showcase.jsx'
+      - 'components/practice-showcase.module.css'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/my-services-dashboard.jsx'
+      - 'components/app/practice-inner-navigation.jsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'scripts/verify-practice-visual-browser.mjs'
+      - 'scripts/compare-ui-screenshots.mjs'
+      - '.github/workflows/practice-visual-browser.yml'
+permissions:
+  contents: read
+jobs:
+  practice-visual-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PRACTICE_QA_ORIGIN: http://127.0.0.1:3119
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-practice-visual-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check screenshot comparator, source flow and browser script
+        run: |
+          node --check scripts/verify-practice-visual-browser.mjs
+          node --check scripts/compare-ui-screenshots.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/practitioner-preview-auth.test.mjs tests/practice-google-return-and-services-v5.test.mjs
+          npx eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
+          npx tsc --noEmit --pretty false
+      - name: Install Chromium and WebKit for synthetic UI verification
+        run: |
+          mkdir -p /tmp/hh-practice-visual-tools
+          npm install --prefix /tmp/hh-practice-visual-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-practice-visual-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Render and verify real Practice page at 320, 354, 390 and 430 pixels
+        run: |
+          mkdir -p artifacts/practice-visual
+          npx next dev --hostname 127.0.0.1 --port 3119 > /tmp/hh-practice-visual-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3119/ru/practice > /dev/null; then break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-practice-visual-next.log; exit 1; fi
+            sleep 2
+          done
+          node scripts/verify-practice-visual-browser.mjs
+      - name: Upload synthetic geometry and browser screenshots only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-reference-design-browser
+          path: artifacts/practice-visual/
+          retention-days: 3
+          if-no-files-found: warn
