@@ -576,9 +576,10 @@ async function handle(request, { params }) {
         throw error
       }
     }
-    if (method === 'POST' && ['intelligence/feedback/save','intelligence/feedback/export','intelligence/feedback/delete'].includes(joined)) {
+    if (method === 'POST' && ['intelligence/feedback/status','intelligence/feedback/save','intelligence/feedback/export','intelligence/feedback/delete'].includes(joined)) {
       const body=await readBody(request,2048)
       const memory=await import('@/lib/app/intelligence-feedback')
+      if(joined==='intelligence/feedback/status'){onlyKeys(body,[]);return json(await memory.intelligenceFeedbackStatus(config,actor))}
       if(joined==='intelligence/feedback/save')return json(await memory.saveIntelligenceFeedback(config,actor,body))
       if(joined==='intelligence/feedback/export'){onlyKeys(body,[]);return json(await memory.exportIntelligenceFeedback(config,actor))}
       return json(await memory.deleteIntelligenceFeedback(config,actor,body))
