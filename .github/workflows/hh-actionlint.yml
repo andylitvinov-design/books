@@ -44,7 +44,9 @@ jobs:
             exit 1
           fi
           printf 'Full workflow validation: %s definitions\n' "${#files[@]}" >> "$GITHUB_STEP_SUMMARY"
-          actionlint -color "${files[@]}"
+          # Full baseline syntax/expression audit: historical shell warnings are
+          # inventoried separately; changed workflows still get strict shellcheck.
+          actionlint -shellcheck= -color "${files[@]}"
       - name: Validate all exact changed workflow definitions
         shell: bash
         env:
