@@ -661,6 +661,36 @@ function paintCinematicFrame(
   paint(ctx,image,effect,localTime,aspect,
     shot.theme==="money"?shot.sceneId as MoneySceneId:null,
     caption,shot.theme,shot.sceneId as LocalSceneId,speed,brightness,null);
+  // The visitor's visual-style filter changes actual local rendered frames,
+  // not merely the premium-provider storyboard text. All four looks use
+  // portable Canvas gradients, identical in preview and MediaRecorder.
+  const w=ctx.canvas.width,h=ctx.canvas.height;
+  ctx.save();
+  if(storyboard.styleId==="warm"){
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(246,181,80,.11)");
+    grade.addColorStop(1,"rgba(122,63,15,.08)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="nature"){
+    const grade=ctx.createLinearGradient(0,h,0,0);
+    grade.addColorStop(0,"rgba(17,112,62,.18)");
+    grade.addColorStop(1,"rgba(135,209,170,.07)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="dream"){
+    const grade=ctx.createRadialGradient(w*.53,h*.36,0,w*.53,h*.45,Math.max(w,h)*.76);
+    grade.addColorStop(0,"rgba(211,171,255,.17)");
+    grade.addColorStop(.65,"rgba(91,87,172,.14)");
+    grade.addColorStop(1,"rgba(27,29,67,.20)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(storyboard.styleId==="minimal"){
+    ctx.fillStyle="rgba(224,221,202,.16)";
+    ctx.fillRect(0,0,w,h);
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(252,245,220,.04)");
+    grade.addColorStop(1,"rgba(5,24,24,.14)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }
+  ctx.restore();
   const edge=Math.min(localTime,Math.max(0,shot.durationSeconds-localTime));
   if(edge<.35){
     ctx.fillStyle="rgba(17,36,30,"+(0.25*(1-edge/.35)).toFixed(3)+")";
