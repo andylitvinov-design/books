@@ -5,6 +5,8 @@ import Link from "next/link";
 import { BookOpen, Check, ChevronDown, Download, Headphones, LockKeyhole, Pause, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
+import { affirmationGoalCatalog } from "@/lib/mandala/video-affirmations";
+import type { VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildPersonalImageryCourse, COURSE_THEMES, selectVerifiedCourseEvidence, suggestGuidedGoalsFromProfile } from "@/lib/mandala/personal-guided-course.mjs";
 import css from "./mandala-guided-course.module.css";
 
@@ -40,6 +42,7 @@ const copy = {
     difficultyLabel:"Key difficulty · optional",difficultyPlaceholder:"For example: it is hard to pause and feel settled",
     goalLabel:"Key goal · optional",goalPlaceholder:"For example: move forward calmly and confidently",
     checkGoals:"Review my goals",selectedGoals:"Your priorities",stage:"8 gentle steps",
+    detailed:"Specify your focus",detailHint:"Choose up to 3 specific goals from the same video editor filter.",
     fromGoals:"From your chosen goals · tests only with consent",fromTests:"From your goals and saved test results",
     themes:{energy:"Energy",money:"Money / work",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Self-care"}
   },
@@ -53,7 +56,7 @@ const copy = {
     load:"Подобрать по тестам",loading:"Проверяем подтверждённые показатели…",read:"Учтены проверенные показатели тестов",empty:"Для выбранных целей нет актуальных подтверждённых шкал. Продолжайте с собственными целями.",
     signin:"Войдите в «Мой дом», чтобы использовать сохранённые тесты.",signInLink:"Мой дом",error:"Не удалось получить приватные показатели. Можно продолжить с выбранными целями.",
     none:"Приватный профиль не загружен; только выбранные цели и ваша самооценка.",self:"Самооценка 1–10 отдельно от психометрических шкал.",
-    create:"Составить программу из 8 сессий",refresh:"Обновить программу",sequence:"Ваша персональная серия",
+    create:"Сформировать программу",refresh:"Обновить программу",sequence:"Ваша персональная серия",
     session:"Сессия",film:"видео",free:"Первое видео бесплатно",ready:"Перенести сюжет и установки в редактор",
     firstHelp:"Подготовит существующий локальный видеоредактор на 60 секунд. Нажмите «Создать видео» ниже и скачайте готовый MP4/WebM. Без вашего нажатия рендер не запускается.",
     listen:"Прослушать текст на устройстве",stop:"Остановить озвучку",script:"Текст и сценарий медитации",download:"Скачать текст №1",
@@ -67,7 +70,8 @@ const copy = {
     difficultyLabel:"Ключевая сложность · необязательно",difficultyPlaceholder:"Например: трудно расслабиться после рабочего дня",
     goalLabel:"Ключевая цель · необязательно",goalPlaceholder:"Например: больше спокойствия и уверенности",
     checkGoals:"Проверить мои цели",selectedGoals:"Ваши акценты",stage:"8 бережных шагов",
-    fromGoals:"По выбранным целям · тесты только с разрешения",fromTests:"По вашим целям и сохранённым тестам",
+    detailed:"Уточнить цели",detailHint:"До 3 конкретных целей из того же фильтра, что и в видеоредакторе.",
+    fromGoals:"8 сессий по вашим целям · тесты по согласию",fromTests:"8 сессий по вашим целям и тестам",
     themes:{energy:"Энергия",money:"Деньги / дело",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Забота о себе"}
   },
   es: {
@@ -94,6 +98,7 @@ const copy = {
     difficultyLabel:"Dificultad principal · opcional",difficultyPlaceholder:"Por ejemplo: me cuesta relajarme después del trabajo",
     goalLabel:"Objetivo principal · opcional",goalPlaceholder:"Por ejemplo: avanzar con calma y confianza",
     checkGoals:"Revisar mis metas",selectedGoals:"Tus prioridades",stage:"8 pasos amables",
+    detailed:"Definir las prioridades",detailHint:"Elige hasta 3 metas del mismo filtro que usa el editor de vídeo.",
     fromGoals:"Según tus metas · pruebas solo con permiso",fromTests:"Según tus metas y resultados guardados",
     themes:{energy:"Energía",money:"Dinero / trabajo",relationships:"Relaciones",goals:"Metas",life:"Sentido",health:"Autocuidado"}
   }
@@ -103,6 +108,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const t = copy[locale];
   const [goals,setGoals] = useState<VideoTheme[]>([]);
   const [goalsOpen,setGoalsOpen] = useState(false);
+  const [detailGoals,setDetailGoals] = useState<VideoAffirmationGoal[]>([]);
   const [keyDifficulty,setKeyDifficulty] = useState("");
   const [keyGoal,setKeyGoal] = useState("");
   const [consent,setConsent] = useState(false);
@@ -114,8 +120,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const profileRequestRef = useRef(0);
   const actualGoals = goals.length ? goals : [theme];
   const plan = useMemo(()=>buildPersonalImageryCourse({
-    locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal
-  }),[locale,theme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal]);
+    locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal,
+    detailGoals:detailGoals.flatMap(id=>affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label))
+  }),[locale,theme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailGoals]);
   const sessions = plan.sessions as Session[];
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
@@ -123,6 +130,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     // reused for a different chosen focus without another network request.
     setGoals(prev=>prev.includes(goal)?prev.filter(value=>value!==goal):
       prev.length<3?[...prev,goal]:[...prev.slice(1),goal]);
+  };
+  const toggleDetailGoal=(id:VideoAffirmationGoal)=>{
+    setDetailGoals(previous=>previous.includes(id)?previous.filter(value=>value!==id):
+      previous.length<3?[...previous,id]:previous);
   };
   const withdraw=()=>{
     profileRequestRef.current++;
@@ -220,7 +231,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           <Target size={17} aria-hidden="true"/>{goalsOpen?t.close:t.checkGoals}
           <ChevronDown size={16} aria-hidden="true"/>
         </button>
-        <span className={css.goalSelection}>{t.selectedGoals}: {actualGoals.map(item=>t.themes[item]).join(" · ")}</span>
+        <span className={css.goalSelection}>{t.selectedGoals}: {actualGoals.map(item=>t.themes[item]).join(" · ")}{detailGoals.length?" · "+detailGoals.length+"/3":""}</span>
       </div>
       {goalsOpen?<div className={css.goalsPanel} id="video-therapy-goals" data-video-goals-filter>
         <strong>{t.goals}</strong><p>{t.chosen}</p>
@@ -230,6 +241,20 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
               onClick={()=>toggleGoal(goal)} data-guided-goal={goal}>
               {actualGoals.includes(goal)?<Check size={14} aria-hidden="true"/>:null}{t.themes[goal]}
             </button>)}
+        </div>
+        <div className={css.detailPanel} data-video-therapy-detailed-goals>
+          <strong>{t.detailed}</strong>
+          <small>{t.detailHint}</small>
+          <div className={css.detailChips} role="group" aria-label={t.detailed}>
+            {affirmationGoalCatalog[locale].map(item=>
+              <button type="button" key={item.id} data-guided-focus-goal={item.id}
+                aria-pressed={detailGoals.includes(item.id)}
+                disabled={disabled||(!detailGoals.includes(item.id)&&detailGoals.length>=3)}
+                onClick={()=>toggleDetailGoal(item.id)}>
+                {detailGoals.includes(item.id)?<Check size={13} aria-hidden="true"/>:null}
+                {item.label}
+              </button>)}
+          </div>
         </div>
         <label className={css.consent}>
           <input type="checkbox" checked={consent} disabled={disabled}
