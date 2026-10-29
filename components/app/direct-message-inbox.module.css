@@ -144,3 +144,9 @@
 .actions .send{margin-left:auto}
 .voicePreview{width:min(100%,430px);height:48px;max-width:100%;}
 @media(max-width:390px){.actions{gap:6px}.filePick{padding:7px 9px}.actions .send{padding:9px 11px}}
+
+
+/* Video notes share the authenticated, private message feed; no public URL. */
+.videoBubble{display:block;width:min(230px,70vw);height:min(230px,70vw);aspect-ratio:1/1;object-fit:cover;border-radius:50%;background:#32242e;max-width:100%;border:3px solid #eed7df}
+.videoDraft{display:block;width:min(240px,74vw);height:min(240px,74vw);object-fit:cover;border-radius:50%;background:#32242e;border:3px solid #e5cad4;max-width:100%}
+@media(max-width:390px){.videoBubble,.videoDraft{width:min(195px,64vw);height:min(195px,64vw)}}
