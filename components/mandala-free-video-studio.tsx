@@ -1374,8 +1374,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <header className={videoStyles.quickHeader}>
           <div><h2 id="video-quick-heading">{quick.title}</h2><p>{quick.sub}</p></div>
           <button type="button" data-video-quick-smart disabled={recording||preparing}
-            onClick={()=>{setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);
-              suggestScene();}}>
+            onClick={()=>{if(!uploadedAudio){setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);}
+              if(wish.trim())suggestScene();}}>
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
@@ -1545,7 +1545,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
           <audio className={videoStyles.quickAudioPlayer} controls preload="none"
-            src={previewAudioUrl||"/audio/mandala/ocean.wav"}
+            src={previewAudioUrl||(recommendedAudioId?presetAudioUrl(recommendedAudioId):"/audio/mandala/ocean.wav")}
             aria-label={quick.preview}/>
           <div className={videoStyles.quickAudioFooter}>
             <button type="button" disabled={recording||preparing} onClick={()=>{setAudioAuto(false);chooseMusic("none");}}>{quick.silent}</button>
