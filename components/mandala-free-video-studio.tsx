@@ -719,7 +719,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || jobRef.current) return;
-    const [w,h] = formatDimensions(aspect, "hd");
+    const [w,h] = formatDimensions("landscape", "hd");
     if(canvas.width !== w) canvas.width=w;
     if(canvas.height !== h) canvas.height=h;
   }, [aspect]);
@@ -755,6 +755,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
+  // The hero is a wide cinematic slide. A portrait canvas CSS-covered into
+  // the wide preview previously zoomed in until the head disappeared. The
+  // recording still uses the visitor-selected aspect ratio.
   useEffect(() => {
     if (!source || jobRef.current) return;
     let cancelled = false;
@@ -765,18 +768,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (cancelled || jobRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const [width,height] = formatDimensions(aspect,"hd");
+      const [width,height] = formatDimensions("landscape","hd");
       canvas.width=width;canvas.height=height;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paint(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+      paint(ctx,image,effect,0,"landscape",moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paint(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
+          paint(ctx,image,effect,(now-startedAt)/1000,"landscape",moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current);
           paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -1192,8 +1195,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.heroPromo} aria-hidden="true"
           style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.30),rgba(6,28,29,.53)),url("${activeFilm.poster}")`} : undefined} />
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
-          <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
-            height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
+          <canvas key={aspect} ref={canvasRef} width={formatDimensions("landscape","hd")[0]}
+            height={formatDimensions("landscape","hd")[1]} data-mandala-cinematic-canvas data-preview-layout="landscape"
             aria-label={supportUi.quickPreview}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
