@@ -8,6 +8,7 @@ import { useState } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-video-library.module.css";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
+import AcademyVideoProgress from "@/components/app/academy-video-progress";
 
 export type AcademyVideoLesson = { id: string; title: string; unavailable?: boolean };
 export type AcademyVideoChapter = { id: string; title: string; videos: AcademyVideoLesson[] };
@@ -299,6 +300,7 @@ export function AcademyVideoLibraryClient({
                                                 <a href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer">
                                                   {t.youtube} <ArrowUpRight size={14} aria-hidden="true" />
                                                 </a>
+                                                <AcademyVideoProgress key={lesson.id} videoId={lesson.id} title={lesson.title} locale={locale} />
                                               </div>
                                             ) : null}
                                           </div>
