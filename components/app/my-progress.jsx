@@ -51,6 +51,7 @@ const COPY = {
     topicsHeader:'Topics', allTopics:'All topics', energy:'Energy', money:'Money & work',
     relationships:'Relationships', meaning:'Goals & meaning', topicHint:'Only activities with a verified editorial topic appear in a selected topic.',
     sectionsHistory:'My history by section', viewSection:'Open section', noTopicHistory:'No saved records in this topic yet.',
+    rubric:{courses:'My courses',tests:'My tests',practices:'My practices',services:'My orders',reports:'My reports',notes:'My notes'},
     profileShortcut:'My profile', ordersShortcut:'My orders', servicesShortcut:'My services', messagesShortcut:'Messages',
     expandHistory:'Show all dated entries', collapseHistory:'Hide dated entries', recentByTopic:'Newest first · swipe for earlier records',
     noSavedVideos:'Nothing saved yet. Explore the Academy or create your first video.',
@@ -89,6 +90,7 @@ const COPY = {
     topicsHeader:'Темы', allTopics:'Все темы', energy:'Энергия', money:'Деньги и работа',
     relationships:'Отношения', meaning:'Цели и смыслы', topicHint:'Фильтр показывает только записи с подтверждённой тематикой в каталоге.',
     sectionsHistory:'История по разделам', viewSection:'Открыть раздел', noTopicHistory:'В этой теме ещё нет сохранённых материалов.',
+    rubric:{courses:'Мои курсы',tests:'Мои тесты',practices:'Мои практики',services:'Мои заказы',reports:'Мои отчёты',notes:'Мои заметки'},
     profileShortcut:'Мой профиль', ordersShortcut:'Мои заказы', servicesShortcut:'Мои услуги', messagesShortcut:'Сообщения',
     expandHistory:'Показать всю историю по датам', collapseHistory:'Скрыть список по датам', recentByTopic:'Новые слева · листайте вправо к прошлому',
     noSavedVideos:'Пока ничего не сохранено. Откройте Академию или создайте первое видео.',
@@ -127,6 +129,7 @@ const COPY = {
     topicsHeader:'Temas', allTopics:'Todos', energy:'Energía', money:'Dinero y trabajo',
     relationships:'Relaciones', meaning:'Objetivos y sentido', topicHint:'Solo aparecen registros con temas editoriales confirmados.',
     sectionsHistory:'Mi historial por sección', viewSection:'Abrir sección', noTopicHistory:'Aún no hay registros guardados de este tema.',
+    rubric:{courses:'Mis cursos',tests:'Mis tests',practices:'Mis prácticas',services:'Mis pedidos',reports:'Mis informes',notes:'Mis notas'},
     profileShortcut:'Mi perfil', ordersShortcut:'Mis pedidos', servicesShortcut:'Mis servicios', messagesShortcut:'Mensajes',
     expandHistory:'Ver todo por fecha', collapseHistory:'Ocultar lista por fecha', recentByTopic:'Más nuevos primero · desliza para ver los anteriores',
     noSavedVideos:'Aún no has guardado nada. Explora Academia o crea tu primer vídeo.',
@@ -288,9 +291,10 @@ export default function MyProgress({ data, locale='en' }) {
       entry.category===id&&(selectedTopic==='all'||entry.topics?.includes(selectedTopic)))
     })).filter(group=>group.items.length>0),[progress,selectedTopic])
   const lastActivity=useMemo(()=>progress.entries.filter(entry=>
-    (entry.category==='tests'&&entry.status==='in_progress')
-    || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status))
-  )[0], [progress])
+    ((entry.category==='tests'&&entry.status==='in_progress')
+    || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status)))
+    && (selectedTopic==='all'||entry.topics?.includes(selectedTopic))
+  )[0], [progress,selectedTopic])
   const filtered=useMemo(()=>progress.entries.filter(entry=>
     (filter==='all'||entry.category===filter)
     &&(selectedTopic==='all'||entry.topics?.includes(selectedTopic))
@@ -326,6 +330,7 @@ export default function MyProgress({ data, locale='en' }) {
   // Invalidate outstanding signed-URL requests on account switch / unmount.
   useEffect(()=>()=>{mandalaEpoch.current+=1},[accountId])
   const countFor=id=>progress.entries.filter(entry=>entry.category===id).length
+  const visibleCountFor=id=>progress.entries.filter(entry=>entry.category===id && matchesTopic(entry)).length
   const jumpTo=id=>{setFilter(id);setShown(24);setHistoryExpanded(true)}
   const topicChange=id=>{setSelectedTopic(id);setFilter('all');setShown(24)}
   const practitioner=Boolean(data?.practitioner||data?.practice)
@@ -403,7 +408,7 @@ export default function MyProgress({ data, locale='en' }) {
           <h2 id="hh-progress-library-title">{t.library}</h2></div>
       </div>
       <div className={styles.library}>
-        {LIBRARY.map(({id,Icon,tone})=><a key={id} href={countFor(id)
+        {LIBRARY.map(({id,Icon,tone})=><a key={id} href={visibleCountFor(id)
           ? '#'+(id==='videos'?'hh-progress-watch-title':id==='mandalas'?'hh-progress-mandalas-title':'hh-progress-rail-'+id)
           : SECTION_HREF(id,lang)}
           className={styles.libraryTile} data-tone={tone}
@@ -425,7 +430,7 @@ export default function MyProgress({ data, locale='en' }) {
         <section className={styles.rubricSection} key={id} id={'hh-progress-rail-'+id}
           aria-labelledby={'hh-progress-rail-heading-'+id}>
           <div className={styles.sectionHead}>
-            <h3 id={'hh-progress-rail-heading-'+id}>{t[id]} <small>({items.length})</small></h3>
+            <h3 id={'hh-progress-rail-heading-'+id}>{t.rubric?.[id]||t[id]} <small>({items.length})</small></h3>
             <Link href={SECTION_HREF(id,lang)} prefetch={false} className={styles.sectionLink}>
               {t.viewSection}<ArrowRight size={17}/>
             </Link>
