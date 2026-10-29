@@ -17,7 +17,9 @@ const config={encryptionKey:randomBytes(32),encryptionKeyId:'synthetic',supabase
 function fixture(mime='image/jpeg',bytes=512){
  const uploaded=[]
  const record={id:IDs.asset,thread_id:IDs.thread,uploader_account_id:IDs.owner,
-   object_key:IDs.owner+'/'+IDs.asset+'.jpg',mime,expected_bytes:bytes,
+   object_key:IDs.owner+'/'+IDs.asset+'.'+(
+     mime==='video/mp4'?'mp4':mime==='video/webm'?'webm':
+       mime==='video/quicktime'?'mov':'jpg'),mime,expected_bytes:bytes,
    status:'pending',created_at:new Date().toISOString()}
  const transaction=async(_cfg,actor,fn)=>fn({query:async(sql,params=[])=>{
    if(sql.includes('from app.practitioner_direct_threads t'))
@@ -110,6 +112,21 @@ test('audio bytes pass private upload with valid Ogg signature',async()=>{
  assert.deepEqual(await f.store.upload({id:IDs.owner},IDs.asset,{mime:'audio/ogg',body}),
    {uploaded:true})
  assert.equal(f.uploaded.length,1)
+})
+test('short private MP4 WebM and iPhone MOV clips use verified binary headers',async()=>{
+ for(const mime of ['video/mp4','video/webm','video/quicktime']){
+   const fixtureData=fixture(mime)
+   const body=Buffer.alloc(512,0)
+   if(mime==='video/webm')body.set([0x1a,0x45,0xdf,0xa3],0)
+   else{body.writeUInt32BE(24,0);body.write('ftyp',4,'ascii')}
+   assert.deepEqual(await fixtureData.store.upload({id:IDs.owner},IDs.asset,{mime,body}),
+     {uploaded:true})
+   assert.equal(fixtureData.uploaded.length,1)
+   const badFixture=fixture(mime)
+   await assert.rejects(badFixture.store.upload({id:IDs.owner},IDs.asset,{
+     mime,body:Buffer.alloc(512,0)}),error=>error.code==='MEDIA_TYPE_NOT_ALLOWED')
+   assert.equal(badFixture.uploaded.length,0)
+ }
 })
 test('outsider, mismatched MIME/size and disguised media never reach storage',async()=>{
  const f=fixture()
