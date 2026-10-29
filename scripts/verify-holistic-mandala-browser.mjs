@@ -550,6 +550,16 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await goals.locator('[data-guided-goal="relationships"]').click();
           assert.equal(await goals.locator("[data-guided-focus-goal]").count(),12);
           await goals.locator('[data-guided-focus-goal="boundaries"]').click();
+          await page.locator("[data-meditation-generate]").click();
+          const privateMeditation=await page.locator("[data-meditation-script]").inputValue();
+          assert.match(privateMeditation,/Мне трудно расслабиться/);
+          assert.match(privateMeditation,/Я хочу больше спокойствия/);
+          assert.match(privateMeditation,/Личные границы/);
+          assert.equal(await page.locator("[data-meditation-copy]").isVisible(),true);
+          const medDownload=page.waitForEvent("download",{timeout:15000});
+          await page.locator("[data-meditation-download]").click();
+          const textFile=await medDownload;
+          assert.equal(textFile.suggestedFilename(),"holistic-house-personal-meditation-ru.txt");
           assert.equal(await goals.locator('[data-guided-goal="relationships"]').getAttribute("aria-pressed"),"true");
           await page.locator("[data-guided-create-plan]").click();
           assert.equal(await page.locator("[data-guided-session]").count(),8);
