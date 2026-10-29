@@ -174,6 +174,10 @@ jobs:
         run: node --conditions=react-server --test tests/crm-opportunities.test.mjs
       - name: Lint opportunity lifecycle, store, protected API and mobile page
         run: npx eslint lib/crm/opportunity-contract.mjs lib/crm/opportunity-pagination.mjs lib/crm/opportunity-store.js components/app/crm-opportunities.jsx app/api/app/crm/opportunities/route.js tests/crm-opportunities.test.mjs
+      - name: Deal booking request schedules one owner-only task without external send
+        run: node --conditions=react-server --test tests/crm-deal-booking-followups.test.mjs
+      - name: Lint deal booking task integration
+        run: npx eslint lib/crm/opportunity-store.js lib/crm/workflow-store.js components/app/crm-workflow.jsx components/app/crm-opportunities.jsx tests/crm-deal-booking-followups.test.mjs
       - name: Business pipeline stage integrity, owner actions and visual contract
         run: node --test tests/crm-business-pipeline.test.mjs
       - name: Lint business pipeline flow and accessible board
