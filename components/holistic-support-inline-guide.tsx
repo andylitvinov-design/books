@@ -646,7 +646,7 @@ export function HolisticSupportInlineGuide({
     if(kind==="meditation") return primaryVideo ? <button className={styles.serviceAction} type="button"
       onClick={()=>onVideo(primaryVideo.id)}><Play size={17} aria-hidden="true"/>
       <span>{primaryVideo.title}</span><ArrowRight size={16} aria-hidden="true"/></button>
-      : <button type="button" className={styles.serviceAction} onClick={()=>onVideo(null)}>{talk.videoBrowse}</button>;
+      : <button type="button" className={styles.serviceAction} onClick={()=>onVideo(null)}>{t.videoBrowse}</button>;
     if(kind==="courses")return <Link className={styles.primaryLink}
       href={"/"+locale+(topic==="money"?"/explore/business":"/academy")} prefetch={false}>
       {journey.other}<ArrowRight size={17} aria-hidden="true"/></Link>;
@@ -729,7 +729,7 @@ export function HolisticSupportInlineGuide({
             </button>
           </div>)}
           <button type="button" className={styles.textLink} data-guide-media-short-practice onClick={startExercise}>{journey.shortPractice}</button>
-          {!mediaCandidates.length?<button type="button" className={styles.textLink} onClick={()=>onVideo(null)}>{talk.videoBrowse}</button>:null}
+          {!mediaCandidates.length?<button type="button" className={styles.textLink} onClick={()=>onVideo(null)}>{t.videoBrowse}</button>:null}
         </div> : phase==="media-return" ? <div className={styles.options}>
           <button className={styles.primary} type="button" data-guide-self-report-watched onClick={()=>askFeedback(journey.videoDone)}>{journey.videoDone}</button>
           <button type="button" onClick={()=>reply(journey.notYet,journey.mediaWait)}>{journey.notYet}</button>
