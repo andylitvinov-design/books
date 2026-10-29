@@ -130,7 +130,7 @@ test('intelligence route enforces origin and verified session before planning', 
   assert.equal((await auth.client.auth.exchangeCodeForSession('synthetic-code')).error, null)
   const cookies = commit(auth).cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')
   const headers = {origin, cookie:cookies}
-  const response = await route.POST(request(body, headers), params)
+  const response = await route.POST(request({...body,symbolicInterest:'include'}, headers), params)
   assert.equal(response.status, 200)
   assert.match(response.headers.get('cache-control'), /no-store/)
   const result = await response.json()
@@ -162,7 +162,7 @@ test('intelligence route enforces origin and verified session before planning', 
   const coursePlan=await course.json()
   assert.equal(coursePlan.primary.href,'/en/academy/principles-of-energywork/learn')
   assert.equal(coursePlan.primary.requiresUserConfirmation,true)
-  const historyBody={...body,intent:{...body.intent,formats:['video']},videoHistory:'avoid_marked'}
+  const historyBody={...body,intent:{...body.intent,formats:['video']},videoHistory:'avoid_marked',symbolicInterest:'include'}
   const history=await route.POST(request(historyBody,headers),params)
   assert.equal((await history.json()).status,'no_match')
   assert.deepEqual(route.videoReads,[user.id])

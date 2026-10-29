@@ -17,7 +17,7 @@ import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-set
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
 const body={requestId:'d4502108-a8b8-4d3b-813f-c255b452bde4',surface:'cabinet',intent:{language:'en'},
-  preflight:{immediateDanger:'no',selfHarmThoughts:'no'},profileFocus:'confirmed_coaching_topic'}
+  preflight:{immediateDanger:'no',selfHarmThoughts:'no'},profileFocus:'confirmed_coaching_topic',symbolicInterest:'include'}
 const videos=JSON.parse(await readFile(new URL('../data/academy/meditation-catalog-candidates-20261028.json',import.meta.url),'utf8')).videos
 // Synthetic metadata ensures distinct outcomes while running the real ranker.
 const source={...videos.find(video=>video.youtube_id==='HqfixazXqRY'),goals:['money'],goal_weights:{money:90}}
@@ -91,7 +91,7 @@ test('verified completed test affects only its owner after explicit consent',asy
   assert.equal(ownerRows.length,1)
   assert.equal(otherRows.length,0)
   const loadFor=who=>async()=>projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(who),accountId:who.id})
-  const request={...body,profileFocus:undefined,testHistory:'avoid_completed',intent:{language:'en',selectedTopics:['energy'],formats:['test']}}
+  const request={...body,profileFocus:undefined,symbolicInterest:undefined,testHistory:'avoid_completed',intent:{language:'en',selectedTopics:['energy'],formats:['test']}}
   const first=await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory:loadFor(a)})
   const second=await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory:loadFor(b)})
   assert.equal(first.primary.id,'test:hh-current-state')

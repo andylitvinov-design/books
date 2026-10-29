@@ -12,9 +12,9 @@ if (!['chromium','webkit'].includes(name)) throw new Error('UNSUPPORTED_BROWSER'
 const base = process.env.HH_INTELLIGENCE_BASE_URL || 'http://127.0.0.1:3187'
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('LOCAL_SITE_REQUIRED')
 const copy = {
-  en:{next:'Continue',no:'No',yes:'Yes',skip:'Skip',other:'Another option',help:'If you may be in danger'},
-  ru:{next:'Продолжить',no:'Нет',yes:'Да',skip:'Пропустить',other:'Другой вариант',help:'Если вам угрожает опасность'},
-  es:{next:'Continuar',no:'No',yes:'Sí',skip:'Omitir',other:'Otra opción',help:'Si puedes estar en peligro'},
+  en:{next:'Continue',no:'No',yes:'Yes',symbolic:'Include symbolic practices',symbolicResult:'Symbolic spiritual practice · not medical treatment',skip:'Skip',other:'Another option',help:'If you may be in danger'},
+  ru:{next:'Продолжить',no:'Нет',yes:'Да',symbolic:'Включить символические практики',symbolicResult:'Символическая духовная практика · не медицинское лечение',skip:'Пропустить',other:'Другой вариант',help:'Если вам угрожает опасность'},
+  es:{next:'Continuar',no:'No',yes:'Sí',symbolic:'Incluir prácticas simbólicas',symbolicResult:'Práctica espiritual simbólica · no es tratamiento médico',skip:'Omitir',other:'Otra opción',help:'Si puedes estar en peligro'},
 }
 for (let i=0;i<60;i++) {
   try { if ((await fetch(`${base}/en/holistic-support`)).ok) break } catch { /* server starting */ }
@@ -40,6 +40,7 @@ try {
       await card.getByRole('button',{name:t.next,exact:true}).click()
       await card.locator('#hh-intelligence-format-meditation').selectOption('video')
       await card.getByRole('button',{name:t.next,exact:true}).click()
+      await card.getByRole('button',{name:t.symbolic,exact:true}).click()
       await card.getByRole('button',{name:t.no,exact:true}).click()
       await card.getByRole('button',{name:t.no,exact:true}).click()
       await card.getByRole('button',{name:t.skip,exact:true}).click()
@@ -47,6 +48,7 @@ try {
       await link.waitFor({state:'visible',timeout:15000})
       const href=await link.getAttribute('href')
       assert.match(href,/^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/)
+      assert.equal(await card.getByText(t.symbolicResult,{exact:true}).isVisible(),true)
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${locale} ${width} overflow`)
       assert.deepEqual(privateCalls,[], 'guest request unexpectedly reached the private API')
       if(width===390) await card.screenshot({path:`${evidence}/${name}-${locale}-${width}.png`})
@@ -67,6 +69,8 @@ try {
     await next.focus();await page.keyboard.press('Enter')
     await card.locator('#hh-intelligence-format-meditation').selectOption('video')
     await next.focus();await page.keyboard.press('Enter')
+    const symbolic=card.getByRole('button',{name:copy.en.symbolic,exact:true})
+    await symbolic.focus();await page.keyboard.press('Enter')
     const yes=card.getByRole('button',{name:copy.en.yes,exact:true})
     await yes.focus();await page.keyboard.press('Enter')
     assert.equal(await card.getByText(copy.en.help,{exact:false}).isVisible(),true)
@@ -82,6 +86,7 @@ try {
     await card.getByRole('button',{name:'Continue',exact:true}).click()
     await card.locator('#hh-intelligence-format-meditation').selectOption('video')
     await card.getByRole('button',{name:'Continue',exact:true}).click()
+    await card.getByRole('button',{name:copy.en.symbolic,exact:true}).click()
     await card.getByRole('button',{name:'No',exact:true}).click()
     await card.getByRole('button',{name:'No',exact:true}).click()
     await card.locator('#hh-checkin-before-meditation').fill('3')
@@ -93,6 +98,25 @@ try {
     await card.getByText('Change in your self-report: +2.',{exact:false}).waitFor()
     assert.equal(await card.getByText('not proof of a treatment effect',{exact:false}).isVisible(),true)
   } finally { await checkinPage.close() }
+  const secularPage=await browser.newPage({viewport:{width:390,height:844}})
+  try {
+    await secularPage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
+    await secularPage.locator('[data-meditation-finder-toggle]').click()
+    await secularPage.locator('[data-meditation-audio-language]').selectOption('en')
+    const card=secularPage.locator('[data-holistic-intelligence]')
+    await card.locator('select').selectOption('energy')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.locator('select').selectOption('video')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.getByRole('button',{name:'Only non-symbolic practices',exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.skip,exact:true}).click()
+    await card.locator('[class*="result"]').waitFor({state:'visible'})
+    assert.equal(await card.getByText('Symbolic spiritual practice · not medical treatment',{exact:true}).count(),0)
+    const link=card.getByRole('link').first()
+    if(await link.count()) assert.doesNotMatch(await link.getAttribute('href'),/(HqfixazXqRY|80xZ7jN6o2Y|_IOX0E8N-To)/)
+  } finally { await secularPage.close() }
   const testPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
     const privateCalls=[]
@@ -172,5 +196,5 @@ try {
     assert.equal(await learner.locator('[data-energywork-slide-id]').getAttribute('data-energywork-slide-id'),'flight-01')
     await learner.close()
   } finally { await coursePage.close() }
-  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',testRecommendation:'passed',serviceOptIn:'passed',coursePreview:'passed'}))
+  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',symbolicOptIn:'passed',testRecommendation:'passed',serviceOptIn:'passed',coursePreview:'passed'}))
 } finally { await browser.close() }

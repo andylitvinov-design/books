@@ -8,19 +8,27 @@ const sourceId = 'HqfixazXqRY';
 const intent = { language: 'en', selectedTopics: ['energy'] };
 const preflight = { immediateDanger: 'no', selfHarmThoughts: 'no' };
 const body = { requestId: 'd4502108-a8b8-4d3b-813f-c255b452bde4', surface: 'cabinet', intent, preflight };
+const videoBody = {...body,symbolicInterest:'include'};
 const loader = async () => ({ videos, publishedSourceIds: [sourceId] });
 
 test('plans one real, eligible meditation and returns a private-data-free response', async () => {
-  const result = await planIntelligenceRequest(body, { loadCatalog: loader });
+  assert.equal((await planIntelligenceRequest(body, { loadCatalog:loader })).status,'no_match');
+  const result = await planIntelligenceRequest(videoBody, { loadCatalog: loader });
   assert.equal(result.status, 'recommend');
   assert.equal(result.primary.id, `youtube:${sourceId}`);
   assert.equal(result.primary.href, `https://www.youtube.com/watch?v=${sourceId}`);
   assert.equal(result.primary.requiresUserConfirmation, true);
+  assert.equal(result.primary.symbolic,true);
   assert.ok(result.explanation);
   assert.equal(result.feedbackRecording, 'session_only');
   assert.equal(JSON.stringify(result).includes('immediateDanger'), false);
   assert.equal(JSON.stringify(result).includes(body.requestId), false);
   assert.ok(result.alternatives.length <= 2);
+});
+test('symbolic interest is independent, explicit, and only accepted for video', async () => {
+  await assert.rejects(planIntelligenceRequest({...body,symbolicInterest:true},{loadCatalog:loader}),/INVALID_INTELLIGENCE_REQUEST/)
+  await assert.rejects(planIntelligenceRequest({...body,symbolicInterest:'include',intent:{...intent,formats:['test']}},{loadCatalog:loader}),/INVALID_INTELLIGENCE_REQUEST/)
+  assert.equal((await planIntelligenceRequest({...body,symbolicInterest:'include',preflight:undefined},{loadCatalog:loader})).status,'unavailable')
 });
 test('urgent or missing preflight never reads the catalog', async () => {
   const never = async () => { throw new Error('catalog must not be read'); };
@@ -32,7 +40,7 @@ test('invalid claimed ownership is rejected before reading any catalog', async (
   await assert.rejects(planIntelligenceRequest({ ...body, ownerScoped: true }, { loadCatalog: async () => { throw Error('unexpected read'); } }), /INVALID_INTELLIGENCE_REQUEST/);
 });
 test('dismissal changes the next step for this request without recording anything', async () => {
-  const result = await planIntelligenceRequest({ ...body, session: { dismissedIds: [`youtube:${sourceId}`] } }, { loadCatalog: loader });
+  const result = await planIntelligenceRequest({ ...videoBody, session: { dismissedIds: [`youtube:${sourceId}`] } }, { loadCatalog: loader });
   assert.equal(result.status, 'no_match');
   assert.equal(result.feedbackRecording, 'session_only');
 });
@@ -44,7 +52,7 @@ test('catalog failure returns unavailable without echoing sensitive input', asyn
 });
 test('crisis language in untrusted catalog titles is never emitted as a recommendation', async () => {
   const badVideo = { ...videos.find(video => video.youtube_id === sourceId), title: 'I want to die' };
-  const result = await planIntelligenceRequest(body, { loadCatalog: async () => ({ videos:[badVideo], publishedSourceIds:[sourceId] }) });
+  const result = await planIntelligenceRequest(videoBody, { loadCatalog: async () => ({ videos:[badVideo], publishedSourceIds:[sourceId] }) });
   assert.equal(result.status, 'no_match');
   assert.equal(JSON.stringify(result).includes('I want to die'), false);
 });
@@ -59,7 +67,7 @@ test('crisis handoff and empty results are localized without inventing audio in 
   }
 });
 test('interface and soundtrack languages stay separate', async () => {
-  const result = await planIntelligenceRequest({ ...body, intent:{ language:'ru', audioLanguage:'en', selectedTopics:['energy'] } }, { loadCatalog:loader });
+  const result = await planIntelligenceRequest({ ...videoBody, intent:{ language:'ru', audioLanguage:'en', selectedTopics:['energy'] } }, { loadCatalog:loader });
   assert.equal(result.status, 'recommend');
   assert.equal(result.primary.audioLanguage, 'en');
   assert.match(result.explanation, /выбранной/);
@@ -80,7 +88,7 @@ test('saved coaching topic is read only with explicit consent and no current foc
 test('a confirmed saved topic can rank a genuinely eligible synthetic source without exposing the plan', async () => {
   const source={...videos.find(video=>video.youtube_id===sourceId),goals:['money'],goal_weights:{money:90}}
   const loadCoaching=async()=>({course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'private goal',approvedAt:'2026-01-01T00:00:00Z'}}}})
-  const result=await planIntelligenceRequest({...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}},{loadCatalog:async()=>({videos:[source],publishedSourceIds:[sourceId]}),loadCoaching})
+  const result=await planIntelligenceRequest({...videoBody,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}},{loadCatalog:async()=>({videos:[source],publishedSourceIds:[sourceId]}),loadCoaching})
   assert.equal(result.status,'recommend')
   assert.match(result.explanation,/saved coaching topic/)
   assert.equal(JSON.stringify(result).includes('private goal'),false)
@@ -156,7 +164,7 @@ test('service adapter rejects forged routes and never suggests symbolic or unrev
 test('video history is read only after a cabinet owner explicitly opts in and marked videos are excluded', async () => {
   let reads=0
   const loadVideoHistory=async ids=>{reads++;assert(ids.includes(sourceId));return {videoIds:[sourceId]}}
-  const request={...body,intent:{language:'en',selectedTopics:['energy'],formats:['video']}}
+  const request={...videoBody,intent:{language:'en',selectedTopics:['energy'],formats:['video']}}
   assert.equal((await planIntelligenceRequest(request,{loadCatalog:loader,loadVideoHistory})).status,'recommend')
   assert.equal(reads,0)
   const avoided=await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory})

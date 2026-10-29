@@ -6,7 +6,17 @@ import { reasonAcrossMeditations } from '../lib/holistic-support/client-reasonin
 const videos = JSON.parse(readFileSync(new URL('../data/academy/meditation-catalog-candidates-20261028.json', import.meta.url), 'utf8')).videos;
 // This ID is also in the existing English-guided-meditations source manifest.
 const sourceId = 'HqfixazXqRY';
-const base = { intent: { language: 'en', selectedTopics: ['energy'] }, safety: { status: 'clear' }, videos, publishedSourceIds: [sourceId] };
+const base = { intent: { language: 'en', selectedTopics: ['energy'] }, safety: { status: 'clear' }, videos, publishedSourceIds: [sourceId], includeSymbolic:true };
+
+test('symbolic practices need explicit interest and unknown approach fails closed', () => {
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false}).status,'no_match');
+  const original=videos.find(video=>video.youtube_id===sourceId);
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'unknown',techniques:[]}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:true,videos:[{...original,spiritual_style:'unknown',techniques:[]}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'open',techniques:['energy_symbolic']}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'secular',techniques:['breath']}]}).status,'recommend');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:true}).status,'recommend');
+});
 
 test('uses the actual meditation ranker and a published original as a real action', () => {
   const result = reasonAcrossMeditations(base);
