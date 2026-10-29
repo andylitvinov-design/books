@@ -181,3 +181,17 @@ test("real video acceptance isolates each WebKit viewport and resets an emptied 
   assert.match(studio,/onEmptied=\{\(\)=>setPremiumReady\(false\)\}/);
   assert.match(browser,/master\.readyState >= 2 && master\.videoWidth > 0/);
 });
+
+
+test("Safari evicted master can reload on the visitor's explicit photo consent without faking decode",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  assert.match(studio,/data-video-photo-consent checked=\{photoConsent\}/);
+  assert.match(studio,/const consented=event\.currentTarget\.checked/);
+  assert.match(studio,/if\(consented && previewPlaying && activeFilm && master && master\.readyState<2\)/);
+  assert.match(studio,/setPremiumReady\(false\)/);
+  assert.match(studio,/master\.networkState===master\.NETWORK_IDLE\) master\.load\(\)/);
+  assert.match(studio,/void master\.play\(\)\.catch/);
+  // Even after a retry, export remains unavailable until real decoded frames exist.
+  assert.match(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
+});
