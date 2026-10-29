@@ -7,6 +7,7 @@ import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { interpretSupportUtterance } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
@@ -44,11 +45,6 @@ function preflight(text,locale) {
   }
   return {status:"clear"};
 }
-function goalFromRequest(text,locale,explicit) {
-  if (GOALS.has(explicit)) return explicit;
-  const found = interpretSupportUtterance(text,locale).topic;
-  return found==="love"?"relationships":GOALS.has(found)?found:null;
-}
 export async function POST(request) {
   let auth;
   try {
@@ -63,7 +59,15 @@ export async function POST(request) {
     await consumeRate(config,{op:"holistic-agent-turn",actorId:actor.id},10,60);
     await consumeRate(config,{op:"holistic-agent-daily",actorId:actor.id},100,86400);
     const safety = preflight(body.message,body.locale);
-    const goal=goalFromRequest(body.message,body.locale,body.selectedGoal);
+    // Earlier unsafe user turns in the supplied working window may only
+    // strengthen the safety gate, never override one. Durable safety state
+    // must be server-bound before a clinical/public rollout.
+    const recentUnsafe = body.history.some(turn => turn.role==="user" &&
+      preflight(turn.text,body.locale).status!=="clear");
+    if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    const focus=resolveConversationFocus({message:body.message,locale:body.locale,
+      history:body.history,selectedGoal:body.selectedGoal});
+    const goal=focus.goal;
     // No private test scores, practitioner notes or saved memories are read
     // by this first vertical slice. Catalog is the existing published service list.
     const decision = buildHolisticGuidedTurn({

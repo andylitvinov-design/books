@@ -21,7 +21,7 @@ const copy = {
     loading:"Формирую ответ…",error:"Ответ сейчас недоступен. Проверьте вход в кабинет и попробуйте ещё раз.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
-    option:"Выбрать",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм"},
+    option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм"},
   en:{ title:"Chat with the AI guide",disclosure:"I am Holistic House's AI guide, not a human or a therapist.",
     intro:"Share your question in your own words. Private test results are not read or saved in this pilot.",
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
@@ -30,7 +30,7 @@ const copy = {
     loading:"Preparing a reply…",error:"Reply unavailable. Check that you're signed into your cabinet and try again.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
-    option:"Open",used:"On device",backend:"Self-hosted server",simple:"Rules"},
+    option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules"},
   es:{ title:"Habla con el asistente de IA",disclosure:"Soy el asistente de IA de Holistic House, no una persona ni terapeuta.",
     intro:"Escribe tu pregunta con tus propias palabras. Los resultados privados no se leen ni se guardan.",
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
@@ -39,7 +39,7 @@ const copy = {
     loading:"Preparando una respuesta…",error:"Respuesta no disponible. Comprueba el inicio de sesión e inténtalo de nuevo.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
-    option:"Abrir",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas"},
+    option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas"},
 } as const;
 
 type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
@@ -134,6 +134,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       <textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
+        <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
