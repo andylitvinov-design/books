@@ -256,3 +256,10 @@ flowchart TD
 **Gate для server route:** `access.authenticated` / `access.ownerScoped` устанавливаются исключительно после реального server-side auth + RLS. Нельзя получать эти флаги, `catalogs` или `history` из тела браузерного запроса как источник доверия. Для внешнего текстового диалога нужен отдельный risk preflight; UI-браузер опубликованных материалов сам по себе не считается такой проверкой.
 
 **Тесты:** `node --test tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/holistic-intelligence.test.mjs tests/holistic-guide-adapter.test.mjs`. Реальный owner A/B, mobile, CI и Vercel ещё не подтверждены.
+
+
+### P1 Client UX · приватный подбор по осям
+
+В `PersonalAxisMatches` добавлены добровольные действия **«Уже попробовал(а)»** и **«Не подходит»** с временной перестановкой/исключением карточек, а также восстановление скрытых предложений. Это **только локальное состояние страницы**, без записи отзывов в CRM, profile storage или analytics. Сведения о выполнении не являются доказательством эффективности.
+
+Показ платных сессий теперь выключен по умолчанию и включается отдельно. Процент ranker-соответствия убран из интерфейса, чтобы не воспринимался как вероятность пользы. Если `showMeasurements=false`, повторное отображение test evidence в карточке оси отключено. В UI есть RU/EN/ES и touch targets минимум 44px. Реальный browser owner A/B и mobile E2E ещё необходимы.

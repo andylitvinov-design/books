@@ -66,3 +66,14 @@
 .group[data-axis-offer-kind="audio"]{grid-column:1/-1}
 .group audio{display:block;width:100%;min-height:44px;max-width:100%;margin-top:4px}
 @media(max-width:440px){.groupGrid{grid-template-columns:1fr}}
+
+/* Voluntary, unsaved feedback and explicit paid-material discovery. */
+.feedbackActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.feedbackActions button,.feedbackRestore{min-height:44px;border:1px solid #d4c3ad;
+  border-radius:9px;background:#fffaf3;color:#66462b;font:650 12px/1.35 system-ui;
+  cursor:pointer;padding:9px 12px}
+.feedbackActions button[aria-pressed="true"]{background:#e9f1e7;border-color:#b5c9b2;color:#345537}
+.feedbackActions button:focus-visible,.feedbackRestore:focus-visible{outline:3px solid #9b744e;outline-offset:2px}
+.feedbackRestore{margin:12px 0 4px}
+.feedbackLocal{font-size:11px;line-height:1.5;color:#766957;margin:10px 0}
+.completedNote{color:#345537!important;font-weight:700}
