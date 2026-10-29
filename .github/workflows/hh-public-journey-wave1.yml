@@ -6,8 +6,9 @@ on:
       - 'components/public-pathway-strip.*'
       - 'components/public-journey-refresh.module.css'
       - 'app/**/about/page.tsx'
-      - 'app/[locale]/contact/**'
+      - 'app/\\[locale\\]/contact/**'
       - 'tests/public-pathway-migration.test.mjs'
+      - 'scripts/verify-public-pathway-mobile.mjs'
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
       - '.github/workflows/hh-public-journey-wave1.yml'
 permissions:
@@ -36,3 +37,27 @@ jobs:
           npx --no-install tsc --noEmit
       - name: Real production build
         run: npm run build
+      - name: Install Chromium and WebKit without altering project dependencies
+        run: |
+          npm install --prefix /tmp/hh-public-wave1-browser --no-audit --no-fund --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/hh-public-wave1-browser/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-public-wave1-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real browser contracts on 320/390/430/1200 EN/RU/ES
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3103 > /tmp/hh-public-wave1-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 75); do
+            if curl --silent --fail http://127.0.0.1:3103/en/contact >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-public-wave1-next.log; exit 1; fi
+          node scripts/verify-public-pathway-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-journey-wave1-browser
+          path: artifacts/public-wave1/
+          retention-days: 7
+          if-no-files-found: warn
