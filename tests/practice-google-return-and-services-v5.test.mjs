@@ -75,13 +75,18 @@ test('web Google sign-in returns to original Practice, with editor only after ex
  assert.match(account,/const publicPracticeAction = proPanel === 'services'/)
  assert.match(account,/native\s*\? \{ continueTo: 'my-practice'/)
  assert.match(account,/continueTo: 'practice-preview', \.\.\.\(publicPracticeAction \?/)
- assert.match(account,/\['diagnostic','energy','personal','reiki'\]\.includes\(proStarter\)/)
+ assert.match(account,/\['diagnostic','energy','personal','reiki','intro','workshop'\]\.includes\(proStarter\)/)
  assert.match(account,/\['clients','requests','analytics','profile'\]\.includes\(proPanel\)/)
  assert.match(front,/data-practice-after-google/)
  assert.match(front,/onClick=\{continueAction\}/)
  assert.doesNotMatch(front,/router\.replace\(destination\(locale, ready\)\)/)
  assert.match(callback,/continueTo === 'practice-preview'/)
  assert.match(callback,/'\?ready='\+encodeURIComponent\(profi\)/)
+ for(const kind of ['intro','workshop']){
+   assert.match(front,new RegExp(kind+":root \\+ '\\?panel=services&create=1&starter="+kind+"'"))
+   assert.ok(callback.includes(kind+":'/app/practice?panel=services&create=1&starter="+kind+"'"))
+ }
+
 })
 
 test('viewing an empty My Services does not open the wizard without an explicit create request',()=>{
