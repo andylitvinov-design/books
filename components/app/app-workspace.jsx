@@ -267,7 +267,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       // handoff keeps its established deep-link semantics and secure PKCE.
       const publicPracticeAction = proPanel === 'services'
         ? proCreate
-          ? (['diagnostic','energy','personal','reiki'].includes(proStarter) ? proStarter : 'service')
+          ? (['diagnostic','energy','personal','reiki','intro','workshop'].includes(proStarter) ? proStarter : 'service')
           : 'services'
         : proPanel === 'materials'
           ? searchParams.get('materialTab') === 'courses'
