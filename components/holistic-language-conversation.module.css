@@ -30,3 +30,12 @@
 .privacy{margin:0;color:#527080;font-size:12px;line-height:1.5}
 @media(max-width:430px){.history{padding:10px;max-height:50vh}.agent,.visitor{padding:10px;max-width:100%}.material{flex-wrap:wrap}.formActions button{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.history{scroll-behavior:auto}}
+
+/* Generative messages remain visually distinct from verified source facts. */
+.verifiedContext{margin:7px 0 0!important;font-size:12px!important;line-height:1.45!important;
+  padding-top:8px;border-top:1px solid #d6e5ea;color:#51707a}
+.generated{align-items:center}
+.generated span{flex:1}
+.generated button{flex:none;min-height:36px;border-radius:9px;padding:7px 10px;
+  border:1px solid #a1c9d3;background:#fff;color:#245b69;font-weight:700;cursor:pointer}
+.generated button:focus-visible{outline:3px solid #078aa6;outline-offset:2px}
