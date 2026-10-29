@@ -4,6 +4,8 @@ import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config
 import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
 import { createAppRepository } from '@/lib/app/repository'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { videoProfileFocus } from '@/lib/mandala/video-affirmation-focus.mjs'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
 import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
@@ -84,6 +86,8 @@ import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/mater
 const PRACTICE_PREVIEW_ACTIONS = Object.freeze({
   create:'/app/practice?panel=services&create=1&starter=session',
   service:'/app/practice?panel=services&create=1&starter=session',
+  intro:'/app/practice?panel=services&create=1&starter=intro',
+  workshop:'/app/practice?panel=services&create=1&starter=workshop',
   diagnostic:'/app/practice?panel=services&create=1&starter=diagnostic',
   energy:'/app/practice?panel=services&create=1&starter=energy',
   personal:'/app/practice?panel=services&create=1&starter=personal',
@@ -798,6 +802,12 @@ async function handle(request, { params }) {
         return json(await saveCoachingIntake(config, actor, await readBody(request, 40000)))
       }
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'video-affirmation-focus' && method === 'GET') {
+      // Verifies Supabase identity and owner-scope before reading private results.
+      // No raw answers, scores or clinical notes are sent to the video editor.
+      const data = await repo.bootstrap(actor, { view: 'portrait' })
+      return json(videoProfileFocus(buildPsychPortrait(data.results)))
     }
     if (joined === 'bootstrap' && method === 'GET') {
       // A reduced initial payload is safe only after the normal verified session,

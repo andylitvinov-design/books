@@ -25,6 +25,10 @@ const LOOK: Record<MoneySceneId, Palette> = {
   "golden-shield": ["#151f2f", "#584328", "#ffd273", "#f9efd5"],
   "abundance-circle": ["#18332b", "#6c5633", "#f6c864", "#faf1c9"],
   "life-gifts": ["#403047", "#b36d69", "#ffcf67", "#fff3da"],
+  "wealth-sunrise": ["#2e2f42", "#cc8b4e", "#ffcc76", "#fff4c7"],
+  "golden-harvest": ["#263a28", "#bf9341", "#f8db8a", "#fff7ce"],
+  "radiant-portal": ["#5b2d1d", "#dfb77c", "#ffea9f", "#fff6d5"],
+  "prosperity-coast": ["#233f45", "#9abf9a", "#f9dc90", "#fdf6e1"],
   dreams: ["#254b60", "#c78662", "#f9d57f", "#ebffff"],
 };
 

@@ -97,12 +97,15 @@ function profileComponent(input = profiles) {
 }
 // Public checked-in source fixtures, not records, uploads or external requests.
 const route = parse(read("app/[locale]/holistic-support/mobile/page.tsx"));
-const collections = evaluate(named(route.statements, "mysteryCollections").initializer.getText(route));
+const greekSource = parse(read("data/academy/greek-video-series.ts"));
+const greekSeries = evaluate(named(greekSource.statements, "GREEK_VIDEO_SERIES").initializer.getText(greekSource));
+const collections = evaluate(named(route.statements, "mysteryCollections").initializer.getText(route), { GREEK_VIDEO_SERIES: greekSeries });
 const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
 const media = JSON.parse(read("data/academy/psimaster-media.generated.json"));
 const courses = Array.from(collections, entry => {
   const record = one(curricula.filter(x => x.logicalId === entry.programId && x.sourceLocale === "ru"));
   return { id: entry.id, shortTitle: entry.shortTitle, href: "/ru/academy/" + record.routeKey,
+    seriesHref: entry.id.startsWith("greek-") ? "/ru/academy/" + entry.videoIds[0] : undefined,
     poster: "/inert-course-poster.png", videoCount: media.filter(x => entry.videoIds.includes(x.logicalId)).length };
 });
 const sectors = ["energy", "money", "love", "meaning"];
@@ -123,10 +126,10 @@ function verifyProfiles(locale, input = profiles) {
     for (const action of ["test", "fill", "recommend"]) one(allNodes.filter(x => x.props["data-support-profile-" + action])).props.onClick();
     assert.deepEqual(calls, [...sectors.map(x => ["select", x]), ["tests"], ["fill", active], ["recommend", active]]);
     const links = allNodes.filter(x => x.tag === "link");
-    assert.deepEqual(links.map(x => x.props.href), ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.href) : [])]);
+    assert.deepEqual(links.map(x => x.props.href), ["/" + locale + "/academy", "/" + locale + "/academy/reiki/tantra-reiki/discover", ...(locale === "ru" ? courses.map(x => x.seriesHref ?? x.href) : [])]);
     if (locale === "ru") {
       assert.equal(one(allNodes.filter(x => x.props["data-support-mystery-courses"])).tag, "details");
-      for (const course of courses) assert.ok(text(one(links.filter(x => x.props.href === course.href))).includes(course.shortTitle));
+      for (const course of courses) assert.ok(text(one(links.filter(x => x.props.href === (course.seriesHref ?? course.href)))).includes(course.shortTitle));
     } else assert.equal(allNodes.filter(x => x.props["data-support-mystery-courses"]).length, 0);
   }
 }
@@ -143,8 +146,8 @@ test("course/profile loss, wrong link and inert real CTA fail the selected JSX c
   }
 });
 test("original RU manifest pointers and media totals remain distinct from four profile sectors", () => {
-  assert.deepEqual(courses.map(x => x.id), ["maya", "egypt", "greek"]);
-  assert.deepEqual(courses.map(x => x.videoCount), [6, 7, 12]);
+  assert.deepEqual(courses.map(x => x.id), ["maya", "egypt", "greek-dionysus", "greek-demeter"]);
+  assert.deepEqual(courses.map(x => x.videoCount), [6, 7, 7, 5]);
   assert.equal(media.length, 45); assert.equal(curricula.length, 22);
   const input = read("app/[locale]/holistic-support/mobile/page.tsx");
   assert.match(input, /if \(locale === "ru"\)/);

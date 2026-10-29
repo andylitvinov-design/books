@@ -136,7 +136,7 @@ export function HolisticSupportCourseProfiles({
       {courses.length ? <details className={styles.moreCourses} data-support-mystery-courses>
         <summary>{t.others}<span>{courses.length}</span></summary>
         <div className={styles.originals}>
-          {courses.map(course => <Link href={course.href} prefetch={false} key={course.id}>
+          {courses.map(course => <Link href={course.seriesHref ?? course.href} prefetch={false} key={course.id}>
             <Image src={course.poster} alt="" width={110} height={68} unoptimized loading="lazy" />
             <span><strong>{course.shortTitle}</strong><small>{course.videoCount} {t.videos}</small></span>
             <ArrowRight size={18} aria-hidden="true" />

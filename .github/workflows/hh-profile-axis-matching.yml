@@ -1,0 +1,49 @@
+name: Holistic House axis-to-offer matching
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/holistic-support/axis-offer-matcher.mjs'
+      - 'lib/holistic-support/axis-offer-matcher.d.mts'
+      - 'lib/holistic-support/client-intent-model.mjs'
+      - 'lib/holistic-support/client-intent-model.d.mts'
+      - 'lib/holistic-support/meditation-catalog-ranker.mjs'
+      - 'lib/holistic-support/meditation-catalog-types.ts'
+      - 'components/holistic-meditation-finder.tsx'
+      - 'components/holistic-meditation-finder.module.css'
+      - 'lib/profile/portrait-recommendations.js'
+      - 'components/app/personal-axis-matches.jsx'
+      - 'components/app/personal-axis-matches.module.css'
+      - 'components/app/my-tests-dashboard.jsx'
+      - 'components/app/portrait-recommendations.jsx'
+      - 'tests/axis-offer-matcher.test.mjs'
+      - 'docs/myspace/PROFILE_AXIS_OFFER_MATCHING_V1_20261028.md'
+      - '.github/workflows/hh-profile-axis-matching.yml'
+permissions:
+  contents: read
+concurrency:
+  group: profile-axis-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  axis-unit-types-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Rank accuracy and no health/goal score invention
+        run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs
+      - name: Scoped ESLint
+        run: npx --no-install eslint lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+      - name: TypeScript check
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Build site
+        run: npm run build

@@ -1,0 +1,50 @@
+name: Visual-to-Code Pro — PNG comparison unit checks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'AGENTS.md'
+      - '.agents/skills/visual-to-code-pro/**'
+      - 'scripts/compare-ui-screenshots.mjs'
+      - 'tests/compare-ui-screenshots.test.mjs'
+      - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'tests/capture-public-ui-reference.test.mjs'
+      - 'scripts/capture-public-ui-reference.mjs'
+      - 'scripts/fixtures/practice-approved-reference-20261028.json'
+      - '.codex/config.toml'
+      - '.vscode/mcp.json'
+      - 'docs/design/VISUAL_MCP_AUTO_QA.md'
+      - '.github/workflows/visual-to-code-skill.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'AGENTS.md'
+      - '.agents/skills/visual-to-code-pro/**'
+      - 'scripts/compare-ui-screenshots.mjs'
+      - 'tests/compare-ui-screenshots.test.mjs'
+      - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'tests/capture-public-ui-reference.test.mjs'
+      - 'scripts/capture-public-ui-reference.mjs'
+      - 'scripts/fixtures/practice-approved-reference-20261028.json'
+      - '.codex/config.toml'
+      - '.vscode/mcp.json'
+      - 'docs/design/VISUAL_MCP_AUTO_QA.md'
+      - '.github/workflows/visual-to-code-skill.yml'
+permissions:
+  contents: read
+jobs:
+  compare-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify dependency-free screenshot comparator
+        run: |
+          node --check scripts/compare-ui-screenshots.mjs
+          node --check scripts/capture-public-ui-reference.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs

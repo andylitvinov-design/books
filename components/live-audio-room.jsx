@@ -77,6 +77,9 @@ export function LiveAudioRoom({role='listener', locale='en'}) {
     currentRef.current = true
     let cancelled = false
     async function refresh() {
+      // Presence is informational. Do not spend Vercel/LiveKit calls while
+      // this tab is hidden; resynchronize immediately when the user returns.
+      if (cancelled || document.visibilityState === 'hidden') return
       try {
         const result = await fetch('/api/live-audio/status', {cache:'no-store', credentials:'same-origin'})
         const data = await result.json()
@@ -87,11 +90,15 @@ export function LiveAudioRoom({role='listener', locale='en'}) {
       }
     }
     void refresh()
-    const timer = setInterval(refresh, 15000)
+    // Lower background/provider API reads by 75% versus the former 15s poll.
+    const timer = setInterval(() => { void refresh() }, 60000)
+    const onVisibility = () => { if (document.visibilityState === 'visible') void refresh() }
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
       cancelled = true
       currentRef.current = false
       clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
       roomRef.current?.disconnect().catch(() => {})
       roomRef.current = null
     }

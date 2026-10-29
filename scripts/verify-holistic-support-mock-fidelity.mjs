@@ -232,7 +232,7 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-recommendations]').click();
           const initialGuide=root.locator('[data-support-inline-guide]');
           await initialGuide.waitFor({state:"visible",timeout:8000});
-          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').first().innerText();
+          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').nth(1).innerText();
           assert.ok(statusText.includes("2/10"),label+" only changed check-in reflected in first reply");
           assert.ok(statusText.includes(locale==="ru"?"Отношения":locale==="es"?"Relaciones":"Relationships"),
             label+" focus comes from the user's edited rating");
@@ -327,34 +327,11 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').fill("1");
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
-          // Capture synthetic pointer semantics without modifying app behaviour.
-          await page.evaluate(() => {
-            window.__hhSyntheticNextEvents = [];
-            const button = document.querySelector('[data-support-goal-next]');
-            for (const type of ["pointerdown", "pointerup", "click"]) {
-              button?.addEventListener(type, () => window.__hhSyntheticNextEvents.push(type), {once:true});
-            }
-          });
           await filter.locator('[data-support-goal-next]').click();
-          // Wait for the actual React state on WebKit, never infer an Accepted mark.
-          try {
-            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"visible",timeout:8000});
-          } catch (error) {
-            const diagnostic = await page.evaluate(() => ({
-              // All fields are fixed synthetic selectors/booleans, never private input values.
-              pointerEvents: window.__hhSyntheticNextEvents ?? [],
-              active: [...document.querySelectorAll('[data-goal-sector][aria-pressed="true"]')]
-                .map(node => node.getAttribute("data-goal-sector")),
-              accepted: [...document.querySelectorAll('[data-goal-accepted]')]
-                .map(node => node.getAttribute("data-goal-accepted")),
-              moneyCheckin: document.querySelector('[data-support-scale="money"] input')?.value,
-              formPresent: Boolean(document.querySelector('[data-support-goal-filter]')),
-            }));
-            console.error("GOAL_NEXT_SYNTHETIC_DIAGNOSTIC", label, JSON.stringify(diagnostic));
-            await page.screenshot({path:output+"/"+label.replaceAll("/","-")+"-goal-next-failure.png",
-              fullPage:true, animations:"disabled"}).catch(()=>{});
-            throw error;
-          }
+          // WebKit can resolve a click before React commits accepted/next state.
+          // Wait for actual acceptance and navigation; never bypass either gate.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
@@ -365,6 +342,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-task="closeness"] input').check();
           // The explicit Save button remains independently useful.
           await filter.locator('[data-support-goal-save]').click();
+          // React may flush the Accepted badges after the click resolves in WebKit.
+          // Wait for the actual saved state; do not treat a paint race as lost data.
+          await page.waitForFunction(() => document.querySelectorAll('[data-goal-accepted]').length === 2,
+            null, { timeout: 6000 });
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
             label+" independent Save and auto-Next keep separate Accepted marks");
           await filter.locator('[data-goal-sector="money"]').click();
@@ -479,35 +460,33 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
           const results=root.locator('[data-support-inline-guide]');
           await results.waitFor({state:"visible",timeout:8000});
-          const filterSummary=await results.locator('[data-support-guide-message="guide"]').first().innerText();
+          const filterSummary=await results.locator('[data-support-guide-message="guide"]').nth(1).innerText();
           assert.ok(filterSummary.includes(locale==="ru"?"Деньги":locale==="es"?"Dinero":"Money"),
-            label+" accepted goal filter takes priority over prior relationship check-in");
+            label+" accepted goal filter overrides earlier relationship check-in");
           assert.equal(await results.locator('[data-support-guide-phase="review"]').count(),1,
-            label+" first ask visitor to confirm the personal summary");
+            label+" invite visitor to confirm the suggestion");
           await results.locator('[data-support-guide-phase="review"] button').first().click();
-          await results.locator('[data-support-guide-phase="need"] button').first().click();
-          await results.locator('[data-support-guide-phase="detail"] button').first().click();
-          await results.locator('[data-support-guide-minutes="10"]').click();
-          assert.equal(await results.locator('[data-support-guide-format="consultation"]').count(),0,
-            label+" filtered-out consultations not recommended");
-          assert.equal(await results.locator('[data-support-guide-format="healing"]').count(),1,
-            label+" opt-in Reiki support remains available");
-          assert.equal(await results.locator('[data-support-guide-format="mandala"]').count(),1,
-            label+" existing video studio is accessible");
-          assert.equal(await results.locator('[data-support-guide-format="courses"]').count(),1,
-            label+" Academy stays accessible");
-          await results.locator('[data-support-guide-format="tests"]').click();
-          assert.equal(await results.locator('[data-support-guide-phase="confirm"]').count(),1,
-            label+" explicit review before any recommendations");
+          assert.equal(await results.locator('[data-support-guide-phase="test-invite"]').count(),1,
+            label+" user can choose test or go straight to practice");
           assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
             label+" no early recommendation");
+          await results.locator('[data-guide-skip-test]').click();
+          assert.equal(await results.locator('[data-support-guide-phase="practice-invite"]').count(),1,
+            label+" practice is optional and independent of tests");
+          await results.locator('[data-guide-short-practice]').click();
+          await results.locator('[data-support-guide-phase="exercise"] button').first().click();
+          await results.locator('[data-support-guide-phase="feedback"] button').first().click();
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
+            label+" recommendation still hidden before My Path action");
           await results.locator('[data-support-guide-show-recommendations]').click();
           assert.equal(await results.locator('[data-support-guide-recommendation]').count(),1,
-            label+" real recommendation after conversation and confirmation");
+            label+" user confirms personal path after conversation");
           assert.equal(await results.locator('[data-support-guide-program]').count(),1,
-            label+" personal next steps only after confirmation");
-          assert.match(await results.locator('a[href*="/client/tests?journey="]').getAttribute("href")??"",
-            /\/client\/tests\?journey=business$/,label+" real public test explorer route");
+            label+" optional path proposed only after consent");
+          assert.equal(await results.locator('[data-support-guide-alternative="consultation"]').count(),0,
+            label+" opted-out consultation excluded from final alternatives");
+          assert.equal(await results.locator('[data-support-guide-alternative]').count()<=2,true,
+            label+" no more than two alternative formats");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
             label+" only published video catalogue");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
@@ -688,13 +667,27 @@ for (const browserType of [chromium, webkit]) {
             label+" original video lessons are reachable");
           if(locale==="ru") {
             const mysteryPicker=root.locator('[data-support-mystery-courses]');
-            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),3,
-              label+" three Russian original Maya/Egypt/Greek courses restored");
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),4,
+              label+" four Russian original Maya/Egypt/Dionysus/Demeter series restored");
             await mysteryPicker.locator('[data-support-mystery-course="egypt"]').click();
             assert.equal(await mysteryPicker.locator('[data-support-mystery-course="egypt"]').getAttribute('aria-pressed'),"true",
               label+" Egypt programme selection works");
             assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
               /^\/ru\/academy\//,label+" source Academy programme link");
+            for (const [channel,total] of [["greek-dionysus",7],["greek-demeter",5]]) {
+              await mysteryPicker.locator('[data-support-mystery-course="'+channel+'"]').click();
+              const episodes=root.locator('[data-support-meditation-gallery] [data-support-video]');
+              assert.equal(await episodes.count(),total,label+" "+channel+" retains complete sequence");
+              assert.deepEqual(await episodes.evaluateAll(nodes=>nodes.map(el=>Number(el.getAttribute("data-source-order")))),
+                Array.from({length:total},(_,i)=>i+1),label+" "+channel+" numbered episodes 1–"+total);
+              assert.equal(await root.locator('[data-support-lesson-navigation]').count(),1,
+                label+" "+channel+" previous/next episode navigation exists");
+              assert.match(await root.locator('[data-support-active-course-link]').getAttribute("href")??"",
+                new RegExp("^/ru/academy/videos/greek-mysteries-"+(channel==="greek-dionysus"?"dionysus":"demeter")+"$"),
+                label+" canonical original channel course link");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" changing original channel never auto-plays");
+            }
           }
           const academyHrefs=await root.locator('[data-support-courses-panel] a')
             .evaluateAll(links => links.map(a => a.getAttribute("href")));
@@ -726,6 +719,15 @@ for (const browserType of [chromium, webkit]) {
           });
           const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
           assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          const intentionLabels = {
+            ru: ["Поддержка энергии","Поддержка любви","Поддержка цели","Поддержка сознания"],
+            en: ["Energy support","Love support","Goal support","Consciousness support"],
+            es: ["Apoyo a la energía","Apoyo al amor","Apoyo a las metas","Apoyo a la conciencia"],
+          };
+          assert.deepEqual((await reikiTabs.allInnerTexts()).map(text=>text.trim()),intentionLabels[locale],
+            label+" session tiles show just four intentions, no Reiki system captions");
+          assert.equal(await reikiTabs.locator("small").count(),0,
+            label+" session goals must not expose methodology captions");
           assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
             "true",label+" only published Tantra Reiki selected initially");
           const marketplace=healing.locator('[data-support-reiki-marketplace]');
@@ -743,6 +745,30 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");
           assert.equal(await tab("description").count(),1,label+" central Description tab");
           assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          const mainTabPosition = await heroMaster.evaluate(element=>{
+            const tabs=element.querySelector('[role="tablist"]')?.getBoundingClientRect();
+            const content=element.querySelector('[data-support-reiki-panel="main"]')?.getBoundingClientRect();
+            return {tabsBottom:tabs?.bottom,contentTop:content?.top};
+          });
+          assert.ok(Number.isFinite(mainTabPosition.tabsBottom) &&
+            Number.isFinite(mainTabPosition.contentTop) &&
+            mainTabPosition.tabsBottom <= mainTabPosition.contentTop+2,
+            label+" Main / Filter / Description / Video tabs must sit ABOVE the scenic hero content: "+
+              JSON.stringify(mainTabPosition));
+          const topFilterPosition = await healing.locator('[data-support-reiki-hero-filter]')
+            .evaluate(element => {
+              const box=element.getBoundingClientRect();
+              const stage=element.closest('[data-support-reiki-central]').getBoundingClientRect();
+              return {top:box.top,bottom:box.bottom,stageTop:stage.top,stageHeight:stage.height};
+            });
+          assert.ok(topFilterPosition.top >= mainTabPosition.tabsBottom-1 &&
+            topFilterPosition.top - mainTabPosition.tabsBottom <= 25 &&
+            topFilterPosition.bottom <= topFilterPosition.stageTop+topFilterPosition.stageHeight/2,
+            label+" large Filter CTA must be at the top of the photo, not beside the lower hero copy: "+
+              JSON.stringify(topFilterPosition));
+          assert.ok(topFilterPosition.bottom <= mainTabPosition.contentTop+1,
+            label+" floating top Filter cannot collide with the published provider text panel: "+
+              JSON.stringify({topFilterPosition,mainTabPosition}));
           // Screenshot regression: shared .page button {font:inherit} used to inflate
           // every Reiki tab into a huge two-line block on real iPhone Safari.
           const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
@@ -830,6 +856,26 @@ for (const browserType of [chromium, webkit]) {
           await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
             label+" three real linked initiation pathways appear on selection");
+          const initiationPicker=marketplace.locator('[data-support-reiki-initiation-types]');
+          assert.equal(await initiationPicker.count(),1,
+            label+" initiation brings its own lower Reiki type menu");
+          assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id]').count(),4,
+            label+" All + exactly the three approved Academy initiation types");
+          for(const id of ["tantra-initiation","kundalini-initiation","yggdrasil-initiation"]) {
+            assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id="'+id+'"]').count(),1,
+              label+" source-backed initiation "+id);
+          }
+          await initiationPicker.locator('[data-support-reiki-initiation-id="yggdrasil-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" Yggdrasil selector hides unrelated initiations");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="yggdrasil-initiation"]').count(),1,
+            label+" retains the original Yggdrasil path");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="kundalini-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer="kundalini-initiation"]').count(),1,
+            label+" Kundalini selector opens the original Academy entry");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="all"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" All restores exactly the three original initiations");
           await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
             label+" 21–50 EUR selects only published-price Tantra initiation");

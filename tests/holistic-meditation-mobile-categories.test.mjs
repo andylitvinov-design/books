@@ -53,7 +53,7 @@ test("Compact 320–430px cards stay readable while retaining original playback,
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)/);
   assert.match(mobile, /youtube-nocookie\.com\/embed/);
   assert.match(mobile, /onClick=\{startVideo\}/);
-  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
+  assert.match(mobile, /const relevantVideos = choice === "pump" && program !== "all" \? catalogVideos : catalogVideos\.slice\(0, 4\)/);
   assert.doesNotMatch(mobile, /<audio|autoplay=\{true\}|localStorage|navigator\.sendBeacon|fetch\(/);
   const parsed = ts.transpileModule(mobile, {
     fileName: "holistic-support-mobile.tsx", reportDiagnostics: true,
@@ -72,7 +72,7 @@ test("Full feed follows the four featured cards, uses one filtered catalogue and
   assert.ok(gallery > 0 && featured > gallery && feed > featured && rows > feed && sourceLink > rows,
     "featured four -> full vertical catalogue -> original YouTube source link");
   assert.match(mobile, /const catalogVideos = useMemo\(\(\) => \{/);
-  assert.match(mobile, /const relevantVideos = catalogVideos\.slice\(0, 4\)/);
+  assert.match(mobile, /const relevantVideos = choice === "pump" && program !== "all" \? catalogVideos : catalogVideos\.slice\(0, 4\)/);
   assert.match(mobile, /const selected = catalogVideos\.find\(video => video\.id === selectedId\)/);
   assert.match(mobile, /catalogVideos\.map\(video => <li key=\{video\.id\}>/);
   assert.match(mobile, /aria-pressed=\{selected\?\.id === video\.id\}/);
