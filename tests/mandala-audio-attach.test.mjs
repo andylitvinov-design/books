@@ -11,7 +11,7 @@ const browser=read("scripts/verify-holistic-mandala-browser.mjs");
 
 test("audio-only mobile list: no fake video images, real readable controls and filters",()=>{
   const start=studio.indexOf('<section className={videoStyles.audioSection}');
-  const end=studio.indexOf('<section className={videoStyles.hypnosisSection}',start);
+  const end=studio.indexOf('      </section>',start);
   assert.ok(start>0 && end>start);
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
