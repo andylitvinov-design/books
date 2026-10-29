@@ -333,3 +333,21 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   assert.match(css,/\.previewChoices\{display:grid/);
   assert.match(css,/\.therapyBanner\{display:flex/);
 });
+
+test("current two-video-mode compact opt-ins have actual 44px touch targets at mobile sizes", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  for(const marker of ["data-video-photo-enabled","data-video-photo-picker",
+      "data-video-affirmations-feature","data-video-preview-choices",
+      "data-video-advanced-filters","data-video-mode-switch"]) {
+    assert.ok(studio.includes(marker),marker+" must remain in the canonical editor");
+  }
+  assert.match(css,/\.previewChoiceLabel\{[^}]*min-height:44px/);
+  assert.match(css,/\.previewChoiceLink\{[^}]*min-height:44px/);
+  assert.match(css,/@media\(max-width:430px\)\{[\s\S]*?\.previewChoiceLabel\{[^}]*min-height:44px/);
+  assert.match(browser,/previewTouchTargets\.every\(rect=>rect\.height>=44&&rect\.width>=44\)/);
+  assert.ok(studio.indexOf("data-video-category-rail") < studio.indexOf("data-video-preview-choices"));
+  assert.ok(studio.indexOf("data-video-preview-choices") < studio.indexOf("data-video-mandala-hero"));
+  assert.ok(studio.indexOf('id="video-templates"') < studio.indexOf("data-video-advanced-filters"));
+});

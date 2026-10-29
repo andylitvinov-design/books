@@ -81,6 +81,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false,
           "background-only is the default; adding a personal photo is opt-in");
         assert.equal(await page.locator("[data-video-photo-picker]").count(),1);
+        // Photo and affirmation controls remain practical touch targets on
+        // 320–430px real Chromium/WebKit layouts, not only CSS declarations.
+        const previewTouchTargets=await page.locator(
+          "[data-video-preview-choices] label, [data-video-preview-choices] button, [data-video-preview-choices] a"
+        ).evaluateAll(nodes=>nodes.map(node=>({
+          height:node.getBoundingClientRect().height,
+          width:node.getBoundingClientRect().width,
+        })));
+        assert.equal(previewTouchTargets.length,4,"two opt-ins and two actionable links");
+        assert.ok(previewTouchTargets.every(rect=>rect.height>=44&&rect.width>=44),
+          engine+" "+locale+" "+width+"px compact video touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
