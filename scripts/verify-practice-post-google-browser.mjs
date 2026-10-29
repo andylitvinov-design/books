@@ -136,129 +136,17 @@ for(const engine of [chromium,webkit]){
           },null,{timeout:30000})
           const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
           await input.fill('Synthetic service title')
-          await page.evaluate(()=>{
-            window.__practiceEditorClickTrace=[]
-            document.addEventListener('click',event=>{
-              if(event.target.closest('[data-service-step-controls]'))
-                window.__practiceEditorClickTrace.push(event.target.closest('button')?.textContent?.trim())
-            },true)
+          // Regression: blur must not teleport the fixed footer before pointerup.
+          const focusedFooter=await page.evaluate(()=>{
+            const footer=document.querySelector('[data-service-editor-footer]')
+            const box=footer.getBoundingClientRect()
+            return {position:getComputedStyle(footer).position,active:document.activeElement?.tagName,
+              bottom:box.bottom,viewport:document.documentElement.clientHeight}
           })
-          await editor.locator('[data-service-step-controls] button').last().click()
-          await page.waitForTimeout(300)
-          console.log('PROTECTED_EDITOR_NEXT_DIAG '+JSON.stringify(await page.evaluate(()=>({
-            pathname:location.pathname+location.search,
-            formCount:document.querySelectorAll('[data-service-slide-editor]').length,
-            stages:[...document.querySelectorAll('[data-service-slide-editor]')].map(el=>el.dataset.serviceStage),
-            activeStep:document.querySelector('[data-service-stage-nav] button[aria-pressed=true]')?.textContent,
-            buttons:[...document.querySelectorAll('[data-service-step-controls] button')].map(btn=>({
-              text:btn.textContent?.trim(),disabled:btn.disabled,connected:btn.isConnected})),
-            clicks:window.__practiceEditorClickTrace,
-            inputs:[...document.querySelectorAll('[data-service-slide="presentation"] input')].map(e=>e.value),
-          }))))
-          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
-            ?.getAttribute('data-service-stage')==='1',null,{timeout:10000})
-          assert.equal(await editor.getAttribute('data-service-stage'),'1',label+' Next opens booking')
-          await editor.locator('[data-service-step-controls] button').first().click()
-          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
-            ?.getAttribute('data-service-stage')==='0',null,{timeout:10000})
-          assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' Back preserves step')
-          assert.equal(await input.inputValue(),'Synthetic service title',
-            label+' unsaved title stays in form when navigating stages')
-          results.push({label:engine.name()+'-'+locale+'-'+width+'-real-editor',ok:true,
-            mode:'rendered protected real wizard, synthetic account only',layout})
-        }
-        assert.deepEqual(errors,[],label+' browser exceptions')
-        results.push({label,ok:true,mode:'synthetic signed-in browser render'})
-      }catch(e){
-        await page.screenshot({path:out+'/failure-'+label+'.png',fullPage:false}).catch(()=>{})
-        throw new Error(label+': '+e.message,{cause:e})
-      }finally{await page.close()}
-    }
-
-    // Historical bookmarked OAuth links must never recreate the large
-    // "Continue: Create" panel in the approved practitioner screenshot.
-    for(const locale of ['ru','en','es']){
-      const label=engine.name()+'-'+locale+'-stale-ready'
-      const page=await browser.newPage({viewport:{width:390,height:844},
-        hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
-      await api(page,true)
-      try{
-        const response=await page.goto(origin+'/'+locale+'/practice?ready=create',{waitUntil:'domcontentloaded'})
-        assert.equal(response?.status(),200,label+' HTTP')
-        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='signed')
-        await page.waitForFunction(()=>!location.search)
-        assert.equal(await page.locator('[data-practice-after-google]').count(),0,label+' no continuation banner')
-        assert.equal(await page.locator('[class*="quickGrid"] > button').count(),6,label+' six first-screen creation tiles')
-        results.push({label,ok:true,mode:'synthetic legacy OAuth URL cleanup'})
-      }finally{await page.close()}
-    }
-
-    // A guest clicking Create -> Google on the approved dashboard must not
-    // send profi=create: that formerly injected the unwanted second screenshot.
-    for(const locale of ['ru','en','es']){
-      const label=engine.name()+'-'+locale+'-public-google'
-      const page=await browser.newPage({viewport:{width:390,height:844},
-        hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
-      await api(page,false)
-      let payload=null
-      await page.route('**/api/app/auth/start',route=>{
-        payload=route.request().postDataJSON()
-        return respond(route,200,{redirectUrl:'https://accounts.google.com/o/oauth2/v2/auth?synthetic=1'})
-      })
-      await page.route('https://accounts.google.com/**',route=>
-        route.fulfill({status:200,contentType:'text/html',body:'<html>synthetic OAuth</html>'}))
-      try{
-        await page.goto(origin+'/'+locale+'/practice',{waitUntil:'domcontentloaded'})
-        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='guest')
-        await page.locator('[class*="quickGrid"] > button').first().click()
-        await page.locator('button[class*="modalPrimary"]').click()
-        await page.waitForURL(url=>url.hostname==='accounts.google.com')
-        assert.equal(payload?.continueTo,'practice-preview',label+' same dashboard after login')
-        assert.equal(payload?.profi,undefined,label+' no extra Continue banner')
-        assert.equal(payload?.locale,locale,label+' preserve locale')
-        results.push({label,ok:true,mode:'synthetic guest create -> Google continuation'})
-      }finally{await page.close()}
-    }
-
-    // Reproduce the real broken starting URL before Google sign-in, without making an external OAuth request.
-    for(const locale of ['ru','en']){
-      const label=engine.name()+'-'+locale+'-legacy-auth'
-      const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,
-        isMobile:true,hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'})
-      await api(page,false)
-      let payload=null
-      await page.route('**/api/app/auth/start',async route=>{
-        payload=route.request().postDataJSON()
-        return respond(route,200,{redirectUrl:'https://accounts.google.com/o/oauth2/v2/auth?synthetic=1'})
-      })
-      await page.route('https://accounts.google.com/**',route=>
-        route.fulfill({status:200,contentType:'text/html',body:'<html>synthetic OAuth</html>'}))
-      try{
-        const res=await page.goto(origin+'/'+locale+'/app/practice?panel=services&create=1&starter=session',
-          {waitUntil:'domcontentloaded',timeout:90000})
-        assert.equal(res?.status(),200,label+' legacy screen')
-        const button=page.locator('button.hh-primary').filter({hasText:/Google|Войти|Sign in/i}).first()
-        await button.waitFor({state:'visible',timeout:30000})
-        await button.click()
-        await page.waitForURL(url=>url.hostname==='accounts.google.com',{timeout:30000})
-        assert.equal(payload?.continueTo,'practice-preview',label+' must return to reference dashboard')
-        assert.equal(payload?.profi,undefined,label+' MUST NOT add ?ready=service banner')
-        assert.equal(payload?.locale,locale,label+' preserves language')
-        results.push({label,ok:true,mode:'synthetic OAuth-start routing; NOT provider login'})
-      }catch(e){
-        await page.screenshot({path:out+'/failure-'+label+'.png',fullPage:false}).catch(()=>{})
-        throw new Error(label+': '+e.message,{cause:e})
-      }finally{await page.close()}
-    }
-  }finally{await browser.close()}
-}
-await writeFile(out+'/manifest.json',JSON.stringify({privacy:'synthetic only; real Google login and saves require separate owner E2E',results},null,2)+'\n')
-console.log('Post-Google Practice visual browser checks:',results.length,'passed')
-)));
-            return hydrated(field)&&hydrated(next);
-          },null,{timeout:30000})
-          const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
-          await input.fill('Synthetic service title')
+          assert.equal(focusedFooter.active,'INPUT',label+' input focus before Next')
+          assert.equal(focusedFooter.position,'fixed',label+' focused footer does not teleport')
+          assert.ok(Math.abs(focusedFooter.viewport-focusedFooter.bottom)<=12,
+            label+' focused footer remains at mobile viewport bottom '+JSON.stringify(focusedFooter))
           await page.evaluate(()=>{
             window.__practiceEditorClickTrace=[]
             document.addEventListener('click',event=>{
