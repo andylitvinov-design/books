@@ -148,6 +148,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           return photo && photo.complete && photo.naturalWidth > 0;
         }, undefined, { timeout: 15000 });
         assert.deepEqual(uploaded, [], engine + " synthetic photo must not be uploaded");
+        // The visible wide hero must frame the WHOLE oval medallion. A 9:16
+        // source canvas stretched by object-fit:cover previously cropped out
+        // the face in the 320–430px public video editor.
+        const landscapeFrame=await page.locator('[data-mandala-cinematic-canvas][data-preview-layout="landscape"]')
+          .evaluate(el=>({w:el.width,h:el.height}));
+        assert.ok(landscapeFrame.w>landscapeFrame.h,
+          engine+" "+locale+" "+width+"px preview uses a full cinematic oval, not a portrait crop");
+
 
         const downloadLink = page.locator('a[download="holistic-house-mandala.png"]');
         await downloadLink.waitFor({ state: "visible", timeout: 30000 });
