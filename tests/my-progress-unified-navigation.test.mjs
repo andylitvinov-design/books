@@ -104,4 +104,12 @@ test('practitioner offerings stay behind original private Practice; client order
   assert.match(inbox, /myOrderInbox\(actor\)/)
   assert.doesNotMatch(progress, /appFetch\('crm\//)
   assert.match(support, /Шкалы, фото и история просмотра не отправляются на сервер/)
+  assert.match(support, /const markCurrentVideoWatched = async/)
+  assert.match(support, /data-support-account-video-mark/)
+  assert.match(support, /status: "watched"/)
+  assert.match(support, /response.status === 401/)
+  assert.match(support, /savedVideos.includes\(selected.id\)/)
+  // Only the explicit self-confirmation saves video progress; Play remains local.
+  const onPlay = support.slice(support.indexOf('const startVideo = () =>'), support.indexOf('const markCurrentVideoWatched'))
+  assert.doesNotMatch(onPlay, /video-progress|fetch\(/)
 })
