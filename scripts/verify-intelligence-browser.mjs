@@ -32,7 +32,7 @@ try {
     try {
       const privateCalls=[]
       page.on('request',request=>{if(new URL(request.url()).pathname==='/api/app/intelligence/plan')privateCalls.push(request.url())})
-      await page.goto(`${base}/${locale}/holistic-support`,{waitUntil:'domcontentloaded'})
+      await page.goto(`${base}/${locale}/holistic-support`,{waitUntil:'networkidle'})
       await page.locator('[data-meditation-finder-toggle]').click()
       await page.locator('[data-meditation-audio-language]').selectOption('en')
       const card=page.locator('[data-holistic-intelligence]')
@@ -59,7 +59,7 @@ try {
   }
   const page=await browser.newPage({viewport:{width:320,height:700}})
   try {
-    await page.goto(`${base}/en/holistic-support`,{waitUntil:'domcontentloaded'})
+    await page.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
     await page.locator('[data-meditation-finder-toggle]').click()
     const card=page.locator('[data-holistic-intelligence]')
     await card.locator('select').selectOption('energy')
@@ -75,7 +75,7 @@ try {
   const checkinPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
     await checkinPage.context().route('https://www.youtube.com/**',route=>route.abort())
-    await checkinPage.goto(`${base}/en/holistic-support`,{waitUntil:'domcontentloaded'})
+    await checkinPage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
     await checkinPage.locator('[data-meditation-finder-toggle]').click()
     const card=checkinPage.locator('[data-holistic-intelligence]')
     await card.locator('select').selectOption('energy')
@@ -97,7 +97,7 @@ try {
   try {
     const privateCalls=[]
     testPage.on('request',request=>{if(new URL(request.url()).pathname==='/api/app/intelligence/plan')privateCalls.push(request.url())})
-    await testPage.goto(`${base}/es/holistic-support`,{waitUntil:'domcontentloaded'})
+    await testPage.goto(`${base}/es/holistic-support`,{waitUntil:'networkidle'})
     await testPage.locator('[data-meditation-finder-toggle]').click()
     const card=testPage.locator('[data-holistic-intelligence]')
     await card.locator('select').selectOption('energy')
