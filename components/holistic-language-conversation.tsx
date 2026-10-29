@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, MessageCircle, RotateCcw, Send, Sparkles, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
+import { createLanguageSession, turnLanguageAgent, type LanguageState } from "@/lib/holistic-support/language-agent.mjs";
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
 import { HolisticAgentMemoryPanel, type MyAgentMemory } from "@/components/holistic-agent-memory-panel";
@@ -161,8 +161,10 @@ export function HolisticLanguageConversation({
     const remembered=(kind:string)=>savedMemory.find(item=>item.kind===kind)?.value;
     const style=remembered("communication_style");
     const length=remembered("response_length");
-    const avoid=remembered("avoid_format");
-    const withPreference= savedMemory.length>0 ? {
+    const candidateAvoid=remembered("avoid_format");
+    const avoid=(["video","audio","test","course","service"] as string[]).includes(candidateAvoid||"")
+      ?candidateAvoid as LanguageState["excluded"][number]:null;
+    const withPreference:LanguageState|null= savedMemory.length>0 ? {
       ...state,
       address:state.address==="neutral"&&["informal","formal"].includes(style||"")
         ?style!:state.address,
