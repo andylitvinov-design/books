@@ -64,3 +64,73 @@
 @media(max-width:360px){.panel{padding:11px}.actions button{font-size:11px;padding:8px 6px}.goalChips{grid-template-columns:repeat(2,minmax(0,1fr))}.secondaryActions button{font-size:10.5px}}
 @media(min-width:740px){.sessionList{grid-template-columns:repeat(2,minmax(0,1fr))}.sessionCard:first-child{grid-column:1/-1}.actions{max-width:530px}}
 @media(prefers-reduced-motion:reduce){.panel button,.panel a{transition:none}}
+
+
+/* Dedicated Video Therapy composer — intentional focus, not a lengthy questionnaire. */
+.panel{margin:12px 0 5px;padding:clamp(13px,3.8vw,22px);border:1px solid #c9e1d6;border-radius:24px;background:linear-gradient(160deg,#fffef9,#f4f9f2 78%,#fff9ec);box-shadow:0 15px 32px rgba(19,72,54,.07)}
+.header{gap:11px}
+.emblem{width:44px;height:44px;border-radius:15px;background:#dff5e9;border-color:#b2dcca}
+.heading h3{font-size:clamp(20px,5vw,27px);line-height:1.15;letter-spacing:-.035em}
+.heading small{font-size:10px;letter-spacing:.11em}
+.stageBadge{flex:none;align-self:flex-start;padding:6px 8px;border-radius:99px;background:#eaf5e9;border:1px solid #d5e9d9;color:#328468;font-size:11px;font-weight:850;letter-spacing:.06em}
+.intro{margin:10px 1px 15px;font-size:12.5px;line-height:1.5}
+.focusCard{padding:15px;border:1px solid #d3e6da;border-radius:19px;background:linear-gradient(145deg,#f3f9f4,#fffefa);box-shadow:inset 0 1px 0 #fff}
+.focusHeading{display:grid;gap:3px;margin-bottom:13px}
+.focusHeading>small{display:flex;align-items:center;gap:6px;color:#158262;font-size:10px;font-weight:850;letter-spacing:.095em}
+.focusHeading h4{margin:3px 0;color:#174a3d;font-size:clamp(18px,4.2vw,23px);line-height:1.2;font-weight:850}
+.focusHeading p{margin:0;color:#688174;font-size:12px;line-height:1.5}
+.focusFields{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.focusFields label{display:grid;gap:6px;min-width:0;color:#355f4d;font-size:12px;font-weight:800}
+.focusFields textarea{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:76px;padding:12px;border:1px solid #d1e1d5;border-radius:13px;resize:vertical;background:#fff;color:#193f33;box-shadow:0 2px 8px #1b61460a;font:500 14px/1.45 Arial,Helvetica,sans-serif}
+.focusFields textarea::placeholder{color:#92a59b;font-weight:450}
+.focusFields textarea:focus-visible{outline:3px solid #88d1b3;outline-offset:1px;border-color:#198869}
+.focusFields textarea:disabled{opacity:.55}
+.goalActions{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:13px}
+.goalReview{display:inline-flex;align-items:center;justify-content:space-between;gap:9px;min-height:48px;width:100%;padding:10px 13px;border:1px solid #b9d8c8;border-radius:13px;background:#fffdf8;color:#176e54;font-size:13px;font-weight:850;text-align:left;cursor:pointer}
+.goalReview svg:last-child{margin-left:auto;transition:transform .2s ease}
+.goalReview[aria-expanded="true"] svg:last-child{transform:rotate(180deg)}
+.goalReview:focus-visible{outline:3px solid #76c9aa;outline-offset:2px}
+.goalSelection{font-size:11px;line-height:1.4;color:#739080}
+.goalsPanel{margin:12px 0 1px;padding:13px;background:#f6faf4}
+.goalChips{gap:7px}
+.goalChips button{min-height:45px}
+.planButton{display:flex;gap:12px;justify-content:center;width:100%;min-height:75px;margin:15px 0 0;padding:12px;border:1px solid #087455;border-radius:16px;background:linear-gradient(115deg,#056a50,#0e9973);box-shadow:0 9px 19px rgba(6,114,82,.2);color:#fff}
+.planButton svg{flex:none;width:23px;height:23px}
+.planButton span{display:grid;gap:4px;min-width:0}
+.planButton strong{font-size:clamp(15px,4vw,18px);line-height:1.15;font-weight:850}
+.planButton small{display:block;color:#d5f6e9;font-size:11px;font-weight:600;line-height:1.35}
+.planButton:disabled{box-shadow:none}
+.profileNotice{margin:10px 2px 0;font-size:12px;color:#557464;line-height:1.5}
+.profileNotice a{color:#067e5c;font-weight:850;text-decoration:underline}
+.programme{margin-top:18px;padding-top:17px;border-top:1px solid #dceade}
+.sequenceHeader{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:0 0 12px}
+.sequenceHeader small{display:block;color:#468a70;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+.sequenceHeader h4{margin:3px 0 0;color:#194e3d;font-size:19px;line-height:1.2}
+.sequenceHeader>span{flex:none;color:#39856b;font-size:12px;font-weight:850}
+.sessionTrack{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.sessionTrack span{display:grid;place-items:center;min-width:0;height:33px;border:1px solid #dce8d9;border-radius:9px;background:#f1f5ee;color:#8aa294;font-size:11px;font-weight:850}
+.sessionTrack .trackActive{background:#06815f;border-color:#06815f;color:white;box-shadow:0 3px 8px #0a7c5826}
+.sessionList{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(246px,83%);gap:11px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scroll-padding-inline:3px;padding:3px 2px 11px;scrollbar-width:thin;scrollbar-color:#b5d9c7 transparent}
+.sessionCard{scroll-snap-align:start;border-color:#d9e8dd;border-radius:16px;min-height:125px;box-shadow:0 3px 11px rgba(24,69,45,.04)}
+.sessionCard:first-child{border-color:#a7d7be;box-shadow:0 5px 15px rgba(9,113,72,.09)}
+.number{background:#e7f4ea}
+.first .apply{min-height:48px;border-radius:12px}
+.package{margin-top:13px}
+.safeguard{margin-top:13px}
+@media(min-width:650px){
+  .focusFields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .goalActions{grid-template-columns:auto minmax(0,1fr);align-items:center}
+  .goalReview{width:auto;min-width:194px}
+  .goalSelection{padding-left:8px}
+  .sessionList{grid-auto-columns:minmax(270px,32%)}
+}
+@media(min-width:740px){.sessionCard:first-child{grid-column:auto}}
+@media(max-width:355px){
+  .panel{padding:12px}
+  .focusCard{padding:11px}
+  .sessionList{grid-auto-columns:minmax(225px,90%)}
+  .sessionTrack{gap:3px}
+  .sessionTrack span{font-size:10px;height:29px}
+  .planButton strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){.goalReview svg:last-child{transition:none}.sessionList{scroll-behavior:auto}}
