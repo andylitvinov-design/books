@@ -12,6 +12,7 @@ const fixtures = [
   '20261005165044_hh_master_network_r2_policy_hardening.sql',
   '20261019152000_hh_public_service_enquiries_secure.sql',
   '20261019121144_hh_practitioner_request_messages_20261019.sql',
+  '20261020123209_hh_practitioner_request_followup_tasks_20261020.sql',
   '20261019174312_hh_practitioner_request_read_state_20261019.sql',
   '20261019180000_hh_client_message_push_optin.sql',
 ];
@@ -46,7 +47,9 @@ test('reused migrations preserve table access policy and explicit notification o
   assert.match(migration(fixtures[3]), /FORCE ROW LEVEL SECURITY/i);
   assert.match(migration(fixtures[3]), /CREATE POLICY practitioner_request_messages_participant_insert/i);
   assert.match(migration(fixtures[4]), /FORCE ROW LEVEL SECURITY/i);
-  assert.match(migration(fixtures[5]), /message_alerts boolean not null default false/i);
-  assert.match(migration(fixtures[5]), /message_alerts=true/i);
-  assert.match(migration(fixtures[5]), /app\.practitioner_request_messages/);
+  assert.match(migration(fixtures[4]), /CREATE POLICY practitioner_request_tasks_insert/i);
+  assert.match(migration(fixtures[5]), /FORCE ROW LEVEL SECURITY/i);
+  assert.match(migration(fixtures[6]), /message_alerts boolean not null default false/i);
+  assert.match(migration(fixtures[6]), /message_alerts=true/i);
+  assert.match(migration(fixtures[6]), /app\.practitioner_request_messages/);
 });
