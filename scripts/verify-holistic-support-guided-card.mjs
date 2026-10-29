@@ -127,6 +127,20 @@ for (const engine of [chromium, webkit]) {
           await page.screenshot({
             path:output+"/"+engine.name()+"-ru-390-recommendations.png",fullPage:true,
           });
+          // Screenshot regression: selecting Reiki for Money must not claim a 10-minute
+          // session or hide more directly relevant business courses behind generic videos.
+          await guide.locator("[data-support-guide-recommendations] .unused-link, [data-support-guide-recommendations] button").last().click();
+          await guide.locator('[data-support-guide-format="healing"]').click();
+          await guide.locator("[data-support-guide-show-recommendations]").click();
+          await guide.locator("[data-support-guide-recommendations]").waitFor({state:"visible"});
+          assert.ok((await guide.locator("[data-support-guide-primary-title]").innerText()).includes("Рейки"),
+            tag+" explicitly chosen support remains the primary format");
+          assert.equal(await guide.locator("[data-support-guide-alternative]").first().getAttribute("data-support-guide-alternative"),
+            "courses",tag+" business course outranks generic video as alternative");
+          assert.equal(await guide.locator('a[href="/ru/explore/business"]').count(),1,
+            tag+" verified business-course destination");
+          const reikiNote=await guide.locator("[data-support-guide-time-preference]").innerText();
+          assert.ok(reikiNote.includes("не длительность"),tag+" no invented 10-minute Reiki service");
           await guide.locator("[data-support-guide-recommendations] .unused-link, [data-support-guide-recommendations] button").last().click();
           assert.equal(await guide.locator("[data-support-guide-phase='format']").count(),1,
             tag+" return to the dialogue");
