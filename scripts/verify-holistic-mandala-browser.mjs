@@ -405,14 +405,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // which WebKit can load, decode and advance after a direct user tap.
         if (locale === "ru" && width === 390) {
           // Real context-aware filter and choice flow, not decorative chips.
-          await page.locator("[data-video-audio-kind]").selectOption("nature");
+          await page.locator('[data-video-audio-kind="nature"]').click();
           assert.equal(await page.locator('[data-video-music="rain"]').count(),1);
           assert.equal(await page.locator('[data-video-music="prosperity"]').count(),0,
             "type filter removes unrelated tracks");
-          await page.locator("[data-video-audio-mood]").selectOption("calm");
+          await page.locator('[data-video-audio-mood="calm"]').click();
           assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
-          await page.locator("[data-video-audio-kind]").selectOption("all");
-          await page.locator("[data-video-audio-mood]").selectOption("all");
+          await page.locator('[data-video-audio-kind="all"]').click();
+          await page.locator('[data-video-audio-mood="all"]').click();
           assert.equal(await page.locator("[data-video-audio-mic]").count(),1,
             "microphone recording must be an actual control, not decorative");
           assert.equal(await page.locator("[data-video-audio-attach]").count(),1,
@@ -423,7 +423,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.locator("[data-video-audio-search]").fill("");
           await page.locator("[data-video-audio-sort]").selectOption("name");
           await page.locator("[data-video-audio-sort]").selectOption("best");
-          await page.locator("[data-video-audio-length]").selectOption("20");
+          await page.locator('[data-video-audio-length="20"]').click();
           await page.locator("[data-video-audio-auto]").click();
           assert.equal(await page.locator("[data-video-audio-auto]").getAttribute("aria-pressed"),"true");
           assert.ok(await page.locator("[data-video-audio-player]").getAttribute("src"));
