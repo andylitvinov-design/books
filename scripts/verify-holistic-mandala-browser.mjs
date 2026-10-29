@@ -77,6 +77,45 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const promoRect=await promo.boundingBox();
         assert.ok(promoRect && promoRect.height>=44 && promoRect.height<=66,
           engine+" "+locale+" "+width+"px half-height diagnostic strip: "+JSON.stringify(promoRect));
+
+        // Owner-approved first mock: six linked controls, not a static picture.
+        const quick=page.locator("[data-video-quick-builder]");
+        await quick.waitFor({state:"visible",timeout:12000});
+        assert.equal(await quick.locator("[data-video-quick-section]").count(),6);
+        assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
+        assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
+        assert.equal(await quick.locator("[data-video-quick-aspect]").count(),3);
+        assert.equal(await quick.locator("[data-video-quick-duration]").count(),4);
+        assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
+        await quick.locator('[data-video-quick-theme="money"]').click();
+        assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
+        await quick.locator('[data-video-quick-theme="energy"]').click();
+        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
+        await quick.locator('[data-video-quick-style="1"]').click();
+        assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
+        await quick.locator('[data-video-quick-duration="30"]').click();
+        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        await quick.locator('[data-video-quick-aspect="landscape"]').click();
+        assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
+        await quick.locator('[data-video-quick-aspect="portrait"]').click();
+        await quick.locator('[data-video-quick-phrases="ready"]').click();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        await quick.locator('[data-video-quick-phrases="ready"]').click();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        const quickOverflow=await page.evaluate(()=>({
+          page:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
+          cards:[...document.querySelectorAll("[data-video-quick-section]")].map(el=>({
+            width:el.getBoundingClientRect().width,x:el.getBoundingClientRect().x,
+          })),
+        }));
+        assert.ok(quickOverflow.page<=quickOverflow.viewport+2,
+          engine+" "+locale+" "+width+"px quick UI overflow "+JSON.stringify(quickOverflow));
+        assert.ok(quickOverflow.cards.every(rect=>rect.width<=width+1&&rect.x>=-3));
+        await quick.locator('[data-video-quick-style="0"]').click();
+        await quick.locator("[data-video-quick-wish]").fill("");
+        // Restore legacy controls before all existing Chromium/WebKit E2E flows.
+        await page.locator("[data-video-quick-legacy] > summary").click();
         const picks=page.locator("[data-video-daily-picks]");
         await picks.waitFor({state:"visible",timeout:12000});
         assert.equal(await picks.locator("a").count(),4,"four actionable daily recommendations");
