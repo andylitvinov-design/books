@@ -5,6 +5,9 @@ on:
     paths:
       - 'supabase/migrations/20261029231000_hh_intelligence_feedback_memory.sql'
       - 'tests/intelligence-memory-rls.integration.mjs'
+      - 'lib/app/intelligence-feedback.js'
+      - 'lib/app/config.js'
+      - 'app/api/app/**/route.js'
       - '.github/workflows/hh-intelligence-memory-rls.yml'
 permissions:
   contents: read
@@ -40,4 +43,5 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
+      - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs
       - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
