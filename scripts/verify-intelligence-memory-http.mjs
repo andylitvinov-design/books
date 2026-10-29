@@ -117,6 +117,10 @@ try {
       await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
       await context.route('https://www.youtube.com/**',route=>route.abort())
       const page=await context.newPage()
+      let saveRequests=0, saveFailure=null, pageErrors=0
+      page.on('request',request=>{if(request.url().endsWith('/api/app/intelligence/feedback/save'))saveRequests++})
+      page.on('requestfailed',request=>{if(request.url().endsWith('/api/app/intelligence/feedback/save'))saveFailure=request.failure()?.errorText||'unknown'})
+      page.on('pageerror',()=>{pageErrors++})
       await page.goto(origin+'/en/app/portfolio',{waitUntil:'networkidle',timeout:60000})
       await page.locator('#hh-portrait-tab-recommendations').click()
       const card=page.locator('[data-holistic-intelligence]')
@@ -141,7 +145,12 @@ try {
       assert.equal((await call('export',a)).body.records.length,0)
       const saveResponse=page.waitForResponse(response=>response.url().endsWith('/api/app/intelligence/feedback/save')&&response.request().method()==='POST')
       await card.getByRole('button',{name:'Confirm save',exact:true}).click()
-      const savedResponse=await saveResponse, savedBody=await savedResponse.json()
+      let savedResponse
+      try {savedResponse=await saveResponse} catch(error) {
+        console.log(JSON.stringify({browser:browserName,saveRequests,saveFailure,pageErrors,alertVisible:await card.getByRole('alert').isVisible().catch(()=>false),prepareVisible:await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).isVisible().catch(()=>false),confirmVisible:await card.getByRole('button',{name:'Confirm save',exact:true}).isVisible().catch(()=>false)}))
+        throw error
+      }
+      const savedBody=await savedResponse.json()
       assert.equal(savedResponse.status(),200,`feedback save returned ${savedResponse.status()} (${typeof savedBody?.error==='string'?savedBody.error:'no error code'})`)
       await card.getByText('Feedback saved.',{exact:true}).waitFor()
       await use.check()
