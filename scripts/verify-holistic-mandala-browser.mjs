@@ -217,7 +217,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator('[data-video-affirmation-preset="3"]').getAttribute("aria-pressed"),"true");
         await page.locator('[data-video-affirmation-density="high"]').click();
         assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
-        await page.locator("[data-video-affirmation-frequency]").fill("3");
+        await page.locator("[data-video-affirmation-frequency]").focus();
+        await page.locator("[data-video-affirmation-frequency]").press("End");
+        assert.equal(await page.locator("[data-video-affirmation-frequency]").inputValue(),"3");
         await page.locator('[data-video-affirmation-visibility="small"] input').check();
         await page.locator('[data-video-affirmation-visibility="frame"] input').check();
         assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
