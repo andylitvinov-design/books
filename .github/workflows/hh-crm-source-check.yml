@@ -20,6 +20,7 @@ on:
       - 'app/[locale]/contact/**'
       - 'tests/public-contact-page.test.mjs'
       - 'components/app/crm-business-enquiries.*'
+      - 'components/app/crm-opportunities.*'
       - 'supabase/migrations/*business_consulting*'
       - 'tests/business-website-enquiry.test.mjs'
       - 'app/api/app/crm/**'
@@ -169,6 +170,10 @@ jobs:
         run: npx eslint lib/crm/salesbot-internal-runtime.js lib/crm/salesbot-internal-store.js components/app/crm-salesbot-internal-runs.jsx tests/crm-salesbot-internal-runtime.test.mjs
       - name: Lint SalesBot draft storage, private API and UI
         run: npx eslint lib/crm/salesbot-store.js components/app/crm-salesbot-drafts.jsx app/api/app/crm/salesbot/drafts/route.js tests/crm-salesbot-drafts.integration.mjs
+      - name: Universal opportunities owner scope, signed paging, transitions, idempotency and history
+        run: node --conditions=react-server --test tests/crm-opportunities.test.mjs
+      - name: Lint opportunity lifecycle, store, protected API and mobile page
+        run: npx eslint lib/crm/opportunity-contract.mjs lib/crm/opportunity-pagination.mjs lib/crm/opportunity-store.js components/app/crm-opportunities.jsx app/api/app/crm/opportunities/route.js tests/crm-opportunities.test.mjs
       - name: Business pipeline stage integrity, owner actions and visual contract
         run: node --test tests/crm-business-pipeline.test.mjs
       - name: Lint business pipeline flow and accessible board
