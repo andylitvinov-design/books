@@ -76,7 +76,9 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);
   assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
-  assert.match(ui,/startPresetAudio\(music,soundVolume\)/);
+  // The export uses an explicitly attached preset, never the merely previewed selection.
+  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume\)/);
+  assert.match(ui,/!audioNeedsAttachment &&/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);
   assert.match(audio,/linearRampToValueAtTime\(0, at \+ \.7\)/);
