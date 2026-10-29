@@ -436,14 +436,14 @@ test('actual upstream handlers clear only dependent drafts and unchanged back/fo
     researchAxisId: 'goal::motivation' })), researchAxes: [{ id: 'goal::motivation' }] }]
   const initial = { tests, scaleGroups, visibleScaleGroups: scaleGroups, focuses: ['goal'],
     selectedResearchIds: ['goal::motivation'], selectedScaleIds: ['a::f'], selectedAxes: ['energy'],
-    selectedByMode: { questionnaires: ['a'], pro: ['saved-pro'] }, batteryMode: 'questionnaires',
-    batterySignature: 'a::f', selectedKeys: [], step: 2, scalesInitialized: true, showMore: true,
+    batteryMode: 'all',
+    batterySignature: 'a::f', selectedKeys: ['a'], step: 2, showMore: true,
     recommendProfileTopThreeTests, defaultProfileScaleIds }
   const plain = value => JSON.parse(JSON.stringify(value))
   const setup = (extra = {}) => {
     const state = { ...initial, ...extra }
-    for (const name of ['Focuses', 'SelectedResearchIds', 'SelectedScaleIds', 'SelectedByMode',
-      'BatteryMode', 'BatterySignature', 'Step', 'ScalesInitialized', 'ShowMore']) {
+    for (const name of ['Focuses', 'SelectedResearchIds', 'SelectedScaleIds', 'SelectedKeys',
+      'BatteryMode', 'BatterySignature', 'Step', 'ShowMore']) {
       const key = name[0].toLowerCase() + name.slice(1)
       state['set' + name] = update => { state[key] = plain(typeof update === 'function' ? update(state[key]) : update) }
     }
@@ -451,14 +451,14 @@ test('actual upstream handlers clear only dependent drafts and unchanged back/fo
       { ...state, eligibleTestKeys: new Set() })
     return { state, handlers }
   }
-  let current = setup({ selectedByMode: { questionnaires: [], pro: [] } })
+  let current = setup({ selectedKeys: [] })
   current.handlers.goForward()
   assert.equal(current.state.step, 3)
-  assert.deepEqual(current.state.selectedByMode, { questionnaires: [], pro: [] },
+  assert.deepEqual(current.state.selectedKeys, [],
     'going back then forward without topic changes must not re-check tests')
   current = setup({ batterySignature: '' })
   current.handlers.goForward()
-  assert.deepEqual(current.state.selectedByMode, { questionnaires: ['a', 'b', 'c'], pro: [] })
+  assert.deepEqual(current.state.selectedKeys, ['a', 'b', 'c'])
   current = setup({ step: 3, selectedKeys: [] })
   current.handlers.goForward()
   assert.equal(current.state.step, 3, 'zero checked tests cannot reach save step')
@@ -468,7 +468,7 @@ test('actual upstream handlers clear only dependent drafts and unchanged back/fo
   for (const [handler, key] of [['toggleScale', 'a::f'], ['toggleResearchAxis', 'goal::motivation'], ['toggleFocus', 'goal']]) {
     current = setup()
     current.handlers[handler](key)
-    assert.deepEqual(current.state.selectedByMode, { questionnaires: [], pro: [] }, handler)
+    assert.deepEqual(current.state.selectedKeys, [], handler)
     assert.equal(current.state.batterySignature, '', handler)
     assert.equal(current.state.showMore, false, handler)
     assert.deepEqual(current.state.selectedScaleIds, [], handler)
@@ -476,7 +476,7 @@ test('actual upstream handlers clear only dependent drafts and unchanged back/fo
   for (const handler of ['toggleResearchAxis', 'toggleScale']) {
     current = setup()
     current.handlers[handler]('outside-chosen-scope')
-    assert.deepEqual(current.state.selectedByMode, initial.selectedByMode, 'invalid source choice must be a no-op')
+    assert.deepEqual(current.state.selectedKeys, initial.selectedKeys, 'invalid source choice must be a no-op')
     assert.equal(current.state.batterySignature, 'a::f')
   }
   const scope = actualWizardLogic(['visibleAreas', 'visibleScaleGroups', 'activeAreas', 'scaleGroups'], [], {
@@ -504,12 +504,12 @@ test('actual main-scale and topic handlers never leak other areas or test drafts
   ] }]
   const plain = value => JSON.parse(JSON.stringify(value))
   const original = { selectedResearchIds: [], selectedScaleIds:['a::stress'],
-    selectedByMode:{questionnaires:['a'],pro:['saved-pro']},
+    selectedKeys:['a','saved-pro'],
     batterySignature:'old-topic', showMore:true }
   const run = (fn, arg, source = original) => {
     const state = plain(source)
     const ctx = { ...state, visibleScaleGroups, scaleGroups }
-    for (const key of ['SelectedResearchIds','SelectedScaleIds','SelectedByMode',
+    for (const key of ['SelectedResearchIds','SelectedScaleIds','SelectedKeys',
       'BatterySignature','ShowMore']) {
       const field = key[0].toLowerCase() + key.slice(1)
       ctx['set' + key] = next => {
@@ -524,7 +524,7 @@ test('actual main-scale and topic handlers never leak other areas or test drafts
   assert.deepEqual(broad.selectedResearchIds,
     ['emotions::stress','emotions::anxiety','emotions::mood'])
   assert.deepEqual(broad.selectedScaleIds, [])
-  assert.deepEqual(broad.selectedByMode, {questionnaires:[],pro:[]})
+  assert.deepEqual(broad.selectedKeys, [])
   assert.equal(broad.batterySignature, '')
   assert.equal(broad.showMore, false)
   assert.deepEqual(run('toggleMainScale','emotions',broad).selectedResearchIds,[])
@@ -535,7 +535,7 @@ test('actual main-scale and topic handlers never leak other areas or test drafts
     { ...original, selectedScaleIds: [] })
   assert.deepEqual(selected.selectedScaleIds,['a::stress','b::stress'],
     'one newly selected research topic matches only registered source scales in its own axis')
-  assert.deepEqual(selected.selectedByMode,{questionnaires:[],pro:[]})
+  assert.deepEqual(selected.selectedKeys,[])
   assert.deepEqual(run('toggleTopicAxis','emotions::stress',selected).selectedScaleIds,[])
   assert.deepEqual(run('toggleTopicAxis','emotions::unknown'),original,
     'unknown/unsupported topics cannot add tests or reset the draft')
