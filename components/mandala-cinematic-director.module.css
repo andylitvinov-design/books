@@ -77,6 +77,10 @@
 .freeText textarea{max-width:100%;width:100%;min-height:118px;resize:vertical;padding:12px;
  border:1px solid #b8d7bf;border-radius:12px;background:#fff;color:#193c30;font:inherit;font-size:15px}
 .freeText small{font-size:11px;line-height:1.5;font-weight:500;color:#667d6d}
+.sceneChoice{display:grid;gap:5px;margin:9px 0 5px;max-width:100%;font-size:11px;color:#54765c;font-weight:800}
+.sceneChoice select{width:100%;max-width:100%;min-width:0;min-height:44px;
+  padding:7px 8px;background:#fffdf5;border:1px solid #b7d6c1;border-radius:9px;
+  color:#23483b;font:600 12px/1.4 Arial,Helvetica,sans-serif}
 @media(max-width:360px){
  .root{padding:11px}
  .hero{gap:7px}

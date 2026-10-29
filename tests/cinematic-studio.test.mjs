@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
   CINEMATIC_THEMES,CINEMATIC_STYLES,CINEMATIC_PLAN_VERSION,
-  buildCinematicStoryboard,findCinematicShot,safeCinematicPrompt,
+  buildCinematicStoryboard,customizeCinematicShot,findCinematicShot,safeCinematicPrompt,
 } from "../lib/mandala/cinematic-director.mjs";
 import {
   CINEMATIC_PROVIDER_CATALOG,listCinematicRoutes,evaluateCinematicSpend,
@@ -69,6 +69,32 @@ test("detailed client requests choose a matching APPROVED scene, not just the fo
   }
 });
 
+test("shot choices reject untrusted motifs, swap without duplicates, and never reuse stale client words",()=>{
+  for(const theme of CINEMATIC_THEMES){
+    const plan=buildCinematicStoryboard({locale:"ru",theme,wish:prefix,avoid:"ocean and river"});
+    assert.ok(plan.sceneChoices.length>=4);
+    const initial=plan.shots.map(x=>x.sceneId);
+    const swap=customizeCinematicShot(plan,1,initial[3]);
+    assert.equal(swap.shots[0].sceneId,initial[3]);
+    assert.equal(swap.shots[3].sceneId,initial[0]);
+    assert.equal(plan.shots[0].sceneId,initial[0],"original plan is immutable");
+    assert.equal(new Set(swap.shots.map(x=>x.sceneId)).size,4);
+    assert.equal(swap.shots.reduce((n,x)=>n+x.durationSeconds,0),plan.durationSeconds);
+    assert.ok(swap.shots.every(x=>safeCinematicPrompt(swap,x.number)===x.providerPrompt));
+    const extra=plan.sceneChoices.find(x=>!initial.includes(x.sceneId));
+    if(extra){
+      const changed=customizeCinematicShot(plan,2,extra.sceneId);
+      assert.equal(changed.shots[1].sceneId,extra.sceneId);
+      assert.equal(new Set(changed.shots.map(x=>x.sceneId)).size,4);
+    }
+    assert.throws(()=>customizeCinematicShot(plan,2,"untrusted-client-prompt"),/unapproved_cinematic_scene/);
+    assert.throws(()=>customizeCinematicShot(plan,5,initial[0]),/invalid_cinematic_edit/);
+    assert.ok(!JSON.stringify(swap).includes(prefix));
+  }
+  assert.match(directorUI,/data-director-scene-choice=\{shot\.number\}/);
+  assert.match(directorUI,/onInvalidateStoryboard\(\)/);
+  assert.match(studio,/onInvalidateStoryboard=\{\(\)=>setCinematicPlan\(null\)\}/);
+});
 test("therapy-mode storyboards require practitioner review and make no autonomous treatment claims",()=>{
   const privateTherapy=buildCinematicStoryboard({theme:"energy",locale:"ru",
     wish:"У меня стресс и напряжение",mode:"therapy"});

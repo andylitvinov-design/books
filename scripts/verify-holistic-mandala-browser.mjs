@@ -655,6 +655,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const storyboardText=await director.locator("[data-director-storyboard]").innerText();
           assert.ok(!storyboardText.includes("PRIVATE_SCRIPT_BROKEN_IF_SENT"),
             "private wish must not reach exported storyboard/provider-safe prompt");
+          const firstScene=director.locator('[data-director-scene-choice="1"]');
+          assert.ok((await firstScene.locator("option").count())>=4,
+            "original approved scene options stay available for manual editing");
+          const firstBefore=await firstScene.inputValue();
+          const secondScene=await director.locator('[data-director-scene-choice="2"]').inputValue();
+          await firstScene.selectOption(secondScene);
+          assert.equal(await firstScene.inputValue(),secondScene);
+          assert.equal(await director.locator('[data-director-scene-choice="2"]').inputValue(),firstBefore,
+            "reusing another scene swaps rather than duplicates it");
           await director.locator("[data-director-apply-montage]").click();
           await page.waitForFunction(()=>document.querySelector("[data-mandala-master-mp4]")===null,
             undefined,{timeout:15000});

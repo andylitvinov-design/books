@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
-import {buildCinematicStoryboard,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
+import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
@@ -14,10 +14,11 @@ export type CinematicShot={number:number;title:string;theme:VideoTheme;sceneId:s
   startSeconds:number;durationSeconds:number;camera:string;providerPrompt:string;visualCue:string};
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:CinematicShot[];
-  shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean};
+  shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;
+  sceneChoices:{sceneId:string;theme:VideoTheme;visualCue:string}[]};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
-type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void};
+type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
@@ -34,7 +35,7 @@ const copy={
     goalPlaceholder:"For example, approach a conversation more calmly",
     avoidPlaceholder:"For example, dark forests or water",
     format:"Format",length:"Length",seconds:"sec",plan:"Create storyboard",refresh:"Update storyboard",
-    shots:"Four connected scenes",camera:"Camera",privacy:"Only pre-approved visual words may be used in an external AI prompt. Your problem, goals, photo and test results stay in this browser.",
+    shots:"Four connected scenes",camera:"Camera",sceneChoice:"Change this shot",privacy:"Only pre-approved visual words may be used in an external AI prompt. Your problem, goals, photo and test results stay in this browser.",
     safe:"Provider-safe visual prompt",local:"Use as free moving montage",localHint:"Applies four animated scenes to the EXISTING local recorder. Press Create video below; no provider render or charge is started.",
     download:"Save safe storyboard",quote:"AI Premium · estimate required",quoteHelp:"Kling/Runway/Higgsfield remain quote-only: payment, owner approval and verified provider delivery are not enabled here.",
     myVideos:"My videos",myVideosHint:"Private account saving is available only after separate consent and cloud activation.",
@@ -55,7 +56,7 @@ const copy={
     goalPlaceholder:"Например, говорить спокойнее и свободнее",
     avoidPlaceholder:"Например, тёмный лес или вода",
     format:"Формат",length:"Длительность",seconds:"сек",plan:"Сформировать раскадровку",refresh:"Обновить раскадровку",
-    shots:"Четыре связанные сцены",camera:"Камера",privacy:"Внешнему AI допускаются только проверенные описания образов. Проблема, цели, фото и результаты тестов остаются в браузере.",
+    shots:"Четыре связанные сцены",camera:"Камера",sceneChoice:"Заменить кадр",privacy:"Внешнему AI допускаются только проверенные описания образов. Проблема, цели, фото и результаты тестов остаются в браузере.",
     safe:"Безопасный визуальный промпт",local:"Применить бесплатный видеомонтаж",localHint:"Четыре анимированные сцены подготовятся в СУЩЕСТВУЮЩЕМ редакторе. Нажмите ниже «Создать видео». Платного рендера нет.",
     download:"Сохранить раскадровку",quote:"AI Premium · нужна смета",quoteHelp:"Kling/Runway/Higgsfield пока только для оценки возможностей: оплата, утверждение расходов и доставка AI-фильма здесь не включены.",
     myVideos:"Мои видео",myVideosHint:"Приватное облачное хранение включается отдельно, с согласием владельца.",
@@ -76,7 +77,7 @@ const copy={
     goalPlaceholder:"Por ejemplo, hablar con más calma",
     avoidPlaceholder:"Por ejemplo, bosque oscuro o agua",
     format:"Formato",length:"Duración",seconds:"s",plan:"Crear guion visual",refresh:"Actualizar guion visual",
-    shots:"Cuatro escenas conectadas",camera:"Cámara",privacy:"Solo se pueden compartir descripciones visuales aprobadas con IA. Tus dificultades, metas, fotos y tests permanecen en el navegador.",
+    shots:"Cuatro escenas conectadas",camera:"Cámara",sceneChoice:"Cambiar escena",privacy:"Solo se pueden compartir descripciones visuales aprobadas con IA. Tus dificultades, metas, fotos y tests permanecen en el navegador.",
     safe:"Prompt visual seguro",local:"Usar montaje animado gratis",localHint:"Aplica cuatro escenas animadas al grabador LOCAL existente. Pulsa Crear vídeo; sin costes externos.",
     download:"Guardar guion visual",quote:"AI Premium · presupuesto requerido",quoteHelp:"Kling/Runway/Higgsfield solo para cotización: el pago, la aprobación y la entrega externa aún no están habilitados.",
     myVideos:"Mis vídeos",myVideosHint:"El almacenamiento privado requiere consentimiento y activación.",
@@ -84,7 +85,7 @@ const copy={
     themes:{energy:"Energía",money:"Dinero y trabajo",relationships:"Relaciones",goals:"Metas y sentido",life:"Vida",health:"Descanso y bienestar"}},
 } as const;
 const FIELDS:Field[]=["theme","difficulty","goal","profile"];
-export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onApplyStoryboard}:Props){
+export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onApplyStoryboard,onInvalidateStoryboard}:Props){
   const t=copy[locale]||copy.en;
   const [expanded,setExpanded]=useState(false);
   const [editing,setEditing]=useState<Field|null>(null);
@@ -97,15 +98,17 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   const [seconds,setSeconds]=useState<20|30|60>(20);
   const [generated,setGenerated]=useState(false);
   const [applied,setApplied]=useState(false);
+  const [customPlan,setCustomPlan]=useState<CinematicStoryboard|null>(null);
   const [profileConsent,setProfileConsent]=useState(false);
   const [profileState,setProfileState]=useState<"idle"|"loading"|"ready"|"signin"|"error">("idle");
   const [profileSuggestions,setProfileSuggestions]=useState<VideoTheme[]>([]);
   const profileRequestRef=useRef(0);
   const editRef=useRef<HTMLButtonElement>(null);
-  const plan=useMemo(()=>buildCinematicStoryboard({
+  const basePlan=useMemo(()=>buildCinematicStoryboard({
     locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
     mode:therapyMode?"therapy":"creative",
   }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
+  const plan=customPlan??basePlan;
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -152,7 +155,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   useEffect(()=>{
     if(parentThemeRef.current===theme)return;
     parentThemeRef.current=theme;
-    if(topic!==theme){setTopic(theme);setGenerated(false);setApplied(false);}
+    if(topic!==theme){setTopic(theme);setGenerated(false);setApplied(false);setCustomPlan(null);}
   },[theme,topic]);
   useEffect(()=>{
     if(!editing)return;
@@ -166,17 +169,30 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     profile:profileState==="ready"&&profileSuggestions.length?t.profileReady:t.profileEmpty,
     style:CINEMATIC_STYLES[style].name[locale],avoid:avoid||"—",
   };
+  const invalidate=()=>{
+    setGenerated(false);setApplied(false);setCustomPlan(null);
+    onInvalidateStoryboard();
+  };
   const fieldValue=(field:Field)=>field==="difficulty"?difficulty:field==="goal"?goal:avoid;
   const fieldChange=(field:Field,value:string)=>{
     const clean=graphemeTrim(value,160);
     if(field==="difficulty")setDifficulty(clean);
     else if(field==="goal")setGoal(clean);
     else if(field==="avoid")setAvoid(clean);
-    setGenerated(false);setApplied(false);
+    invalidate();
   };
-  const selectTopic=(next:VideoTheme)=>{setTopic(next);setGenerated(false);setApplied(false);};
-  const selectStyle=(next:StyleId)=>{setStyle(next);setGenerated(false);setApplied(false);};
-  const onPlan=()=>{setGenerated(true);setApplied(false);};
+  const selectTopic=(next:VideoTheme)=>{setTopic(next);invalidate();};
+  const selectStyle=(next:StyleId)=>{setStyle(next);invalidate();};
+  const onPlan=()=>{setGenerated(true);setApplied(false);onInvalidateStoryboard();};
+  const chooseShot=(number:number,sceneId:string)=>{
+    try{
+      const next=customizeCinematicShot(plan,number,sceneId);
+      setCustomPlan(next);setApplied(false);onInvalidateStoryboard();
+    }catch{
+      // A forged/obsolete scene option never reaches the recorder or provider.
+      setCustomPlan(null);setGenerated(false);onInvalidateStoryboard();
+    }
+  };
   const apply=()=>{
     onApplyStoryboard(plan as CinematicStoryboard);
     setApplied(true);
@@ -224,14 +240,14 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
         <fieldset disabled={disabled}><legend>{t.format}</legend>
           <div className={css.chips}>
             {(["landscape","portrait","square"] as const).map((v,i)=><button type="button" key={v}
-              aria-pressed={aspect===v} onClick={()=>{setAspect(v);setGenerated(false);}}>
+              aria-pressed={aspect===v} onClick={()=>{setAspect(v);invalidate();}}>
               {["16:9","9:16","1:1"][i]}</button>)}
           </div>
         </fieldset>
         <fieldset disabled={disabled}><legend>{t.length}</legend>
           <div className={css.chips}>{([20,30,60] as const).map(v=>
             <button key={v} type="button" aria-pressed={seconds===v}
-              onClick={()=>{setSeconds(v);setGenerated(false);}}>{v} {t.seconds}</button>)}
+              onClick={()=>{setSeconds(v);invalidate();}}>{v} {t.seconds}</button>)}
           </div>
         </fieldset>
       </div>
@@ -250,6 +266,16 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
           <div><strong>{shot.title}</strong><p>{shot.visualCue}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
+            <label className={css.sceneChoice}>
+              <span>{t.sceneChoice}</span>
+              <select data-director-scene-choice={shot.number} value={shot.sceneId} disabled={disabled}
+                onChange={event=>chooseShot(shot.number,event.currentTarget.value)}>
+                {plan.sceneChoices.filter(item=>item.theme===shot.theme||item.sceneId===shot.sceneId)
+                  .map(item=><option key={item.sceneId} value={item.sceneId}>
+                    {item.visualCue}
+                  </option>)}
+              </select>
+            </label>
             <details><summary>{t.safe}</summary><p>{shot.providerPrompt}</p></details></div>
         </article>)}</div>
         <button type="button" className={css.primary} data-director-apply-montage
