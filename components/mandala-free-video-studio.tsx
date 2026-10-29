@@ -2083,15 +2083,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
         <a href="#video-templates" data-video-editor-tab="design"
-          onClick={()=>openQuickDetailed("video-templates")}>
+          onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>
           <Film size={17} aria-hidden="true"/>{layout.designTab}
         </a>
         <a href="#video-audio" data-video-editor-tab="audio"
-          onClick={()=>openQuickDetailed("video-audio")}>
+          onClick={event=>{event.preventDefault();openQuickDetailed("video-audio");}}>
           <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
         </a>
         <a href="#video-hypnosis" data-video-editor-tab="affirmations"
-          onClick={()=>openQuickDetailed("video-hypnosis")}>
+          onClick={event=>{event.preventDefault();openQuickDetailed("video-hypnosis");}}>
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
