@@ -475,7 +475,6 @@ export function HolisticSupportInlineGuide({
   const [phase,setPhase] = useState<Phase>(initial.phase);
   const [topic,setTopic] = useState<GoalSector>(initial.topic);
   const [draft,setDraft] = useState("");
-  const [need,setNeed] = useState("");
   const [minutes,setMinutes] = useState<number | null>(null);
   const [format,setFormat] = useState<Format>("meditation");
   const [selectedTest,setSelectedTest] = useState<SupportGuideTest | null>(null);
@@ -526,8 +525,9 @@ export function HolisticSupportInlineGuide({
     setDraft("");
   }
   function enterTopic(next:GoalSector,answer:string=t.areas[next]) {
-    setTopic(next);setNeed("");setSelectedTest(null);setSelectedVideoId(null);
-    say(answer,journey.inviteTest,"test-invite");
+    setTopic(next);setSelectedTest(null);setSelectedVideoId(null);
+    const availableForTopic=(guideTests[next]??[]).some(item=>item&&/^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key));
+    say(answer,availableForTopic?journey.inviteTest:journey.inviteTestEmpty,"test-invite");
   }
   function acceptTopic() {
     say(t.agree, testCards.length ? journey.inviteTest : journey.inviteTestEmpty,"test-invite");
@@ -694,7 +694,7 @@ export function HolisticSupportInlineGuide({
             <a href={item.href} target="_blank" rel="noopener noreferrer" onClick={()=>chooseTest(item)}
               data-guide-start-test={item.key}>{journey.launchTest}<ArrowRight size={15} aria-hidden="true"/></a>
           </div>)}
-          <button type="button" className={styles.textLink} onClick={()=>goPractice(journey.skipTest)}>{journey.skipTest}</button>
+          <button type="button" className={styles.textLink} data-guide-skip-test onClick={()=>goPractice(journey.skipTest)}>{journey.skipTest}</button>
         </div> : phase==="test-return" ? <div className={styles.options}>
           <button type="button" className={styles.primary} data-guide-continue-after-test onClick={()=>goPractice(journey.backFromTest)}>{journey.backFromTest}</button>
           <button type="button" onClick={showTests}>{journey.anotherTest}</button>
