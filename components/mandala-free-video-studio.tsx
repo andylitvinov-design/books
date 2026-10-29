@@ -233,8 +233,10 @@ const layoutCopy = {
   en: {
     modeLabel:"Choose a video mode",pump:"Video boost",therapy:"Video therapy",
     therapyHint:"An optional eight-session guided imagery journey for reflection, not medical or autonomous psychotherapy.",
-    therapyJump:"Explore the 8 sessions",photoEnable:"Include my photo in the video",
-    photoLink:"Add a photo of me / my goal",photoIncluded:"Photo selected",
+    therapyJump:"Explore the 8 sessions",photoEnable:"My photo / goal",
+    photoLink:"Choose photo",photoIncluded:"Photo chosen",
+    previewOptions:"Optional video elements",affirmationsToggle:"Affirmations",configureAffirmations:"Choose phrases",previewTitle:"Personal video preview",
+    therapyBannerLabel:"YOUR PERSONAL JOURNEY",therapyBannerTitle:"Eight gentle video sessions",therapyBannerHint:"Plan a guided imagery series. The first video is free; seven further sessions are previews.",therapyBannerAction:"Create a personal video-therapy programme",
     quickControls:"Video preview settings",extraFilters:"More visual styles and themes",
     extraThemes:"Other themes",audioTitle:"Audio track",audioHelp:"Choose an ambient sound or upload your own recording.",
     hypnosisTitle:"Hypnoaffirmations",hypnosisHelp:"Optional short, visible phrases and gentle imagery. No proven subliminal effects or clinical hypnosis are claimed.",
@@ -245,8 +247,10 @@ const layoutCopy = {
   ru: {
     modeLabel:"Выбор режима видео",pump:"Видео-подкачка",therapy:"Видео-терапия",
     therapyHint:"Бережная серия из 8 образных практик для самостоятельной поддержки, а не медицинская или автономная психотерапия.",
-    therapyJump:"Программа из 8 сессий",photoEnable:"Добавить фото в видео",
-    photoLink:"Добавить фото себя / цели",photoIncluded:"Фото выбрано",
+    therapyJump:"Программа из 8 сессий",photoEnable:"Своё фото / цель",
+    photoLink:"Выбрать фото",photoIncluded:"Фото выбрано",
+    previewOptions:"Дополнения к видео",affirmationsToggle:"Аффирмации",configureAffirmations:"Настроить фразы",previewTitle:"Просмотр видеоролика",
+    therapyBannerLabel:"ЛИЧНАЯ ПРОГРАММА",therapyBannerTitle:"8 видеопрактик по вашему запросу",therapyBannerHint:"Бережные образные практики: первый ролик бесплатно, остальные пока в плане.",therapyBannerAction:"Создать персональную программу видеотерапии",
     quickControls:"Параметры видеопревью",extraFilters:"Другие стили и темы",
     extraThemes:"Другие темы",audioTitle:"Аудио-трек",audioHelp:"Подберите звуковую подложку или загрузите свою запись.",
     hypnosisTitle:"Гипноаффирмации",hypnosisHelp:"Короткие фразы и мягкие образы по желанию. Не заменяют клинический гипноз или лечение; скрытый эффект не доказан.",
@@ -257,8 +261,10 @@ const layoutCopy = {
   es: {
     modeLabel:"Elige el modo de vídeo",pump:"Vídeo de impulso",therapy:"Videoterapia",
     therapyHint:"Una serie opcional de 8 sesiones de imágenes guiadas para reflexionar, sin tratamiento médico ni psicoterapia autónoma.",
-    therapyJump:"Explorar 8 sesiones",photoEnable:"Incluir mi foto en el vídeo",
-    photoLink:"Añadir foto de mí / mi objetivo",photoIncluded:"Foto seleccionada",
+    therapyJump:"Explorar 8 sesiones",photoEnable:"Mi foto / objetivo",
+    photoLink:"Elegir foto",photoIncluded:"Foto elegida",
+    previewOptions:"Elementos opcionales del vídeo",affirmationsToggle:"Afirmaciones",configureAffirmations:"Elegir frases",previewTitle:"Vista previa del vídeo",
+    therapyBannerLabel:"TU PROGRAMA PERSONAL",therapyBannerTitle:"Ocho sesiones de vídeo guiado",therapyBannerHint:"Prepara una serie de visualizaciones. El primer vídeo es gratis; los otros siete son vistas previas.",therapyBannerAction:"Crear mi programa personal de videoterapia",
     quickControls:"Ajustes de vista previa",extraFilters:"Otros estilos y temas",
     extraThemes:"Otros temas",audioTitle:"Pista de audio",audioHelp:"Elige un sonido de ambiente o sube tu propia grabación.",
     hypnosisTitle:"Hipnoafirmaciones",hypnosisHelp:"Frases breves visibles e imágenes suaves opcionales. No sustituyen la hipnosis clínica ni un tratamiento; no hay evidencia de efectos subliminales.",
@@ -621,6 +627,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const supportUi = supportDesignCopy[locale];
   const layout = layoutCopy[locale];
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
+  const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
   const [touchedScores,setTouchedScores] = useState<Partial<Record<(typeof checkOrder)[number],number>>>({});
   const [theme, setTheme] = useState<VideoTheme>("energy");
@@ -646,7 +653,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const [tonePreview,setTonePreview] = useState<{preset:AmbientMusic;url:string}|null>(null);
   const [audioRights,setAudioRights] = useState(false);
-  const [captionMode,setCaptionMode] = useState<CaptionMode>("theme");
+  const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
@@ -1070,7 +1077,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing)return;
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
-    setMusic("none");setSoundVolume(75);setCaptionMode("theme");setCustomCaption("");setQuality("hd");
+    setMusic("none");setSoundVolume(75);setCaptionMode("none");setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
@@ -1108,6 +1115,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       block: "center",
     });
   };
+
+  // Only an explicit click opens and scrolls to the existing guided-image
+  // planner; no treatment, API request, rendering or paid action is started.
+  useEffect(()=>{
+    if(!therapyJumpRequested || studioMode!=="therapy")return;
+    document.getElementById("guided-video-series")?.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start",
+    });
+    setTherapyJumpRequested(false);
+  },[studioMode,therapyJumpRequested]);
 
   return (
     <section className={videoStyles.studio} id="free-personal-video"
@@ -1148,22 +1166,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>;
           })}
         </div>
-        <div className={videoStyles.photoChoice} data-mandala-output-mode>
-          <label className={videoStyles.photoToggle}>
-            <input type="checkbox" data-video-photo-enabled checked={!backgroundOnly}
-              disabled={recording||preparing} onChange={event=>{
-                const enabled=event.currentTarget.checked;
-                setBackgroundOnly(!enabled);
-                if(enabled&&!photoUrl)onPickPhoto();
-              }}/>
-            <span className={videoStyles.srOnly}>{layout.photoEnable}</span>
-          </label>
-          <button type="button" className={videoStyles.photoLink} data-video-photo-picker
-            disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
-            <Camera size={16} aria-hidden="true"/>{photoUrl?ui.replace:layout.photoLink}
-          </button>
-          <small>{photoUrl&&!backgroundOnly?layout.photoIncluded:ui.photoPrivate}</small>
-        </div>
         {photoError?<p className={videoStyles.warning} role="alert">{ui.photoError}</p>:null}
       </div>
 
@@ -1180,72 +1182,59 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </header>
 
 
+
+      <div className={videoStyles.previewChoices} data-video-preview-choices data-mandala-output-mode
+        role="group" aria-label={layout.previewOptions}>
+        <div className={videoStyles.previewChoice}>
+          <label className={videoStyles.previewChoiceLabel}>
+            <input type="checkbox" data-video-photo-enabled checked={!backgroundOnly}
+              disabled={recording||preparing} onChange={event=>{
+                const enabled=event.currentTarget.checked;
+                setBackgroundOnly(!enabled);
+                if(enabled&&!photoUrl)onPickPhoto();
+              }}/>
+            <span>{layout.photoEnable}</span>
+          </label>
+          <button type="button" className={videoStyles.previewChoiceLink} data-video-photo-picker
+            disabled={recording||preparing} onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+            <Camera size={14} aria-hidden="true"/>{photoUrl?ui.replace:layout.photoLink}
+          </button>
+        </div>
+        <div className={videoStyles.previewChoice}>
+          <label className={videoStyles.previewChoiceLabel}>
+            <input type="checkbox" data-video-affirmations-feature checked={affirmations.enabled}
+              disabled={recording||preparing}
+              onChange={event=>setAffirmations(previous=>({...previous,enabled:event.currentTarget.checked}))}/>
+            <span>{layout.affirmationsToggle}</span>
+          </label>
+          <a className={videoStyles.previewChoiceLink} href="#video-hypnosis">
+            <Sparkles size={14} aria-hidden="true"/>{layout.configureAffirmations}
+          </a>
+        </div>
+      </div>
+
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
         data-hero-promo={!photoUrl&&!previewPlaying&&!recording?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
+        <h2 id="video-hero-heading" className={videoStyles.srOnly}>{layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
-          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.30),rgba(6,28,29,.53)),url("${activeFilm.poster}")`} : undefined} />
+          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
           <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
             height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
-            aria-label={supportUi.quickPreview}/>
+            aria-label={layout.previewTitle}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
-        <div className={videoStyles.heroOverlay}>
-
-          <div className={videoStyles.heroQuickFilters} data-video-hero-filters role="group" aria-label={layout.quickControls}>
-            <label><span>{ui.format}</span>
-              <select data-video-hero-aspect value={aspect} disabled={recording||preparing}
-                onChange={event=>setAspect(event.currentTarget.value as Aspect)}>
-                <option value="portrait">9:16</option>
-                <option value="square">1:1</option>
-                <option value="landscape">16:9</option>
-              </select>
-            </label>
-            <label><span>{ui.duration}</span>
-              <select data-video-hero-duration value={duration} disabled={recording||preparing}
-                onChange={event=>setDuration(Number(event.currentTarget.value) as (typeof durations)[number])}>
-                {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
-              </select>
-            </label>
-            <label><span>{ui.speed}</span>
-              <select data-video-hero-motion value={speed} disabled={recording||preparing}
-                onChange={event=>setSpeed(event.currentTarget.value as Speed)}>
-                <option value="slow">{ui.slow}</option>
-                <option value="dynamic">{ui.dynamic}</option>
-              </select>
-            </label>
-          </div>
-          <div className={videoStyles.heroMain}>
-            <div className={videoStyles.heroVisual}>
-              <div className={videoStyles.videoOrb} aria-hidden="true"/>
-              <button className={videoStyles.heroAudio} type="button" data-mandala-money-preview
-                data-video-preview-toggle aria-pressed={previewPlaying}
-                disabled={!source||recording||preparing}
-                onClick={()=>setPreviewPlaying(value=>!value)}>
-                {previewPlaying?<Pause size={14} aria-hidden="true"/>:<Play size={14} aria-hidden="true"/>}
-                {previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
-              </button>
-            </div>
-            <div className={videoStyles.heroDetails}>
-              <span className={videoStyles.heroGoal}><Leaf size={12} aria-hidden="true"/>{supportUi.forGoal}</span>
-              <h2 id="video-hero-heading">{supportUi.categoryTitles[videoCategory]}</h2>
-              <p>{supportUi.categoryDescriptions[videoCategory]}</p>
-              <span className={videoStyles.heroFeature}><Sparkles size={12} aria-hidden="true"/>{supportUi.featureAnimation}</span>
-              <span className={videoStyles.heroSound}><Music2 size={12} aria-hidden="true"/>
-                {music==="none"?supportUi.heroBadge:ui.musicNames[music]}</span>
-              <span className={videoStyles.heroFeature}>{duration} {ui.seconds}</span>
-            </div>
-          </div>
-          <div className={videoStyles.heroActions}>
-            <button type="button" className={videoStyles.heroCreate}
-              data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
-              <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
-            </button>
-            <a className={videoStyles.heroMore} href="#video-templates">{supportUi.more}</a>
-          </div>
-        </div>
+        <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
+          data-video-preview-toggle aria-pressed={previewPlaying}
+          aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+          title={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+          disabled={!source||recording||preparing}
+          onClick={()=>{if(previewPlaying)setPreviewPlaying(false);else openAffirmationPreview();}}>
+          {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
+            <Play size={32} fill="currentColor" aria-hidden="true"/>}
+        </button>
       </section>
       <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
         <a href="#video-templates" data-video-editor-tab="design">
@@ -1258,6 +1247,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
+      <div className={videoStyles.postHeroActions} data-video-hero-actions>
+        <button type="button" className={videoStyles.heroCreate}
+          data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
+          <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
+        </button>
+      </div>
+      <section className={videoStyles.therapyBanner} data-video-therapy-banner>
+        <div className={videoStyles.therapyBannerCopy}>
+          <small>{layout.therapyBannerLabel}</small>
+          <h3>{layout.therapyBannerTitle}</h3>
+          <p>{layout.therapyBannerHint}</p>
+        </div>
+        <button type="button" data-video-therapy-start
+          disabled={recording||preparing}
+          onClick={()=>{setStudioMode("therapy");setTherapyJumpRequested(true);}}>
+          {layout.therapyBannerAction}<ArrowRight size={19} aria-hidden="true"/>
+        </button>
+      </section>
 
       {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
         {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
