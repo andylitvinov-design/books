@@ -26,7 +26,7 @@ const COPY={
     ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
 }
 const VALID_TABS=new Set(['chats','requests'])
-export default function MessagesHub({locale='en',embedded=false,onClientsCount,onDetailChange}){
+export default function MessagesHub({locale='en',embedded=false,onClientsCount=undefined,onDetailChange=undefined}){
   const searchParams=useSearchParams()
   const t=COPY[locale]||COPY.en
   const [tab,setTab]=useState('chats')
