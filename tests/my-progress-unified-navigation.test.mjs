@@ -113,3 +113,41 @@ test('practitioner offerings stay behind original private Practice; client order
   const onPlay = support.slice(support.indexOf('const startVideo = () =>'), support.indexOf('const markCurrentVideoWatched'))
   assert.doesNotMatch(onPlay, /video-progress|fetch\(/)
 })
+
+test('existing labs, saved development and 90-day coaching appear with only neutral source references',()=>{
+  const value=buildMyProgress({
+    extras:{
+      labs:{available:true,records:[{id:'lab-1',savedAt:at('25'),markers:[{name:'HIDDEN_LAB_VALUE',value:900}]}]},
+      development:{available:true,updatedAt:at('23'),targets:{hidden:'HIDDEN_GOAL'}},
+      business:{available:true,updatedAt:at('24'),course:{private:'HIDDEN_BUSINESS'}},
+    },
+    locale:'ru',
+  })
+  assert.deepEqual(value.entries.map(row=>row.category),['labs','courses','development'])
+  assert.equal(value.entries.find(row=>row.category==='labs').href,'/ru/app/labs')
+  assert.equal(value.entries.find(row=>row.category==='development').href,'/ru/app/portfolio')
+  assert.equal(value.entries.find(row=>row.category==='courses').href,'/ru/app/business')
+  assert.deepEqual(value.entries.find(row=>row.category==='courses').topics,['money'])
+  for(const secret of ['HIDDEN_LAB_VALUE','HIDDEN_GOAL','HIDDEN_BUSINESS']) {
+    assert.ok(!JSON.stringify(value).includes(secret))
+  }
+})
+
+test('optional progress extras only disclose dates/IDs from protected existing sources, not health or coaching payloads',()=>{
+  const route=source('app/api/app/progress-extras/route.js')
+  assert.match(route,/const actor=await auth\.verified\(\)/)
+  assert.match(route,/requestOrigin\(request,config\)/)
+  assert.match(route,/ACCOUNT_CHANGED/)
+  assert.match(route,/listLabReports\(config,actor\)/)
+  assert.match(route,/readDevelopmentGoals\(config,actor\)/)
+  assert.match(route,/readBusinessCoaching\(config,actor\)/)
+  assert.match(route,/labsResult\.value\.reports/)
+  assert.match(route,/id:row\.id,savedAt:row\.savedAt/)
+  assert.match(route,/partial:/)
+  assert.doesNotMatch(route,/\bmarkers\s*:/)
+  assert.doesNotMatch(route,/body\.message/)
+  const page=source('components/app/my-progress.jsx')
+  assert.match(page,/'progress-extras'/)
+  assert.match(page,/extras:values\[5\]\?\.accountId===accountId/)
+  assert.match(page,/rubric:\{courses:/)
+})
