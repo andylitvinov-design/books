@@ -124,7 +124,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await quick.locator("[data-video-quick-attach]").click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "quick attachment must really apply the selected WAV to MediaRecorder");
-        assert.ok((await page.locator("[data-video-audio-attached]").innerText()).length>8);
+        // Audio panel is inside the deliberately collapsed advanced editor:
+        // innerText() can be empty for hidden <details> content on Chromium.
+        // Read the existing DOM's textContent and independently assert the
+        // attachment transition via the disabled Attach action above.
+        assert.ok((await page.locator("[data-video-audio-attached]").textContent()||"").trim().length>8,
+          "the applied soundtrack name remains in the original audio editor");
         await quick.locator("[data-video-quick-section='5'] button").filter({hasText:
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
