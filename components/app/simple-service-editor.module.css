@@ -224,46 +224,56 @@
 .footerControls{display:grid;gap:10px}
 @media(max-width:650px){
   .quickForm{
-    width:100%;max-width:none;margin:0;padding:2px 2px 66px;gap:6px;
+    width:100%;max-width:none;margin:0;padding:1px 0 calc(96px + env(safe-area-inset-bottom,0px));gap:8px;
     border:0;border-radius:0;background:transparent;box-shadow:none;
   }
   .quickForm :is(input,textarea,select){min-width:0;max-width:100%}
-  .header{justify-content:flex-end;align-items:center;min-height:37px;margin:0;padding:0 1px}
+  .header{justify-content:flex-end;align-items:center;min-height:42px;margin:0;padding:0 2px}
   .headerCopy{display:none}
   .langSelect{flex:0 0 auto;display:flex;align-items:center;gap:7px;max-width:none;margin:0}
-  .langSelect>span{font-size:.68rem;gap:5px}
-  .langSelect select{height:37px;max-width:132px;min-width:104px;font-size:16px}
-  .stageTabs{gap:4px}
-  .stageTabs button{min-height:42px;padding:5px 4px;gap:4px;border-radius:10px;font-size:.68rem}
-  .stageTabs button span{width:20px;height:20px}
-  .stageTabs button strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;overflow-wrap:normal}
+  .langSelect>span{font-size:11px;gap:5px;color:#337a69}
+  .langSelect select{height:40px;max-width:134px;min-width:114px;padding:6px 24px 6px 11px;font-size:16px;
+    border-radius:12px;border-color:#cfe2d5;background:#fffdf8;color:#245a4c}
+  .stageTabs{gap:6px}
+  .stageTabs button{min-height:48px;padding:6px 5px;gap:5px;border-radius:13px;
+    background:#fffcf7;border-color:#e3ddd1;text-align:left;justify-content:center}
+  .stageTabs button span{width:21px;height:21px}
+  .stageTabs button strong{min-width:0;overflow:visible;white-space:normal;text-overflow:clip;
+    overflow-wrap:anywhere;font:780 clamp(10px,2.8vw,12px)/1.16 system-ui,sans-serif}
+  .stageTabs button[aria-pressed=true]{background:#dff4e9;border-color:#73baa4;
+    box-shadow:inset 0 0 0 1px #9bd2bc}
   .stagePanel{gap:5px;padding:0;border:0;border-radius:0;background:transparent}
   .stagePanel[data-service-slide="presentation"]>.panelHead,
   .stagePanel[data-service-slide="presentation"]>.stageTip,
   .stagePanel[data-service-slide="presentation"]>.note{display:none}
-  .serviceCanvas{width:100%;border-radius:12px;box-shadow:none}
-  .photoCanvas,.photoCanvas>img,.emptyPhoto{min-height:80px;max-height:94px}
-  .photoCanvas{aspect-ratio:auto;height:89px}
+  .serviceCanvas{width:100%;border:1px solid #e4eadd;border-radius:18px;
+    box-shadow:0 5px 18px #3148340d;background:#fffdf8;overflow:hidden}
+  .photoCanvas,.photoCanvas>img,.emptyPhoto{min-height:88px;max-height:103px}
+  .photoCanvas{aspect-ratio:auto;height:96px;background:#d7e6d7}
   .photoCanvas>img{height:100%}
-  .emptyPhoto{height:100%;gap:4px}
-  .emptyPhoto svg{box-sizing:content-box;width:23px;height:23px;padding:8px}
+  .emptyPhoto{height:100%;gap:4px;
+    background:linear-gradient(90deg,#0d453c90,#174c3730),
+      url('/images/holistic-house/reiki-practitioner-sunrise.webp') 63% center/cover no-repeat}
+  .emptyPhoto svg{box-sizing:content-box;width:21px;height:21px;padding:7px;color:#236e59;
+    background:#fffaf1e8;border-radius:50%}
   .emptyPhoto small{display:none}
   .photoButton{
-    bottom:6px;right:7px;left:auto;max-width:calc(100% - 14px);
-    min-height:44px;padding:7px 11px;border-radius:9px;font-size:.72rem;
+    bottom:8px;right:9px;left:auto;max-width:calc(100% - 18px);
+    min-height:44px;padding:8px 12px;border-radius:13px;border-color:#c7e2d2;
+    background:#fffdf9f4;color:#185847;font:760 12px/1.15 system-ui,sans-serif
   }
-  .contentCanvas{gap:6px;padding:9px 10px}
+  .contentCanvas{gap:8px;padding:11px 12px;background:#fffdf8}
   .contentKicker{display:none}
   .visualTitle,.visualSummary{gap:4px}
   .visualTitle>span,.visualSummary>span{font-size:.69rem}
   .visualTitle input{
-    height:40px;min-height:40px!important;padding:6px 3px!important;
-    font:650 16px/1.25 system-ui,-apple-system,sans-serif!important;
+    height:44px;min-height:44px!important;padding:7px 4px!important;
+    font:660 16px/1.25 system-ui,-apple-system,sans-serif!important;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .visualSummary textarea{
-    min-height:69px!important;height:72px;padding:8px!important;
-    font:500 16px/1.35 system-ui,-apple-system,sans-serif!important;
+    min-height:80px!important;height:80px;padding:10px!important;
+    font:500 16px/1.3 system-ui,-apple-system,sans-serif!important;
   }
   .previewMeta{gap:5px}
   .previewMeta span{padding:4px 8px;font-size:.67rem}
@@ -281,32 +291,35 @@
     box-shadow:none;background:transparent;
   }
   .footerControls{
-    position:fixed;z-index:45;
+    position:fixed;z-index:75;
     left:max(8px,env(safe-area-inset-left,0px));
     right:max(8px,env(safe-area-inset-right,0px));
-    bottom:calc(74px + env(safe-area-inset-bottom,0px));
+    /* The five-tab dock is intentionally hidden during editing. Do not
+       leave its old 74px offset below the Save/Next bar on iPhone. */
+    bottom:calc(8px + env(safe-area-inset-bottom,0px));
     display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr);
-    gap:6px;align-items:stretch;max-width:550px;margin:0 auto;padding:6px;
-    border:1px solid #ddcbbb;border-radius:12px;
-    background:#fffdf9f7;box-shadow:0 3px 18px #4b352122;
+    gap:7px;align-items:stretch;max-width:550px;margin:0 auto;padding:7px;
+    border:1px solid #d9e7d9;border-radius:18px;
+    background:#fffefaf7;backdrop-filter:blur(14px);
+    box-shadow:0 7px 24px #24432b29;
   }
   .footerControls .stepNavigation>span{display:none}
   .footerControls :is(.stepNavigation>button,.actions>button){
-    min-width:0;min-height:44px!important;margin:0!important;
-    padding:7px 8px!important;border-radius:9px!important;
-    font-size:.73rem!important;line-height:1.18!important;
+    min-width:0;min-height:46px!important;margin:0!important;
+    padding:7px 9px!important;border-radius:12px!important;
+    font-size:clamp(11px,3vw,13px)!important;line-height:1.18!important;
     text-align:center;white-space:normal;
   }
   .footerControls .stepNavigation>button:first-child{grid-column:1;grid-row:1}
   .footerControls .previousLabel{display:none}
   .footerControls .stepNavigation>button:nth-of-type(2){
     grid-column:3;grid-row:1;
-    background:#0b7776;border-color:#0b7776;color:#fff;
+    background:linear-gradient(115deg,#00a980,#00856a);border-color:#00866a;color:#fff;
   }
   .footerControls .actions>.draft{grid-column:2;grid-row:1}
   .footerControls .actions>.submit{
     grid-column:3;grid-row:1;
-    background:#812c49!important;border-color:#812c49!important;color:#fff!important;
+    background:linear-gradient(115deg,#00a980,#00856a)!important;border-color:#00866a!important;color:#fff!important;
   }
   .footerControls .actions>.pause{grid-column:1/-1;grid-row:2}
   .footerControls:has(.stepNavigation>button:first-child:disabled) .stepNavigation>button:first-child{display:none}
@@ -317,9 +330,9 @@
   .fine{margin:0!important;font-size:.65rem!important;line-height:1.3!important;text-align:center}
 }
 @media(max-width:355px){
-  .stageTabs button{gap:3px;font-size:.61rem;min-height:42px}
-  .stageTabs button strong{font-size:.61rem}
-  .stageTabs button span{width:18px;height:18px}
+  .stageTabs button{gap:4px;font-size:10px;min-height:56px;padding:5px 3px}
+  .stageTabs button strong{font-size:10px}
+  .stageTabs button span{width:19px;height:19px}
   .contentCanvas{padding:8px}
   .footerControls{gap:4px;padding:5px;grid-template-columns:42px minmax(0,1fr) minmax(0,1fr)}
   .footerControls :is(.stepNavigation>button,.actions>button){font-size:.68rem!important;padding:6px 4px!important}
