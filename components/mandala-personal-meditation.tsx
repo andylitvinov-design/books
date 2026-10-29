@@ -14,7 +14,7 @@ type ImageKey = "video"|"garden"|"water"|"light"|"home";
 type ToneKey = "gentle"|"grounded"|"uplifting";
 type LengthKey = 3|5|8;
 type Props = {
-  locale:PublicLocale;theme:VideoTheme;wish:string;scene:string;sound:string;
+  locale:PublicLocale;theme:VideoTheme;wish:string;scene:string;sound:string;caption:string;
   pace:"slow"|"dynamic";brightness:"soft"|"bright";
   affirmations:string[];affirmationsEnabled:boolean;
   focus:GuidedMeditationFocus;disabled:boolean;
@@ -79,7 +79,7 @@ const themeLabels = {
 } as const;
 
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,pace,brightness,affirmations,affirmationsEnabled,focus,disabled
+  locale,theme,wish,scene,sound,caption,pace,brightness,affirmations,affirmationsEnabled,focus,disabled
 }:Props) {
   const t=copy[locale];
   const [selected,setSelected]=useState<Accent[]>([]);
@@ -90,7 +90,7 @@ export function MandalaPersonalMeditation({
   const [script,setScript]=useState("");
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
-  const signature=JSON.stringify([locale,theme,wish,scene,sound,pace,brightness,affirmationsEnabled,affirmations,
+  const signature=JSON.stringify([locale,theme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
     focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra]);
   const stale=Boolean(script&&generatedFor!==signature);
   const toggle=(accent:Accent)=>setSelected(current=>current.includes(accent)
@@ -99,7 +99,7 @@ export function MandalaPersonalMeditation({
   const generate=()=>{
     if(disabled)return;
     const next=buildPersonalMeditationScript({
-      locale,theme,wish,scene,sound,pace,brightness,affirmationsEnabled,affirmations,
+      locale,theme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
       focus,accents:selected,image,tone,length,extra
     });
     setScript(next);setGeneratedFor(signature);setNotice(t.creating);
