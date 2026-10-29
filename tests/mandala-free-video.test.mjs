@@ -146,7 +146,7 @@ test("background-only reusable clip is the default, with an explicit photo check
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
-  assert.match(studio,/data-mandala-output-mode/);
+  assert.match(studio,/data-video-quick-photo-enabled data-video-photo-enabled/);
   assert.match(studio,/data-video-photo-enabled/);
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
