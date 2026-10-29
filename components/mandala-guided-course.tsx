@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BookOpen, Check, ChevronDown, Download, Headphones, LockKeyhole, Pause, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
-import { buildPersonalImageryCourse, COURSE_THEMES, selectVerifiedCourseEvidence } from "@/lib/mandala/personal-guided-course.mjs";
+import { buildPersonalImageryCourse, COURSE_THEMES, selectVerifiedCourseEvidence, suggestGuidedGoalsFromProfile } from "@/lib/mandala/personal-guided-course.mjs";
 import css from "./mandala-guided-course.module.css";
 
 type Evidence = {axis:string;sourceTitle:string;measuredAt:string;definitionKey:string;percent:number};
@@ -21,6 +21,7 @@ const copy = {
     intro:"A gentle sequence of symbolic scenes, optional affirmations and spoken imagery. Inspired by resource-focused guided imagery; not autonomous psychotherapy.",
     personal:"Suggest from my test profile",accents:"Set accents / goals",close:"Hide goals",
     goals:"What would you like to give attention to?",chosen:"Choose up to 3 priorities; your choice comes before test scores.",
+    suggested:"Topics with recent source-verified results (not a diagnosis or ranking of needs)",applySuggested:"Choose these themes",
     profile:"I consent to read my saved test results from my protected account for this on-device course preview. Nothing is sent to an external AI or stored here.",
     load:"Use saved scores",loading:"Reading verified scores…",read:"Verified test indicators considered",empty:"No current source-verified measures for these goals. Your chosen goals still work.",
     signin:"Sign in to My House to use saved tests.",signInLink:"My House",error:"Could not read your saved test profile. Continue with your chosen goals.",
@@ -41,6 +42,7 @@ const copy = {
     intro:"Бережный курс из символических сюжетов, установок и текстов для медитаций. На основе ресурсных образов символдрамы, но не автономная психотерапия.",
     personal:"Предложить по моим тестам",accents:"Расставить акценты / цели",close:"Скрыть цели",
     goals:"На чём сделать акцент?",chosen:"Выберите до 3 целей: ваш выбор важнее любых тестовых баллов.",
+    suggested:"Темы, по которым есть свежие проверенные шкалы (не диагноз и не оценка тяжести)",applySuggested:"Выбрать эти темы",
     profile:"Согласен на чтение моих сохранённых результатов из защищённого кабинета только для подбора на этом устройстве. Данные не отправляются внешнему ИИ и не сохраняются здесь.",
     load:"Подобрать по тестам",loading:"Проверяем подтверждённые показатели…",read:"Учтены проверенные показатели тестов",empty:"Для выбранных целей нет актуальных подтверждённых шкал. Продолжайте с собственными целями.",
     signin:"Войдите в «Мой дом», чтобы использовать сохранённые тесты.",signInLink:"Мой дом",error:"Не удалось получить приватные показатели. Можно продолжить с выбранными целями.",
@@ -61,6 +63,7 @@ const copy = {
     intro:"Ocho escenas simbólicas, frases opcionales y guiones de audio. Inspirado en la imaginería de recursos, no psicoterapia autónoma.",
     personal:"Sugerir según mis pruebas",accents:"Elegir prioridades / metas",close:"Ocultar metas",
     goals:"¿En qué quieres concentrarte?",chosen:"Elige hasta 3 prioridades. Tu elección tiene prioridad sobre las pruebas.",
+    suggested:"Temas con resultados recientes verificados (no diagnóstico ni gravedad)",applySuggested:"Elegir estos temas",
     profile:"Acepto leer mis resultados guardados de mi cuenta protegida solo para esta vista previa en mi dispositivo. No se envían a IA externa ni se guardan aquí.",
     load:"Usar resultados guardados",loading:"Verificando resultados…",read:"Indicadores verificados considerados",empty:"No hay resultados recientes verificados para estas metas. Puedes continuar.",
     signin:"Inicia sesión en Mi Casa para usar tus pruebas.",signInLink:"Mi Casa",error:"No se pudo leer el perfil. Continúa con tus metas.",
@@ -85,6 +88,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [consent,setConsent] = useState(false);
   const [profileStatus,setProfileStatus] = useState<Status>("idle");
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
+  const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
   const [planOpen,setPlanOpen] = useState(false);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
@@ -95,19 +99,19 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const sessions = plan.sessions as Session[];
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
-    profileRequestRef.current++;
-    setProfileEvidence([]);setProfileStatus("idle");setConsent(false);
+    // Once explicitly consented and verified, the source readings can be
+    // reused for a different chosen focus without another network request.
     setGoals(prev=>prev.includes(goal)?prev.filter(value=>value!==goal):
       prev.length<3?[...prev,goal]:[...prev.slice(1),goal]);
   };
   const withdraw=()=>{
     profileRequestRef.current++;
-    setConsent(false);setProfileEvidence([]);setProfileStatus("idle");
+    setConsent(false);setProfileEvidence([]);setSuggestedGoals([]);setProfileStatus("idle");
   };
   async function loadPrivateProfile(){
     if(!consent || disabled || profileStatus==="loading")return;
     const requestId=++profileRequestRef.current;
-    setProfileStatus("loading");setProfileEvidence([]);
+    setProfileStatus("loading");setProfileEvidence([]);setSuggestedGoals([]);
     try{
       const response=await fetch("/api/app/bootstrap?view=portrait",{
         method:"GET",credentials:"same-origin",cache:"no-store",redirect:"error",
@@ -123,9 +127,15 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       // until the user deliberately opts in. The validated result never leaves this browser.
       const {buildPsychPortrait}=await import("@/lib/assessments/psych-portrait.js");
       const portrait=buildPsychPortrait(data.results);
-      const evidence=selectVerifiedCourseEvidence(portrait,actualGoals) as Evidence[];
+      // A single authenticated read supports changing the 1-3 goals later.
+      // Only the first-party source-cleared portrait leaves the parsing step;
+      // deduplicate by validated axis. Nothing is persisted or transmitted.
+      const candidates=COURSE_THEMES.flatMap(goal=>selectVerifiedCourseEvidence(portrait,[goal]));
+      const evidence=Array.from(new Map(candidates.map(item=>[item.axis,item])).values()).slice(0,17) as Evidence[];
+      const suggested=suggestGuidedGoalsFromProfile(portrait) as VideoTheme[];
       if(requestId!==profileRequestRef.current)return;
       setProfileEvidence(evidence);
+      setSuggestedGoals(suggested);
       setProfileStatus(evidence.length?"ready":"empty");
     } catch {if(requestId===profileRequestRef.current){setProfileEvidence([]);setProfileStatus("error");}}
   }
@@ -187,13 +197,19 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           <ShieldCheck size={15} aria-hidden="true"/>{profileStatus==="loading"?t.loading:t.load}
         </button>
         <small aria-live="polite">
-          {profileStatus==="ready"?t.read:profileStatus==="empty"?t.empty:
+          {profileStatus==="ready"?(plan.evidence.length?t.read:t.empty):profileStatus==="empty"?t.empty:
             profileStatus==="signin"?t.signin:profileStatus==="error"?t.error:t.none}
         </small>
       </div>
       {profileStatus==="signin"?<Link href={"/"+locale+"/app"} prefetch={false}>{t.signInLink}</Link>:null}
-      {profileEvidence.length?<ul className={css.sources} data-guided-score-provenance>
-        {profileEvidence.map(item=><li key={item.axis+"-"+item.measuredAt}>
+      {profileStatus==="ready" && suggestedGoals.length?<div className={css.suggestions} data-guided-goal-suggestions>
+        <small>{t.suggested}</small>
+        <div>{suggestedGoals.map(goal=><span key={goal}>{t.themes[goal]}</span>)}</div>
+        <button type="button" disabled={disabled} data-guided-apply-suggestions
+          onClick={()=>setGoals(suggestedGoals)}>{t.applySuggested}</button>
+      </div>:null}
+      {plan.evidence.length?<ul className={css.sources} data-guided-score-provenance>
+        {plan.evidence.map(item=><li key={item.axis+"-"+item.measuredAt}>
           {item.axis.replaceAll("_"," ")} · {item.sourceTitle} · {item.measuredAt.slice(0,10)}
         </li>)}
       </ul>:null}
