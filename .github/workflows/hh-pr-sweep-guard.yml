@@ -1,0 +1,27 @@
+name: HH PR Sweep Guard tests
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/ci/pr-sweep-guard.mjs'
+      - 'scripts/pr-sweep-guard.mjs'
+      - 'tests/pr-sweep-guard.test.mjs'
+      - '.github/workflows/hh-pr-sweep-guard.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-pr-sweep-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  guard-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pr-sweep-guard.test.mjs
