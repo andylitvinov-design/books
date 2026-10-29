@@ -204,7 +204,12 @@ test("no medical inference, URL health params, storage, hidden CRM send or fabri
   for (const source of [editor, read("lib/holistic-support/goal-filter.js")]) {
     assert.doesNotMatch(source, /fetch\(|localStorage|sessionStorage|sendBeacon|URLSearchParams|\/api\/|diagnos\w*\(|Found 24|Найдено 24/);
   }
-  assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
+  // A neutral 5/10 is a display default, not an inferred self-report. Ranking
+  // remains unavailable until the visitor has explicitly edited every check-in.
+  assert.match(client, /setEditedCheckins\(previous => previous\.includes\(id\) \? previous : \[\.\.\.previous, id\]\)/);
+  assert.match(client, /setRecommendation\(editedCheckins\.length === checkinOrder\.length \? asFocusScores\(scores\) : null\)/);
+  assert.match(client, /const suggested = useMemo\(\(\) => recommendation && editedCheckins\.length === checkinOrder\.length/);
+  assert.doesNotMatch(client, /setRecommendation\(asFocusScores\(scores\)\)/);
   assert.doesNotMatch(client, /nextScores\[goalSectorFocus|value\.ratings\[primary/);
   assert.match(editor, /goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey>/);
   assert.match(editor, /meaning: "meaning"/);

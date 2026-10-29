@@ -72,6 +72,25 @@ const scoreIcons = { energy: Zap, money: Coins, relationships: Heart, goals: Flo
 const asFocusScores = (values: Record<CheckinArea, number>): Record<Focus, number> => ({
   energy: values.energy, money: values.money, relationships: values.relationships, goals: values.meaning,
 });
+type QuickGoal = "stress" | "energy" | "relationships" | "decisions" | "business";
+const quickGoalItems = [
+  { id: "stress", Icon: Leaf }, { id: "energy", Icon: Zap },
+  { id: "relationships", Icon: Heart }, { id: "decisions", Icon: Compass },
+  { id: "business", Icon: Coins },
+] as const;
+const quickGoalFocus: Record<QuickGoal, Focus> = {
+  stress: "energy", energy: "energy", relationships: "relationships",
+  decisions: "goals", business: "money",
+};
+// Canonical, existing public routes. A suggestion does not create an order.
+const quickGoalRoutes: Record<QuickGoal, string> = {
+  stress: "/courses/antistress",
+  energy: "/holistic-support#meditation-practices",
+  relationships: "/explore/love",
+  decisions: "/services/free-situation-review",
+  business: "/explore/business",
+};
+
 const choices: { id: Choice; Icon: typeof Play }[] = [
   { id: "meditation", Icon: Play },
   { id: "consultation", Icon: MessageCircle },
@@ -82,6 +101,19 @@ const choices: { id: Choice; Icon: typeof Play }[] = [
 
 const copy = {
   en: {
+    quickGoalsTitle: "3. What would you like to improve today?",
+    quickGoalsIntro: "Choose a first step. Self-ratings are optional.",
+    quickGoalSkip: "Skip", quickGoalNoChoice: "Choose a goal", quickGoalSelected: "Your chosen goal",
+    quickGoalLabels: { stress: "Less stress", energy: "More energy", relationships: "Relationships", decisions: "Make a decision", business: "Work & money" },
+    quickGoalExplain: {
+      stress: "Try a gentle published recording below, or explore the existing 14-day OPORA course.",
+      energy: "Explore original guided recordings below. Choose one that suits your preferences.",
+      relationships: "Explore communication and boundaries or request a personal written review.",
+      decisions: "Describe one decision for a free written review; a personal session is optional.",
+      business: "Explore practical business and career guidance, or request a personal session.",
+    },
+    quickGoalActions: { stress: "Explore OPORA · 14 days", energy: "Browse meditations", relationships: "Explore relationships", decisions: "Free written review", business: "Explore business options" },
+    quickGoalHeroStress: "Take a gentle pause", quickGoalBrowseTitle: "Explore guided meditations",
     assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
     focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo", videoMandala: "Video mandala",
     photoPrivacy: "Photo stays on this device until you leave.",
@@ -182,6 +214,19 @@ const copy = {
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
+    quickGoalsTitle: "3. Что хотите улучшить сейчас?",
+    quickGoalsIntro: "Выберите конкретную цель. Оценки необязательны.",
+    quickGoalSkip: "Пропустить", quickGoalNoChoice: "Выберите цель", quickGoalSelected: "Вы выбрали",
+    quickGoalLabels: { stress: "Меньше стресса", energy: "Больше энергии", relationships: "Улучшить отношения", decisions: "Принять решение", business: "Работа и деньги" },
+    quickGoalExplain: {
+      stress: "Ниже — мягкая опубликованная практика. Также можно открыть существующий 14-дневный курс ОПОРА.",
+      energy: "Ниже — оригинальные медитации. Выберите запись, которая вам подходит.",
+      relationships: "Исследуйте общение и границы или запросите личный письменный разбор.",
+      decisions: "Опишите важное решение для бесплатного письменного разбора. Личная сессия — по желанию.",
+      business: "Выберите поддержку для работы и бизнеса или запросите личную консультацию.",
+    },
+    quickGoalActions: { stress: "Курс ОПОРА · 14 дней", energy: "Все медитации", relationships: "Раздел «Отношения»", decisions: "Бесплатный письменный разбор", business: "Бизнес и работа" },
+    quickGoalHeroStress: "Сделайте мягкую паузу", quickGoalBrowseTitle: "Медитации и практики",
     assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
     focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото", videoMandala: "Видео-мандала",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
@@ -282,6 +327,19 @@ const copy = {
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
+    quickGoalsTitle: "3. ¿Qué te gustaría mejorar hoy?",
+    quickGoalsIntro: "Elige tu primer paso. Las puntuaciones son opcionales.",
+    quickGoalSkip: "Omitir", quickGoalNoChoice: "Elige un objetivo", quickGoalSelected: "Has elegido",
+    quickGoalLabels: { stress: "Menos estrés", energy: "Más energía", relationships: "Mejorar relaciones", decisions: "Tomar una decisión", business: "Trabajo y dinero" },
+    quickGoalExplain: {
+      stress: "Prueba una grabación suave publicada o explora el curso OPORA de 14 días.",
+      energy: "Explora grabaciones originales y elige una práctica a tu ritmo.",
+      relationships: "Explora comunicación y límites o pide una revisión escrita personal.",
+      decisions: "Comparte una decisión para una revisión escrita gratuita. La sesión es opcional.",
+      business: "Explora recursos de carrera y negocios o solicita una consulta personal.",
+    },
+    quickGoalActions: { stress: "Curso OPORA · 14 días", energy: "Ver meditaciones", relationships: "Explorar relaciones", decisions: "Revisión escrita gratuita", business: "Trabajo y negocios" },
+    quickGoalHeroStress: "Haz una pausa suave", quickGoalBrowseTitle: "Explorar meditaciones",
     assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
     focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto", videoMandala: "Vídeo mandala",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
@@ -444,6 +502,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [scores, setScores] = useState<Record<CheckinArea, number>>({
     energy: 5, money: 5, relationships: 5, meaning: 5,
   });
+  // Explicit visitor goal, distinct from untouched 5/10 check-ins.
+  const [quickGoal, setQuickGoal] = useState<QuickGoal | null>(null);
   const [choice, setChoice] = useState<Choice>(initialChoice);
   // The visitor explicitly requests a local ranking snapshot; editing a rating
   // clears it. Ties are matched jointly and never become a hidden focus choice.
@@ -498,10 +558,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const focusScores = asFocusScores(scores);
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
     focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
-  const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
-  const suggested = useMemo(() => recommendation
+  const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector]
+    : quickGoal ? quickGoalFocus[quickGoal] : lowestFocus;
+  const suggested = useMemo(() => recommendation && editedCheckins.length === checkinOrder.length
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
-    : null, [recommendation, videos, locale]);
+    : null, [recommendation, editedCheckins, videos, locale]);
   const goalMatch = useMemo(() => goalSelection
     ? rankSupportGoalVideos({ selection: goalSelection, videos, locale })
     : null, [goalSelection, videos, locale]);
@@ -560,9 +621,31 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setGuideOpen(false);
     setRecommendation(null); setGoalSelection(null);
   };
+  const chooseQuickGoal = (value: QuickGoal) => {
+    setQuickGoal(value); setGoalSelection(null); setRecommendation(null);
+    setGuideOpen(false); setGoalFilterOpen(false); setPlaying(false);
+    setSelectedId(null); setMaster("all"); setProgram("all");
+    setTheme(value === "stress" || value === "energy" ? "energy" : "all");
+    setChoice(value === "stress" || value === "energy" ? "meditation" : "consultation");
+  };
+  const skipQuickGoal = () => {
+    // Skip this optional question only; never discard an independently accepted
+    // detailed goal or change an unrelated manually selected tool.
+    if (quickGoal) {
+      setQuickGoal(null); setSelectedId(null); setPlaying(false);
+      if (!goalSelection) {
+        setChoice("meditation"); setTheme("all"); setMaster("all"); setProgram("all");
+      }
+    }
+    scrollToSupport("support-mobile-experience");
+  };
   const onRecommendations = () => {
-    // No unsolicited analysis: launch dialogue from the user's actual inputs.
-    setRecommendation(asFocusScores(scores));
+    // Neutral sliders are not user evidence. Prompt for an explicit goal.
+    if (quickGoal) { scrollToSupport("support-quick-goal-result"); return; }
+    if (!goalSelection && editedCheckins.length === 0) {
+      scrollToSupport("support-quick-goals"); return;
+    }
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null);
     setGoalFilterOpen(false);
     setGuideVersion(previous => previous + 1); setGuideOpen(true);
     scrollToSupport("support-goal-results");
@@ -598,7 +681,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       formats.includes(id) && inlineChoice[id]);
     // Three "Now → Want" measures remain independent. Applying them must
     // never overwrite the dedicated check-in, which syncs on every drag.
-    setRecommendation(asFocusScores(scores));
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null);
+    setQuickGoal(null);
     setGoalSelection(value);
     setGuideVersion(previous => previous + 1); setGuideOpen(true);
     setGoalFilterOpen(false); setChoice(firstInline ? inlineChoice[firstInline]! : "meditation");
@@ -629,7 +713,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const changeChoice = (value: Choice) => {
-    setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
+    setQuickGoal(null); setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
   };
   // Scroll only after React actually commits the new Tests panel. This also
@@ -647,10 +731,17 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
-  const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
+  // Display a check-in average only after interaction, never from four default 5s.
+  const averageScore = editedCheckins.length === checkinOrder.length
+    ? (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1)
+    : null;
   const FocusIcon = scoreIcons[focus];
-  const ActiveFocusIcon = goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
-  const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector] : t.foci[focus];
+  const ActiveFocusIcon = quickGoal
+    ? quickGoalItems.find(item => item.id === quickGoal)?.Icon ?? FocusIcon
+    : goalSelection?.sector === "meaning" ? Flower2 : FocusIcon;
+  const activeFocusLabel = goalSelection ? t.goalSector[goalSelection.sector]
+    : quickGoal ? t.quickGoalLabels[quickGoal]
+    : editedCheckins.length ? t.foci[focus] : t.quickGoalNoChoice;
   const activeGoalFormats = goalSelection?.recommendationFormats ?? GOAL_RECOMMENDATION_FORMATS;
   const goalHasInlineFormat = activeGoalFormats.some(id =>
     ["meditation", "consultation", "tests", "courses", "talismans", "healing", "masters"].includes(id));
@@ -658,7 +749,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const guidePreferredVideo = goalMatch?.videos[0] ?? null;
   const openGuideVideo = (id: string | null) => {
     if (goalSelection && !activeGoalFormats.includes("meditation")) { openGoalFilter(); return; }
-    setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(id); setPlaying(false);
     scrollToSupport("support-meditation-player");
@@ -775,6 +866,39 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
           </section>
         </div>
 
+        <section className={styles.quickGoals} id="support-quick-goals"
+          aria-labelledby="support-quick-goals-title" data-support-quick-goals>
+          <header className={styles.quickGoalsHeading}>
+            <div>
+              <h2 id="support-quick-goals-title">{t.quickGoalsTitle}</h2>
+              <p>{t.quickGoalsIntro}</p>
+            </div>
+            <button type="button" className={styles.quickGoalSkip}
+              data-support-quick-goal-skip onClick={skipQuickGoal}>{t.quickGoalSkip}</button>
+          </header>
+          <div className={styles.quickGoalGrid} role="group" aria-label={t.quickGoalsTitle}>
+            {quickGoalItems.map(({ id, Icon }) => (
+              <button type="button" key={id} className={styles.quickGoalCard}
+                data-support-quick-goal={id} aria-pressed={quickGoal === id}
+                onClick={() => chooseQuickGoal(id)}>
+                <Icon size={27} strokeWidth={1.8} aria-hidden="true" />
+                <span>{t.quickGoalLabels[id]}</span>
+              </button>
+            ))}
+          </div>
+          {quickGoal ? <div className={styles.quickGoalResult}
+            id="support-quick-goal-result" data-support-quick-goal-result role="status">
+            <div className={styles.quickGoalResultCopy}>
+              <span>{t.quickGoalSelected}: {t.quickGoalLabels[quickGoal]}</span>
+              <p>{t.quickGoalExplain[quickGoal]}</p>
+            </div>
+            <Link href={`/${locale}${quickGoalRoutes[quickGoal]}`} prefetch={false}
+              data-support-quick-goal-action={quickGoal} className={styles.quickGoalAction}>
+              {t.quickGoalActions[quickGoal]}<ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          </div> : null}
+        </section>
+
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
             key={guideVersion} locale={locale} scores={scores} editedCheckins={editedCheckins}
@@ -842,7 +966,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </label>
                   <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
                     <strong className={styles.filterValue}>{t.themes[theme]}</strong>
-                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setGoalSelection(null); setPlaying(false); setSelectedId(null); }}>
+                    <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setGoalSelection(null); setQuickGoal(null); setPlaying(false); setSelectedId(null); }}>
                       {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
                         <option key={key} value={key}>{t.themes[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
@@ -873,7 +997,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                       <span className={styles.reikiPricePill}>{reikiText.price}</span>
                       <span className={styles.reikiAudioPill}>{reikiText.audio}</span>
                     </div> : null}
-                    <h2>{activeReiki?.title ?? (choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus])}</h2>
+                    <h2>{activeReiki?.title ?? (choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : quickGoal === "stress" ? t.quickGoalHeroStress : quickGoal || editedCheckins.length ? t.heroTitle[focus] : t.quickGoalBrowseTitle)}</h2>
                     <p className={styles.heroDescription}>{activeReiki?.description ?? (selected ? selected.title : t.heroIntro)}</p>
                     {selected ? <div className={styles.reikiHeroActions}>
                       {activeReiki ? <Link href={freeCourseHref} prefetch={false} className={styles.reikiStartCourse}
@@ -1027,8 +1151,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               </div>
               <div className={styles.progressOpened}><strong>{t.started}</strong><span>{t.private}</span></div>
             </div>
-            <div className={styles.progressFocus}><ActiveFocusIcon size={25} aria-hidden="true" /><strong>{activeFocusLabel}</strong><span>{t.focusStatus}</span></div>
-            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
+            <div className={styles.progressFocus}><ActiveFocusIcon size={25} aria-hidden="true" /><strong>{activeFocusLabel}</strong><span>{quickGoal || goalSelection ? t.quickGoalSelected : editedCheckins.length ? t.focusStatus : t.quickGoalNoChoice}</span></div>
+            <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore === null ? "—" : averageScore + "/10"}</strong><span>{averageScore === null ? t.quickGoalNoChoice : t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
         </section>
