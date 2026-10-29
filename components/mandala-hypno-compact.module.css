@@ -78,3 +78,6 @@
 .create{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;padding:10px 14px;border:0;border-radius:14px;background:linear-gradient(110deg,#02795d,#009873);color:#fff;font-size:14px;font-weight:800;box-shadow:0 6px 15px #08735127;cursor:pointer}
 .create:disabled{opacity:.55;cursor:wait}
 .create:focus-visible{outline:3px solid #67c6a8;outline-offset:2px}
+
+.testEntry{display:grid;gap:6px;padding:9px 10px;border:1px solid #c8dfd1;border-radius:11px;background:#f0f8ed}
+.testEntry .designFoot{margin-top:0}
