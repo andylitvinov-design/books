@@ -13,3 +13,4 @@
 .actions a{display:inline-flex;align-items:center;text-decoration:none;background:#315e51;border-color:#315e51;color:#fff}
 .feedback span{flex-basis:100%}
 .result{border-top:1px solid #ded8cf;padding-top:.75rem;overflow-wrap:anywhere}
+.memoryList{display:grid;gap:.5rem;padding-left:1.25rem;min-width:0;overflow-wrap:anywhere}
