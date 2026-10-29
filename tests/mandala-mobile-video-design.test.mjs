@@ -4,11 +4,11 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
-test("approved mobile video design is the one canonical Mandala editor with four theme choices", () => {
+test("approved mobile video design is the one canonical Mandala editor with six real-footage themes", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const parent=read("components/mandala-meditation-client.tsx");
   const ui=read("components/mandala-video-mobile.module.css");
-  for(const theme of ["money","relationships","energy","goals"]){
+  for(const theme of ["money","relationships","energy","life","health","goals"]){
     assert.match(studio,new RegExp('"'+theme+'"'));
   }
   assert.match(studio,/const themeChoices: VideoTheme\[\]/);
@@ -61,8 +61,10 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(studio,/data-video-catalog/);
   assert.match(studio,/data-video-category-rail/);
   assert.match(studio,/data-video-category=\{item\}/);
-  assert.match(studio,/const videoCategories = \["energy","money","relationships","goals","health"\]/);
-  assert.match(studio,/next==="health" \? "gentle-shield"/);
+  assert.match(studio,/const videoCategories = \["energy","money","relationships","goals","life","health"\]/);
+  assert.match(studio,/setTheme\(next\)/);
+  assert.match(studio,/getThemedRealFilm\(theme,other\.id\)/);
+  assert.match(studio,/data-video-health-disclaimer/);
   assert.match(studio,/data-video-catalog-filters/);
   assert.match(studio,/data-video-style/);
   assert.match(studio,/data-video-motion/);
