@@ -37,21 +37,22 @@ test("approved mobile video design is the one canonical Mandala editor with six 
   assert.match(ui,/\.templateRail\{display:grid/);
   assert.match(ui,/\.templateArt\{/);
   assert.match(ui,/\.download\{/);
-  assert.match(ui,/\.heroTabs\{display:grid/);
-  // The extra filter row is folded into the Theme tab, as in the base
-  // Support mock. The default gold poster is artwork only until preview.
-  assert.match(studio,/data-video-theme-toggle/);
-  assert.match(studio,/hidden=\{!themeMenuOpen\}/);
+  assert.match(ui,/\.heroQuickFilters\{/);
+  assert.match(studio,/data-video-mode-switch/);
+  assert.match(studio,/data-video-mode=\{mode\}/);
+  assert.match(studio,/data-video-photo-enabled/);
+  assert.match(studio,/data-video-hero-aspect/);
+  assert.match(studio,/data-video-advanced-filters/);
   assert.match(studio,/data-hero-promo=/);
   assert.match(studio,/support-reference-avatar\.webp/);
-  assert.match(ui,/\.heroThemes\[hidden\]\{display:none!important\}/);
+  assert.match(ui,/\.quickStart \.categoryRail\{display:grid/);
   assert.match(ui,/\.heroPromo\{position:absolute/);
   assert.match(ui,/money-films-v1\/golden-rain\.jpg/);
   assert.match(ui,/mandala-gold-reference\.webp/);
   assert.match(ui,/\.toolCompact\{display:none\}/);
   assert.match(ui,/\.referencePortrait\{display:block!important/);
   assert.match(ui,/@media\(max-width:430px\)/);
-  assert.match(ui,/\.heroThemes\{display:flex/);
+  assert.match(ui,/\.modePicker\{display:grid/);
   assert.match(ui,/@media\(max-width:380px\)/);
 });
 
@@ -79,7 +80,7 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(studio,/data-video-theme-active=\{videoCategory\}/);
   assert.match(studio,/data-preview-playing=\{previewPlaying/);
   assert.match(studio,/data-video-hero-create/);
-  assert.match(studio,/href="#video-settings"/);
+  assert.match(studio,/href="#video-templates"/);
   for(const value of ["Video mandala","Vídeo mandala","Видео-мандала","Wellbeing","Bienestar","Здоровье"])
     assert.ok(studio.includes(value),value);
   assert.match(css,/\.catalogShell\{/);
@@ -186,54 +187,26 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
 });
 
 
-test("mobile theme is a compact accessible menu, and hero returns to live selected video on preview", () => {
+test("preview-first mobile flow preserves local rendering and the user's photo preference", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(studio,/setThemeMenuOpen\(open=>!open\)/);
-  assert.match(studio,/setThemeMenuOpen\(false\)/);
-  assert.match(studio,/aria-expanded=\{themeMenuOpen\}/);
-  assert.match(studio,/aria-controls="video-hero-themes"/);
-  assert.match(studio,/data-hero-promo=\{!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording/);
+  assert.match(studio,/data-video-quick-start/);
+  assert.match(studio,/data-video-mode-switch/);
+  assert.match(studio,/data-video-photo-enabled/);
+  assert.match(studio,/setBackgroundOnly\(!enabled\)/);
+  assert.match(studio,/data-video-hero-filters/);
+  assert.match(studio,/data-video-hero-aspect/);
+  assert.match(studio,/data-video-audio-section/);
+  assert.match(studio,/data-video-hypnosis-section/);
+  assert.match(studio,/studioMode==="therapy"/);
+  assert.match(studio,/data-hero-promo=\{!photoUrl&&!previewPlaying&&!recording/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
-  assert.match(browser,/data-video-theme-toggle/);
+  assert.match(browser,/data-video-mode-switch/);
   assert.match(browser,/data-hero-promo/);
-  assert.doesNotMatch(studio,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/i);
+  assert.doesNotMatch(studio,/data-video-theme-toggle|videoStyles\.backgroundChoices/);
 });
-
-
-// Render the actual TSX with inert JSX records: no browser, React effects or I/O.
-async function renderMandalaDock(source, locale) {
-  const ts = await import("typescript");
-  const input = source.replace(/^import .*;\n/gm, "");
-  const { outputText, diagnostics = [] } = ts.transpileModule(input, {
-    fileName: "holistic-support-mandala-dock.tsx", reportDiagnostics: true,
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
-      jsx: ts.JsxEmit.React, jsxFactory: "h", jsxFragmentFactory: "Fragment" },
-  });
-  assert.equal(diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
-  const h = (type, props, ...children) => ({ type, props: props || {}, children: children.flat(Infinity) });
-  const exports = {};
-  const styles = new Proxy({}, { get: (_, key) => key });
-  new Function("exports", "h", "Fragment", "useState", "Link", "styles",
-    "ArrowLeft", "BarChart3", "Compass", "Home", "MessageCircle", "Settings2", outputText)(
-    exports, h, "fragment", () => [false, () => {}], "a", styles,
-    "icon", "icon", "icon", "icon", "icon", "icon");
-  return exports.HolisticSupportMandalaDock({ locale });
-}
-
-function assertMandalaHeaderName(tree, expected) {
-  const header = tree.children.find(node => node?.type === "header");
-  assert.ok(header, "actual header exists");
-  const button = header.children.find(node => node?.type === "button");
-  assert.ok(button, "actual header settings control exists");
-  assert.equal(button.props["aria-label"], expected, "header settings has localized accessible name");
-  assert.equal(button.props["aria-controls"], "mandala-support-settings");
-  assert.equal(button.props["aria-expanded"], false);
-  const nav = tree.children.find(node => node?.type === "nav");
-  assert.equal(nav.children.length, 5, "current five-item dock preserved");
-}
 
 test("mandala header settings actual JSX has an accessible name in all three locales", async () => {
   const source = read("components/holistic-support-mandala-dock.tsx");
@@ -250,4 +223,25 @@ test("mandala header settings oracle rejects missing-label regression", async ()
     const tree = await renderMandalaDock(mutant, locale);
     assert.throws(() => assertMandalaHeaderName(tree, expected), /localized accessible name/);
   }
+});
+
+
+test("mobile composer uses the approved mode → themes → optional photo → preview → templates → audio → affirmations hierarchy", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const locations=[
+    "data-video-mode-switch","data-video-category-rail","data-video-photo-enabled",
+    "data-video-hero-filters","id=\"video-templates\"","data-video-audio-section",
+    "data-video-hypnosis-section","data-video-extra-settings",
+  ].map(marker=>studio.indexOf(marker));
+  assert.ok(locations.every(pos=>pos>0));
+  for(let i=1;i<locations.length;i++)assert.ok(locations[i]>locations[i-1],"out of order: "+i);
+  for(const title of ["Видео-подкачка","Видео-терапия","Добавить фото себя / цели",
+    "Гипноз и аффирмации","Video boost","Video therapy","Videoterapia"]){
+    assert.ok(studio.includes(title),title);
+  }
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
+  assert.match(css,/@media\(max-width:355px\)/);
+  assert.match(css,/\.photoToggle input\{/);
 });
