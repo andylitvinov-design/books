@@ -206,6 +206,24 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        // Public iPhone control E2E: local affirmations change the live preview
+        // and are included by the same canvas renderer in final recordings.
+        const affirmationsPanel = page.locator("[data-video-affirmations]");
+        await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        await page.locator("[data-video-affirmations-enable]").check();
+        await page.locator('[data-video-affirmation-preset="3"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-preset="3"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-affirmation-density="high"]').click();
+        assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-affirmation-frequency]").fill("3");
+        await page.locator('[data-video-affirmation-visibility="small"] input').check();
+        await page.locator('[data-video-affirmation-visibility="frame"] input').check();
+        assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
+        await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
+        await page.locator("[data-video-custom-affirmations]").fill("I choose a small, kind step");
+        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/5.*phrases|5.*фраз|5.*frases/i);
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.
