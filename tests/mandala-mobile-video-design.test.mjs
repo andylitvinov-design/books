@@ -274,6 +274,9 @@ test("owner-requested compact photo choice and deeper options keep one functiona
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/data-video-advanced-filters/);
   assert.match(css,/\.photoQuickRow\{/);
+  assert.match(css,/\.photoInclude\{[^}]*min-height:44px/);
+  assert.match(css,/\.photoQuickLink\{[^}]*min-height:44px/);
+  assert.match(css,/\.advancedQuickFilters summary\{[^}]*min-height:44px/);
   assert.match(css,/\.advancedQuickFilters\{/);
   for(const phrase of ["Добавить фото себя или цели","Add photo of me or my goal","Añadir foto mía o de mi objetivo"]) {
     assert.ok(studio.includes(phrase),phrase);

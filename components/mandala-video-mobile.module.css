@@ -115,10 +115,10 @@
 /* Small, optional photo entry before the four primary topics. */
 .photoQuickRow{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;min-width:0;
   margin:0 0 10px;padding:3px 10px;border:1px solid #e1e8db;border-radius:12px;background:#f6faf3}
-.photoInclude{display:inline-flex;align-items:center;gap:6px;min-height:40px;flex:none;
+.photoInclude{display:inline-flex;align-items:center;gap:6px;min-height:44px;flex:none;
   color:#286553;font:750 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
 .photoInclude input{width:18px;height:18px;flex:none;margin:0;accent-color:#07976e;cursor:pointer}
-.photoQuickLink{display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;min-height:40px;
+.photoQuickLink{display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;min-height:44px;
   min-width:0;padding:4px 0;border:0;background:transparent;color:#117e5e;
   text-align:left;text-decoration:underline;text-underline-offset:3px;font:750 12px/1.2 Arial,Helvetica,sans-serif}
 .photoQuickLink svg{flex:none}
@@ -420,7 +420,7 @@
 .categoryRail button[data-tone="health"]{background:#eef7f1;border-color:#c9e1d8;color:#148a6a}
 .categoryRail button[aria-pressed="true"]{border:3px solid currentColor;padding:10px 3px 7px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 3px 11px rgba(41,83,63,.15)}
 .advancedQuickFilters{margin:11px 0 0;padding:5px 0 0;border-top:1px solid #e3e4d7}
-.advancedQuickFilters summary{display:flex;align-items:center;gap:7px;min-height:40px;
+.advancedQuickFilters summary{display:flex;align-items:center;gap:7px;min-height:44px;
   width:max-content;max-width:100%;cursor:pointer;color:#427263;
   font:750 12px/1.25 Arial,Helvetica,sans-serif;list-style:revert}
 .advancedQuickFilters[open] summary{color:#087d5d}

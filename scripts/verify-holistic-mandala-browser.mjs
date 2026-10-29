@@ -105,6 +105,12 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.ok(photoOrder.photo.bottom<=photoOrder.topics.top+2,"photo control above topics");
         assert.ok(photoOrder.topics.bottom<=photoOrder.hero.top+2,"video immediately after topics");
         assert.ok(photoOrder.gallery.bottom<=photoOrder.advanced.top+2,"filters below gallery");
+        const touchHeights=await page.locator(
+          '[data-mandala-output-mode] label, [data-video-photo-link], [data-video-advanced-filters] summary'
+        ).evaluateAll(elements=>elements.map(node=>node.getBoundingClientRect().height));
+        assert.equal(touchHeights.length,3,"checkbox, photo link and advanced control are tappable");
+        assert.ok(touchHeights.every(height=>height>=44),
+          "iPhone photo/options touch areas stay at least 44px: "+JSON.stringify(touchHeights));
         await photoChoice.check();
         assert.equal(await photoChoice.isChecked(),true);
         await photoChoice.uncheck();
