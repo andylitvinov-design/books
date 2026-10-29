@@ -10,3 +10,13 @@
 .error{max-width:225px;color:#a52836;font:600 11px/1.4 system-ui,sans-serif}
 .root button:focus-visible{outline:3px solid #965074;outline-offset:2px}
 @media(max-width:390px){.start{padding:7px 8px;font-size:11px}.camera{width:128px;height:128px}}
+
+
+/* Match the green wellness chat composer rather than an isolated purple control. */
+.root .start{background:#eef7f0;border-color:#bedfce;color:#146a52}
+.root .stop{background:#178365;border-color:#178365;color:white}
+.root .discard{background:#fffaf6;border-color:#e5d9d1;color:#8a5e53}
+.capture{background:#f6faf4;border-color:#dae8dc}
+.camera{background:#224b3c}
+.hint{color:#507763}
+.root button:focus-visible{outline-color:#178365}
