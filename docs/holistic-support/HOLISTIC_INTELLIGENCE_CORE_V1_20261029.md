@@ -241,3 +241,18 @@ flowchart TD
 - [ ] Vercel READY, источник ветки, точный production SHA, live check и только после этого merge.
 
 **Ограничение:** создание PR, чтение кода или успешный HTTP ответ не являются доказательством публикации и настоящего end-to-end клиента.
+
+
+## P1 реализовано в stacked PR #2532: единый guide decision contract (source-only)
+
+`lib/holistic-support/holistic-guide-adapter.mjs` вызывает `buildHolisticIntelligencePlan` только после **явного safety preflight status=clear**, превращает результаты утверждённых ranker-ов в безопасные кандидаты и передаёт их **каноническому** `planClientNextStep` из PR #2528. Отдельный второй decision engine не создаётся.
+
+- При отсутствии preflight — `safety_check_required`; urgent/human_review — остановка и human handoff.
+- Бесплатные предложения по умолчанию. Платные услуги, чувствительные темы, тестовые измерения и сохранённая история имеют **независимые purpose-specific opt-in**.
+- Текущие добровольные `dismissedIds` / `completedIds` немедленно влияют на очередь; ранее сохранённая история используется только с отдельным согласием и серверно проверенным owner scope. **Запись истории пока не реализована**.
+- Объяснения и ответы RU/EN/ES формируются шаблонами на основе конкретных опубликованных материалов; в переносимом результате отсутствуют raw scores, тексты запроса и ID клиента.
+- Текущий API статeless: никаких новых таблиц, платных LLM, автоматического назначения сессии, сохранений или обещаний результата.
+
+**Gate для server route:** `access.authenticated` / `access.ownerScoped` устанавливаются исключительно после реального server-side auth + RLS. Нельзя получать эти флаги, `catalogs` или `history` из тела браузерного запроса как источник доверия. Для внешнего текстового диалога нужен отдельный risk preflight; UI-браузер опубликованных материалов сам по себе не считается такой проверкой.
+
+**Тесты:** `node --test tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/holistic-intelligence.test.mjs tests/holistic-guide-adapter.test.mjs`. Реальный owner A/B, mobile, CI и Vercel ещё не подтверждены.
