@@ -6,6 +6,35 @@ export const SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000;
 const MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const FILE_EXT = /\.(jpe?g|png|webp|heic|heif)$/i;
 
+// Some iOS Safari decoders can render a HEIC/JPEG through <img> even when
+// HTMLImageElement.decode() rejects or is missing. The load event is a real
+// decoding check, never a bypass for unsupported or corrupt images.
+function waitForBrowserImageLoad(image: HTMLImageElement): Promise<void> {
+  const valid = () => image.naturalWidth > 0 && image.naturalHeight > 0;
+  if (image.complete) {
+    return valid() ? Promise.resolve() : Promise.reject(new Error("PHOTO_FILE_INVALID"));
+  }
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      image.removeEventListener("load", onLoad);
+      image.removeEventListener("error", onError);
+      if (ok) resolve();
+      else reject(new Error("PHOTO_FILE_INVALID"));
+    };
+    const onLoad = () => finish(valid());
+    const onError = () => finish(false);
+    const timeout = window.setTimeout(() => finish(false), 15_000);
+    image.addEventListener("load", onLoad);
+    image.addEventListener("error", onError);
+    // Image may finish decoding between our first ready check and listeners.
+    if (image.complete) finish(valid());
+  });
+}
+
 export async function prepareBrowserPhoto(file: File): Promise<Blob> {
   if (!file || !file.size || file.size > SUPPORT_PHOTO_MAX_INPUT_BYTES ||
     (!MIME_TYPES.has(file.type.toLowerCase()) && !FILE_EXT.test(file.name))) {
@@ -17,7 +46,12 @@ export async function prepareBrowserPhoto(file: File): Promise<Blob> {
   try {
     const image = new Image();
     image.src = objectUrl;
-    await image.decode();
+    if (typeof image.decode === "function") {
+      try { await image.decode(); }
+      catch { await waitForBrowserImageLoad(image); }
+    } else {
+      await waitForBrowserImageLoad(image);
+    }
     const width = image.naturalWidth;
     const height = image.naturalHeight;
     if (!width || !height || width * height > 64_000_000) throw new Error("PHOTO_FILE_INVALID");
