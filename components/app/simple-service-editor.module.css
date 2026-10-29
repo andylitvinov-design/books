@@ -538,3 +538,12 @@
  .durationChoices>button:last-child{grid-column:auto}
  .footerControls{grid-template-columns:42px minmax(0,1fr)}
 }
+@media(min-width:651px){
+ .serviceCanvas{grid-template-areas:"cover content" "thumbs content";
+   grid-template-columns:minmax(155px,.81fr) minmax(0,1.19fr);align-items:start}
+ .serviceCanvas>.photoCanvas{grid-area:cover;height:330px;min-height:330px}
+ .serviceCanvas>.photoCanvas>img,.serviceCanvas>.photoCanvas>.emptyPhoto{height:330px}
+ .serviceCanvas>.galleryStrip{grid-area:thumbs;align-self:stretch;justify-content:flex-start;
+   border-right:1px solid #e8dfd0}
+ .serviceCanvas>.contentCanvas{grid-area:content;height:100%}
+}

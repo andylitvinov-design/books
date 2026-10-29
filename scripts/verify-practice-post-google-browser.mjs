@@ -249,7 +249,7 @@ for(const engine of [chromium,webkit]){
           deliveryFormat:'hybrid',durationMinutes:90,pricingMode:'contact'},
         photos:[]},
     ]
-    for(const locale of ['ru','en'])for(const width of locale==='ru'?[320,390,430]:[390]){
+    for(const locale of ['ru','en'])for(const width of locale==='ru'?[320,390,430,768]:[390,1440]){
       const label=engine.name()+'-'+locale+'-'+width+'-service-list'
       const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,
         hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
@@ -280,6 +280,18 @@ for(const engine of [chromium,webkit]){
         if(width===390)await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
         await page.locator('[data-service-list-item]').last().locator('[data-service-edit-action]').click()
         await page.locator('[data-service-slide-editor]').waitFor({state:'visible',timeout:20000})
+        if(width>=651){
+          const scene=await page.evaluate(()=>{
+            const rect=selector=>{const el=document.querySelector(selector);const b=el.getBoundingClientRect();
+              return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}}
+            return {photo:rect('[class*="photoCanvas"]'),gallery:rect('[data-service-gallery-strip]'),
+              content:rect('[class*="contentCanvas"]'),scroll:document.documentElement.scrollWidth,
+              viewport:document.documentElement.clientWidth}
+          })
+          assert.ok(scene.photo.right<=scene.content.x+4,label+' desktop photo is left of editable content '+JSON.stringify(scene))
+          assert.ok(scene.gallery.y>=scene.photo.bottom-5,label+' desktop photo thumbnails sit below cover '+JSON.stringify(scene))
+          assert.ok(scene.scroll<=scene.viewport+3,label+' desktop editor has no horizontal overflow')
+        }
         assert.equal(await page.locator('[data-service-slide-editor]').getAttribute('data-service-stage'),'0',
           label+' same private editor, no duplicate route')
         results.push({label,ok:true,mode:'real protected component with synthetic records only',layout})
