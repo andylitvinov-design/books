@@ -16,18 +16,15 @@ type Props = {
 };
 const LIMIT = 2_500_000;
 
-function imageElement(file: File): Promise<HTMLImageElement> {
+// Do not revoke a blob URL in onload: older WebKit can still need the
+// decoded backing resource when Canvas draws the image a moment later.
+function imageElement(file: File): Promise<{ image: HTMLImageElement; release: () => void }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new window.Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("INVALID_IMAGE"));
-    };
+    const release = () => URL.revokeObjectURL(url);
+    image.onload = () => resolve({ image, release });
+    image.onerror = () => { release(); reject(new Error("INVALID_IMAGE")); };
     image.src = url;
   });
 }
@@ -40,24 +37,23 @@ async function safeJpeg(file: File): Promise<File> {
   // old iOS engines still use the scoped-CSP Image fallback above.
   const bitmap = typeof createImageBitmap === "function"
     ? await createImageBitmap(file).catch(() => null) : null;
-  const image = bitmap ?? await imageElement(file);
-  const width = bitmap?.width ?? (image as HTMLImageElement).naturalWidth;
-  const height = bitmap?.height ?? (image as HTMLImageElement).naturalHeight;
-  if (width < 100 || height < 100) {
-    bitmap?.close();
-    throw new Error("INVALID_IMAGE");
-  }
-  const scale = Math.min(1, 1600 / Math.max(width, height));
+  const loaded = bitmap ? null : await imageElement(file);
+  const image = bitmap ?? loaded!.image;
+  const width = bitmap?.width ?? loaded!.image.naturalWidth;
+  const height = bitmap?.height ?? loaded!.image.naturalHeight;
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
-  const context = canvas.getContext("2d");
-  if (!context) {
+  try {
+    if (width < 100 || height < 100) throw new Error("INVALID_IMAGE");
+    const scale = Math.min(1, 1600 / Math.max(width, height));
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("INVALID_IMAGE");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  } finally {
     bitmap?.close();
-    throw new Error("INVALID_IMAGE");
+    loaded?.release();
   }
-  try { context.drawImage(image, 0, 0, canvas.width, canvas.height); }
-  finally { bitmap?.close(); }
   const encode = (quality: number): Promise<Blob> =>
     new Promise((resolve, reject) =>
       canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("INVALID_IMAGE")),
