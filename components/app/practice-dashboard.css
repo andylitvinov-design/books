@@ -1686,3 +1686,31 @@ body:has(.hh-app--practice-inner){
 @media(prefers-reduced-motion:reduce){
  .hh-app.hh-app--practice-inner *{scroll-behavior:auto!important;transition:none!important}
 }
+
+/* Service-editor visual continuity: approved practitioner home → explicit action.
+   Keep the real private wizard, but do not show list-only chrome or a
+   commission disclosure beneath its fixed Save/Next controls. */
+.hh-app.hh-app--practice-inner .hh-practice-service-editor-heading{display:none}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+  .hh-practice-service-list-heading{display:none}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+  .hh-practice-service-editor-heading{display:inline}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+  .hh-practice-fee-notice{display:none!important}
+@media(max-width:720px){
+  .hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+    > .hh-practice-inner-header{gap:8px;margin:0 0 2px;padding:1px 2px 4px}
+  /* The small back-to-services control belongs to the composer; avoid an
+     unrelated circular Back button that jumps to Practice and loses form work. */
+  .hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+    .hh-practice-inner-back{display:none!important}
+  .hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+    .hh-practice-inner-heading h2{font-size:clamp(23px,6vw,29px);line-height:1.08;margin:0}
+  .hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+    .hh-practice-inner-heading p{display:none}
+  .hh-app.hh-app--practice-inner [data-practice-detail-panel="services"]:has([data-service-slide-editor])
+    .hh-practice-inner-alert{width:42px;height:42px;min-width:42px;min-height:42px}
+  .hh-app.hh-app--practice-inner .hh-practice-dashboard:has([data-service-slide-editor]){
+    padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))
+  }
+}
