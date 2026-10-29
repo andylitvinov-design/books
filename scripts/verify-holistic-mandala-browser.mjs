@@ -595,7 +595,24 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
           await page.locator("[data-video-audio-rights]").check();
-          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),true);
+          // A full, detailed client prompt produces real ordered moving shots,
+          // sharing this exact free browser recorder and explicitly allowed WAV.
+          await page.locator("[data-video-wish]").fill("10 seconds: clients, then income, then growth");
+          await page.locator("[data-video-storyboard-build]").click();
+          const storyboard=page.locator("[data-video-storyboard]");
+          await storyboard.waitFor({state:"visible",timeout:10000});
+          assert.equal(await storyboard.getAttribute("data-video-storyboard-count"),"3");
+          assert.deepEqual(await storyboard.locator("[data-video-storyboard-shot]").evaluateAll(nodes=>
+            nodes.map(x=>x.getAttribute("data-video-storyboard-shot"))),
+            ["partners","money-magnet","abundance-tree"],"real client request must select ordered existing scenes");
+          assert.equal(await page.locator("[data-video-local-storyboard]").getAttribute("data-video-local-storyboard"),
+            "true","same central Canvas will draw the montage");
+          assert.equal(await page.locator('[data-video-duration="10"]').getAttribute("aria-pressed"),"true");
+          await page.waitForFunction(()=>{
+            const generate=document.querySelector("[data-mandala-video-generate]");
+            const movie=document.querySelector("[data-mandala-master-mp4]");
+            return Boolean(generate&&!generate.disabled&&movie&&movie.readyState>=2);
+          },undefined,{timeout:30000});
           await page.locator("[data-mandala-video-generate]").click();
           const backgroundLink = page.locator("[data-mandala-video-download]");
           await backgroundLink.waitFor({ state: "visible", timeout: 45000 });
@@ -607,6 +624,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           const backgroundBytes = await bufferFromStream(await backgroundDownload.createReadStream());
           assert.ok(backgroundBytes.length > 10000, "moving background is real video bytes");
+          const sampleFrame=second=>spawnSync("ffmpeg",["-v","error","-i","pipe:0",
+            "-ss",String(second),"-frames:v","1","-vf","scale=16:16","-pix_fmt","rgb24",
+            "-f","rawvideo","pipe:1"],{input:backgroundBytes,maxBuffer:1024*1024});
+          const frameFirst=sampleFrame(1),frameLast=sampleFrame(8);
+          assert.equal(frameFirst.status,0,"first storyboard stage must decode");
+          assert.equal(frameLast.status,0,"third storyboard stage must decode");
+          assert.equal(frameFirst.stdout.length,768,"first stage contains actual video pixels");
+          assert.equal(frameLast.stdout.length,768,"third stage contains actual video pixels");
+          const stageDifference=frameFirst.stdout.reduce((sum,pixel,index)=>
+            sum+Math.abs(pixel-frameLast.stdout[index]),0);
+          assert.ok(stageDifference>1000,
+            "scene 1 and 3 of the encoded user-request video must have different imagery: "+stageDifference);
           const fileProbe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
             "-of","json","-"],{input:backgroundBytes,encoding:"utf8"});
           assert.equal(fileProbe.status,0,"user audio export is a decodable media container: "+(fileProbe.error?.message || fileProbe.stderr));
