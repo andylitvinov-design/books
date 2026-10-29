@@ -1243,17 +1243,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
-      <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
-        <a href="#video-templates" data-video-editor-tab="design">
-          <Film size={17} aria-hidden="true"/>{layout.designTab}
-        </a>
-        <a href="#video-audio" data-video-editor-tab="audio">
-          <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
-        </a>
-        <a href="#video-hypnosis" data-video-editor-tab="affirmations">
-          <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
-        </a>
-      </nav>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
       <MandalaGuidedCourse locale={locale} theme={theme}
         selfRatings={touchedScores} disabled={recording||preparing}
@@ -1282,6 +1271,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
+      <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
+        <a href="#video-templates" data-video-editor-tab="design">
+          <Film size={17} aria-hidden="true"/>{layout.designTab}
+        </a>
+        <a href="#video-audio" data-video-editor-tab="audio">
+          <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
+        </a>
+        <a href="#video-hypnosis" data-video-editor-tab="affirmations">
+          <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
+        </a>
+      </nav>
       {studioMode==="pump" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
