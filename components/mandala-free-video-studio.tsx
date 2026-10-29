@@ -8,7 +8,7 @@ import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
-import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
+import { suggestPersonalVideoScene, buildFreePromptStoryboard, freeStoryboardFrameAt, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -149,6 +149,9 @@ const studioCopy = {
     wishAction:"Suggest a scene for free",wishCaption:"Put my words on the video",
     wishReady:"Suggested scene",wishDefault:"No matching visual theme; we kept your chosen topic.",
     wishMissing:"Write a short wish first.",
+    storyboardAction:"Build a free scene sequence",storyboardTitle:"Your local video storyboard",
+    storyboardHint:"Selected scenes change in the actual video. The first uses site HD footage; later scenes use original Canvas animation. No new AI footage or external upload. Tap Play to preview, then Create video to save.",
+    storyboardNoMatch:"No specific scene matched; we kept your chosen theme.",storyboardClear:"Use one scene",storyboardShot:"Scene",
     settings:"Settings",home:"Home",meditations:"Meditations",createTab:"Create",
     advanced:"Mandala & guided meditations",photoError:"Try a JPG, PNG or WebP image smaller than 10 MB.",
   },
@@ -189,6 +192,9 @@ const studioCopy = {
     wishAction:"Подобрать сцену бесплатно",wishCaption:"Добавить мою фразу на видео",
     wishReady:"Подходящий сюжет",wishDefault:"Сцена не найдена по словам; оставили выбранную вами тему.",
     wishMissing:"Сначала напишите краткое пожелание.",
+    storyboardAction:"Собрать ролик из сцен бесплатно",storyboardTitle:"Ваш сценарий видео",
+    storyboardHint:"Сцены действительно сменяются в видео. Первая использует HD-видеофон сайта, следующие — авторскую Canvas-анимацию. Это не генерация новых AI-кадров. Нажмите Play для просмотра, затем «Создать видео» для сохранения.",
+    storyboardNoMatch:"Конкретных сюжетов по словам не найдено — оставлена выбранная тема.",storyboardClear:"Одна сцена",storyboardShot:"Сцена",
     settings:"Настройки",home:"Главная",meditations:"Медитации",createTab:"Создать",
     advanced:"Мандала и авторские медитации",photoError:"Загрузите JPG, PNG или WebP до 10 МБ.",
   },
@@ -229,6 +235,9 @@ const studioCopy = {
     wishAction:"Sugerir escena gratis",wishCaption:"Poner mis palabras en el vídeo",
     wishReady:"Escena sugerida",wishDefault:"No hay coincidencias; mantenemos tu tema elegido.",
     wishMissing:"Escribe primero tu deseo.",
+    storyboardAction:"Montar escenas gratis",storyboardTitle:"Tu guion visual local",
+    storyboardHint:"Las escenas change in the actual video. The first uses site HD footage and later scenes original Canvas animation. No AI footage or external upload. Pulsa Play y luego Crear vídeo.",
+    storyboardNoMatch:"Sin coincidencias; conservamos el tema elegido.",storyboardClear:"Una escena",storyboardShot:"Escena",
     settings:"Ajustes",home:"Inicio",meditations:"Meditaciones",createTab:"Crear",
     advanced:"Mandala y meditaciones originales",photoError:"Usa JPG, PNG o WebP de hasta 10 MB.",
   }
@@ -640,6 +649,26 @@ function paint(
   }
 }
 
+function paintFreeStoryboard(
+  ctx:CanvasRenderingContext2D,image:HTMLImageElement|null,
+  storyboard:ReturnType<typeof buildFreePromptStoryboard>,
+  seconds:number,total:number,aspect:Aspect,speed:Speed,brightness:Brightness,
+  effect:Effect,caption:string,selectedTheme:VideoTheme,selectedScene:string,
+  realVideo:HTMLVideoElement|null,
+) {
+  const part=freeStoryboardFrameAt(storyboard.shots,total,seconds);
+  const shot=part.scene;
+  const nextTheme=shot.theme as VideoTheme;
+  const nextMoney=nextTheme==="money"?shot.sceneId as MoneySceneId:null;
+  const nextOther=nextTheme==="money"?"sun-flight":shot.sceneId as LocalSceneId;
+  const video=nextTheme===selectedTheme&&shot.sceneId===selectedScene?realVideo:null;
+  paint(ctx,image,effect,seconds,aspect,nextMoney,caption,nextTheme,nextOther,speed,brightness,video);
+  if(part.shade>0) {
+    ctx.save();ctx.fillStyle="rgba(5,28,26,"+part.shade.toFixed(3)+")";
+    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();
+  }
+}
+
 function stopJob(job: Job, cancelled: boolean) {
   job.cancelled = cancelled;
   window.cancelAnimationFrame(job.animation);
@@ -693,6 +722,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [freeStoryboard,setFreeStoryboard] = useState<ReturnType<typeof buildFreePromptStoryboard>|null>(null);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
@@ -720,7 +750,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption,affirmations]);
+    effect,aspect,duration,quality,speed,brightness,music,uploadedAudio?.url,soundVolume,caption,affirmations,
+    freeStoryboard?.version,freeStoryboard?.shots]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
