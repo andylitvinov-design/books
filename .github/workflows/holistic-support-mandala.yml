@@ -81,6 +81,7 @@ jobs:
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+          HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
         run: |
           set -euo pipefail
           npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-mandala-next.log 2>&1 & NEXT_PID=$!
@@ -92,4 +93,12 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
           node scripts/verify-holistic-mandala-browser.mjs
+      - name: Publish synthetic mobile Hypno screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypno-compact-mobile-screenshots
+          path: artifacts/hypno-compact/*.png
+          if-no-files-found: ignore
+          retention-days: 3
 
