@@ -154,7 +154,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     const photo = page.locator("[data-reiki-initiation-photo]");
     await expect(photo).toBeVisible();
     await expect(photo.locator('input[type="file"][accept="image/*"]')).toHaveCount(1);
-    await expect(photo.locator('[class*="upload"]')).toBeVisible();
+    await expect(photo.locator('label[class*="_upload__"]')).toBeVisible();
   }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
