@@ -652,6 +652,11 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await director.locator('[data-director-create-plan]').click();
           assert.equal(await director.locator("[data-director-shot]").count(),4,
             "four connected first-party local video shots");
+          assert.match(await director.locator('[data-director-shot="1"] > div > p').innerText(),
+            /[А-Яа-яЁё]/,"Russian director shot names must use the existing localized scene catalog");
+          const localizedChoices=await director.locator('[data-director-scene-choice="1"] option').allTextContents();
+          assert.ok(localizedChoices.length>=2&&localizedChoices.every(s=>/[А-Яа-яЁё]/.test(s)),
+            "every offered scene must be labelled in Russian, not raw English provider cues");
           const storyboardText=await director.locator("[data-director-storyboard]").innerText();
           assert.ok(!storyboardText.includes("PRIVATE_SCRIPT_BROKEN_IF_SENT"),
             "private wish must not reach exported storyboard/provider-safe prompt");
