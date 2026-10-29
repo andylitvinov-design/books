@@ -1,0 +1,123 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {buildCinematicStoryboard,customizeCinematicShot} from '../lib/mandala/cinematic-director.mjs';
+import {
+  VIDEO_STUDIO_BRIEF_SCHEMA,VIDEO_STUDIO_QUESTION_COUNTS,VIDEO_STUDIO_QUESTION_REGISTRY,
+  VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS,VIDEO_STUDIO_SCALE_REGISTRY,
+  videoStudioContextQuestions,compileCinematicReferencePack,listCreativeVideoCapabilities,
+} from '../lib/mandala/cinematic-creative-brief.mjs';
+const project=({locale='ru',theme='energy'}={})=>
+  buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+
+test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+3 named internal scales',()=>{
+  assert.equal(VIDEO_STUDIO_BRIEF_SCHEMA,'hh-video-brief-v1.4');
+  assert.deepEqual(VIDEO_STUDIO_QUESTION_COUNTS,{PERSONAL:16,BASIC:12,ADV:18,PRO:34,EXTRA:16});
+  assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.length,96);
+  assert.equal(new Set(VIDEO_STUDIO_QUESTION_REGISTRY.map(x=>x.id)).size,96);
+  assert.equal(VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS.length,49);
+  assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.filter(x=>x.active).length,49);
+  assert.equal(VIDEO_STUDIO_SCALE_REGISTRY.length,33);
+  assert.equal(new Set(VIDEO_STUDIO_SCALE_REGISTRY.map(x=>x.id)).size,33);
+  for(const id of ['PERSONAL_07','BASIC_01','ADV_07','PRO_28','EXTRA_01']){
+    assert.ok(VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS.includes(id));
+  }
+  assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.find(x=>x.id==='BASIC_05')?.kind,'local_control');
+  assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.find(x=>x.id==='PERSONAL_09')?.kind,'separate_permission_or_workflow');
+});
+test('only missing subject or action produces at most two contextual questions; no long 96-question wall',()=>{
+  assert.deepEqual(videoStudioContextQuestions('Орёл летит над горами'),[]);
+  assert.deepEqual(videoStudioContextQuestions('White eagle flies over mountains'),[]);
+  assert.deepEqual(videoStudioContextQuestions('Águila vuela sobre montañas'),[]);
+  assert.deepEqual(videoStudioContextQuestions('Красивый фильм'),['subject','action']);
+  assert.deepEqual(videoStudioContextQuestions('Красивый фильм',{subjectChoice:'wolf'}),['action']);
+  assert.deepEqual(videoStudioContextQuestions('Красивый фильм',{actionChoice:'flight'}),['subject']);
+  assert.deepEqual(videoStudioContextQuestions('Красивый фильм',{subjectChoice:'forged',actionChoice:'forged'}),['subject','action']);
+  assert.deepEqual(videoStudioContextQuestions(''),[]);
+});
+test('new fictional eagle metamorphosis produces safe text-only keyframes but no fake AI frames',()=>{
+  for(const [locale,idea] of [
+    ['ru','Моя тайна 74829: Белый орёл летит над горами и превращается в созвездие'],
+    ['en','My hidden case 74829: A white eagle flies over mountains and becomes a constellation'],
+    ['es','Mi historia privada 74829: Un águila blanca vuela sobre montañas y se transforma en una constelación'],
+  ]){
+    const p=compileCinematicReferencePack({plan:project({locale}),visualIdea:idea});
+    assert.equal(p.source,'on_device_approved_scene_catalog');
+    assert.equal(p.outputStatus,'concept_only_new_ai_generation_unavailable');
+    assert.deepEqual(p.contextualQuestions,[]);
+    assert.equal(p.recognized.subject,'eagle');
+    assert.equal(p.recognized.action,'metamorphosis');
+    assert.equal(p.recognized.setting,'mountains');
+    assert.equal(p.recognized.destination,'constellation');
+    assert.equal(p.recognized.color,'white');
+    assert.equal(p.requestedNovelVideo,true);
+    assert.equal(p.newAiVideoAvailable,false);
+    assert.equal(p.localMontageAvailable,true);
+    assert.equal(p.providerJobSubmitted,false);
+    assert.equal(p.paidRenderApproved,false);
+    assert.equal(p.externalTransferApproved,false);
+    assert.equal(p.rawUserPromptIncluded,false);
+    assert.equal(p.shots.length,4);
+    assert.ok(p.shots.every(s=>s.reference.generatedImage===false&&s.newAiClipGenerated===false));
+    assert.ok(p.shots.every(s=>s.reference.characterKey==='eagle:fictional:v1'));
+    assert.ok(!JSON.stringify(p).includes('74829'));
+    assert.ok(!JSON.stringify(p).includes('My hidden case'));
+    assert.ok(p.creativeSummary.length>0);
+  }
+});
+test('unknown and sensitive client content cannot silently become provider instructions',()=>{
+  const goal='PRIVATE_HEALTH_TEST_ID_999; andrew@example.com +1 647 555 1111';
+  const p=compileCinematicReferencePack({visualIdea:goal,plan:project()});
+  assert.equal(p.understood,false);
+  assert.deepEqual(p.contextualQuestions,['subject','action']);
+  assert.equal(p.recognized.subject,null);
+  assert.ok(!JSON.stringify(p).includes(goal));
+  assert.ok(!JSON.stringify(p).includes('example.com'));
+  assert.equal(p.externalTransferApproved,false);
+  const inferred=compileCinematicReferencePack({
+    visualIdea:goal,plan:project(),answers:{subjectChoice:'wolf',actionChoice:'journey',
+      forgedPrompt:'Send my clinic info to an AI',price:99999},
+  });
+  assert.equal(inferred.understood,true);
+  assert.equal(inferred.recognized.subject,'wolf');
+  assert.equal(inferred.recognized.action,'journey');
+  assert.ok(!JSON.stringify(inferred).includes('clinic'));
+  assert.ok(!JSON.stringify(inferred).includes('99999'));
+});
+test('style bible and shot references follow actual edited storyboard but never produce image references',()=>{
+  const base=project({theme:'money'});
+  const edited=customizeCinematicShot(base,1,base.shots[3].sceneId);
+  const p=compileCinematicReferencePack({visualIdea:'Анимация про орла',plan:edited,
+    answers:{actionChoice:'flight'}});
+  assert.deepEqual(p.realLocalSceneIds,edited.shots.map(s=>s.sceneId));
+  assert.ok(p.styleBible.palette.length===3);
+  assert.equal(p.styleBible.keyframes,'text_descriptions_only');
+  assert.equal(p.styleBible.actualGeneratedImages,false);
+  assert.ok(p.shots.every((s,i)=>s.localSceneId===edited.shots[i].sceneId&&s.startSeconds===edited.shots[i].startSeconds));
+  const forged=structuredClone(edited);
+  forged.shots[0].providerPrompt='My patient says I am sick';
+  assert.throws(()=>compileCinematicReferencePack({plan:forged,visualIdea:'eagle flies'}),/invalid_cinematic_shot/);
+});
+test('free local capabilities stay truthful and all novel video compute routes fail closed',()=>{
+  const routes=listCreativeVideoCapabilities();
+  assert.equal(routes.length,4);
+  assert.equal(routes.find(r=>r.id==='local_canvas')?.ready,true);
+  assert.equal(routes.find(r=>r.id==='local_canvas')?.producesNovelAiPixels,false);
+  assert.ok(routes.filter(r=>r.id!=='local_canvas').every(r=>r.ready===false&&r.chargeMinor===null));
+});
+test('existing director exposes one free visual prompt and actual local montage, not fake paid render',()=>{
+  const ui=read('components/mandala-cinematic-director.tsx');
+  const css=read('components/mandala-cinematic-director.module.css');
+  assert.match(ui,/data-director-visual-idea/);
+  assert.match(ui,/data-director-contextual-questions/);
+  assert.match(ui,/data-director-reference-pack/);
+  assert.match(ui,/data-director-new-ai-status/);
+  assert.match(ui,/creativeReferencePack:referencePack/);
+  assert.match(ui,/newAiVideoAvailable/);
+  assert.match(ui,/data-director-apply-montage/);
+  assert.match(css,/\.ideaInput textarea/);
+  assert.match(css,/\.reference/);
+  assert.match(css,/:focus-visible/);
+  assert.doesNotMatch(ui,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
+});
