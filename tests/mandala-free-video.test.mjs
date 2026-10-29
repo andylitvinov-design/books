@@ -47,7 +47,7 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
 });
 
 
-test("client money-flow studio offers exactly 12 symbolic looks and starts with four favourites", async () => {
+test("client money-flow studio offers 16 original and licensed looks and starts with four favourites", async () => {
   const ts = await import("typescript");
   const studio = read("components/mandala-free-video-studio.tsx");
   const effects = read("lib/mandala/money-flow-effects.ts");
@@ -58,9 +58,10 @@ test("client money-flow studio offers exactly 12 symbolic looks and starts with 
     "golden-rain", "abundance-tree", "money-magnet", "infinite-flow",
     "cosmic-flow", "opportunity-falls", "path-to-goals", "partners",
     "golden-shield", "abundance-circle", "life-gifts", "dreams",
+    "wealth-sunrise","golden-harvest","radiant-portal","prosperity-coast",
   ];
   for (const id of ids) assert.match(effects, new RegExp('id: "' + id + '"'));
-  assert.equal((effects.match(/ id: "/g) || []).length, 12, "exactly twelve client-safe concepts");
+  assert.equal((effects.match(/ id: "/g) || []).length, 16, "sixteen client-safe concepts");
   for (const locale of ["en", "ru", "es"]) assert.match(effects, new RegExp(locale + ': "'));
   assert.match(studio, /moneyTemplates/);
   assert.match(studio, /data-mandala-money-option/);
