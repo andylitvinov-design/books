@@ -63,9 +63,10 @@ export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accou
   function answerSecond(value){if(value!=='no'){setResult({status:'safety_handoff',explanation:t.help});setStep('result');return}const preflight={immediateDanger:first,selfHarmThoughts:value};setAnswers(preflight);if(format==='service'||format==='audio')void suggest(preflight);else setStep('checkin')}
   function beforeCheckin(save){if(save)setBaseline({promptKey:'self_calm',value:Number(checkin),measuredAt:new Date().toISOString()});setCheckin('');void suggest(answers)}
   async function afterCheckin(save){
-    try {if(save&&baseline){const {compareVoluntaryCheckins}=await import('@/lib/holistic-support/client-reasoning-core.mjs');setComparison(compareVoluntaryCheckins(baseline,{promptKey:'self_calm',value:Number(checkin),measuredAt:new Date().toISOString()}))}}
-    catch {setComparison(null)}
-    finally {setCheckin('');setFollowupDone(true)}
+    const current=generation.current
+    try {if(save&&baseline){const {compareVoluntaryCheckins}=await import('@/lib/holistic-support/client-reasoning-core.mjs');if(current===generation.current)setComparison(compareVoluntaryCheckins(baseline,{promptKey:'self_calm',value:Number(checkin),measuredAt:new Date().toISOString()}))}}
+    catch {if(current===generation.current)setComparison(null)}
+    finally {if(current===generation.current){setCheckin('');setFollowupDone(true)}}
   }
   function another(){if(!answers||!result?.primary)return;const next=[...new Set([...dismissed,result.primary.id])].slice(-80);setDismissed(next);setBaseline(null);setCheckin('');setFollowupDone(false);setComparison(null);void suggest(answers,next)}
   const choices=handler=><div className={styles.actions}>{['yes','no','unsure'].map(value=><button key={value} type="button" onClick={()=>handler(value)}>{t[value]}</button>)}</div>
