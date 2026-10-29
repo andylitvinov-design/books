@@ -96,7 +96,7 @@ test('owner-only creation guards archived contact and writes atomic stage histor
 test('concurrent same-operation creation reports committed result without a duplicate stage event',async()=>{
   let reads=0
   let events=0
-  const db={query:async(sql,args)=>{
+  const db={query:async(sql)=>{
     if(sql.startsWith('select id,contact_id,service,stage,revision from app.crm_opportunities')){
       reads++
       return {rows:reads===1?[]:[{id:deal,contact_id:contact,service:'reiki',stage:'new',revision:0}]}
@@ -141,7 +141,7 @@ test('owner change uses revision, monotonic state and an immutable event',async(
 test('full stage counts are independent from first page; client name is read from existing encrypted contact',async()=>{
   const contact_ciphertext=seal({displayName:'Synthetic contact'},
     {accountId:owner,recordId:contact,field:'crm.contact'},config)
-  const db={query:async(sql,args)=>{
+  const db={query:async(sql)=>{
     if(sql.startsWith('select stage,count(*)'))return {rows:[{stage:'new',total:75},{stage:'offered',total:2}]}
     if(sql.startsWith('select o.id,o.contact_id'))return {rows:[{
       id:deal,contact_id:contact,service:'reiki',stage:'new',revision:0,created_at:'2026-10-29T17:00:00Z',
