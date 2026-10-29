@@ -13,7 +13,7 @@ const WORDS={
   materialsTitle:'My materials',materialsIntro:'Lessons, recordings and files for your clients',
   profileTitle:'Practitioner profile',profileIntro:'Manage the details your clients can see',
   analyticsTitle:'Practice insights',analyticsIntro:'Your real activity and service statistics',
-  servicesTitle:'My services',servicesIntro:'Create, edit and submit your offerings for review',
+  servicesTitle:'My services',servicesEditTitle:'Create service',servicesIntro:'Create, edit and submit your offerings for review',
   moreTitle:'More practice tools',moreIntro:'Events, reporting and additional options',
   back:'Back to practice',alerts:'Open requests',
  },
@@ -24,7 +24,7 @@ const WORDS={
   materialsTitle:'Мои материалы',materialsIntro:'Уроки, записи и файлы для ваших клиентов',
   profileTitle:'Профиль мастера',profileIntro:'Информация о вашей практике и услугах',
   analyticsTitle:'Аналитика практики',analyticsIntro:'Настоящие показатели работы и услуг',
-  servicesTitle:'Мои услуги',servicesIntro:'Создавайте и редактируйте предложения, отправляйте на проверку',
+  servicesTitle:'Мои услуги',servicesEditTitle:'Новая услуга',servicesIntro:'Создавайте и редактируйте предложения, отправляйте на проверку',
   moreTitle:'Другие инструменты',moreIntro:'Мероприятия, отчёты и дополнительные возможности',
   back:'К практике',alerts:'Открыть заявки',
  },
@@ -35,7 +35,7 @@ const WORDS={
   materialsTitle:'Mis materiales',materialsIntro:'Lecciones, grabaciones y archivos para tus clientes',
   profileTitle:'Perfil profesional',profileIntro:'La información visible de tu práctica',
   analyticsTitle:'Análisis de práctica',analyticsIntro:'Actividad y estadísticas reales de los servicios',
-  servicesTitle:'Mis servicios',servicesIntro:'Crear y editar propuestas antes de su revisión',
+  servicesTitle:'Mis servicios',servicesEditTitle:'Crear servicio',servicesIntro:'Crear y editar propuestas antes de su revisión',
   moreTitle:'Más herramientas',moreIntro:'Eventos, informes y otras opciones',
   back:'Volver a la práctica',alerts:'Ver solicitudes',
  },
@@ -66,7 +66,10 @@ export function PracticeInnerHeader({locale='en',panel,requests=[],onBack,onNavi
        <Leaf size={15} aria-hidden="true"/>{t.practiceHome}
      </Link>
     </div>
-    <h2>{titles[panel]}</h2><p>{intros[panel]}</p>
+    <h2>{panel==='services'
+      ? <><span className="hh-practice-service-list-heading">{t.servicesTitle}</span>
+          <span className="hh-practice-service-editor-heading">{t.servicesEditTitle}</span></>
+      : titles[panel]}</h2><p>{intros[panel]}</p>
    </div>
   <button type="button" className="hh-practice-inner-alert" onClick={()=>onNavigate('requests')} aria-label={t.alerts}>
    <Bell size={20} aria-hidden="true"/>
