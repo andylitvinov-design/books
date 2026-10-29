@@ -155,12 +155,13 @@ test("all published goal formats stay available, with recommendations gated behi
   assert.match(client, /guideOpen && !goalFilterOpen \? <HolisticSupportInlineGuide/);
   assert.match(guide, /goalSelection\.recommendationFormats/);
   assert.match(guide, /data-support-guide-show-recommendations/);
-  assert.match(guide, /data-support-guide-format=\{item\.id\}/);
-  assert.match(guide, /data-support-guide-recommendations ref=\{resultsRef\}/);
+  assert.match(guide, /data-guide-go-meditations/);
+  assert.match(guide, /data-guide-test-options/);
+  assert.match(guide, /data-support-guide-recommendations aria-labelledby=/);
   assert.match(guide, /client\/tests\?journey=/);
   assert.match(guide, /\/explore\/business/);
   assert.match(guide, /holistic-support\/mandala/);
-  assert.match(guide, /onChoice\(kind === "healing" \? "healing" : "consultation"\)/);
+  assert.match(guide, /onChoice\(kind==="healing"\?"healing":"consultation"\)/);
   assert.match(client, /goalHasInlineFormat/);
   assert.match(client, /setGoalRecommendationFormats\(formats\)/);
   assert.match(client, /goalSectorCheckinKey\[sector\]/);
