@@ -126,7 +126,7 @@ test('real Google OAuth returns to the exact master chat after a mobile sign-in'
   const response=await routeCallback(flow,flow.cookies)
   assert.equal(response.status,303)
   assert.equal(response.headers.get('location'),origin+'/ru/app/messages?to=master-anna')
-  assert(response.cookies.getAll().some(c=>/^hh-app-auth(\\.\\d+)?$/.test(c.name)&&c.value))
+  assert(response.cookies.getAll().some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
 })
 
 test('native OAuth transfers public master slug only; PKCE is exchanged in-app',async()=>{
