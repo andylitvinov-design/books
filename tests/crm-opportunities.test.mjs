@@ -158,6 +158,29 @@ test('full stage counts are independent from first page; client name is read fro
   assert.equal(response.bookingVerified,false)
   assert.equal(response.paymentVerified,false)
 })
+test('opportunity timeline reads only a verified owner deal, in immutable revision order',async()=>{
+  const statements=[]
+  const db={query:async(sql,args)=>{
+    statements.push({sql,args})
+    if(sql.startsWith('select id from app.crm_opportunities'))return {rows:[{id:deal}]}
+    if(sql.startsWith('select from_stage,to_stage'))return {rows:[
+      {revision:0,from_stage:null,to_stage:'new',occurred_at:'2026-10-29T12:00:00Z'},
+      {revision:1,from_stage:'new',to_stage:'qualified',occurred_at:'2026-10-29T13:00:00Z'},
+    ]}
+    throw Error('Unexpected SQL '+sql)
+  }}
+  const result=await createCrmOpportunityStore(db,{id:owner},config).listOpportunityHistory({id:deal})
+  assert.equal(result.id,deal)
+  assert.equal(result.events.length,2)
+  assert.equal(result.manualOnly,true)
+  assert.deepEqual(statements[0].args,[deal,owner])
+  assert.match(statements[1].sql,/order by revision asc limit 100/)
+  await assert.rejects(()=>createCrmOpportunityStore({
+    query:async()=>({rows:[]})
+  },{id:other},config).listOpportunityHistory({id:deal}),/NOT_FOUND/)
+  await assert.rejects(()=>createCrmOpportunityStore(db,{id:owner},config)
+    .listOpportunityHistory({id:deal,ownerId:other}),/INVALID_OPPORTUNITY/)
+})
 test('API, release gate and schema never leak deals across owners or imply payment',()=>{
   const route=read('app/api/app/crm/opportunities/route.js')
   const repo=read('lib/crm/repository.js')
@@ -169,6 +192,7 @@ test('API, release gate and schema never leak deals across owners or imply payme
   assert.match(route,/practitionerEmailAllowed\(actor\)/)
   assert.match(route,/\.withOwner\(actor,/)
   assert.match(repo,/createCrmOpportunityStore/)
+  assert.match(route,/store\.listOpportunityHistory\(body\.payload\)/)
   assert.match(workflow,/crm-opportunities\.test\.mjs/)
   const migrationName=readdirSync(new URL('../supabase/migrations/',import.meta.url))
     .find(name=>/^\d{14}_hh_crm_opportunities_v1\.sql$/.test(name))
