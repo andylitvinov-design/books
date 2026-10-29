@@ -228,7 +228,11 @@ test('Reiki phone upload can decode only its local blob photo on the exact cours
 test('Safari photo decoding prefers native ImageBitmap, keeps EXIF-free JPEG and bounded private upload', () => {
   const component = read('components/reiki-initiation-photo.tsx')
   assert.match(component, /createImageBitmap\(file\)\.catch\(\(\) => null\)/)
-  assert.match(component, /bitmap \?\? await imageElement\(file\)/)
+  assert.match(component, /const loaded = bitmap \? null : await imageElement\(file\)/)
+  assert.match(component, /const image = bitmap \?\? loaded!\.image/)
+  assert.match(component, /image\.onload = \(\) => resolve\(\{ image, release \}\)/)
+  assert.match(component, /loaded\?\.release\(\)/)
+  assert.doesNotMatch(component, /image\.onload = \(\) => \{\s*URL\.revokeObjectURL/)
   assert.match(component, /bitmap\?\.close\(\)/)
   assert.match(component, /context\.drawImage\(image, 0, 0, canvas\.width, canvas\.height\)/)
   assert.match(component, /canvas\.toBlob\(/)
