@@ -394,6 +394,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
           await page.locator("[data-video-audio-kind]").selectOption("all");
           await page.locator("[data-video-audio-mood]").selectOption("all");
+          assert.equal(await page.locator("[data-video-audio-mic]").count(),1,
+            "microphone recording must be an actual control, not decorative");
+          assert.equal(await page.locator("[data-video-audio-attach]").count(),1,
+            "a real attach action must exist on all sound selections");
+          await page.locator("[data-video-audio-search]").fill("дождь");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),1,
+            "search filters actual localized tracks");
+          await page.locator("[data-video-audio-search]").fill("");
+          await page.locator("[data-video-audio-sort]").selectOption("name");
+          await page.locator("[data-video-audio-sort]").selectOption("best");
+          await page.locator("[data-video-audio-length]").selectOption("20");
           await page.locator("[data-video-audio-auto]").click();
           assert.equal(await page.locator("[data-video-audio-auto]").getAttribute("aria-pressed"),"true");
           assert.ok(await page.locator("[data-video-audio-player]").getAttribute("src"));
@@ -402,6 +413,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             "voice-friendly mode lowers soundtrack volume");
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
+          await page.locator("[data-video-audio-more]").click();
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
+            "expanded audio-only library contains all 13 original WAV tracks");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
             "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
@@ -440,6 +454,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator('[data-video-duration="10"]').click();
           await page.locator('[data-video-music="harmony"]').click();
+          const attachButton=page.locator("[data-video-audio-attach]");
+          assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
+          await attachButton.click();
+          assert.equal(await attachButton.isDisabled(),true,"attached soundtrack acknowledged");
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Гармония/,
+            "attached identity is separate from current audio preview");
+          assert.equal(await create.isEnabled(),true,"attach unlocks real audio+video export");
           const nativePlayer=page.locator("[data-video-audio-player]");
           await nativePlayer.waitFor({state:"attached",timeout:10000});
           await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
@@ -494,6 +515,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           }
           assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
+          // A new preview choice must not change an already exported file;
+          // the separate Attach action invalidates that file for a new export.
+          await page.locator('[data-video-music="energy"]').click();
+          assert.equal(await page.locator("[data-mandala-video-download]").count(),1,
+            "preview selection leaves the already encoded video untouched");
+          assert.equal(await create.isEnabled(),false);
+          await page.locator("[data-video-audio-attach]").click();
+          await page.locator("[data-mandala-video-download]").waitFor({state:"detached",timeout:10000});
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Энергия/);
         }
 
         // A free guided-imagery first video uses the REAL first-party meadow
@@ -595,6 +625,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
           await page.locator("[data-video-audio-rights]").check();
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),false,
+            "consent without attaching must not silently export a selected file");
+          await page.locator("[data-video-audio-attach]").click();
           assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),true);
           await page.locator("[data-mandala-video-generate]").click();
           const backgroundLink = page.locator("[data-mandala-video-download]");
