@@ -1371,7 +1371,7 @@
   margin:0;color:#78665a;font:500 12px/1.45 system-ui,sans-serif
 }
 .hh-app .hh-practice-first-actions-grid{
-  min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+  min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
 }
 .hh-app .hh-practice-first-action{
   display:flex;align-items:center;gap:12px;min-width:0;width:100%;
@@ -1383,6 +1383,10 @@
 .hh-app .hh-practice-first-action.is-service{
   color:#fffdf8;border-color:#874b60;
   background:linear-gradient(100deg,#772d4a 0%,#78374f 65%,#67434e 100%)
+}
+.hh-app .hh-practice-first-action.is-reiki{
+  color:#fffaf2;border-color:#8b7057;
+  background:linear-gradient(120deg,#74513b,#97734f 72%,#826044)
 }
 .hh-app .hh-practice-first-action.is-meditation{
   color:#fffdf7;border-color:#58766d;
@@ -1475,4 +1479,210 @@
 @media(prefers-reduced-motion:reduce){
   .hh-app .hh-practice-first-action{transition:none}
   .hh-app .hh-practice-first-action:hover:not(:disabled){transform:none}
+}
+
+
+/* Approved Oct-28 practitioner inner screens. Visual-only; data and actions stay
+   in the existing authenticated PracticeWorkspace, clients and request store. */
+.hh-app .hh-practice-inner-header{
+ display:flex;align-items:center;gap:10px;min-width:0;margin:0 0 15px;
+ color:#183b32;font:500 14px/1.35 system-ui,-apple-system,sans-serif}
+.hh-app .hh-practice-inner-heading{flex:1;min-width:0}
+.hh-app .hh-practice-inner-heading h2{color:#193d34;font:790 clamp(22px,3.5vw,29px)/1.12 system-ui,sans-serif;
+ margin:0 0 5px;letter-spacing:-.035em}
+.hh-app .hh-practice-inner-heading p{font:500 12px/1.45 system-ui,sans-serif;color:#8a7d6c;margin:0}
+.hh-app .hh-practice-inner-back,.hh-app .hh-practice-inner-alert{
+ position:relative;display:grid;place-items:center;flex:none;width:44px;height:44px;
+ padding:0;border:1px solid #e7e0d4;border-radius:50%;background:#fffcf8;
+ color:#215e4c;box-shadow:0 3px 10px #55432d0c;cursor:pointer}
+.hh-app .hh-practice-inner-unread{position:absolute;top:6px;right:6px;width:9px;height:9px;
+ background:#00a480;border:2px solid #fff;border-radius:50%}
+.hh-app .hh-practice-inner-dock{display:none}
+.hh-app .hh-inner-requests{display:grid;gap:10px;min-width:0}
+.hh-app .hh-inner-request-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hh-app .hh-inner-request-stats>div{display:grid;place-items:center;gap:4px;padding:13px 5px 11px;
+ min-height:81px;background:#fffbf5;border:1px solid #eee4d8;border-radius:16px;box-shadow:0 3px 12px #51432b09}
+.hh-app .hh-inner-request-stats>div[data-kind="new"]{background:#fff2dc;border-color:#efdcb7}
+.hh-app .hh-inner-request-stats>div[data-kind="working"]{background:#e6f2ec;border-color:#d3e5db}
+.hh-app .hh-inner-request-stats strong{color:#20483d;font:820 25px/1.05 system-ui,sans-serif}
+.hh-app .hh-inner-request-stats [data-kind="new"] strong{color:#b47b2a}
+.hh-app .hh-inner-request-stats small{color:#887d70;font:600 11px/1.3 system-ui,sans-serif;text-align:center}
+.hh-app .hh-inner-requests .hh-practice-service-toolbar{display:flex;align-items:center;justify-content:flex-end;
+ min-height:0;margin:-2px 0 -3px;padding:0;border:0;background:none}
+.hh-app .hh-inner-requests .hh-practice-service-toolbar h2{display:none}
+.hh-app .hh-inner-requests .hh-practice-requests-filter{display:flex;align-items:center;gap:7px;
+ color:#807365;font:650 12px/1.35 system-ui,sans-serif}
+.hh-app .hh-inner-requests .hh-practice-requests-filter select{min-height:40px;max-width:205px;
+ border:1px solid #e3d8c9;border-radius:10px;background:#fffdf9;color:#305749;
+ font:650 12px/1.2 system-ui,sans-serif;padding:7px 9px}
+.hh-app .hh-inner-request-tabs{display:flex;gap:7px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:0 0 3px}
+.hh-app .hh-inner-request-tabs button{flex:none;min-height:44px;padding:9px 13px;border-radius:12px;
+ border:1px solid #e6d9ca;color:#756b5f;background:#fffefa;
+ font:700 12px/1.3 system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.hh-app .hh-inner-request-tabs button[aria-pressed="true"]{background:#008971;border-color:#008971;color:#fff}
+.hh-app .hh-inner-requests>p.hh-fine{font:550 11px/1.3 system-ui,sans-serif;margin:0;color:#918578}
+.hh-app .hh-inner-request-card{display:grid;gap:12px;min-width:0;margin:0;padding:13px;
+ background:linear-gradient(135deg,#fffefa,#fffaf4);border:1px solid #ece4d9;border-radius:16px;
+ box-shadow:0 4px 14px #57442c0b}
+.hh-app .hh-inner-request-card-head{display:flex;align-items:center;gap:9px;min-width:0}
+.hh-app .hh-inner-request-avatar{display:grid;place-items:center;flex:none;width:44px;height:44px;
+ border:2px solid #fff;border-radius:50%;background:#e4efe8;color:#397062;
+ font:790 17px/1 system-ui,sans-serif;box-shadow:0 0 0 1px #cee2d6}
+.hh-app .hh-inner-request-identity{display:grid;flex:1;min-width:0;gap:3px}
+.hh-app .hh-inner-request-identity strong{font:770 13px/1.32 system-ui,sans-serif;color:#244137;overflow-wrap:anywhere}
+.hh-app .hh-inner-request-identity small{font:520 11px/1.4 system-ui,sans-serif;color:#8f8375}
+.hh-app .hh-inner-request-state{flex:none;max-width:40%;padding:5px 8px;border-radius:9px;
+ background:#eef0eb;color:#686e65;font:760 10px/1.24 system-ui,sans-serif;text-align:center}
+.hh-app .hh-inner-request-state[data-status="requested"]{background:#fff0d1;color:#ac7622}
+.hh-app .hh-inner-request-state[data-status="contacted"],
+.hh-app .hh-inner-request-state[data-status="in_progress"],
+.hh-app .hh-inner-request-state[data-status="confirmed"],
+.hh-app .hh-inner-request-state[data-status="booked"]{background:#e2f3e9;color:#21775d}
+.hh-app .hh-inner-request-service{display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:4px 10px;min-width:0;border-top:1px solid #f2ebdf;padding-top:10px}
+.hh-app .hh-inner-request-service strong{grid-column:1;color:#26443b;font:730 12px/1.34 system-ui,sans-serif}
+.hh-app .hh-inner-request-service small{grid-column:1;color:#897c6f;font:540 11px/1.4 system-ui,sans-serif}
+.hh-app .hh-inner-request-service b{grid-column:2;grid-row:1 / 3;align-self:center;
+ color:#224939;font:780 13px/1.24 system-ui,sans-serif;white-space:nowrap}
+.hh-app .hh-inner-request-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hh-app .hh-inner-request-actions>button{display:inline-flex;gap:6px;align-items:center;
+ min-height:44px;padding:9px 13px;border:1px solid #008f72;border-radius:11px;
+ background:linear-gradient(110deg,#009e7d,#007d65);color:#fff;font:750 12px/1.25 system-ui,sans-serif;cursor:pointer}
+.hh-app .hh-inner-request-actions small{font:500 10px/1.4 system-ui,sans-serif;color:#928473}
+.hh-app .hh-inner-request-details{border-top:1px solid #ede5db;padding-top:7px}
+.hh-app .hh-inner-request-details>summary{display:flex;justify-content:space-between;align-items:center;
+ gap:8px;cursor:pointer;min-height:43px;list-style:none;color:#21715c;font:730 12px/1.3 system-ui,sans-serif}
+.hh-app .hh-inner-request-details>summary::-webkit-details-marker{display:none}
+.hh-app .hh-inner-request-details[open]>summary svg{transform:rotate(90deg)}
+.hh-app .hh-inner-request-advanced{display:grid;gap:8px;padding:8px 2px 2px;min-width:0;overflow-wrap:anywhere}
+.hh-app .hh-inner-request-advanced .hh-actions{display:flex;flex-wrap:wrap;gap:8px}
+.hh-app .hh-inner-request-advanced .hh-actions button{min-height:44px;max-width:100%;font-size:12px}
+/* The existing workspace controls are replaced by a clear inner header/dock only
+   for the mock's pages; other powerful editor modes retain their own structure. */
+@media(max-width:720px){
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-head,
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-v4-launch{display:none}
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"])>.hh-practice-form-panel{
+   padding:0;border:0;box-shadow:none;background:transparent;margin:0;overflow:visible}
+ .hh-app .hh-practice-dashboard:is([data-practice-active="requests"],[data-practice-active="clients"],
+   [data-practice-active="materials"],[data-practice-active="profile"],[data-practice-active="analytics"]) .hh-practice-form-heading{display:none}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-inner-dock{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;align-items:stretch;
+  position:fixed;z-index:71;bottom:0;left:0;right:0;
+  padding:8px max(9px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));
+  background:#fffdf9f5;border-top:1px solid #e9e0d4;backdrop-filter:blur(17px);
+  box-shadow:0 -6px 18px #4b3b2b14;max-width:610px;margin-inline:auto;border-radius:18px 18px 0 0}
+ .hh-app .hh-practice-inner-dock :is(a,button){display:flex;flex-direction:column;align-items:center;
+   justify-content:center;gap:4px;min-width:0;min-height:50px;padding:6px 2px;
+   border:0;border-radius:11px;background:transparent;text-decoration:none;
+   color:#857e71;font:650 10px/1.16 system-ui,sans-serif;text-align:center}
+ .hh-app .hh-practice-inner-dock :is(a,button) svg{flex:none;width:21px;height:21px}
+ .hh-app .hh-practice-inner-dock button[aria-current="page"]{color:#007e63;background:#e3f3eb;font-weight:790}
+ .hh-app .hh-practice-inner-dock :is(a,button):focus-visible{outline:3px solid #00866a;outline-offset:1px}
+ .hh-app .hh-practice-dashboard:has(.hh-practice-inner-dock){padding-bottom:calc(95px + env(safe-area-inset-bottom))}
+ body:has(.hh-practice-inner-dock) .hh-mobile-app-nav{display:none!important}
+ body:has(.hh-practice-inner-dock) .hh-app:has(input:focus,textarea:focus) .hh-practice-inner-dock{display:none}
+}
+@media(max-width:355px){
+ .hh-app .hh-inner-request-stats{gap:5px}
+ .hh-app .hh-inner-request-stats>div{padding:11px 3px}
+ .hh-app .hh-inner-request-service{grid-template-columns:1fr}
+ .hh-app .hh-inner-request-service b{grid-column:1;grid-row:auto}
+ .hh-app .hh-practice-inner-heading h2{font-size:21px}
+ .hh-app .hh-practice-inner-heading p{font-size:11px}
+ .hh-app .hh-practice-inner-dock :is(a,button){font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app .hh-inner-request-details>summary svg{transition:none}
+}
+
+
+/* 28-Oct approved public → protected practitioner design continuity.
+   The private AppWorkspace keeps the same authenticated APIs, RLS and editor
+   state. Only its obsolete personal-account chrome is removed. */
+body:has(.hh-app--practice-inner){
+  background:radial-gradient(circle at 12% 8%,#e8f0e7,transparent 34%),
+    linear-gradient(160deg,#f7f1e6,#f1ecdf);
+}
+.hh-app.hh-app--practice-inner{
+  --hh-ink:#193e33;--hh-paper:#fffefa;--hh-accent:#008e71;
+  --hh-line:#e8ddce;--hh-muted:#86796b;
+  width:min(100%,1020px);min-height:100svh;margin:0 auto;
+  padding:clamp(10px,2.4vw,23px) clamp(10px,3vw,26px)
+    calc(106px + env(safe-area-inset-bottom));
+  background:transparent;color:#214136;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard{
+  max-width:100%;width:100%;gap:10px;margin:0;
+  padding:0;color:#1d4034;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-head,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-v4-launch,
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-setup{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+  width:100%;max-width:100%;min-width:0;
+  display:grid;gap:12px;margin:0!important;padding:0!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;border-radius:0!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel>.hh-practice-form-heading{
+  display:none!important;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-header{
+  margin:0 0 6px;padding:5px 2px 8px;
+  color:#193d32;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{
+  margin:0 0 5px;font:800 clamp(23px,4vw,30px)/1.12 system-ui,-apple-system,sans-serif;
+  color:#183c31;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-heading p{
+  margin:0;color:#857a6c;font:520 12px/1.38 system-ui,sans-serif;
+}
+.hh-app.hh-app--practice-inner .hh-practice-inner-back,
+.hh-app.hh-app--practice-inner .hh-practice-inner-alert{
+  min-width:44px;min-height:44px;max-width:44px;max-height:44px;
+  color:#0c8167;background:#fffcf7;border:1px solid #eae1d5;
+  border-radius:50%;padding:0;
+}
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="clients"]>div,
+.hh-app.hh-app--practice-inner [data-practice-detail-panel="requests"]>div{
+  min-width:0;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-card{
+  border-color:#e7ded2;border-radius:17px;
+  box-shadow:0 5px 15px #5846310a;
+}
+.hh-app.hh-app--practice-inner .hh-inner-request-actions button{
+  background:linear-gradient(115deg,#00a27f,#007c62);
+  color:white;border-color:#008d6d;
+}
+.hh-app.hh-app--practice-inner .hh-practice-form-panel :is(button,a,summary,input,textarea,select):focus-visible{
+  outline:3px solid #008d72;outline-offset:2px;
+}
+@media(max-width:720px){
+ .hh-app.hh-app--practice-inner{padding:10px 11px calc(111px + env(safe-area-inset-bottom))}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard[data-practice-active]>.hh-practice-form-panel{
+   padding:0!important;gap:8px;margin:0!important
+ }
+ .hh-app.hh-app--practice-inner .hh-practice-inner-header{padding:0 0 6px;margin:0}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:clamp(21px,5.5vw,27px)}
+ .hh-app.hh-app--practice-inner .hh-practice-dashboard:has([data-service-slide-editor]) .hh-practice-inner-dock{
+   display:none!important; /* Don't cover the service wizard Save/Continue. */
+ }
+ .hh-app.hh-app--practice-inner:has(input:focus,textarea:focus) .hh-practice-inner-dock{
+   display:none!important; /* Native keyboard must not hide Send/Save. */
+ }
+}
+@media(max-width:355px){
+ .hh-app.hh-app--practice-inner{padding-inline:7px}
+ .hh-app.hh-app--practice-inner .hh-practice-inner-heading h2{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app.hh-app--practice-inner *{scroll-behavior:auto!important;transition:none!important}
 }

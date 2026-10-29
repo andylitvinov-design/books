@@ -1,3 +1,5 @@
+import type { ReikiOffer } from './reiki-offer.mjs'
+
 export type VideoPresentation = {kind:'external';url:string}|{kind:'upload';assetId:string;path:string}
 export type ServiceIntroduction = {language:'en'|'ru'|'es';type:'audio'|'video';media:VideoPresentation}
 
@@ -53,6 +55,7 @@ export type PublicService = {
   currency: string
   durationMinutes: number | null
   priceOptions?: {duration: 10 | 20 | 30 | 60; price: number}[]
+  reikiOffer?: ReikiOffer | null
   imagePath: string
   videoPresentation?: VideoPresentation | null
   serviceIntroductions?: ServiceIntroduction[]
@@ -80,6 +83,8 @@ export type PublicPractitioner = {
   profile: PractitionerPublicProfile
   credentials: PractitionerCredentialPublic[]
   services: PublicService[]
+  /** Published service-review aggregate only; no reviewer identities or unpublished text. */
+  reviewSummary?: { count: number; average: number }
 }
 
 export type PublicServiceDetail = {

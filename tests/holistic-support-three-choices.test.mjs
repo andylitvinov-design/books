@@ -46,8 +46,9 @@ test("Meditations and energy support use working existing destinations; mobile w
   assert.match(chooser, /href="#meditation-practices"/);
   assert.match(chooser, /\/services\/remote-energy-support/);
   assert.match(page, /id="meditation-practices"/);
-  assert.match(page, /data-holistic-audio-player/);
-  assert.match(page, /<AcademyCourseVideoPlaylist/);
+  assert.doesNotMatch(page, /data-holistic-audio-player|id="meditation-audio"/);
+  assert.match(page, /<HolisticMeditationGallery locale=\{locale\}/);
+  assert.match(read("components/holistic-meditation-gallery.tsx"), /data-holistic-meditation-gallery/);
   assert.match(css, /\.journeyHero\{/);
   assert.match(css, /\.journeyChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:700px\)/);

@@ -7,7 +7,7 @@ const read = p => readFileSync(new URL("../" + p,import.meta.url),"utf8");
 const approved={slug:"remote-energy-support",area_key:"energy_spiritual",
   status:"published",active:true,delivery_format:"online",pricing_mode:"fixed"};
 
-test("Public Holistic Support uses a scrollable, photograph-led order catalog",()=>{
+test("Public Holistic Support uses a scrollable, photograph-led shopping basket",()=>{
   const page=read("app/[locale]/holistic-support/page.tsx");
   const widget=read("components/taoist-talisman-catalog.tsx");
   const css=read("components/taoist-talisman-catalog.module.css");
@@ -16,7 +16,8 @@ test("Public Holistic Support uses a scrollable, photograph-led order catalog",(
   assert.match(widget,/data-taoist-talisman-catalog/);
   assert.match(widget,/role="region" tabIndex=\{0\}/);
   assert.match(widget,/data-tao-talisman-order=\{item.id\}/);
-  assert.match(widget,/HolisticInlineSupportOrder key=\{selection.id\}/);
+  assert.match(widget,/cartIds\.includes\(item\.id\) \? t\.order : t\.add/);
+  assert.match(widget,/router\.push\("\/" \+ locale \+ "\/talismans\/cart"\)/);
   assert.match(widget,/archiveOpen && <div/);
   assert.match(widget,/SupportTalismanGallery locale=\{locale\}/);
   assert.match(css,/overflow:auto/);
@@ -42,7 +43,7 @@ test("Three Daoist-style examples; no fabricated prices or guaranteed results",(
   assert.match(widget,/Confirmed by the master/);
   assert.match(widget,/Уточняется у мастера/);
 });
-test("Catalog choice remains explicit from selected card to encrypted master inbox",()=>{
+test("Generic master enquiry remains allowlisted; basket does not imply a confirmed purchase",()=>{
   const now=Date.now();
   for(const item of TAOIST_TALISMANS) {
     const input={version:1,goal:item.goal,catalogId:item.id};
@@ -66,11 +67,14 @@ test("Catalog choice remains explicit from selected card to encrypted master inb
   assert.match(read("lib/app/repository.js"),/talismanEnquiry\.catalogId/);
   assert.match(read("lib/app/repository.js"),/createPractitionerClientMessages/);
   assert.doesNotMatch(read("components/taoist-talisman-catalog.tsx"),/sessionStorage|localStorage/);
+  assert.doesNotMatch(read("components/taoist-talisman-catalog.tsx"),/HolisticInlineSupportOrder/);
 });
-test("Themed and catalog order panels coordinate, keeping just one active",()=>{
+test("Themed wizard remains separate from the dedicated multi-item basket",()=>{
   const filter=read("components/holistic-support-topic-filter.tsx");
   const catalog=read("components/taoist-talisman-catalog.tsx");
-  for(const file of [filter,catalog])assert.match(file,/hh-support-order-open/);
+  assert.match(filter,/hh-support-order-open/);
   assert.match(filter,/setOrderKind\(null\)/);
-  assert.match(catalog,/setSelection\(null\)/);
+  assert.doesNotMatch(catalog,/hh-support-order-open/);
+  assert.match(catalog,/saveBrowserTalismanCart/);
+  assert.match(catalog,/TALISMAN_CART_UPDATED_EVENT/);
 });

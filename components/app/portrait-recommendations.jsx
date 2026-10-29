@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Compass, ShieldCheck } from 'lucide-react'
 import { buildPortraitRecommendations } from '@/lib/profile/portrait-recommendations'
+import { PersonalAxisMatches } from './personal-axis-matches'
 import styles from './portrait-recommendations.module.css'
 
 const COPY = {
@@ -86,6 +87,7 @@ export function PortraitRecommendations({results = [],locale = 'en'}) {
             </div>
           </section>
         </div>}
+    <PersonalAxisMatches measurements={model.measurements} locale={locale} showMeasurements={false} />
     <div className={styles.footer}>
       <p>{t.nextCopy}</p>
       <Link href={`/${locale}/app/tests?profile=missing`} prefetch={false}>

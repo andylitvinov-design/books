@@ -7,7 +7,21 @@ on:
       - ".github/workflows/hh-owner-telegram-video.yml"
       - "app/admin/youtube-upload/page.js"
       - "app/admin/materials/page.js"
+      - "app/api/internal/housekeeping/route.js"
       - "components/admin-telegram-videos.jsx"
+      - "components/admin-youtube-publications.jsx"
+      - "components/app/practice-youtube-share.jsx"
+      - "components/app/practice-video-field.jsx"
+      - "components/app/service-introduction-editor.jsx"
+      - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
+      - "app/api/admin/youtube-publications/**"
+      - "app/api/app/practice/youtube/share/**"
+      - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
+      - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
+      - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
+      - "tests/youtube-owner-publications.test.mjs"
       - "app/api/admin/telegram-video/**"
       - "app/api/app/crm/messenger/webhook/**"
       - "app/api/app/notification-channels/telegram/webhook/**"
@@ -16,22 +30,38 @@ on:
       - "lib/practitioners/owner-telegram-audio-model.mjs"
       - "lib/practitioners/owner-telegram-video-*"
       - "tests/owner-telegram-video.test.mjs"
+      - "tests/owner-telegram-youtube-visibility.test.mjs"
+      - "tests/owner-telegram-video-cut-recovery.test.mjs"
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
       - "docs/videos/OPENVERSE_SFX_20261026.md"
       - "tests/owner-telegram-audio-combine.test.mjs"
       - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
       - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
+      - "supabase/migrations/20261028003500_hh_owner_video_trim_before_youtube.sql"
+      - "scripts/verify-telegram-owner-video-media.mjs"
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
   push:
     branches: [codex/public-book-library]
     paths:
+      - "tests/owner-telegram-video-cut-recovery.test.mjs"
       - "lib/practitioners/owner-telegram-video-*"
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
       - "app/api/admin/telegram-video/**"
+      - "app/api/internal/housekeeping/route.js"
+      - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
+      - "app/api/admin/youtube-publications/**"
+      - "app/api/app/practice/youtube/share/**"
+      - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
+      - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
+      - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
+      - "tests/youtube-owner-publications.test.mjs"
+      - "tests/owner-telegram-youtube-visibility.test.mjs"
       - ".github/workflows/hh-owner-telegram-video.yml"
 permissions:
   contents: read
@@ -47,11 +77,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Telegram and audio regression tests
-        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
+        run: node --test tests/owner-telegram-youtube-visibility.test.mjs tests/youtube-owner-publications.test.mjs tests/owner-telegram-video.test.mjs tests/owner-telegram-video-cut-recovery.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
-        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
+        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js app/api/admin/youtube-publications/route.js "app/api/admin/youtube-publications/[id]/preview/route.js" app/api/app/practice/youtube/share/route.js lib/youtube/owner-publication-service.js lib/youtube/upload-history-store.js components/admin-youtube-publications.jsx components/app/practice-youtube-share.jsx components/app/practice-video-field.jsx components/app/service-introduction-editor.jsx components/admin-telegram-videos.jsx tests/youtube-owner-publications.test.mjs tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit --incremental false
       - name: Next production build

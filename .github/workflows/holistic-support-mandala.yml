@@ -1,0 +1,94 @@
+name: Holistic Support mandala release checks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/[locale]/holistic-support/**'
+      - 'components/mandala-meditation*'
+      - 'components/mandala-free-video-studio.tsx'
+      - 'components/mandala-video-affirmations*'
+      - 'components/mandala-guided-course*'
+      - 'components/mandala-video-mobile.module.css'
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-mobile.module.css'
+      - 'lib/mandala/**'
+      - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'lib/public-locales.ts'
+      - 'public/mandalas/**'
+      - 'public/audio/mandala/**'
+      - 'public/videos/holistic-house/money-films-v1/**'
+      - 'public/videos/holistic-house/film-collection-v2/**'
+      - 'tests/real-money-film-library.test.mjs'
+      - 'tests/film-collection-v2.test.mjs'
+      - 'tests/holistic-mandala-meditation.test.mjs'
+      - 'tests/mandala-export.test.mjs'
+      - 'tests/mandala-free-video.test.mjs'
+      - 'tests/video-affirmations.test.mjs'
+      - 'tests/personal-guided-course.test.mjs'
+      - 'tests/mandala-video-therapy-focus.test.mjs'
+      - 'tests/mandala-mobile-video-design.test.mjs'
+      - 'tests/personal-video-intent.test.mjs'
+      - 'tests/mandala-sound.test.mjs'
+      - 'tests/mandala-native-audio-files.test.mjs'
+      - 'tests/mandala-smart-audio.test.mjs'
+      - '.github/workflows/holistic-support-mandala.yml'
+permissions:
+  contents: read
+concurrency:
+  group: holistic-support-mandala-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  focused-unit-types-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Check browser acceptance script syntax before slow production build
+        run: node --check scripts/verify-holistic-mandala-browser.mjs
+      - name: Mandala and mobile support contracts
+        run: node --test tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs
+      - name: Targeted lint
+        run: npx --no-install eslint lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-guided-course.tsx components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit
+      - name: Build
+        run: npm run build
+
+      - name: Install isolated Chromium and WebKit (no external account)
+        run: |
+          mkdir -p /tmp/hh-mandala-playwright
+          npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffprobe -version | head -n 1
+          ffmpeg -version | head -n 1
+      - name: Public mandala photo, PNG and video browser flow · 320/390/430px
+        env:
+          HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-mandala-next.log 2>&1 & NEXT_PID=$!
+          trap 'kill "$NEXT_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3100/ru/holistic-support/mandala >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
+          node scripts/verify-holistic-mandala-browser.mjs
+
