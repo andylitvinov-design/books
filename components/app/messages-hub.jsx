@@ -26,7 +26,7 @@ const COPY={
     ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
 }
 const VALID_TABS=new Set(['chats','requests'])
-export default function MessagesHub({locale='en'}){
+export default function MessagesHub({locale='en',embedded=false,onClientsCount,onDetailChange}){
   const searchParams=useSearchParams()
   const t=COPY[locale]||COPY.en
   const [tab,setTab]=useState('chats')
@@ -147,8 +147,19 @@ export default function MessagesHub({locale='en'}){
     businessEnquiries={requestData?.businessEnquiries||[]}
     telegramUrl={telegramUrl}
     websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
-    onReload={()=>setRefreshKey(n=>n+1)}/>
+    onReload={()=>setRefreshKey(n=>n+1)} embedded={embedded}
+    onClientsCount={onClientsCount} onDetailChange={onDetailChange}/>
   if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
+  // Non-owner accounts have private member conversations but no owner-only CRM.
+  // Render the real existing transport without a second Chats/Requests header.
+  if(embedded)return <div className={styles.hub} data-embedded-member-inbox>
+    {(unauthenticated||bootstrapSignInRequired)&&!data&&
+      <p className={styles.authNotice} role="alert">{t.sessionRequired}{' '}
+        <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>}
+    <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
+    {requestData?.hasPractice&&<MessagesClientRequests data={requestData} locale={locale}
+      onReload={()=>setRefreshKey(v=>v+1)} crmState={{loading:false,error:false,threads:[],partial:false}}/>}
+  </div>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
