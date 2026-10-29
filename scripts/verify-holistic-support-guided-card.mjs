@@ -95,6 +95,16 @@ for (const engine of [chromium, webkit]) {
         await guide.locator("[data-support-guide-recommendations]").waitFor({state:"visible",timeout:10000});
         assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),1,tag+" actual result");
         assert.equal(await guide.locator("[data-support-guide-program]").count(),1,tag+" next steps");
+        assert.equal(await guide.locator("[data-support-guide-primary-title]").count(),1,
+          tag+" one visible named primary resource");
+        assert.equal(await guide.locator("[data-support-guide-context]").count(),1,
+          tag+" one compact context instead of repeated recommendation summary");
+        const timeDisclosure=await guide.locator("[data-support-guide-time-preference]").innerText();
+        assert.ok(timeDisclosure.includes("10") &&
+          timeDisclosure.includes(({en:"not the duration",ru:"не длительность",es:"no es la duración"})[locale]),
+          tag+" selected 10 minutes never masquerades as a verified duration");
+        assert.equal(await guide.locator("[data-support-guide-recommendations] h3").count(),1,
+          tag+" only one recommendation heading");
         assert.equal(await guide.locator('a[href="/'+locale+'/client/tests?journey=business"]').count(),1,
           tag+" real allowlisted tests destination");
         assert.ok(await guide.locator("[data-support-guide-message]").count()>=13,
