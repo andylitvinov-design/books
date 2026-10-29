@@ -1815,8 +1815,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing} onApplyStoryboard={plan=>{
           // Only a safe first-party storyboard; no provider/client API call.
           setTheme(plan.theme);setVideoCategory(plan.theme);
-          if(plan.theme==="money")setMoneyScene(plan.shots[0].sceneId as MoneySceneId);
-          else{setMoneyScene(null);setOtherScene(plan.shots[0].sceneId as LocalSceneId);}
+          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
+            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
+          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
+            ? plan.shots[0].sceneId as LocalSceneId : otherVideoScenes[plan.theme][0].id);}
           setAspect(plan.aspect);
           setDuration(plan.durationSeconds as (typeof durations)[number]);
           setCinematicPlan(plan);
