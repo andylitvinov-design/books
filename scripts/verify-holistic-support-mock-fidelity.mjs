@@ -569,8 +569,12 @@ for (const browserType of [chromium, webkit]) {
             const circleBox=await root.locator('[data-support-photo]').boundingBox();
             assert.ok(inputBox && circleBox && inputBox.width >= circleBox.width - 10 &&
               inputBox.height >= circleBox.height - 10,label+" iPhone native picker hit target");
-            await root.locator('[data-support-photo] input[type="file"]')
-              .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
+            const chooserPromise=page.waitForEvent("filechooser",{timeout:8000});
+            await root.locator('[data-support-photo]').click({position:{
+              x: circleBox.width/2, y: circleBox.height/2
+            }});
+            const chooser=await chooserPromise;
+            await chooser.setFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
             await root.locator('[data-support-photo] img[class*="photoPreview"]').waitFor({state:"attached",timeout:5000});
             await root.locator('[data-support-photo-save]').waitFor({state:"visible",timeout:8000});
             assert.equal(privatePhotoWrites,0,label+" selection remains local");
