@@ -200,9 +200,9 @@ test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overf
   assert.ok(builder.includes('const displayTests = showMore ? extraMatches : [];'))
   assert.ok(builder.includes('remainingTestKeys.size > 0'))
   assert.ok(builder.includes('if (!eligibleTestKeys.has(key)) return;'))
-  assert.ok(builder.includes('keys.length < 12'))
-  assert.ok(builder.includes('selectedScaleIds, "pro")'))
-  assert.ok(builder.includes('test.key === key &&'))
+  assert.ok(builder.includes('previous.length < 12'))
+  assert.ok(builder.includes('selectedScaleIds, "all")'))
+  assert.ok(builder.includes('test.key === candidate.key &&'))
   assert.ok(route.includes('testKind: entry.testKind'))
   assert.ok(css.includes('.extraFilters {'))
   assert.ok(css.includes('.extraSearch { grid-column: 1 / -1; }'))
@@ -220,8 +220,8 @@ test('all additional tests inherit only chosen facets and the existing server gu
   for (const flag of ['entry.selectable === true', 'entry.startable === true',
     'entry.guestEligible === true', 'entry.free === true', 'entry.rightsStatus === "cleared"',
     'entry.explicitOptIn !== true']) assert.ok(page.includes(flag), flag)
-  assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)'))
-  assert.ok(builder.includes('remainingTestKeys.has(test.key) && test.testKind === modeKind'))
+  assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, "all")'))
+  assert.ok(builder.includes('remainingTestKeys.has(test.key) &&'))
   assert.ok(builder.includes('selectedAxisRefs.includes(scale.researchAxisId)'))
   assert.ok(builder.includes('timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter))'))
   assert.ok(builder.includes('fitByKey.get(key) ?? 0'))
@@ -255,9 +255,9 @@ test('Tests step keeps three plus five cards in place when checkboxes change and
   assert.match(slide, /\{extraMatchPercent\(test\.key\)\}%/)
   assert.match(builder, /selectedKeys\.join\(","\)/)
   assert.match(builder, /selectedKeys\.length === 0 && recommendedTests\.length > 0/)
-  for (const text of ['3 key recommended tests', '5 more tests ranked by topic match',
-    '3 основных рекомендованных теста', 'Ещё 5 тестов по проценту соответствия',
-    '3 pruebas principales recomendadas', '5 pruebas más, ordenadas por coincidencia']) {
+  for (const text of ['3 key recommended tests', 'More matching tests',
+    '3 основных рекомендованных теста', 'Другие подходящие тесты',
+    '3 pruebas principales recomendadas', 'Otras pruebas recomendadas']) {
     assert.ok(builder.includes(text), text)
   }
   for (const selector of ['.testSectionHeading', '.fiveMore', '.fitPill', '.fitNote']) {
