@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [codex/public-book-library]
     paths:
-      - 'app/[locale]/app/messages/**'
+      - 'app/**/app/messages/**'
       - 'components/app/messages-orders-clients.*'
       - 'components/app/messages-simple-inbox.*'
       - 'components/app/messages-hub.*'
