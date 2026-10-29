@@ -1,0 +1,324 @@
+/* Shared question-card design for the REAL guest + signed-in assessment runners.
+   Scope to opt-in data attribute: reports, editors and course quizzes are unchanged.
+   These rules are visual only; all saved answers and scoring stay in existing handlers. */
+.hh-test-experience {
+  --test-ink: #302e29;
+  --test-muted: #66766c;
+  --test-green: #376b56;
+  --test-line: #e5e5dc;
+  --test-cream: #fffdfa;
+  color: var(--test-ink);
+  min-width: 0;
+  max-width: 850px;
+  margin-inline: auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.client-entry-shell .hh-test-experience.cabinet-guest-runner,
+.hh-app .hh-test-experience.hh-runner {
+  border: 0;
+  border-top: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.client-entry-shell .hh-test-experience.cabinet-guest-runner {
+  margin-top: 11px;
+}
+.hh-app .hh-test-experience.hh-runner {
+  width: 100%;
+  max-width: 850px;
+  margin: 12px auto;
+}
+.hh-test-experience .hh-runner-topline {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-direction: column;
+  min-width: 0;
+}
+.client-entry-shell .hh-test-experience .hh-runner-topline {
+  flex-direction: column-reverse;
+}
+.hh-test-experience .hh-test-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid #e5d8ca;
+  border-radius: 999px;
+  background: #f5eee8;
+}
+.hh-app .hh-test-experience .hh-test-mode-toggle button,
+.client-entry-shell .hh-test-experience .hh-test-mode-toggle button {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-width: 0;
+  min-height: 53px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 9px;
+  background: transparent;
+  color: #796b60;
+  font: 650 14px/1.17 system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+}
+.hh-test-experience .hh-test-mode-toggle button small {
+  display: block;
+  margin-top: 3px;
+  color: #8b8278;
+  font: 500 11px/1.3 system-ui, -apple-system, sans-serif;
+}
+.hh-app .hh-test-experience .hh-test-mode-toggle button[aria-pressed="true"],
+.client-entry-shell .hh-test-experience .hh-test-mode-toggle button[aria-pressed="true"] {
+  border-color: #87a993;
+  background: #fffdfa;
+  color: #2f604a;
+  box-shadow: 0 3px 9px #2e563515;
+}
+.hh-test-experience .hh-runner-segments {
+  gap: 5px;
+  margin: 10px 0 12px;
+}
+.hh-test-experience .hh-runner-segments > span {
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: #eae5df;
+}
+.hh-test-experience .hh-runner-segments > span.is-done,
+.hh-test-experience .hh-runner-segments > span.is-current {
+  background: #5d9278;
+}
+.hh-test-experience .cabinet-test-progress,
+.hh-test-experience .hh-runner-progress-copy {
+  margin: 0;
+  color: #474a42;
+  font: 750 13px/1.3 system-ui, -apple-system, sans-serif;
+  letter-spacing: 0;
+}
+.hh-test-experience .hh-runner-progress-copy {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+.hh-app .hh-test-experience .hh-runner-head {
+  padding: clamp(15px, 3vw, 22px);
+  margin-bottom: 13px;
+  border: 1px solid #e4e1d8;
+  border-radius: 21px;
+  background: linear-gradient(125deg, #fffefa 0%, #f1f6ee 100%);
+  box-shadow: 0 6px 20px #4059490b;
+}
+.hh-app .hh-test-experience .hh-runner-head .hh-kicker {
+  color: #315946;
+  font: 750 14px/1.35 system-ui, -apple-system, sans-serif;
+  letter-spacing: 0;
+}
+.hh-app .hh-test-experience .hh-runner-instructions {
+  color: #627267;
+  margin: 11px 4px 12px;
+  font: 550 13px/1.5 system-ui, -apple-system, sans-serif;
+}
+.hh-app .hh-test-experience .hh-quick-form,
+.client-entry-shell .hh-test-experience .cabinet-quick-form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 10px 0 0;
+}
+.hh-app .hh-test-experience .hh-quick-question:first-child { padding-top: clamp(15px, 2.5vw, 22px); }
+.hh-app .hh-test-experience .hh-test-question-card,
+.client-entry-shell .hh-test-experience .hh-test-question-card {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: clamp(15px, 2.5vw, 22px);
+  border: 1px solid #e7e6de;
+  border-radius: 21px;
+  background: linear-gradient(130deg, #fffefd 0%, #fffcf8 100%);
+  box-shadow: 0 6px 20px #51483d0d;
+  animation: none;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+.hh-app .hh-test-experience .hh-test-question-card[data-answer-state="answered"],
+.client-entry-shell .hh-test-experience .hh-test-question-card[data-answer-state="answered"] {
+  border-color: #a7c4ae;
+  background: linear-gradient(130deg, #fffefd 0%, #f5faf4 100%);
+}
+.hh-test-experience .hh-test-question-card:nth-child(3n + 1) { --question-pastel: #f9e4df; --question-ink: #89564e; }
+.hh-test-experience .hh-test-question-card:nth-child(3n + 2) { --question-pastel: #e5efdf; --question-ink: #476952; }
+.hh-test-experience .hh-test-question-card:nth-child(3n + 3) { --question-pastel: #f9edd7; --question-ink: #80653b; }
+.hh-test-experience .hh-test-question-caption {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: auto;
+  min-width: 0;
+  margin: 0 0 11px;
+  padding: 0 8px 0 0;
+  color: #5b6b60;
+  font: 700 12px/1.35 system-ui, -apple-system, sans-serif;
+  white-space: normal;
+}
+.hh-test-experience .hh-test-question-number {
+  display: inline-grid;
+  flex: 0 0 37px;
+  width: 37px;
+  height: 37px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--question-pastel, #e6eee1);
+  color: var(--question-ink, #3b654d);
+  font: 700 19px/1 Georgia, serif;
+}
+.hh-test-experience .hh-test-question-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: calc(100% - 65px);
+  min-height: 28px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f4f4ef;
+  color: #536a5c;
+  font: 650 12px/1.35 system-ui, -apple-system, sans-serif;
+}
+.hh-test-experience .hh-test-question-check {
+  margin-left: auto;
+  color: #377c59;
+  font-size: 17px;
+  font-weight: 800;
+}
+.hh-test-experience .hh-test-question-card > :is(h1, h2, h3),
+.client-entry-shell .hh-test-experience .cabinet-guided-question > h3,
+.hh-app .hh-test-experience .hh-runner-question > h1 {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 15px;
+  color: #302d29;
+  font: 450 clamp(18px, 2.7vw, 23px)/1.36 Georgia, "Times New Roman", serif;
+  letter-spacing: -0.012em;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.hh-test-experience .hh-test-question-card :is(.cabinet-test-note, .hh-muted) {
+  max-width: 100%;
+  font: 500 12px/1.5 system-ui, -apple-system, sans-serif;
+}
+.hh-test-experience :is(.cabinet-day-count-select, .hh-day-count-select) {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.hh-test-experience :is(.cabinet-day-count-select, .hh-day-count-select) > span {
+  display: block;
+  color: #66736b;
+  font: 550 12px/1.45 system-ui, -apple-system, sans-serif;
+}
+.hh-test-experience :is(.cabinet-day-count-select, .hh-day-count-select) select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 52px;
+  padding: 12px 42px 12px 15px;
+  border: 1px solid #d7ded6;
+  border-radius: 15px;
+  background-color: #fff;
+  color: #374539;
+  font: 500 16px/1.35 system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+.hh-test-experience :is(.cabinet-answer-list, .hh-scale-words) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 2px 0 0;
+}
+.hh-test-experience :is(.cabinet-answer-scale, .hh-scale:not(.hh-scale-words)) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(47px, 1fr));
+  gap: 7px;
+  min-width: 0;
+  margin: 2px 0 0;
+}
+.hh-test-experience :is(.cabinet-answer-list, .cabinet-answer-scale, .hh-scale) button,
+.hh-app .hh-test-experience .hh-test-question-card .hh-scale-words button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid #d8dfd5;
+  border-radius: 13px;
+  background: #fffefa;
+  color: #44584b;
+  font: 600 13px/1.3 system-ui, -apple-system, sans-serif;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  box-sizing: border-box;
+}
+.hh-test-experience :is(.cabinet-answer-list, .hh-scale-words) button,
+.hh-app .hh-test-experience .hh-test-question-card .hh-scale-words button {
+  justify-content: flex-start;
+  text-align: left;
+}
+.hh-test-experience :is(.cabinet-answer-list, .cabinet-answer-scale, .hh-scale) button[aria-pressed="true"] {
+  border-color: #3b7c5b;
+  background: #e8f3e9;
+  color: #22563b;
+  box-shadow: inset 0 0 0 1px #3b7c5b;
+}
+.hh-test-experience :is(button, select, summary):focus-visible {
+  outline: 3px solid #287d5b;
+  outline-offset: 3px;
+}
+.hh-test-experience button:disabled,
+.hh-test-experience select:disabled { cursor: wait; opacity: .68; }
+.hh-test-experience .hh-quick-hint,
+.hh-test-experience .hh-runner-save-state { color: #607767; font-size: 12px; }
+.hh-test-experience .cabinet-quick-context,
+.hh-test-experience .hh-runner-context {
+  border: 1px solid #dae5dc;
+  border-radius: 17px;
+  padding: 14px;
+  background: #f8fbf7;
+}
+.hh-test-experience .cabinet-test-actions button,
+.hh-test-experience .hh-runner-actions button {
+  min-height: 44px;
+  border-radius: 14px;
+}
+@media (max-width: 600px) {
+  .hh-app .hh-test-experience .hh-quick-form,
+  .client-entry-shell .hh-test-experience .cabinet-quick-form { gap: 12px; }
+  .hh-app .hh-test-experience .hh-test-question-card,
+  .client-entry-shell .hh-test-experience .hh-test-question-card { padding: 15px; border-radius: 18px; }
+  .hh-test-experience .hh-test-question-card > :is(h1,h2,h3) { font-size: 18px; line-height: 1.4; }
+  .hh-app .hh-test-experience .hh-test-question-card .hh-scale-words { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hh-test-experience :is(.cabinet-answer-list,.hh-scale-words) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hh-test-experience :is(.cabinet-answer-scale,.hh-scale:not(.hh-scale-words)) { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); }
+  .hh-test-experience .hh-test-question-number { flex-basis: 34px; width: 34px; height: 34px; font-size: 18px; }
+  .hh-test-experience .hh-test-question-caption { font-size: 11px; }
+}
+@media (max-width: 350px) {
+  .hh-test-experience .hh-test-question-card > :is(h1,h2,h3) { font-size: 17px; }
+  .hh-test-experience .hh-test-question-label { padding-inline: 8px; }
+  .hh-test-experience :is(.cabinet-answer-list,.hh-scale-words) { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .hh-test-experience :is(.cabinet-answer-scale,.hh-scale:not(.hh-scale-words)) { grid-template-columns: repeat(5,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hh-test-experience * { animation: none !important; transition: none !important; }
+}
