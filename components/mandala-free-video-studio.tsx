@@ -731,12 +731,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // and final recording. A muted video may play on iPhone without audio
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
-    // WebKit may defer preload for the visually hidden first-party MP4.
-    // Explicitly start loading the new scene; never mark it ready until the
-    // browser has actually decoded a frame (loadeddata / canplay).
-    setPremiumReady(false);
+    // The keyed HD element may finish decoding *before* this effect runs.
+    // Resetting ready=false unconditionally then waiting only for a new
+    // loadeddata/canplay event can leave Create disabled forever on Safari.
+    // Reconcile the real current frame first; request a load only if needed.
     const master=premiumVideoRef.current;
-    if(activeFilm && master && master.readyState<2)master.load();
+    const decoded=Boolean(activeFilm && master && master.readyState>=2 &&
+      master.videoWidth>0 && master.videoHeight>0);
+    setPremiumReady(decoded);
+    if(activeFilm && master && !decoded)master.load();
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
