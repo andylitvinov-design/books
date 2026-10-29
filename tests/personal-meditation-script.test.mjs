@@ -27,7 +27,7 @@ test("three locales generate meaningful distinct guided texts without provider c
   assert.match(ru,/ПЕРСОНАЛЬНАЯ МЕДИТАЦИЯ/);assert.match(ru,/ручей/);
   assert.match(es,/MEDITACIÓN PERSONAL/);assert.match(es,/paso/);
   assert.notEqual(en,ru);assert.notEqual(ru,es);
-  assert.match(es,/puedes detenerlo/);
+  assert.match(es,/Detente si te incomoda/);
   assert.match(PERSONAL_MEDITATION_VERSION,/resource-meditation/);
 });
 test("invalid or harmful text is bounded, stripped, and never emitted as an instruction",()=>{
