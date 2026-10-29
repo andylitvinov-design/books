@@ -166,7 +166,7 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
-  assert.match(studio,/audioMatches\.map\(\(track,index\)=>/);
+  assert.match(studio,/visibleAudio\.map\(\(track,index\)=>/);
   assert.match(studio,/data-video-music=\{track\.id\}/);
   assert.match(studio,/chooseMusic\(track\.id as AmbientMusic\)/);
   assert.match(studio,/recommendMandalaAudio\(\{/);
@@ -304,7 +304,9 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
     assert.ok(studio.includes('href="#'+id+'" data-video-editor-tab="'+tab+'"'),tab+" must be a real same-page link");
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
   }
-  assert.match(studio,/data-video-affirmation-preview disabled=\{recording\|\|preparing\} onClick=\{openAffirmationPreview\}/);
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
+  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
   const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);

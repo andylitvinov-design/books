@@ -4,6 +4,7 @@
  * Uses a synthetic 1px photo and verifies the encoded locally generated sound.
  */
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { chromium, webkit } from "@playwright/test";
 
@@ -108,6 +109,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           engine+" "+locale+" "+width+"px compact video touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
+        // Reference-state capture: the approved owner screenshot starts with
+        // the default ENERGY topic, before browser QA switches to MONEY.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await page.locator("[data-hypno-overview]").screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
+            animations:"disabled",
+          });
+        }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
@@ -116,9 +126,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
         await page.locator("[data-video-affirmations-feature]").check();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
         await page.locator("[data-video-affirmations-feature]").uncheck();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
@@ -346,8 +356,34 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
 
         // Public iPhone control E2E: local affirmations change the live preview
         // and are included by the same canvas renderer in final recordings.
+        // New compact one-page UI: the deep phrase editor is only opened
+        // on an explicit Edit tap; existing real renderer controls are retained.
+        const compactHypno = page.locator("[data-hypno-overview]");
+        await compactHypno.waitFor({state:"visible",timeout:12000});
+        for(const marker of ["data-hypno-request","data-hypno-phrases","data-hypno-display","data-hypno-design","data-hypno-preview"]){
+          assert.equal(await compactHypno.locator("["+marker+"]").count(),1,marker);
+        }
+        // Public synthetic screenshot. No signed-in profile, test answers or
+        // private media is captured in CI artifacts.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await compactHypno.screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
+            animations:"disabled",
+          });
+        }
+        const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
+        assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isDisabled(),true);
+        assert.equal(await compactHypno.locator("[data-hypno-request-edit]").getAttribute("aria-expanded"),"false");
+        await compactHypno.locator("[data-hypno-phrases-edit]").click();
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        // Guest opening is only a request to import; it never marks test
+        // personalization as successful or sends a profile without consent.
+        await compactHypno.locator("[data-hypno-tests]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-tests]").getAttribute("aria-pressed"),"false");
+        assert.equal(await compactHypno.locator('a[href$="/personality-profiles"]').count(),1);
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
         // Hypnoaffirmations: the first thing visitors see is a truthful, compact
         // explanation and the two explicit ways to choose their phrases.
@@ -366,10 +402,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
         assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
         assert.ok((await affirmationsPanel.locator('[data-video-affirmation-preset="0"]').innerText()).length<=26);
-        const collapsedHeight=await affirmationsPanel.evaluate(el=>el.getBoundingClientRect().height);
-        assert.ok(collapsedHeight<650, engine+" "+locale+" "+width+"px panel too tall: "+collapsedHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"true");
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
         await page.locator("[data-video-affirmations-enable]").check();
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isEnabled(),true);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
           "settings and top opt-in must always stay synchronized");
         await page.locator('[data-video-affirmation-preset="3"]').click();
@@ -396,6 +432,29 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        // Owner screenshot acceptance: in-place request edits affect real
+        // selected words, text geometry changes use the shared recorder,
+        // and the live scene rail changes the original (not a mock) scene.
+        await compactHypno.locator("[data-hypno-request-edit]").click();
+        await compactHypno.locator('[data-hypno-problem="1"]').click();
+        // The earlier real-film test selected MONEY. Match its actual goal catalogue.
+        assert.equal(await hero.getAttribute("data-video-theme-active"),"money");
+        await compactHypno.locator('[data-hypno-goal="value"]').click();
+        await compactHypno.locator("[data-hypno-apply-request]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        await compactHypno.locator("[data-hypno-display-edit]").click();
+        await compactHypno.locator('[data-hypno-frequency="3"]').click();
+        await compactHypno.locator('[data-hypno-size="large"]').click();
+        await compactHypno.locator('[data-hypno-position="bottom"]').click();
+        assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        const firstScene=compactHypno.locator("[data-hypno-scene]").first();
+        const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
+        assert.ok(await firstScene.count() && await secondScene.count());
+        await secondScene.click();
+        assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
+        await firstScene.click();
+        assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
@@ -432,20 +491,54 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           return Boolean(button && !button.disabled && master && master.readyState >= 2);
         },undefined,{timeout:25000});
         assert.equal(await create.isEnabled(), true);
+        // Capture the real rendered AUDIO-ONLY section on the same public
+        // guest route and iPhone viewport, without iOS browser chrome.
+        if(locale==="ru"&&[320,390,430].includes(width)){
+          const panel=page.locator("[data-video-audio-section]");
+          const dimensions=await panel.locator("[data-video-audio-tracks] [data-video-music]").first()
+            .evaluate(node=>{
+              const rect=node.getBoundingClientRect(),font=getComputedStyle(node.querySelector("strong")).fontSize;
+              return {height:rect.height,width:rect.width,font};
+            });
+          assert.ok(dimensions.height>=60 && dimensions.width>200 && parseFloat(dimensions.font)>=13,
+            "readable 44px+ audio-only rows at "+width+": "+JSON.stringify(dimensions));
+          const attach=await panel.locator("[data-video-audio-attach]").boundingBox();
+          assert.ok(attach && attach.height>=44,
+            "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
+          mkdirSync("artifacts/mandala-audio",{recursive:true});
+          await panel.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
+            animations:"disabled",timeout:20000});
+        }
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
         // Every preset must now be an actual first-party HTTP audio file
         // which WebKit can load, decode and advance after a direct user tap.
         if (locale === "ru" && width === 390) {
           // Real context-aware filter and choice flow, not decorative chips.
-          await page.locator("[data-video-audio-kind]").selectOption("nature");
+          await page.locator('[data-video-audio-kind="nature"]').click();
           assert.equal(await page.locator('[data-video-music="rain"]').count(),1);
           assert.equal(await page.locator('[data-video-music="prosperity"]').count(),0,
             "type filter removes unrelated tracks");
-          await page.locator("[data-video-audio-mood]").selectOption("calm");
+          await page.locator('[data-video-audio-mood="calm"]').click();
           assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
-          await page.locator("[data-video-audio-kind]").selectOption("all");
-          await page.locator("[data-video-audio-mood]").selectOption("all");
+          await page.locator('[data-video-audio-kind="all"]').click();
+          await page.locator('[data-video-audio-mood="all"]').click();
+          const localFavorite=page.locator("[data-video-audio-tracks] [data-video-audio-favorite]").first();
+          await localFavorite.click();
+          assert.equal(await localFavorite.getAttribute("aria-pressed"),"true","local heart is a working control");
+          await localFavorite.click();
+          assert.equal(await localFavorite.getAttribute("aria-pressed"),"false","favorite can be undone");
+          assert.equal(await page.locator("[data-video-audio-mic]").count(),1,
+            "microphone recording must be an actual control, not decorative");
+          assert.equal(await page.locator("[data-video-audio-attach]").count(),1,
+            "a real attach action must exist on all sound selections");
+          await page.locator("[data-video-audio-search]").fill("дождь");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),1,
+            "search filters actual localized tracks");
+          await page.locator("[data-video-audio-search]").fill("");
+          await page.locator("[data-video-audio-sort]").selectOption("name");
+          await page.locator("[data-video-audio-sort]").selectOption("best");
+          await page.locator('[data-video-audio-length="20"]').click();
           await page.locator("[data-video-audio-auto]").click();
           assert.equal(await page.locator("[data-video-audio-auto]").getAttribute("aria-pressed"),"true");
           assert.ok(await page.locator("[data-video-audio-player]").getAttribute("src"));
@@ -454,6 +547,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             "voice-friendly mode lowers soundtrack volume");
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
+          await page.locator("[data-video-audio-more]").click();
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
+            "expanded audio-only library contains all 13 original WAV tracks");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
             "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
@@ -492,6 +588,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator('[data-video-duration="10"]').click();
           await page.locator('[data-video-music="harmony"]').click();
+          const attachButton=page.locator("[data-video-audio-attach]");
+          assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
+          await attachButton.click();
+          assert.equal(await attachButton.isDisabled(),true,"attached soundtrack acknowledged");
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Гармония/,
+            "attached identity is separate from current audio preview");
+          assert.equal(await create.isEnabled(),true,"attach unlocks real audio+video export");
           const nativePlayer=page.locator("[data-video-audio-player]");
           await nativePlayer.waitFor({state:"attached",timeout:10000});
           await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
@@ -500,7 +603,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
-          await create.click();
+          // The approved compact green Create button must initiate a real
+          // MediaRecorder session, not just the legacy Generate control.
+          await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
           const filename = await videoLink.getAttribute("download");
@@ -546,6 +651,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           }
           assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
+          // A new preview choice must not change an already exported file;
+          // the separate Attach action invalidates that file for a new export.
+          await page.locator('[data-video-music="energy"]').click();
+          assert.equal(await page.locator("[data-mandala-video-download]").count(),1,
+            "preview selection leaves the already encoded video untouched");
+          assert.equal(await create.isEnabled(),false);
+          await page.locator("[data-video-audio-attach]").click();
+          await page.locator("[data-mandala-video-download]").waitFor({state:"detached",timeout:10000});
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Энергия/);
         }
 
         // A free guided-imagery first video uses the REAL first-party meadow
@@ -614,6 +728,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             "guided first video preserves the visitor's photo/background choice");
           assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),affirmationsBeforeGuided,
             "guided first video preserves the visitor's affirmations checkbox");
+          // The compact Hypno editor intentionally unmounts its deep inputs
+          // until the visitor opens Edit. Preserve real guided-course phrases.
+          await page.locator("[data-hypno-phrases-edit]").click();
+          await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
           // Keep automated media verification bounded at 10s; the default
@@ -657,6 +775,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
           await page.locator("[data-video-audio-rights]").check();
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),false,
+            "consent without attaching must not silently export a selected file");
+          await page.locator("[data-video-audio-attach]").click();
           assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),true);
           await page.locator("[data-mandala-video-generate]").click();
           const backgroundLink = page.locator("[data-mandala-video-download]");

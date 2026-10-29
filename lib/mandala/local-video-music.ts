@@ -202,7 +202,7 @@ export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): 
 export const LOCAL_AUDIO_MAX_BYTES = 15 * 1024 * 1024;
 export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">): boolean {
   if (file.size < 1 || file.size > LOCAL_AUDIO_MAX_BYTES) return false;
-  if (!/\.(mp3|m4a|wav|aac|mp4)$/i.test(file.name)) return false;
+  if (!/\.(mp3|m4a|wav|aac|mp4|webm)$/i.test(file.name)) return false;
   // iOS Files may provide an empty MIME even for a playable audio file.
   return !file.type || file.type.startsWith("audio/") || file.type === "application/octet-stream";
 }
