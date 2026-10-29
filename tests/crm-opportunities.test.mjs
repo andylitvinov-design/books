@@ -77,8 +77,8 @@ test('owner-only creation guards archived contact and writes atomic stage histor
       return {rows:[]}
     if(sql.startsWith('select id,lifecycle,suppressed from app.crm_contacts'))
       return {rows:[{id:contact,lifecycle:'lead',suppressed:false}]}
-    if(sql.startsWith('insert into app.crm_opportunities')||sql.startsWith('insert into app.crm_opportunity_events'))
-      return {rows:[],rowCount:1}
+    if(sql.startsWith('insert into app.crm_opportunities'))return {rows:[{id:deal}],rowCount:1}
+    if(sql.startsWith('insert into app.crm_opportunity_events'))return {rows:[],rowCount:1}
     throw Error('Unexpected SQL')
   }}
   const result=await createCrmOpportunityStore(db,{id:owner},config).createOpportunity(create)
@@ -92,6 +92,26 @@ test('owner-only creation guards archived contact and writes atomic stage histor
   assert.equal(queries[3].args[4],'new')
   assert.equal(queries[3].args[5],0)
   assert.ok(!queries.some(q=>/sendMessage|provider|payment|invoice|clinical/i.test(q.sql)))
+})
+test('concurrent same-operation creation reports committed result without a duplicate stage event',async()=>{
+  let reads=0
+  let events=0
+  const db={query:async(sql,args)=>{
+    if(sql.startsWith('select id,contact_id,service,stage,revision from app.crm_opportunities')){
+      reads++
+      return {rows:reads===1?[]:[{id:deal,contact_id:contact,service:'reiki',stage:'new',revision:0}]}
+    }
+    if(sql.startsWith('select id,lifecycle,suppressed from app.crm_contacts'))
+      return {rows:[{id:contact,lifecycle:'lead',suppressed:false}]}
+    if(sql.startsWith('insert into app.crm_opportunities'))
+      return {rows:[],rowCount:0}
+    if(sql.startsWith('insert into app.crm_opportunity_events')){events++;return {rows:[]}}
+    throw Error('Unexpected SQL '+sql)
+  }}
+  const result=await createCrmOpportunityStore(db,{id:owner},config).createOpportunity(create)
+  assert.equal(result.id,deal)
+  assert.equal(result.duplicate,true)
+  assert.equal(events,0)
 })
 test('owner change uses revision, monotonic state and an immutable event',async()=>{
   const queries=[]
