@@ -49,6 +49,7 @@ test('reject malformed IDs, categories, tags, revisions and arbitrary fields', (
 
 const linkCandidate = {
   owner_review_status: 'accepted', source_kind: 'external', content_type: 'guided',
+  editorial_status: 'candidate',
   duration_verified_seconds: 375, metadata_confidence: 'public_listing',
   metadata_checked_at: '2026-10-29T13:00:00Z', youtube_oembed_checked_at: '2026-10-29T13:00:00Z',
   content_checked_at: '2026-10-29T13:10:00Z', claims_risk: 'low',
@@ -63,7 +64,8 @@ test('client link release requires owner, duration, independent listing and scre
     ['youtube_oembed_checked_at', null], ['metadata_checked_at', null],
     ['content_checked_at', null], ['metadata_confidence', 'candidate'],
     ['claims_risk', 'high'], ['source_kind', 'original'],
-    ['content_type', 'talk'], ['embed_status', 'blocked'], ['rights_status', 'blocked'],
+    ['content_type', 'talk'], ['editorial_status', 'approved'],
+    ['embed_status', 'blocked'], ['rights_status', 'blocked'],
   ]
   for (const [key, value] of fields) assert.equal(
     videoLinkEligible({ ...linkCandidate, [key]: value }), false, key)
