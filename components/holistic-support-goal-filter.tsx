@@ -286,8 +286,14 @@ export function HolisticSupportGoalFilter({
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
-  const isAccepted = (id: GoalSector) => Boolean(accepted[id] && !dirty[id] &&
-    accepted[id]?.checkin === scores[goalSectorCheckinKey[id]]);
+  const isAccepted = (id: GoalSector) => {
+    // Parent onSave is the durable in-page source after Save/Next. On WebKit,
+    // a child-only accepted update can briefly lag a parent render; use the
+    // saved snapshot first, but never show a stale/dirty self-rating as accepted.
+    const snapshot = savedSectors[id] ?? accepted[id];
+    return Boolean(snapshot && !dirty[id] &&
+      snapshot.checkin === scores[goalSectorCheckinKey[id]]);
+  };
 
   function changeSector(value: GoalSector) {
     if (value === sector) return;
