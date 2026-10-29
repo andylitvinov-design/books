@@ -60,7 +60,7 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.match(service,/aria-pressed=\{status===entry\.key\}/)
  assert.match(service,/onClick=\{\(\)=>setStatus\(entry\.key\)\}/)
  assert.match(service,/visible\.map\(item=>\{/)
- assert.match(service,/<\/article>\s*\)\}\}/)
+ assert.match(service,/<\/article>\s*\}\)\}/)
  assert.match(service,/data-service-card-list/)
  assert.match(service,/data-service-edit-action/)
  assert.match(service,/getPublicServiceDetailHref\(locale,item\.practitionerSlug,item\.slug\)/)
