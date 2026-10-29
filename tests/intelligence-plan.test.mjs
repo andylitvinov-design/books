@@ -219,7 +219,7 @@ test('completed tests are used only with explicit per-request consent and are no
   const {buildIntelligenceTestCatalog}=await import('../lib/holistic-support/intelligence-test-catalog.js')
   const request={...body,intent:{language:'en',selectedTopics:['energy'],formats:['test']}}
   let reads=0
-  const loadTestHistory=async()=>{reads++;return {completedKeys:['hh-resource-pulse']}}
+  const loadTestHistory=async keys=>{reads++;assert.deepEqual(keys,buildIntelligenceTestCatalog('en').energy.map(row=>row.key));return {completedKeys:['hh-resource-pulse']}}
   assert.equal((await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory})).primary.id,'test:hh-resource-pulse')
   assert.equal(reads,0)
   const next=await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory})
@@ -230,6 +230,10 @@ test('completed tests are used only with explicit per-request consent and are no
   assert.equal(reads,1)
   await assert.rejects(planIntelligenceRequest({...request,surface:'meditation',testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory}),/INVALID_INTELLIGENCE_REQUEST/)
   assert.equal((await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory:()=>{throw Error('private')}})).status,'unavailable')
+  const empty=await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:async()=>({energy:[]}),loadTestHistory:()=>{throw Error('must not read')}})
+  assert.equal(empty.status,'no_match')
+  const forged=await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory:()=>({completedKeys:['unrelated-test']})})
+  assert.equal(forged.status,'unavailable')
 });
 test('a symbolic course preview requires its own explicit choice and points to the existing learner', async () => {
   const request={...body,intent:{language:'es',selectedTopics:['energy'],formats:['course']}}
