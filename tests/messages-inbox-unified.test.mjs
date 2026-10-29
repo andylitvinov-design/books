@@ -79,7 +79,11 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
   assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
   assert.match(workspace,/const mobileNav = \[/)
-  assert.match(workspace,/id: 'messages', label: locale === 'ru' \? 'Заявки'/)
+  const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
+  assert.equal((mobile.match(/id: '/g)||[]).length,4)
+  assert.match(mobile,/id: 'progress'/)
+  assert.match(mobile,/id: 'settings'/)
+  assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
 })
 
 test('empty personal inbox is compact; does not hide or mislabel existing Telegram CRM data',()=>{
