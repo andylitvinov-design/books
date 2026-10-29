@@ -114,3 +114,57 @@ image. Those controls were explicitly removed from the hero, not from the editor
   Actual screenshots/overlay and physical iPhone browser QA still required.
 
 Status: Implemented in existing PR #2510, not merged/live yet at this document update.
+
+
+## 29 October — free detailed-prompt montage v1 (same editor, zero AI credits)
+
+Owner request following live-verification: improve the *existing* video editor's
+ability to make a genuine downloadable movie from a more detailed client prompt
+for free. Before this change, the local wish matcher selected just **one**
+existing scene. This release does NOT claim AI text-to-video or entirely new
+photorealistic stock footage.
+
+### Implementation (reuse, do not duplicate)
+- Canonical \`/{ru,en,es}/holistic-support/mandala\`: existing
+  \`MandalaFreeVideoStudio\`, \`personal-video-intent.mjs\` and Canvas/MediaRecorder.
+  No new user route, API, DB, credentials, uploads, paid credits or subscriptions.
+- One button under the existing 320-character on-device request input,
+  **Собрать ролик из сцен бесплатно**. The previous one-scene suggestion and
+  \`Добавить мою фразу\` are preserved. The new builder understands up to three
+  clauses in RU/EN/ES, detects supported visual themes and known scene motifs,
+  and never invents a scene or infers health conditions from private tests.
+- A compact visible numbered storyboard shows 1–3 genuine scene IDs, localized
+  names and approximate seconds/scene, with a return-to-one-scene control.
+  Supported prompt instructions also select 9:16/1:1/16:9, 10/20/30/60 seconds,
+  slow/dynamic motion; the user can manually override all controls afterward.
+  Unmatched prompts show a truthful fallback using the selected theme.
+- Playback and **actual encoded video** use \`freeStoryboardFrameAt\` and the
+  same \`paintFreeStoryboard\` in both preview and \`MediaRecorder\`. The first
+  shot uses the selected existing first-party MP4 if present; later shots use
+  the existing original deterministic local Canvas renderers, one decoded MP4
+  maximum on iPhone, with short low-cost fade transitions. There are genuine
+  moving frames, not a static screenshot or fake download.
+- Existing local source/photo + permissions, 13 first-party original WAV tracks,
+  user audio rights, captions, selected affirmations, language parity, video
+  output quality and download/share remain unchanged. Prompt text and raw
+  personal information never leave the device for matching or become analytics.
+
+### Evidence required before live sign-off
+1. Existing Node contract suite and new request parser/timeline unit tests:
+   ordered scene IDs, RU/EN/ES, explicit duration/aspect/motion, no unmatched
+   invented footage, 3-shot cap, no unsafe data transmission.
+2. Scoped ESLint, TypeScript and Next build from the actual PR HEAD.
+3. Chromium/WebKit 320/390/430 RU + EN/ES 390 browser suite. The existing EN390
+   free local 10-second recording now assembles three prompt-chosen scenes
+   \`partners → money-magnet → abundance-tree\`, verifies video/audio container,
+   decodes sample frames from first and third stage, and checks their difference.
+   No synthetic photo or audio is uploaded.
+4. Exact PR current-head pass → merge into Vercel's actual
+   \`codex/public-book-library\` production source → verify READY deployment,
+   git SHA, canonical alias, RU/EN/ES HTTP 200 and controls. Physical iPhone
+   Safari (sound, playback and Save to Files) is a separate owner E2E.
+
+**Hard product boundary:** No arbitrary new AI scenes, no third-party
+Kling/HeyGen/Higgsfield rendering, no promise of medical therapeutic benefits.
+This is a genuine cost-free locally composited thematic *montage*, with fixed
+approved visual motifs and curated first-party footage.
