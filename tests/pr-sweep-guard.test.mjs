@@ -7,8 +7,9 @@ const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
 
 test('passes clean current HEAD only when core gate and applicable specialists succeed',()=>{
-  const checks=[check('release-ready'),check('unit-build'),check('database'),check('verify'),check('browser (chromium, core)'),check('browser (webkit, core)')];
-  const result=analyzeCI({pr:pr(),paths:['components/app/app-workspace.jsx'],checks});
+  const paths=['components/app/app-workspace.jsx'];
+  const checks=[check('release-ready'),...productionSpecialists(paths).map(name=>check(name))];
+  const result=analyzeCI({pr:pr(),paths,checks});
   assert.equal(result.ci_ready,true);
   assert.deepEqual(result.blockers,[]);
 });
@@ -214,6 +215,7 @@ test('unrelated green core check cannot hide missing high-fanout specialist jobs
   const cases = [
     ['lib/crm/salesbot-operator.mjs', ['crm','build']],
     ['components/app/my-services-dashboard.jsx', ['signed-in-mock-browser','practice-visual-parity','service-editor']],
+    ['components/app/app-workspace.jsx', ['crm','build','signed-in-mock-browser','practice-visual-parity','service-editor','private-progress','notification-build','focused-verification']],
     ['lib/practitioners/conversation-policy.js', ['presentation-contract']],
     ['components/session-audio-recorder.jsx', ['private-audio']],
     ['scripts/verify-practice-visual-browser.mjs', ['practice-visual-parity']],
