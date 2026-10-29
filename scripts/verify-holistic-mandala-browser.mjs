@@ -224,7 +224,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await guided.waitFor({state:"visible",timeout:12000});
         assert.equal(await page.locator("[data-video-personal-pick]").count(),1);
         assert.equal(await page.locator("[data-video-goal-accents]").count(),1);
-        assert.equal(await page.locator("[data-guided-profile-consent]").isChecked(),false);
+        assert.equal(await page.locator("[data-guided-profile-consent]").count(),0,
+          "private profile consent remains unmounted before opening goals");
         assert.equal(await page.locator("[data-guided-profile-import]").count(),0,
           "private test access remains hidden before choosing goals");
 
@@ -329,6 +330,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const goals=page.locator("[data-video-goals-filter]");
           await goals.waitFor({state:"visible"});
           assert.equal(await goals.locator("[data-guided-goal]").count(),6);
+          assert.equal(await page.locator("[data-guided-profile-consent]").isChecked(),false,
+            "private profile access is strictly opt-in even after opening goals");
           assert.equal(await page.locator("[data-guided-profile-import]").isDisabled(),true,
             "saved scores require explicit consent");
           await goals.locator('[data-guided-goal="relationships"]').click();
