@@ -83,7 +83,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/controls preload="metadata"/);
   assert.match(studio,/presetAudioUrl\(music\)/);
   assert.match(studio,/isSupportedLocalAudio\(file\)/);
-  assert.match(css,/\.audioTrackGrid\{display:grid/);
+  assert.match(css,/\.audioTrackList\{display:flex;flex-direction:column/);
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
