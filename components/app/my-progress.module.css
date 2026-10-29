@@ -339,7 +339,7 @@
 .mandalaEmpty { flex-wrap: wrap; color: #5e6e62; font-size: 13px; }
 .mandalaEmpty > svg { color: #c8a06c; flex-shrink: 0; }
 .mandalaEmpty > span { flex: 1; min-width: 120px; }
-#hh-progress-activity, .section[id="hh-progress-activity"] { scroll-margin-top: 18px; }
+.section[id="hh-progress-activity"] { scroll-margin-top: 18px; }
 .page .refresh {
   display: grid;
   place-items: center;
@@ -463,3 +463,9 @@
 @media (prefers-reduced-motion: reduce) {
   .videoRail, .mandalaRail, .filters { scroll-behavior: auto; }
 }
+
+.activityIntro{margin:0 3px 11px;color:#788477;font-size:12px;line-height:1.45}
+.page .mandalaButton{display:inline-flex;align-items:center;justify-content:center;min-height:42px;margin-top:10px;padding:8px 13px;border:1px solid #cce1d1;border-radius:999px;background:#e8f3ea;color:#246249;font-size:12px;font-weight:790;cursor:pointer}
+.page .mandalaButton:disabled{opacity:.55;cursor:wait}
+.privateVideo{display:block;width:100%;max-height:320px;margin-top:10px;border-radius:12px;background:#172a24}
+.mandalaError{margin:8px 0 0;color:#86582e;font-size:11px;line-height:1.4}
