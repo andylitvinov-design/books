@@ -67,6 +67,11 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(studio,/data-video-health-disclaimer/);
   assert.match(studio,/data-video-catalog-filters/);
   assert.match(studio,/data-video-style/);
+  const styleStart=studio.indexOf("<select data-video-style");
+  const styleEnd=studio.indexOf("</select>",styleStart);
+  assert.ok(styleStart>=0 && styleEnd>styleStart,"the existing visual style selector must be present");
+  assert.match(studio.slice(styleStart,styleEnd),/setShowAllMoney\(true\)/,
+    "choosing a hidden fifth-or-later MP4 or legacy preset reveals its selected thumbnail");
   assert.match(studio,/data-video-motion/);
   assert.match(studio,/data-video-length/);
   assert.match(studio,/setSpeed\(event.currentTarget.value as Speed\)/);
