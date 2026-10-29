@@ -368,6 +368,7 @@ export default function MyProgress({ data, locale='en' }) {
         {TOPIC_IDS.map(id=><button type="button" key={id} aria-pressed={selectedTopic===id}
           onClick={()=>topicChange(id)}>{id==='all'?t.allTopics:t[id]}</button>)}
       </nav>
+      {selectedTopic!=='all' && <p className={styles.topicExplanation}>{t.topicHint}</p>}
       <div className={styles.quickLinks} aria-label={t.library} data-progress-existing-function-links>
         {quickDestinations.map(({id,title,href,Icon})=><Link href={href} key={id} prefetch={false}>
           <Icon size={17} aria-hidden="true"/><span>{title}</span><ChevronRight size={15} aria-hidden="true"/>
@@ -396,7 +397,8 @@ export default function MyProgress({ data, locale='en' }) {
           {videos.length} {t.countVideos} · {mastered} {t.masteredCount}. {t.videoNote}</p>
       </> : <div className={styles.videoEmpty}>
         <span className={styles.emptyIcon}><Play size={25} fill="currentColor" aria-hidden="true"/></span>
-        <div><strong>{t.noVideos}</strong><p>{t.noVideosHelp}</p>
+        <div><strong>{selectedTopic==='all'?t.noVideos:t.noTopicHistory}</strong>
+          <p>{selectedTopic==='all'?t.noVideosHelp:t.topicHint}</p>
           <Link href={'/'+lang+'/academy/videos'} prefetch={false}>{t.exploreVideos}<ArrowRight size={16}/></Link>
         </div>
       </div>}
@@ -415,7 +417,7 @@ export default function MyProgress({ data, locale='en' }) {
           onClick={()=>{setFilter(id);setShown(24)}} aria-label={t[id]+': '+countFor(id)}>
           <span className={styles.libraryIcon}><Icon size={25} strokeWidth={1.8} aria-hidden="true"/></span>
           <span className={styles.libraryCopy}><strong>{t[id]}</strong>
-            <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':countFor(id)} {t.itemCount}</small></span>
+            <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':visibleCountFor(id)} {t.itemCount}</small></span>
           <ChevronRight className={styles.libraryArrow} size={18} aria-hidden="true"/>
         </a>)}
       </div>
@@ -475,7 +477,7 @@ export default function MyProgress({ data, locale='en' }) {
           player={mandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
       </div>:<div className={styles.mandalaEmpty}>
         <Sparkles size={23} aria-hidden="true"/>
-        <span>{sources.videosDisabled?t.storageDisabled:t.noMandalas}</span>
+        <span>{sources.videosDisabled?t.storageDisabled:selectedTopic!=='all'?t.noTopicHistory:t.noMandalas}</span>
         <Link href={'/'+lang+'/holistic-support/mandala'} prefetch={false}>{t.mandalaCreate}<ArrowRight size={15}/></Link>
       </div>}
     </section>
