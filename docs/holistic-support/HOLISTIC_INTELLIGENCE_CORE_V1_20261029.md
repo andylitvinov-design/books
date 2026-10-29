@@ -268,3 +268,10 @@ flowchart TD
 ### Контракт типов и malformed-input hardening
 
 Добавлен `holistic-guide-adapter.d.mts`; входы со значением null или массив вместо объекта не вызывают исключение и не обходят fail-closed preflight. Подписи типов не заменяют server-side auth/RLS. Параллельно на ветке появился `psychologist-mind.mjs`, который следует рассматривать как отдельный self-guided program planner, не как замещение канонического `planClientNextStep`. Его публикация/объединение требует самостоятельных тестов и согласования safety gate.
+
+
+## Psychologist Mind v1 — source-only update, 29 октября 2026
+
+Отдельный алгоритм `lib/holistic-support/psychologist-mind.mjs` и контракт в `psychologist-mind.d.mts` доступны через экспорт общего `holistic-intelligence.mjs`: `consultPsychologistMind({task:'program'|'dialogue', ...})`. План строится из 8 последовательных психологически поддерживающих шагов; диалоговый ход использует те же focus, методы и порядок сессий. Для специалиста есть отдельные `clinicianDiscussionIds` (KIP/психодинамика), которые НЕ выполняются AI. Trauma-specific options только для рассмотрения специалистом и не назначаются автономно. Входной triage обязателен, raw-данные не сохраняются. Полное ТЗ, протоколы согласия, виды проверок и ограничения: `docs/holistic-support/PSYCHOLOGIST_MIND_V1_20261029.md`.
+
+**Разница с предыдущим статусом SPEC ONLY:** исходный алгоритм восьмисессионного плана теперь существует, но опубликованный видеокурс/видеотерапия, реальные сессии, авторизованное сохранение и live-принятие пользователем по-прежнему НЕ реализованы данным PR. Это не доказательство клинической эффективности. Тесты: `tests/psychologist-mind.test.mjs`.
