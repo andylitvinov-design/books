@@ -139,14 +139,16 @@ test("existing 12 money scenes retain tap-triggered animated thumbnails", () => 
   assert.match(browser,/actual H\.264 video must advance in time/);
 });
 
-test("background-only reusable clip preserved from live without photo or payment", () => {
+test("background-only reusable clip is the default, with an explicit photo checkbox", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(studio,/const BACKGROUND_CLIP="local-money-background-only"/);
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
-  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(false\)/);
+  assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
   assert.match(studio,/data-mandala-output-mode/);
+  assert.match(studio,/data-video-photo-enabled/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
   assert.match(studio,/backgroundOnly\?\(theme==="money"\?"money-background":theme\+"-background"\)/);
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
