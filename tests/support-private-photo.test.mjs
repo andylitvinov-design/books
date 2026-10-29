@@ -43,6 +43,7 @@ test('private photo API is session-bound and does not expose public media URLs',
 
 test('iPhone Photos and Files use full tap-target and decoded metadata-stripped JPEG',()=>{
   assert.match(helper,/image\/heic/)
+  assert.match(helper,/FILE_EXT\.test\(file\.name\)/)
   assert.match(helper,/image\/heif/)
   assert.match(helper,/image\/\*/)
   assert.match(helper,/image\.decode\(\)/)
