@@ -73,3 +73,11 @@ The command validates input files and local directory boundaries; requires expli
 5. Independent real iPhone Safari (320/354/390/430) video+audio+download, RLS/account-switch, network error, retry/idempotency, GitHub exact-head CI + Vercel READY exact SHA/domain and provider media readback.
 
 **Honest status:** the zero-cost director/storyboard/montage and offline assembler are actual code, subject to CI/browser QA and production readback. The extended paid-cloud pipeline, server job persistence, auto Drive ingest, eight delivered films and account upload E2E must not be labeled complete until verified.
+
+
+### Client-prompt acceptance refinement · 29 October
+
+The previously chosen **four base scenes per theme** are preserved as the default film. An explicit supported wish may now replace shot **3** with another **already approved** visual from the existing first-party library. Examples (all on-device, no external image creation): RU `оплата` → `money-magnet`, EN clients/partners → `partners`, RU `отдых и расслабление` → `light-waterfall`, EN mountain-air → `mountain-air`, EN blooming flowers → `wildflower-dance`, ES rest → `gentle-falls`. Additional safe scene descriptions are part of the trusted visual prompt catalog; the raw client wish remains private. The other three stages, duration and user photo/music permissions are retained.
+
+**New release proof:** focused Node tests assert all six localized mappings, unique four-stage order and non-disclosure; the existing Chromium RU390 actual recorded montage scenario now decodes the **first and fourth saved video frames** with FFmpeg and compares real pixels in addition to validating a genuine media container. These tests require exact-head CI SUCCESS and must not be confused with physical owner iPhone Safari playback or unlimited AI text-to-video. No paid API, job, CRM event, storage migration or duplicate editor was introduced.
+
