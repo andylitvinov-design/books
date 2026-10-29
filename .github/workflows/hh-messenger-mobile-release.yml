@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [codex/public-book-library]
     paths:
-      - 'app/[[]locale[]]/app/messages/**'
-      - 'app/api/app/[[]...path[]]/route.js'
+      - 'app/\[locale\]/app/messages/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/direct-messages/**'
       - 'components/app/direct-message-inbox.jsx'
       - 'components/app/messages-hub.jsx'
@@ -15,17 +15,6 @@ on:
       - 'tests/app-auth-pkce.integration.mjs'
       - 'tests/holistic-house-mobile-master-chat.test.mjs'
       - '.github/workflows/hh-messenger-mobile-release.yml'
-  push:
-    branches: [codex/public-book-library]
-    paths:
-      - 'app/[[]locale[]]/app/messages/**'
-      - 'components/app/direct-message-inbox.jsx'
-      - 'components/app/messages-hub.jsx'
-      - 'components/app/messenger-sign-in.jsx'
-      - 'lib/app/direct-messenger-handoff.*'
-      - 'lib/native/deep-link-policy.js'
-      - '.github/workflows/hh-messenger-mobile-release.yml'
-
 permissions:
   contents: read
 concurrency:
