@@ -266,7 +266,11 @@ test("all three video editor deep links cancel native hash navigation before exp
       '          onClick={event=>{event.preventDefault();openQuickDetailed("'+target+'");}}>'
     ),"native hash navigation must not race React disclosure: "+tab);
   }
-  assert.match(studio,/if\(window\.location\.hash !== "#"\+anchor\)window\.location\.hash="#"\+anchor/);
+  // A router or WebKit layout transition may reset a fragment after the
+  // first click, so the controlled panel repairs the hash on the next frame.
+  assert.match(studio,/window\.history\.pushState\(window\.history\.state,"",path\+desired\)/);
+  assert.match(studio,/window\.history\.replaceState\(window\.history\.state,"",path\+desired\)/);
+  assert.match(studio,/token!==quickNavTokenRef\.current/);
   assert.match(studio,/setQuickDetailedOpen\(true\)/);
   assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
 });
