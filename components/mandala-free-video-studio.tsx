@@ -1206,8 +1206,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ? 25 : quality === "fullhd" ? 12 : 15;
       const cores=Number.isFinite(navigator.hardwareConcurrency)
         ? Math.max(1,navigator.hardwareConcurrency) : 4;
-      const phone=window.innerWidth<=600;
-      const suggestedFps=phone
+      const phone = window.innerWidth<=600;
+      const suggestedFps = phone
         ? (quality === "fullhd" ? (cores>=6 ? 20 : 16) : (cores>=6 ? 24 : 20))
         : (quality === "fullhd" ? (cores>=8 ? 25 : 20) : (cores>=8 ? 30 : 24));
       const framesPerSecond=baselineFramesPerSecond === 25 || (phone && cores<=2)
