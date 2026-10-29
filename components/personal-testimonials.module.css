@@ -359,5 +359,14 @@
 .section[data-personal-testimonials="about"] {
   min-width: 0;
   max-width: 100%;
+  /* Paint containment is essential in Chromium: hiding horizontal overflow
+     alone still lets offscreen flex-row video slides expand html.scrollWidth. */
+  contain: paint;
   overflow-x: hidden;
+}
+.section[data-personal-testimonials="about"] .videoGrid {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
