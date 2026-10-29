@@ -17,6 +17,8 @@ const COPY={
   unavailable:'Contact is archived, suppressed or unavailable.',
   created:'Deal created. No message was sent or appointment/payment confirmed.',
   updated:'Stage saved manually. No booking or payment was verified.',
+  taskPlanned:'Internal booking task added to Today. Nothing was sent to the client.',
+  taskFull:'Stage saved. The contact has 20 open tasks: please manage the task list manually.',
   manual:'Only manual business stages. No external messages, clinical records or financial confirmations.',
   services:{consultation:'Consultation',business:'Business consulting',reiki:'Reiki course / initiation',video_therapy:'Video therapy',other:'Other service'},
   stages:{new:'New',qualified:'Qualified',offered:'Offer sent (manual)',booking_requested:'Booking requested',
@@ -35,6 +37,8 @@ const COPY={
   unavailable:'Контакт архивирован, заблокирован или недоступен.',
   created:'Сделка создана. Ничего не отправлено; запись и оплата не подтверждены.',
   updated:'Этап отмечен вручную. Запись и оплата не подтверждены.',
+  taskPlanned:'Создана внутренняя задача по записи на сегодня. Клиенту ничего не отправлено.',
+  taskFull:'Этап сохранён. У контакта уже 20 задач — проверьте список вручную.',
   manual:'Только деловые этапы вручную. Без внешней отправки, клинических данных и фиктивных оплат.',
   services:{consultation:'Консультация',business:'Бизнес-консалтинг',reiki:'Курс / инициация Reiki',video_therapy:'Видеотерапия',other:'Другая услуга'},
   stages:{new:'Новая',qualified:'Запрос уточнён',offered:'Предложение сделано (вручную)',booking_requested:'Запрошена запись',
@@ -53,6 +57,8 @@ const COPY={
   unavailable:'El contacto está archivado, bloqueado o no disponible.',
   created:'Oportunidad creada. No se envió un mensaje ni se confirmó reserva/pago.',
   updated:'Etapa guardada manualmente. Reserva y pago sin verificar.',
+  taskPlanned:'Se añadió una tarea interna de reserva para hoy. No se envió nada al cliente.',
+  taskFull:'Etapa guardada. El contacto ya tiene 20 tareas; revísalas manualmente.',
   manual:'Solo etapas comerciales manuales; sin envíos, datos clínicos ni cobros ficticios.',
   services:{consultation:'Consulta',business:'Consultoría de negocios',reiki:'Curso / iniciación Reiki',video_therapy:'Videoterapia',other:'Otro servicio'},
   stages:{new:'Nueva',qualified:'Cualificada',offered:'Oferta enviada (manual)',booking_requested:'Reserva solicitada',
@@ -160,10 +166,10 @@ export default function CrmOpportunities({
     const controller=new AbortController();sendAbort.current=controller
     setBusy(true);setError('');setNotice('')
     try{
-      await command(accountId,'change',{id:item.id,expectedRevision:item.revision,stage},controller.signal)
+      const result=await command(accountId,'change',{id:item.id,expectedRevision:item.revision,stage},controller.signal)
       if(controller.signal.aborted||accountRef.current!==accountId)return
       setHistories({})
-      setNotice(t.updated)
+      setNotice(result.taskPlanned===true?t.taskPlanned:result.taskSkipped==='capacity'?t.taskFull:t.updated)
       await load(null)
     }catch(e){
       if(!controller.signal.aborted&&accountRef.current===accountId)
