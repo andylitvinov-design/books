@@ -51,8 +51,8 @@ const COPY = {
     topicsHeader:'Topics', allTopics:'All topics', energy:'Energy', money:'Money & work',
     relationships:'Relationships', meaning:'Goals & meaning', topicHint:'Only activities with a verified editorial topic appear in a selected topic.',
     sectionsHistory:'My history by section', viewSection:'Open section', noTopicHistory:'No saved records in this topic yet.',
-    rubric:{courses:'My courses',tests:'My tests',practices:'My practices',services:'My orders',reports:'My reports',notes:'My notes'},
-    profileShortcut:'My profile', ordersShortcut:'My orders', servicesShortcut:'My services', messagesShortcut:'Messages',
+    rubric:{courses:'My courses',tests:'My tests',practices:'My practices',services:'My orders',reports:'My reports',notes:'My notes',labs:'My lab reports',development:'My Development Path'},
+    profileShortcut:'My profile', ordersShortcut:'My orders', servicesShortcut:'My services', messagesShortcut:'Messages', labsShortcut:'My lab reports', developmentShortcut:'My Development Path', labs:'Lab reports', development:'Development Path',
     expandHistory:'Show all dated entries', collapseHistory:'Hide dated entries', recentByTopic:'Newest first · swipe for earlier records',
     noSavedVideos:'Nothing saved yet. Explore the Academy or create your first video.',
   },
@@ -90,8 +90,8 @@ const COPY = {
     topicsHeader:'Темы', allTopics:'Все темы', energy:'Энергия', money:'Деньги и работа',
     relationships:'Отношения', meaning:'Цели и смыслы', topicHint:'Фильтр показывает только записи с подтверждённой тематикой в каталоге.',
     sectionsHistory:'История по разделам', viewSection:'Открыть раздел', noTopicHistory:'В этой теме ещё нет сохранённых материалов.',
-    rubric:{courses:'Мои курсы',tests:'Мои тесты',practices:'Мои практики',services:'Мои заказы',reports:'Мои отчёты',notes:'Мои заметки'},
-    profileShortcut:'Мой профиль', ordersShortcut:'Мои заказы', servicesShortcut:'Мои услуги', messagesShortcut:'Сообщения',
+    rubric:{courses:'Мои курсы',tests:'Мои тесты',practices:'Мои практики',services:'Мои заказы',reports:'Мои отчёты',notes:'Мои заметки',labs:'Мои анализы',development:'Мой путь развития'},
+    profileShortcut:'Мой профиль', ordersShortcut:'Мои заказы', servicesShortcut:'Мои услуги', messagesShortcut:'Сообщения', labsShortcut:'Мои анализы', developmentShortcut:'Мой путь развития', labs:'Анализы', development:'Путь развития',
     expandHistory:'Показать всю историю по датам', collapseHistory:'Скрыть список по датам', recentByTopic:'Новые слева · листайте вправо к прошлому',
     noSavedVideos:'Пока ничего не сохранено. Откройте Академию или создайте первое видео.',
   },
@@ -129,8 +129,8 @@ const COPY = {
     topicsHeader:'Temas', allTopics:'Todos', energy:'Energía', money:'Dinero y trabajo',
     relationships:'Relaciones', meaning:'Objetivos y sentido', topicHint:'Solo aparecen registros con temas editoriales confirmados.',
     sectionsHistory:'Mi historial por sección', viewSection:'Abrir sección', noTopicHistory:'Aún no hay registros guardados de este tema.',
-    rubric:{courses:'Mis cursos',tests:'Mis tests',practices:'Mis prácticas',services:'Mis pedidos',reports:'Mis informes',notes:'Mis notas'},
-    profileShortcut:'Mi perfil', ordersShortcut:'Mis pedidos', servicesShortcut:'Mis servicios', messagesShortcut:'Mensajes',
+    rubric:{courses:'Mis cursos',tests:'Mis tests',practices:'Mis prácticas',services:'Mis pedidos',reports:'Mis informes',notes:'Mis notas',labs:'Mis análisis',development:'Mi ruta de desarrollo'},
+    profileShortcut:'Mi perfil', ordersShortcut:'Mis pedidos', servicesShortcut:'Mis servicios', messagesShortcut:'Mensajes', labsShortcut:'Mis análisis', developmentShortcut:'Mi ruta de desarrollo', labs:'Análisis', development:'Desarrollo',
     expandHistory:'Ver todo por fecha', collapseHistory:'Ocultar lista por fecha', recentByTopic:'Más nuevos primero · desliza para ver los anteriores',
     noSavedVideos:'Aún no has guardado nada. Explora Academia o crea tu primer vídeo.',
   },
@@ -144,8 +144,9 @@ const SECTION_HREF=(id,lang)=>({
   practices:'/'+lang+'/holistic-support/mobile',
   reports:'/'+lang+'/app/portrait#personal-reports',
   services:'/'+lang+'/app/messages?section=orders',notes:'/'+lang+'/app/history',
+  labs:'/'+lang+'/app/labs',development:'/'+lang+'/app/portfolio',
 })[id] || '/'+lang+'/app/progress'
-const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes']
+const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes','labs','development']
 const LIBRARY = [
   { id:'videos', Icon:PlaySquare, tone:'video' },
   { id:'courses', Icon:BookOpen, tone:'course' },
@@ -155,6 +156,8 @@ const LIBRARY = [
   { id:'reports', Icon:FileText, tone:'report' },
   { id:'services', Icon:CalendarDays, tone:'service' },
   { id:'notes', Icon:NotebookPen, tone:'note' },
+  { id:'labs', Icon:ClipboardCheck, tone:'report' },
+  { id:'development', Icon:Leaf, tone:'course' },
 ]
 const ICONS = Object.fromEntries(LIBRARY.map(({id,Icon})=>[id,Icon]))
 
@@ -246,7 +249,7 @@ export default function MyProgress({ data, locale='en' }) {
     ? data.account.displayName.trim().slice(0,70) : ''
   const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
   const root='/'+lang+'/app'
-  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,loading:true,failed:0,videosDisabled:false})
+  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
@@ -258,18 +261,20 @@ export default function MyProgress({ data, locale='en' }) {
   useEffect(()=>{
     if(!accountId) return
     let active=true
-    setSources({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,loading:true,failed:0,videosDisabled:false})
-    const endpoints=['course','academy-energywork','personal-videos','video-progress','messages/my-orders']
+    setSources({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
+    const endpoints=['course','academy-energywork','personal-videos','video-progress','messages/my-orders','progress-extras']
     Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
       .then(results=>{
         if(!active) return
         const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
           growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],
-          orders:values[4]?.accountId===accountId&&Array.isArray(values[4]?.orders)?values[4]:null,loading:false,
+          orders:values[4]?.accountId===accountId&&Array.isArray(values[4]?.orders)?values[4]:null,
+          extras:values[5]?.accountId===accountId?values[5]:null,loading:false,
           videosDisabled:results[2].status==='rejected'&&results[2].reason?.code==='FEATURE_UNAVAILABLE',
           failed:results.filter((item,index)=>item.status==='rejected' &&
-            !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length,
+            !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length+
+            (values[5]?.partial===true?1:0),
         })
       })
     return ()=>{active=false}
@@ -281,7 +286,7 @@ export default function MyProgress({ data, locale='en' }) {
     titleOfTest:assessmentHistoryTitle,
     topicsOfTest:entry=>monitoringCatalogItem(entry.definitionKey)?.topics||[],
     videoTopics:Object.fromEntries(freeMeditationVideos(lang).map(video=>[video.id,video.topics])),
-    orders:sources.orders,locale:lang,
+    orders:sources.orders,extras:sources.extras,locale:lang,
   }),[data,sources,lang])
   const matchesTopic=useCallback(entry=>selectedTopic==='all'||entry.topics?.includes(selectedTopic),[selectedTopic])
   const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'&&matchesTopic(entry)),[progress,matchesTopic])
@@ -338,6 +343,8 @@ export default function MyProgress({ data, locale='en' }) {
     {id:'profile',title:t.profileShortcut,href:root+'/portrait',Icon:UserRound},
     {id:'orders',title:t.ordersShortcut,href:root+'/messages?section=orders',Icon:CalendarDays},
     {id:'messages',title:t.messagesShortcut,href:root+'/messages',Icon:Activity},
+    {id:'development',title:t.developmentShortcut,href:root+'/portfolio',Icon:Leaf},
+    {id:'labs',title:t.labsShortcut,href:root+'/labs',Icon:ClipboardCheck},
     ...(practitioner?[{id:'services',title:t.servicesShortcut,href:root+'/practice?panel=services',Icon:Leaf}]:[]),
   ]
   return <section className={styles.page} data-my-progress data-account-progress-loaded={!sources.loading}>
