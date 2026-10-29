@@ -10,8 +10,13 @@ const out='artifacts/practice-after-google'
 await mkdir(out,{recursive:true})
 const results=[]
 const headings={ru:'Кабинет практика',en:'Practitioner workspace',es:'Espacio profesional'}
-const bootstrap={account:{id:'synthetic-qa',onboardingState:'complete'},results:[],runs:[],requests:[],consents:[],services:[]}
-const practice={practitioner:{profile:{displayName:''},draftProfile:{displayName:''}},services:[],requests:[]}
+// "active" is required by AppWorkspace to render the REAL authenticated
+// PracticeWorkspace; "complete" previously tested only the destination URL.
+const bootstrap={account:{id:'synthetic-qa',onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]}
+const practice={practitioner:{id:'synthetic-practitioner',status:'approved',
+  profile:{displayName:'Synthetic Practitioner'},draftProfile:{displayName:'Synthetic Practitioner'}},
+  practiceActivated:true,serviceQuota:{canAdd:true,used:0,limit:10},
+  newServices:{recent:[]},services:[],requests:[]}
 function respond(route,status,body){return route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)})}
 async function api(page,signed){
   await page.route('**/api/app/**',async route=>{
@@ -76,11 +81,58 @@ for(const engine of [chromium,webkit]){
         assert.ok(g.cover.every(r=>r.x>=-3&&r.right<=g.width+3),label+' six covers fit')
         assert.ok(g.heroBackground.includes('url('),label+' real scenic hero asset')
         if(width===390)await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
-        if(locale==='ru'&&width===390){
+        if(width===390||locale==='ru'){
+          // The previous test stopped at waitForURL here, so it never saw
+          // the oversized private service composer shown in the owner's image.
           await root.locator('[class*="quickGrid"] > button').first().click()
-          await page.waitForURL(u=>u.pathname==='/ru/app/practice'&&
+          await page.waitForURL(u=>u.pathname==='/'+locale+'/app/practice'&&
             u.searchParams.get('panel')==='services'&&u.searchParams.get('create')==='1',
             {timeout:30000})
+          const editor=page.locator('[data-service-slide-editor]')
+          await editor.waitFor({state:'visible',timeout:45000})
+          assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' opens stage one')
+          assert.equal(await editor.locator('[data-service-stage-nav] button').count(),3,
+            label+' three real editor steps')
+          const title=await page.locator('.hh-practice-inner-heading h2').innerText()
+          assert.match(title,/Новая услуга|Create service|Crear servicio/,
+            label+' not a duplicate list header')
+          const layout=await page.evaluate(()=>{
+            const rect=el=>{const r=el.getBoundingClientRect();return {
+              x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}}
+            const footer=document.querySelector('[data-service-editor-footer]')
+            const fee=document.querySelector('.hh-practice-fee-notice')
+            const buttons=[...document.querySelectorAll('[data-service-stage-nav] button')]
+            const labels=buttons.map(b=>{const node=b.querySelector('strong');return {
+              text:node?.textContent||'',clientWidth:node?.clientWidth||0,
+              scrollWidth:node?.scrollWidth||0,clientHeight:node?.clientHeight||0,
+              scrollHeight:node?.scrollHeight||0}})
+            return {viewportWidth:document.documentElement.clientWidth,
+              scrollWidth:document.documentElement.scrollWidth,footer:rect(footer),
+              footerPosition:getComputedStyle(footer).position,feeHidden:!fee||
+                getComputedStyle(fee).display==='none',
+              labels,photo:rect(document.querySelector('[class*="photoCanvas"]'))}
+          })
+          assert.ok(layout.scrollWidth<=layout.viewportWidth+3,label+' no horizontal overflow '+JSON.stringify(layout))
+          assert.equal(layout.footerPosition,'fixed',label+' visible fixed controls')
+          assert.ok(layout.footer.bottom>=834&&layout.footer.bottom<=845,
+            label+' Save/Next actually rests at the iPhone bottom '+JSON.stringify(layout.footer))
+          assert.ok(layout.footer.height>=44&&layout.footer.height<95,label+' compact footer height')
+          assert.ok(layout.feeHidden,label+' no commission card under the wizard')
+          assert.ok(layout.labels.every(x=>x.scrollWidth<=x.clientWidth+2&&x.scrollHeight<=x.clientHeight+2),
+            label+' no truncated three-step headings '+JSON.stringify(layout.labels))
+          assert.ok(layout.photo.height>=80&&layout.photo.height<=105,label+' compact photo control')
+          if(width===390)await page.screenshot({
+            path:out+'/'+engine.name()+'-'+locale+'-390-service-editor.png',fullPage:false})
+          const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
+          await input.fill('Synthetic service title')
+          await editor.locator('[data-service-step-controls] button').last().click()
+          assert.equal(await editor.getAttribute('data-service-stage'),'1',label+' Next opens booking')
+          await editor.locator('[data-service-step-controls] button').first().click()
+          assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' Back preserves step')
+          assert.equal(await input.inputValue(),'Synthetic service title',
+            label+' unsaved title stays in form when navigating stages')
+          results.push({label:engine.name()+'-'+locale+'-'+width+'-real-editor',ok:true,
+            mode:'rendered protected real wizard, synthetic account only',layout})
         }
         assert.deepEqual(errors,[],label+' browser exceptions')
         results.push({label,ok:true,mode:'synthetic signed-in browser render'})
