@@ -23,3 +23,9 @@
 - Browser Chromium/WebKit with real native audio GET/Range, select→attach→create with FFprobe audio, private Files selection + rights + attach, 320/390/430 and EN/ES 390; overlay/screenshot on equivalent route/state/crop.
 - Verify full focus/touch/no-horizontal-scroll, no duplicate dock or account writes.
 - Merge **only after focused green CI** into checked Vercel production branch. Vercel READY and canonical alias at exact SHA and physical owner iPhone playback/Save-to-Files verified separately; do not label speaker acceptance from CI alone.
+
+## Owner's 29 Oct exact-reference visual reconciliation
+- Reference is the **second** image supplied by the owner on 29 Oct: vertically stacked **soundtrack rows**, green audio-header, colored topic/type/mood/tempo/duration chips, search+sort, square illustrative covers, small waveforms, local favorites and a bottom native player. The first photo is the older actual page with oversized two-row tiles and dropdowns.
+- Real implementation now uses the existing 13 **8-second synthesized WAV loops**, and **existing same-origin JPEG poster stills** only as decorative audio cover art. No video tile, playback, or external content is introduced in the audio picker. These stills are illustrative, not claims of field recordings or multi-minute songs.
+- Soundtopic chips only change **audio recommendation scope** (starting from the already selected visual video theme), not the underlying finished video scene. Other audio chips filter metadata. Favorites toggle visibly in local state; no fake account persistence. Four/five rows initially, expandable list, selected vs attached sound remain distinct.
+- iPhone widths 320/354/390/430, 13–14px core text and 44px interactive targets; preserve a fallback native player for actual Safari audio decoding and correct iOS media volume. Physical owner screenshot and speaker QA are still needed to certify visual/hardware parity.
