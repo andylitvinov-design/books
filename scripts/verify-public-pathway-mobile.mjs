@@ -47,7 +47,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             // The horizontal testimonial archive must remain independently
             // keyboard/touch scrollable even while the root never widens.
             if (route === "about") {
-              // CSS Modules hash visual class names; target the existing accessible carousel region.\n              const gallery = page.locator('[data-personal-testimonials="about"] [role="region"][tabindex="0"]');
+              // CSS Modules hash visual class names; target the existing accessible carousel region.
+              const gallery = page.locator('[data-personal-testimonials="about"] [role="region"][tabindex="0"]');
               await expect(gallery).toHaveCount(1);
               const state = await gallery.evaluate(el => ({
                 client: el.clientWidth, content: el.scrollWidth,
