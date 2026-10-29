@@ -99,7 +99,7 @@ function ReviewCard({ row, locale, onUpdated }) {
     setTopics(videoTopicsFromRow(row))
     setNote(row.owner_review_note || '')
     setScreened(false)
-  }, [row.owner_review_version])
+  }, [row])
 
   const canSave = areas.length > 0 && !pending
   function toggleArea(area) {
