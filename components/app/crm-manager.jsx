@@ -458,7 +458,7 @@ export default function CrmManager({ locale = 'en', accountId, publicEnquiries =
       </>}
       {activeSection==='deals'&&<CrmOpportunities key={accountId+'-crm-deals'}
         accountId={accountId} locale={language} contacts={data.contacts||[]}
-        initialContactId={opportunityContactId} onOpenContact={focusContact} />}
+        initialContactId={opportunityContactId} onOpenContact={focusContact} onCrmChange={retry} />}
       {activeSection==='pipeline'&&<>
          <CrmBusinessEnquiries mode="board" locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
          {notice&&<p role="status" className={styles.notice}>{notice}</p>}
