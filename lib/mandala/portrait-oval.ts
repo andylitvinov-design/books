@@ -29,7 +29,9 @@ export function ovalPortraitCrop(
   const rx = Math.min(frameWidth * (wide ? .205 : .35), ry * .72);
   const cx = frameWidth * (wide ? .275 : .50);
   const cy = frameHeight * .50;
-  const cover = Math.max(rx * 2 / imageWidth, ry * 2 / imageHeight) * 1.08;
+  // Extra room above/below the oval enables a 34%-height face focal point
+  // without letterboxing or clipping the image outside the selected ellipse.
+  const cover = Math.max(rx * 2 / imageWidth, ry * 2 / imageHeight) * 1.34;
   const dw = imageWidth * cover, dh = imageHeight * cover;
   const dx = Math.max(cx + rx - dw, Math.min(cx - rx, cx - dw * .50));
   const dy = Math.max(cy + ry - dh, Math.min(cy - ry, cy - dh * .34));
