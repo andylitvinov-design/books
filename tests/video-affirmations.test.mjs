@@ -80,7 +80,10 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
   assert.match(studio,/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
-  assert.match(studio,/caption,affirmations\]\)/);
+  // The canonical render signature includes the cinematic plan after the
+  // affirmation settings, so either changing overlays or a storyboard resets
+  // a stale preview/export.
+  assert.match(studio,/caption,affirmations,\s*cinematicPlan\?\.version/);
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
