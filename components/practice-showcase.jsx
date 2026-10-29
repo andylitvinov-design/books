@@ -235,11 +235,15 @@ export default function PracticeShowcase({ locale = 'en' }) {
     void checkSession(controller.signal)
     const params = new URLSearchParams(window.location.search)
     const start = params.get('start')
-    const ready = params.get('ready')
     if (PRO_STARTS.has(start)) setPendingAction(start)
-    // This token contains only one fixed category from the server allowlist,
-    // never account data or a client request.
-    if (RESUMABLE_ACTIONS.has(ready)) setNextAction(ready)
+    // Remove legacy OAuth ?ready=<action> links before rendering the
+    // authenticated dashboard. They must never shift the approved hero.
+    // Explicit Pro ?start=... intent remains available independently.
+    if (params.has('ready')) {
+      const cleanUrl = new URL(window.location.href)
+      cleanUrl.searchParams.delete('ready')
+      window.history.replaceState(window.history.state, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash)
+    }
     if (params.get('auth') === 'cancelled' || params.get('auth') === 'failed')
       setNotice(t.authCancelled)
     return () => controller.abort()
@@ -300,17 +304,21 @@ export default function PracticeShowcase({ locale = 'en' }) {
         try {
           await appFetch('bootstrap')
           setSession('signed')
-          setNextAction(key)
           setPendingAction('')
           void checkSession()
+          // The user has already tapped a protected action. If the session
+          // was merely still checking, honour that explicit click directly.
+          router.push(destination(locale, key))
           return
         } catch (error) {
           if (error?.status !== 401) throw error
         }
       }
-      // Fixed action codes only: the OAuth callback returns to THIS SAME
-      // dashboard with a non-automatic Continue action. No private data in URL.
-      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview', profi:key })
+      // Google always returns to the unchanged dashboard. Do not pass the
+      // pending action in profi: that generated ?ready=create and a large
+      // unexpected Continue card above the six creation tiles on iPhone.
+      // Once signed in, the person chooses the action on the same screen.
+      const result = await appFetch('auth/start', { locale, continueTo:'practice-preview' })
       if (!result?.redirectUrl || !result.redirectUrl.startsWith('https://'))
         throw new Error('INVALID_OAUTH_REDIRECT')
       window.location.assign(result.redirectUrl)
@@ -335,6 +343,10 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const active = services.filter(item => item.status === 'published').length
   const newRequests = countRequests(requests)
   const initials = name ? name.slice(0, 1).toUpperCase() : ''
+  const photoPath = practitioner?.profile?.photoPath || practitioner?.draftProfile?.photoPath
+  const profilePhoto = typeof photoPath === 'string' &&
+    (photoPath.startsWith('https://') || (photoPath.startsWith('/') && !photoPath.startsWith('//')))
+    ? photoPath : ''
   const metric = signedIn && practice ? String(active) : t.countUnknown
   const requestMetric = signedIn && practice ? String(newRequests) : t.countUnknown
 
@@ -352,7 +364,11 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>
-        <span className={styles.avatar} aria-hidden="true">{signedIn ? (initials || <UserRound size={42}/>) : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
+        <span className={styles.avatar} aria-hidden="true">{signedIn
+          ? (profilePhoto
+            ? <Image src={profilePhoto} alt="" width={68} height={68} unoptimized />
+            : (initials || <UserRound size={42}/>))
+          : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
         <div className={styles.identityCopy}>
           <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
           <small>{t.practitioner}</small>
