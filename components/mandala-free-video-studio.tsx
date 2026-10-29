@@ -17,6 +17,7 @@ import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } fr
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPresetAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
+import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 
 import type { PublicLocale } from "@/lib/public-locales";
@@ -122,7 +123,7 @@ const studioCopy = {
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
     brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Sound ambience",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"Five original audio background files served by this site. Add your own music or voice recording below.",
+    originalAudio:"13 original, locally synthesized WAV soundscapes on this site. No external streaming, AI processing or music licenses needed.",
     openAudioDirect:"Open soundtrack directly",retryAudio:"Retry playback",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
@@ -162,7 +163,7 @@ const studioCopy = {
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
     brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Звуковой фон",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"Пять готовых звуковых подложек из файлов нашего сайта. Также можно добавить свою музыку или голос.",
+    originalAudio:"13 оригинальных синтезированных WAV-подложек с нашего сайта. Без внешних сервисов; можно добавить свою музыку или голос.",
     openAudioDirect:"Открыть аудиофайл отдельно",retryAudio:"Повторить",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
@@ -202,7 +203,7 @@ const studioCopy = {
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
     brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Ambiente sonoro",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"Cinco fondos sonoros originales alojados en este sitio. También puedes añadir tu música o voz.",
+    originalAudio:"13 fondos WAV sintetizados y originales de este sitio. Sin servicios externos; también puedes subir tu música o voz.",
     openAudioDirect:"Abrir el archivo de audio",retryAudio:"Reintentar",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
@@ -279,6 +280,39 @@ const layoutCopy = {
      therapyHeading:"Tu videoterapia personal",therapySub:"8 sesiones guiadas · primer vídeo gratis",
   },
 } as const;
+const audioCopy = {
+  en: {
+    context:"For your video theme",automatic:"Match to theme",autoOn:"Auto-match on",
+    type:"Sound type",mood:"Mood",pace:"Tempo",
+    types:{all:"All sounds",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
+    moods:{all:"Any mood",calm:"Calm",focus:"Focus",uplift:"Inspiration"},
+    paces:{all:"Any pace",slow:"Slow",steady:"Steady",active:"Energizing"},
+    voice:"Quiet background under my voice",voiceInfo:"Uses subtle, voice-friendly tracks at 30% volume. Your voice is not uploaded.",
+    suggested:"Best for this topic",browse:"Scroll to explore",count:"sounds",
+    empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected audio",
+  },
+  ru: {
+    context:"Под вашу тему",automatic:"Подобрать по теме",autoOn:"Автоподбор включён",
+    type:"Тип звука",mood:"Настрой",pace:"Темп",
+    types:{all:"Все звуки",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
+    moods:{all:"Любой",calm:"Успокоение",focus:"Концентрация",uplift:"Вдохновение"},
+    paces:{all:"Любой",slow:"Медленный",steady:"Ровный",active:"Бодрый"},
+    voice:"Тихий фон под мой голос",voiceInfo:"Спокойные подложки, громкость 30%. Голос не отправляется на сервер.",
+    suggested:"Лучше подходит",browse:"Листайте звуки",count:"звуков",
+    empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранная дорожка",
+  },
+  es: {
+    context:"Para el tema elegido",automatic:"Elegir por tema",autoOn:"Selección activa",
+    type:"Tipo de sonido",mood:"Ambiente",pace:"Ritmo",
+    types:{all:"Todos",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
+    moods:{all:"Cualquiera",calm:"Calma",focus:"Concentración",uplift:"Inspiración"},
+    paces:{all:"Cualquiera",slow:"Lento",steady:"Regular",active:"Dinámico"},
+    voice:"Fondo suave bajo mi voz",voiceInfo:"Sonidos suaves al 30%. Tu voz no se envía al servidor.",
+    suggested:"Recomendado",browse:"Desliza para explorar",count:"sonidos",
+    empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
+  },
+} as const;
+
 const supportDesignCopy = {
   en: {
     check:"1. Check in with yourself", scoreGuide:"Rate each area from 1 to 10",
@@ -358,7 +392,6 @@ const supportDesignCopy = {
 } as const;
 const checkOrder = ["energy","money","relationships","goals"] as const;
 
-const musicChoices: AmbientMusic[] = ["none","harmony","prosperity","energy","love","meditation"];
 const preferredMoney = ["golden-rain","abundance-tree","cosmic-flow","path-to-goals"] as const;
 const moneyTemplateLabels: Partial<Record<MoneySceneId,Record<VideoLocale,string>>> = {
   "golden-rain":{en:"Money fountain",ru:"Фонтан денег",es:"Fuente de dinero"},
@@ -378,14 +411,6 @@ const themeChoices: VideoTheme[] = ["money","relationships","energy","life","hea
 // Health reuses the real, locally rendered gentle-shield Energy scene.
 const videoCategories = ["energy","money","relationships","goals","life","health"] as const;
 type VideoCategory = (typeof videoCategories)[number];
-const themeMusic: Exclude<AmbientMusic,"none">[] = ["harmony","prosperity","energy","love","meditation"];
-const musicBackgrounds = [
-  "linear-gradient(145deg,#f7cf9a,#688b89)",
-  "linear-gradient(145deg,#bd9b57,#324f37)",
-  "linear-gradient(145deg,#f9b39c,#9b667e)",
-  "linear-gradient(145deg,#e3a0bf,#bd9f4b)",
-  "linear-gradient(145deg,#c5d0ce,#44617b)"
-];
 
 function formatDimensions(aspect: Aspect, quality: Quality): [number, number] {
   const edge = quality === "fullhd" ? 1080 : 720;
@@ -630,6 +655,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 }) {
   const t = translations[locale];
   const ui = studioCopy[locale];
+  const audioUi = audioCopy[locale];
   const supportUi = supportDesignCopy[locale];
   const layout = layoutCopy[locale];
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -651,6 +677,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [brightness,setBrightness] = useState<Brightness>("soft");
   const [music,setMusic] = useState<AmbientMusic>("none");
   const [soundVolume,setSoundVolume] = useState(75);
+  const [audioKind,setAudioKind] = useState("all");
+  const [audioMood,setAudioMood] = useState("all");
+  const [audioPace,setAudioPace] = useState("all");
+  const [audioVoiceFriendly,setAudioVoiceFriendly] = useState(false);
+  const [audioAuto,setAudioAuto] = useState(false);
   const [soundPreview,setSoundPreview] = useState(false);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const restoreAudioSessionRef = useRef<(() => void) | null>(null);
@@ -696,6 +727,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
+  // Context comes from the existing theme/filter on this very screen.
+  // A typed wish influences ranking locally; no profile, tests or health data is read.
+  const audioMatches = recommendMandalaAudio({
+    theme,kind:audioKind,mood:audioMood,pace:audioPace,
+    voiceFriendly:audioVoiceFriendly,wish,
+  });
+  const recommendedAudioId = audioMatches[0]?.id as AmbientMusic | undefined;
+  const selectedAudio = mandalaAudioTracks.find(item=>item.id===music);
   const lowestTheme=checkOrder.reduce((min,part)=>scores[part]<scores[min]?part:min,checkOrder[0]);
   // Decode a user's photo once for all 12 preview cards. This avoids 12
   // duplicate high-resolution photo decodes and private portrait copies on iOS.
@@ -732,6 +771,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => () => {
     if (result?.url) URL.revokeObjectURL(result.url);
   }, [result]);
+  useEffect(() => {
+    if (audioAuto && !uploadedAudio) setMusic(recommendedAudioId||"none");
+  },[audioAuto,uploadedAudio,recommendedAudioId]);
   // Built-in presets come from stable HTTPS WAV files, not a generated
   // blob: URL: Safari's in-app player reported a native "Error" for blobs.
   // The actual selected user audio remains a private, local File object.
@@ -1038,6 +1080,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     uploadedAudioRef.current=entry;
     setUploadedAudio(entry);
     setAudioPlaybackError(false);
+    setAudioAuto(false);
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
@@ -1094,7 +1137,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing)return;
     clearUploadedAudio();
     setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
-    setMusic("none");setSoundVolume(75);setCaptionMode("none");setCustomCaption("");setQuality("hd");
+    setMusic("none");setSoundVolume(75);setCaptionMode("none");
+    setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
+    setAudioVoiceFriendly(false);setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
@@ -1470,25 +1515,82 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <p>{layout.audioHelp}</p></div>
         <fieldset className={videoStyles.musicCard} disabled={recording||preparing}>
           <legend><Music2 size={18} aria-hidden="true"/>{ui.music}</legend>
-          <div className={videoStyles.musicRail}>
-            {themeMusic.map((choice,i)=>
-              <button type="button" key={choice} data-video-music={choice}
-                aria-pressed={!uploadedAudio && music===choice} onClick={()=>chooseMusic(choice)}
-                style={{background:musicBackgrounds[i]}}>
-                <span aria-hidden="true">{["♫","✧","✺","♡","◌"][i]}</span>
-                <strong>{ui.musicNames[choice]}</strong>
-                {!uploadedAudio && music===choice?<Check size={14} className={videoStyles.musicCheck} aria-hidden="true"/>:null}
-              </button>)}
-            <button type="button" className={videoStyles.silent} data-video-music="none"
-              aria-pressed={music==="none" && !uploadedAudio} onClick={()=>chooseMusic("none")}>
-              <span>×</span><strong>{ui.noMusic}</strong>
+          <div className={videoStyles.audioSmartBar} data-video-audio-context>
+            <div className={videoStyles.audioContextText}>
+              <Sparkles size={16} aria-hidden="true"/>
+              <span>{audioUi.context} <strong>{ui.themes[theme]}</strong></span>
+            </div>
+            <button type="button" data-video-audio-auto aria-pressed={audioAuto}
+              disabled={!recommendedAudioId}
+              onClick={()=>{
+                if(audioAuto){setAudioAuto(false);return;}
+                if(recommendedAudioId){chooseMusic(recommendedAudioId);setAudioAuto(true);}
+              }}>{audioAuto?audioUi.autoOn:audioUi.automatic}</button>
+          </div>
+          <div className={videoStyles.audioFilters} data-video-audio-filters>
+            <label>{audioUi.type}
+              <select data-video-audio-kind value={audioKind}
+                onChange={event=>setAudioKind(event.currentTarget.value)}>
+                {Object.entries(audioUi.types).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+              </select>
+            </label>
+            <label>{audioUi.mood}
+              <select data-video-audio-mood value={audioMood}
+                onChange={event=>setAudioMood(event.currentTarget.value)}>
+                {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+              </select>
+            </label>
+            <label>{audioUi.pace}
+              <select data-video-audio-pace value={audioPace}
+                onChange={event=>setAudioPace(event.currentTarget.value)}>
+                {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className={videoStyles.audioVoiceOption}>
+            <input data-video-audio-voice type="checkbox" checked={audioVoiceFriendly}
+              onChange={event=>{
+                const enabled=event.currentTarget.checked;
+                setAudioVoiceFriendly(enabled);
+                if(enabled){setSoundVolume(30);setAudioAuto(true);}
+              }}/>
+            <span><strong>{audioUi.voice}</strong><small>{audioUi.voiceInfo}</small></span>
+          </label>
+          <div className={videoStyles.audioCatalogHeading}>
+            <strong>{audioMatches.length} {audioUi.count}</strong>
+            <span>{audioUi.browse}</span>
+          </div>
+          {audioMatches.length?<div className={videoStyles.audioTrackGrid} data-video-audio-tracks>
+            {audioMatches.map((track,index)=><button type="button" key={track.id}
+              className={videoStyles.audioTrackTile} data-video-music={track.id}
+              data-audio-kind={track.kind} aria-pressed={!uploadedAudio&&music===track.id}
+              onClick={()=>{setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
+              <span className={videoStyles.audioTileGlyph} aria-hidden="true">{track.icon}</span>
+              <span className={videoStyles.audioTileText}>
+                <strong>{track.name[locale]}</strong><small>{track.detail[locale]}</small>
+              </span>
+              {index===0?<span className={videoStyles.audioTopPick}>{audioUi.suggested}</span>:null}
+              {!uploadedAudio&&music===track.id?<Check size={15} className={videoStyles.audioSelectedCheck} aria-hidden="true"/>:null}
+            </button>)}
+            <button type="button" className={videoStyles.audioSilentTile}
+              data-video-music="none" aria-pressed={!uploadedAudio&&music==="none"}
+              onClick={()=>{setAudioAuto(false);chooseMusic("none");}}>
+              <span aria-hidden="true">×</span>{ui.noMusic}
             </button>
+          </div>:<div className={videoStyles.audioEmpty} role="status">
+            <span>{audioUi.empty}</span>
+            <button type="button" onClick={()=>{setAudioKind("all");setAudioMood("all");setAudioPace("all");}}>
+              {audioUi.clear}
+            </button>
+          </div>}
+          <div className={videoStyles.audioNowPlaying} data-video-audio-now>
+            <span>{audioUi.now}</span><strong>{uploadedAudio?uploadedAudio.file.name:selectedAudio?.name[locale]||ui.noMusic}</strong>
           </div>
           <div className={videoStyles.audioUpload}>
             <label htmlFor="personal-video-audio-upload" className={videoStyles.audioUploadLabel}>
               <Music2 size={16} aria-hidden="true"/>{ui.uploadAudio}
             </label>
-            <input id="personal-video-audio-upload" ref={audioInputRef}
+            <input className={videoStyles.audioFileInput} id="personal-video-audio-upload" ref={audioInputRef}
               data-video-audio-upload type="file"
               accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,.mp3,.m4a,.wav,.aac,.mp4"
               disabled={recording||preparing}
@@ -1514,7 +1616,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={audioPreviewRef}
             src={previewAudioUrl} controls preload="metadata" loop={!uploadedAudio}
             data-video-audio-player data-video-audio-source={uploadedAudio?"user-file":"site-preset"}
-            aria-label={uploadedAudio?.file.name||ui.music}
+            aria-label={uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.music}
             onPlay={()=>{if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
               setSoundPreview(true);setMusicWarning("");}}
             onPause={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
