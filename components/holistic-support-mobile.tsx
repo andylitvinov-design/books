@@ -177,7 +177,7 @@ const copy = {
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Activity on this page", openFullProgress: "Open my saved progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
-    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
+    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings", saveWatched: "I watched this video", savedWatched: "Saved to My Progress", videoLogin: "Sign in, then return to this video to mark it watched.", videoSaveError: "Unable to save the mark. Try again.", videoSaving: "Saving…",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
@@ -277,7 +277,7 @@ const copy = {
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "На этом экране", openFullProgress: "Открыть мой прогресс в кабинете", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
-    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
+    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки", saveWatched: "Я посмотрел(а) это видео", savedWatched: "Сохранено в «Мой прогресс»", videoLogin: "Войдите, затем вернитесь к ролику и отметьте просмотр.", videoSaveError: "Не удалось сохранить отметку. Повторите.", videoSaving: "Сохраняем…",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
@@ -377,7 +377,7 @@ const copy = {
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Actividad en esta página", openFullProgress: "Abrir mi progreso guardado", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
-    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
+    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes", saveWatched: "He visto este vídeo", savedWatched: "Guardado en Mi progreso", videoLogin: "Inicia sesión, vuelve al vídeo y márcalo visto.", videoSaveError: "No se ha podido guardar. Inténtalo otra vez.", videoSaving: "Guardando…",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
@@ -468,6 +468,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
+  const [savedVideos, setSavedVideos] = useState<string[]>([]);
+  const [videoSaveBusy, setVideoSaveBusy] = useState(false);
+  const [videoSaveError, setVideoSaveError] = useState("");
+  const [videoNeedsLogin, setVideoNeedsLogin] = useState(false);
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -626,7 +630,28 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
+    setVideoSaveError(""); setVideoNeedsLogin(false);
+    // Local "opened" is only a current-visit UI counter, never an account mark.
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
+  };
+  const markCurrentVideoWatched = async () => {
+    // Viewing is a user-confirmed action; never infer it from opening the iframe.
+    if (!selected || !playing || videoSaveBusy || savedVideos.includes(selected.id)) return;
+    const videoId = selected.id;
+    setVideoSaveBusy(true); setVideoSaveError(""); setVideoNeedsLogin(false);
+    try {
+      const response = await fetch("/api/app/video-progress", {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId, title: selected.title, status: "watched" }),
+      });
+      if (response.status === 401) { setVideoNeedsLogin(true); return; }
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload || payload.videoId !== videoId ||
+          !["watched", "mastered"].includes(payload.status)) throw new Error("NOT_SAVED");
+      setSavedVideos(current => current.includes(videoId) ? current : [...current, videoId]);
+    } catch { setVideoSaveError(t.videoSaveError); }
+    finally { setVideoSaveBusy(false); }
   };
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
@@ -954,6 +979,15 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               <div className={styles.videoSourceRow} data-support-video-source>
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
+                {playing && selected ? <div className={styles.videoAccountProgress} data-support-account-video-mark>
+                  <button type="button" onClick={() => void markCurrentVideoWatched()}
+                    disabled={videoSaveBusy || savedVideos.includes(selected.id)}>
+                    <ShieldCheck size={17} aria-hidden="true"/>
+                    {savedVideos.includes(selected.id) ? t.savedWatched : videoSaveBusy ? t.videoSaving : t.saveWatched}
+                  </button>
+                  {videoNeedsLogin ? <Link href={accountProgressHref} prefetch={false}>{t.videoLogin}</Link> : null}
+                  {videoSaveError ? <p role="alert">{videoSaveError}</p> : null}
+                </div> : null}
               </div>
               {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
                 <p>{t.energyIntro}</p>
