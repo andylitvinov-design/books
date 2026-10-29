@@ -1449,6 +1449,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-hero-promo={!photoUrl&&!previewPlaying&&!recording?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
+        data-video-local-storyboard={freeStoryboard?"true":"false"}
         aria-labelledby="video-hero-heading">
         <h2 id="video-hero-heading" className={videoStyles.srOnly}>{studioMode==="therapy"?layout.therapyHeading:layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
@@ -1553,7 +1554,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-mandala-money-option={money.id} data-video-template={money.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={moneyScene===money.id}
-              onClick={()=>{setSuggestion("");if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
+              onClick={()=>{setFreeStoryboard(null);setSuggestion("");if(moneyScene===money.id&&previewPlaying)setPreviewPlaying(false);
                 else{setMoneyScene(money.id);setPreviewPlaying(true);}}}>
               <CinematicSceneThumbnail scene={money.id} title={name}
                 photo={backgroundOnly?null:sharedThumbnailPhoto}
@@ -1570,7 +1571,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+              onClick={()=>{setFreeStoryboard(null);setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
                 }}>
               {getThemedRealFilm(theme,other.id) ?
                  <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
@@ -1605,7 +1606,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <select data-video-style value={theme==="money"?(moneyScene||"golden-rain"):otherScene}
               disabled={recording||preparing}
               onChange={event=>{
-                setSuggestion("");setPreviewPlaying(false);
+                setFreeStoryboard(null);setSuggestion("");setPreviewPlaying(false);
                 // The style selector includes scenes beyond the first four tiles.
                 // Reveal the selected film in the existing gallery, including legacy looks.
                 setShowAllMoney(true);
@@ -1800,10 +1801,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         onChange={setAffirmations} disabled={recording||preparing}/>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
-        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
+        <textarea id="personal-video-wish" data-video-wish rows={3} maxLength={320}
           value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");}} />
+          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value,320));setSuggestion("");setFreeStoryboard(null);}} />
         <p>{ui.wishHelp}</p>
+        <button type="button" className={videoStyles.storyboardAction}
+          data-video-storyboard-build disabled={!wish.trim()||recording||preparing}
+          onClick={buildLocalStoryboard}>
+          <Film size={17} aria-hidden="true"/>{ui.storyboardAction}
+        </button>
+        {freeStoryboard ? <div className={videoStyles.storyboardPanel} data-video-storyboard
+          data-video-storyboard-count={freeStoryboard.shots.length}>
+          <div className={videoStyles.storyboardHeading}>
+            <strong>{ui.storyboardTitle}</strong>
+            <button type="button" data-video-storyboard-clear disabled={recording||preparing}
+              onClick={()=>{setFreeStoryboard(null);setSuggestion("");setPreviewPlaying(false);}}>
+              {ui.storyboardClear}
+            </button>
+          </div>
+          <ol className={videoStyles.storyboardSteps}>
+            {freeStoryboard.shots.map((shot,index)=>{
+              const itemTheme=shot.theme as VideoTheme;
+              const label=itemTheme==="money" ?
+                moneyTemplateLabels[shot.sceneId as MoneySceneId]?.[locale] ||
+                  moneyScenes.find(x=>x.id===shot.sceneId)?.label[locale] :
+                otherVideoScenes[itemTheme as OtherTheme].find(x=>x.id===shot.sceneId)?.label[locale];
+              return <li key={shot.theme+":"+shot.sceneId} data-video-storyboard-shot={shot.sceneId}>
+                <span>{String(index+1).padStart(2,"0")}</span>
+                <div><small>{ui.themes[itemTheme]}</small><strong>{label||shot.sceneId}</strong></div>
+                <small>{Math.round(duration/freeStoryboard.shots.length)} {ui.seconds}</small>
+              </li>;
+            })}
+          </ol>
+          <p>{ui.storyboardHint}</p>
+        </div> : null}
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
             <Target size={17} aria-hidden="true"/>{ui.wishAction}
