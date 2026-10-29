@@ -613,6 +613,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             "guided first video preserves the visitor's photo/background choice");
           assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),affirmationsBeforeGuided,
             "guided first video preserves the visitor's affirmations checkbox");
+          // The compact Hypno editor intentionally unmounts its deep inputs
+          // until the visitor opens Edit. Preserve real guided-course phrases.
+          await page.locator("[data-hypno-phrases-edit]").click();
+          await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
           // Keep automated media verification bounded at 10s; the default
