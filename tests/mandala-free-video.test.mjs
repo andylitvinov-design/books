@@ -103,10 +103,9 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(parent, /photoUrl=\{imageUrl\}/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
-  assert.match(renderer, /getPortraitLayer\(image\)/);
   assert.match(renderer, /coinTexture\(\)/);
-  assert.match(renderer, /ctx\.arc\(0,0,radius,0,Math\.PI\*2\);ctx\.clip\(\)/);
-  assert.match(renderer, /ctx\.drawImage\(src,-src\.width\*scale\/2,-src\.height\*scale\/2,src\.width\*scale,src\.height\*scale\)/);
+  assert.match(renderer, /paintOvalPortrait\(ctx,image,w,h,"gold"\)/);
+  assert.match(read("lib/mandala/portrait-oval.ts"), /ctx\.ellipse\(cx,cy,rx,ry,0,0,Math\.PI\*2\)/);
   assert.match(renderer, /c\.fillText\("\$", 70\.5, 72\)/);
   assert.match(renderer, /if\(front&&Math\.abs\(x-w\*\.5\)<w\*\.24/);
   assert.match(css, /\.moneyFlowThumb/);
