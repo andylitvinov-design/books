@@ -37,7 +37,7 @@ export function greekVideoSeries(locale: PublicLocale): GreekVideoSeries[] {
 
   return GREEK_VIDEO_SERIES.flatMap((series): GreekVideoSeries[] => {
     const record = findAcademyRecord(series.logicalId, "ru");
-    if (!record || record.sourceLocale !== "ru" || record.sourceProvider !== "psimaster") return [];
+    if (!record || record.sourceLocale !== "ru" || record.direction !== "videos") return [];
 
     const seen = new Set<string>();
     const lessons = [...mediaForRecord(record)]
