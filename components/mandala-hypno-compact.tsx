@@ -38,7 +38,7 @@ const copy = {
     additional:"Other display controls (density, visibility and experimental short frame)",
     design:"Video design", designHint:"Scene, atmosphere and original sound", sound:"Audio", adjustAudio:"Choose sound",
     scenery:"Choose a scene", moreScenes:"All video scenes", preview:"Preview", previewHint:"Preview only — no export or account save",
-    previewButton:"Preview real video", use:"In video", privacy:"Your words stay in this browser. No AI/CRM upload.",
+    previewButton:"Preview real video", create:"Create video", use:"In video", privacy:"Your words stay in this browser. No AI/CRM upload.",
     themeNames:{energy:"Energy",money:"Money",relationships:"Love",goals:"Goals",life:"Life",health:"Wellbeing"},
     enabledNote:"Switch on to include the chosen phrases in the video",
   },
@@ -55,7 +55,7 @@ const copy = {
     additional:"Другие настройки: плотность, видимость и экспериментальный короткий кадр",
     design:"Дизайн видео", designHint:"Сцена, атмосфера и оригинальные звуки", sound:"Звук", adjustAudio:"Выбрать звук",
     scenery:"Выберите сцену", moreScenes:"Все видеосцены", preview:"Предпросмотр", previewHint:"Только просмотр, без сохранения и рендера",
-    previewButton:"Просмотреть видео", use:"В видео", privacy:"Ваши фразы остаются в браузере. Без отправки в AI и CRM.",
+    previewButton:"Просмотреть видео", create:"Создать видео", use:"В видео", privacy:"Ваши фразы остаются в браузере. Без отправки в AI и CRM.",
     themeNames:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Жизнь",health:"Самочувствие"},
     enabledNote:"Включите, чтобы выбранные фразы вошли в видео",
   },
@@ -72,7 +72,7 @@ const copy = {
     additional:"Más ajustes: densidad, visibilidad y fotograma breve experimental",
     design:"Diseño de vídeo", designHint:"Escena, ambiente y sonidos originales", sound:"Audio", adjustAudio:"Elegir audio",
     scenery:"Elige una escena", moreScenes:"Todas las escenas", preview:"Vista previa", previewHint:"Solo vista previa, sin exportar",
-    previewButton:"Ver vídeo real", use:"En vídeo", privacy:"Tus frases permanecen en este navegador. Sin envío a IA ni CRM.",
+    previewButton:"Ver vídeo real", create:"Crear vídeo", use:"En vídeo", privacy:"Tus frases permanecen en este navegador. Sin envío a IA ni CRM.",
     themeNames:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Metas",life:"Vida",health:"Bienestar"},
     enabledNote:"Activa para incluir las frases seleccionadas en tu vídeo",
   },
@@ -80,12 +80,12 @@ const copy = {
 
 export function MandalaHypnoCompact({
   locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster,
-  onSelectScene, onSelectTheme, onPreview,
+  onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
   scenes:SceneOption[]; activeScene:string; activePoster?:string|null;
-  onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void;
+  onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale];
   const [open,setOpen]=useState<EditPanel>(null);
@@ -271,6 +271,8 @@ export function MandalaHypnoCompact({
         <button type="button" data-video-affirmation-preview disabled={disabled}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled}
+        onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
       <label className={css.enable}>
         <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
