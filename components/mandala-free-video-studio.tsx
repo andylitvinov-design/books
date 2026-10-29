@@ -1619,7 +1619,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           {studioMode==="pump" ? <button type="button" onClick={()=>{
             setShowAllMoney(true);
-            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
+            openQuickDetailed("video-templates");
           }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button> :
            <span className={videoStyles.courseIndicator}>01 — 08</span>}
         </header>
@@ -1780,7 +1780,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onClick={()=>selectCategory(lowestTheme)}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
           </button>
-          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
+          {photoError?<p role="alert" className={videoStyles.warning}>{photoError}</p>:null}
         </section>
 
         <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
