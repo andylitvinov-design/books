@@ -88,12 +88,35 @@ test("video_course returns eight storyboarded 12-minute episodes without claimin
 test("chosen compatible course takes priority, incompatible selection falls back to focus",()=>{
   const custom=ask("video_course",{intent:{focus:"stress",courseId:"anxiety_cbt"}});
   assert.equal(custom.courseId,"anxiety_cbt");
-  assert.equal(custom.selectionRationale,"client_selected_compatible_format");
+  assert.equal(custom.selectionRationale,"explicit_compatible_choice");
   const incompatible=ask("video_course",{intent:{focus:"stress",courseId:"relationship_skills"}});
   assert.equal(incompatible.courseId,"stress_foundations");
-  assert.equal(incompatible.selectionRationale,"safe_default_for_confirmed_focus");
+  assert.equal(incompatible.selectionRationale,"default_for_focus");
 });
 
+test("anxiety request selects CBT-specific eight-step sequence consistently",()=>{
+  const input={...safe,locale:"ru",intent:{focus:"stress",rawUtterance:"Хочу понять тревожность"}};
+  const plan=buildPsychologyProgram(input);
+  assert.equal(plan.courseRecipeId,"anxiety_cbt");
+  assert.equal(plan.sessions.length,8);
+  assert.equal(plan.sessions[3].methodIds[0],"thought_reflection");
+  const course=consultPsychologistMind({...input,task:"video_course"});
+  assert.equal(course.courseId,"anxiety_cbt");
+  assert.equal(course.lessons[3].selectedSkillId,"thought_reflection");
+  assert.equal(course.selectionRationale,"request_topic_detected");
+});
+test("selected safe symbol enriches a personalized meditation without interpreting its meaning",()=>{
+  const result=ask("meditation",{consent:{resourceImagery:true},
+    intent:{focus:"stress",symbolId:"tree"}});
+  assert.equal(result.status,"script_ready");
+  assert.equal(result.symbolId,"tree");
+  assert.ok(result.script.includes("дерево"));
+  assert.equal(result.noSymbolInterpretation,true);
+  const risky=ask("meditation",{consent:{resourceImagery:true},
+    intent:{focus:"stress",symbolId:"cave"}});
+  assert.equal(risky.status,"symbol_review_required");
+  assert.equal(risky.script,null);
+});
 test("imagery course option requires separate opt-in and actually permitted method",()=>{
   const without=ask("course_options");
   assert.ok(!without.formats.some(f=>f.id==="imagery_resources"));
