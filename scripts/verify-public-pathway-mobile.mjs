@@ -45,6 +45,27 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
               await expect(link).toBeVisible();
             }
             const didOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+            if (didOverflow) {
+              const suspects = await page.evaluate(() => {
+                const viewport = window.innerWidth;
+                return {
+                  viewport, documentWidth: document.documentElement.scrollWidth,
+                  bodyWidth: document.body.scrollWidth,
+                  elements: [...document.querySelectorAll("body *")].map(el => {
+                    const box = el.getBoundingClientRect();
+                    return { tag: el.tagName.toLowerCase(), id: el.id,
+                      cls: typeof el.className === "string" ? el.className.slice(0, 160) : "",
+                      left: Math.round(box.left), right: Math.round(box.right),
+                      width: Math.round(box.width), scrollWidth: el.scrollWidth,
+                      overflowX: getComputedStyle(el).overflowX };
+                  }).filter(x => x.right > viewport + 2 && x.width > 0)
+                    .sort((a, b) => b.right - a.right).slice(0, 28),
+                };
+              });
+              console.error("WAVE1_OVERFLOW_FORENSICS", JSON.stringify({ engine, locale, route, width, suspects }));
+              writeFileSync(output + "/overflow-" + engine + "-" + locale + "-" + route + "-" + width + ".json", JSON.stringify(suspects, null, 2));
+              await page.screenshot({ path: output + "/overflow-" + engine + "-" + locale + "-" + route + "-" + width + ".png", fullPage: true });
+            }
             assert.equal(didOverflow, false, engine + " " + locale + "/" + route + " " + width + " overflow");
             if (route === "about") {
               assert.equal(await page.locator(".about-biography > section").count(), 7);
