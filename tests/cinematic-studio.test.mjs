@@ -159,6 +159,22 @@ test("no-cost offline FFmpeg assembler validates local rights and builds explici
   assert.throws(()=>validateAssemblyInput({...input,clips:[{...input.clips[0],seconds:999}]}),
     /invalid_cinematic_assembly/);
 });
+test("cinematic director preserves the agreed four-field profile flow without private-data leakage",()=>{
+  assert.match(directorUI,/const FIELDS:Field\[\]=\["theme","difficulty","goal","profile"\]/);
+  assert.match(directorUI,/data-director-profile-consent checked=\{profileConsent\}/);
+  assert.match(directorUI,/disabled=\{disabled\|\|!profileConsent\|\|profileState==="loading"\}/);
+  assert.match(directorUI,/if\(!profileConsent\|\|disabled\|\|profileState==="loading"\)return/);
+  assert.match(directorUI,/fetch\("\/api\/app\/bootstrap\?view=portrait"/);
+  assert.match(directorUI,/credentials:"same-origin",cache:"no-store",redirect:"error"/);
+  assert.match(directorUI,/buildPsychPortrait\(data\.results\)/);
+  assert.match(directorUI,/suggestGuidedGoalsFromProfile\(buildPsychPortrait\(data\.results\)\)/);
+  assert.match(directorUI,/profileRequestRef\.current\+\+/);
+  assert.match(directorUI,/const withdrawProfile=\(\)=>\{/);
+  assert.match(directorUI,/setProfileConsent\(false\);setProfileSuggestions\(\[\]\)/);
+  assert.match(directorUI,/profileSuggestions\.map\(item=>/);
+  assert.match(directorUI,/data-director-visual-preferences/);
+  assert.doesNotMatch(directorUI,/localStorage|sessionStorage|sendBeacon|fetch\("https:/);
+});
 test("same iPhone editor records actual four-shot canvas montage without sending private brief",()=>{
   assert.match(studio,/MandalaCinematicDirector/);
   assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
