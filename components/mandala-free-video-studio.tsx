@@ -722,7 +722,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const [w,h] = formatDimensions("landscape", "hd");
     if(canvas.width !== w) canvas.width=w;
     if(canvas.height !== h) canvas.height=h;
-  }, [aspect]);
+  }, [aspect, recording]);
 
   // Invalidate the result when the client photo, composition or preset changes.
   // The selected, SAME-ORIGIN MP4 is the sole footage source for preview
@@ -788,7 +788,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, recording]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
