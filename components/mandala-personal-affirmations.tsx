@@ -11,8 +11,9 @@ import css from "./mandala-video-affirmations.module.css";
 
 const copy = {
   en: {
-    personal:"From my tests",
-    goals:"Goals / focus",
+    choice:"Choose your affirmations",manual:"Choose myself",
+    personal:"Auto-pick from my tests",
+    goals:"Refine my goals",
     title:"My priorities",
     hint:"Choose up to three goals. The first chosen goal has the strongest emphasis.",
     apply:"Apply my goals",
@@ -26,8 +27,9 @@ const copy = {
     busy:"Checking my test indicators…",
   },
   ru: {
-    personal:"По моим тестам",
-    goals:"Цели / акценты",
+    choice:"Как подобрать установки?",manual:"Выбрать самому",
+    personal:"Автоподбор по тестам",
+    goals:"Уточнить цели",
     title:"Мои цели и акценты",
     hint:"Выберите до трёх целей. Первая будет главным акцентом.",
     apply:"Применить выбранные цели",
@@ -41,8 +43,9 @@ const copy = {
     busy:"Сверяем показатели ваших тестов…",
   },
   es: {
-    personal:"Según mis tests",
-    goals:"Metas / enfoque",
+    choice:"Elige tus afirmaciones",manual:"Elegir yo",
+    personal:"Elegir según mis tests",
+    goals:"Precisar mis metas",
     title:"Mis metas y prioridades",
     hint:"Elige hasta tres metas. La primera tendrá prioridad.",
     apply:"Aplicar mis metas",
@@ -57,9 +60,11 @@ const copy = {
   },
 } as const;
 
-export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disabled=false}: {
+export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disabled=false,
+  selectionMethod,onManualSelect,onTestsSelected}: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
+  selectionMethod:"manual"|"tests"; onManualSelect:()=>void; onTestsSelected:()=>void;
 }) {
   const ui=copy[locale];
   const [goalsOpen,setGoalsOpen]=useState(false);
@@ -89,7 +94,7 @@ export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disa
         setMessage(ui.empty);setTestsLink(true);setGoalsOpen(true);
         return;
       }
-      apply(fresh,goals);setMessage(ui.success);
+      apply(fresh,goals);onTestsSelected();setMessage(ui.success);
     } catch(error) {
       const status=(error as {status?:number}).status;
       setMessage(status===401?ui.auth:ui.unavailable);
@@ -103,17 +108,24 @@ export function MandalaPersonalAffirmations({locale,theme,settings,onChange,disa
   };
   return (
     <div className={css.personalFocus} data-video-personal-affirmations>
-      <div className={css.personalButtons}>
+      <p className={css.chooseHeading}>{ui.choice}</p>
+      <div className={css.personalButtons} data-video-choice-mode role="group" aria-label={ui.choice}>
+        <button type="button" data-video-manual-select className={css.personalManual}
+          disabled={disabled||busy} aria-pressed={selectionMethod==="manual"}
+          onClick={onManualSelect}>
+          <ListFilter size={17} aria-hidden="true"/>{ui.manual}
+        </button>
         <button type="button" data-video-personal-suggest className={css.personalSuggest}
-          disabled={disabled||busy} onClick={()=>{void loadProfile();}}>
+          disabled={disabled||busy} aria-pressed={selectionMethod==="tests"}
+          onClick={()=>{void loadProfile();}}>
           <Sparkles size={17} aria-hidden="true"/>{busy?ui.busy:ui.personal}
         </button>
-        <button type="button" data-video-goals-toggle className={css.goalsToggle}
-          disabled={disabled} aria-expanded={goalsOpen} aria-controls="video-affirmation-priorities"
-          onClick={()=>setGoalsOpen(open=>!open)}>
-          <ListFilter size={17} aria-hidden="true"/>{ui.goals}
-        </button>
       </div>
+      <button type="button" data-video-goals-toggle className={css.goalsToggle}
+        disabled={disabled} aria-expanded={goalsOpen} aria-controls="video-affirmation-priorities"
+        onClick={()=>setGoalsOpen(open=>!open)}>
+        <Target size={15} aria-hidden="true"/>{ui.goals}
+      </button>
       {goalsOpen && <div id="video-affirmation-priorities" className={css.goalsFilter} data-video-goals-filter>
         <h4><Target size={17} aria-hidden="true"/>{ui.title}</h4>
         <p>{ui.hint}</p>
