@@ -27,7 +27,7 @@ const COPY = {
     noVideosHelp:'In the Academy, open a video and choose “I watched this” after watching.',
     exploreVideos:'Explore videos', videoSource:'Academy', replay:'Watch again',
     myMandalas:'My video mandalas', mandalaCollection:'Your privately saved MP4 videos',
-    noMandalas:'Your saved video mandalas will appear here.',
+    noMandalas:'Your saved video mandalas will appear here.', storageDisabled:'Private cloud saving is unavailable right now. Local downloads still work.',
     mandalaCreate:'Create a mandala', mandalaOpen:'Open my videos', mandalaPlay:'Play saved video', mandalaClose:'Close video', mandalaBusy:'Opening securely…', mandalaError:'Video unavailable. Open My Videos to retry.',
     resume:'Continue where you left off', resumeNow:'Continue', resumeEmpty:'Explore a course or take a test',
     recentActivity:'All activity', activityEyebrow:'ACTIVITY JOURNAL', recentIntro:'The records below are based on actual saves and confirmations.',
@@ -60,7 +60,7 @@ const COPY = {
     noVideosHelp:'Откройте ролик в Академии и после просмотра нажмите «Я посмотрел(а)».',
     exploreVideos:'Смотреть видео', videoSource:'Академия', replay:'Смотреть снова',
     myMandalas:'Мои видео-мандалы', mandalaCollection:'Готовые MP4 в личном хранилище',
-    noMandalas:'Здесь появятся ваши сохранённые видео-мандалы.',
+    noMandalas:'Здесь появятся ваши сохранённые видео-мандалы.', storageDisabled:'Приватное облачное сохранение сейчас недоступно. Скачивание на устройство работает.',
     mandalaCreate:'Создать мандалу', mandalaOpen:'Открыть мои видео', mandalaPlay:'Смотреть видео', mandalaClose:'Закрыть видео', mandalaBusy:'Открываем безопасно…', mandalaError:'Видео недоступно. Повторите в «Мои видео».',
     resume:'Продолжить с того места', resumeNow:'Продолжить', resumeEmpty:'Выбрать курс или тест',
     recentActivity:'Вся активность', activityEyebrow:'ДНЕВНИК АКТИВНОСТИ', recentIntro:'Только фактические сохранения и подтверждённые вами действия.',
@@ -93,7 +93,7 @@ const COPY = {
     noVideosHelp:'Abre un vídeo en la Academia y, después de verlo, elige “Lo he visto”.',
     exploreVideos:'Explorar vídeos', videoSource:'Academia', replay:'Ver otra vez',
     myMandalas:'Mis videomandalas', mandalaCollection:'MP4 guardados de forma privada',
-    noMandalas:'Tus videomandalas guardadas aparecerán aquí.',
+    noMandalas:'Tus videomandalas guardadas aparecerán aquí.', storageDisabled:'El guardado privado en la nube no está disponible. Las descargas locales siguen disponibles.',
     mandalaCreate:'Crear mandala', mandalaOpen:'Abrir mis vídeos', mandalaPlay:'Reproducir vídeo', mandalaClose:'Cerrar vídeo', mandalaBusy:'Abriendo de forma segura…', mandalaError:'Vídeo no disponible. Abre Mis vídeos para reintentar.',
     resume:'Continúa donde lo dejaste', resumeNow:'Continuar', resumeEmpty:'Elegir un curso o test',
     recentActivity:'Toda la actividad', activityEyebrow:'DIARIO DE ACTIVIDAD', recentIntro:'Solo acciones realmente guardadas o confirmadas por ti.',
@@ -203,7 +203,7 @@ export default function MyProgress({ data, locale='en' }) {
     ? data.account.displayName.trim().slice(0,70) : ''
   const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
   const root='/'+lang+'/app'
-  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0})
+  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
@@ -213,7 +213,7 @@ export default function MyProgress({ data, locale='en' }) {
   useEffect(()=>{
     if(!accountId) return
     let active=true
-    setSources({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0})
+    setSources({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
     const endpoints=['course','academy-energywork','personal-videos','video-progress']
     Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
       .then(results=>{
@@ -221,6 +221,7 @@ export default function MyProgress({ data, locale='en' }) {
         const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
           growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],loading:false,
+          videosDisabled:results[2].status==='rejected'&&results[2].reason?.code==='FEATURE_UNAVAILABLE',
           failed:results.filter((item,index)=>item.status==='rejected' &&
             !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length,
         })
@@ -291,7 +292,7 @@ export default function MyProgress({ data, locale='en' }) {
         {overview.map(({id,number,caption,Icon})=><button type="button" key={id}
           className={styles.metric} onClick={()=>jumpTo(id)}>
           <Icon size={18} strokeWidth={1.9} aria-hidden="true"/>
-          <strong>{number}</strong>
+          <strong>{sources.loading&&id!=='tests'?'—':number}</strong>
           <span>{t[id]}</span>
           <small>{caption}</small>
         </button>)}
@@ -309,7 +310,7 @@ export default function MyProgress({ data, locale='en' }) {
           {t.historyAll}<ChevronRight size={18}/>
         </a>
       </div>
-      {videos.length ? <>
+      {sources.loading ? <div className={styles.skeletonRail} aria-hidden="true"><span/><span/><span/></div> : videos.length ? <>
         <div className={styles.videoRail} role="list" aria-label={t.recentVideos}>
           {videos.slice(0,12).map(video=><div role="listitem" key={video.id}>
             <VideoHistoryCard entry={video} lang={lang} t={t}/>
@@ -336,7 +337,7 @@ export default function MyProgress({ data, locale='en' }) {
           onClick={()=>jumpTo(id)} aria-label={t[id]+': '+countFor(id)}>
           <span className={styles.libraryIcon}><Icon size={25} strokeWidth={1.8} aria-hidden="true"/></span>
           <span className={styles.libraryCopy}><strong>{t[id]}</strong>
-            <small>{countFor(id)} {t.itemCount}</small></span>
+            <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':countFor(id)} {t.itemCount}</small></span>
           <ChevronRight className={styles.libraryArrow} size={18} aria-hidden="true"/>
         </a>)}
       </div>
@@ -350,7 +351,7 @@ export default function MyProgress({ data, locale='en' }) {
       <div className={styles.resume}>
         <span className={styles.resumeIcon}><BookOpen size={25} aria-hidden="true"/></span>
         <div className={styles.resumeContent}>
-          <strong>{lastActivity?.title || t.resumeEmpty}</strong>
+          <strong>{sources.loading?t.loading:lastActivity?.title || t.resumeEmpty}</strong>
           {lastActivity && <div className={styles.resumeStatus}><Status status={lastActivity.status} t={t}/>{lastActivity.detail && <small>{lastActivity.detail}</small>}</div>}
         </div>
         <Link href={lastActivity?.href || root+'/course?view=courses'} prefetch={false} className={styles.resumeAction}>
@@ -367,12 +368,12 @@ export default function MyProgress({ data, locale='en' }) {
           {t.mandalaOpen}<ChevronRight size={18}/>
         </Link>
       </div>
-      {mandalas.length?<div className={styles.mandalaRail}>
+      {sources.loading?<div className={styles.skeletonRail} aria-hidden="true"><span/><span/></div>:mandalas.length?<div className={styles.mandalaRail}>
         {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}
           player={mandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
       </div>:<div className={styles.mandalaEmpty}>
         <Sparkles size={23} aria-hidden="true"/>
-        <span>{t.noMandalas}</span>
+        <span>{sources.videosDisabled?t.storageDisabled:t.noMandalas}</span>
         <Link href={'/'+lang+'/holistic-support/mandala'} prefetch={false}>{t.mandalaCreate}<ArrowRight size={15}/></Link>
       </div>}
     </section>
