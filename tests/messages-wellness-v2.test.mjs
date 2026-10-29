@@ -111,3 +111,17 @@ test('zero owned orders shows exactly two real free offer links, and truthful EN
   ])assert.ok(css.includes(required),required)
   assert.equal(ui.includes('freeConsultationDetail:\'30 min'),false)
 })
+
+test('practitioner client inbox is unified without revealing owner-only CRM',()=>{
+ const hub=source('components/app/messages-hub.jsx')
+ const ui=source('components/app/messages-simple-inbox.jsx')
+ assert.match(hub,/if\(embedded&&requestData\?\.accountId\)return <MessagesSimpleInbox/)
+ assert.match(hub,/crmEnabled=\{false\} embedded/)
+ assert.match(hub,/accountId=\{requestData\.accountId\}/)
+ assert.match(ui,/crmEnabled=true,onClientsCount/)
+ assert.match(ui,/crmEnabled&&<CrmMessengerPanel/)
+ assert.match(ui,/loading:crmEnabled/)
+ assert.match(ui,/selected\?\.kind!=='crm'\|\|!crmEnabled/)
+ assert.match(ui,/<DirectMessageInbox key=\{accountId/)
+ assert.match(ui,/<PracticeRequestConversation key=\{selected.id\} inline autoOpen/)
+})
