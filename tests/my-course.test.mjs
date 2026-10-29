@@ -115,9 +115,9 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /hh-mobile-app-nav/)
   // The six-option check-in scale is not the fixed mobile navigation.
   // The approved cabinet dock contains five destinations including Home.
-  assert.match(css, /\\.hh-scale\\s*\\{[^}]*grid-template-columns:\\s*repeat\\(6,\\s*minmax\\(0,\\s*1fr\\)\\)/)
-  assert.match(css, /\\.hh-mobile-app-nav\\s*\\{[^}]*grid-template-columns:\\s*repeat\\(5,\\s*minmax\\(0,\\s*1fr\\)\\)/)
-  assert.match(css, /\\.hh-mobile-app-nav a\\s*\\{[^}]*min-height:\\s*53px/)
+  assert.match(css, /\.hh-scale\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/)
+  assert.match(css, /\.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/)
+  assert.match(css, /\.hh-mobile-app-nav a\s*\{[^}]*min-height:\s*53px/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
   const completion=read('components/app/course-completion-review.jsx')
