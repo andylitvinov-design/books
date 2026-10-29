@@ -9,7 +9,7 @@ const COPY={
   title:'Deals & services',intro:'Track each business request independently from the contact. Every stage here is owner-entered, not a verified booking or payment.',
   total:'Total deals',active:'In progress',requested:'Booking requested',
   contact:'Business contact',choose:'Choose a contact',service:'Service',create:'Create deal',
-  newDeal:'New deal',stages:'Filter loaded deals',all:'All stages',open:'Open contact',
+  newDeal:'New deal',stageFilterLabel:'Filter loaded deals',all:'All stages',open:'Open contact',
   noContacts:'Add a business contact first in Contacts.',empty:'No deals yet.',
   loading:'Loading…',more:'Load earlier deals',refresh:'Refresh',
   partial:'Showing the latest deals. Load more to see older items; the totals count all owner deals.',
@@ -27,7 +27,7 @@ const COPY={
   title:'Сделки и услуги',intro:'Каждый деловой запрос отдельно от статуса клиента. Этапы отмечены вручную и не подтверждают запись или оплату.',
   total:'Всего сделок',active:'В работе',requested:'Запрос записи',
   contact:'Деловой контакт',choose:'Выберите контакт',service:'Услуга',create:'Создать сделку',
-  newDeal:'Новая сделка',stages:'Фильтр загруженных сделок',all:'Все этапы',open:'Открыть контакт',
+  newDeal:'Новая сделка',stageFilterLabel:'Фильтр загруженных сделок',all:'Все этапы',open:'Открыть контакт',
   noContacts:'Сначала добавьте деловой контакт в разделе «Контакты».',empty:'Сделок пока нет.',
   loading:'Загрузка…',more:'Загрузить старые сделки',refresh:'Обновить',
   partial:'Показаны последние сделки. Более ранние доступны через «Загрузить». Общие счётчики полные.',
@@ -45,7 +45,7 @@ const COPY={
   title:'Oportunidades y servicios',intro:'Cada solicitud empresarial se gestiona aparte del contacto. Las etapas son manuales; no verifican reservas ni pagos.',
   total:'Total',active:'En curso',requested:'Reserva solicitada',
   contact:'Contacto profesional',choose:'Elige un contacto',service:'Servicio',create:'Crear oportunidad',
-  newDeal:'Nueva oportunidad',stages:'Filtrar oportunidades cargadas',all:'Todas las etapas',open:'Abrir contacto',
+  newDeal:'Nueva oportunidad',stageFilterLabel:'Filtrar oportunidades cargadas',all:'Todas las etapas',open:'Abrir contacto',
   noContacts:'Añade un contacto profesional en Contactos.',empty:'Todavía no hay oportunidades.',
   loading:'Cargando…',more:'Cargar oportunidades anteriores',refresh:'Actualizar',
   partial:'Se muestran las más recientes. Carga más para ver las anteriores; los totales son completos.',
@@ -129,8 +129,7 @@ export default function CrmOpportunities({
     operation.current=null
     void load(null)
     return ()=>{listAbort.current?.abort();sendAbort.current?.abort()}
-  },[accountId,load])
-  useEffect(()=>{if(initialContactId)setContactId(initialContactId)},[initialContactId])
+  },[accountId,load,initialContactId])
   const available=contacts.filter(contact=>contact&&!contact.suppressed&&contact.lifecycle!=='archived')
   async function create(){
     if(!contactId||busy||loading||!available.some(contact=>contact.id===contactId))return
@@ -206,7 +205,7 @@ export default function CrmOpportunities({
     {error&&<p role="alert" className={styles.error}>{error}</p>}
     {notice&&<p role="status" className={styles.success}>{notice}</p>}
     <div className={styles.controls}>
-      <label className={styles.field}>{t.stages}
+      <label className={styles.field}>{t.stageFilterLabel}
         <select className={styles.filter} value={stageFilter} onChange={e=>setStageFilter(e.target.value)}>
           <option value="all">{t.all}</option>
           {CRM_OPPORTUNITY_STAGES.map(id=><option key={id} value={id}>{t.stages[id]}</option>)}
