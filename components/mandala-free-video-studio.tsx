@@ -1371,7 +1371,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.videoMandalaChoice}
             data-video-therapy-toggle aria-pressed={studioMode==="therapy"}
             disabled={recording||preparing}
-            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setNotice("");}}>
+            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setCinematicPlan(null);setNotice("");}}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
           </button>
         </section>
@@ -1521,7 +1521,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <button type="button" data-video-therapy-start
           disabled={recording||preparing}
-          onClick={()=>{setStudioMode("therapy");setTherapyJumpRequested(true);}}>
+          onClick={()=>{setStudioMode("therapy");setCinematicPlan(null);setTherapyJumpRequested(true);}}>
           {layout.therapyBannerAction}<ArrowRight size={19} aria-hidden="true"/>
         </button>
       </section>
