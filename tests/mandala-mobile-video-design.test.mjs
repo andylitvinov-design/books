@@ -142,7 +142,7 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
 test("client photo consent and privacy are enforced without payment or server photo upload", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const audio=read("lib/mandala/local-video-music.ts");
-  assert.match(studio,/!photoUrl \|\| photoConsent/);
+  assert.match(studio,/backgroundOnly \|\| photoConsent/);
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
   assert.match(studio,/disabled=\{!canGenerate\}/);
