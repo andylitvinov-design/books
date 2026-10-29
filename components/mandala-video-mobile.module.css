@@ -1029,7 +1029,7 @@
 .audioSection .audioCatalogHeading{padding:2px 1px 6px}
 .audioSection .audioCatalogHeading span{font-size:11px;color:#73867a}
 .audioTrackList{gap:5px}
-.audioTrackRow{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:stretch;
+.audioTrackRow{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:stretch;
   min-width:0;min-height:78px;border:1px solid #e9ebe3;border-radius:14px;
   background:#fffefb;box-shadow:0 3px 10px #193d2c0b;overflow:hidden}
 .audioTrackSelect{display:grid;grid-template-columns:58px minmax(0,1fr) auto;
@@ -1052,7 +1052,7 @@
 .audioTrackList .audioWave i:nth-child(5n+4){height:16px}
 .audioTrackList .audioWave i:nth-child(5n+5){height:5px}
 .audioTrackPick{justify-content:flex-end;min-width:36px;color:#188767;font-size:11px}
-.audioFavorite{display:grid;place-items:center;width:38px;min-height:44px;border:0;
+.audioFavorite{display:grid;place-items:center;width:44px;min-height:44px;border:0;
   background:transparent;color:#8c9993;cursor:pointer}
 .audioFavorite[aria-pressed="true"]{color:#e47789}
 .audioFavorite:focus-visible{outline:3px solid #d7b269;outline-offset:-3px;border-radius:10px}
