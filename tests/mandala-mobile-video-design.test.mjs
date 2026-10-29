@@ -166,7 +166,7 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
-  assert.match(studio,/audioMatches\.map\(\(track,index\)=>/);
+  assert.match(studio,/visibleAudio\.map\(\(track,index\)=>/);
   assert.match(studio,/data-video-music=\{track\.id\}/);
   assert.match(studio,/chooseMusic\(track\.id as AmbientMusic\)/);
   assert.match(studio,/recommendMandalaAudio\(\{/);
