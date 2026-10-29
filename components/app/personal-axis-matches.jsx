@@ -88,6 +88,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
   const [want, setWant] = useState("");
   const [includeTestEvidence, setIncludeTestEvidence] = useState(false);
   const [loadCourseAudio, setLoadCourseAudio] = useState(false);
+  const [audioRefresh, setAudioRefresh] = useState(0);
   const [publishedCourseAudio, setPublishedCourseAudio] = useState([]);
   const [audioState, setAudioState] = useState("idle");
 
@@ -114,7 +115,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
       setAudioState(approved.length ? "ready" : "none");
     }).catch(() => { if (alive) setAudioState("error"); });
     return () => {alive=false;ctrl.abort();};
-  }, [loadCourseAudio,lang]);
+  }, [loadCourseAudio,lang,audioRefresh]);
   const media = useMemo(() => lang === "ru"
     ? freeMeditationVideos("ru").map(video => ({...video,sourceLanguage:"ru"}))
     : englishGuidedMeditations.filter(video => video.youtubeId)
@@ -238,7 +239,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
         })}
       </div> : <p className={styles.empty}>{t.noMatches}</p>}
       {lang!=="es" && <div className={styles.audioLookup}>
-        <button type="button" onClick={()=>setLoadCourseAudio(true)}
+        <button type="button" onClick={()=>{setLoadCourseAudio(true);setAudioRefresh(n=>n+1);}}
           disabled={audioState==="loading"} data-intelligence-public-audio>
           <Headphones size={16} aria-hidden="true"/>
           {audioState==="loading"?t.audioLoading:audioState==="ready"?t.audioReady:t.audioLoad}
