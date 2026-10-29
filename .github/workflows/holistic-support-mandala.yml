@@ -97,6 +97,7 @@ jobs:
           ready=0
           for i in $(seq 1 60); do
             if curl --silent --fail http://127.0.0.1:3100/ru/holistic-support/mandala >/dev/null; then ready=1; break; fi
+            echo "Waiting for local Mandala server, attempt ${i}/60" >&2
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
