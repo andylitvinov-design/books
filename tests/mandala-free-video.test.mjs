@@ -162,11 +162,11 @@ test("background-only reusable clip is the default, with an explicit photo check
 test("HD master retries only undecoded idle media on user preview, retaining strict browser decode", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(studio, /video\.readyState < 2 &&[\s\S]*?video\.NETWORK_IDLE/);
+  assert.match(studio, /if\(video\.readyState < 2 &&[\s\S]*?video\.NETWORK_IDLE/);
   assert.match(studio, /film\.readyState < 2 &&[\s\S]*?film\.NETWORK_IDLE/);
-  assert.match(studio, /onLoadedData=\{event=>\{if\(event\.currentTarget\.videoWidth>0\)setPremiumReady\(true\);\}\}/);
+  assert.match(studio, /onLoadedData=\{event=>\{[\s\S]*?event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio, /if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
-  assert.match(browser, /master\.readyState >= 2 && master\.videoWidth > 0/);
+  assert.match(browser, /master\.readyState\s*>=\s*2 && master\.videoWidth\s*>\s*0/);
   assert.match(browser, /real master MP4 did not decode/);
 });
 
@@ -179,18 +179,18 @@ test("real video acceptance isolates each WebKit viewport and resets an emptied 
   assert.match(browser,/await context\.close\(\);[\s\S]*?await browser\.close\(\);/);
   assert.match(browser,/assert\.equal\(passes, 10\)/);
   assert.match(studio,/onEmptied=\{\(\)=>setPremiumReady\(false\)\}/);
-  assert.match(browser,/master\.readyState >= 2 && master\.videoWidth > 0/);
+  assert.match(browser,/master\.readyState\s*>=\s*2 && master\.videoWidth\s*>\s*0/);
 });
 
 
 test("Safari evicted master can reload on the visitor's explicit photo consent without faking decode",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   assert.match(studio,/data-video-photo-consent checked=\{photoConsent\}/);
-  assert.match(studio,/const consented=event\.currentTarget\.checked/);
-  assert.match(studio,/if\(consented && previewPlaying && activeFilm && master && master\.readyState<2\)/);
+  assert.match(studio,/const approved=event\.target\.checked/);
+  assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/setPremiumReady\(false\)/);
-  assert.match(studio,/master\.networkState===master\.NETWORK_IDLE\) master\.load\(\)/);
-  assert.match(studio,/void master\.play\(\)\.catch/);
+  assert.match(studio,/video\.networkState === video\.NETWORK_IDLE\)\)\s*video\.load\(\)/);
+  assert.match(studio,/void video\.play\(\)\.then/);
   // Even after a retry, export remains unavailable until real decoded frames exist.
   assert.match(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
   assert.match(studio,/if\(!master \|\| master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
