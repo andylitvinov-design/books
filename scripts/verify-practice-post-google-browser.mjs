@@ -126,8 +126,12 @@ for(const engine of [chromium,webkit]){
           const input=editor.locator('[data-service-slide="presentation"] input[type=text]').first()
           await input.fill('Synthetic service title')
           await editor.locator('[data-service-step-controls] button').last().click()
+          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
+            ?.getAttribute('data-service-stage')==='1',null,{timeout:10000})
           assert.equal(await editor.getAttribute('data-service-stage'),'1',label+' Next opens booking')
           await editor.locator('[data-service-step-controls] button').first().click()
+          await page.waitForFunction(()=>document.querySelector('[data-service-slide-editor]')
+            ?.getAttribute('data-service-stage')==='0',null,{timeout:10000})
           assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' Back preserves step')
           assert.equal(await input.inputValue(),'Synthetic service title',
             label+' unsaved title stays in form when navigating stages')
