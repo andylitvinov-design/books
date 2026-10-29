@@ -26,6 +26,8 @@ export type PsychologistIntent = {
   durationMinutes?: number; noImagery?: boolean;
   avoidMethods?: string[];
   confirmedTrigger?: string; confirmedReaction?: string;
+  courseId?: string; motifId?: string; symbolId?: string;
+  selfGuidedOnly?: boolean; intentionCode?: string;
 };
 export type PsychologistProfile = {
   confirmedFocus?: PsychologistFocus; preferredStyle?: string;
@@ -38,6 +40,11 @@ export type PsychologyInput = {
   safety?: PsychologistSafety; access?: PsychologistAccess;
   consent?: PsychologistConsent; profile?: PsychologistProfile;
   feedback?: PsychologistFeedback;
+  preferences?: {
+    style?: "gentle" | "practical" | "poetic";
+    channel?: "visual" | "auditory" | "tactile" | "neutral";
+    avoidElements?: string[]; noImagery?: boolean;
+  };
 };
 export type PsychologySession = {
   number: number; id: string; title: string; objectiveCode: string;
@@ -96,6 +103,10 @@ export type PsychologyDialogueTurn = {
   requiresHumanReview: boolean; canStartExercise: false;
   modelUsed: false; saved: false; clinicalTreatment: false;
   currentObjective?: string;
+  skillPreview?: {
+    id: string; title: string; steps: string[];
+    needsExplicitStart: true; optional: true; clinicalProtocol: false;
+  } | null;
   voluntaryComparison?: {
     promptKey: string; before: number; after: number; change: number;
     evidenceType: string; efficacyClaim: false; saveRequiresConsent: true;
@@ -115,11 +126,62 @@ export const PSYCHOLOGIST_METHODS: Readonly<Record<string, Readonly<{
 }>>>;
 export function buildPsychologyProgram(input?: PsychologyInput): PsychologyProgram;
 export function buildPsychologyDialogueTurn(input?: PsychologyDialogueInput): PsychologyDialogueTurn;
+
+export type PsychologyVideoSegment = {
+  id: string; seconds: number; narration: string; onScreen: string;
+  requiresOptIn?: boolean; allowSilenceAndSkip?: boolean;
+  requiresUserResponse?: boolean;
+};
+export type PsychologyVideoLesson = {
+  number: number; sessionId: string; title: string;
+  learningObjective: string; selectedSkillId: string | null;
+  practicalSteps: string[]; plannedVideoSeconds: number;
+  segments: PsychologyVideoSegment[]; transferExercise: string;
+  needsSafetyRecheck: true; canStopOrSkip: true;
+  videoAssetId: null; videoPlayable: false; audioAssetId: null;
+  needsManualPublication: true;
+  assessment: { t0: "optional_checkin"; t1: "optional_checkin"; noClaimsOfEfficacy: true };
+};
+export type PsychologyVideoCourseDraft = {
+  version: "psychologist-video-course-v1"; status: string;
+  courseId: string | null; title: string | null;
+  lessons: PsychologyVideoLesson[];
+  published: false; rendered: false; mediaAssetsVerified: false;
+  requiresClinicalAndEditorialReview: true;
+  focus?: PsychologistFocus; teachingModel?: string;
+  selectionRationale?: string;
+};
+export type PsychologyMeditationSegment = {
+  id: string; text: string; seconds: number; optionalSilenceSeconds: number;
+  maySkip: true; forceBreathControl: false; eyesMayRemainOpen: true;
+};
+export type PsychologyMeditationDraft = {
+  version: "psychologist-meditation-v1"; status: string;
+  motifId: string | null; script: string | null;
+  title?: string; language?: PsychologistLocale;
+  intentionCode?: string; plannedDurationSeconds: number;
+  segments: PsychologyMeditationSegment[];
+  audioAssetId: null; videoAssetId: null; rendered: false;
+  published: false; requiresEditorialReview: true;
+  noSymbolInterpretation?: true; diagnosis?: null;
+};
+export type PsychologyCourseOptions = {
+  version: "psychologist-mind-v1"; status: string;
+  formats: Array<{id:string;title:string;teachingModel:string;eligibleFoci:PsychologistFocus[]}>;
+  modelUsed: false; saved: false;
+};
+export type PsychologyMotifLibrary = {
+  version: "psychologist-mind-v1";status:string;
+  motifCount:number;symbolCount:number;
+  motifs:Array<{id:string;title:string;tier:string;selfGuided:boolean;clinicalReviewRequired:boolean}>;
+  noFixedInterpretations:true;modelUsed:false;saved:false;
+};
 export function consultPsychologistMind(
-  input?: (PsychologyDialogueInput & {task?: "dialogue"}) |
-    (PsychologyInput & {task?: "program"}) |
+  input?: (PsychologyDialogueInput & {task:"dialogue"}) |
+    (PsychologyInput & {task?:"program"|"video_course"|"course_options"|"meditation"|"kip_library"|"symbol_explore"}) |
     {task: string}
-): PsychologyProgram | PsychologyDialogueTurn | {
-  version: "psychologist-mind-v1"; status: "unsupported_task";
+): PsychologyProgram | PsychologyDialogueTurn | PsychologyVideoCourseDraft |
+   PsychologyMeditationDraft | PsychologyCourseOptions | PsychologyMotifLibrary | {
+  version: "psychologist-mind-v1"; status: string;
   modelUsed: false; saved: false;
 };
