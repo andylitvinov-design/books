@@ -372,7 +372,25 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // Every preset must now be an actual first-party HTTP audio file
         // which WebKit can load, decode and advance after a direct user tap.
         if (locale === "ru" && width === 390) {
-          for (const preset of ["harmony","prosperity","energy","love","meditation"]) {
+          // Real context-aware filter and choice flow, not decorative chips.
+          await page.locator("[data-video-audio-kind]").selectOption("nature");
+          assert.equal(await page.locator('[data-video-music="rain"]').count(),1);
+          assert.equal(await page.locator('[data-video-music="prosperity"]').count(),0,
+            "type filter removes unrelated tracks");
+          await page.locator("[data-video-audio-mood]").selectOption("calm");
+          assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
+          await page.locator("[data-video-audio-kind]").selectOption("all");
+          await page.locator("[data-video-audio-mood]").selectOption("all");
+          await page.locator("[data-video-audio-auto]").click();
+          assert.equal(await page.locator("[data-video-audio-auto]").getAttribute("aria-pressed"),"true");
+          assert.ok(await page.locator("[data-video-audio-player]").getAttribute("src"));
+          await page.locator("[data-video-audio-voice]").check();
+          assert.equal(await page.locator("[data-video-music-volume]").inputValue(),"30",
+            "voice-friendly mode lowers soundtrack volume");
+          await page.locator("[data-video-audio-voice]").uncheck();
+          await page.locator("[data-video-audio-auto]").click();
+          for (const preset of ["harmony","prosperity","energy","love","meditation",
+            "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
             const native=page.locator("[data-video-audio-player]");
             await native.waitFor({state:"attached",timeout:12000});
