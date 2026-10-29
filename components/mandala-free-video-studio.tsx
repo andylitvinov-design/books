@@ -1559,18 +1559,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setSuggestion("");
     setPreviewPlaying(false);
   };
+  // Last-click-wins guard: delayed WebKit layout callbacks may arrive after
+  // the visitor has switched to another editor tab.
+  const quickNavTokenRef = useRef(0);
   const openQuickDetailed = (anchor:string) => {
-    // Commit the fragment synchronously from the user's click. A native
-    // anchor jump while <details> is closed may otherwise be lost in WebKit.
-    if(window.location.hash !== "#"+anchor)window.location.hash="#"+anchor;
+    const token=++quickNavTokenRef.current;
+    const path=window.location.pathname+window.location.search;
+    const desired="#"+anchor;
+    const setLocation=(push:boolean)=>{
+      if(token!==quickNavTokenRef.current ||
+         window.location.pathname+window.location.search!==path)return;
+      if(window.location.hash===desired)return;
+      // The native anchor default is prevented on all three editor tabs.
+      // Keep the first click in browser history; repair a router/WebKit
+      // fragment reset after React expands the controlled <details>.
+      if(push)window.history.pushState(window.history.state,"",path+desired);
+      else window.history.replaceState(window.history.state,"",path+desired);
+    };
+    setLocation(true);
     setQuickDetailedOpen(true);
-    // Wait for the expanded DOM before scrolling; avoid competing smooth
-    // animations when switching multiple editor tabs on a narrow screen.
     const jump=()=>{
-      document.getElementById(anchor)?.scrollIntoView({behavior:"auto",block:"start"});
+      if(token!==quickNavTokenRef.current)return;
+      setLocation(false);
+      const section=document.getElementById(anchor);
+      if(section && section.getClientRects().length)
+        section.scrollIntoView({behavior:"auto",block:"start"});
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
     window.setTimeout(jump,180);
+    window.setTimeout(jump,400);
   };
   const createQuickVideo = () => {
     if(audioNeedsAttachment){
