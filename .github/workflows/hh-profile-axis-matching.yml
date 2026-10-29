@@ -18,6 +18,7 @@ on:
       - 'lib/holistic-support/intelligence-test-catalog.js'
       - 'lib/assessments/support-guide-tests.js'
       - 'lib/assessments/test-recommendations.js'
+      - 'data/core-service-offers.ts'
       - 'app/*/holistic-support/page.tsx'
       - 'components/holistic-meditation-gallery.tsx'
       - 'tests/intelligence-plan.test.mjs'

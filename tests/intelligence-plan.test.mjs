@@ -120,3 +120,36 @@ test('test format never silently becomes video and sensitive relationship tests 
   assert.equal(result.status,'no_match')
   assert.equal(result.primary,undefined)
 });
+test('service format uses published catalogue and requires an explicit choice for paid sessions', async () => {
+  const {coreServiceOffers}=await import('../data/core-service-offers.ts')
+  const request={...body,intent:{language:'en',selectedTopics:['money'],formats:['service']}}
+  const loadServices=coreServiceOffers
+  const free=await planIntelligenceRequest(request,{loadServices})
+  assert.equal(free.primary.id,'service:situation')
+  assert.equal(free.primary.href,'/en/services/free-situation-review')
+  assert.equal(free.primary.free,true)
+  const paid=await planIntelligenceRequest({...request,servicePayment:'include_paid'},{loadServices})
+  assert.equal(paid.primary.id,'service:business')
+  assert.equal(paid.primary.href,'/en/services/business-consulting')
+  assert.equal(paid.primary.free,false)
+  assert.equal(paid.primary.requiresUserConfirmation,true)
+  assert.equal(JSON.stringify(paid).includes('price'),false)
+  const timed=await planIntelligenceRequest({...request,intent:{...request.intent,maxDurationMinutes:5}},{loadServices})
+  assert.equal(timed.status,'no_match')
+  assert.equal((await planIntelligenceRequest({...request,preflight:undefined},{loadServices:()=>{throw Error('must not read')}})).status,'unavailable')
+});
+test('service adapter rejects forged routes and never suggests symbolic or unreviewed sensitive services', async () => {
+  const {coreServiceOffers}=await import('../data/core-service-offers.ts')
+  const offers=coreServiceOffers('en').map(row=>row.id==='business'?{...row,href:'/en/services/alchemy-of-soul'}:row)
+  const request={...body,servicePayment:'include_paid',intent:{language:'en',selectedTopics:['money'],formats:['service']}}
+  const result=await planIntelligenceRequest(request,{loadServices:()=>offers})
+  assert.equal(result.primary.id,'service:situation')
+  assert.equal(result.alternatives.length,0)
+  await assert.rejects(planIntelligenceRequest({...request,servicePayment:'yes'},{loadServices:()=>offers}),/INVALID_INTELLIGENCE_REQUEST/)
+  for (const locale of ['en','ru','es']) {
+    const related=await planIntelligenceRequest({...request,intent:{language:locale,selectedTopics:['relationships'],formats:['service']}},{loadServices:coreServiceOffers})
+    assert.equal(related.primary.id,'service:situation')
+    assert.equal(related.primary.href,`/${locale}/services/free-situation-review`)
+    assert.equal(related.alternatives.length,0)
+  }
+});

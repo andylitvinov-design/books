@@ -113,5 +113,31 @@ try {
     assert.equal(await card.getByText('Idioma del cuestionario: English',{exact:false}).isVisible(),true)
     assert.deepEqual(privateCalls,[])
   } finally { await testPage.close() }
-  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',testRecommendation:'passed'}))
+  const servicePage=await browser.newPage({viewport:{width:390,height:844}})
+  try {
+    await servicePage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
+    await servicePage.locator('[data-meditation-finder-toggle]').click()
+    const card=servicePage.locator('[data-holistic-intelligence]')
+    await card.locator('select').selectOption('money')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.locator('#hh-intelligence-format-meditation').selectOption('service')
+    await card.getByRole('button',{name:copy.en.next,exact:true}).click()
+    await card.getByRole('button',{name:'Include paid options',exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.en.no,exact:true}).click()
+    const link=card.getByRole('link').first();await link.waitFor({state:'visible',timeout:15000})
+    assert.equal(await link.getAttribute('href'),'/en/services/business-consulting')
+    assert.equal(await card.getByText('Paid service · check terms on the service page',{exact:true}).isVisible(),true)
+    assert.equal(await card.getByText('Opening details does not book, pay, or share your answers.',{exact:true}).isVisible(),true)
+    const opened=servicePage.waitForEvent('popup')
+    await link.click()
+    const details=await opened
+    await details.waitForLoadState('domcontentloaded')
+    assert.equal(new URL(details.url()).pathname,'/en/services/business-consulting')
+    assert.equal(await details.locator('h1').count()>0,true)
+    await details.close()
+    await card.getByRole('button',{name:copy.en.other,exact:true}).click()
+    assert.equal(await card.getByRole('link').first().getAttribute('href'),'/en/services/free-situation-review')
+  } finally { await servicePage.close() }
+  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',testRecommendation:'passed',serviceOptIn:'passed'}))
 } finally { await browser.close() }
