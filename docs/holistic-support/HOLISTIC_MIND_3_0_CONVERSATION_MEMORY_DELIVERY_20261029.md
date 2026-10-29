@@ -73,3 +73,9 @@ Do not label the feature live before these gates have passed.
   more safely; add reusable pieces only after compatibility review.
 - Paid model API fallback, cloud GPU expense, autonomous psychotherapy or
   automatic sensitive memory extraction (none permitted).
+
+## Validation hardening (29 October)
+- Fixed a duplicate React state setter/function declaration (`setConsent`) that blocked TS compilation.
+- Natural directly phrased RU/EN/ES preferences now produce a confirmation proposal; they are never automatically persisted. Incidental mentions are not proposals.
+- Authenticated memory mutations now use the existing per-owner database rate limiter (30 per minute).
+- Added focused regression scenarios. This update is source-level only; GitHub CI and two-account live RLS verification are still required before enabling the feature.

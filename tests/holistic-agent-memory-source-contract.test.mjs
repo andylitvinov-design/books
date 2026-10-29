@@ -32,6 +32,8 @@ test("API uses server verified user, origin and owner RLS transaction",()=>{
  assert.match(route,/requireSameOrigin\(request,config\)/u);
  assert.match(route,/HH_AGENT_MEMORY_ENABLED/u);
  assert.match(route,/readBody\(request,2048\)/u);
+ assert.match(route,/consumeRate\(config/u);
+ assert.match(route,/actorId:actor\.id/u);
  assert.match(route,/PRIVATE_HEADERS/u);
  assert.doesNotMatch(route,/service_role|clientUserId/u);
 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAppConfig,requestOrigin,requireSameOrigin } from "@/lib/app/config";
 import { createRequestAuth } from "@/lib/app/session";
+import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS,readBody,safeError } from "@/lib/app/http";
 import { AppError } from "@/lib/assessments/contracts";
 import {
@@ -21,6 +22,9 @@ async function endpoint(request) {
     else requireSameOrigin(request,config);
     auth=createRequestAuth(request,config);
     const actor=await auth.verified();
+    // Throttle encrypted writes and revocations for the verified owner.
+    if(request.method!=="GET")
+      await consumeRate(config,{op:"agent-memory-mutation",actorId:actor.id},30,60);
     // Optional owner header prevents stale cross-account tabs from editing
     // a different newly signed-in account. Never trust its value for auth.
     const expected=request.headers.get("x-hh-account-id");

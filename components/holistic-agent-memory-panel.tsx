@@ -78,7 +78,7 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
     }catch{setError(copy.saveError);return false;}
     finally{setBusy(false);}
   }
-  async function setConsent(accepted:boolean){
+  async function changeConsent(accepted:boolean){
     if(!accepted){setUseSaved(false);onUse([]);}
     await action({action:"consent",accepted});
   }
@@ -97,7 +97,7 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
         status==="unavailable"?<p role="status">{copy.unavailable}</p>:
         status==="ready"?<>
           <label className={styles.check}><input type="checkbox" checked={consent}
-            disabled={busy} onChange={e=>void setConsent(e.target.checked)}/>
+            disabled={busy} onChange={e=>void changeConsent(e.target.checked)}/>
             {consent?copy.disable:copy.enable}
           </label>
           {consent ? <>
