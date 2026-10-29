@@ -283,6 +283,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        const director=page.locator("[data-cinematic-director]");
+        assert.equal(await director.count(),1,"one canonical Cinematic Director in original editor");
+        assert.equal(await director.getAttribute("data-director-open"),"false",
+          "cinematic controls do not expand or start rendering without a tap");
         // Eight resource-imagery sessions stay within this ONE video editor.
         // Browsing and planning do not send saved tests or call a provider.
         assert.equal(await page.locator("[data-video-guided-course]").count(),0,
@@ -621,6 +625,46 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.ok(pcm.stdout.length>4000 && Math.sqrt(sum/(pcm.stdout.length/2))>.02,
             "real uploaded audio is audible in finished video");
           assert.deepEqual(uploaded, [], "background video must not upload any client content");
+        }
+
+        // True end-to-end cinematic storyboard → 4 animated Canvas shots →
+        // locally captured video bytes, never an AI API submission.
+        if(engine==="chromium"&&locale==="ru"&&width===390){
+          const therapy=page.locator("[data-video-therapy-toggle]");
+          if(await therapy.getAttribute("aria-pressed")==="true")await therapy.click();
+          await page.locator("[data-video-photo-enabled]").uncheck();
+          await page.locator("[data-video-affirmations-feature]").uncheck();
+          const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
+          await openDirector.click();
+          assert.equal(await director.getAttribute("data-director-open"),"true");
+          await director.locator('[data-director-field="goal"]').click();
+          await page.locator('[role="dialog"] textarea').fill("PRIVATE_SCRIPT_BROKEN_IF_SENT к ясному горизонту");
+          await page.locator('[role="dialog"] button:has-text("Готово")').click();
+          await director.locator('[data-director-create-plan]').click();
+          assert.equal(await director.locator("[data-director-shot]").count(),4,
+            "four connected first-party local video shots");
+          const storyboardText=await director.locator("[data-director-storyboard]").innerText();
+          assert.ok(!storyboardText.includes("PRIVATE_SCRIPT_BROKEN_IF_SENT"),
+            "private wish must not reach exported storyboard/provider-safe prompt");
+          await director.locator("[data-director-apply-montage]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-mandala-master-mp4]")===null,
+            undefined,{timeout:15000});
+          await page.waitForFunction(()=>
+            !document.querySelector("[data-mandala-video-generate]")?.disabled,
+            undefined,{timeout:15000});
+          await create.click();
+          const montageLink=page.locator("[data-mandala-video-download]");
+          await montageLink.waitFor({state:"visible",timeout:40000});
+          const [clip]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),montageLink.click(),
+          ]);
+          const montageBytes=await bufferFromStream(await clip.createReadStream());
+          assert.ok(montageBytes.length>10000,"recorded cinematic montage is not a storyboard screenshot");
+          const montageProbe=spawnSync("ffprobe",["-v","error","-show_entries",
+            "stream=codec_type","-of","json","-"],{input:montageBytes,encoding:"utf8"});
+          assert.equal(montageProbe.status,0,"cinematic montage media decodes");
+          assert.ok(JSON.parse(montageProbe.stdout).streams.some(s=>s.codec_type==="video"));
+          assert.deepEqual(uploaded,[],"no client photo/wish or render was uploaded to a provider");
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
