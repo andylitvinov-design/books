@@ -3,7 +3,8 @@
  * No external music or microphone capture; never touches the network.
  * Only started from an explicit user Create click and attached to that export.
  */
-export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation";
+export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation" |
+  "rain" | "ocean" | "breeze" | "focus" | "grounding" | "breath" | "sunrise" | "pulse";
 /** Cacheable first-party files: Safari in-app browsers cannot reliably open
  * synthetic blob: audio, even when WAV bytes are valid.
  * HTTPS /audio/mandala/*.wav lets WebKit request the actual media using Range.
@@ -23,6 +24,14 @@ const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number
   energy:[164.81,246.94,329.63,493.88],
   love:[174.61,220.00,349.23,440.00],
   meditation:[130.81,196.00,261.63,392.00],
+  rain:[130.81,196.00,261.63,392.00],
+  ocean:[110.00,164.81,220.00,329.63],
+  breeze:[146.83,220.00,293.66,440.00],
+  focus:[174.61,261.63,349.23,523.25],
+  grounding:[98.00,146.83,196.00,293.66],
+  breath:[130.81,196.00,261.63,349.23],
+  sunrise:[196.00,293.66,392.00,587.33],
+  pulse:[164.81,246.94,329.63,493.88],
 };
 
 // On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
@@ -136,7 +145,9 @@ export async function startAmbientMusic(
  * the original screenshot showed native media "Error" for that source.
  */
 export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): Blob {
-  const sampleRate = 44100;
+  // Original five presets retain byte-for-byte identical 44.1kHz masters.
+  // Additional first-party loops use 22.05kHz mono for mobile download size.
+  const sampleRate = ["harmony","prosperity","energy","love","meditation"].includes(preset) ? 44100 : 22050;
   const duration = 8;
   const length = sampleRate * duration;
   const bytes = new ArrayBuffer(44 + length * 2);
@@ -152,12 +163,35 @@ export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): 
   view.setUint16(34, 16, true); ascii(36, "data");
   view.setUint32(40, length * 2, true);
   const frequencies = NOTES[preset];
+  let seed = 0x12345678, low = 0, mid = 0;
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     const fade = Math.min(1, t / .3, (duration - t) / .4);
-    const sound = frequencies.reduce((sum, hz, index) =>
+    const tone = frequencies.reduce((sum, hz, index) =>
       sum + Math.sin(2 * Math.PI * hz * t) * (index === 0 ? .4 : .13)
         * (1 + .12 * Math.sin(2 * Math.PI * (.09 + index * .03) * t)), 0);
+    let sound = tone;
+    // These three nature-like textures are synthesized, not field recordings.
+    // Deterministic filtered noise prevents external assets or license issues.
+    if (preset === "rain" || preset === "ocean" || preset === "breeze") {
+      seed = (Math.imul(seed,1664525) + 1013904223) >>> 0;
+      const white = seed / 2147483648 - 1;
+      low += (white - low) * .006;
+      mid += (white - mid) * .038;
+      if (preset === "rain") sound = white * .28 + mid * .6 + Math.sin(2*Math.PI*110*t)*.025;
+      if (preset === "ocean") sound = (white*.13 + mid*.9 + low*1.6) *
+        (.72 + .23*Math.sin(t*.68)) + Math.sin(2*Math.PI*65*t)*.09;
+      if (preset === "breeze") sound = (white*.17 + mid*.48 + low) *
+        (.73 + .2*Math.sin(t*.42)) + tone*.1;
+    } else if (preset === "breath") {
+      sound = tone * (.7 + .3*Math.sin(2*Math.PI*.13*t));
+    } else if (preset === "sunrise") {
+      sound = tone * (.82 + .18*Math.sin(2*Math.PI*.32*t));
+    } else if (preset === "pulse") {
+      sound = tone * (.52 + .48*Math.pow(Math.sin(2*Math.PI*1.1*t),2));
+    } else if (preset === "grounding") {
+      sound = tone*.8;
+    }
     view.setInt16(44 + i * 2, Math.round(
       Math.max(-1, Math.min(1, sound * .62 * Math.max(0, fade))) * 32767,
     ), true);
