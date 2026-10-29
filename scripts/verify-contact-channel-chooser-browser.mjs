@@ -157,6 +157,69 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
 }
 
+/**
+ * The approved Tantra Reiki page has ONE compact consented phone capture and
+ * five selectable request intents; the earlier five separate trigger forms
+ * were replaced. Exercise the real rendered selection and synthetic CRM save,
+ * without opening an external messenger or creating a production lead.
+ */
+async function verifyTantraCompact(page, capture, locale, name, submissions) {
+  const picker = capture.locator('select[id^="tantra-request-"]');
+  assert.equal(await picker.count(), 1, name + ": one accessible request selector");
+  const options = await picker.locator("option").evaluateAll(nodes => nodes.map(node => node.value));
+  assert.deepEqual(options, ["free", "personal", "session", "answers", "feedback"],
+    name + ": all five approved intentions remain selectable");
+  assert.equal(await capture.locator('[data-reiki-phone-enquiry]').count(), 1,
+    name + ": one reusable compact phone consent form");
+
+  await picker.selectOption("personal");
+  const form = capture.locator('[data-reiki-phone-enquiry] form');
+  await form.waitFor({ state: "visible" });
+  const consent = form.locator('input[type="checkbox"][required]');
+  assert.equal(await consent.count(), 1, name + ": explicit reply-only opt-in required");
+  assert.equal(await consent.isChecked(), false, name + ": consent is never preselected");
+  assert.equal(await capture.locator('a[data-contact-channel="whatsapp"]').count(), 0,
+    name + ": no external messenger handoff before confirmed CRM receipt");
+  const previous = submissions.length;
+  await form.locator('[data-contact-channel-submit="whatsapp"]').click();
+  await form.locator('[role="alert"]').waitFor({ state: "visible" });
+  assert.equal(submissions.length, previous, name + ": no lead without contact/consent");
+  await form.locator('input[type="tel"]').fill("4165550123");
+  await consent.check();
+  // Simulate Safari's blocked popup: the in-page saved receipt must remain
+  // available, and no test may navigate to a real messenger.
+  await page.evaluate(() => { window.open = () => null; });
+  await form.locator('[data-contact-channel-submit="whatsapp"]').click();
+  const wa = capture.locator('a[data-contact-channel="whatsapp"]');
+  const tg = capture.locator('a[data-contact-channel="telegram"]');
+  await wa.waitFor({ state: "visible", timeout: 12000 });
+  assert.equal(await tg.count(), 1, name + ": optional Telegram handoff");
+  assert.equal(submissions.length, previous + 1, name + ": exactly one synthetic CRM acknowledgement");
+  const request = submissions.at(-1);
+  assert.equal(request.locale, locale);
+  assert.equal(request.sourcePath, "/" + locale + "/academy/reiki/tantra-reiki/free-initiation");
+  assert.equal(request.contactConsent, true);
+  assert.equal(request.contact.phone, "+14165550123");
+  assert.equal(request.contact.email, "");
+  assert.match(request.description, /50/, name + ": selected personal €50 request retained");
+  const waDraft = draft(await wa.getAttribute("href"), "wa.me", "/14376066502");
+  const tgDraft = draft(await tg.getAttribute("href"), "t.me", "/AndyTherapist");
+  assert.equal(waDraft, tgDraft, name + ": the five-choice request is consistent across messengers");
+  assert.doesNotMatch(waDraft, /4165550123|qa-browser@example.test/,
+    name + ": private contact is never put into a messenger URL");
+
+  // Changing intent must not reuse the previous consent, stored receipt, or
+  // silently create a second lead. Client chooses again and opts in again.
+  await picker.selectOption("answers");
+  const fresh = capture.locator('[data-reiki-phone-enquiry] form');
+  await fresh.waitFor({ state: "visible" });
+  assert.equal(await fresh.locator('input[type="checkbox"][required]').isChecked(), false);
+  assert.equal(await capture.locator('a[data-contact-channel="whatsapp"]').count(), 0);
+  assert.equal(submissions.length, previous + 1);
+  results.push({ name, locale, compactRequestIntents: options.length,
+    syntheticCrmAcknowledged: true, consentResetOnSelection: true, externalMessengerOpened: false });
+}
+
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
@@ -177,7 +240,7 @@ async function runEngine(name, engine) {
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
@@ -191,6 +254,12 @@ async function runEngine(name, engine) {
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
             const count = await items.count();
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
+            if (item.path.includes("/tantra-reiki/free-initiation")) {
+              assert.equal(count, 1, "Tantra Reiki has one compact chooser for five intents");
+              await verifyTantraCompact(page, page.locator("[data-tantra-whatsapp-capture]"),
+                locale, [name, locale, width, "tantra-compact"].join("-"), submissions);
+              continue;
+            }
             const indexes = count > 2 ? [0,count-1] : [0];
             for (const i of indexes) {
               await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
