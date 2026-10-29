@@ -36,19 +36,19 @@ async function start(cookies = []) {
   return { ...commit(auth, cookies), data, challenge: new URL(data.url).searchParams.get('code_challenge') }
 }
 const user = { id: '10000000-0000-4000-8000-000000000001', aud: 'authenticated', email: 'synthetic@example.invalid', user_metadata: {} }
-function provider(t, challenge, size = 0) {
+function provider(t, challenge, size = 0, identity = user) {
   let calls = 0
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     if (new URL(url).pathname.endsWith('/logout')) return new Response(null, { status: 204 })
-    if (new URL(url).pathname.endsWith('/user')) return Response.json(user)
+    if (new URL(url).pathname.endsWith('/user')) return Response.json(identity)
     assert.equal(new URL(url).searchParams.get('grant_type'), 'pkce')
     const body = JSON.parse(options.body)
     calls++
     if (createHash('sha256').update(body.code_verifier || '').digest('base64url') !== challenge)
       return Response.json({ code: 'bad_code_verifier', message: 'Synthetic verifier mismatch' }, { status: 400 })
     const exp = Math.floor(Date.now()/1000) + 3600
-    const claims = { sub: user.id, session_id: '20000000-0000-4000-8000-000000000001', exp }
-    return Response.json({ access_token: 'synthetic.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.signature', refresh_token: 'synthetic-refresh-' + 'x'.repeat(size), token_type: 'bearer', expires_in: 3600, user })
+    const claims = { sub: identity.id, session_id: '20000000-0000-4000-8000-000000000001', exp }
+    return Response.json({ access_token: 'synthetic.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.signature', refresh_token: 'synthetic-refresh-' + 'x'.repeat(size), token_type: 'bearer', expires_in: 3600, user:identity })
   })
   return () => calls
 }
@@ -89,6 +89,7 @@ test('missing or wrong verifier fails closed without a session', async t => {
 
 // Execute the actual route, substituting only external DB/rate boundaries.
 // Auth and cookie implementations remain the pinned production SDK and adapter.
+const meditationFixture = JSON.parse(await readFile(new URL('../data/academy/meditation-catalog-candidates-20261028.json', import.meta.url), 'utf8')).videos
 let routeSource = await readFile(new URL('../app/api/app/[...path]/route.js', import.meta.url), 'utf8')
 routeSource = routeSource
   .replace("from 'next/server'", "from 'next/server.js'")
@@ -97,9 +98,50 @@ routeSource = routeSource
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
     'export const accountWrites = []; const createAppRepository = () => ({ensureAccount: async actor => accountWrites.push(actor.id)})')
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
-  .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + '.js', import.meta.url)}'`)
+  .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
+  .replace("const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')", `const loadMeditationDiscovery = async () => ({ videos: ${JSON.stringify(meditationFixture)}, publishedSourceIds: ['HqfixazXqRY'] })`)
+  .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + (/\.[cm]?js$/.test(name) ? '' : '.js'), import.meta.url)}'`)
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
 const route = await import('data:text/javascript;base64,' + Buffer.from(routeSource).toString('base64'))
+
+test('intelligence route enforces origin and verified session before planning', async t => {
+  const body = { requestId:'d4502108-a8b8-4d3b-813f-c255b452bde4', surface:'cabinet',
+    intent:{language:'en',selectedTopics:['energy']}, preflight:{immediateDanger:'no',selfHarmThoughts:'no'} }
+  const request = (payload, headers) => new NextRequest(origin + '/api/app/intelligence/plan', {
+    method:'POST', headers:{'content-type':'application/json', ...headers}, body:JSON.stringify(payload),
+  })
+  const params = {params:Promise.resolve({path:['intelligence','plan']})}
+  assert.equal((await route.POST(request(body, {origin:'https://evil.example'}), params)).status, 403)
+  assert.equal((await route.POST(request(body, {origin}), params)).status, 401)
+  const flow = await start()
+  provider(t,flow.challenge)
+  const auth = createRequestAuth(request(body, {origin, cookie:flow.cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')}), config)
+  assert.equal((await auth.client.auth.exchangeCodeForSession('synthetic-code')).error, null)
+  const cookies = commit(auth).cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')
+  const headers = {origin, cookie:cookies}
+  const response = await route.POST(request(body, headers), params)
+  assert.equal(response.status, 200)
+  assert.match(response.headers.get('cache-control'), /no-store/)
+  const result = await response.json()
+  assert.equal(result.status, 'recommend')
+  assert.equal(result.primary.id, 'youtube:HqfixazXqRY')
+  assert.equal(JSON.stringify(result).includes(user.id), false)
+  assert.equal((await route.POST(request({...body, ownerScoped:true}, headers), params)).status, 400)
+  assert.equal((await route.POST(request({...body, intent:{...body.intent, goalText:'x'.repeat(17000)}}, headers), params)).status, 413)
+  const crisis = await route.POST(request({...body, intent:{...body.intent, goalText:'I want to die'}}, headers), params)
+  assert.equal((await crisis.json()).status, 'safety_handoff')
+  assert.equal((await route.POST(request(body, {...headers, 'x-hh-account-id':'10000000-0000-4000-8000-000000000002'}), params)).status, 409)
+  const second = { ...user, id:'10000000-0000-4000-8000-000000000002' }
+  const secondFlow = await start()
+  provider(t,secondFlow.challenge,0,second)
+  const secondAuth = createRequestAuth(request(body, {origin, cookie:secondFlow.cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')}), config)
+  assert.equal((await secondAuth.client.auth.exchangeCodeForSession('synthetic-code')).error, null)
+  const secondCookies = commit(secondAuth).cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')
+  assert.equal((await route.POST(request(body, {origin, cookie:secondCookies, 'x-hh-account-id':user.id}), params)).status, 409)
+  const secondResult = await route.POST(request(body, {origin, cookie:secondCookies}), params)
+  assert.equal(secondResult.status, 200)
+  assert.equal(JSON.stringify(await secondResult.json()).includes(second.id), false)
+})
 async function routeStart(cookies = [], intentId, continueTo = null) {
   const req = new NextRequest(origin + '/api/app/auth/start', { method:'POST', headers:{
     origin, 'content-type':'application/json', cookie:cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; '),

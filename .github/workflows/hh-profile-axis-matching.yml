@@ -3,7 +3,7 @@ on:
   # Run the same gate on this isolated dependency branch while its PR targets
   # another draft rather than the production branch.
   push:
-    branches: ['codex/hh-intelligence-meditation-bridge-20261029']
+    branches: ['codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029']
   pull_request:
     branches: ['codex/public-book-library']
     paths:
@@ -14,6 +14,11 @@ on:
       - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'lib/holistic-support/intelligence-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
+      - 'lib/holistic-support/intelligence-plan.mjs'
+      - 'tests/intelligence-plan.test.mjs'
+      - 'tests/app-auth-pkce.integration.mjs'
+      - 'lib/holistic-support/meditation-discovery-server.ts'
+      - 'app/api/app/**/route.js'
       - 'lib/home-conversation.mjs'
       - 'lib/ideas-guidance.mjs'
       - 'data/ideas-aphorisms.json'
@@ -62,9 +67,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs
+        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+      - name: Authenticated intelligence route and OAuth regression
+        run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: TypeScript check
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site

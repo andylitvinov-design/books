@@ -29,3 +29,17 @@ test('rejects invalid types, unbounded input and unknown values', () => {
   assert.throws(() => validateIntelligenceRequest({ ...valid(), requestId: 'not-a-uuid' }), /INVALID_INTELLIGENCE_REQUEST/);
   assert.throws(() => validateIntelligenceRequest({ ...valid(), surface: 'admin' }), /INVALID_INTELLIGENCE_REQUEST/);
 });
+test('preflight accepts only explicit answers and never a claimed safety status', () => {
+  const preflight = { immediateDanger: 'no', selfHarmThoughts: 'no' };
+  assert.deepEqual(validateIntelligenceRequest({ ...valid(), preflight }).preflight, preflight);
+  for (const preflight of [
+    { status: 'clear' }, { immediateDanger: 'no', selfHarmThoughts: 'no', status: 'clear' },
+    { immediateDanger: false, selfHarmThoughts: 'no' }, { immediateDanger: 'no' },
+    { immediateDanger: 'no', selfHarmThoughts: 'never' },
+  ]) assert.throws(() => validateIntelligenceRequest({ ...valid(), preflight }), /INVALID_INTELLIGENCE_REQUEST/);
+});
+test('session dismissals are bounded identifiers, not private history records', () => {
+  assert.deepEqual(validateIntelligenceRequest({ ...valid(), session: { dismissedIds: ['youtube:HqfixazXqRY'] } }).session.dismissedIds, ['youtube:HqfixazXqRY']);
+  for (const session of [{ accountId: 'other' }, { dismissedIds: ['bad/id'] }, { dismissedIds: Array(81).fill('x') }])
+    assert.throws(() => validateIntelligenceRequest({ ...valid(), session }), /INVALID_INTELLIGENCE_REQUEST/);
+});
