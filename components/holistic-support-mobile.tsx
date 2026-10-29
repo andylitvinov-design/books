@@ -727,8 +727,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
   // Display a check-in average only after interaction, never from four default 5s.
-  const averageScore = editedCheckins.length
-    ? (editedCheckins.reduce((sum, id) => sum + scores[id], 0) / editedCheckins.length).toFixed(1)
+  const averageScore = editedCheckins.length === checkinOrder.length
+    ? (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1)
     : null;
   const FocusIcon = scoreIcons[focus];
   const ActiveFocusIcon = quickGoal
