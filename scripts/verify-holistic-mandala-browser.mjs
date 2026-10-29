@@ -5,6 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
@@ -300,6 +301,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await compactHypno.waitFor({state:"visible",timeout:12000});
         for(const marker of ["data-hypno-request","data-hypno-phrases","data-hypno-display","data-hypno-design","data-hypno-preview"]){
           assert.equal(await compactHypno.locator("["+marker+"]").count(),1,marker);
+        }
+        // Public synthetic screenshot. No signed-in profile, test answers or
+        // private media is captured in CI artifacts.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await compactHypno.screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
+            animations:"disabled",
+          });
         }
         const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
         assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
