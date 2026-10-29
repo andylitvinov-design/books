@@ -207,6 +207,8 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(studio,/setCinematicPlan\(plan\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
   assert.match(studio,/const activeFilm = cinematicPlan \? null/);
+  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
+    "applied cinematic storyboard must show its real first frame, not old static hero promo");
   assert.match(studio,/setCinematicPlan\(null\)/);
   assert.match(studio,/data-mandala-video-generate/);
   assert.match(directorUI,/data-director-create-plan/);
