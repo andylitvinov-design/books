@@ -1069,7 +1069,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <Icon size={16} aria-hidden="true"/>
                   <input type="range" min={1} max={10} step={1} value={scores[key]}
                     aria-label={ui.themes[key]}
-                    onChange={event=>{setTouchedScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}));setScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}));}}/>
+                    onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
                   <output>{scores[key]}</output>
                 </span>
               </label>;
