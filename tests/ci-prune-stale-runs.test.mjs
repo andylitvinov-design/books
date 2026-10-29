@@ -59,6 +59,8 @@ test('elevated GitHub token only used for trusted production checkout, not PR HE
   assert.match(yaml, /permissions: \{\}/);
   assert.match(yaml, /actions: write/);
   assert.match(yaml, /pull-requests: read/);
-  assert.match(yaml, /github\.event\.pull_request\.base\.sha \|\| github\.sha/);
-  assert.doesNotMatch(yaml, /^  pull_request:/m);
+  assert.match(yaml, /ref: codex\/public-book-library/);
+  assert.match(yaml, /^  pull_request:/m);
+  assert.match(yaml, /if: github\.event_name == 'pull_request'/);
+  assert.match(yaml, /github\.event_name != 'pull_request'/);
 });

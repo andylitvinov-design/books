@@ -3,6 +3,12 @@ name: HH CI prune superseded queued runs
 # pull_request_target executes the trusted BASE-branch script. Never check out
 # untrusted PR HEAD while possessing a GITHUB_TOKEN with actions:write.
 on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-ci-stale-run-prune.yml'
+      - 'scripts/ci-prune-stale-runs.mjs'
+      - 'tests/ci-prune-stale-runs.test.mjs'
   pull_request_target:
     branches: ['codex/public-book-library']
     types: [synchronize, closed, reopened]
@@ -15,8 +21,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/ci-prune-stale-runs.test.mjs
   prune:
-    if: github.repository == 'andylitvinov-design/books'
+    if: github.repository == 'andylitvinov-design/books' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -28,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
           # A PR cannot substitute the privileged script with attacker code.
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.base.sha || github.sha }}
+          ref: codex/public-book-library
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

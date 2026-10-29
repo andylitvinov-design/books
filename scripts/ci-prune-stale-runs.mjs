@@ -56,7 +56,11 @@ export async function prune(api, ctx, { limit = 20, dryRun = false } = {}) {
     if (!eligible(freshRun, freshPR, ctx)) continue;
     if (dryRun) { summary.dryRun.push(run.id); continue; }
     try { await api.cancel(run.id); summary.cancelled.push(run.id); }
-    catch (e) { summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) }); }
+    catch (e) {
+      // Another janitor may have cancelled the same run between GET and POST.
+      const after = await api.run(run.id).catch(() => null);
+      if (after?.status === 'queued') summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) });
+    }
   }
   return summary;
 }
