@@ -12,9 +12,9 @@ if (!['chromium','webkit'].includes(name)) throw new Error('UNSUPPORTED_BROWSER'
 const base = process.env.HH_INTELLIGENCE_BASE_URL || 'http://127.0.0.1:3187'
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('LOCAL_SITE_REQUIRED')
 const copy = {
-  en:{next:'Continue',no:'No',yes:'Yes',other:'Another option',help:'If you may be in danger'},
-  ru:{next:'Продолжить',no:'Нет',yes:'Да',other:'Другой вариант',help:'Если вам угрожает опасность'},
-  es:{next:'Continuar',no:'No',yes:'Sí',other:'Otra opción',help:'Si puedes estar en peligro'},
+  en:{next:'Continue',no:'No',yes:'Yes',skip:'Skip',other:'Another option',help:'If you may be in danger'},
+  ru:{next:'Продолжить',no:'Нет',yes:'Да',skip:'Пропустить',other:'Другой вариант',help:'Если вам угрожает опасность'},
+  es:{next:'Continuar',no:'No',yes:'Sí',skip:'Omitir',other:'Otra opción',help:'Si puedes estar en peligro'},
 }
 for (let i=0;i<60;i++) {
   try { if ((await fetch(`${base}/en/holistic-support`)).ok) break } catch { /* server starting */ }
@@ -40,6 +40,7 @@ try {
       await card.getByRole('button',{name:t.next,exact:true}).click()
       await card.getByRole('button',{name:t.no,exact:true}).click()
       await card.getByRole('button',{name:t.no,exact:true}).click()
+      await card.getByRole('button',{name:t.skip,exact:true}).click()
       const link=card.getByRole('link').first()
       await link.waitFor({state:'visible',timeout:15000})
       const href=await link.getAttribute('href')
@@ -67,5 +68,24 @@ try {
     assert.equal(await card.getByText(copy.en.help,{exact:false}).isVisible(),true)
     assert.equal(await card.getByRole('link').count(),0)
   } finally { await page.close() }
-  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed'}))
+  const checkinPage=await browser.newPage({viewport:{width:390,height:844}})
+  try {
+    await checkinPage.context().route('https://www.youtube.com/**',route=>route.abort())
+    await checkinPage.goto(`${base}/en/holistic-support`,{waitUntil:'domcontentloaded'})
+    await checkinPage.locator('[data-meditation-finder-toggle]').click()
+    const card=checkinPage.locator('[data-holistic-intelligence]')
+    await card.locator('select').selectOption('energy')
+    await card.getByRole('button',{name:'Continue',exact:true}).click()
+    await card.getByRole('button',{name:'No',exact:true}).click()
+    await card.getByRole('button',{name:'No',exact:true}).click()
+    await card.locator('#hh-checkin-before-meditation').fill('3')
+    await card.getByRole('button',{name:'Use this answer',exact:true}).click()
+    const link=card.getByRole('link').first();await link.waitFor({state:'visible',timeout:15000})
+    const popup=checkinPage.waitForEvent('popup');await link.click();await (await popup).close()
+    await card.locator('#hh-checkin-after-meditation').fill('5')
+    await card.getByRole('button',{name:'Use this answer',exact:true}).click()
+    await card.getByText('Change in your self-report: +2.',{exact:false}).waitFor()
+    assert.equal(await card.getByText('not proof of a treatment effect',{exact:false}).isVisible(),true)
+  } finally { await checkinPage.close() }
+  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed'}))
 } finally { await browser.close() }

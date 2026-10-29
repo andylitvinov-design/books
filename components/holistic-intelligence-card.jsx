@@ -12,6 +12,11 @@ const LANGUAGES = {en:'English',ru:'Русский',es:'Español'}
 const FOCUS = {en:'Your focus',ru:'Выбранная тема',es:'Tu tema'}
 const SAVED = {en:'Use my saved coaching topic for this request',ru:'Использовать мою сохранённую тему коучинга для этого запроса',es:'Usar mi tema de coaching guardado para esta solicitud'}
 const PROFILE_NOTE = {en:'Your profile is used only if you select your saved coaching topic; test results are not used.',ru:'Профиль используется только если вы выберете сохранённую тему коучинга; результаты тестов не используются.',es:'Tu perfil se usa solo si eliges tu tema de coaching guardado; no se usan resultados de tests.'}
+const CHECKIN = {
+  en:{before:'Optional: how calm do you feel right now, from 0 to 10?',after:'After trying the practice, how calm do you feel, from 0 to 10?',save:'Use this answer',change:'Change in your self-report',note:'This is a personal observation, not proof of a treatment effect.'},
+  ru:{before:'Необязательно: насколько спокойно вы чувствуете себя сейчас, от 0 до 10?',after:'После практики насколько спокойно вы чувствуете себя, от 0 до 10?',save:'Использовать ответ',change:'Изменение вашей самооценки',note:'Это личное наблюдение, а не доказательство лечебного эффекта.'},
+  es:{before:'Opcional: ¿cuánta calma sientes ahora, de 0 a 10?',after:'Después de la práctica, ¿cuánta calma sientes, de 0 a 10?',save:'Usar respuesta',change:'Cambio en tu autoevaluación',note:'Es una observación personal, no una prueba de efecto terapéutico.'},
+}
 
 /** @param {{locale?:string, surface?:string, accountId?:string, videos?:object[], publishedSourceIds?:string[], audioLanguage?:string}} props */
 export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accountId, videos, publishedSourceIds, audioLanguage }) {
@@ -19,9 +24,10 @@ export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accou
   const [step,setStep]=useState('topic'), [goal,setGoal]=useState(''), [first,setFirst]=useState('')
   const [answers,setAnswers]=useState(null), [result,setResult]=useState(null), [dismissed,setDismissed]=useState([])
   const [feedback,setFeedback]=useState(''), [started,setStarted]=useState(false), [busy,setBusy]=useState(false)
+  const [baseline,setBaseline]=useState(null), [checkin,setCheckin]=useState(''), [followupDone,setFollowupDone]=useState(false), [comparison,setComparison]=useState(null)
   const generation=useRef(0)
   useEffect(()=>()=>{generation.current+=1},[])
-  function edit(){generation.current+=1;setStep('topic');setFirst('');setAnswers(null);setResult(null);setFeedback('');setStarted(false);setBusy(false)}
+  function edit(){generation.current+=1;setStep('topic');setFirst('');setAnswers(null);setResult(null);setFeedback('');setStarted(false);setBusy(false);setBaseline(null);setCheckin('');setFollowupDone(false);setComparison(null)}
   async function suggest(preflight,excluded=dismissed){
     const current=++generation.current
     setBusy(true);setFeedback('');setStarted(false)
@@ -37,19 +43,28 @@ export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accou
     finally {if(current===generation.current)setBusy(false)}
   }
   function answerFirst(value){setFirst(value);if(value==='no')setStep('thoughts');else{setResult({status:'safety_handoff',explanation:t.help});setStep('result')}}
-  function answerSecond(value){if(value!=='no'){setResult({status:'safety_handoff',explanation:t.help});setStep('result');return}void suggest({immediateDanger:first,selfHarmThoughts:value})}
-  function another(){if(!answers||!result?.primary)return;const next=[...new Set([...dismissed,result.primary.id])].slice(-80);setDismissed(next);void suggest(answers,next)}
+  function answerSecond(value){if(value!=='no'){setResult({status:'safety_handoff',explanation:t.help});setStep('result');return}setAnswers({immediateDanger:first,selfHarmThoughts:value});setStep('checkin')}
+  function beforeCheckin(save){if(save)setBaseline({promptKey:'self_calm',value:Number(checkin),measuredAt:new Date().toISOString()});setCheckin('');void suggest(answers)}
+  async function afterCheckin(save){
+    try {if(save&&baseline){const {compareVoluntaryCheckins}=await import('@/lib/holistic-support/client-reasoning-core.mjs');setComparison(compareVoluntaryCheckins(baseline,{promptKey:'self_calm',value:Number(checkin),measuredAt:new Date().toISOString()}))}}
+    catch {setComparison(null)}
+    finally {setCheckin('');setFollowupDone(true)}
+  }
+  function another(){if(!answers||!result?.primary)return;const next=[...new Set([...dismissed,result.primary.id])].slice(-80);setDismissed(next);setBaseline(null);setCheckin('');setFollowupDone(false);setComparison(null);void suggest(answers,next)}
   const choices=handler=><div className={styles.actions}>{['yes','no','unsure'].map(value=><button key={value} type="button" onClick={()=>handler(value)}>{t[value]}</button>)}</div>
   return <section className={styles.root} aria-label={t.title} data-holistic-intelligence>
     <h3>{t.title}</h3><p>{surface==='cabinet'?PROFILE_NOTE[lang]:t.intro}</p>
     {step==='topic'&&<div className={styles.question}><label htmlFor={`hh-intelligence-topic-${surface}`}>{t.topic}</label><select id={`hh-intelligence-topic-${surface}`} value={goal} onChange={event=>{setGoal(event.target.value);setDismissed([])}}><option value="">{t.choose}</option>{Object.entries(t.goals).map(([key,label])=><option key={key} value={key}>{label}</option>)}{surface==='cabinet'&&<option value="saved">{SAVED[lang]}</option>}</select><button type="button" disabled={!goal} onClick={()=>setStep('danger')}>{t.next}</button></div>}
     {step==='danger'&&<div className={styles.question}><p>{t.danger}</p>{choices(answerFirst)}</div>}
     {step==='thoughts'&&!busy&&<div className={styles.question}><p>{t.thoughts}</p>{choices(answerSecond)}</div>}
+    {step==='checkin'&&!busy&&<div className={styles.question}><label htmlFor={`hh-checkin-before-${surface}`}>{CHECKIN[lang].before}</label><input id={`hh-checkin-before-${surface}`} type="number" min="0" max="10" step="1" value={checkin} onChange={event=>setCheckin(event.target.value)}/><div className={styles.actions}><button type="button" disabled={checkin===''||!Number.isInteger(Number(checkin))||Number(checkin)<0||Number(checkin)>10} onClick={()=>beforeCheckin(true)}>{CHECKIN[lang].save}</button><button type="button" onClick={()=>beforeCheckin(false)}>{t.skip}</button></div></div>}
     {busy&&<p role="status">{t.wait}</p>}
     {step==='result'&&!busy&&result&&<div className={styles.result} role={result.status==='safety_handoff'?'alert':'status'}>
       {result.primary?<><small>{FOCUS[lang]}: {goal==='saved'?SAVED[lang]:t.goals[goal]}</small><strong>{result.primary.title}</strong><p>{result.explanation}</p><small>{t.audio}: {LANGUAGES[result.primary.audioLanguage]||result.primary.audioLanguage}</small>
         <div className={styles.actions}><a href={result.primary.href} target="_blank" rel="noopener noreferrer" onClick={()=>setStarted(true)}>{t.start}</a><button type="button" onClick={another}>{t.other}</button><button type="button" onClick={another}>{t.unsuitable}</button></div>
-        {started&&(!feedback?<div className={styles.feedback}><span>{t.helpful}</span>{['useful','notUseful','skip'].map(key=><button type="button" key={key} onClick={()=>key==='notUseful'?another():setFeedback(key)}>{t[key]}</button>)}</div>:feedback==='skip'?null:<p>{t.thanks}</p>)}
+        {started&&baseline&&!followupDone&&<div className={styles.question}><label htmlFor={`hh-checkin-after-${surface}`}>{CHECKIN[lang].after}</label><input id={`hh-checkin-after-${surface}`} type="number" min="0" max="10" step="1" value={checkin} onChange={event=>setCheckin(event.target.value)}/><div className={styles.actions}><button type="button" disabled={checkin===''||!Number.isInteger(Number(checkin))||Number(checkin)<0||Number(checkin)>10} onClick={()=>void afterCheckin(true)}>{CHECKIN[lang].save}</button><button type="button" onClick={()=>void afterCheckin(false)}>{t.skip}</button></div></div>}
+        {comparison&&<p>{CHECKIN[lang].change}: {comparison.change>0?'+':''}{comparison.change}. {CHECKIN[lang].note}</p>}
+        {started&&(!baseline||followupDone)&&(!feedback?<div className={styles.feedback}><span>{t.helpful}</span>{['useful','notUseful','skip'].map(key=><button type="button" key={key} onClick={()=>key==='notUseful'?another():setFeedback(key)}>{t[key]}</button>)}</div>:feedback==='skip'?null:<p>{t.thanks}</p>)}
       </>:<p>{result.explanation||t.unavailable}</p>}
       {result.status!=='safety_handoff'&&<button type="button" onClick={edit}>{t.change}</button>}
     </div>}
