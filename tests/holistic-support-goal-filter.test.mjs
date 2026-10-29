@@ -256,3 +256,17 @@ test("WebKit late-change acceptance is precise: saved inactive only, never unsav
     "a new check-in invalidates previously accepted goals");
   assert.equal(acceptedBadge(undefined,{dirty:true,active:false,checkin:5}),false);
 });
+
+test("WebKit stale input events cannot corrupt the next goal sector after atomic Save + Next", () => {
+  // A late blur from the previous Money input must not mutate Love amounts,
+  // restore an unsaved flag, or erase the saved Money checkmark.
+  assert.match(editor, /const activeSectorRef = useRef\(sector\)/);
+  assert.match(editor, /const markDirty = \(\) => \{\s*if \(activeSectorRef\.current !== sector\) return;/);
+  assert.match(editor, /function toggle\([^]*?\{\s*if \(activeSectorRef\.current !== sector\) return;/);
+  assert.match(editor, /function updateRating\([^]*?\{\s*if \(activeSectorRef\.current !== sector\) return;/);
+  assert.match(editor, /function updateAmount\([^]*?\{\s*if \(activeSectorRef\.current !== sector\) return;/);
+  assert.match(editor, /function changeSector\([^]*?activeSectorRef\.current = value;\s*setSector\(value\);/);
+  assert.match(editor, /function nextSector\(\) \{[^]*?activeSectorRef\.current = nextId;\s*flushSync/);
+  assert.match(editor, /function reset\(\) \{\s*activeSectorRef\.current = "energy";/);
+  assert.match(editor, /setAccepted\(previous => \(\{ \.\.\.previous, \[sector\]: snapshot \}\)\)/);
+});
