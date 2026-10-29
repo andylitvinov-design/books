@@ -111,7 +111,7 @@ function ReviewCard({ row, locale, onUpdated }) {
   }
 
   function submit(action) {
-    if (!canSave) return
+    if (pending || (action !== 'reject' && !canSave)) return
     setMessage('')
     startTransition(async () => {
       const result = await reviewCatalogVideoAction({
