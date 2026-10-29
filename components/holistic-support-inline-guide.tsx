@@ -682,9 +682,13 @@ export function HolisticSupportInlineGuide({
         {!freeMode ? <span className={styles.progress}>{t.step} {stageStep}/4</span> : null}
         <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
-      {freeMode ? <HolisticLanguageConversation locale={locale}
-        seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)} videos={videos} tests={guideTests} enabledFormats={languageFormats}
-        onVideo={onVideo} /> : <>
+      <div hidden={!freeMode} aria-hidden={!freeMode}>
+        <HolisticLanguageConversation locale={locale}
+          seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)}
+          videos={videos} tests={guideTests} enabledFormats={languageFormats}
+          onVideo={onVideo}/>
+      </div>
+      {!freeMode ? <>
       <div className={styles.dialogue}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
           <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={128} height={160}
