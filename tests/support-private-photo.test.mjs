@@ -135,3 +135,21 @@ test('concurrent photo choices never let an older iPhone decode replace the newe
   assert.match(select,/if\(choiceEpoch===photoChoiceEpoch\.current\)setError\(t\.invalid\)/)
   assert.match(select,/if\(choiceEpoch===photoChoiceEpoch\.current\)setBusy\(false\)/)
 })
+
+test('local mandala editor invalidates earlier iPhone photo decoding and clears stale exports',()=>{
+  // The same photo normalizer powers Support and Mandala. The latter must
+  // never revive a previous photo after a fast second file choice or Delete.
+  assert.match(mandala,/const photoChoiceEpoch = useRef\(0\)/)
+  assert.match(mandala,/photoChoiceEpoch\.current \+= 1; \}, \[\]\)/)
+  const pick=mandala.slice(mandala.indexOf('async function handleImage'),mandala.indexOf('function selectTopic'))
+  assert.match(pick,/const choiceEpoch = \+\+photoChoiceEpoch\.current/)
+  assert.ok(pick.indexOf('setImageUrl(null);') < pick.indexOf('await prepareBrowserPhoto(image)'),
+    'replace clears previous photo before decoding the next file')
+  assert.ok(pick.indexOf('setPreparedPng(null);') < pick.indexOf('await prepareBrowserPhoto(image)'),
+    'old image export must not remain downloadable during a replacement')
+  assert.ok(pick.indexOf('if (choiceEpoch !== photoChoiceEpoch.current) return;') <
+    pick.indexOf('setImageUrl(URL.createObjectURL(prepared))'),
+    'late old decode cannot overwrite the latest photo')
+  assert.match(pick,/if \(choiceEpoch === photoChoiceEpoch\.current\) setImageError\(t\.invalid\)/)
+  assert.match(mandala,/onClick=\{\(\) => \{ photoChoiceEpoch\.current \+= 1; setImageUrl\(null\); setPreparedPng\(null\);/)
+})
