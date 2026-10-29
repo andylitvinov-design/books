@@ -75,6 +75,7 @@ export type PsychologyProgram = {
   contextUsed: { profile: boolean; agentMemory: boolean; verifiedTestResults: boolean };
   formulation: PsychologyCaseFormulation | null;
   primaryApproach: string | null; sessions: PsychologySession[];
+  courseRecipeId?: string | null; courseSelectionOrigin?: string;
   requiresHumanReview: boolean; publishable: false; saved: false;
   specialistDiscussionOptions: string[]; clinicalAssessmentRequired: boolean;
   modelUsed: false; clinicalTreatment: false;
@@ -157,7 +158,7 @@ export type PsychologyMeditationSegment = {
 };
 export type PsychologyMeditationDraft = {
   version: "psychologist-meditation-v1"; status: string;
-  motifId: string | null; script: string | null;
+  motifId: string | null; symbolId?: string | null; script: string | null;
   title?: string; language?: PsychologistLocale;
   intentionCode?: string; plannedDurationSeconds: number;
   segments: PsychologyMeditationSegment[];
