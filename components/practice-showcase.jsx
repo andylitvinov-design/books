@@ -152,6 +152,8 @@ function destination(locale, key) {
     practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
+    intro:root + '?panel=services&create=1&starter=intro',
+    workshop:root + '?panel=services&create=1&starter=workshop',
     diagnostic:root + '?panel=services&create=1&starter=diagnostic',
     energy:root + '?panel=services&create=1&starter=energy',
     personal:root + '?panel=services&create=1&starter=personal',
@@ -179,16 +181,16 @@ function destination(locale, key) {
 }
 
 const RESUMABLE_ACTIONS = new Set([
-  'create','service','diagnostic','energy','personal','session','meditation',
+  'create','service','intro','workshop','diagnostic','energy','personal','session','meditation',
   'talisman','reiki','course','material','meditationList','talismanList',
   'reikiList','courseList','clients','requests','messages','services',
   'materials','analytics','profile',
 ])
 const PRO_STARTS = new Set(['diagnostic','energy','personal','meditation','profile'])
 const ACTION_NAMES = {
-  en:{diagnostic:'Personal diagnostics',energy:'Energy support',personal:'Personal session',meditation:'Meditation',reiki:'Reiki support'},
-  ru:{diagnostic:'Диагностика',energy:'Энергетическая поддержка',personal:'Личная сессия',meditation:'Медитация',reiki:'Рейки'},
-  es:{diagnostic:'Diagnóstico personal',energy:'Apoyo energético',personal:'Sesión personal',meditation:'Meditación',reiki:'Reiki'},
+  en:{intro:'Introduction',workshop:'Workshop',diagnostic:'Personal diagnostics',energy:'Energy support',personal:'Personal session',meditation:'Meditation',reiki:'Reiki support'},
+  ru:{intro:'Вводная встреча',workshop:'Семинар',diagnostic:'Диагностика',energy:'Энергетическая поддержка',personal:'Личная сессия',meditation:'Медитация',reiki:'Рейки'},
+  es:{intro:'Introducción',workshop:'Taller',diagnostic:'Diagnóstico personal',energy:'Apoyo energético',personal:'Sesión personal',meditation:'Meditación',reiki:'Reiki'},
 }
 
 function countRequests(list) {
