@@ -987,3 +987,107 @@
   .audioTrackSelect{grid-template-columns:40px minmax(0,1fr) 52px 54px}
   .audioFilters{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+
+/* 29 Oct owner-approved audio-only list: static first-party cover art, never
+   video players or remote sound. Five chip rows + accessible 44px controls. */
+.audioSection{padding:10px 9px;border-radius:18px;background:#fffdf7;border-color:#e2e8dc}
+.audioSection .blockHeading{padding:11px 12px 12px;border:1px solid #e3ebda;border-radius:17px;
+  background:linear-gradient(115deg,#eef5e9,#f8f9ee);min-height:82px}
+.audioSection .blockHeading h3{font-size:22px;color:#163f35;letter-spacing:-.03em}
+.audioSection .blockHeading h3 svg{width:26px;height:26px;color:#688c78}
+.audioSection .blockHeading p{font-size:13px;line-height:1.33;max-width:45ch}
+.audioSection .musicCard{border:0;background:transparent;padding:6px 2px 9px;overflow:visible}
+.audioSection .musicCard legend{display:none}
+.audioSection .audioSmartBar{border-radius:14px;margin:0 0 8px;border-color:#d2e2d4;
+  background:linear-gradient(100deg,#f0f7ed,#f5f9f3)}
+.audioSection .audioSmartBar button{background:linear-gradient(110deg,#41846d,#7aa790);
+  color:white;border:0;font-size:12px;font-weight:800}
+.audioSection .audioSmartBar button[aria-pressed="true"]{background:#076d55}
+.audioChipFilters{display:grid;gap:0;margin-bottom:9px;background:transparent}
+.audioFilterRow{display:grid;grid-template-columns:86px minmax(0,1fr);align-items:center;
+  gap:7px;min-width:0;min-height:49px;border-bottom:1px solid #e9ece3}
+.audioFilterRow>strong{font-size:12.5px;color:#3a5149;line-height:1.22;font-weight:750}
+.audioChipRail{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;padding:3px 1px}
+.audioChipRail::-webkit-scrollbar{display:none}
+.audioChipRail button{flex:none;min-height:42px;max-width:100%;padding:8px 12px;border:1px solid #e8e9e0;
+  border-radius:999px;background:#f3f3ee;color:#294c41;font:750 12.5px/1.2 Arial,Helvetica,sans-serif;
+  white-space:nowrap;scroll-snap-align:start;box-shadow:none}
+.audioChipRail button:nth-child(4n+1){background:#e4f1e4;border-color:#dce9dc}
+.audioChipRail button:nth-child(4n+2){background:#f7e6e4;border-color:#efdfda}
+.audioChipRail button:nth-child(4n+3){background:#f8efd9;border-color:#f0e7d7}
+.audioChipRail button:nth-child(4n+4){background:#e4ecf7;border-color:#dce5f1}
+.audioChipRail button[aria-pressed="true"]{background:#147b5c;border-color:#147b5c;color:#fff;
+  box-shadow:0 2px 7px rgba(17,103,73,.18)}
+.audioChipRail button:focus-visible{outline:3px solid #d5ad64;outline-offset:2px}
+.audioSection .audioVoiceOption{margin:5px 0 9px;padding:6px 9px;border-color:#e8e9dd;
+  background:#f8faf6}
+.audioSection .audioVoiceOption span strong{font-size:12.5px}
+.audioSection .audioVoiceOption span small{font-size:11px}
+.audioSection .audioSearchRow{margin:0 0 8px;grid-template-columns:minmax(0,1fr) minmax(105px,.68fr)}
+.audioSection .audioSearchInput,.audioSection .audioSort{border-radius:12px;background:#fffdf9}
+.audioSection .audioCatalogHeading{padding:2px 1px 6px}
+.audioSection .audioCatalogHeading span{font-size:11px;color:#73867a}
+.audioTrackList{gap:5px}
+.audioTrackRow{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:stretch;
+  min-width:0;min-height:78px;border:1px solid #e9ebe3;border-radius:14px;
+  background:#fffefb;box-shadow:0 3px 10px #193d2c0b;overflow:hidden}
+.audioTrackSelect{display:grid;grid-template-columns:58px minmax(0,1fr) auto;
+  gap:9px;align-items:center;min-height:78px;padding:7px 3px 7px 7px;
+  background:transparent;border:0;border-radius:0;box-shadow:none}
+.audioTrackSelect[aria-pressed="true"]{padding:7px 3px 7px 7px;border:0;
+  box-shadow:inset 4px 0 0 #188b66;background:linear-gradient(90deg,#edf8ef,#fffefa)}
+.audioTrackList .audioTileGlyph{display:block;width:58px;height:58px;flex:none;overflow:hidden;
+  border:0;border-radius:10px;background-color:#dceadd;background-size:cover;background-position:center}
+.audioTrackList .audioTileText{display:grid;gap:3px;align-content:center;min-width:0}
+.audioTrackList .audioTileText strong{display:flex;align-items:center;gap:4px;font-size:14px;
+  line-height:1.2;color:#163b30;white-space:normal}
+.audioTrackList .audioTileText small{font-size:11.5px;line-height:1.2;color:#77847c;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audioTrackList .audioWave{display:flex;justify-content:flex-start;gap:2.1px;
+  height:17px;color:#b0d7bd;min-width:0;max-width:100%;overflow:hidden}
+.audioTrackList .audioWave i{flex:0 0 2px}
+.audioTrackList .audioWave i:nth-child(5n+2){height:13px}
+.audioTrackList .audioWave i:nth-child(5n+3){height:8px}
+.audioTrackList .audioWave i:nth-child(5n+4){height:16px}
+.audioTrackList .audioWave i:nth-child(5n+5){height:5px}
+.audioTrackPick{justify-content:flex-end;min-width:36px;color:#188767;font-size:11px}
+.audioFavorite{display:grid;place-items:center;width:38px;min-height:44px;border:0;
+  background:transparent;color:#8c9993;cursor:pointer}
+.audioFavorite[aria-pressed="true"]{color:#e47789}
+.audioFavorite:focus-visible{outline:3px solid #d7b269;outline-offset:-3px;border-radius:10px}
+.audioTrackRow[data-audio-id="harmony"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="prosperity"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
+.audioTrackRow[data-audio-id="energy"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/solar-surge.jpg')}
+.audioTrackRow[data-audio-id="love"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="meditation"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="rain"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/morning-dew.jpg')}
+.audioTrackRow[data-audio-id="ocean"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="breeze"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sea-breeze.jpg')}
+.audioTrackRow[data-audio-id="focus"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="grounding"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="breath"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/gentle-falls.jpg')}
+.audioTrackRow[data-audio-id="sunrise"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="pulse"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/river-power.jpg')}
+.audioSection .audioUpload{padding:6px;border:0;background:transparent}
+.audioSection .audioNowPlaying{background:#e7f4ea;margin-top:7px;border-radius:12px}
+.audioSection .audioAttachPanel{border-color:#b9dec7;background:#e9f6ed}
+.audioSection .musicTools{border:1px solid #e0eadf;border-radius:12px;
+  background:#f3f8f1;padding:7px}
+.audioSection .musicCard audio[data-video-audio-player]{background:#eff6ed;border-radius:14px}
+@media(max-width:375px){
+  .audioFilterRow{grid-template-columns:68px minmax(0,1fr);gap:5px}
+  .audioFilterRow>strong{font-size:11.5px}
+  .audioChipRail{gap:5px}
+  .audioChipRail button{padding:8px 10px;font-size:12px}
+  .audioTrackSelect{grid-template-columns:48px minmax(0,1fr) auto;gap:6px;padding:5px 2px 5px 5px}
+  .audioTrackSelect[aria-pressed="true"]{padding:5px 2px 5px 5px}
+  .audioTrackList .audioTileGlyph{width:48px;height:48px}
+  .audioTrackList .audioTileText strong{font-size:13.2px}
+  .audioTrackList .audioTileText small{font-size:11px}
+  .audioTrackPick{min-width:26px;font-size:10px}
+}
+@media(min-width:760px){
+  .audioFilterRow{grid-template-columns:104px minmax(0,1fr)}
+  .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
