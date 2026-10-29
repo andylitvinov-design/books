@@ -109,6 +109,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           engine+" "+locale+" "+width+"px compact video touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
+        // Reference-state capture: the approved owner screenshot starts with
+        // the default ENERGY topic, before browser QA switches to MONEY.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await page.locator("[data-hypno-overview]").screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
+            animations:"disabled",
+          });
+        }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
@@ -117,9 +126,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
         await page.locator("[data-video-affirmations-feature]").check();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
         await page.locator("[data-video-affirmations-feature]").uncheck();
-        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
@@ -295,8 +304,34 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
 
         // Public iPhone control E2E: local affirmations change the live preview
         // and are included by the same canvas renderer in final recordings.
+        // New compact one-page UI: the deep phrase editor is only opened
+        // on an explicit Edit tap; existing real renderer controls are retained.
+        const compactHypno = page.locator("[data-hypno-overview]");
+        await compactHypno.waitFor({state:"visible",timeout:12000});
+        for(const marker of ["data-hypno-request","data-hypno-phrases","data-hypno-display","data-hypno-design","data-hypno-preview"]){
+          assert.equal(await compactHypno.locator("["+marker+"]").count(),1,marker);
+        }
+        // Public synthetic screenshot. No signed-in profile, test answers or
+        // private media is captured in CI artifacts.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await compactHypno.screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
+            animations:"disabled",
+          });
+        }
+        const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
+        assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isDisabled(),true);
+        assert.equal(await compactHypno.locator("[data-hypno-request-edit]").getAttribute("aria-expanded"),"false");
+        await compactHypno.locator("[data-hypno-phrases-edit]").click();
         const affirmationsPanel = page.locator("[data-video-affirmations]");
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
+        // Guest opening is only a request to import; it never marks test
+        // personalization as successful or sends a profile without consent.
+        await compactHypno.locator("[data-hypno-tests]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-tests]").getAttribute("aria-pressed"),"false");
+        assert.equal(await compactHypno.locator('a[href$="/personality-profiles"]').count(),1);
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
         // Hypnoaffirmations: the first thing visitors see is a truthful, compact
         // explanation and the two explicit ways to choose their phrases.
@@ -315,10 +350,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-video-affirmations-custom]").getAttribute("open"),null);
         assert.equal(await page.locator("[data-video-affirmations-settings]").getAttribute("open"),null);
         assert.ok((await affirmationsPanel.locator('[data-video-affirmation-preset="0"]').innerText()).length<=26);
-        const collapsedHeight=await affirmationsPanel.evaluate(el=>el.getBoundingClientRect().height);
-        assert.ok(collapsedHeight<650, engine+" "+locale+" "+width+"px panel too tall: "+collapsedHeight);
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"true");
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
         await page.locator("[data-video-affirmations-enable]").check();
+        assert.equal(await compactHypno.locator("[data-hypno-create-video]").isEnabled(),true);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),true,
           "settings and top opt-in must always stay synchronized");
         await page.locator('[data-video-affirmation-preset="3"]').click();
@@ -345,6 +380,29 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        // Owner screenshot acceptance: in-place request edits affect real
+        // selected words, text geometry changes use the shared recorder,
+        // and the live scene rail changes the original (not a mock) scene.
+        await compactHypno.locator("[data-hypno-request-edit]").click();
+        await compactHypno.locator('[data-hypno-problem="1"]').click();
+        // The earlier real-film test selected MONEY. Match its actual goal catalogue.
+        assert.equal(await hero.getAttribute("data-video-theme-active"),"money");
+        await compactHypno.locator('[data-hypno-goal="value"]').click();
+        await compactHypno.locator("[data-hypno-apply-request]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        await compactHypno.locator("[data-hypno-display-edit]").click();
+        await compactHypno.locator('[data-hypno-frequency="3"]').click();
+        await compactHypno.locator('[data-hypno-size="large"]').click();
+        await compactHypno.locator('[data-hypno-position="bottom"]').click();
+        assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        const firstScene=compactHypno.locator("[data-hypno-scene]").first();
+        const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
+        assert.ok(await firstScene.count() && await secondScene.count());
+        await secondScene.click();
+        assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
+        await firstScene.click();
+        assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
@@ -493,7 +551,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
             undefined,{timeout:10000});
           await page.locator("[data-video-music-preview]").click();
-          await create.click();
+          // The approved compact green Create button must initiate a real
+          // MediaRecorder session, not just the legacy Generate control.
+          await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
           const filename = await videoLink.getAttribute("download");
@@ -606,6 +666,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             "guided first video preserves the visitor's photo/background choice");
           assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),affirmationsBeforeGuided,
             "guided first video preserves the visitor's affirmations checkbox");
+          // The compact Hypno editor intentionally unmounts its deep inputs
+          // until the visitor opens Edit. Preserve real guided-course phrases.
+          await page.locator("[data-hypno-phrases-edit]").click();
+          await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
           // Keep automated media verification bounded at 10s; the default

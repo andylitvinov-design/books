@@ -304,7 +304,9 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
     assert.ok(studio.includes('href="#'+id+'" data-video-editor-tab="'+tab+'"'),tab+" must be a real same-page link");
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
   }
-  assert.match(studio,/data-video-affirmation-preview disabled=\{recording\|\|preparing\} onClick=\{openAffirmationPreview\}/);
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
+  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
   const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);

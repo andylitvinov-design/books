@@ -864,6 +864,15 @@
   .audioSection .musicCard{padding:14px 16px}
 }
 
+
+/* Keep the original wish-to-scene tool available, but optional: the new
+   one-screen request/phrases overview is the primary mobile interaction. */
+.hypnoOptionalWish{min-width:0;margin-top:4px;border:1px solid #d5e7d9;border-radius:13px;background:#f9fcf5;overflow:hidden}
+.hypnoOptionalWish summary{display:flex;align-items:center;min-height:44px;padding:10px 13px;cursor:pointer;color:#21634b;font-size:12px;font-weight:750}
+.hypnoOptionalWish[open] summary{border-bottom:1px solid #d5e7d9}
+.hypnoOptionalWish .wishPanel{padding:9px;border:0;box-shadow:none;background:transparent}
+.hypnoOptionalWish summary:focus-visible{outline:3px solid #60ba97;outline-offset:-3px}
+
 /* Audio-only, compact iPhone picker: no video thumbnails or oversized tiles.
    Tap targets stay >=44px; filter/text sizing stays readable at 320-430px. */
 .audioSection{padding:11px 9px;gap:7px;background:linear-gradient(145deg,#fffdf7,#f6faf4)}
