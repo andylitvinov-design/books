@@ -1034,6 +1034,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAffirmations(defaultAffirmations);
     setPreviewPlaying(false);
   };
+  // iPhone WebKit can defer HD decoding for the hidden same-origin master.
+  // Photo consent is a genuine user gesture: briefly unlock muted inline media
+  // rather than marking Create ready without a decoded video frame.
+  function primeNativeMasterFromUserGesture(){
+    const video=premiumVideoRef.current;
+    if(!activeFilm || !video || video.readyState>=2)return;
+    video.muted=true;
+    video.load();
+    void video.play().then(()=>{
+      if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0)
+        setPremiumReady(true);
+      if(!previewPlaying && !recording && !preparing)video.pause();
+    }).catch(()=>{
+      // Keep Create gated: native loadeddata/canplay/error handlers decide readiness.
+    });
+  }
+
   const startFromHero=()=>{
     if(recording||preparing)return;
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
@@ -1517,7 +1534,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {photoUrl && !backgroundOnly ? (
         <label className={videoStyles.consent}>
           <input type="checkbox" data-video-photo-consent checked={photoConsent}
-            disabled={recording||preparing} onChange={event=>setPhotoConsent(event.target.checked)}/>
+            disabled={recording||preparing} onChange={event=>{
+              const approved=event.target.checked;
+              setPhotoConsent(approved);
+              if(approved)primeNativeMasterFromUserGesture();
+            }}/>
           <span>{ui.consent}</span>
         </label>
       ) : null}
