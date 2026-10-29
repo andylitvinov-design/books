@@ -12,8 +12,8 @@ import { chromium, webkit } from "@playwright/test";
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 const PNG=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X3fEiQAAAABJRU5ErkJggg==","base64");
 const cases=[
-  {locale:"ru",width:320},{locale:"ru",width:354},{locale:"ru",width:390},
-  {locale:"ru",width:430},{locale:"en",width:390},{locale:"es",width:390},
+  {locale:"ru",width: 320},{locale:"ru",width:354},{locale:"ru",width:390},
+  {locale:"ru",width: 430},{locale:"en",width:390},{locale:"es",width:390},
 ];
 
 const bufferFromStream=async stream=>{
