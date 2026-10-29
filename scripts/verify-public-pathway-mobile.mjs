@@ -44,6 +44,19 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
               await expect(link).toHaveAttribute("href", "/" + locale + "/" + suffix);
               await expect(link).toBeVisible();
             }
+            // The horizontal testimonial archive must remain independently
+            // keyboard/touch scrollable even while the root never widens.
+            if (route === "about") {
+              const gallery = page.locator('[data-personal-testimonials="about"] .videoGrid');
+              await expect(gallery).toHaveCount(1);
+              const state = await gallery.evaluate(el => ({
+                client: el.clientWidth, content: el.scrollWidth,
+                overflowX: getComputedStyle(el).overflowX,
+                rootOverflowX: getComputedStyle(document.querySelector('main[data-public-design-migration="wave1"]')).overflowX,
+              }));
+              assert.ok(state.content > state.client && state.overflowX === "auto" && state.rootOverflowX === "hidden",
+                engine+" "+locale+"/about "+width+" gallery remains independently scrollable: "+JSON.stringify(state));
+            }
             const didOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
             if (didOverflow) {
               const suspects = await page.evaluate(() => {

@@ -1,5 +1,11 @@
 .page {
   min-height: 100svh;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  /* The About page contains an independently scrollable testimonial archive.
+     Contain its offscreen flex items here, not in the page scroll extent. */
+  overflow-x: hidden;
   color: #26382f;
   background:
     radial-gradient(ellipse at 64% 0%, rgba(211, 231, 214, .55), transparent 34%),
