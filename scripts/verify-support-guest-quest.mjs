@@ -52,14 +52,22 @@ try {
         const score = root.locator('[data-support-scale="energy"] input');
         await score.focus();
         await score.press("ArrowRight");
+        // On mobile WebKit a keyboard press can resolve before React commits the
+        // client-local quest badge. Wait for real DOM evidence, never award it in QA.
+        await quest.locator('[data-support-quest-step="checkin"][data-status="done"]')
+          .waitFor({ state: "attached", timeout: 7000 });
         assert.equal(await quest.locator('[data-support-quest-step="checkin"]').getAttribute("data-status"),
           "done", label + " real self-rating interaction");
 
         await root.locator('[data-support-meditation-category="energy"]').click();
+        await quest.locator('[data-support-quest-step="category"][data-status="done"]')
+          .waitFor({ state: "attached", timeout: 7000 });
         assert.equal(await quest.locator('[data-support-quest-step="category"]').getAttribute("data-status"),
           "done", label + " actual category selection");
 
         await root.locator("[data-support-recommendations]").click();
+        await quest.locator('[data-support-quest-step="recommendation"][data-status="done"]')
+          .waitFor({ state: "attached", timeout: 7000 });
         assert.equal(await quest.locator('[data-support-quest-step="recommendation"]').getAttribute("data-status"),
           "done", label + " recommendation opened");
 
