@@ -202,7 +202,11 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   // still support keyboard/screen-reader click without a preceding pointer.
   const pointerHandledRef = useRef(false);
   function toggleFocusMode() { setFocusMode(value => !value); }
-  function onFocusPointerUp() {
+  function onFocusPointerUp(event: { pointerType: string }) {
+    // WebKit may deliver a mouse pointerup and click for one activation.
+    // Let native click own mouse and keyboard; touch/pen use pointerup as
+    // a fallback for iPhone in-app browsers that suppress the trailing click.
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
     pointerHandledRef.current = true;
     toggleFocusMode();
   }
