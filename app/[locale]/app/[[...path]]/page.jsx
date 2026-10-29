@@ -5,6 +5,7 @@ import './assessment-dashboard.css'
 import './insights-compact.css'
 import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
+import '@/components/app/test-runner-cards.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export async function generateMetadata({ params, searchParams }) {
