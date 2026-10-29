@@ -665,7 +665,7 @@ export function HolisticSupportInlineGuide({
     </button>;
   }
   const languageFormats = goalSelection
-    ? [...new Set(allowed.map(row => ({meditation:"video",tests:"test",courses:"course",consultation:"service",healing:"service",mandala:"video"} as Record<Format,string>)[row.id]))]
+    ? [...new Set(allowed.map(row => ({meditation:"video",tests:"test",courses:"course",consultation:"service",healing:"service",mandala:""} as Record<Format,string>)[row.id]).filter(Boolean))]
     : ["video","audio","test","course","service"];
   const alternatives=allowed.filter(row=>row.id!==format).slice(0,2);
   const stageSummary=t.areas[topic]+(need?" · "+need:"")+(selectedTest?" · "+selectedTest.title:"")+
@@ -683,7 +683,7 @@ export function HolisticSupportInlineGuide({
         <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
       {freeMode ? <HolisticLanguageConversation locale={locale}
-        seedTopic={topic} videos={videos} tests={guideTests} enabledFormats={languageFormats}
+        seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)} videos={videos} tests={guideTests} enabledFormats={languageFormats}
         onVideo={onVideo} /> : <>
       <div className={styles.dialogue}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
