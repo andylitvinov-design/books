@@ -3,6 +3,7 @@
 import http from 'node:http'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
+import {createHash} from 'node:crypto'
 import {NextRequest,NextResponse} from 'next/server.js'
 import {getAppConfig} from '../lib/app/config.js'
 import {createRequestAuth} from '../lib/app/session.js'
@@ -14,6 +15,7 @@ if (!config.test || config.supabaseUrl!=='http://127.0.0.1:54329' ||
     !config.origins.includes(origin)) throw new Error('ISOLATED_TEST_CONFIGURATION_REQUIRED')
 const ids={a:['10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001'],
   b:['10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002']}
+const challenges=new Map()
 const user=kind=>({id:ids[kind][0],aud:'authenticated',email:'synthetic@example.invalid',user_metadata:{}})
 const token=kind=>{const [sub,session_id]=ids[kind];return 'synthetic.'+
   Buffer.from(JSON.stringify({sub,session_id,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.signature'}
@@ -23,7 +25,9 @@ const server=http.createServer(async(req,res)=>{
     let body='';for await(const chunk of req)body+=chunk
     let parsed;try {parsed=JSON.parse(body)} catch {res.writeHead(400);res.end('{}');return}
     const kind=parsed.auth_code==='synthetic-code-a'?'a':parsed.auth_code==='synthetic-code-b'?'b':null
-    if(!kind||!parsed.code_verifier){res.writeHead(400);res.end('{}');return}
+    const verifier=typeof parsed.code_verifier==='string'?parsed.code_verifier:''
+    const challenge=createHash('sha256').update(verifier).digest('base64url')
+    if(!kind||!verifier||challenge!==challenges.get(kind)){res.writeHead(400);res.end('{}');return}
     res.end(JSON.stringify({access_token:token(kind),refresh_token:'synthetic-refresh-'+kind,
       token_type:'bearer',expires_in:3600,user:user(kind)}));return
   }
@@ -43,6 +47,10 @@ try {
     const start=createRequestAuth(request(),config)
     const started=await start.client.auth.signInWithOAuth({provider:'google',options:{redirectTo:origin+'/api/app/auth/callback',skipBrowserRedirect:true}})
     assert.equal(started.error,null)
+    challenges.set(kind,new URL(started.data.url).searchParams.get('code_challenge'))
+    const invalid=await fetch(config.supabaseUrl+'/auth/v1/token?grant_type=pkce',{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify({auth_code:'synthetic-code-'+kind,code_verifier:'wrong-verifier'})})
+    assert.equal(invalid.status,400)
     const verifier=start.apply(NextResponse.json({})).cookies.getAll()
     const exchange=createRequestAuth(request(verifier),config)
     const completed=await exchange.client.auth.exchangeCodeForSession('synthetic-code-'+kind)
@@ -56,12 +64,16 @@ try {
   const call=async (cookies,payload=body,extra={})=>{
     const response=await fetch(origin+'/api/app/intelligence/plan',{method:'POST',
       headers:{origin,'content-type':'application/json',cookie:cookies,...extra},body:JSON.stringify(payload)})
-    return {status:response.status,body:await response.json()}
+    return {status:response.status,cacheControl:response.headers.get('cache-control'),body:await response.json()}
   }
   assert.equal((await call('')).status,401)
+  assert.equal((await call(a,body,{origin:'https://hostile.example.invalid'})).status,403)
   assert.equal((await call(a,body,{'x-hh-account-id':ids.b[0]})).status,409)
+  const urgent=await call(a,{...body,preflight:{immediateDanger:'no',selfHarmThoughts:'yes'}})
+  assert.equal(urgent.body.status,'safety_handoff');assert.equal(urgent.body.primary,undefined)
   const first=await call(a), second=await call(b)
   assert.equal(first.status,200);assert.equal(second.status,200)
+  assert.match(first.cacheControl,/no-store/)
   assert.equal(first.body.primary?.id,'test:hh-current-state')
   assert.equal(second.body.primary?.id,'test:hh-resource-pulse')
   const withoutConsent=await call(a,{...body,testHistory:undefined})
