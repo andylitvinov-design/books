@@ -208,9 +208,16 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // The real About archive has ten individually verified videos; the
+  // separate Psychic Alchemy intro above is not a SiteVideoPlayer.
+  const archive = page.locator('[data-personal-testimonials="about"]')
+  await expect(archive.locator('[data-testimonial-video-id]')).toHaveCount(10)
+  await expect(archive.locator('.site-video-player')).toHaveCount(10)
+  assert.equal(new Set(await archive.locator('[data-testimonial-video-id]').evaluateAll(
+    nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')))).size, 10,
+    'About must retain ten distinct owner-approved video reviews')
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: About intro, ten distinct archived testimonial players and form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')

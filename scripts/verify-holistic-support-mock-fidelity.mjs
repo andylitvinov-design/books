@@ -331,7 +331,25 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-support-goal-next]').click();
           // WebKit can resolve a click before React commits accepted/next state.
           // Wait for actual acceptance and navigation; never bypass either gate.
-          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          try {
+            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          } catch (error) {
+            // Preserve exact failed state instead of masking a real WebKit
+            // Save + Next error with retries, a fixture override or fake badges.
+            const state=await filter.evaluate(element=>({
+              active:[...element.querySelectorAll('[data-goal-sector]')].map(btn=>({
+                name:btn.dataset.goalSector,pressed:btn.getAttribute('aria-pressed'),
+                accepted:Boolean(btn.querySelector('[data-goal-accepted]'))})),
+              metrics:[...element.querySelectorAll('[data-goal-metric]')].map(input=>({
+                field:input.getAttribute('data-goal-metric'),
+                part:input.getAttribute('data-metric-field'),value:input.value})),
+              moneyScore:document.querySelector('[data-support-scale="money"] input')?.value,
+              currentScore:element.querySelector('[data-support-goal-checkin-input]')?.value,
+              action:element.querySelector('[data-support-goal-next]')?.textContent?.trim(),
+              focus:document.activeElement?.getAttribute('data-metric-field'),
+            }));
+            throw new Error(label+' Money Save + Next did not produce accepted badge: '+JSON.stringify(state)+'; '+String(error));
+          }
           await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
