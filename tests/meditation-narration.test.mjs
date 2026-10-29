@@ -37,7 +37,7 @@ test("speech playback actually submits text utterances and schedules real pauses
   assert.ok(spoken.length>=1,"the first utterance was actually sent to speechSynthesis");
   let cycles=0;while(timers.length&&cycles++<120){timers.shift().fn();}
   assert.ok(spoken.length>=8,"the narration moves through all real text steps");
-  assert.ok(pauses.some(ms=>ms>=10000),"pause marker is an actual timed silence");
+  assert.ok(pauses.length>=3 && pauses.every(ms=>ms>=1000),"calibrated pause cues must schedule real silent intervals");
   assert.ok(!spoken.join(" ").includes("[Optional quiet pause"));
   assert.ok(result.queueLength>=spoken.length);
 });
