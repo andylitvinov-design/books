@@ -3,6 +3,7 @@ on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
+      - 'tests/talisman-google-checkout.test.mjs'
       - 'app/**/cart/**'
       - 'app/api/payments/**'
       - 'app/api/billing/**'

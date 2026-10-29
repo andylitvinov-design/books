@@ -3,6 +3,12 @@ on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
+      - 'scripts/verify-ia-v2.mjs'
+      - 'scripts/ia-v2-loopback-proxy.mjs'
+      - 'scripts/ia-public-navigation-diagnostics.mjs'
+      - 'lib/clients/**'
+      - 'lib/prescriptions/**'
+      - 'lib/site-navigation-model.js'
       - 'app/api/app/**'
       - 'app/api/auth/**'
       - 'app/**/app/**'

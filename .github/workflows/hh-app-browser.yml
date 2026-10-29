@@ -5,6 +5,13 @@ on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
+      - 'scripts/helpers/isolated-browser-diagnostics.mjs'
+      - 'scripts/verify-account-status-filters.mjs'
+      - 'scripts/verify-asrs6-pdf.mjs'
+      - 'scripts/verify-asrs6.mjs'
+      - 'scripts/verify-bach-personal-report-browser.mjs'
+      - 'scripts/verify-mhc-sf.mjs'
+      - 'scripts/verify-personality-types.mjs'
       - 'app/**/app/**'
       - 'app/**/client/**'
       - 'app/api/app/**'
