@@ -51,3 +51,23 @@ test("separate use-in-dialogue permission is durable and never implicit",()=>{
  assert.match(route,/body\.enabled/u);
  assert.match(store,/useInDialogue:/u);
 });
+
+test("stale account A tabs cannot save memory into newly signed-in account B",()=>{
+ assert.match(route,/operationHash\(\{op:"agent-memory-owner-v1",accountId:actor\.id\},config\)/u);
+ assert.match(route,/request\.headers\.get\("x-hh-memory-owner"\)!==ownerBinding/u);
+ assert.match(route,/MEMORY_ACCOUNT_CHANGED/u);
+ assert.match(route,/readMyAgentMemory\(config,actor\),ownerBinding/u);
+ const panel=read("components/holistic-agent-memory-panel.tsx");
+ const chat=read("components/holistic-language-conversation.tsx");
+ assert.match(panel,/"x-hh-memory-owner":ownerBinding/u);
+ assert.match(chat,/"x-hh-memory-owner":memoryOwner/u);
+});
+test("consent revocation and erasure lock owner consent before deleting items",()=>{
+ for(const fn of ["consentToAgentMemory","eraseAllOwnAgentMemory"]){
+  const tail=store.slice(store.indexOf("export async function "+fn));
+  const next=tail.indexOf("\nexport async function ",5);
+  const body=next>0?tail.slice(0,next):tail;
+  assert.match(body,/agent_memory_consent[\s\S]*for update/u);
+  assert.match(body,/delete from app_private\.agent_memory_item/u);
+ }
+});

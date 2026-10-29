@@ -79,3 +79,8 @@ Do not label the feature live before these gates have passed.
 - Natural directly phrased RU/EN/ES preferences now produce a confirmation proposal; they are never automatically persisted. Incidental mentions are not proposals.
 - Authenticated memory mutations now use the existing per-owner database rate limiter (30 per minute).
 - Added focused regression scenarios. This update is source-level only; GitHub CI and two-account live RLS verification are still required before enabling the feature.
+
+## Owner-change and revocation hardening
+- GET returns an opaque account-specific owner HMAC binding. Every POST/DELETE must echo it in the same-origin header; the server checks the verified current account and rejects stale-account writes (409). Authentication and RLS are still mandatory.
+- Consent revocation and full deletion lock the owner consent row before deleting entries, serializing those operations with concurrent saves.
+- Source tests cover the code contracts. Real 2-account and concurrent PostgreSQL E2E remain mandatory before applying the migration or enabling the flags.

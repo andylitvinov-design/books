@@ -6,7 +6,7 @@ import { approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memor
 import styles from "./holistic-agent-memory-panel.module.css";
 
 export type MyAgentMemory = {kind:string;value:string;updatedAt?:string};
-type MemoryReply = {consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[];error?:string;saved?:boolean;deleted?:boolean};
+type MemoryReply = {consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[];ownerBinding?:string;error?:string;saved?:boolean;deleted?:boolean};
 const kindLabels={
   ru:{preferred_name:"Как ко мне обращаться",communication_style:"Обращение",response_length:"Длина ответа",avoid_format:"Не предлагать формат",personal_accent:"Что ещё учитывать"},
   en:{preferred_name:"Preferred name",communication_style:"Address style",response_length:"Answer length",avoid_format:"Avoid this format",personal_accent:"Another preference"},
@@ -25,7 +25,7 @@ const selectValues={
 } as const;
 const emptyDraft={preferred_name:"",communication_style:"neutral",response_length:"normal",avoid_format:"video",personal_accent:""};
 export function HolisticAgentMemoryPanel({locale,onUse}:{
-  locale:PublicLocale;onUse:(items:MyAgentMemory[])=>void;
+  locale:PublicLocale;onUse:(items:MyAgentMemory[],ownerBinding:string)=>void;
 }){
   const copy=t[locale];
   const [open,setOpen]=useState(false),[loading,setLoading]=useState(false);
@@ -33,31 +33,34 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
   const [busy,setBusy]=useState(false),[error,setError]=useState("");
   const [consent,setConsent]=useState(false),[useSaved,setUseSaved]=useState(false);
   const [items,setItems]=useState<MyAgentMemory[]>([]);
+  const [ownerBinding,setOwnerBinding]=useState("");
   const [drafts,setDrafts]=useState<Record<typeof keys[number],string>>(emptyDraft);
   const enabled=process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED==="true";
   if(!enabled)return null;
   const headers={"Content-Type":"application/json"} as const;
   async function read(){
-    setLoading(true);setError("");
+    setLoading(true);setError("");setOwnerBinding("");
     try{
       const response=await fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"});
       if(response.status===401){
-        setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+        setUseSaved(false);onUse([],"");setConsent(false);setItems([]);
         setStatus("signed");return;
       }
       if(!response.ok){
-        setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+        setUseSaved(false);onUse([],"");setConsent(false);setItems([]);
         setStatus("unavailable");return;
       }
       const data=await response.json() as MemoryReply;
       const rows=Array.isArray(data.items)?data.items:[];
-      setItems(rows);setConsent(data.consent===true);
+      const binding=typeof data.ownerBinding==="string" && /^[a-f0-9]{64}$/u.test(data.ownerBinding)
+        ?data.ownerBinding:"";
+      setOwnerBinding(binding);setItems(rows);setConsent(data.consent===true);
       const active=data.consent===true && data.useInDialogue===true;
-      setUseSaved(active);onUse(active?approvedMemoryForLocalPrompt(rows):[]);
+      setUseSaved(active);onUse(active?approvedMemoryForLocalPrompt(rows):[],binding);
       setDrafts({...emptyDraft,...Object.fromEntries(rows.map(row=>[row.kind,row.value]))});
       setStatus("ready");
     }catch{
-      setUseSaved(false);onUse([]);setConsent(false);setItems([]);
+      setUseSaved(false);onUse([],"");setConsent(false);setItems([]);
       setStatus("unavailable");
     }
     finally{setLoading(false);}
@@ -67,10 +70,11 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
     setOpen(true);void read();
   }
   async function action(body:Record<string,unknown>,method:"POST"|"DELETE"="POST"){
+    if(!ownerBinding){setError(copy.saveError);return false;}
     setBusy(true);setError("");
     try{
       const response=await fetch("/api/app/agent-memory",{
-        method,credentials:"same-origin",headers:method==="POST"?headers:undefined,
+        method,credentials:"same-origin",headers:{...headers,"x-hh-memory-owner":ownerBinding},
         body:method==="POST"?JSON.stringify(body):undefined,cache:"no-store",
       });
       if(!response.ok){setError(body.action==="consent"?copy.consentError:copy.saveError);return false;}
@@ -79,11 +83,11 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
     finally{setBusy(false);}
   }
   async function changeConsent(accepted:boolean){
-    if(!accepted){setUseSaved(false);onUse([]);}
+    if(!accepted){setUseSaved(false);onUse([],"");}
     await action({action:"consent",accepted});
   }
   async function erase(){
-    setUseSaved(false);onUse([]);
+    setUseSaved(false);onUse([],"");
     await action({},"DELETE");
   }
   const change=(kind:typeof keys[number],value:string)=>setDrafts(prev=>({...prev,[kind]:value}));

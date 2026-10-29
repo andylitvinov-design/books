@@ -76,6 +76,7 @@ export function HolisticLanguageConversation({
   const [modelProgress,setModelProgress] = useState(0);
   const [generating,setGenerating] = useState(false);
   const [savedMemory,setSavedMemory] = useState<MyAgentMemory[]>([]);
+  const [memoryOwner,setMemoryOwner] = useState("");
   const [memoryProposal,setMemoryProposal] = useState<{kind:string;value:string}|null>(null);
   const [memoryNotice,setMemoryNotice] = useState("");
   const [memorySaving,setMemorySaving] = useState(false);
@@ -101,11 +102,12 @@ export function HolisticLanguageConversation({
       .then((data:unknown)=>{
         if(!active)return;
         const safe=data&&typeof data==="object"?data as {
-          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[]
+          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[];ownerBinding?:string
         }:null;
         setSavedMemory(safe?.consent===true && safe.useInDialogue===true
           ?approvedMemoryForLocalPrompt(safe.items):[]);
-      }).catch(()=>{if(active)setSavedMemory([]);});
+        setMemoryOwner(typeof safe?.ownerBinding==="string"?safe.ownerBinding:"");
+      }).catch(()=>{if(active){setSavedMemory([]);setMemoryOwner("");}});
     return ()=>{active=false;};
   },[]);
   useEffect(()=>{
@@ -249,11 +251,17 @@ export function HolisticLanguageConversation({
 
   async function saveProposedMemory() {
     if(!memoryProposal||memorySaving)return;
+    if(!memoryOwner){
+      setMemoryNotice(locale==="ru"?"Войдите в кабинет и откройте панель памяти, чтобы подтвердить аккаунт.":
+        locale==="es"?"Inicia sesión y abre el panel de memoria para confirmar la cuenta.":
+          "Sign in and open the memory panel to confirm the account.");
+      return;
+    }
     setMemorySaving(true);setMemoryNotice("");
     try{
       const response=await fetch("/api/app/agent-memory",{
         method:"POST",credentials:"same-origin",cache:"no-store",
-        headers:{"Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json","x-hh-memory-owner":memoryOwner},
         body:JSON.stringify({action:"set",kind:memoryProposal.kind,value:memoryProposal.value}),
       });
       if(!response.ok){
@@ -265,10 +273,11 @@ export function HolisticLanguageConversation({
       const next=await fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"});
       if(next.ok) {
         const data=await next.json() as {
-          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[]
+          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[];ownerBinding?:string
         };
         setSavedMemory(data.consent===true && data.useInDialogue===true
           ?approvedMemoryForLocalPrompt(data.items):[]);
+        setMemoryOwner(typeof data.ownerBinding==="string"?data.ownerBinding:"");
       }
       setMemoryProposal(null);
       setMemoryNotice(locale==="ru"?"Пожелание сохранено в профиле."
@@ -336,7 +345,9 @@ export function HolisticLanguageConversation({
       </div>
     </div> : null}
     {memoryNotice?<p role="status" className={styles.memoryNotice}>{memoryNotice}</p>:null}
-    <HolisticAgentMemoryPanel locale={locale} onUse={rows=>{stopAnswer();setSavedMemory(rows);}}/>
+    <HolisticAgentMemoryPanel locale={locale} onUse={(rows,ownerBinding)=>{
+      stopAnswer();setSavedMemory(rows);setMemoryOwner(ownerBinding);
+    }}/>
     {modelExperiment ? <div className={styles.experiment} data-local-model-experiment>
       <p><Volume2 size={16} aria-hidden="true"/>{t.gpu}</p>
       <small>{t.pilot} {t.modelNotice}</small>
