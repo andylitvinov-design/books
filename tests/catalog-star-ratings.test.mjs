@@ -53,7 +53,6 @@ test('real star filters are connected to public video, talisman and service cata
     'components/holistic-meditation-gallery.tsx',
     'components/academy-video-library-client.tsx',
     'components/taoist-talisman-catalog.tsx',
-    'components/holistic-support-talisman-viewer.tsx',
     'components/services-smart-discovery.tsx',
     'components/master-network-explorer.tsx',
   ]) {
@@ -62,6 +61,8 @@ test('real star filters are connected to public video, talisman and service cata
     assert.match(source,/StarFilter/,path)
     assert.match(source,/CatalogStarRating/,path)
   }
+  const compact=await read('components/holistic-support-talisman-viewer.tsx')
+  assert.doesNotMatch(compact,/useCatalogRatings\(|<StarFilter|<CatalogStarRating|data-support-talisman-star-filters|data-support-talisman-rating/)
   assert.match(await read('components/service-video-showcase.tsx'),/PublicVideoStarRating/)
   assert.match(await read('components/holistic-meditation-finder.tsx'),/videos:eligibleVideos/)
   assert.match(await read('components/services-smart-discovery.tsx'),/services\.filter\(eligible\)/)

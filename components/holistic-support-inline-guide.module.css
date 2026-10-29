@@ -1,0 +1,169 @@
+.card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  margin: 0;
+  background: linear-gradient(135deg, #fffaf2 0%, #f4faf3 100%);
+  border: 1px solid #cadecf;
+  border-radius: 21px;
+  box-shadow: 0 7px 24px #143c2a12;
+  color: #194b3c;
+}
+.header { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.title { display: inline-flex; align-items: center; gap: 6px; flex: 1; font-size: 16px; font-weight: 800; min-width: 0; }
+.title svg { flex: none; color: #079674; }
+.progress { font-size: 11px; white-space: nowrap; color: #64776c; font-weight: 700; }
+.close { display: grid; place-items: center; width: 35px; height: 35px; flex: none;
+  border-radius: 50%; border: 1px solid #d4e0d7; background: #fffdf9; color: #315a4b; cursor: pointer; }
+.dialogue { display: grid; grid-template-columns: 100px minmax(0,1fr); align-items: start; gap: 10px; min-width: 0; }
+.portrait { position: relative; width: 100px; height: 135px; overflow: hidden;
+  border-radius: 18px; background: #e5eee6; border: 2px solid #b7e1d2; }
+.portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.online { position: absolute; right: 6px; bottom: 6px; height: 13px; width: 13px;
+  border-radius: 50%; border: 2px solid white; background: #1fba79; }
+.thread { display: flex; flex-direction: column; gap: 9px; align-items: stretch; min-width: 0;
+  min-height: 135px; max-height: 215px; overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; scrollbar-width: thin; scroll-behavior: smooth;
+  padding: 2px 5px 6px 0; }
+.bubbleGuide,.bubbleUser { align-self: flex-start; max-width: 96%; padding: 9px 10px; border-radius: 14px;
+  margin: 0; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
+.bubbleGuide { animation: guide-message-in 220ms ease-out both; border: 1px solid #e4e4d9; background: #fff; border-bottom-left-radius: 5px; color: #244535; }
+.bubbleUser { animation: guide-message-in 220ms ease-out both; align-self: flex-end; border: 1px solid #c0e4ce; background: #dbf3df;
+  border-bottom-right-radius: 5px; color: #134a37; }
+.answers { display: grid; gap: 10px; min-width: 0; }
+.options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; min-width: 0; }
+.options > :is(button,a) { display: flex; align-items: center; justify-content: center; gap: 5px;
+  min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid #cbded2; border-radius: 12px;
+  background: #fffdf8; text-align: center; color: #245244; font: inherit; font-size: 13px;
+  line-height: 1.2; font-weight: 700; cursor: pointer; text-decoration: none; }
+.options > :is(button,a):hover { border-color: #42b58a; background: #f0fff3; }
+.options > .primary,.options > .selected { color: white; background: #008d6c;
+  border-color: #008d6c; }
+.options > .primary:hover,.options > .selected:hover { background: #006d53; }
+.options > :is(button,a):last-child:nth-child(odd) { grid-column: 1 / -1; }
+.customForm { display: flex; flex-wrap: wrap; gap: 6px; }
+.customForm input { flex: 1 1 170px; min-width: 0; min-height: 44px; padding: 8px 10px;
+  background: #fff; border: 1px solid #bdd8c8; border-radius: 10px; font-size: 14px; color: #143d30; }
+.customForm button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 7px 13px; border: 0; border-radius: 10px;
+  background: #008e6a; color: white; font-weight: 700; }
+.customForm button:disabled { background: #aebcb4; }
+.result { display: grid; gap: 9px; min-width: 0; padding: 10px; border-radius: 14px;
+  background: #fffdfa; border: 1px solid #e0e5d8; }
+.result > strong { font-size: 15px; line-height: 1.3; }
+.offer { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.offer img { flex: 0 0 100px; width: 100px; height: 72px; object-fit: cover; border-radius: 10px; }
+.offer > span { display: grid; min-width: 0; gap: 7px; font-size: 13px; line-height: 1.3; }
+.offer b { overflow-wrap: anywhere; }
+.offer button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 44px; background: #008c69; color: white; font-weight: 750; font-size: 13px;
+  border: 0; border-radius: 9px; cursor: pointer; padding: 7px 11px; }
+.primaryLink { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px; background: #e7f4e9; border: 1px solid #b0d9bd; border-radius: 11px;
+  min-height: 49px; padding: 10px; color: #1a604a; text-decoration: none; font-size: 13px; font-weight: 750; }
+.serviceAction { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; min-height: 50px;
+  border-radius: 11px; border: 1px solid #8bcbb2; padding: 10px; background: #e5f7e9;
+  color: #17523d; font-size: 13px; font-weight: 700; text-align: left; cursor: pointer; }
+.serviceAction > span { flex: 1; }
+.why { color: #466e5d; font-size: 12px; }
+.why summary { display: flex; align-items: center; gap: 5px; width: fit-content; min-height: 38px;
+  cursor: pointer; font-weight: 700; }
+.why p { padding: 6px 8px; margin: 2px 0; background: #f0f7f0; border-radius: 8px; line-height: 1.4; }
+.plan { padding: 9px 10px; background: #f3f8ef; border: 1px solid #d8e8d8;
+  border-radius: 12px; font-size: 12px; line-height: 1.42; }
+.plan > strong { display: block; margin-bottom: 5px; color: #16513d; font-size: 13px; }
+.plan ol { margin: 0; padding-left: 19px; display: grid; gap: 5px; }
+.plan li { padding-left: 2px; }
+.next { margin: 0; font-size: 12px; color: #4e6b5a; }
+.privacy { margin: 0; font-size: 10px; color: #5e7768; line-height: 1.35; }
+.card :is(button,a,input):focus-visible,.why summary:focus-visible {
+  outline: 3px solid #dea83c; outline-offset: 2px;
+}
+@media (max-width: 390px) {
+  .card { padding: 9px; gap: 9px; border-radius: 17px; }
+  .title { font-size: 14px; }
+  .dialogue { grid-template-columns: 75px minmax(0,1fr); gap: 8px; }
+  .portrait { width: 75px; height: 103px; border-radius: 14px; }
+  .thread { min-height: 106px; max-height: 188px; gap: 7px; }
+  .bubbleGuide,.bubbleUser { font-size: 12px; padding: 8px; max-width: 100%; }
+  .options { gap: 6px; }
+  .options > :is(button,a) { padding: 7px 6px; font-size: 12px; }
+  .offer img { flex-basis: 76px; width: 76px; height: 61px; }
+}
+@media (max-width: 340px) {
+  .dialogue { grid-template-columns: 65px minmax(0,1fr); gap: 6px; }
+  .portrait { width: 65px; height: 89px; }
+  .bubbleGuide,.bubbleUser { font-size: 11px; }
+  .thread { min-height: 95px; }
+}
+@media (prefers-reduced-motion: reduce) { .card * { scroll-behavior: auto !important; transition: none !important; } }
+
+
+/* Only the conversation is scrollable. The avatar stays in the left column. */
+@keyframes guide-message-in {
+  from { opacity: .65; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dialogue .portrait { align-self: start; }
+.confirm { display: grid; gap: 9px; padding: 10px; background: #fffdf7;
+  border: 1px solid #e4e5da; border-radius: 13px; color: #294b38; }
+.confirm p { margin: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.confirm > strong { font-size: 15px; }
+.confirm .options { margin-top: 4px; }
+.confirm .options > .primary { grid-column: 1 / -1; background: #008866; color: white; }
+.recommendations { display: grid; gap: 11px; min-width: 0; margin-top: 2px;
+  padding-top: 12px; border-top: 1px solid #dce8dc; scroll-margin-top: 76px; }
+.recommendations h3 { margin: 0; font-size: clamp(17px, 4.5vw, 22px);
+  line-height: 1.25; color: #154a38; }
+.reason { margin: 0; font-size: 12px; line-height: 1.4; color: #607568; }
+.alternatives { display: grid; gap: 7px; min-width: 0; }
+.alternatives > strong { font-size: 14px; }
+.alternative { display: grid; gap: 6px; padding: 10px; border: 1px solid #e0e5dc;
+  background: #fffdfa; border-radius: 13px; min-width: 0; }
+.alternative > b { color: #226647; font-size: 13px; }
+.alternative .offer img { max-width: 82px; max-height: 58px; }
+.alternative .primaryLink,.alternative .serviceAction { font-size: 12px; }
+.textLink { display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; width: fit-content; max-width: 100%; padding: 7px 12px;
+  background: #ecf7ec; border: 1px solid #a5d0b5; border-radius: 11px;
+  color: #17654a; font-size: 13px; font-weight: 750; cursor: pointer; }
+.card :is(button,a,input,summary):focus-visible { outline: 3px solid #c19c32; outline-offset: 2px; }
+@media (max-width: 390px) {
+  .thread { max-height: 200px; }
+  .confirm { padding: 9px; }
+  .confirm p { font-size: 12px; }
+  .customForm button { padding: 8px 10px; }
+}
+@media (max-width: 340px) {
+  .thread { max-height: 190px; }
+  .customForm input { flex-basis: 155px; }
+  .result,.alternative { padding: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubbleGuide,.bubbleUser { animation: none; }
+  .thread { scroll-behavior: auto; }
+}
+
+/* V2: optional verified test cards and video choices stay within the chat surface. */
+.inlineChoices { display: grid; gap: 9px; min-width: 0; }
+.inlineChoices > strong { font-size: 14px; color: #1b5c43; }
+.inlineChoices > p { font-size: 13px; line-height: 1.5; margin: 0; color: #264d3e; }
+.inlineOffer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  min-width: 0; padding: 9px; border-radius: 12px; border: 1px solid #d6e3d8;
+  background: #fffdf9; }
+.inlineOffer > img { width: 88px; height: 57px; flex: 0 0 88px; object-fit: cover; border-radius: 8px; }
+.inlineOffer > span { display: grid; flex: 1 1 120px; min-width: 0; gap: 3px; font-size: 13px;
+  line-height: 1.3; overflow-wrap: anywhere; color: #20513e; }
+.inlineOffer small { color: #647668; font-size: 11px; }
+.inlineOffer > :is(a,button) { display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; min-height: 44px; padding: 9px 12px; border: 1px solid #008e68;
+  border-radius: 10px; background: #008e68; color: white; font-weight: 700;
+  text-decoration: none; cursor: pointer; font-size: 13px; line-height: 1.3; }
+.inlineChoices > .textLink { width: fit-content; }
+.card :is(button,a,input):focus-visible { outline: 3px solid #c79d25; outline-offset: 2px; }
+@media (max-width: 390px) {
+  .inlineOffer { padding: 8px; gap: 6px; }
+  .inlineOffer > img { width: 74px; height: 50px; flex-basis: 74px; }
+  .inlineOffer > span { font-size: 12px; flex-basis: 115px; }
+  .inlineOffer > :is(a,button) { width: 100%; }
+}

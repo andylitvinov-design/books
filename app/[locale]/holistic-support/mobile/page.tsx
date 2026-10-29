@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 
-import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo } from "@/components/holistic-support-mobile";
+import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo, type SupportMobileChoice } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
 
 // These recordings are attributed to Andrey in the existing approved sources:
 // English guided meditations and the historical PsiMaster / Andrey archive.
@@ -85,9 +86,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function HolisticSupportMobilePage({ params }: Props) {
+export default async function HolisticSupportMobilePage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  // Internal journeys from Mandala open the same new-design experience.
+  // Ignore unknown query values instead of forwarding an untrusted route.
+  const requestedView = (await searchParams).view;
+  const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
@@ -139,7 +145,20 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
     }
   }
 
-  const videos: SupportMobileVideo[] = locale === "ru"
+  // Verified English originals are available in RU/EN/ES, retaining Russian meditations.
+  const englishVideos: SupportMobileVideo[] = englishGuidedMeditations
+    .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
+    .map((video): SupportMobileVideo => ({
+      id: video.youtubeId!,
+      title: video.title,
+      topics: englishThemes[video.key] ?? ["energy"],
+      program: video.key === "flight-to-sun" ? "sun" : "reiki",
+      author: "andrey",
+      sourceLanguage: "en",
+      courseKey: video.key,
+      masterProfile: andreyMasterProfile(locale),
+    }));
+  const russianVideos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
         ...video,
         program: index < 3 ? "sun" : "energy",
@@ -147,19 +166,16 @@ export default async function HolisticSupportMobilePage({ params }: Props) {
         sourceLanguage: "ru",
         masterProfile: andreyMasterProfile("ru"),
       }))
-    : englishGuidedMeditations
-      .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
-      .map((video): SupportMobileVideo => ({
-        id: video.youtubeId!,
-        title: video.title,
-        topics: englishThemes[video.key] ?? ["energy"],
-        program: video.key === "flight-to-sun" ? "sun" : "reiki",
-        author: "andrey",
-        sourceLanguage: "en",
-        masterProfile: andreyMasterProfile(locale),
-      }));
+    : [];
+  const englishIds = new Set(englishVideos.map(video => video.id));
+  const videos: SupportMobileVideo[] = [
+    ...russianVideos.filter(video => !englishIds.has(video.id)), ...englishVideos,
+  ];
 
+  // Public, verified catalogue metadata only; no user test results in this prop.
+  const guideTests = buildSupportGuideTestShortlists({ locale });
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
+      initialChoice={initialChoice} guideTests={guideTests} />
   );
 }

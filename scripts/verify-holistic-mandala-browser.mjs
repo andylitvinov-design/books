@@ -1,9 +1,10 @@
 /**
  * Public/guest mandala E2E: real Chromium and WebKit at iPhone widths.
  * No login, account writes, provider render, billing or uploaded personal data.
- * Uses a synthetic 1px file and only tests YouTube iframe mounting, not sound.
+ * Uses a synthetic 1px photo and verifies the encoded locally generated sound.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { chromium, webkit } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
@@ -20,6 +21,19 @@ const viewports = [
   { locale: "es", width: 390 },
 ];
 
+// A real, local PCM recording for native audio player + MediaRecorder E2E.
+function syntheticAudioWav(seconds=3) {
+  const rate=16000, samples=rate*seconds;
+  const bytes=Buffer.alloc(44+samples*2);
+  bytes.write("RIFF",0);bytes.writeUInt32LE(bytes.length-8,4);bytes.write("WAVE",8);
+  bytes.write("fmt ",12);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);
+  bytes.writeUInt16LE(1,22);bytes.writeUInt32LE(rate,24);
+  bytes.writeUInt32LE(rate*2,28);bytes.writeUInt16LE(2,32);bytes.writeUInt16LE(16,34);
+  bytes.write("data",36);bytes.writeUInt32LE(samples*2,40);
+  for(let i=0;i<samples;i++)bytes.writeInt16LE(
+    Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
+  return bytes;
+}
 const bufferFromStream = async stream => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
@@ -56,57 +70,53 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
-        // Keep the already-live Support layout and interaction checks,
-        // while testing the six new topic-specific video categories.
+        // Support-home visual parity is functional, not only decorative.
         const supportTop=page.locator("[data-video-support-layout]");
         await supportTop.waitFor({state:"visible",timeout:12000});
         assert.equal(await supportTop.locator('input[type="range"]').count(),4);
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
-        assert.equal(await hero.locator('nav a').count(),4);
+        assert.equal(await hero.locator('nav a, nav button').count(),4);
+        assert.equal(await hero.getAttribute("data-hero-promo"),"true",
+          "illustrative theme scene is visible until actual preview starts");
+        assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
+        assert.equal(await page.locator("#video-hero-themes").isVisible(),false);
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         await page.locator("[data-video-recommend-focus]").click();
         await page.waitForFunction(() =>
           document.querySelector('[data-video-theme="energy"]')?.getAttribute("aria-pressed")==="true",
           undefined,{timeout:9000});
+
+        // New Talisman-style controls drive the same local renderer and settings.
+        const catalog=page.locator("[data-video-catalog]");
+        await catalog.waitFor({state:"visible"});
+        assert.equal(await catalog.locator("[data-video-category]").count(),5);
+        assert.equal(await page.locator("[data-video-catalog-filters] select").count(),3);
+        await page.locator('[data-video-category="health"]').click();
+        assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await hero.getAttribute("data-video-theme-active"),"health");
+        assert.equal(await page.locator("[data-video-style]").inputValue(),"gentle-shield");
+        await page.locator("[data-video-motion]").selectOption("dynamic");
+        await page.locator("[data-video-length]").selectOption("30");
+        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        await page.locator('[data-video-category="energy"]').click();
+        await page.locator("[data-video-style]").selectOption("green-vortex");
+        assert.equal(await page.locator('[data-video-template="green-vortex"]').getAttribute("aria-pressed"),"true");
         const categoryControls=page.locator("[data-video-theme]");
-        assert.equal(await categoryControls.count(),6,"six real themes including life and health");
-        for(const id of ["money","energy","life","health","relationships","goals"]){
+        assert.equal(await categoryControls.count(),4,"exactly four actual themes");
+        for(const id of ["money","energy","relationships","goals"]){
+          await page.locator("[data-video-theme-toggle]").click();
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"true");
           const select=page.locator('[data-video-theme="'+id+'"]');
           await select.click();
           await page.waitForFunction(key=>
             document.querySelector('[data-video-theme="'+key+'"]')?.getAttribute("aria-pressed")==="true",
             id,{timeout:10000});
           assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
+          assert.equal(await page.locator("[data-video-theme-toggle]").getAttribute("aria-expanded"),"false");
         }
-        if (engine === "chromium" && locale === "ru" && width === 390) {
-          // Real Full HD MP4s in ALL three new/expanded categories; no
-          // pretence that these are static posters or animated SVGs.
-          for (const [category, id] of [
-            ["energy","solar-surge"],["life","wildflower-dance"],["health","calm-sea"],
-          ]) {
-            await page.locator('[data-video-theme="'+category+'"]').click();
-            if (category === "health") {
-              await page.locator("[data-video-health-disclaimer]").waitFor({state:"visible"});
-            }
-            const tile=page.locator('[data-video-template="'+id+'"]');
-            await tile.click();
-            const film=tile.locator('video[data-real-mp4]');
-            await film.waitFor({state:"visible"});
-            assert.equal(await film.evaluate(el=>el.tagName),"VIDEO");
-            assert.match(await film.getAttribute("data-real-mp4")||"",
-              /^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.mp4$/);
-            await page.waitForFunction(sceneId=>{
-              const el=document.querySelector('[data-mandala-scene-preview="'+sceneId+'"]');
-              return el && el.readyState>=2 && el.videoWidth>=900 && el.currentTime>.15;
-            },id,{timeout:30000});
-            const before=await film.evaluate(v=>v.currentTime);
-            await page.waitForTimeout(470);
-            const after=await film.evaluate(v=>v.currentTime);
-            assert.ok(after>before+.10,category+" native H264 must advance real frames");
-          }
-        }
+        await page.locator("[data-video-theme-toggle]").click();
         await page.locator('[data-video-theme="money"]').click();
         await page.locator("[data-mandala-advanced] > summary").click();
         const preset = page.locator('[data-mandala-preset="star"]');
@@ -185,15 +195,7 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await page.locator("[data-mandala-quality] button").count(), 2);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await moneySelector.locator('button[aria-expanded]').click();
-          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 16);
-          const hdMoney = moneySelector.locator('[data-mandala-money-option="wealth-sunrise"]');
-          await hdMoney.click();
-          const newClip=hdMoney.locator('video[data-real-mp4]');
-          await page.waitForFunction(() => {
-            const v=document.querySelector('[data-mandala-scene-preview="wealth-sunrise"]');
-            return v && v.videoWidth>=900 && v.currentTime>.15;
-          },undefined,{timeout:30000});
-          assert.match(await newClip.getAttribute("data-real-mp4")||"",/film-collection-v2\/wealth-sunrise\.mp4$/);
+          assert.equal(await moneySelector.locator("[data-mandala-money-option]").count(), 12);
           const infinity = moneySelector.locator('[data-mandala-money-option="infinite-flow"]');
           await infinity.click();
           assert.equal(await infinity.getAttribute("aria-pressed"), "true");
@@ -206,13 +208,13 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const create = page.locator("[data-mandala-video-generate]");
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
         await page.locator("[data-video-photo-consent]").check();
-        // Native H.264 sources can decode asynchronously after changing a
-        // scene. Do not click "Create" until the correct master is ready.
+        // Selecting a different genuine MP4 starts a new async decode.
+        // Wait for the actual master canplay event rather than testing a stale state.
         await page.waitForFunction(() => {
           const button=document.querySelector("[data-mandala-video-generate]");
           const master=document.querySelector("[data-mandala-master-mp4]");
           return Boolean(button && !button.disabled && master && master.readyState >= 2);
-        },undefined,{timeout:30000});
+        },undefined,{timeout:25000});
         assert.equal(await create.isEnabled(), true);
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator('[data-video-aspect="landscape"]').click();
@@ -221,6 +223,14 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             undefined,{timeout:10000});
           await page.locator('[data-video-duration="10"]').click();
           await page.locator('[data-video-music="harmony"]').click();
+          const nativePlayer=page.locator("[data-video-audio-player]");
+          await nativePlayer.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
           await create.click();
           const videoLink = page.locator("[data-mandala-video-download]");
           await videoLink.waitFor({ state: "visible", timeout: 25000 });
@@ -240,9 +250,32 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           assert.equal(videoDownload.suggestedFilename(), filename);
           const videoBytes = await bufferFromStream(await videoDownload.createReadStream());
-          assert.ok(videoBytes.length > 10000, "generated silent video has a real encoded payload");
+          assert.ok(videoBytes.length > 10000, "generated video has a real encoded payload");
           if (filename?.endsWith(".webm")) assert.deepEqual(videoBytes.subarray(0, 4), Buffer.from([26, 69, 223, 163]));
           else assert.equal(videoBytes.subarray(4, 8).toString("utf8"), "ftyp");
+          // A selected ambient track must survive the actual MediaRecorder
+          // and contain audible PCM energy, not just a silent MP4/WebM header.
+          const info = spawnSync("ffprobe", [
+            "-v", "error", "-show_entries", "stream=codec_type,codec_name", "-of", "json", "-",
+          ], { input: videoBytes, encoding: "utf8" });
+          assert.equal(info.status, 0, "ffprobe reads the real downloadable video: "+(info.error?.message || info.stderr));
+          const streams = JSON.parse(info.stdout).streams || [];
+          assert.ok(streams.some(stream => stream.codec_type === "video"), "recording has a video track");
+          assert.ok(streams.some(stream => stream.codec_type === "audio"), "recording has a real audio track");
+
+          const decoded = spawnSync("ffmpeg", [
+            "-hide_banner", "-loglevel", "error", "-i", "pipe:0", "-map", "0:a:0",
+            "-t", "2", "-ar", "8000", "-ac", "1", "-f", "s16le", "pipe:1",
+          ], { input: videoBytes, maxBuffer: 1024 * 1024 });
+          assert.equal(decoded.status, 0, "recorded audio decodes to PCM: "+decoded.stderr);
+          const samples = Math.floor(decoded.stdout.length / 2);
+          assert.ok(samples > 4000, "at least half a second of encoded audio");
+          let energy = 0;
+          for (let sample = 0; sample < samples; sample++) {
+            const value = decoded.stdout.readInt16LE(sample * 2) / 32768;
+            energy += value * value;
+          }
+          assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
         }
 
@@ -253,6 +286,22 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           const backgroundMode = page.locator("[data-mandala-output-mode] button").nth(1);
           await backgroundMode.click();
           assert.equal(await backgroundMode.getAttribute("aria-pressed"), "true");
+          await page.locator("[data-video-audio-upload]").setInputFiles({
+            name:"my-local-sound.wav",mimeType:"audio/wav",buffer:syntheticAudioWav(),
+          });
+          await page.locator("[data-video-audio-selected]").waitFor({state:"visible",timeout:10000});
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),false,
+            "user-supplied audio needs explicit permission for export");
+          const player=page.locator("[data-video-audio-player]");
+          await player.waitFor({state:"attached",timeout:10000});
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.readyState>=2,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.waitForFunction(()=>document.querySelector("[data-video-audio-player]")?.currentTime>.25,
+            undefined,{timeout:10000});
+          await page.locator("[data-video-music-preview]").click();
+          await page.locator("[data-video-audio-rights]").check();
+          assert.equal(await page.locator("[data-mandala-video-generate]").isEnabled(),true);
           await page.locator("[data-mandala-video-generate]").click();
           const backgroundLink = page.locator("[data-mandala-video-download]");
           await backgroundLink.waitFor({ state: "visible", timeout: 45000 });
@@ -264,6 +313,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           const backgroundBytes = await bufferFromStream(await backgroundDownload.createReadStream());
           assert.ok(backgroundBytes.length > 10000, "moving background is real video bytes");
+          const fileProbe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+            "-of","json","-"],{input:backgroundBytes,encoding:"utf8"});
+          assert.equal(fileProbe.status,0,"user audio export is a decodable media container: "+(fileProbe.error?.message || fileProbe.stderr));
+          assert.ok(JSON.parse(fileProbe.stdout).streams.some(x=>x.codec_type==="audio"),
+            "uploaded WAV must survive as real recorded audio track");
+          const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
+            "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
+            {input:backgroundBytes,maxBuffer:1024*1024});
+          assert.equal(pcm.status,0,"uploaded audio export decodes: "+pcm.stderr);
+          let sum=0;
+          for(let i=0;i+1<pcm.stdout.length;i+=2){const sample=pcm.stdout.readInt16LE(i)/32768;sum+=sample*sample;}
+          assert.ok(pcm.stdout.length>4000 && Math.sqrt(sum/(pcm.stdout.length/2))>.02,
+            "real uploaded audio is audible in finished video");
           assert.deepEqual(uploaded, [], "background video must not upload any client content");
         }
 
@@ -294,10 +356,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           undefined,{timeout:12000});
         assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
 
-        const overflow = await page.evaluate(() => ({
-          view: window.innerWidth,
-          page: document.documentElement.scrollWidth,
-        }));
+        const overflow = await page.evaluate(() => {
+          const viewport = window.innerWidth;
+          return {
+            view: viewport,
+            page: document.documentElement.scrollWidth,
+            // Geometry if a native input or control regresses again.
+            culprits: [...document.querySelectorAll("body *")]
+              .filter(el => el instanceof HTMLElement && el.getBoundingClientRect().right > viewport + 2)
+              .slice(0, 8).map(el => ({tag:el.tagName,
+                className:typeof el.className==="string"?el.className.slice(0,90):"",
+                right:Math.round(el.getBoundingClientRect().right)})),
+          };
+        });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus");

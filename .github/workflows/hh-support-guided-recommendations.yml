@@ -1,0 +1,90 @@
+name: Holistic Support AI guide — scored intake and WhatsApp dialogue
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-inline-guide.tsx'
+      - 'components/holistic-support-inline-guide.module.css'
+      - 'lib/holistic-support/guide-dialogue.mjs'
+      - 'lib/assessments/support-guide-tests.js'
+      - 'app/[locale]/holistic-support/mobile/page.tsx'
+      - 'tests/holistic-support-conversation-intents.test.mjs'
+      - 'tests/holistic-support-guide-test-shortlist.test.mjs'
+      - 'components/holistic-support-mobile.module.css'
+      - 'tests/holistic-support-guided-recommendations.test.mjs'
+      - 'scripts/verify-holistic-support-guided-card.mjs'
+      - '.github/workflows/hh-support-guided-recommendations.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-support-guided-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  focused-unit-types-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Grounded goal-led conversation and existing recommendation contracts
+        run: |
+          node --check scripts/verify-holistic-support-guided-card.mjs
+          node --test tests/holistic-support-conversation-intents.test.mjs tests/holistic-support-guide-test-shortlist.test.mjs tests/holistic-support-guided-recommendations.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs
+      - name: Scoped lint
+        run: npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-inline-guide.tsx app/'[locale]'/holistic-support/mobile/page.tsx lib/assessments/support-guide-tests.js lib/holistic-support/guide-dialogue.mjs tests/holistic-support-conversation-intents.test.mjs scripts/verify-holistic-support-guided-card.mjs tests/holistic-support-guided-recommendations.test.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Build
+        run: npm run build
+  mobile-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3119
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-support-guide-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install browsers for mobile Chromium and WebKit
+        run: |
+          npm install --prefix /tmp/hh-support-guide-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-support-guide-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Score-first multi-turn dialog on EN/RU/ES × 320/390/430
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/holistic-guided-recommendations
+          npx next dev --hostname 127.0.0.1 --port 3119 >/tmp/hh-support-guide-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3119/ru/holistic-support/mobile >/dev/null; then ready=1; break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -100 /tmp/hh-support-guide-next.log; exit 1; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then tail -100 /tmp/hh-support-guide-next.log; exit 1; fi
+          node scripts/verify-holistic-support-guided-card.mjs
+      - name: Keep only public synthetic screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-guided-recommendations-browser
+          path: artifacts/holistic-guided-recommendations/
+          retention-days: 3
+          if-no-files-found: warn

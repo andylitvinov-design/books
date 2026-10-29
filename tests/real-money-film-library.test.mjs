@@ -50,7 +50,7 @@ test("public money gallery uses first-party MP4 decoder for selected personal vi
     assert.ok(found,"Missing "+id+" link");
   }
  assert.match(comp,/data-real-mp4=\{film\.src\}/);
- assert.match(comp,/data-mandala-master-mp4=\{activeFilm\.src\}/);
+ assert.match(comp,/data-mandala-master-mp4=\{activeMoneyFilm\.src\}/);
  assert.match(comp,/paintRealMoneyVideoFrame/);
  assert.match(cinematic,/ctx\.drawImage\(video,/);
  assert.match(browser,/actual H\.264 video must advance in time/);
