@@ -27,7 +27,7 @@ test('EN/RU/ES orders and clients are actual account-scoped tabs and never synth
    assert.ok(ui.includes(word),word)
  for(const required of ['data-orders-clients-hub','data-section={section}',
    "role=\"tablist\"","aria-selected={section==='orders'}","aria-selected={section==='clients'}",
-   "query.get('section')==='clients'","query.get('order')","chooseOrder(order.id)",
+   "q.get('section')==='clients'","q.get('order')","chooseOrder(order.id)",
    'cloneElement(children,','onClientsCount:setClientCount','onDetailChange:setClientDetailOpen',
    'search.trim().toLocaleLowerCase()','filter===key','PracticeRequestConversation key={selected.id}'])
    assert.ok(ui.includes(required),required)
