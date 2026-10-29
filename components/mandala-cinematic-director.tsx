@@ -15,14 +15,20 @@ export type CinematicShot={number:number;title:string;theme:VideoTheme;sceneId:s
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean};
-type Field="theme"|"difficulty"|"goal"|"style"|"avoid";
+type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
 type Props={locale:PublicLocale;theme:VideoTheme;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
     open:"Plan my film",close:"Close director",edit:"Edit",done:"Done",back:"Back",
-    theme:"Topic",difficulty:"Main challenge",goal:"Desired change",style:"Visual style",avoid:"Avoid these images",
+    theme:"Topic",difficulty:"Main challenge",goal:"Desired change",profile:"My profile",style:"Visual style",avoid:"Avoid these images",
+    profileEmpty:"Not connected",profileReady:"Verified test suggestions available",
+    profileConsent:"I allow the site to read my saved test results in this browser to suggest a video theme. The results are not shared with video AI services, analytics or CRM.",
+    profileLoad:"Suggest from my tests",profileLoading:"Reading your protected tests…",
+    profileSignIn:"Sign in to your private account to access test suggestions.",
+    profileError:"Unable to read tests; select a topic manually.",profileNone:"No current verified test suggestions; you can choose a topic yourself.",
+    profileUse:"Choose",profileCabinet:"Update my profile",profileTests:"Take tests",visualOptions:"Style & imagery preferences",
     choose:"Choose a visual direction",custom:"In your own words",goalHint:"A voluntary, realistic next step, not a promise.",
     difficultyPlaceholder:"For example, feeling unsure at work",
     goalPlaceholder:"For example, approach a conversation more calmly",
@@ -37,7 +43,13 @@ const copy={
   ru:{title:"Кинорежиссёр",tag:"НОВОЕ · ЛОКАЛЬНО И ПРИВАТНО",
     intro:"Опишите желаемые изменения и атмосферу. Получите четыре связанных сюжета вместо случайных кадров.",
     open:"Спланировать фильм",close:"Закрыть режиссёра",edit:"Изменить",done:"Готово",back:"Назад",
-    theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",style:"Визуальный стиль",avoid:"Нежелательные образы",
+    theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",profile:"Мой профиль",style:"Визуальный стиль",avoid:"Нежелательные образы",
+    profileEmpty:"Не подключён",profileReady:"Есть рекомендации по проверенным тестам",
+    profileConsent:"Я разрешаю прочитать мои сохранённые тесты в браузере для подбора темы видео. Результаты не передаются AI-видеосервисам, аналитике или CRM.",
+    profileLoad:"Предложить по моим тестам",profileLoading:"Загружаем защищённые тесты…",
+    profileSignIn:"Войдите в личный кабинет, чтобы использовать свои тесты.",
+    profileError:"Не удалось прочитать тесты. Выберите тему вручную.",profileNone:"Нет актуальных проверенных рекомендаций. Выберите тему самостоятельно.",
+    profileUse:"Выбрать",profileCabinet:"Обновить профиль",profileTests:"Пройти тесты",visualOptions:"Стиль и предпочтения по образам",
     choose:"Выберите художественное направление",custom:"Своими словами",goalHint:"Посильный желаемый шаг, без гарантий результата.",
     difficultyPlaceholder:"Например, неуверенность в рабочем разговоре",
     goalPlaceholder:"Например, говорить спокойнее и свободнее",
@@ -52,7 +64,13 @@ const copy={
   es:{title:"Director cinematográfico",tag:"NUEVO · LOCAL Y PRIVADO",
     intro:"Describe los cambios y el ambiente que deseas explorar. Crea cuatro escenas conectadas.",
     open:"Planificar mi película",close:"Cerrar director",edit:"Editar",done:"Listo",back:"Volver",
-    theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",style:"Estilo visual",avoid:"Evitar estas imágenes",
+    theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",profile:"Mi perfil",style:"Estilo visual",avoid:"Evitar estas imágenes",
+    profileEmpty:"Sin conectar",profileReady:"Hay sugerencias de tests verificados",
+    profileConsent:"Autorizo consultar mis tests guardados en este navegador para sugerir temas del vídeo. Los resultados no se envían a IA de vídeo, analítica ni CRM.",
+    profileLoad:"Sugerir desde mis tests",profileLoading:"Consultando tests privados…",
+    profileSignIn:"Inicia sesión en tu cuenta privada para consultar los tests.",
+    profileError:"No se han podido consultar los tests; elige un tema manualmente.",profileNone:"No hay sugerencias verificadas recientes. Elige un tema manualmente.",
+    profileUse:"Elegir",profileCabinet:"Actualizar mi perfil",profileTests:"Realizar tests",visualOptions:"Estilo y preferencias visuales",
     choose:"Elige una dirección visual",custom:"Con tus palabras",goalHint:"Un paso voluntario y posible, sin promesas.",
     difficultyPlaceholder:"Por ejemplo, inseguridad en una conversación",
     goalPlaceholder:"Por ejemplo, hablar con más calma",
@@ -65,7 +83,7 @@ const copy={
     applied:"Montaje preparado. Pulsa el botón existente Crear vídeo.",noData:"No se enviaron datos a proveedores.",
     themes:{energy:"Energía",money:"Dinero y trabajo",relationships:"Relaciones",goals:"Metas y sentido",life:"Vida",health:"Descanso y bienestar"}},
 } as const;
-const FIELDS:Field[]=["theme","difficulty","goal","style","avoid"];
+const FIELDS:Field[]=["theme","difficulty","goal","profile"];
 export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboard}:Props){
   const t=copy[locale]||copy.en;
   const [expanded,setExpanded]=useState(false);
@@ -79,6 +97,10 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
   const [seconds,setSeconds]=useState<20|30|60>(20);
   const [generated,setGenerated]=useState(false);
   const [applied,setApplied]=useState(false);
+  const [profileConsent,setProfileConsent]=useState(false);
+  const [profileState,setProfileState]=useState<"idle"|"loading"|"ready"|"signin"|"error">("idle");
+  const [profileSuggestions,setProfileSuggestions]=useState<VideoTheme[]>([]);
+  const profileRequestRef=useRef(0);
   const editRef=useRef<HTMLButtonElement>(null);
   const plan=useMemo(()=>buildCinematicStoryboard({
     locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
@@ -87,6 +109,44 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
   // A genuinely external topic change resets the stale draft instead.
+  useEffect(()=>()=>{profileRequestRef.current++;},[]);
+  const withdrawProfile=()=>{
+    profileRequestRef.current++;
+    setProfileConsent(false);setProfileSuggestions([]);setProfileState("idle");
+  };
+  async function loadPrivateSuggestions(){
+    if(!profileConsent||disabled||profileState==="loading")return;
+    const requestId=++profileRequestRef.current;
+    setProfileState("loading");setProfileSuggestions([]);
+    try{
+      const response=await fetch("/api/app/bootstrap?view=portrait",{
+        method:"GET",credentials:"same-origin",cache:"no-store",redirect:"error",
+        headers:{"Accept":"application/json"},referrerPolicy:"no-referrer",
+      });
+      if(requestId!==profileRequestRef.current)return;
+      if(response.status===401||response.status===403){setProfileState("signin");return;}
+      if(!response.ok)throw Error("protected_profile_unavailable");
+      const data:unknown=await response.json();
+      if(!data||typeof data!=="object"||!("account" in data)||
+        !("results" in data)||!Array.isArray(data.results))throw Error("invalid_profile");
+      // Parse first-party, current source-validated axes only after consent.
+      // The full private record is never stored, serialized into the storyboard,
+      // or submitted to a video AI provider.
+      const [{buildPsychPortrait},{suggestGuidedGoalsFromProfile}]=await Promise.all([
+        import("@/lib/assessments/psych-portrait.js"),
+        import("@/lib/mandala/personal-guided-course.mjs"),
+      ]);
+      const suggested=suggestGuidedGoalsFromProfile(buildPsychPortrait(data.results));
+      if(requestId!==profileRequestRef.current)return;
+      const allowed=new Set<string>(Array.from(CINEMATIC_THEMES));
+      setProfileSuggestions(suggested.filter((x:string)=>allowed.has(x)).slice(0,3) as VideoTheme[]);
+      setProfileState("ready");
+    }catch{
+      if(requestId===profileRequestRef.current){
+        setProfileSuggestions([]);setProfileState("error");
+      }
+    }
+  }
   const parentThemeRef=useRef(theme);
   useEffect(()=>{
     if(parentThemeRef.current===theme)return;
@@ -102,6 +162,7 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
   },[editing]);
   const values:Record<Field,string>={
     theme:t.themes[topic],difficulty:difficulty||"—",goal:goal||"—",
+    profile:profileState==="ready"&&profileSuggestions.length?t.profileReady:t.profileEmpty,
     style:CINEMATIC_STYLES[style].name[locale],avoid:avoid||"—",
   };
   const fieldValue=(field:Field)=>field==="difficulty"?difficulty:field==="goal"?goal:avoid;
@@ -147,6 +208,17 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
           <span className={css.edit}>{t.edit}<ChevronRight size={15} aria-hidden="true"/></span>
         </button>)}
       </div>
+      <details className={css.visualPrefs} data-director-visual-preferences>
+        <summary>{t.visualOptions}</summary>
+        <div className={css.fields}>
+          {(["style","avoid"] as const).map(field=><button key={field} type="button"
+            className={css.field} data-director-field={field} disabled={disabled}
+            onClick={()=>setEditing(field)}>
+            <span><small>{t[field]}</small><strong>{values[field]}</strong></span>
+            <span className={css.edit}>{t.edit}<ChevronRight size={15} aria-hidden="true"/></span>
+          </button>)}
+        </div>
+      </details>
       <div className={css.options}>
         <fieldset disabled={disabled}><legend>{t.format}</legend>
           <div className={css.chips}>
@@ -193,6 +265,31 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
         {editing==="theme"?<div className={css.sheetChoices} role="group" aria-label={t.theme}>
           {(CINEMATIC_THEMES as VideoTheme[]).map(item=><button type="button" key={item}
             aria-pressed={topic===item} onClick={()=>selectTopic(item)}>{t.themes[item]}</button>)}
+        </div>:editing==="profile"?<div className={css.profileOptions} data-director-profile-options>
+          <label className={css.profileConsent}><input type="checkbox"
+            data-director-profile-consent checked={profileConsent} disabled={disabled}
+            onChange={event=>event.target.checked?setProfileConsent(true):withdrawProfile()}/>
+            <span>{t.profileConsent}</span></label>
+          <button type="button" className={css.primary} data-director-profile-import
+            disabled={disabled||!profileConsent||profileState==="loading"}
+            onClick={()=>void loadPrivateSuggestions()}>
+            <Sparkles size={16} aria-hidden="true"/>
+            {profileState==="loading"?t.profileLoading:t.profileLoad}
+          </button>
+          <p className={css.privacy} role="status">{profileState==="signin"?t.profileSignIn:
+            profileState==="error"?t.profileError:
+            profileState==="ready"&&!profileSuggestions.length?t.profileNone:
+            profileState==="ready"?t.profileReady:t.profileEmpty}</p>
+          {profileState==="ready"&&profileSuggestions.length?<div className={css.sheetChoices}
+            data-director-profile-suggestions>
+            {profileSuggestions.map(item=><button type="button" key={item}
+              onClick={()=>{selectTopic(item);setEditing(null);}}>
+              {t.profileUse}: {t.themes[item]}</button>)}
+          </div>:null}
+          <div className={css.secondary}>
+            <Link href={"/"+locale+"/app"} prefetch={false}>{t.profileCabinet}</Link>
+            <Link href={"/"+locale+"/client/tests"} prefetch={false}>{t.profileTests}</Link>
+          </div>
         </div>:editing==="style"?<div className={css.sheetChoices} role="group" aria-label={t.choose}>
           {Object.entries(CINEMATIC_STYLES).map(([id,item])=><button type="button" key={id}
             aria-pressed={style===id} onClick={()=>selectStyle(id as StyleId)}>{item.name[locale]}</button>)}
