@@ -1299,7 +1299,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-template={other.id}
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
-              onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+              onClick={event=>{
+                setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
+                // Start the selected real MP4 within the visitor’s tap gesture.
+                // In Safari the later React effect alone may not retain that gesture.
+                const clip=event.currentTarget.querySelector("video");
+                if(clip){clip.muted=true;void clip.play().catch(()=>{/* normal player error path remains active */});}
                 }}>
               {getThemedRealFilm(theme,other.id) ?
                  <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
