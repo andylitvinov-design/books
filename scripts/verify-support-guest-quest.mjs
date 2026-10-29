@@ -116,10 +116,21 @@ try {
           0, label + " signed-in unlocked");
         // Reset only the synthetic activity marker to prove that Play, not tile
         // selection, creates the two meditation badges for a signed-in viewer.
-        await page.evaluate(() => localStorage.setItem("hh-support-free-journey-v1",
-          JSON.stringify({ starts: 0, completed: {} })));
+        // WebKit can finish an earlier page's async verified-test status while
+        // a synthetic localStorage reset triggers navigation. Seed the next
+        // document BEFORE React hydration; this tests fresh account/activity
+        // state, not an unsupported live mutation of mounted React storage.
+        await page.addInitScript(() => {
+          localStorage.setItem("hh-support-free-journey-v1",
+            JSON.stringify({ starts: 0, completed: {} }));
+        });
         await page.reload({ waitUntil: "domcontentloaded", timeout: 90000 });
         await page.locator("[data-support-play]:not([disabled])").waitFor({ timeout: 35000 });
+        await page.waitForFunction(() => {
+          const saved=JSON.parse(localStorage.getItem("hh-support-free-journey-v1")||"{}");
+          const step=document.querySelector('[data-support-quest-step="firstVideo"]');
+          return saved.starts===0 && step?.getAttribute("data-status")!=="done";
+        }, null, { timeout: 15000 });
         assert.notEqual(await page.locator('[data-support-quest-step="firstVideo"]').getAttribute("data-status"),
           "done", label + " no fake video completion");
         await page.locator("[data-support-play]").click();
