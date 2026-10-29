@@ -107,6 +107,8 @@ try {
     await card.getByRole('button',{name:copy.es.no,exact:true}).click()
     await card.getByRole('button',{name:copy.es.no,exact:true}).click()
     await card.getByRole('button',{name:copy.es.skip,exact:true}).click()
+    assert.equal(await card.getByRole('link').count(),0,'test must not start before explicit consent')
+    await card.locator('#hh-intelligence-test-consent-meditation').check()
     const link=card.getByRole('link').first()
     await link.waitFor({state:'visible',timeout:15000})
     assert.match(await link.getAttribute('href'),/^\/en\/client\?startTests=[a-z0-9-]+$/)
