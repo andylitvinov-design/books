@@ -109,6 +109,10 @@ on:
       - '.github/workflows/hh-crm-source-check.yml'
   workflow_dispatch:
 
+concurrency:
+  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 

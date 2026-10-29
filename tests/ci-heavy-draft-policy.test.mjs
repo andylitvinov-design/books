@@ -47,3 +47,30 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /node --test tests\/pr-sweep-guard\.test\.mjs tests\/ci-heavy-draft-policy\.test\.mjs/);
   assert.match(guard, /^  pull_request:/m);
 });
+
+const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+const prOnlyCancellation = "${{ github.event_name == 'pull_request' }}";
+const supersededRunWorkflows = [
+  ['hh-crm-source-check.yml', 'hh-crm-source'],
+  ['practice-google-browser.yml', 'hh-practice-google'],
+  ['practitioner-presentations.yml', 'hh-practitioner-presentations'],
+  ['hh-private-audio-e2e.yml', 'hh-private-audio'],
+];
+
+for (const [workflow, key] of supersededRunWorkflows) {
+  test(workflow + ': superseded PR runs preserve push audit', () => {
+    const source = read(workflow);
+    assert.match(source, /^  pull_request:/m);
+    assert.match(source, /^jobs:/m);
+    assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
+    assert.ok(source.includes('group: ' + key + '-' + runGroupSuffix));
+    assert.ok(source.includes('cancel-in-progress: ' + prOnlyCancellation));
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  });
+}
+
+test('non-PR push verification is still triggered for release-sensitive suites', () => {
+  for (const name of ['practice-google-browser.yml', 'practitioner-presentations.yml', 'hh-private-audio-e2e.yml']) {
+    assert.match(read(name), /^  push:/m);
+  }
+});
