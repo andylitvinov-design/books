@@ -69,6 +69,16 @@ test("detailed client requests choose a matching APPROVED scene, not just the fo
   }
 });
 
+test("therapy-mode storyboards require practitioner review and make no autonomous treatment claims",()=>{
+  const privateTherapy=buildCinematicStoryboard({theme:"energy",locale:"ru",
+    wish:"У меня стресс и напряжение",mode:"therapy"});
+  assert.equal(privateTherapy.requiresPractitionerReview,true);
+  assert.equal(privateTherapy.paidRenderApproved,false);
+  assert.equal(privateTherapy.noExternalClientData,true);
+  assert.equal(buildCinematicStoryboard({theme:"energy",mode:"creative"}).requiresPractitionerReview,false);
+  assert.match(studio,/therapyMode=\{studioMode==="therapy"\}/);
+  assert.match(directorUI,/data-director-therapy-review/);
+});
 test("visual avoid rules do not leak private text or force an untrusted prompt",()=>{
   const p=buildCinematicStoryboard({theme:"health",locale:"en",wish:prefix,
     avoid:"water, ocean, stream "+prefix});
