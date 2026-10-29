@@ -670,3 +670,46 @@
 
 /* The four accessible choices now live in the disclosure, not over the film. */
 .moreFilters .catalogFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+
+/* Therapy is a separate cinematic tab, reusing the same private Canvas player. */
+.quickStart .previewChoices{margin:2px 0 2px}
+.studio[data-video-studio-mode="therapy"] .modePicker button[data-video-mode="therapy"][aria-pressed="true"]{
+  background:linear-gradient(120deg,#0d736b,#125e70);border-color:#78beb6;box-shadow:0 3px 13px #0a6e752e
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell{
+  border:1px solid #c8e2d6;border-radius:25px;
+  background:linear-gradient(150deg,#f2faf4 0%,#fffef8 45%,#f9fcf3 100%);
+  box-shadow:0 10px 25px rgba(26,85,64,.07)
+}
+.studio[data-video-studio-mode="therapy"] .catalogHeading{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:4px 3px}
+.studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:clamp(20px,5vw,27px);line-height:1.16;letter-spacing:-.025em;color:#174d41}
+.studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:12px;line-height:1.5;color:#608679}
+.courseIndicator{flex:none;align-self:center;display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border:1px solid #c3dfce;border-radius:99px;background:#e6f4e8;color:#197b60;font-size:11px;font-weight:850;letter-spacing:.035em}
+.studio[data-video-studio-mode="therapy"] .catalogShell .hero{
+  min-height:230px;max-height:440px;aspect-ratio:1.72;border-radius:23px;
+  border:1px solid #9bbcb6;box-shadow:0 13px 25px rgba(6,46,38,.15)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{
+  width:78px;height:78px;background:rgba(8,88,80,.8);border-color:#f4eecf;
+  box-shadow:0 0 0 7px rgba(237,252,243,.2),0 9px 25px rgba(4,32,33,.35)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroShade{
+  background:radial-gradient(circle at center,transparent 22%,rgba(3,39,36,.29) 100%)
+}
+.studio[data-video-studio-mode="therapy"] .therapyCourse{margin:13px 0 4px;scroll-margin-top:12px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav{margin-top:14px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a{border-color:#c0dccd;background:#f2faf5}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a:focus-visible{outline:3px solid #a0d1ad;outline-offset:2px}
+@media(max-width:430px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell{padding:12px 9px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:206px;max-height:none;aspect-ratio:1.6}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading{padding:2px 4px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:19px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:11px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{width:68px;height:68px}
+}
+@media(max-width:350px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:190px}
+  .courseIndicator{font-size:10px;padding:6px}
+}
