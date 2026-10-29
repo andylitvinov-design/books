@@ -15,6 +15,22 @@ const cases=[
   {locale:"ru",width:320},{locale:"ru",width:354},{locale:"ru",width:390},
   {locale:"ru",width:430},{locale:"en",width:390},{locale:"es",width:390},
 ];
+
+const bufferFromStream=async stream=>{
+  const chunks=[];for await(const item of stream)chunks.push(Buffer.from(item));
+  return Buffer.concat(chunks);
+};
+function syntheticWav(){
+  const rate=16000,count=rate*2,b=Buffer.alloc(44+count*2);
+  b.write("RIFF",0);b.writeUInt32LE(b.length-8,4);b.write("WAVE",8);
+  b.write("fmt ",12);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);
+  b.writeUInt16LE(1,22);b.writeUInt32LE(rate,24);b.writeUInt32LE(rate*2,28);
+  b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write("data",36);
+  b.writeUInt32LE(count*2,40);
+  for(let i=0;i<count;i++)b.writeInt16LE(Math.round(9500*Math.sin(Math.PI*2*330*i/rate)),44+i*2);
+  return b;
+}
+
 const expectedTitle={
   ru:"Личная видео-подкачка или видеотерапия",
   en:"Personal video boost or video therapy",
@@ -29,6 +45,70 @@ async function openStep(page,n){
   for(let other=1;other<=6;other++)if(other!==n)
     assert.equal(await page.locator("#video-step-"+other+"-panel").isVisible(),false,"step "+other+" closes when "+n+" opens");
 }
+
+async function verifyPngExport(page){
+  const advanced=page.locator("[data-mandala-advanced]");
+  if(await advanced.getAttribute("open")===null)
+    await advanced.locator(":scope > summary").click();
+  await page.locator("#mandala-photo").setInputFiles({
+    name:"synthetic-private.png",mimeType:"image/png",buffer:PNG,
+  });
+  await page.waitForFunction(()=>{
+    const photo=document.querySelector('img[src^="blob:"]');
+    return photo && photo.complete && photo.naturalWidth>0;
+  },undefined,{timeout:15000});
+  assert.equal(await page.locator("[data-video-photo-consent]").isChecked(),false,
+    "replacing a photo must reset earlier consent");
+  await page.locator("[data-video-photo-consent]").check();
+  const a=page.locator('a[download="holistic-house-mandala.png"]');
+  await a.waitFor({state:"visible",timeout:25000});
+  const [d]=await Promise.all([page.waitForEvent("download",{timeout:20000}),a.click()]);
+  const png=await bufferFromStream(await d.createReadStream());
+  assert.deepEqual(png.subarray(0, 8),Buffer.from([137,80,78,71,13,10,26,10]));
+  assert.ok(png.length>2000,"real locally composited PNG");
+}
+async function verifyMoneyFrames(page){
+  const tile=page.locator('[data-mandala-money-option="golden-rain"]');
+  await tile.waitFor({state:"visible",timeout:10000});
+  await tile.click();
+  const clip=page.locator('[data-mandala-scene-preview="golden-rain"]');
+  await clip.waitFor({state:"visible",timeout:12000});
+  await page.waitForFunction(()=>{
+    const video=document.querySelector('[data-mandala-scene-preview="golden-rain"]');
+    return video && video.readyState >= 2 && video.videoWidth>=500 && video.currentTime>=.15;
+  },undefined,{timeout:25000});
+  const before=await clip.evaluate(v=>v.currentTime);
+  await page.waitForTimeout(760);
+  const after=await clip.evaluate(v=>v.currentTime);
+  assert.ok(after>before+.17,"actual H.264 video must advance in time");
+  const canvas=page.locator("[data-mandala-cinematic-canvas]");
+  const hash=()=>canvas.evaluate(c=>{
+    const bytes=c.getContext("2d").getImageData(0,0,c.width,c.height).data;
+    let x=7;for(let i=0;i<bytes.length;i+=199)x=(x*31+bytes[i])>>>0;
+    return x;
+  });
+  const first=await hash();
+  await page.waitForTimeout(700);
+  assert.notEqual(await hash(),first,"money-frame-motion: Canvas renders moving scene");
+  if(await page.locator("[data-video-preview-toggle]").getAttribute("aria-pressed")==="true")
+    await page.locator("[data-video-preview-toggle]").click();
+}
+async function verifyGuidedFocus(page){
+  const advanced=page.locator("[data-mandala-advanced]");
+  if(await advanced.getAttribute("open")===null)
+    await advanced.locator(":scope > summary").click();
+  await page.locator("button[aria-pressed][class*='focusButton']").click();
+  await page.waitForFunction(()=>document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus")==="true",
+    undefined,{timeout:12000});
+  assert.equal(await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').count(),0);
+  await page.locator(".academy-video-poster").first().click();
+  await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').waitFor({state:"attached",timeout:15000});
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(()=>document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus")==="false",
+    undefined,{timeout:12000});
+}
+
+
 async function checkExport(page,engine){
   await openStep(page,2);
   if(await page.locator("[data-video-photo-enabled]").isChecked())
@@ -37,37 +117,79 @@ async function checkExport(page,engine){
   if(await page.locator("[data-video-affirmations-feature]").isChecked())
     await page.locator("[data-video-affirmations-feature]").uncheck();
   await openStep(page,5);
-  if(!(await page.locator("[data-video-audio-attach]").isDisabled()))
-    await page.locator("[data-video-quick-attach]").click();
+  // Explicit selected-versus-attached audio state, source-backed native WAV.
+  await page.locator('[data-video-quick-section="5"] button').filter({hasText:"Без звука"}).last().click();
+  await page.locator('[data-video-audio-kind="all"]').click();
+  await page.locator("[data-video-audio-search]").fill("дождь");
+  await page.locator('[data-video-music="rain"]').click();
+  const create=page.locator("[data-mandala-video-generate]");
+  assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
+  const attachButton=page.locator("[data-video-audio-attach]");
+  const player=page.locator("[data-video-audio-player]");
+  assert.equal(await player.getAttribute("src"),"/audio/mandala/rain.wav");
+  const media=await page.request.get(BASE+"/audio/mandala/rain.wav",{headers:{Range:"bytes=0-63"}});
+  assert.ok([200,206].includes(media.status()));
+  assert.equal(Buffer.from(await media.body()).subarray(0,4).toString("ascii"),"RIFF");
+  await page.locator("[data-video-music-preview]").click();
+  await page.waitForFunction(()=>{
+    const a=document.querySelector("[data-video-audio-player]");
+    return a && a.error===null && a.readyState>=2 && a.currentTime>.25;
+  },undefined,{timeout:18000});
+  await page.locator("[data-video-music-preview]").click();
+  await attachButton.click();
+  assert.equal(await attachButton.isDisabled(),true);
+  assert.equal(await create.isEnabled(),true);
   await openStep(page,6);
   await page.locator('[data-video-quick-duration="10"]').click();
   await page.locator('[data-video-quick-aspect="portrait"]').click();
-  const create=page.locator("[data-video-quick-generate]");
   const output=page.locator("[data-mandala-video-download]");
-  // On iOS WebKit, the first tap can unlock a hidden same-origin MP4; never
-  // claim an export until an actual playable downloadable Blob is produced.
   for(let attempt=0;attempt<3;attempt++){
     if(await output.isVisible())break;
     await create.click();
     try{await output.waitFor({state:"visible",timeout:50000});break;}
     catch(e){if(attempt===2)throw e;}
   }
-  await output.waitFor({state:"visible",timeout:15000});
-  const [download]=await Promise.all([
-    page.waitForEvent("download",{timeout:25000}), output.click(),
-  ]);
-  const path=await download.path();
-  assert.ok(path,"local video file from "+engine);
+  const [d]=await Promise.all([page.waitForEvent("download",{timeout:20000}),output.click()]);
+  const filepath=await d.path();
+  assert.ok(filepath,"real downloaded MP4/WebM");
   const probe=spawnSync("ffprobe",["-v","error","-show_entries",
     "stream=codec_type,codec_name,width,height:format=duration",
-    "-of","json",path],{encoding:"utf8",timeout:20000});
+    "-of","json",filepath],{encoding:"utf8",timeout:20000});
   assert.equal(probe.status,0,"ffprobe real encoded media: "+probe.stderr);
-  const data=JSON.parse(probe.stdout);
-  assert.ok(data.streams?.some(stream=>stream.codec_type==="video"&&stream.width>0&&stream.height>0),
+  const data=JSON.parse(probe.stdout),streams=data.streams||[];
+  assert.ok(streams.some(stream=>stream.codec_type==="video"&&stream.width>0),
     "file contains decoded moving video frames");
-  assert.ok(Number(data.format?.duration)>1,"video has nonzero duration");
-  assert.ok(data.streams?.some(stream=>stream.codec_type==="audio"),
-    "attached first-party soundtrack is encoded, not only previewed");
+  assert.ok(streams.some(stream => stream.codec_type === "audio"),
+    "audio attached to actual recorder, not just preview");
+  assert.ok(Number(data.format?.duration)>1);
+  const pcm=spawnSync("ffmpeg",[
+    "-hide_banner","-loglevel","error","-i",filepath,"-map","0:a:0",
+    "-t","2","-ar","8000","-ac","1","-f","s16le","pipe:1"
+  ],{encoding:null,maxBuffer:1024*1024,timeout:20000});
+  assert.equal(pcm.status,0,"original audio decodes to PCM");
+  let sum=0,count=0;
+  for(let i=0;i+1<pcm.stdout.length;i+=2){
+    const val=pcm.stdout.readInt16LE(i)/32768;sum+=val*val;count++;
+  }
+  assert.ok(count>4000&&Math.sqrt(sum/count)>.003,"encoded audio is audible, not silence");
+  // Selected audio alone doesn't rewrite a finished video; Attach does.
+  await openStep(page,5);
+  await page.locator("[data-video-audio-search]").fill("энергия");
+  await page.locator('[data-video-music="energy"]').click();
+  assert.equal(await output.count(),1,"preview sound keeps existing export");
+  assert.equal(await create.isEnabled(),false,"new soundtrack needs attachment");
+  await page.locator("[data-video-audio-attach]").click();
+  await output.waitFor({state:"detached",timeout:12000});
+  // Genuine local custom audio upload with explicit user permission.
+  await page.locator("[data-video-audio-upload]").setInputFiles({
+    name:"owner-voice.wav",mimeType:"audio/wav",buffer:syntheticWav(),
+  });
+  await page.locator("[data-video-audio-selected]").waitFor({state:"visible",timeout:12000});
+  assert.equal(await create.isEnabled(),false);
+  assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true);
+  await page.locator("[data-video-audio-rights]").check();
+  await page.locator("[data-video-audio-attach]").click();
+  assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true);
 }
 
 let scenarios=0;
@@ -137,23 +259,34 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
       const image=document.querySelector("[data-video-quick-photo] img");
       return Boolean(image && image.complete && image.naturalWidth>0);
     },undefined,{timeout:20000});
-    assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false);
-    await page.locator("[data-video-photo-enabled]").check();
+    assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),true,"selected photo toggles local overlay, NOT rights");
     const consent=page.locator("[data-video-photo-consent]");
     await consent.waitFor({state:"visible",timeout:10000});
     assert.equal(await consent.isChecked(),false,"own photo needs explicit rights");
     await consent.check();
+    if(engine==="chromium"&&locale==="ru"&&width===390)
+      await verifyPngExport(page);
 
     await openStep(page,3);
     assert.equal(await page.locator("[data-video-hypnosis-section]").count(),1);
     await page.locator("[data-video-affirmations-feature]").check();
     assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
     await page.locator("[data-video-affirmations-feature]").uncheck();
+    if(engine==="chromium"&&locale==="ru"&&width===390){
+      const hypno=page.locator("[data-hypno-overview]");
+      await hypno.locator("[data-hypno-phrases-edit]").click();
+      await page.locator("[data-video-goals-toggle]").click();
+      assert.equal(await page.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"true");
+      await page.locator('[data-video-goal="recovery"]').click();
+      await page.locator("[data-video-goals-apply]").click();
+    }
 
     await openStep(page,4);
     assert.equal(await page.locator("#video-templates").count(),1);
     await page.locator('[data-video-quick-style="1"]').click();
     assert.equal(await page.locator('[data-video-quick-style="1"]').getAttribute("aria-pressed"),"true");
+    if(engine==="chromium"&&locale==="ru"&&width===390)
+      await verifyMoneyFrames(page);
     if(engine==="chromium"&&locale==="ru"&&width===390){
       const director=page.locator("[data-cinematic-director]");
       await director.waitFor({state:"visible",timeout:10000});
@@ -188,6 +321,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     }
     if((engine==="chromium"||engine==="webkit")&&locale==="ru"&&width===390)
       await checkExport(page,engine);
+    if(engine==="chromium"&&locale==="ru"&&width===390)
+      await verifyGuidedFocus(page);
     assert.deepEqual(uploads,[],"photo/video must remain local, without provider POST");
 
     // The approved eight-session programme is a separate safe action, not an

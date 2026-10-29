@@ -222,7 +222,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(studio,/document\.querySelector\("\[data-video-photo-consent\]"\)\?\.scrollIntoView/);
   assert.match(studio,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/data-mandala-video-download/);
-  assert.match(studio,/data-video-theme=\{item\}/);
+  assert.match(studio,/data-video-quick-theme=\{value\}/);
   assert.match(css,/\.heroCanvas canvas\{display:block/);
   assert.match(css,/\.supportTop\{display:grid/);
   assert.match(css,/@media\(max-width:390px\)/);
