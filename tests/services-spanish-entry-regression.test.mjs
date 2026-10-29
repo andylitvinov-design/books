@@ -9,7 +9,7 @@ for (const [name, source] of [['personal services', main], ['practitioner direct
   test(name + ': all three public locales work without the EN/RU-only remedies gate', () => {
     assert.match(source, /import \{ isPublicLocale \} from ['"]@\/data\/academy\/catalog['"]/)
     assert.match(source, /if \(!isPublicLocale\(locale\)\) notFound\(\)/)
-    assert.match(source, /return \[\{ locale: "en" \}, \{ locale: "ru" \}, \{ locale: "es" \} \]/)
+    assert.match(source, /return \[\{ locale: "en" \}, \{ locale: "ru" \}, \{ locale: "es" \}\]/)
     assert.doesNotMatch(source, /getHomeopathyLocaleParams|isSupportedLocale|as Locale/)
   })
 }
