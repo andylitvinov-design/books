@@ -1204,7 +1204,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <label className={videoStyles.previewChoiceLabel}>
             <input type="checkbox" data-video-affirmations-feature checked={affirmations.enabled}
               disabled={recording||preparing}
-              onChange={event=>setAffirmations(previous=>({...previous,enabled:event.currentTarget.checked}))}/>
+              onChange={event=>{
+                const enabled=event.currentTarget.checked;
+                setAffirmations(previous=>({...previous,enabled}));
+              }}/>
             <span>{layout.affirmationsToggle}</span>
           </label>
           <a className={videoStyles.previewChoiceLink} href="#video-hypnosis">
