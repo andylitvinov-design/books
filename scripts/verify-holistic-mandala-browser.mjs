@@ -414,6 +414,17 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.locator('[data-video-mode="therapy"]').click();
           assert.equal(await page.locator('[data-video-mode="therapy"]').getAttribute("aria-pressed"),"true");
           await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await page.locator("[data-video-studio-mode]").getAttribute("data-video-studio-mode"),"therapy");
+          const programmeLayout=await page.evaluate(()=>{
+            const rect=selector=>document.querySelector(selector)?.getBoundingClientRect();
+            return {hero:rect("#video-hero"),course:rect("#guided-video-series"),nav:rect("[data-video-editor-nav]")};
+          });
+          assert.ok(programmeLayout.hero && programmeLayout.course && programmeLayout.nav &&
+            programmeLayout.hero.bottom<=programmeLayout.course.top &&
+            programmeLayout.course.bottom<=programmeLayout.nav.top,
+            "therapy programme must follow its own player directly before extra video settings");
+          await page.locator("[data-video-key-difficulty]").fill("Мне трудно расслабиться");
+          await page.locator("[data-video-key-goal]").fill("Я хочу больше спокойствия");
           await page.locator("[data-video-goal-accents]").click();
           const goals=page.locator("[data-video-goals-filter]");
           await goals.waitFor({state:"visible"});
@@ -427,6 +438,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.locator("[data-guided-create-plan]").click();
           assert.equal(await page.locator("[data-guided-session]").count(),8);
           assert.equal(await page.locator("[data-guided-free-video]").count(),1);
+          await page.locator('[data-guided-session="1"] details summary').click();
+          const firstScript=await page.locator('[data-guided-session="1"] details p').innerText();
+          assert.match(firstScript,/Мне трудно расслабиться/);
+          assert.match(firstScript,/Я хочу больше спокойствия/);
           assert.equal(await page.locator("[data-guided-score-provenance]").count(),0,
             "no private profile imported without consent");
           await page.locator("[data-guided-free-video]").click();
