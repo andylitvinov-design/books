@@ -21,6 +21,18 @@ test('audio without an approved playable source is clearly a no-match in each la
   }
 });
 
+test('unavailable audio never reads an opted-in private coaching topic', async () => {
+  const request={...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en',formats:['audio']}};
+  let reads=0;
+  const result=await planIntelligenceRequest(request,{loadCoaching:async()=>{reads++;throw new Error('unexpected private read')}});
+  assert.equal(result.status,'no_match');
+  assert.equal(reads,0);
+  const urgent=await planIntelligenceRequest({...request,preflight:{...preflight,selfHarmThoughts:'yes'}},
+    {loadCoaching:async()=>{reads++;throw new Error('unexpected private read')}});
+  assert.equal(urgent.status,'safety_handoff');
+  assert.equal(reads,0);
+});
+
 test('an empty eligible catalog is distinguished from a technical failure in each language', async () => {
   for (const language of ['en','ru','es']) {
     const request={...body,intent:{language,selectedTopics:['energy'],formats:['test']}};
