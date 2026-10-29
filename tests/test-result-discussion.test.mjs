@@ -210,3 +210,16 @@ test('the UI waits for user relevance before offers and renders only three choic
   assert.match(workspace,/discussionLoadedId === result.id/)
   assert.doesNotMatch(ui,/navigator\.sendBeacon|fetch\(|appFetch\(|localStorage|sessionStorage|POST|autoEnroll/i)
 })
+
+
+test('result page and API preserve exact account ownership; no anonymous interpretation API',()=>{
+  const api=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
+  const repository=readFileSync(new URL('../lib/app/repository.js',import.meta.url),'utf8')
+  assert.match(api,/path\[0\] === 'results' && path\.length === 2 && method === 'GET'/)
+  assert.match(api,/repo\.getResult\(actor, path\[1\]\)/)
+  assert.match(api,/const actor = await auth\.verified\(\)/)
+  assert.match(repository,/async getResult\(actor, id\)/)
+  assert.match(repository,/where result\.id=\$1 and result\.account_id=\$2/)
+  assert.match(repository,/\[id, actor\.id\]/)
+  assert.doesNotMatch(api,/discussion-results|ai-consultant\/results/i)
+})
