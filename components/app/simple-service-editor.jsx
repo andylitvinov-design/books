@@ -333,6 +333,11 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const photos=Array.isArray(draft.photos)?draft.photos:[]
   const photo=photos[0]||''
   const stageLabels=[c.stageIntro,c.stageOffer,c.stageDetails]
+  // Keep the full localized names for assistive technology; use concise,
+  // legible labels in three equal iPhone columns instead of ellipses.
+  const stageShortLabels=lang==='ru'?['Описание','Формат и цена','Детали']
+    :lang==='es'?['Presentación','Formato y precio','Detalles']
+    :['About','Format & price','Details']
   const area=AREAS[draft.areaKey]||AREAS.personal_development
   const areaTitle=area[lang==='ru'?1:lang==='es'?2:0]
   const formatLabel=draft.deliveryFormat==='in_person'?c.inPerson:draft.deliveryFormat==='hybrid'?c.hybrid:c.online
@@ -346,7 +351,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
         {item?.status&&<small className={styles.realStatus}>{c.statusLabel}: {item.status}</small>}
       </div>
       <label className={styles.langSelect}>
-        <span><Globe2 size={15} aria-hidden="true"/>{c.language}</span>
+        <span><Globe2 size={15} aria-hidden="true"/>{lang==='ru'?'Язык':lang==='es'?'Idioma':'Language'}</span>
         <select aria-label={c.language} value={activeLanguage} onChange={event=>{setActiveLanguage(event.target.value);setFormIssue('')}} disabled={locked}>
           <option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option>
         </select>
@@ -357,7 +362,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       {stageLabels.map((label,index)=><button key={label} type="button" aria-label={label} aria-current={stage===index?'step':undefined}
         aria-pressed={stage===index} className={stage===index?styles.activeStage:''}
         onClick={()=>{if(!locked){setStage(index);setFormIssue('')}}} disabled={locked}>
-        <span>{index+1}</span><strong>{label.slice(label.indexOf('·')+1).trim()}</strong>
+        <span>{index+1}</span><strong>{stageShortLabels[index]}</strong>
       </button>)}
     </div>
     {stage===0&&<section className={styles.stagePanel} data-service-slide="presentation" aria-label={c.stageIntro}>
@@ -370,7 +375,10 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
               <ImageIcon size={30} aria-hidden="true"/><small>{c.photoEmpty}</small>
             </div>}
           <button type="button" className={styles.photoButton} disabled={locked} onClick={()=>setPhotoToolsOpen(open=>!open)}
-            aria-expanded={photoToolsOpen}><Camera size={17} aria-hidden="true"/>{photo?c.photoOpen:c.photoAdd}</button>
+            aria-expanded={photoToolsOpen} aria-label={photo?c.photoOpen:c.photoAdd}>
+            <Camera size={17} aria-hidden="true"/>
+            {photo?(lang==='ru'?'Изменить фото':lang==='es'?'Cambiar foto':'Change photo')
+              :(lang==='ru'?'Добавить фото':lang==='es'?'Añadir foto':'Add photo')}</button>
         </div>
         <div className={styles.contentCanvas}>
           <p className={styles.contentKicker}>HOLISTIC HOUSE · {areaTitle}</p>
