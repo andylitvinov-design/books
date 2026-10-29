@@ -12,6 +12,8 @@ import {
 import { appFetch } from '@/lib/app/client-fetch'
 import { buildMyProgress } from '@/lib/app/my-progress.mjs'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
+import { monitoringCatalogItem } from '@/data/assessments/catalog'
+import { freeMeditationVideos } from '@/data/academy/holistic-support-meditations'
 import styles from './my-progress.module.css'
 
 const COPY = {
@@ -46,6 +48,11 @@ const COPY = {
     foot:'Participation and test scores are not a promise of health improvement.',
     masteredCount:'mastered', markHelp:'Watch and mark videos in the Academy',
     itemCount:'items', noProfileName:'My House',
+    topicsHeader:'Topics', allTopics:'All topics', energy:'Energy', money:'Money & work',
+    relationships:'Relationships', meaning:'Goals & meaning', topicHint:'Only activities with a verified editorial topic appear in a selected topic.',
+    sectionsHistory:'My history by section', viewSection:'Open section', noTopicHistory:'No saved records in this topic yet.',
+    profileShortcut:'My profile', ordersShortcut:'My orders', servicesShortcut:'My services', messagesShortcut:'Messages',
+    expandHistory:'Show all dated entries', collapseHistory:'Hide dated entries', recentByTopic:'Newest first · swipe for earlier records',
     noSavedVideos:'Nothing saved yet. Explore the Academy or create your first video.',
   },
   ru: {
@@ -79,6 +86,11 @@ const COPY = {
     foot:'Пройденные занятия и результаты тестов не означают гарантированного улучшения состояния.',
     masteredCount:'освоено', markHelp:'Смотреть и отмечать видео в Академии',
     itemCount:'записей', noProfileName:'Мой дом',
+    topicsHeader:'Темы', allTopics:'Все темы', energy:'Энергия', money:'Деньги и работа',
+    relationships:'Отношения', meaning:'Цели и смыслы', topicHint:'Фильтр показывает только записи с подтверждённой тематикой в каталоге.',
+    sectionsHistory:'История по разделам', viewSection:'Открыть раздел', noTopicHistory:'В этой теме ещё нет сохранённых материалов.',
+    profileShortcut:'Мой профиль', ordersShortcut:'Мои заказы', servicesShortcut:'Мои услуги', messagesShortcut:'Сообщения',
+    expandHistory:'Показать всю историю по датам', collapseHistory:'Скрыть список по датам', recentByTopic:'Новые слева · листайте вправо к прошлому',
     noSavedVideos:'Пока ничего не сохранено. Откройте Академию или создайте первое видео.',
   },
   es: {
@@ -112,11 +124,24 @@ const COPY = {
     foot:'La participación y las puntuaciones no garantizan mejoras de bienestar.',
     masteredCount:'aprendidos', markHelp:'Ver y marcar vídeos en Academia',
     itemCount:'registros', noProfileName:'Mi casa',
+    topicsHeader:'Temas', allTopics:'Todos', energy:'Energía', money:'Dinero y trabajo',
+    relationships:'Relaciones', meaning:'Objetivos y sentido', topicHint:'Solo aparecen registros con temas editoriales confirmados.',
+    sectionsHistory:'Mi historial por sección', viewSection:'Abrir sección', noTopicHistory:'Aún no hay registros guardados de este tema.',
+    profileShortcut:'Mi perfil', ordersShortcut:'Mis pedidos', servicesShortcut:'Mis servicios', messagesShortcut:'Mensajes',
+    expandHistory:'Ver todo por fecha', collapseHistory:'Ocultar lista por fecha', recentByTopic:'Más nuevos primero · desliza para ver los anteriores',
     noSavedVideos:'Aún no has guardado nada. Explora Academia o crea tu primer vídeo.',
   },
 }
 
 const DATE_LOCALES = { en:'en-US', ru:'ru-RU', es:'es-ES' }
+const TOPIC_IDS=['all','energy','money','relationships','meaning']
+const SECTION_HREF=(id,lang)=>({
+  videos:'/'+lang+'/academy/videos',courses:'/'+lang+'/app/course?view=courses',
+  tests:'/'+lang+'/app/tests',mandalas:'/'+lang+'/app/videos',
+  practices:'/'+lang+'/holistic-support/mobile',
+  reports:'/'+lang+'/app/portrait#personal-reports',
+  services:'/'+lang+'/app/messages?section=orders',notes:'/'+lang+'/app/history',
+})[id] || '/'+lang+'/app/progress'
 const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes']
 const LIBRARY = [
   { id:'videos', Icon:PlaySquare, tone:'video' },
@@ -203,24 +228,27 @@ export default function MyProgress({ data, locale='en' }) {
     ? data.account.displayName.trim().slice(0,70) : ''
   const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
   const root='/'+lang+'/app'
-  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
+  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,loading:true,failed:0,videosDisabled:false})
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
+  const [selectedTopic,setSelectedTopic]=useState('all')
+  const [historyExpanded,setHistoryExpanded]=useState(false)
   const mandalaEpoch=useRef(0)
   const [mandalaPlayer,setMandalaPlayer]=useState({id:null,url:null,loading:false,error:false})
 
   useEffect(()=>{
     if(!accountId) return
     let active=true
-    setSources({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
-    const endpoints=['course','academy-energywork','personal-videos','video-progress']
+    setSources({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,loading:true,failed:0,videosDisabled:false})
+    const endpoints=['course','academy-energywork','personal-videos','video-progress','messages/my-orders']
     Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
       .then(results=>{
         if(!active) return
         const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
-          growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],loading:false,
+          growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],
+          orders:values[4]?.accountId===accountId&&Array.isArray(values[4]?.orders)?values[4]:null,loading:false,
           videosDisabled:results[2].status==='rejected'&&results[2].reason?.code==='FEATURE_UNAVAILABLE',
           failed:results.filter((item,index)=>item.status==='rejected' &&
             !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length,
@@ -232,7 +260,10 @@ export default function MyProgress({ data, locale='en' }) {
   const progress=useMemo(()=>buildMyProgress({
     bootstrap:data||{},growth:sources.growth,energywork:sources.energywork,
     videos:sources.videos,videoProgress:sources.videoProgress,
-    titleOfTest:assessmentHistoryTitle,locale:lang,
+    titleOfTest:assessmentHistoryTitle,
+    topicsOfTest:entry=>monitoringCatalogItem(entry.definitionKey)?.topics||[],
+    videoTopics:Object.fromEntries(freeMeditationVideos(lang).map(video=>[video.id,video.topics])),
+    orders:sources.orders,locale:lang,
   }),[data,sources,lang])
   const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'),[progress])
   const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'),[progress])
