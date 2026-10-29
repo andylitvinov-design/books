@@ -53,4 +53,4 @@ jobs:
             exit 1
           fi
           printf '%s\n' "${files[@]}" >> "$GITHUB_STEP_SUMMARY"
-          actionlint -color ${files[@]}
+          actionlint -color "${files[@]}"
