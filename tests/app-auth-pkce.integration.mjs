@@ -108,7 +108,7 @@ routeSource = routeSource
   .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
   .replace("await import('@/lib/holistic-support/intelligence-test-catalog')", `await import('${new URL('../lib/holistic-support/intelligence-test-catalog.js', import.meta.url)}')`)
   .replace("await import('@/data/core-service-offers')", `await import('${new URL('../data/core-service-offers.ts', import.meta.url)}')`)
-  .replace("await import('@/lib/app/video-progress')", "({listVideoProgress:async (_,actor)=>{videoReads.push(actor.id);return {records:actor.id==='10000000-0000-4000-8000-000000000001'?[{videoId:'HqfixazXqRY',status:'watched'}]:[]}}})")
+  .replace("await import('@/lib/app/video-progress')", "({matchingMarkedVideoIds:async (_,actor,ids)=>{videoReads.push(actor.id);return {videoIds:actor.id==='10000000-0000-4000-8000-000000000001'&&ids.includes('HqfixazXqRY')?['HqfixazXqRY']:[]}}})")
   .replace("await import('@/lib/holistic-support/intelligence-result-history')", `await import('${new URL('../lib/holistic-support/intelligence-result-history.js', import.meta.url)}')`)
   .replace("const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')", `const loadMeditationDiscovery = async () => ({ videos: ${JSON.stringify(meditationFixture)}, publishedSourceIds: ['HqfixazXqRY'] })`)
   .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + (/\.[cm]?js$/.test(name) ? '' : '.js'), import.meta.url)}'`)

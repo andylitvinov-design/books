@@ -78,6 +78,13 @@ try {
   assert.equal(second.body.primary?.id,'test:hh-resource-pulse')
   const withoutConsent=await call(a,{...body,testHistory:undefined})
   assert.equal(withoutConsent.body.primary?.id,'test:hh-resource-pulse')
+  const videoBody={...body,testHistory:undefined,videoHistory:'avoid_marked',
+    intent:{language:'en',audioLanguage:'en',selectedTopics:['energy'],formats:['video']}}
+  const firstVideo=await call(a,videoBody),secondVideo=await call(b,videoBody)
+  assert.equal(firstVideo.status,200);assert.equal(secondVideo.status,200)
+  const offered=result=>[result.primary,...result.alternatives].filter(Boolean).map(item=>item.id)
+  assert.equal(offered(firstVideo.body).includes('youtube:HqfixazXqRY'),false)
+  assert.equal(offered(secondVideo.body).includes('youtube:HqfixazXqRY'),true)
   const combined=JSON.stringify([first.body,second.body])
   for(const [accountId,sessionId] of Object.values(ids)) {
     assert.equal(combined.includes(accountId),false);assert.equal(combined.includes(sessionId),false)
