@@ -168,7 +168,7 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-recommendations]').click();
           const initialGuide=root.locator('[data-support-inline-guide]');
           await initialGuide.waitFor({state:"visible",timeout:8000});
-          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').first().innerText();
+          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').nth(1).innerText();
           assert.ok(statusText.includes("2/10"),label+" only changed check-in reflected in first reply");
           assert.ok(statusText.includes(locale==="ru"?"Отношения":locale==="es"?"Relaciones":"Relationships"),
             label+" focus comes from the user's edited rating");
@@ -388,35 +388,33 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
           const results=root.locator('[data-support-inline-guide]');
           await results.waitFor({state:"visible",timeout:8000});
-          const filterSummary=await results.locator('[data-support-guide-message="guide"]').first().innerText();
+          const filterSummary=await results.locator('[data-support-guide-message="guide"]').nth(1).innerText();
           assert.ok(filterSummary.includes(locale==="ru"?"Деньги":locale==="es"?"Dinero":"Money"),
-            label+" accepted goal filter takes priority over prior relationship check-in");
+            label+" accepted goal filter overrides earlier relationship check-in");
           assert.equal(await results.locator('[data-support-guide-phase="review"]').count(),1,
-            label+" first ask visitor to confirm the personal summary");
+            label+" invite visitor to confirm the suggestion");
           await results.locator('[data-support-guide-phase="review"] button').first().click();
-          await results.locator('[data-support-guide-phase="need"] button').first().click();
-          await results.locator('[data-support-guide-phase="detail"] button').first().click();
-          await results.locator('[data-support-guide-minutes="10"]').click();
-          assert.equal(await results.locator('[data-support-guide-format="consultation"]').count(),0,
-            label+" filtered-out consultations not recommended");
-          assert.equal(await results.locator('[data-support-guide-format="healing"]').count(),1,
-            label+" opt-in Reiki support remains available");
-          assert.equal(await results.locator('[data-support-guide-format="mandala"]').count(),1,
-            label+" existing video studio is accessible");
-          assert.equal(await results.locator('[data-support-guide-format="courses"]').count(),1,
-            label+" Academy stays accessible");
-          await results.locator('[data-support-guide-format="tests"]').click();
-          assert.equal(await results.locator('[data-support-guide-phase="confirm"]').count(),1,
-            label+" explicit review before any recommendations");
+          assert.equal(await results.locator('[data-support-guide-phase="test-invite"]').count(),1,
+            label+" user can choose test or go straight to practice");
           assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
             label+" no early recommendation");
+          await results.locator('[data-guide-skip-test]').click();
+          assert.equal(await results.locator('[data-support-guide-phase="practice-invite"]').count(),1,
+            label+" practice is optional and independent of tests");
+          await results.locator('[data-guide-short-practice]').click();
+          await results.locator('[data-support-guide-phase="exercise"] button').first().click();
+          await results.locator('[data-support-guide-phase="feedback"] button').first().click();
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
+            label+" recommendation still hidden before My Path action");
           await results.locator('[data-support-guide-show-recommendations]').click();
           assert.equal(await results.locator('[data-support-guide-recommendation]').count(),1,
-            label+" real recommendation after conversation and confirmation");
+            label+" user confirms personal path after conversation");
           assert.equal(await results.locator('[data-support-guide-program]').count(),1,
-            label+" personal next steps only after confirmation");
-          assert.match(await results.locator('a[href*="/client/tests?journey="]').getAttribute("href")??"",
-            /\/client\/tests\?journey=business$/,label+" real public test explorer route");
+            label+" optional path proposed only after consent");
+          assert.equal(await results.locator('[data-support-guide-alternative="consultation"]').count(),0,
+            label+" opted-out consultation excluded from final alternatives");
+          assert.equal(await results.locator('[data-support-guide-alternative]').count()<=2,true,
+            label+" no more than two alternative formats");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
             label+" only published video catalogue");
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
