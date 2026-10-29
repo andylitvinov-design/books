@@ -43,7 +43,7 @@
 
 ### Existing canonical files to inspect before coding
 
-\`AGENTS.md\`; \`lib/holistic-support/{client-reasoning-core.mjs,client-reasoning-bridge.mjs,axis-offer-ranker.mjs,meditation-catalog-ranker.mjs,meditation-discovery-server.ts}\`; \`lib/profile/{unified-profile.js,goal-profile.js,development-program.js,profile-scale-selection.js}\`; \`lib/assessments/{verified-history.js,test-recommendations.js}\`; \`app/api/app/[...path]/route.js\`; \`lib/app/{session.js,config.js,http.js,repository.js,my-progress.mjs}\`; \`components/app/{app-workspace.jsx,portrait-recommendations.jsx,personal-axis-matches.jsx}\`; \`components/{holistic-meditation-finder.tsx,holistic-support-inline-guide.tsx}\`; \`app/[locale]/app/[[...path]]/page.jsx\`; \`tests/{client-reasoning-core.test.mjs,client-reasoning-bridge.test.mjs,axis-offer-ranker.test.mjs}\`.
+`AGENTS.md`; `lib/holistic-support/{client-reasoning-core.mjs,client-reasoning-bridge.mjs,axis-offer-ranker.mjs,meditation-catalog-ranker.mjs,meditation-discovery-server.ts}`; `lib/profile/{unified-profile.js,goal-profile.js,development-program.js,profile-scale-selection.js}`; `lib/assessments/{verified-history.js,test-recommendations.js}`; `app/api/app/[...path]/route.js`; `lib/app/{session.js,config.js,http.js,repository.js,my-progress.mjs}`; `components/app/{app-workspace.jsx,portrait-recommendations.jsx,personal-axis-matches.jsx}`; `components/{holistic-meditation-finder.tsx,holistic-support-inline-guide.tsx}`; `app/[locale]/app/[[...path]]/page.jsx`; `tests/{client-reasoning-core.test.mjs,client-reasoning-bridge.test.mjs,axis-offer-ranker.test.mjs}`.
 
 ### One-shot prompt: COPY THE ENTIRE BLOCK BELOW INTO CODEX
 
@@ -54,21 +54,21 @@
 ## 0. Репозиторий, исходное состояние и предотвращение конфликтов
 
 - Production site: https://holistichouse.vercel.app. Repo: https://github.com/andylitvinov-design/books.
-- **Реальная целевая ветка — \`codex/public-book-library\`**, GitHub default \`codex/bootstrap-books\` не считать production. В начале перепроверь Vercel project/source branch, READY SHA, alias и head перед любым merge/deploy.
-- Текущий foundational PR: https://github.com/andylitvinov-design/books/pull/2528 (на момент написания OPEN/DRAFT, head \`feat/holistic-intelligence-core-20261029\`); epic https://github.com/andylitvinov-design/books/issues/2530.
-- Обязательное чтение: \`AGENTS.md\`, \`docs/holistic-support/HOLISTIC_INTELLIGENCE_CORE_V1_20261029.md\`, \`docs/holistic-support/HOLISTIC_INTELLIGENCE_2_0_COGNITIVE_ARCHITECTURE_TZ_20261029.md\` и **этот execution pack**. Сначала \`git status\`, \`git branch\`, актуальные PR и CI, затем карта вызовов и тестов.
+- **Реальная целевая ветка — `codex/public-book-library`**, GitHub default `codex/bootstrap-books` не считать production. В начале перепроверь Vercel project/source branch, READY SHA, alias и head перед любым merge/deploy.
+- Текущий foundational PR: https://github.com/andylitvinov-design/books/pull/2528 (на момент написания OPEN/DRAFT, head `feat/holistic-intelligence-core-20261029`); epic https://github.com/andylitvinov-design/books/issues/2530.
+- Обязательное чтение: `AGENTS.md`, `docs/holistic-support/HOLISTIC_INTELLIGENCE_CORE_V1_20261029.md`, `docs/holistic-support/HOLISTIC_INTELLIGENCE_2_0_COGNITIVE_ARCHITECTURE_TZ_20261029.md` и **этот execution pack**. Сначала `git status`, `git branch`, актуальные PR и CI, затем карта вызовов и тестов.
 - Существующие четыре PR Sweep могут работать параллельно: прочитай последние комментарии/commit timestamps PR #2528 и ownership других задач, объяви выбранный рабочий PR в комментарии, НЕ вноси конкурентные коммиты в ветку с активным владельцем. Если #2528 уже merged — продолжай от проверенного actual production head; если он свободен — приведи его к зелёному состоянию; иначе создай узкий зависимый PR без переписывания чужих изменений. При каждой операции re-fetch head, no force-push, no bypass protections; не редактируй #2526 и прочие чужие release-gate ветки.
 - **Одна команда Codex ≠ один гигантский PR**: последовательно выполняй P0→P4(+P5 при безопасной возможности) через небольшие интегрируемые PR. Крупные незаконченные файлы, дублирующиеся сервисы и бессрочные draft не считаются выполнением.
 
 ## 1. Цель готового продукта (Definition of Product MVP)
 
-Один единый «разум» \`Holistic Intelligence Core\`, который после запроса клиента:
+Один единый «разум» `Holistic Intelligence Core`, который после запроса клиента:
 1. распознаёт только явно указанные цель/ситуацию/желательный опыт/длительность/язык/формат либо задаёт **ровно один** безопасный уточняющий вопрос;
 2. по отдельному согласию проверяет **только свои** подтверждённые цели, актуальные результаты валидных шкал и историю уже начатых курсов; незаполненное не «угадывает»;
 3. выполняет обязательный safety preflight **до** любых предложений;
 4. выбирает вид следующего действия (видео/медитация, допустимое аудио, тест, урок, рефлексивный вопрос или добровольное предложение сессии), затем проверяет реальные доступные опубликованные источники;
 5. показывает **одну основную рекомендацию и максимум две альтернативы**, 1–2 проверенные причины, реальный переход и кнопки «Начать / Другое / Уточнить / Не подходит»;
-6. различает статус \`clarify | recommend | no_match | safety_handoff | unavailable\`, не подменяет отсутствие материала ссылкой на выдуманное видео;
+6. различает статус `clarify | recommend | no_match | safety_handoff | unavailable`, не подменяет отсутствие материала ссылкой на выдуманное видео;
 7. по явному действию позволяет оценить полезность/комфорт и скорректировать фильтры; при разрешённом хранении использует только подтверждённую историю без клинических выводов;
 8. интегрирован хотя бы в **реальный кабинет профиля и существующий Meditation Finder**; другие поверхности (видеотерапия, Academy, coaching) используют тот же общий policy/adapter и компактный handoff, без второго AI-движка.
 
@@ -76,39 +76,39 @@
 
 ## 2. Обязательное повторное использование реального проекта
 
-- \`lib/holistic-support/client-reasoning-core.mjs\` и \`client-reasoning-bridge.mjs\` — начальный контракт; исправь и расширь, **не дублируй**.
-- \`lib/holistic-support/axis-offer-ranker.mjs\`, \`axis-offer-matcher.mjs\`, \`client-intent-model.mjs\` — eligibility + существующий score; никаких новых универсальных клинических «% соответствия».
-- \`lib/holistic-support/meditation-catalog-ranker.mjs\`, \`meditation-discovery-server.ts\`, \`components/holistic-meditation-finder.tsx\`, \`components/holistic-meditation-gallery.tsx\` — public video/meditation candidate status, язык реальной дорожки и verified/approx duration.
-- \`lib/profile/unified-profile.js\`, \`goal-profile.js\`, \`development-program.js\`, \`profile-scale-selection.js\`, \`lib/assessments/verified-history.js\`, \`psych-portrait.js\`, \`interpretation-registry.js\` — source-specific измерения, актуальность, статус доказательств.
-- \`lib/assessments/test-recommendations.js\`, \`data/assessments/catalog.js\` — реальные опубликованные и разрешённые тесты.
-- \`lib/personal-coaching/offline-intelligence.js\`, \`guided-session.js\` — исходные методы и одобренные вопросы, максимум один шаг на экран.
-- \`lib/app/session.js\`, \`config.js\`, \`http.js\`, \`database.js\`, \`repository.js\`, \`app/api/app/[...path]/route.js\` — verified actor, \`requireSameOrigin\`, \`readBody\`, \`PRIVATE_HEADERS\`, \`consumeRate\`, \`createAppRepository(config).bootstrap(actor, ...)\`; не клонируй auth.
-- \`components/app/app-workspace.jsx\`, \`components/app/portrait-recommendations.jsx\`, \`components/app/personal-axis-matches.jsx\`, \`app/[locale]/app/[[...path]]/page.jsx\` — один существующий personal dashboard; не порти Google OAuth.
-- \`lib/app/my-progress.mjs\` и существующие session/course records — честная история (не путать «загружено/открыто» и «просмотрено/помогло»).
-- \`lib/crm/consent.js\` — **ТОЛЬКО маркетинговое \`product_updates\`**, не принимать как согласие на AI и психологические результаты.
+- `lib/holistic-support/client-reasoning-core.mjs` и `client-reasoning-bridge.mjs` — начальный контракт; исправь и расширь, **не дублируй**.
+- `lib/holistic-support/axis-offer-ranker.mjs`, `axis-offer-matcher.mjs`, `client-intent-model.mjs` — eligibility + существующий score; никаких новых универсальных клинических «% соответствия».
+- `lib/holistic-support/meditation-catalog-ranker.mjs`, `meditation-discovery-server.ts`, `components/holistic-meditation-finder.tsx`, `components/holistic-meditation-gallery.tsx` — public video/meditation candidate status, язык реальной дорожки и verified/approx duration.
+- `lib/profile/unified-profile.js`, `goal-profile.js`, `development-program.js`, `profile-scale-selection.js`, `lib/assessments/verified-history.js`, `psych-portrait.js`, `interpretation-registry.js` — source-specific измерения, актуальность, статус доказательств.
+- `lib/assessments/test-recommendations.js`, `data/assessments/catalog.js` — реальные опубликованные и разрешённые тесты.
+- `lib/personal-coaching/offline-intelligence.js`, `guided-session.js` — исходные методы и одобренные вопросы, максимум один шаг на экран.
+- `lib/app/session.js`, `config.js`, `http.js`, `database.js`, `repository.js`, `app/api/app/[...path]/route.js` — verified actor, `requireSameOrigin`, `readBody`, `PRIVATE_HEADERS`, `consumeRate`, `createAppRepository(config).bootstrap(actor, ...)`; не клонируй auth.
+- `components/app/app-workspace.jsx`, `components/app/portrait-recommendations.jsx`, `components/app/personal-axis-matches.jsx`, `app/[locale]/app/[[...path]]/page.jsx` — один существующий personal dashboard; не порти Google OAuth.
+- `lib/app/my-progress.mjs` и существующие session/course records — честная история (не путать «загружено/открыто» и «просмотрено/помогло»).
+- `lib/crm/consent.js` — **ТОЛЬКО маркетинговое `product_updates`**, не принимать как согласие на AI и психологические результаты.
 - Авторские культурно-символические практики: можно показывать по добровольному интересу; отделять их от научно обоснованных/клинических методов.
-- Дополнительно обнаруженный факт: в \`app/[locale]/app/[[...path]]/page.jsx\` private Cabinet currently gates \`locale\` to \`en,ru\` with \`notFound()\`. Новый UI локализовать EN/RU/ES, но испанский **signed-in** путь считать неготовым до реальной безопасной правки и E2E. Не менять весь кабинет на ES вслепую.
+- Дополнительно обнаруженный факт: в `app/[locale]/app/[[...path]]/page.jsx` private Cabinet currently gates `locale` to `en,ru` with `notFound()`. Новый UI локализовать EN/RU/ES, но испанский **signed-in** путь считать неготовым до реальной безопасной правки и E2E. Не менять весь кабинет на ES вслепую.
 
 ## 3. Точный дизайн системы: BDI + Soar-like cycle, не мультиагентный хаос
 
 Создай/переиспользуй минимальные модули (имена адаптируй под стиль репо, один source-of-truth):
-- \`intent-parser\`: принимает краткий свободный текст и/или фильтры; возвращает типизированные \`explicitGoal, lifeArea, situations, desiredStates, languages, duration, formats, modality, limits, uncertainty\`. Непонятное — \`clarify\`, не угадывай психиатрические состояния. Язык общения EN/RU/ES соответствует пользовательскому выбору, не притворяйся человеком.
-- \`evidence-reader\`: извлекает только authenticated+authorized owner-scoped bootstrap projection с версиями тестов/источников и consent. Раздельно \`user_said\`, \`user_confirmed\`, \`source_verified\`, \`editorial_approved\`, \`hypothesis\`. Hypothesis не записывай как факт.
-- \`policy-planner\`: \`S0_SAFETY → S1_AUTH/CONSENT → S2_INTENT → S3_EVIDENCE → S4_AVAILABLE_OPERATORS → S5_ELIGIBLE → S6_RANK → S7_EXPLAIN → S8_USER_CONFIRMATION → S9_OPTIONAL_FEEDBACK\`. Направления: 4 canonical life areas \`business, relationships, energy_health, personal_growth\`; goal overlay отдельный; 17 portrait rays/34 facets не превращать в новые scores.
-- \`catalog-adapters\`: по *реальным* данным приводят только допущенные published entities к единым \`{id, kind, title, safeHref, language, availability, editorialStatus, rights, safety, verifiedDuration, facets}\`, но **не повышают статус source**, не генерируют URL. Для видео external \`link_only\` не делать вид, что он embedded/reviewed; original playlist whitelists остаются.
-- \`explainer\`: локализует approved reason codes, показывает «на основании вашего выбора» / «на основании подтверждённых данных с согласия», без сырых баллов, диагнозов и навязанных причин.
-- \`safety-gate\`: независимый до и после; missing preflight fail-closed, EN/RU/ES кризис после business запросов не попадает в продажи. Учитывать ограниченность правил, не заявлять клиническую безопасность на основе regex.
-- \`feedback\`: изменения цели/dismissed/completed относятся к владельцу и только добровольно, без автоматического «обучения» клиническим выводам.
+- `intent-parser`: принимает краткий свободный текст и/или фильтры; возвращает типизированные `explicitGoal, lifeArea, situations, desiredStates, languages, duration, formats, modality, limits, uncertainty`. Непонятное — `clarify`, не угадывай психиатрические состояния. Язык общения EN/RU/ES соответствует пользовательскому выбору, не притворяйся человеком.
+- `evidence-reader`: извлекает только authenticated+authorized owner-scoped bootstrap projection с версиями тестов/источников и consent. Раздельно `user_said`, `user_confirmed`, `source_verified`, `editorial_approved`, `hypothesis`. Hypothesis не записывай как факт.
+- `policy-planner`: `S0_SAFETY → S1_AUTH/CONSENT → S2_INTENT → S3_EVIDENCE → S4_AVAILABLE_OPERATORS → S5_ELIGIBLE → S6_RANK → S7_EXPLAIN → S8_USER_CONFIRMATION → S9_OPTIONAL_FEEDBACK`. Направления: 4 canonical life areas `business, relationships, energy_health, personal_growth`; goal overlay отдельный; 17 portrait rays/34 facets не превращать в новые scores.
+- `catalog-adapters`: по *реальным* данным приводят только допущенные published entities к единым `{id, kind, title, safeHref, language, availability, editorialStatus, rights, safety, verifiedDuration, facets}`, но **не повышают статус source**, не генерируют URL. Для видео external `link_only` не делать вид, что он embedded/reviewed; original playlist whitelists остаются.
+- `explainer`: локализует approved reason codes, показывает «на основании вашего выбора» / «на основании подтверждённых данных с согласия», без сырых баллов, диагнозов и навязанных причин.
+- `safety-gate`: независимый до и после; missing preflight fail-closed, EN/RU/ES кризис после business запросов не попадает в продажи. Учитывать ограниченность правил, не заявлять клиническую безопасность на основе regex.
+- `feedback`: изменения цели/dismissed/completed относятся к владельцу и только добровольно, без автоматического «обучения» клиническим выводам.
 
-Приоритет: safety+scope > текущий выбор/отказ > ранее подтверждённая цель > совместимая свежая проверенная шкала > утверждённый metadata > гипотеза. \`missing\` не равно 5/10, 50% или 0. No cross-instrument averaging.
+Приоритет: safety+scope > текущий выбор/отказ > ранее подтверждённая цель > совместимая свежая проверенная шкала > утверждённый metadata > гипотеза. `missing` не равно 5/10, 50% или 0. No cross-instrument averaging.
 
 **Важный инженерный нюанс:** существующие video/test/service rankers используют разные score. **Сначала выбери допустимую категорию действия на основании intent и шага процесса, потом ранжируй ВНУТРИ неё. Никогда не складывай scores этих категорий напрямую.**
 
 ## 4. Рабочий API и доверенная граница
 
-Создай приватный \`POST /api/app/intelligence/plan\` в корректной реальной маршрутизации (можно безопасный явный route или ветку существующего catch-all, проверить конфликт с \`app/api/app/[...path]/route.js\`). Базовый контракт:
+Создай приватный `POST /api/app/intelligence/plan` в корректной реальной маршрутизации (можно безопасный явный route или ветку существующего catch-all, проверить конфликт с `app/api/app/[...path]/route.js`). Базовый контракт:
 
-\`\`\`ts
+```ts
 type PlanRequest = {
   requestId: string; // UUID, safe idempotency
   surface: 'cabinet'|'meditation'|'video_therapy'|'academy'|'coaching';
@@ -132,9 +132,9 @@ type PlanResponse = {
   consentRequired?: string[];
   feedbackRecording:'explicit_save_only'|'session_only';
 };
-\`\`\`
+```
 
-Backend **САМ** выводит \`actor.id\`, scope/RLS, confirmed goals, authorized resultIDs, knownFacetRefs, source dates, consent and safety. Запретить \`authenticated/ownerScoped/trusted/safety.status/consentGiven\` из неподписанного тела клиента. Не включать account IDs, original scores, raw answers, free-text notes, private IDs, auth, token, hidden practitioner reports в результат/URL/logs/телеметрию. Схема request строгая, unknown keys reject, \`goalText\` ограничен и трактуется как данные (prompt-injection не команды), body cap 8–16KB, rate limit, same-origin/CSRF, POST private/no-store, deny unauthenticated private access, avoid cross-user cache. Не нужно делать GET для чувствительных фильтров.
+Backend **САМ** выводит `actor.id`, scope/RLS, confirmed goals, authorized resultIDs, knownFacetRefs, source dates, consent and safety. Запретить `authenticated/ownerScoped/trusted/safety.status/consentGiven` из неподписанного тела клиента. Не включать account IDs, original scores, raw answers, free-text notes, private IDs, auth, token, hidden practitioner reports в результат/URL/logs/телеметрию. Схема request строгая, unknown keys reject, `goalText` ограничен и трактуется как данные (prompt-injection не команды), body cap 8–16KB, rate limit, same-origin/CSRF, POST private/no-store, deny unauthenticated private access, avoid cross-user cache. Не нужно делать GET для чувствительных фильтров.
 
 **Guest публичный режим** работает только на существующих общедоступных каталогах и локальных фильтрах; не притворяться авторизованным и не отсылать приватные данные. Если signed-in пользователь явно не согласился на измерения — персонализация по тестам выключена даже после входа.
 
@@ -142,11 +142,11 @@ Backend **САМ** выводит \`actor.id\`, scope/RLS, confirmed goals, auth
 
 ## 5. Каталоги — точное поведение
 
-1. **Meditation/videos:** использовать \`loadMeditationDiscovery\` + \`rankMeditationCatalog\`, preserving approved owners, \`external link_only\`, creator destinations and verified language/duration; unavailable/unknown durations не выдавать за точные. Не добавляй стоковые/придуманные видео.
-2. **Tests:** существующий published rights-cleared каталог и \`rankAssessmentDefinitions\`; тест рекомендовать для измерения, не для диагноза; уже пройденное не предлагать как непройденное.
+1. **Meditation/videos:** использовать `loadMeditationDiscovery` + `rankMeditationCatalog`, preserving approved owners, `external link_only`, creator destinations and verified language/duration; unavailable/unknown durations не выдавать за точные. Не добавляй стоковые/придуманные видео.
+2. **Tests:** существующий published rights-cleared каталог и `rankAssessmentDefinitions`; тест рекомендовать для измерения, не для диагноза; уже пройденное не предлагать как непройденное.
 3. **Courses:** только реально опубликованные/доступные lesson URLs и user entitlements; использовать существующий course/cabinet flow; Reiki certificate/initiation/payment не выдавать автоматически.
 4. **Services:** только реальные published services и valid routes; опционально, paid контент только после соответствующего выбора; цена/наличие/бронь лишь из проверенных источников, не из guess.
-5. **Audio:** существующий \`axis-offer-ranker\` **не** поддерживает \`audio\` как допущенный kind. Реализуй отдельный reviewed audio adapter к существующим аудиоматериалам с проверкой auth/visibility/rights/playability/language/duration. Если подтверждённых источников нет — явное \`no_match\`, не «audio ready» на основе лишь наличия типа в enum. Не нарушай защищённую аудиораздачу.
+5. **Audio:** существующий `axis-offer-ranker` **не** поддерживает `audio` как допущенный kind. Реализуй отдельный reviewed audio adapter к существующим аудиоматериалам с проверкой auth/visibility/rights/playability/language/duration. Если подтверждённых источников нет — явное `no_match`, не «audio ready» на основе лишь наличия типа в enum. Не нарушай защищённую аудиораздачу.
 6. **Videotherapy:** найди фактический живой маршрут и существующие авторские видео/видеокурс. Дай переход в тот же policy (запрос → добровольный T0 → approved video → практика → добровольный T1 идентичной шкалы → следующий шаг), не создавая вторую платформу, генератор видео или обещание терапевтической эффективности. Если полный 8-session bridge не выполним безопасно в первом релизе, подключи хотя бы проверяемый переход в существующий маршрут, а остальное явно отметь как gated.
 7. **Coaching:** использовать уже подтверждённые авторские модели; не добавлять бесконечный невалидируемый LLM-диалог.
 
@@ -154,23 +154,23 @@ Backend **САМ** выводит \`actor.id\`, scope/RLS, confirmed goals, auth
 
 ## 6. Интерфейс без дублирования текущих экранов
 
-- Встрой **один переиспользуемый компактный компонент** рядом с существующими рекомендациями кабинета (\`components/app/portrait-recommendations.jsx\`, \`personal-axis-matches.jsx\`; не выводить две одинаковые ленты) и в \`components/holistic-meditation-finder.tsx\`.
+- Встрой **один переиспользуемый компактный компонент** рядом с существующими рекомендациями кабинета (`components/app/portrait-recommendations.jsx`, `personal-axis-matches.jsx`; не выводить две одинаковые ленты) и в `components/holistic-meditation-finder.tsx`.
 - Мобильный экран: «Я понял вашу цель: [редактировать]» → «Предлагаю [реальное название]» → «Почему: [до 2 причин]» → кнопки «Начать / Другой вариант / Уточнить / Не подходит». Дополнительные настройки — accordion, не 20 фильтров на экране. Один ключевой вопрос на экран, large tap targets, skip/stop, focus/keyboard, alt/no-autoplay. EN/RU/ES text + source audio language separately.
-- Приватный ES: явно обработай существующий \`notFound()\` gate. Safe option A: targeted authenticated ES support с полным auth E2E; option B: оставить приватный ES закрытым, обеспечить ES public и сообщить незавершённость. Нельзя утверждать 3/3 signed-in parity по переводам.
-- Сохрани current CSS/brand, OAuth redirect, CLS, CSP, aria, existing screenshots and route intent. \`AGENTS.md\` обязателен; при наличии reference screenshot следуй visual-to-code-pro skill.
+- Приватный ES: явно обработай существующий `notFound()` gate. Safe option A: targeted authenticated ES support с полным auth E2E; option B: оставить приватный ES закрытым, обеспечить ES public и сообщить незавершённость. Нельзя утверждать 3/3 signed-in parity по переводам.
+- Сохрани current CSS/brand, OAuth redirect, CLS, CSP, aria, existing screenshots and route intent. `AGENTS.md` обязателен; при наличии reference screenshot следуй visual-to-code-pro skill.
 - Действия «Начать» используют только настоящие router links/player actions. Никаких фиктивных кнопок, фальшивых session IDs и client logins.
 
 ## 7. Память и persistence
 
-В пределах одного сеанса: no-repeat/declined сохранять только в React state без лишнего backend, пока клиент не выберет «Сохранить». Для authenticated пациента при **явном отдельном Save** сохранять согласованные preference/feedback в существующей owner-scoped модели и обеспечивать edit/revoke/export/delete. Сначала audit реально существующую таблицу; если без новой migration безопасно невозможно, подготовь минимальную строгую миграцию с \`account_id\`, RLS, constraints, идемпотентностью, consent-version, retention/deletion и отрицательным second-account тестом; не создавать параллельную CRM/medical DB. Миграцию выкатывать только с доказательным DB gating. Если DB/approval нет, сделать полный работающий session-only вариант, feature-flag persistent save, честно отметить блокер, не симулировать сохранение.
+В пределах одного сеанса: no-repeat/declined сохранять только в React state без лишнего backend, пока клиент не выберет «Сохранить». Для authenticated пациента при **явном отдельном Save** сохранять согласованные preference/feedback в существующей owner-scoped модели и обеспечивать edit/revoke/export/delete. Сначала audit реально существующую таблицу; если без новой migration безопасно невозможно, подготовь минимальную строгую миграцию с `account_id`, RLS, constraints, идемпотентностью, consent-version, retention/deletion и отрицательным second-account тестом; не создавать параллельную CRM/medical DB. Миграцию выкатывать только с доказательным DB gating. Если DB/approval нет, сделать полный работающий session-only вариант, feature-flag persistent save, честно отметить блокер, не симулировать сохранение.
 
 T0/T1: сравнивать только один и тот же promptKey, 0–10, порядок времени; пометить self-report, no clinical outcome/causality. Нет T1 → отсутствие результата, а не 0%. Ни один feedback event не обновляет clinical scoring.
 
 ## 8. Инкрементальная реализация в рамках ОДНОГО запуска Codex
 
-**Шаг A (P0):** принять и довести #2528: реальные \`node --test tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/axis-offer-ranker.test.mjs\` (не test stub), eslint/TS/build + actual CI. Подправить если нужно; если есть чужой владелец, isolated successor branch. Документацию не считать finished deliverable.
+**Шаг A (P0):** принять и довести #2528: реальные `node --test tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/axis-offer-ranker.test.mjs` (не test stub), eslint/TS/build + actual CI. Подправить если нужно; если есть чужой владелец, isolated successor branch. Документацию не считать finished deliverable.
 
-**Шаг B (P1):** trusted context adapter + strict request schema, consent/safety, direct authenticated private \`plan\` endpoint (или корректное подключение к существующему API), anonymous fallback и owner isolation. Негативный тест, где клиент присылает forged \`ownerScoped=true\`, должен **провалить** доступ к чужим данным.
+**Шаг B (P1):** trusted context adapter + strict request schema, consent/safety, direct authenticated private `plan` endpoint (или корректное подключение к существующему API), anonymous fallback и owner isolation. Негативный тест, где клиент присылает forged `ownerScoped=true`, должен **провалить** доступ к чужим данным.
 
 **Шаг C (P2):** typed catalog projection for video/test/course/service + separately reviewed audio; подключить существующие rankers, без смешения scores. Зафиксировать content IDs и статусы, не копировать в client приватные тесты. Проверить no-result, wrong-language, link-only, rights, expired media, sensitive and paid restrictions.
 
@@ -191,7 +191,7 @@ T0/T1: сравнивать только один и тот же promptKey, 0–
 - Session: T0/T1 same prompt, chronological, voluntary; no self-report => no metric; feedback explicit save and duplicate request idempotency; revoke/delete/export if persisted.
 - Browser: exact canonical routes, Google login, logout/relogin, one synthetic test actor + second distinct authenticated actor; iPhone-like 320/375/390/430px Chromium/WebKit, keyboard/focus/scroll, no overflow; EN/RU/ES where actually supported; failure and empty states.
 - Performance: no repeated full bootstrap fetching per keystroke, lazy request/cancellation, stable no-store; document measured basic response latency, not invented.
-- Tooling: \`npm ci\`, targeted Node suites, scoped ESLint, \`npx tsc --noEmit\`, Next build; CI must finish (not merely queued) and show actual pass of new checks. Do not bypass release-gate, skip browser with fabricated pass or force a red merge.
+- Tooling: `npm ci`, targeted Node suites, scoped ESLint, `npx tsc --noEmit`, Next build; CI must finish (not merely queued) and show actual pass of new checks. Do not bypass release-gate, skip browser with fabricated pass or force a red merge.
 
 **GO:** real authorized profile option correctly respects consent + safety; at least one eligible existing content selection and action works end-to-end; no fabricated media; all relevant CI green; production ready SHA and browser confirmation. **NO-GO:** safety bypass, data leakage, unpublished content, anonymous private data, missing source/consent, red CI, unknown live SHA, unsupported EN/RU/ES assertions. If NO-GO, keep gated and report blockers with reproducible evidence.
 
