@@ -205,3 +205,22 @@ test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct publ
   assert.match(css,/data-energywork-slide-id="end-01"/)
   assert.doesNotMatch(form,/window\.localStorage|sessionStorage\.setItem\([^)]*initiation/)
 })
+
+test('Reiki phone upload can decode only its local blob photo on the exact course route', () => {
+  const middleware = read('middleware.ts')
+  assert.match(middleware, /const reikiLocalPhotoImages = \/\^/)
+  assert.match(middleware, /publicMandalaLocalImages \|\| reikiLocalPhotoImages \? ' blob:'/)
+  const isReikiLearner = /^\/(en|ru)\/academy\/principles-of-energywork\/learn\/?$/
+  for (const path of ['/en/academy/principles-of-energywork/learn',
+    '/ru/academy/principles-of-energywork/learn/',
+  ]) assert.equal(isReikiLearner.test(path), true)
+  for (const path of ['/es/academy/principles-of-energywork/learn',
+    '/en/app/portrait', '/en/academy/principles-of-energywork',
+    '/admin/reiki-leads', '/en/academy/principles-of-energywork/learn/extra'
+  ]) assert.equal(isReikiLearner.test(path), false)
+  const component = read('components/reiki-initiation-photo.tsx')
+  assert.match(component, /URL\.createObjectURL\(file\)/)
+  assert.match(component, /canvas\.toBlob\(/)
+  assert.match(component, /'image\/jpeg'|"image\/jpeg"/)
+  assert.doesNotMatch(component, /localStorage|sendBeacon|canvas\.toDataURL\(/)
+})
