@@ -106,7 +106,7 @@ for(const engine of [chromium,webkit]){
           tag+" shows verified meditation choices");
         assert.ok((await guide.locator("[data-guide-media-card]").count())<=3,tag+" maximum three source videos");
         assert.equal(await root.locator("[data-support-player] iframe").count(),0,tag+" no autoplay");
-        await guide.locator('[data-support-guide-phase="media-pick"] button').last().click();
+        await guide.locator('[data-guide-media-short-practice]').click();
         assert.equal(await guide.locator('[data-support-guide-phase="exercise"]').count(),1,
           tag+" alternative free practice without navigating elsewhere");
         await guide.locator('[data-support-guide-phase="exercise"] button').first().click();
