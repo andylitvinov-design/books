@@ -8,6 +8,8 @@ on:
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
       - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'tests/capture-public-ui-reference.test.mjs'
+      - 'scripts/capture-public-ui-reference.mjs'
       - 'scripts/fixtures/practice-approved-reference-20261028.json'
       - '.codex/config.toml'
       - '.vscode/mcp.json'
@@ -21,6 +23,8 @@ on:
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
       - 'tests/visual-browser-tooling-config.test.mjs'
+      - 'tests/capture-public-ui-reference.test.mjs'
+      - 'scripts/capture-public-ui-reference.mjs'
       - 'scripts/fixtures/practice-approved-reference-20261028.json'
       - '.codex/config.toml'
       - '.vscode/mcp.json'
@@ -42,4 +46,5 @@ jobs:
       - name: Verify dependency-free screenshot comparator
         run: |
           node --check scripts/compare-ui-screenshots.mjs
-          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs
+          node --check scripts/capture-public-ui-reference.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs
