@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
@@ -241,6 +241,8 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- assert.match(art,/Egypt_bookofthedead.jpg/);
- assert.match(art,/Marble_statue_of_Athena/);
+ assert.match(art,/mandala-gold-reference\.webp/);
+ assert.match(art,/hero-olive-incense\.webp/);
+ for (const asset of ["mandala-gold-reference.webp", "hero-olive-incense.webp"])
+   assert.ok(existsSync(path.join(root, "public/images/holistic-house", asset)), "Missing published coaching image: " + asset);
 });
