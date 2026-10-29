@@ -48,6 +48,24 @@ test("explicit goals outrank score data; self-ratings are voluntary independent 
   assert.deepEqual(fallback.goals,["energy"]);
 });
 
+test("resource pace changes only from a single relevant source or an explicit self-checkin",()=>{
+  const goal=["energy"];
+  const base=buildPersonalImageryCourse({locale:"en",goals:goal});
+  const source={axis:"energy",sourceTitle:"My original energy scale",measuredAt:"2026-10-25T18:00:00Z",definitionKey:"e-source"};
+  const gentle=buildPersonalImageryCourse({locale:"en",goals:goal,evidence:[{...source,percent:21}]});
+  const strong=buildPersonalImageryCourse({locale:"en",goals:goal,evidence:[{...source,percent:81}]});
+  const other=buildPersonalImageryCourse({locale:"en",goals:goal,evidence:[
+    {...source,axis:"clarity",percent:21}
+  ]});
+  assert.notEqual(gentle.sessions[0].script,strong.sessions[0].script);
+  assert.ok(gentle.sessions[0].script.includes("you can make the image smaller"));
+  assert.ok(strong.sessions[0].script.includes("resource or helpful choice"));
+  assert.equal(base.sessions[0].script,other.sessions[0].script);
+  const checkin=buildPersonalImageryCourse({locale:"en",goals:goal,selfRatings:{energy:3}});
+  assert.ok(checkin.sessions[0].script.includes("you can make the image smaller"));
+  assert.ok(!base.sessions[0].script.includes("you can make the image smaller"));
+});
+
 test("profile import accepts only scoped, dated, validated directional interpretations",()=>{
   const today=Date.parse("2026-10-28T18:00:00Z");
   const entry={mode:"directional",percent:31,resultId:"result-real",
