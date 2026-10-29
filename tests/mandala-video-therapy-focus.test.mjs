@@ -22,6 +22,8 @@ test("therapy mode is a dedicated programme directly under the central moving vi
   assert.match(guided,/data-video-goal-accents/);
   assert.match(guided,/data-guided-create-plan/);
   assert.match(guided,/data-guided-profile-consent/);
+  assert.match(guided,/affirmationGoalCatalog\[locale\]\.map/);
+  assert.match(guided,/data-guided-focus-goal/);
   assert.match(css,/\.courseIndicator\{/);
 });
 
@@ -31,16 +33,19 @@ test("optional personal difficulty and goal inform all eight scripts without an 
       locale,theme:"energy",goals:["energy","relationships"],
       keyDifficulty:"I rush when under pressure <script> \n  ",
       keyGoal:"A kind pause, meaningful connection",
+      detailGoals:["Warm connection","My boundaries"],
     });
     assert.equal(programme.sessionCount,8);
     assert.equal(programme.freeVideoCount,1);
     assert.equal(programme.sessions.length,8);
     assert.equal(programme.keyDifficulty,"I rush when under pressure script");
     assert.equal(programme.keyGoal,"A kind pause, meaningful connection");
+    assert.deepEqual(programme.detailGoals,["Warm connection","My boundaries"]);
     assert.equal(programme.evidence.length,0,"private scores cannot be invented");
     for(const session of programme.sessions){
       assert.match(session.script,/I rush when under pressure script/);
       assert.match(session.script,/A kind pause, meaningful connection/);
+      assert.match(session.script,/Warm connection/);
       assert.doesNotMatch(session.script,/<script>|\x00/);
       assert.equal(session.videoDurationSeconds,60);
     }
