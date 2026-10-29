@@ -6,13 +6,13 @@ import { buildPersonalMeditationScript, MEDITATION_ACCENTS, PERSONAL_MEDITATION_
 test("meditation script uses real current editor filters, local goals and optional affirmations",()=>{
   const script=buildPersonalMeditationScript({
     locale:"ru",theme:"money",wish:"хочу спокойно обсуждать гонорар",
-    scene:"Золотой портал",sound:"Мягкий дождь",pace:"slow",brightness:"soft",
+    scene:"Золотой портал",sound:"Мягкий дождь",caption:"Я выбираю уважительный обмен",pace:"slow",brightness:"soft",
     focus:{difficulty:"сложно говорить о цене",goal:"спокойно назвать стоимость",goals:["money","relationships"],details:["Уверенность"]},
     accents:["confidence","boundaries"],image:"home",tone:"grounded",length:8,extra:"говорить мягко",
     affirmationsEnabled:true,affirmations:["Я выбираю посильный шаг"]
   });
   for(const value of ["гонорар","Золотой портал","Мягкий дождь","сложно говорить о цене",
-    "спокойно назвать стоимость","Уверенность","Я выбираю посильный шаг","уютную комнату","дверь","[Пауза"]) {
+    "спокойно назвать стоимость","Уверенность","Я выбираю посильный шаг","Я выбираю уважительный обмен","уютную комнату","дверь","[Пауза"]) {
     assert.ok(script.includes(value),value);
   }
   assert.ok(script.includes("8 мин"));
