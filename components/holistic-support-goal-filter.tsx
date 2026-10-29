@@ -287,11 +287,14 @@ export function HolisticSupportGoalFilter({
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
   const isAccepted = (id: GoalSector) => {
-    // Parent onSave is the durable in-page source after Save/Next. On WebKit,
-    // a child-only accepted update can briefly lag a parent render; use the
-    // saved snapshot first, but never show a stale/dirty self-rating as accepted.
+    // Keep edited, unsaved categories unaccepted. WebKit may dispatch the
+    // previous number field's blur/change AFTER an atomic Save + Next and mark
+    // the now-inactive sector dirty again. If its saved in-page draft is
+    // byte-for-byte the accepted snapshot, this is not a new unsaved edit.
     const snapshot = savedSectors[id] ?? accepted[id];
-    return Boolean(snapshot && !dirty[id] &&
+    const savedInactiveDraft = id !== sector && Boolean(dirty[id]) &&
+      drafts[id] !== undefined && JSON.stringify(drafts[id]) === JSON.stringify(snapshot);
+    return Boolean(snapshot && (!dirty[id] || savedInactiveDraft) &&
       snapshot.checkin === scores[goalSectorCheckinKey[id]]);
   };
 
