@@ -122,7 +122,7 @@ test("recording negotiates a real AAC/Opus mux and never silently removes a sele
   assert.match(studioSource, /if \(!recorder\)[\s\S]*?setMusicWarning\(ui\.musicFallback\)/);
   assert.doesNotMatch(studioSource, /stream\.getAudioTracks\(\)\.forEach\(track=>\{stream\?\.removeTrack/);
   assert.match(studioSource, /data-video-audio-player/);
-  assert.match(studioSource, /createAmbientPreviewWav\(music\)/);
+  assert.match(studioSource, /presetAudioUrl\(music\)/);
   assert.match(studioSource, /startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
   assert.match(studioSource, /data-video-audio-upload/);
   assert.match(studioSource, /data-video-music-preview/);

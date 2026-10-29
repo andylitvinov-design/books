@@ -15,6 +15,7 @@ on:
       - 'scripts/verify-holistic-mandala-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
+      - 'public/audio/mandala/**'
       - 'public/videos/holistic-house/money-films-v1/**'
       - 'public/videos/holistic-house/film-collection-v2/**'
       - 'tests/real-money-film-library.test.mjs'
