@@ -194,3 +194,11 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   const jsx=ts.transpileModule(personal,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
   assert.deepEqual(jsx.diagnostics||[],[]);
 });
+
+test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+  assert.match(studio,/if\(activeFilm && master && master\.readyState<2\)master\.load\(\)/);
+  assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
+  assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
+  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
+});
