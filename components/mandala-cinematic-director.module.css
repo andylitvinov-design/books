@@ -91,3 +91,16 @@
  .sheet{border-radius:22px;padding:22px}
 }
 @media(prefers-reduced-motion:reduce){.root *, .sheet *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Four summary rows remain compact; visual style and imagery exclusions are advanced. */
+.visualPrefs{margin:10px 0 0;border:1px solid #d9e7db;border-radius:12px;padding:0 10px;background:#fdfdf9}
+.visualPrefs>summary{padding:12px 0;cursor:pointer;min-height:44px;
+  color:#357355;font-size:12px;font-weight:850}
+.visualPrefs .fields{margin:0 0 10px}
+.profileOptions{display:grid;gap:12px}
+.profileConsent{display:flex;align-items:flex-start;gap:10px;padding:12px;
+  border:1px solid #d8e5d9;border-radius:13px;background:#f5faf3;
+  font-size:12px;line-height:1.48;color:#406c53;cursor:pointer}
+.profileConsent input{flex:none;width:19px;height:19px;margin-top:1px;accent-color:#087e5e}
+.profileOptions .sheetChoices button{min-height:44px}
+.profileOptions .secondary{margin-top:0}
