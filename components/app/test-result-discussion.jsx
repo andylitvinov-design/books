@@ -109,8 +109,12 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false,his
   const [turns,setTurns]=useState([])
   const [question,setQuestion]=useState('')
   const [topic,setTopic]=useState(model.topic)
+  const [selectedKey,setSelectedKey]=useState(null)
+  const [preference,setPreference]=useState('video')
   const [phase,setPhase]=useState('choose')
   const panelRef=useRef(null), threadRef=useRef(null)
+  const selected=model.highlights.find(item=>item.key===selectedKey)||null
+
   useEffect(()=>{
     if(!initiallyOpen)return
     setOpen(true)
@@ -121,41 +125,98 @@ export function TestResultDiscussion({result,locale='en',initiallyOpen=false,his
     if(open&&turns.length&&threadRef.current) threadRef.current.scrollTop=threadRef.current.scrollHeight
   },[open,turns])
   const offers=useMemo(()=>testDiscussionOffers({
-    topic,locale:lang,needsProfessional:model.needsProfessional,verified:model.verified&&phase!=='safety',
-  }),[topic,lang,model.needsProfessional,model.verified,phase])
+    topic,locale:lang,needsProfessional:model.needsProfessional,
+    verified:model.verified&&phase!=='safety',preference,
+  }),[topic,lang,model.needsProfessional,model.verified,phase,preference])
 
+  const say=(...messages)=>setTurns(previous=>[...previous,
+    ...messages.map(([role,text])=>({role,text}))])
+  const reset=()=>{
+    setTurns([])
+    setQuestion('')
+    setSelectedKey(null)
+    setPreference('video')
+    setTopic(model.topic)
+    setPhase('choose')
+  }
   const selectMeasure=(row)=>{
-    setTopic(discussionTopicForTags([row.domain],model.topic))
+    if(!model.verified||phase==='safety')return
+    setSelectedKey(row.key)
+    setTopic(row.topic||discussionTopicForTags([row.domain],model.topic))
+    setPhase(model.needsProfessional?'review':'reflect')
+    say(
+      ['user',row.label],
+      ['guide',t.source+': «'+row.label+'» — '+row.score+'. '+row.priorityReason],
+      ['guide',row.summary||t.fallback],
+      ...(row.band?[['guide',t.published+': '+row.band]]:[]),
+      ['guide',row.trend
+        ? t.previous+': '+row.trend.from+' → '+row.trend.to+'. '+row.trend.label+'. '+row.trend.detail
+        : t.count],
+      ...(model.needsProfessional
+        ? [['guide',model.reviewNote||t.professional]]
+        : [['guide',row.reflectionQuestion||t.choose]])
+    )
+  }
+  const chooseRelevance=(value)=>{
+    if(!selected||model.needsProfessional||phase!=='reflect')return
+    const labels={yes:t.same,unsure:t.uncertain,no:t.different}
+    if(!Object.hasOwn(labels,value))return
+    if(value==='yes'){
+      setPhase('format')
+      say(['user',labels[value]],['guide',t.relevanceYes],
+        ...(selected.optionalStep?[['guide',t.sourceStep+' '+selected.optionalStep]]:[]))
+    }else{
+      setPhase('choose')
+      setSelectedKey(null)
+      say(['user',labels[value]],['guide',value==='no'?t.relevanceNo:t.relevanceUnclear])
+    }
+  }
+  const chooseFormat=(value,reply=null)=>{
+    if(!['video','course','test','session'].includes(value)||
+       !model.verified||model.needsProfessional||phase==='safety')return
+    setPreference(value)
     setPhase('offers')
-    setTurns(previous=>[...previous,
-      {role:'user',text:row.label},
-      {role:'guide',text:row.summary||t.fallback},
-      {role:'guide',text:t.next},
-    ])
+    say(['user',reply||t[value]],['guide',t.next+' '+t.formatNote])
   }
   const submitQuestion=(event)=>{
     event.preventDefault()
     const answer=question.trim().slice(0,240)
-    if(!answer||!model.verified)return
+    if(!answer||!model.verified||phase==='safety')return
     setQuestion('')
-    const interpreted=interpretTestDiscussionQuestion(answer,model.topic)
-    if(interpreted.urgent){
+    const format=discussionFormatFromText(answer)
+    if(format==='urgent'){
       setPhase('safety')
-      setTurns(previous=>[...previous,{role:'user',text:answer},{role:'guide',text:t.urgent}])
+      say(['user',answer],['guide',t.urgent])
       return
     }
-    setTopic(interpreted.topic)
-    setPhase('offers')
-    setTurns(previous=>[...previous,
-      {role:'user',text:answer},{role:'guide',text:t.followup},{role:'guide',text:t.next},
-    ])
+    if(model.needsProfessional){
+      say(['user',answer],['guide',model.reviewNote||t.professional])
+      setPhase('review')
+      return
+    }
+    if(['format','offers'].includes(phase)&&format){
+      chooseFormat(format,answer)
+      return
+    }
+    const interpreted=interpretTestDiscussionQuestion(answer,topic)
+    if(interpreted.urgent){
+      setPhase('safety')
+      say(['user',answer],['guide',t.urgent])
+      return
+    }
+    // A free-text reflection is never evidence of a diagnosis, a lead, consent
+    // or a completed action. Ask for a source-backed scale or explicit choice.
+    say(['user',answer],['guide',selected
+      ? (selected.summary||t.fallback)+' '+t.choose
+      : t.fallback+' '+t.choose])
   }
-  const reset=()=>{
-    setTurns([])
-    setQuestion('')
-    setTopic(model.topic)
+  const discussAnother=()=>{
+    if(phase==='safety')return
     setPhase('choose')
+    setSelectedKey(null)
+    say(['guide',t.choose])
   }
+
   return <section id="hh-test-result-discussion" ref={panelRef} className={styles.root}
     data-test-result-discussion data-verified={model.verified?'true':'false'}>
     <button type="button" className={styles.toggle} aria-controls="hh-test-result-discussion-panel"
