@@ -131,6 +131,11 @@ for(const engine of [chromium,webkit]){
         await guide.locator("[data-support-guide-recommendations]").waitFor({state:"visible",timeout:10000});
         assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),1,tag+" one primary path");
         assert.equal(await guide.locator("[data-support-guide-program]").count(),1,tag+" next steps");
+        assert.equal(await guide.locator("[data-support-guide-primary-title]").count(),1,tag+" primary action label");
+        assert.equal(await guide.locator("[data-support-guide-context]").count(),1,tag+" compact goal context");
+        const duration=await guide.locator("[data-support-guide-time-preference]").innerText();
+        assert.ok(duration.includes("10")&&duration.includes(({en:"not the duration",ru:"не длительность",es:"no es la duración"})[locale]),
+          tag+" selected time is not a verified recording or session duration");
         assert.ok(await guide.locator("[data-support-guide-alternative]").count()<=2,tag+" up to two alternatives");
         assert.ok(await messages.count()>=10,tag+" conversation grows rather than replacing replies");
         const portraitAfter=await guide.locator("[data-support-guide-fixed-portrait]").boundingBox();

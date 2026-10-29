@@ -36,7 +36,7 @@ const formats: { id: Format; filter: string; choice?: Choice }[] = [
 
 const copy = {
   en: {
-    title: "Your AI guide", close: "Close guide", step: "Step",
+    title: "Your personal guide", close: "Close guide", step: "Step",
     areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning" },
     ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
     editedIntro: "You changed your self-rating for",
@@ -80,9 +80,10 @@ const copy = {
     sourceReason: "Priority: your stated goal or ratings. Focus: your confirmed choice. Format: your preference.",
     timeReason: "Your available time is a preference, not a verified media duration.",
     private: "Answers stay in this browser; no external AI request, lead, booking or payment is created.",
+    ux:{focus:"Your focus",primary:"RECOMMENDED FIRST STEP",duration:"Time available",durationWarning:"This is your preference, not the duration of a recording or practitioner session.",supportFit:"You chose personal practitioner support, not a course about business. Other options below may match the topic more closely.",benefit:{meditation:"Open the actual published recording and check its length before playing.",tests:"Start an available free self-check; the result is not inferred here.",courses:"Explore the existing learning path and choose whether it fits.",consultation:"Review practitioner sessions. An enquiry is not a booking.",healing:"Review practitioner Reiki support; the duration and terms require confirmation.",mandala:"Open the video-mandala studio by choice."}},
   },
   ru: {
-    title: "Ваш ИИ-проводник", close: "Закрыть проводника", step: "Шаг",
+    title: "Ваш проводник", close: "Закрыть проводника", step: "Шаг",
     areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы" },
     ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
     editedIntro: "Вы изменили показатель",
@@ -126,9 +127,10 @@ const copy = {
     sourceReason: "Основа: ваши оценки или заполненный фильтр. Тема: ваш подтверждённый выбор. Формат: ваше предпочтение.",
     timeReason: "Указанное время — пожелание, а не проверенная длительность видеозаписи.",
     private: "Ответы остаются в браузере. Внешний ИИ, CRM, запись и оплата не запускаются.",
+    ux:{focus:"Ваш запрос",primary:"РЕКОМЕНДУЕМЫЙ ПЕРВЫЙ ШАГ",duration:"У вас есть",durationWarning:"Это ваше пожелание, а не длительность записи или сессии мастера.",supportFit:"Вы выбрали поддержку мастера, а не курс про работу и деньги. Другие варианты ниже могут быть ближе к теме.",benefit:{meditation:"Откройте опубликованную запись и проверьте её длительность до просмотра.",tests:"Начните доступный бесплатный тест; результат здесь не предполагается.",courses:"Посмотрите существующую программу и решите, подходит ли она.",consultation:"Посмотрите личные сессии. Заявка не означает запись.",healing:"Посмотрите поддержку мастера: длительность и условия уточняются отдельно.",mandala:"Откройте студию видео-мандал по собственному выбору."}},
   },
   es: {
-    title: "Tu guía de IA", close: "Cerrar guía", step: "Paso",
+    title: "Tu guía personal", close: "Cerrar guía", step: "Paso",
     areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
     editedIntro: "Has cambiado tu puntuación de",
@@ -172,6 +174,7 @@ const copy = {
     sourceReason: "Base: tus valoraciones o filtro de objetivos. Tema: tu elección. Formato: tu preferencia.",
     timeReason: "El tiempo es tu preferencia, no la duración verificada del vídeo.",
     private: "Las respuestas se quedan en el navegador. No se envían a IA externa, CRM ni pagos.",
+    ux:{focus:"Tu objetivo",primary:"PRIMER PASO RECOMENDADO",duration:"Tiempo disponible",durationWarning:"Es tu preferencia, no es la duración de una grabación o sesión.",supportFit:"Has elegido apoyo profesional, no un curso de negocios. Otras opciones abajo podrían ser más relevantes.",benefit:{meditation:"Abre una grabación publicada y comprueba su duración antes de verla.",tests:"Comienza una autoevaluación gratuita disponible; no suponemos sus resultados.",courses:"Explora el curso existente y decide si es adecuado.",consultation:"Revisa sesiones personales. Una consulta no es una reserva.",healing:"Revisa el apoyo Reiki; los tiempos y condiciones se confirman por separado.",mandala:"Abre el estudio de vídeo mandala si lo deseas."}},
   },
 } as const;
 
@@ -749,7 +752,7 @@ export function HolisticSupportInlineGuide({
             onClick={showRecommendations}><Sparkles size={16} aria-hidden="true"/>{journey.seePath}</button>
           <button type="button" onClick={askMediaTime}>{journey.morePractice}</button>
           <button type="button" onClick={onClose}>{journey.enough}</button>
-        </div> : phase==="recommendations" ? <p className={styles.next}>{journey.finalIntro}</p> :
+        </div> : phase==="recommendations" ? <p className={styles.context} data-support-guide-context><strong>{t.ux.focus}: {t.areas[topic]}</strong>{need ? " · "+need : ""}</p> :
           <div className={styles.confirm} role="alert"><p>{talk.safetyAnswer}</p>
             <button type="button" onClick={onClose}>{talk.safeStop}</button></div>}
         {phase!=="safety"&&phase!=="recommendations" ?
@@ -762,9 +765,19 @@ export function HolisticSupportInlineGuide({
       {phase==="recommendations"?<section className={styles.recommendations} ref={resultRef}
         data-support-guide-recommendations aria-labelledby="support-guide-recommendations-title">
         <h3 id="support-guide-recommendations-title">{journey.seePath}</h3>
-        <p className={styles.reason}>{journey.finalIntro}</p>
+        <p className={styles.reason}>{stageSummary}</p>
         <div className={styles.result} data-support-guide-recommendation>
-          <strong>{t.resultTitle} · {stageSummary}</strong>{offer(format)}
+          <div className={styles.resultTop}><span className={styles.eyebrow}>{t.ux.primary}</span>
+            <span className={styles.formatTag}>{t.formatLabels[format]}</span></div>
+          <h4 data-support-guide-primary-title>{format==="meditation" ? (primaryVideo?.title??t.formatLabels[format]) :
+            format==="tests" ? (testCards[0]?.title??t.formatLabels[format]) : t.formatLabels[format]}</h4>
+          <p className={styles.benefit}>{t.ux.benefit[format]}</p>
+          {topic==="money" && (format==="healing" || format==="consultation") ?
+            <p className={styles.fitNote} data-support-guide-fit-note>{t.ux.supportFit}</p> : null}
+          {minutes!==null ? <p className={styles.timeNote} data-support-guide-time-preference>
+            <Clock3 size={15} aria-hidden="true"/><span>{t.ux.duration}: {minutes} min. {t.ux.durationWarning}</span>
+          </p> : null}
+          {offer(format)}
           <details className={styles.why}><summary>{talk.whyLabel}<ChevronDown size={15} aria-hidden="true"/></summary>
             <p>{journey.questionWhy} {t.notDiagnosis}</p></details>
         </div>

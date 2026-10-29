@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
@@ -347,7 +348,12 @@ export function HolisticSupportGoalFilter({
   function nextSector() {
     // Advance is an explicit acceptance: commit the current snapshot BEFORE
     // switching. Works even when the visitor never clicked the separate Save.
-    saveCurrent();
+    // React batches Save and Next; commit the accepted snapshot before the
+    // next sector is mounted, so Safari/WebKit never loses the checkmark.
+    // Only a deliberate click invokes this synchronous UI transition.
+    flushSync(() => {
+      saveCurrent();
+    });
     const index = sectorOrder.findIndex(item => item.id === sector);
     changeSector(sectorOrder[(index + 1) % sectorOrder.length].id);
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")

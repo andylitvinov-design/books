@@ -36,6 +36,8 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   const nextBody = editor.split("function nextSector() {")[1]?.split("function apply(")[0];
   assert.ok(nextBody && nextBody.indexOf("saveCurrent();") < nextBody.indexOf("changeSector("),
     "Next must commit current sector before switching");
+  assert.match(nextBody, /flushSync\(\(\) => \{\s*saveCurrent\(\);\s*\}\)/,
+    "WebKit must see the accepted badge before Next switches sectors");
   assert.match(editor, /savedSectors: all/);
   assert.match(client, /goalSavedSectors/);
   assert.match(client, /onSave=\{saveGoalSector\}/);

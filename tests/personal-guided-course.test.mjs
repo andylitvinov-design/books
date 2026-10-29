@@ -140,8 +140,8 @@ test("one canonical editor owns the free user-triggered real render/export; no a
   assert.match(studio,/<MandalaGuidedCourse locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/onApplyFreeVideo=\{session=>\{/);
   assert.match(studio,/setDuration\(60\)/);
-  assert.match(studio,/setBackgroundOnly\(true\)/);
-  assert.match(studio,/setAffirmations\(\{\.\.\.defaultAffirmations,enabled:true/);
+  assert.match(studio,/if\(!photoUrl\)setBackgroundOnly\(true\)/,"keep photo when already chosen");
+  assert.match(studio,/setAffirmations\(current=>\(\{\.\.\.defaultAffirmations,enabled:current\.enabled/,"preserve explicit affirmations opt-in");
   assert.match(studio,/data-mandala-video-generate/);
   assert.match(studio,/data-mandala-video-download/);
   assert.match(studio,/const \[touchedScores,setTouchedScores\]/);

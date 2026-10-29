@@ -150,3 +150,19 @@ test("all touched TSX modules parse",()=>{
     assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText," ")),[],path);
   }
 });
+
+test("V2 compact recommendation preserves real resource and distinguishes time preference from confirmed length",()=>{
+  for(const marker of ["data-support-guide-primary-title","data-support-guide-context","data-support-guide-time-preference",
+    "data-support-guide-fit-note","t.ux.benefit[format]","t.ux.durationWarning","data-support-guide-program"])
+    assert.ok(guide.includes(marker),marker);
+  for(const sentence of ["not the duration","не длительность","no es la duración"])
+    assert.ok(guide.includes(sentence),sentence);
+  assert.match(css,/\.resultTop\s*\{/);
+  assert.match(css,/\.context\s*\{/);
+  assert.match(css,/\.timeNote\s*\{/);
+  assert.match(guide,/phase==="recommendations"\s*\?\s*<p className=\{styles\.context\}/);
+  assert.match(guide,/data-guide-open-test-choice/);
+  assert.match(guide,/data-guide-go-meditations/);
+  assert.match(guide,/data-guide-self-report-watched/);
+  assert.doesNotMatch(guide,/autoplay=1|sendBeacon|localStorage/);
+});

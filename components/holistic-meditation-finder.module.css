@@ -86,3 +86,7 @@
 @media(max-width:760px){.advanced .selects{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.serviceCards{grid-template-columns:minmax(0,1fr)}.serviceCard{padding:11px}.advanced .selects{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:350px){.advanced{padding:8px}.advanced .selects{gap:6px}.serviceSection{padding-top:11px}}
+
+.axisSelector{display:flex;flex-direction:column;gap:6px;max-width:100%;min-width:0;padding:3px 0 10px;color:#69513d;font:700 12px/1.4 Arial,Helvetica,sans-serif}
+.axisSelector select{width:100%;max-width:100%;min-height:44px;min-width:0;padding:9px 12px;border:1px solid #d7c5b2;border-radius:10px;background:#fff;color:#42342a;font:500 16px/1.3 Arial,Helvetica,sans-serif}
+.axisSelector select:focus-visible{outline:3px solid #b9865e;outline-offset:3px}

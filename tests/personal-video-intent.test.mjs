@@ -71,7 +71,7 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   const audio=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(ui,/data-video-music-preview/);
   assert.match(ui,/data-video-music-volume/);
-  assert.match(ui,/createAmbientPreviewWav\(music\)/);
+  assert.match(ui,/presetAudioUrl\(music\)/);
   assert.match(ui,/data-video-audio-player/);
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);

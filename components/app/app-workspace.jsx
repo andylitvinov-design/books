@@ -91,6 +91,7 @@ const PersonalCoaching = dynamic(() => import('@/components/app/personal-coachin
 const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 const MyPersonalVideos = dynamic(() => import('@/components/app/my-personal-videos'), {ssr:false})
+const MyProgress = dynamic(() => import('@/components/app/my-progress'), {ssr:false})
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
 
@@ -577,6 +578,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', href: root + '/progress', icon: Activity },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
@@ -584,15 +586,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.
   const mobileNav = [
-    { id: 'practice', label: locale === 'ru' ? 'Практики' : locale === 'es' ? 'Prácticas' : 'Practices', href: '/' + locale + '/practice', icon: Users },
-    { id: 'messages', label: locale === 'ru' ? 'Заявки' : locale === 'es' ? 'Solicitudes' : 'Requests', href: root + '/messages', icon: MessageCircle },
-    { id: 'portfolio', label: locale === 'ru' ? 'Прогресс' : locale === 'es' ? 'Progreso' : 'Progress', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
+    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
     (id === 'course' && ['business','coaching'].includes(page)) ||
-    (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
+    (id === 'portfolio' && ['reports', 'monitoring', 'results'].includes(page)) ||
+    (id === 'progress' && page === 'history')
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
     page === 'reports'
@@ -669,6 +672,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
+           {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
