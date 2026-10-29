@@ -206,3 +206,14 @@ test("HD master starts its own load and remains gated on a decoded frame in WebK
   assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
+
+test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+  assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
+  assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
+  assert.match(studio,/video\.load\(\)/);
+  assert.match(studio,/void video\.play\(\)\.then/);
+  assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
+  assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
+  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
+    "Create stays disabled until a real decoded master frame is present");
+});
