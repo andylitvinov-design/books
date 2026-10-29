@@ -22,13 +22,18 @@ The GitHub default codex/bootstrap-books is NOT the Holistic House production ta
 - Existing server auth + RLS transaction, per-row AES-GCM using existing seal
   and openSealed, separate revocable consent, remove-one and erase-all API.
 - Private owner-scoped SQL migration in app_private; source-only, not applied.
-- Memory must be explicitly enabled for a chat; no silent chat harvesting.
-  Turning off use does not leave a memory-derived session preference active.
+- Separate durable opt-in for saving and for using remembered preferences.
+  When both permissions are true, the returning signed-in client automatically
+  reloads their saved preferences from the owner-scoped API on the next visit.
+  The toggle can revoke automatic use without deleting the saved entries.
+  No silent chat harvesting. Turning off use does not leave a memory-derived
+  session preference active; in-flight local responses are cancelled.
 
 ## API and flags
 GET /api/app/agent-memory: authenticated consent+entries.
 POST {action:"consent",accepted:true/false}: save or revoke and wipe.
 POST {action:"set",kind,value}: encrypt only user-entered allowed preference.
+POST {action:"use",enabled:true/false}: persist separate automatic reuse permission.
 POST {action:"remove",kind}: remove one.
 DELETE /api/app/agent-memory: erase memory and consent.
 The client cannot choose account ID. Server verifies current session, enforces
