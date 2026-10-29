@@ -106,3 +106,11 @@ export function editorSoundtrackRecommendations(input?: {
   limit?: number;
 }): IntelligenceAudioMatch[];
 export function buildHolisticIntelligencePlan(input?: IntelligenceInput): IntelligencePlan;
+
+// Psychologist Mind uses the same publicly typed Holistic Intelligence entrypoint.
+export { consultPsychologistMind, buildPsychologyProgram, buildPsychologyDialogueTurn,
+  PSYCHOLOGIST_MIND_VERSION, PSYCHOLOGIST_APPROACHES, PSYCHOLOGIST_METHODS,
+  PSYCHOLOGIST_FOCI } from "./psychologist-mind.mjs";
+export type { PsychologistLocale, PsychologistFocus, PsychologyInput,
+  PsychologyProgram, PsychologyDialogueInput, PsychologyDialogueTurn,
+  PsychologistStatus } from "./psychologist-mind.mjs";
