@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
+import type { GuidedMeditationFocus } from "./mandala-guided-course";
+import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -693,6 +695,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [captionMode,setCaptionMode] = useState<CaptionMode>("none");
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
+  const [meditationFocus,setMeditationFocus]=useState<GuidedMeditationFocus>({difficulty:"",goal:"",goals:[],details:[]});
+  const updateMeditationFocus=useCallback((focus:GuidedMeditationFocus)=>setMeditationFocus(focus),[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
@@ -1406,7 +1410,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </section>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
-      <MandalaGuidedCourse locale={locale} theme={theme}
+      <MandalaGuidedCourse locale={locale} theme={theme} onContextChange={updateMeditationFocus}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
           // This is preparation, NOT a render or a claimed downloadable video.
@@ -1883,8 +1887,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-
-
+      {studioMode==="therapy" ? <MandalaPersonalMeditation
+        locale={locale} theme={theme} wish={wish} scene={sceneName}
+        sound={uploadedAudio?uploadedAudio.file.name:(selectedAudio?.name[locale]||"")}
+        pace={speed} brightness={brightness}
+        affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+        focus={meditationFocus} disabled={recording||preparing}/>:null}
     </section>
   );
 }
