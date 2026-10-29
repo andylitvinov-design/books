@@ -17,6 +17,8 @@ test("therapy mode is a dedicated programme directly under the central moving vi
   assert.match(studio,/data-video-studio-mode=\{studioMode\}/);
   assert.match(studio,/data-video-affirmations-feature checked=\{affirmations\.enabled\}/);
   assert.match(studio,/data-video-photo-enabled checked=\{!backgroundOnly\}/);
+  assert.match(studio,/if\(!photoUrl\)setBackgroundOnly\(true\)/);
+  assert.match(studio,/setAffirmations\(current=>\(\{\.\.\.defaultAffirmations,enabled:current\.enabled/);
   assert.match(guided,/data-video-key-difficulty/);
   assert.match(guided,/data-video-key-goal/);
   assert.match(guided,/data-video-goal-accents/);
