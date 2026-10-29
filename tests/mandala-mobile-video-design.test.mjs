@@ -247,7 +247,10 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/data-video-audio-section/);
   assert.match(studio,/data-video-hypnosis-section/);
   assert.match(studio,/studioMode==="therapy"/);
-  assert.match(studio,/data-hero-promo=\{!photoUrl&&!previewPlaying&&!recording/);
+  // A ready cinematic storyboard owns the hero, so the empty-state promo must
+  // not cover an approved local preview. The regular photo/play/record guards
+  // still apply when no storyboard is active.
+  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-therapy-toggle/);
@@ -334,7 +337,9 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   assert.match(studio,/useState<CaptionMode>\("none"\)/,"no default text burnt into the film");
   assert.match(studio,/data-video-advanced-aspect/);
   assert.match(studio,/data-video-therapy-banner/);
-  assert.match(studio,/setStudioMode\("therapy"\);setTherapyJumpRequested\(true\)/);
+  // Switching to the guided programme intentionally clears a cinematic plan:
+  // the therapy renderer must not inherit an unrelated four-shot storyboard.
+  assert.match(studio,/setStudioMode\("therapy"\);setCinematicPlan\(null\);setTherapyJumpRequested\(true\)/);
   for(const phrase of ["Своё фото / цель","Аффирмации","Создать персональную программу видеотерапии",
     "My photo / goal","Affirmations","Mi foto / objetivo","Afirmaciones"])assert.ok(studio.includes(phrase),phrase);
   assert.match(css,/\.catalogShell \.heroPlay\{/);
