@@ -516,11 +516,29 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           // update the URL hash while the target remains hidden.
           await page.waitForFunction(() => document.querySelector('[data-video-quick-legacy]')?.open === true,
             undefined,{timeout:8000});
-          await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
-          await page.waitForFunction(target=>{
-            const rect=document.getElementById(target)?.getBoundingClientRect();
-            return Boolean(rect && rect.top<window.innerHeight-16 && rect.bottom>16);
-          },id,{timeout:10000});
+          try {
+            await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
+            await page.waitForFunction(target=>{
+              const rect=document.getElementById(target)?.getBoundingClientRect();
+              return Boolean(rect && rect.top<window.innerHeight-16 && rect.bottom>16);
+            },id,{timeout:10000});
+          } catch (error) {
+            const diagnostic=await page.evaluate(target=>{
+              const selected=document.getElementById(target);
+              const link=document.querySelector('[data-video-editor-tab="'+
+                ({'video-templates':'design','video-audio':'audio','video-hypnosis':'affirmations'}[target])+'"]');
+              const rect=selected?.getBoundingClientRect();
+              return {
+                wanted:'#'+target,href:window.location.href,hash:window.location.hash,
+                nativeHref:link?.getAttribute('href'),targetPresent:Boolean(selected),
+                detailsOpen:document.querySelector('[data-video-quick-legacy]')?.open,
+                rect:rect?{top:Math.round(rect.top),bottom:Math.round(rect.bottom)}:null,
+                viewport:window.innerHeight,
+              };
+            },id);
+            throw new Error(engine+" "+locale+" "+width+"px deep-tab navigation "+
+              tab+" failed: "+JSON.stringify(diagnostic)+" / "+String(error));
+          }
         }
         // From the bottom of Hypnoaffirmations, a single click must scroll
         // back to the main film and START its existing frame engine.
