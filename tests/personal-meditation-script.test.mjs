@@ -30,6 +30,17 @@ test("three locales generate meaningful distinct guided texts without provider c
   assert.match(es,/Detente si te incomoda/);
   assert.match(PERSONAL_MEDITATION_VERSION,/resource-meditation/);
 });
+test("local first-party word matching adjusts imagery to a worry without diagnosing",()=>{
+  const ru=buildPersonalMeditationScript({locale:"ru",theme:"energy",wish:"я тревожусь перед конфликтами"});
+  assert.match(ru,/Следующий момент может стать чуть спокойнее/);
+  assert.match(ru,/Уютная дверь/);
+  const en=buildPersonalMeditationScript({locale:"en",theme:"money",wish:"I want clarity with decisions"});
+  assert.match(en,/Imagine placing several choices/);
+  const explicit=buildPersonalMeditationScript({locale:"en",theme:"money",
+    wish:"I have anxiety",accents:["gratitude"]});
+  assert.match(explicit,/one small thing that has already offered some support/);
+  assert.ok(!explicit.includes("the next moment can be a little slower"));
+});
 test("invalid or harmful text is bounded, stripped, and never emitted as an instruction",()=>{
   const raw="<script>alert(1)</script>"+"a".repeat(2000);
   const text=buildPersonalMeditationScript({locale:"ru",theme:"bogus",wish:raw,
