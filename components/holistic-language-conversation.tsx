@@ -154,16 +154,30 @@ export function HolisticLanguageConversation({
     const value=draft.trim();
     if(!value || generating)return;
     // Only previously verified public catalog props; never submit private tests.
-    const result=turnLanguageAgent({
-      text:value,previous:state,locale,
-      catalog:{videos,tests},
-    });
+    const input={text:value,previous:state,locale,catalog:{videos,tests}};
+    const plainResult=turnLanguageAgent(input);
+    // Saved communication preferences influence the deterministic guide while
+    // enabled, but never overwrite the visitor's explicit session choices.
+    const remembered=(kind:string)=>savedMemory.find(item=>item.kind===kind)?.value;
+    const style=remembered("communication_style");
+    const length=remembered("response_length");
+    const avoid=remembered("avoid_format");
+    const withPreference= savedMemory.length>0 ? {
+      ...state,
+      address:state.address==="neutral"&&["informal","formal"].includes(style||"")
+        ?style!:state.address,
+      brevity:state.brevity==="normal"&&["short","detailed"].includes(length||"")
+        ?length!:state.brevity,
+      excluded:avoid?[...new Set([...state.excluded,avoid])]:state.excluded,
+    } : null;
+    const result=withPreference ? turnLanguageAgent({...input,previous:withPreference})
+      : plainResult;
     const localRequestId=++requestCounter.current;
     const localContext=prepareLocalConversation({
       history:entries.map(entry=>({role:entry.role,text:entry.generated||entry.text})),
       currentMessage:value,decision:result,locale,memory:savedMemory,
     });
-    setState(result.state);
+    setState(plainResult.state); // do not persist memory-derived state across opt-out
     setEntries(prev=>[...prev,
       {role:"visitor",text:value.slice(0,4000)},
       {role:"agent",text:result.text,suggestions:result.suggestions as Suggestion[],
