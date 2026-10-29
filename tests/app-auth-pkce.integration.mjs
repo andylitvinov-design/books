@@ -87,6 +87,17 @@ test('missing or wrong verifier fails closed without a session', async t => {
   assert(!commit(wrong).cookies.some(c => /^hh-app-auth(\.\d+)?$/.test(c.name)))
 })
 
+// Preserve explicit ESM extensions when resolving aliases for isolated route tests.
+function resolveRouteAliasUrl(specifier) {
+  const path = specifier.slice(2)
+  return new URL('../' + path + (/\.(?:cjs|mjs|js)$/.test(path) ? '' : '.js'), import.meta.url).href
+}
+test('route alias loader preserves explicit module extensions', () => {
+  assert.match(resolveRouteAliasUrl('@/lib/mandala/video-affirmation-focus.mjs'), /video-affirmation-focus\.mjs$/)
+  assert.match(resolveRouteAliasUrl('@/lib/app/session'), /lib\/app\/session\.js$/)
+  assert.match(resolveRouteAliasUrl('@/lib/app/config.js'), /lib\/app\/config\.js$/)
+})
+
 // Execute the actual route, substituting only external DB/rate boundaries.
 // Auth and cookie implementations remain the pinned production SDK and adapter.
 let routeSource = await readFile(new URL('../app/api/app/[...path]/route.js', import.meta.url), 'utf8')
@@ -97,7 +108,7 @@ routeSource = routeSource
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
     'export const accountWrites = []; const createAppRepository = () => ({ensureAccount: async actor => accountWrites.push(actor.id)})')
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
-  .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + '.js', import.meta.url)}'`)
+  .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${resolveRouteAliasUrl(name)}'`)
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
 const route = await import('data:text/javascript;base64,' + Buffer.from(routeSource).toString('base64'))
 async function routeStart(cookies = [], intentId, continueTo = null) {
