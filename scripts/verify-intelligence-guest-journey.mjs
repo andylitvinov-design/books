@@ -4,6 +4,11 @@ import { createRequire } from 'node:module'
 
 const base=process.env.HH_INTELLIGENCE_BASE_URL || 'http://127.0.0.1:3187'
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('LOCAL_SITE_REQUIRED')
+let database
+try {database=new URL(process.env.HH_APP_DATABASE_URL || '')} catch {throw new Error('ISOLATED_TEST_DATABASE_REQUIRED')}
+if(process.env.CI!=='true' || process.env.HH_APP_TEST_RUNTIME!=='isolated' || process.env.VERCEL ||
+   !['127.0.0.1','localhost'].includes(database.hostname) || database.pathname!=='/hh_app_test')
+  throw new Error('ISOLATED_TEST_DATABASE_REQUIRED')
 const tools=process.env.HH_INTELLIGENCE_BROWSER_TOOLS
 if (!tools) throw new Error('HH_INTELLIGENCE_BROWSER_TOOLS_REQUIRED')
 const browsers=createRequire(`${tools}/package.json`)('playwright')
