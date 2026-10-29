@@ -1732,7 +1732,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.audioSmartBar} data-video-audio-context>
             <div className={videoStyles.audioContextText}>
               <Sparkles size={16} aria-hidden="true"/>
-              <span>{audioUi.context} <strong>{ui.themes[theme]}</strong></span>
+              <span>{audioUi.context} <strong>{ui.themes[audioTheme]}</strong></span>
             </div>
             <button type="button" data-video-audio-auto aria-pressed={audioAuto}
               disabled={!recommendedAudioId&&!audioAuto}
