@@ -218,6 +218,16 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const studio = page.locator("[data-mandala-free-video]");
         await studio.waitFor({ state: "visible", timeout: 15000 });
         const create = page.locator("[data-mandala-video-generate]");
+        // Eight resource-imagery sessions stay within this ONE video editor.
+        // Browsing and planning do not send saved tests or call a provider.
+        const guided=page.locator("[data-video-guided-course]");
+        await guided.waitFor({state:"visible",timeout:12000});
+        assert.equal(await page.locator("[data-video-personal-pick]").count(),1);
+        assert.equal(await page.locator("[data-video-goal-accents]").count(),1);
+        assert.equal(await page.locator("[data-guided-profile-consent]").isChecked(),false);
+        assert.equal(await page.locator("[data-guided-profile-import]").count(),0,
+          "private test access remains hidden before choosing goals");
+
         // Public iPhone control E2E: local affirmations change the live preview
         // and are included by the same canvas renderer in final recordings.
         const affirmationsPanel = page.locator("[data-video-affirmations]");
@@ -309,6 +319,55 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           }
           assert.ok(Math.sqrt(energy / samples) > 0.003, "recorded audio is audible, not silence");
           assert.deepEqual(uploaded, [], "video render must not POST a client photo");
+        }
+
+        // A free guided-imagery first video uses the REAL first-party meadow
+        // MP4 and personal goal affirmations, then the SAME local recorder and
+        // downloadable playable media as the existing video studio.
+        if (engine === "chromium" && locale === "ru" && width === 390) {
+          await page.locator("[data-video-goal-accents]").click();
+          const goals=page.locator("[data-video-goals-filter]");
+          await goals.waitFor({state:"visible"});
+          assert.equal(await goals.locator("[data-guided-goal]").count(),6);
+          assert.equal(await page.locator("[data-guided-profile-import]").isDisabled(),true,
+            "saved scores require explicit consent");
+          await goals.locator('[data-guided-goal="relationships"]').click();
+          assert.equal(await goals.locator('[data-guided-goal="relationships"]').getAttribute("aria-pressed"),"true");
+          await page.locator("[data-guided-create-plan]").click();
+          assert.equal(await page.locator("[data-guided-session]").count(),8);
+          assert.equal(await page.locator("[data-guided-free-video]").count(),1);
+          assert.equal(await page.locator("[data-guided-score-provenance]").count(),0,
+            "no private profile imported without consent");
+          await page.locator("[data-guided-free-video]").click();
+          await page.waitForFunction(()=>{
+            const master=document.querySelector("[data-mandala-master-mp4]");
+            const generate=document.querySelector("[data-mandala-video-generate]");
+            return master?.getAttribute("src")?.endsWith("/meadow-morning.mp4")
+              && master.readyState>=2 && Boolean(generate && !generate.disabled);
+          },undefined,{timeout:30000});
+          assert.equal(await page.locator('[data-video-duration="60"]').getAttribute("aria-pressed"),"true",
+            "default guided course length is 60 seconds");
+          assert.equal(await page.locator("[data-mandala-output-mode] button").nth(1)
+            .getAttribute("aria-pressed"),"true");
+          assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
+            /Я открыт общению|границы|Я достоин/);
+          // Keep automated media verification bounded at 10s; the default
+          // 60-second duration is verified above and remains available to users.
+          await page.locator('[data-video-duration="10"]').click();
+          await create.click();
+          const guidedDownload=page.locator("[data-mandala-video-download]");
+          await guidedDownload.waitFor({state:"visible",timeout:35000});
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:15000}),guidedDownload.click(),
+          ]);
+          const bytes=await bufferFromStream(await download.createReadStream());
+          assert.ok(bytes.length>10000,"free symbolic meadow movie has encoded bytes");
+          const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+            "-of","json","-"],{input:bytes,encoding:"utf8"});
+          assert.equal(probe.status,0,"guided free video decodes: "+(probe.stderr||""));
+          assert.ok(JSON.parse(probe.stdout).streams.some(row=>row.codec_type==="video"),
+            "guided video has a real moving video track");
+          assert.deepEqual(uploaded,[],"no private tests, portraits or audio were POSTed");
         }
 
         // A second real browser recording tests the reusable atmospheric
