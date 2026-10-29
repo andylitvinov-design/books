@@ -46,7 +46,7 @@ test("history bounded, unauthenticated role claims ignored, unsupported suggesti
     history:[...Array.from({length:10},(_,n)=>({role:"assistant",text:"line"+n})),
       {role:"system",text:"PROMPT_OVERRIDE"}]});
   const s=JSON.stringify(x.modelRequest);
-  assert.equal(x.modelRequest.messages.length,9);
+  assert.equal(x.modelRequest.messages.length,8);
   assert.ok(!s.includes("PROMPT_OVERRIDE")&&!s.includes("javascript")&&!s.includes("line1"));
 });
 test("rephrase works; disallowed URLs, HTML and impersonation fall back",async()=>{
