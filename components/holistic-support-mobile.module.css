@@ -1088,3 +1088,12 @@
 .accountProgressLink span{min-width:0;overflow-wrap:anywhere}
 .accountProgressLink:hover{background:#cae9da}
 @media(max-width:640px){.accountProgressLink{min-height:46px;margin-top:9px;font-size:12px}}
+
+/* Visitors may explicitly save a public video as watched in their own
+   authenticated history. The existing local 0/N counter remains temporary. */
+.videoAccountProgress{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0;padding:7px 0}
+.page .videoAccountProgress button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:43px;padding:9px 13px;border:1px solid #abd3bc;border-radius:12px;background:#e9f6ec;color:#14674c;font-size:12px;font-weight:780;cursor:pointer}
+.videoAccountProgress button:disabled{opacity:.72;cursor:default}
+.videoAccountProgress a{color:#14674c;font-size:12px;font-weight:700}
+.videoAccountProgress p{margin:0;color:#99552f;font-size:12px}
+@media(max-width:640px){.videoAccountProgress{width:100%;padding:7px 2px}.page .videoAccountProgress button{max-width:100%;min-height:44px;font-size:11px}}
