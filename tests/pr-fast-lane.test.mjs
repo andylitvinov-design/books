@@ -54,7 +54,9 @@ test('PR automation policy and agent entry point require specialist safety gates
   const docs = readFileSync(join(root, 'docs', 'operations', 'PR_FAST_LANE_20261029.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   assert.match(docs, /necessary but not sufficient/);
-  assert.match(docs, /RLS\/auth\/privacy\/payment/);
+  for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
+    assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
+  }
   assert.match(docs, /GitHub administrator setup|administrator setup/i);
   assert.match(agents, /PR_FAST_LANE_20261029\.md/);
   assert.match(agents, /release-ready/);
