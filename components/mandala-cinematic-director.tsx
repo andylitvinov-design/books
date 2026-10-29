@@ -12,13 +12,13 @@ import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-cinematic-director.module.css";
 
-export type CinematicShot={number:number;title:string;theme:VideoTheme;sceneId:string;
+export type CinematicShot={id:string;number:number;title:string;theme:VideoTheme;sceneId:string;
   startSeconds:number;durationSeconds:number;camera:string;providerPrompt:string;visualCue:string};
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;
   requiresPractitionerReview:boolean;
-  sceneChoices:{sceneId:string;theme:VideoTheme;visualCue:string}[]};
+  sceneChoices:readonly {sceneId:string;theme:VideoTheme;visualCue:string}[]};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
 type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
@@ -119,7 +119,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
     mode:therapyMode?"therapy":"creative",
   }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
-  const plan=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
+  const plan:CinematicStoryboard=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
   const showStoryboard=generated && generatedMode===therapyMode;
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
