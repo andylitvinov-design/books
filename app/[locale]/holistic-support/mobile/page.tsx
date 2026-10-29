@@ -144,7 +144,20 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
     }
   }
 
-  const videos: SupportMobileVideo[] = locale === "ru"
+  // Verified English originals are available in RU/EN/ES, retaining Russian meditations.
+  const englishVideos: SupportMobileVideo[] = englishGuidedMeditations
+    .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
+    .map((video): SupportMobileVideo => ({
+      id: video.youtubeId!,
+      title: video.title,
+      topics: englishThemes[video.key] ?? ["energy"],
+      program: video.key === "flight-to-sun" ? "sun" : "reiki",
+      author: "andrey",
+      sourceLanguage: "en",
+      courseKey: video.key,
+      masterProfile: andreyMasterProfile(locale),
+    }));
+  const russianVideos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
         ...video,
         program: index < 3 ? "sun" : "energy",
@@ -152,17 +165,11 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         sourceLanguage: "ru",
         masterProfile: andreyMasterProfile("ru"),
       }))
-    : englishGuidedMeditations
-      .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
-      .map((video): SupportMobileVideo => ({
-        id: video.youtubeId!,
-        title: video.title,
-        topics: englishThemes[video.key] ?? ["energy"],
-        program: video.key === "flight-to-sun" ? "sun" : "reiki",
-        author: "andrey",
-        sourceLanguage: "en",
-        masterProfile: andreyMasterProfile(locale),
-      }));
+    : [];
+  const englishIds = new Set(englishVideos.map(video => video.id));
+  const videos: SupportMobileVideo[] = [
+    ...russianVideos.filter(video => !englishIds.has(video.id)), ...englishVideos,
+  ];
 
   return (
     <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />

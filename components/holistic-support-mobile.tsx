@@ -20,6 +20,7 @@ import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
@@ -33,6 +34,7 @@ export type SupportMobileVideo = {
   program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek";
   author: "andrey" | "psimaster";
   sourceLanguage: "en" | "ru";
+  courseKey?: "flight-to-sun" | "tantra-reiki" | "kundalini-reiki" | "reiki-yggdrasil";
   // Verified public practitioner profile for this particular recording.
   // Recordings with no confirmed practitioner intentionally show no badge.
   masterProfile?: { slug: string; name: string; image: string };
@@ -376,6 +378,39 @@ const copy = {
   },
 } as const;
 
+/** Labels describe the existing free programme; original media IDs remain in Academy. */
+const reikiCourseCopy = {
+  en: {
+    price: "Price · €0", audio: "English-language video",
+    start: "Take the course free", watch: "Watch preview video",
+    lessons: {
+      "flight-to-sun": { title: "Free Reiki course · Flight to the Sun", description: "Start the existing free five-lesson Reiki Practitioner course with Sun Flight, then explore Tantra, Kundalini and Yggdrasil Reiki." },
+      "tantra-reiki": { title: "Tantra Reiki · Level 1", description: "Explore presence and connection through this free Reiki lesson. Original video in English; personal initiation is arranged separately." },
+      "kundalini-reiki": { title: "Kundalini Reiki · Level 1", description: "Try Andrey’s guided meditation and continue with the free five-lesson Reiki programme. Audio is in English." },
+      "reiki-yggdrasil": { title: "Reiki Yggdrasil · Introduction", description: "Explore the World Tree and symbolic practices in the free Reiki Practitioner course. English-language video." },
+    },
+  },
+  ru: {
+    price: "Цена · €0", audio: "Видео на английском",
+    start: "Пройти курс бесплатно", watch: "Смотреть видеоурок",
+    lessons: {
+      "flight-to-sun": { title: "Бесплатный курс Рейки · Полёт к Солнцу", description: "Начните бесплатный курс «Практик Рейки» из пяти уроков с медитации «Полёт к Солнцу». Далее — Тантра, Кундалини и Рейки Иггдрасиль." },
+      "tantra-reiki": { title: "Тантра Рейки · 1-я ступень", description: "Практика присутствия, внимания и контакта из бесплатного курса «Практик Рейки». Видео на английском, личная инициация согласуется отдельно." },
+      "kundalini-reiki": { title: "Кундалини Рейки · 1-я ступень", description: "Авторская медитация Андрея и бесплатные уроки об опоре, внимании и разных системах Рейки. Видео идёт на английском." },
+      "reiki-yggdrasil": { title: "Рейки Иггдрасиль · введение", description: "Знакомство с Древом Миров и символическими практиками в бесплатном курсе из пяти уроков. Оригинальное видео на английском." },
+    },
+  },
+  es: {
+    price: "Precio · €0", audio: "Vídeo en inglés",
+    start: "Hacer el curso gratis", watch: "Ver la lección",
+    lessons: {
+      "flight-to-sun": { title: "Curso Reiki gratis · Vuelo al Sol", description: "Comienza el curso gratuito de cinco lecciones con Vuelo al Sol. Continúa con Tantra, Kundalini y Yggdrasil Reiki." },
+      "tantra-reiki": { title: "Tantra Reiki · Nivel 1", description: "Explora la atención y la conexión en el curso gratuito. Vídeo original en inglés; la iniciación personal es aparte." },
+      "kundalini-reiki": { title: "Kundalini Reiki · Nivel 1", description: "Prueba la meditación original de Andrey y continúa con el curso gratuito. Vídeo en inglés." },
+      "reiki-yggdrasil": { title: "Reiki Yggdrasil · Introducción", description: "Descubre el Árbol del Mundo en el curso de cinco lecciones. Vídeo original en inglés." },
+    },
+  },
+} as const;
 
 /** Display-only compact labels: full verified recording names remain accessible. */
 function shortVideoTitle(title: string, locale: PublicLocale): string {
@@ -396,6 +431,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   initialChoice?: SupportMobileChoice;
 }) {
   const t = copy[locale];
+  const reikiText = reikiCourseCopy[locale];
+  const freeCourseHref = REIKI_FREE_COURSE_PATH.replace(/^\/en\//, "/" + locale + "/");
   // Single owner for the five synchronized check-ins in both UI locations.
   const [scores, setScores] = useState<Record<CheckinArea, number>>({
     energy: 5, money: 5, relationships: 5, meaning: 5,
@@ -470,7 +507,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   // Keep historical course lessons out of score-matched meditation suggestions.
   // They are accessible exclusively when the visitor chooses Courses.
   const browseVideos = useMemo(() => choice === "pump"
-    ? [...videos, ...courses.flatMap(course => course.videos)]
+    ? [...videos.filter(video => video.courseKey), ...videos.filter(video => !video.courseKey),
+      ...courses.flatMap(course => course.videos)]
     : videos, [choice, videos, courses]);
   const relevantVideos = useMemo(() => {
     const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
@@ -493,6 +531,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const selected = relevantVideos.find(video => video.id === selectedId) ??
     videos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
+  const activeReiki = choice === "pump" && selected?.courseKey ? reikiText.lessons[selected.courseKey] : null;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
   const videoSrc = selected ? "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(selected.id) + "?autoplay=1&playsinline=1&rel=0" : "";
@@ -818,15 +857,30 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 </div> : (
                   <div className={styles.heroBody}>
                     <span className={styles.videoOriginal}><ShieldCheck size={17} aria-hidden="true" />{sourceAudio}</span>
-                    <h2>{choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus]}</h2>
-                    <p className={styles.heroDescription}>{selected ? selected.title : t.heroIntro}</p>
-                    {selected ? <button type="button" onClick={startVideo} className={styles.playButton}
-                      data-support-play><Play size={28} fill="currentColor" aria-hidden="true" />{choice === "pump" ? t.watchLesson : t.play}</button> :
-                      <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
+                    {activeReiki ? <div className={styles.reikiPills} data-support-reiki-price>
+                      <span className={styles.reikiPricePill}>{reikiText.price}</span>
+                      <span className={styles.reikiAudioPill}>{reikiText.audio}</span>
+                    </div> : null}
+                    <h2>{activeReiki?.title ?? (choice === "pump" ? activeMystery ? t.programs[activeMystery.id] : t.energyTitle : goalSelection ? t.goalHero[goalSelection.sector] : t.heroTitle[focus])}</h2>
+                    <p className={styles.heroDescription}>{activeReiki?.description ?? (selected ? selected.title : t.heroIntro)}</p>
+                    {selected ? <div className={styles.reikiHeroActions}>
+                      {activeReiki ? <Link href={freeCourseHref} prefetch={false} className={styles.reikiStartCourse}
+                        data-support-free-reiki-cta><BookOpen size={20} aria-hidden="true" />{reikiText.start}<ArrowRight size={18} aria-hidden="true" /></Link> : null}
+                      <button type="button" onClick={startVideo}
+                        className={styles.playButton + (activeReiki ? " " + styles.reikiPreviewButton : "")}
+                        data-support-play><Play size={24} fill="currentColor" aria-hidden="true" />{activeReiki ? reikiText.watch : choice === "pump" ? t.watchLesson : t.play}</button>
+                    </div> : <p role="status" className={styles.noVideo}>{t.notAvailable}</p>}
                     {activeMystery ? <Link className={styles.heroCourseLink} href={activeMystery.href} prefetch={false}
                       data-support-active-course-link>{t.openCourse}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
                   </div>
                 )}
+                {playing && activeReiki ? <div className={styles.reikiAfterVideo}>
+                  <span className={styles.reikiPricePill}>{reikiText.price}</span>
+                  <span className={styles.reikiAudioPill}>{reikiText.audio}</span>
+                  <Link href={freeCourseHref} prefetch={false} data-support-free-reiki-cta>
+                    {reikiText.start}<ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                </div> : null}
               </div>
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery>
                 <div className={styles.videoHeading}>
@@ -851,7 +905,14 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                         alt="" width={320} height={180} unoptimized loading="lazy" />
                       <span className={styles.videoDark} aria-hidden="true" />
                       <span className={styles.thumbnailPlay}><Play size={20} fill="currentColor" aria-hidden="true" /></span>
-                      <span className={styles.videoTitle}>{shortVideoTitle(video.title, locale)}</span>
+                      <span className={styles.videoCaption}>
+                        <span className={styles.videoTitle}>{choice === "pump" && video.courseKey
+                          ? reikiText.lessons[video.courseKey].title : shortVideoTitle(video.title, locale)}</span>
+                        {choice === "pump" && video.courseKey ? <span className={styles.videoMetaPills}>
+                          <small className={styles.videoPricePill}>{reikiText.price}</small>
+                          <small className={styles.videoAudioPill}>{reikiText.audio}</small>
+                        </span> : null}
+                      </span>
                     </button>)}
                   </div>
                 ) : <p role="status" className={styles.emptyMessage}>{t.notAvailable}</p>}
