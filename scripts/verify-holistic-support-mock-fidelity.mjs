@@ -12,7 +12,7 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("
 const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
 const evidence = [];
-const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
+const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGN87e3mFCXH4J339cN1NwAlvwXzqWxvIQAAAABJRU5ErkJggg==", "base64");
 for (const browserType of [chromium, webkit]) {
   const browser = await browserType.launch({ headless: true });
   try {
