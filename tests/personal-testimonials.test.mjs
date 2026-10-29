@@ -11,9 +11,7 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   const extra = read("components", "services-studio-extras.tsx");
   const testimonials = read("components", "personal-testimonials.tsx");
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  // The public EN/RU/ES guard narrows locale to PublicLocale, so a legacy
-  // `as Locale` assertion would reject the correct Spanish-safe route.
-  assert.match(services, /<PersonalTestimonials locale=\{locale\} variant="services"/);
+  assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
   // Conversion-first Services intentionally presents the booking action in the first screen.
