@@ -19,7 +19,7 @@
 .customBody{padding:0 11px 12px;border-top:1px solid #e3ede4}
 .customBody>p{margin:11px 0 8px;font-size:12px;color:#637d6c}
 .accentChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.accentChips button{display:flex;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:44px;padding:8px 6px;border:1px solid #cee1d3;border-radius:10px;background:#f8fbf6;color:#345e48;font:750 12px/1.3 inherit;cursor:pointer}
+.accentChips button{display:flex;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:44px;padding:8px 6px;border:1px solid #cee1d3;border-radius:10px;background:#f8fbf6;color:#345e48;font:750 12px/1.3 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
 .accentChips button[aria-pressed=true]{background:#087e5e;border-color:#087e5e;color:#fff}
 .accentChips button:disabled{opacity:.5;cursor:not-allowed}
 .accentChips button svg{flex:none}
