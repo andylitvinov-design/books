@@ -222,6 +222,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     assert.equal(await page.locator("[data-mandala-support-bottom-nav]").count(),1,"exactly one Support dock");
     assert.equal(await page.locator("[data-video-quick-legacy]").count(),0,"no duplicated legacy editor");
     assert.equal(await page.locator("[data-video-quick-section]").count(),6);
+    assert.equal(await page.locator("[data-video-hero-create]").count(),1,"one genuine Create CTA");
     const geometry=await page.evaluate(()=>{
       const rect=q=>document.querySelector(q)?.getBoundingClientRect();
       const header=rect("[data-support-app-header]");
@@ -275,10 +276,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     if(engine==="chromium"&&locale==="ru"&&width===390){
       const hypno=page.locator("[data-hypno-overview]");
       await hypno.locator("[data-hypno-phrases-edit]").click();
+      await page.locator("[data-video-affirmations-details] > summary").click();
       await page.locator("[data-video-goals-toggle]").click();
       assert.equal(await page.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"true");
       await page.locator('[data-video-goal="recovery"]').click();
       await page.locator("[data-video-goals-apply]").click();
+      await page.locator("[data-video-affirmations-custom] > summary").click();
+      await page.locator("[data-video-custom-affirmations]").fill("I choose a kind next step");
+      assert.equal(await page.locator("[data-video-custom-affirmations]").inputValue(),
+        "I choose a kind next step");
     }
 
     await openStep(page,4);

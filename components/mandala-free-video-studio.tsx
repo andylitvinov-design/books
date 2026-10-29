@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
+import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -1918,6 +1919,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
         }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+      <details className={videoStyles.hypnoOptionalWish} data-video-affirmations-details>
+        <summary>{locale==="ru"?"Мои фразы, подбор по тестам и подробные настройки":
+          locale==="es"?"Mis frases, según tests y ajustes detallados":
+          "My phrases, test-based suggestions and detailed settings"}</summary>
+        <MandalaVideoAffirmations locale={locale} theme={theme}
+          settings={affirmations} onChange={setAffirmations} disabled={recording||preparing}/>
+      </details>
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
