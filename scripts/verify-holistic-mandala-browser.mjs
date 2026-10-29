@@ -83,6 +83,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         await quick.waitFor({state:"visible",timeout:12000});
         assert.equal(await quick.locator("[data-video-quick-section]").count(),6);
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
+        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').innerText(),
+          {ru:"Смыслы",en:"Meaning",es:"Sentido"}[locale],
+          "approved sixth topic labels show a separate Meaning choice");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         assert.equal(await quick.locator("[data-video-quick-aspect]").count(),3);
         assert.equal(await quick.locator("[data-video-quick-duration]").count(),4);
@@ -180,7 +183,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"true");
         const activeTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
         assert.match(activeTherapyBackground,/gradient/i,"chosen therapy entry must turn green");
-        await therapyButton.click();
+        // Close from the adjacent in-view exit, not by scrolling thousands
+        // of pixels back to an old toolbar button (flaky WebKit tap target).
+        await page.locator("[data-video-therapy-exit]").click();
         await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
         await page.locator("[data-video-advanced-filters] > summary").click();

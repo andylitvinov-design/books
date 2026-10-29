@@ -654,6 +654,7 @@ function stopJob(job: Job, cancelled: boolean) {
  * mobile mock. Same state, films, native audio and MediaRecorder as below. */
 const quickVideoCopy = {
   ru: {
+    quickThemes:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Здоровье"},
     title:"Создать видео",sub:"Персональное видео с нужной атмосферой, образами и звуком",
     smart:"Умный подбор",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
     wish:"Что я хочу получить или изменить?",image:"2. Моё изображение",
@@ -676,11 +677,13 @@ const quickVideoCopy = {
     noAI:"Бесплатно · на устройстве · без платных AI-рендеров",
     more:"Расширенный редактор, подробные фильтры и предпросмотр",
     therapy:"Создать персональную программу видеотерапии",
+    exitTherapy:"Вернуться к обычному видео",
     loading:"Подготавливаем видеокадры. После загрузки нажмите ещё раз.",
     disclaimer:"Практика для рефлексии, не медицинское лечение.",
     sceneHint:"Обложки показывают сюжет; кадр видео формируется выбранным шаблоном.",
   },
   en: {
+    quickThemes:{energy:"Energy",money:"Money",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Wellbeing"},
     title:"Create video",sub:"Personal video with the right atmosphere, imagery and sound",
     smart:"Smart match",theme:"1. Theme & goal",myGoals:"Choose from my goals",
     wish:"What would I like to gain or change?",image:"2. My imagery",
@@ -703,11 +706,13 @@ const quickVideoCopy = {
     noAI:"Free · on device · no paid AI renders",
     more:"Advanced editor, detailed filters and video preview",
     therapy:"Create a personal video therapy programme",
+    exitTherapy:"Back to regular video",
     loading:"Preparing video frames. Tap again after they load.",
     disclaimer:"A reflective practice, not medical treatment.",
     sceneHint:"Scene covers are illustrative; the selected renderer produces the actual frames.",
   },
   es: {
+    quickThemes:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Objetivos",life:"Sentido",health:"Bienestar"},
     title:"Crear vídeo",sub:"Vídeo personal con imágenes, ambiente y sonido adecuados",
     smart:"Selección inteligente",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
     wish:"¿Qué me gustaría conseguir o cambiar?",image:"2. Mis imágenes",
@@ -730,6 +735,7 @@ const quickVideoCopy = {
     noAI:"Gratis · en tu dispositivo · sin IA de pago",
     more:"Editor avanzado, filtros y vista previa",
     therapy:"Crear un programa personal de videoterapia",
+    exitTherapy:"Volver al vídeo normal",
     loading:"Preparando fotogramas. Toca de nuevo cuando estén listos.",
     disclaimer:"Práctica reflexiva, no tratamiento médico.",
     sceneHint:"Las portadas ilustran el tema; el vídeo utiliza el motor real elegido.",
@@ -1396,7 +1402,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   if(value==="money")setMoneyScene(id as MoneySceneId);
                   else setOtherScene(id as LocalSceneId);
                 }}>
-                <Icon size={18} aria-hidden="true"/><span>{ui.themes[value]}</span>
+                <Icon size={18} aria-hidden="true"/><span>{quick.quickThemes[value]}</span>
               </button>;
             })}
           </div>
@@ -1791,6 +1797,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </section>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
+      <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
+        disabled={recording||preparing}
+        onClick={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}>
+        <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
+      </button>
       <MandalaGuidedCourse locale={locale} theme={theme}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
