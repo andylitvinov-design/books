@@ -258,6 +258,19 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.doesNotMatch(studio,/data-video-theme-toggle|videoStyles\.backgroundChoices/);
 });
 
+test("all three video editor deep links cancel native hash navigation before expanding details", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  for(const [tab,target] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
+    assert.ok(studio.includes(
+      '<a href="#'+target+'" data-video-editor-tab="'+tab+'"\n'+
+      '          onClick={event=>{event.preventDefault();openQuickDetailed("'+target+'");}}>'
+    ),"native hash navigation must not race React disclosure: "+tab);
+  }
+  assert.match(studio,/if\(window\.location\.hash !== "#"\+anchor\)window\.location\.hash="#"\+anchor/);
+  assert.match(studio,/setQuickDetailedOpen\(true\)/);
+  assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
+});
+
 test("mandala header settings actual JSX has an accessible name in all three locales", async () => {
   const source = read("components/holistic-support-mandala-dock.tsx");
   for (const [locale, expected] of [["en", "Settings"], ["ru", "Настройки"], ["es", "Ajustes"]]) {
