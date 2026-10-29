@@ -65,6 +65,15 @@ for(const engine of [chromium,webkit]){
         await guide.locator('[data-support-guide-phase="review"] button').first().click();
         assert.equal(await guide.locator('[data-support-guide-phase="test-invite"]').count(),1,tag+" gentle test offer");
 
+        if(locale==="ru"&&width===390){
+          await guide.locator("[data-guide-talk-first]").click();
+          assert.equal(await guide.locator('[data-support-guide-phase="reflection"]').count(),1,
+            tag+" talk-first option asks an open question");
+          await guide.locator("[data-support-guide-compose] input").fill("Хочу ясности в деньгах");
+          await guide.locator("[data-support-guide-compose] button").click();
+          assert.equal(await guide.locator('[data-support-guide-phase="test-invite"]').count(),1,
+            tag+" free-form answer is acknowledged before options");
+        }
         const tests=guide.locator("[data-guide-open-test-choice]");
         if(await tests.count()){
           await tests.click();
