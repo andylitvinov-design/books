@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {readFileSync} from "node:fs";
-import {suggestPersonalVideoScene,graphemeTrim,captionFromWish,PERSONAL_VIDEO_THEMES} from "../lib/mandala/personal-video-intent.mjs";
+import {suggestPersonalVideoScene,buildFreePromptStoryboard,freeStoryboardFrameAt,FREE_STORYBOARD_VERSION,graphemeTrim,captionFromWish,PERSONAL_VIDEO_THEMES} from "../lib/mandala/personal-video-intent.mjs";
 
 const money=["golden-rain","cosmic-flow","abundance-tree","opportunity-falls","money-magnet",
   "path-to-goals","partners","infinite-flow","golden-shield","abundance-circle","life-gifts","dreams"];
@@ -62,7 +62,7 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/data-video-suggest/);
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
-  assert.match(ui,/maxLength=\{160\}/);
+  assert.match(ui,/maxLength=\{320\}/);
   assert.match(ui,/id="personal-video-result"/);
 });
 
@@ -87,4 +87,70 @@ test("full HD energy, life and wellbeing suggestions remain local and multilingu
   assert.equal(suggest("energy","Мне нужен заряд бодрости",["solar-surge","ocean-pulse"]).sceneId,"solar-surge");
   assert.equal(suggest("life","Я хочу свободу",["wildflower-dance","coastal-freedom"]).sceneId,"coastal-freedom");
   assert.equal(suggest("health","I want a calm pause",["calm-sea","morning-dew"],"en").sceneId,"calm-sea");
+});
+
+
+const story=(prompt,locale="ru",preferredTheme="energy",maxShots=3)=>
+  buildFreePromptStoryboard({prompt,locale,preferredTheme,maxShots});
+
+test("detailed RU scene instructions become an ordered 3-shot movie without a provider",()=>{
+  const x=story("Сначала достойная оплата от клиентов, затем тёплая любовь, потом ясная цель");
+  assert.equal(x.version,FREE_STORYBOARD_VERSION);
+  assert.deepEqual(x.shots.map(s=>s.theme),["money","relationships","goals"]);
+  assert.equal(x.shots[1].sceneId,"heart-light");
+  assert.equal(x.shots[2].sceneId,"guiding-stars");
+  assert.equal(x.matched,true);
+  assert.ok(x.shots.every(s=>s.matched===true));
+  assert.equal(JSON.stringify(x).includes("достойная"),false,"do not retain text or health data");
+});
+
+test("EN/ES instructions safely set format, duration and motion without paid video rendering",()=>{
+  const en=story("Vertical 20 seconds: fair pay, then gentle love, then a clear goal","en","energy");
+  assert.equal(en.options.aspect,"portrait");
+  assert.equal(en.options.duration,20);
+  assert.deepEqual(en.shots.map(s=>s.theme),["money","relationships","goals"]);
+  const es=story("Vídeo horizontal 30 segundos: confianza, luego energía, luego objetivo","es","life");
+  assert.equal(es.options.aspect,"landscape");
+  assert.equal(es.options.duration,30);
+  assert.ok(es.shots.length>=2&&es.shots.length<=3);
+  assert.equal(story("Квадратное динамичное видео 10 сек о цели").options.aspect,"square");
+  assert.equal(story("Квадратное динамичное видео 10 сек о цели").options.duration,10);
+  assert.equal(story("Квадратное динамичное видео 10 сек о цели").options.speed,"dynamic");
+});
+
+test("unknown prompts use one explicitly chosen existing visual fallback, not an invented video",()=>{
+  const x=story("невыразимая загадка", "ru","money");
+  assert.deepEqual(x.shots,[{theme:"money",sceneId:"golden-rain",matched:false}]);
+  assert.equal(x.matched,false);
+  assert.throws(()=>story("test","unknown"),/invalid_video_storyboard/);
+  assert.throws(()=>buildFreePromptStoryboard({prompt:"something",locale:"en",preferredTheme:"money",
+    availableByTheme:{money:["not-a-real-scene"]}}),/no_available_video_scenes/);
+  assert.ok(story("Любовь, затем деньги, потом отдых, после этого новые цели","ru","energy",12).shots.length<=3);
+});
+
+test("one shared deterministic frame timeline spans actual preview and encoded video",()=>{
+  const shots=story("оплата, любовь, ясная цель").shots;
+  assert.equal(shots.length,3);
+  assert.equal(freeStoryboardFrameAt(shots,10,0).index,0);
+  assert.equal(freeStoryboardFrameAt(shots,10,3.4).index,1);
+  assert.equal(freeStoryboardFrameAt(shots,10,7.1).index,2);
+  assert.ok(freeStoryboardFrameAt(shots,10,3.33).shade>.6,
+    "actual scene transition fades through dark without requiring three HD decoders");
+  assert.equal(freeStoryboardFrameAt(shots,10,10).index,2);
+  assert.throws(()=>freeStoryboardFrameAt([],10,1),/invalid_video_storyboard_timeline/);
+});
+
+test("no duplicate editor: the same local recorder paints the storyboard in preview and export",()=>{
+  const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(ui,/data-video-storyboard-build/);
+  assert.match(ui,/data-video-storyboard-shot/);
+  assert.match(ui,/data-video-storyboard-clear/);
+  assert.match(ui,/paintFreeStoryboard\(ctx,image,freeStoryboard,0,duration/);
+  assert.match(ui,/paintFreeStoryboard\(ctx,image,freeStoryboard,Math\.min\(duration/);
+  assert.match(ui,/canvas\.captureStream\(framesPerSecond\)/);
+  assert.match(ui,/const \[freeStoryboard,setFreeStoryboard\] = useState/);
+  assert.match(ui,/setFreeStoryboard\(null\)/);
+  assert.match(ui,/data-mandala-video-download/);
+  assert.match(ui,/data-video-photo-consent/);
+  assert.match(ui,/maxLength=\{320\}/);
 });
