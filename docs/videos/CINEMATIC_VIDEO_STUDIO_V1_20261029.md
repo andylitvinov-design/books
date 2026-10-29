@@ -19,8 +19,8 @@ A client can describe a desired visual journey, adjust four compact fields, choo
 ### Client UX (same editor, not new route)
 
 - A small **Cinematic Director** card expands inside the existing editor after optional audio/affirmation controls.
-- Four editable rows (Topic, Main challenge, Desired change, Visual style) plus optional "Avoid these images"; one phone screen can show the collapsed summary, with a single accessible edit sheet.
-- Current topic is synchronized when entering. Each row opens the same mobile sheet; full-height screen is not required on a short 320px phone.
+- **Four main rows**: Topic, Main challenge, Desired change, **My profile** (not connected by default). Visual style and excluded imagery live in a secondary advanced disclosure. One compact summary, one reusable accessible edit sheet.
+- Current topic is synchronized when entering. My profile opens a separate **unchecked** permission; only a user click triggers first-party `GET /api/app/bootstrap?view=portrait`, validates source through existing `buildPsychPortrait` and `suggestGuidedGoalsFromProfile`, then presents optional themes to accept manually. No scores/gender/diagnoses are exposed in provider prompts, URLs, JSON export, logging or the new video storage. Revocation invalidates in-flight reads. Sign-in/refresh links reuse current My House/My Tests. Each row opens the same mobile sheet; short 320px phones can scroll naturally.
 - Format 16:9 / 9:16 / 1:1 and 20/30/60 s. Button `Create storyboard` generates four **distinct** and sequential local scenes. A screenshot/card is NOT a rendered movie.
 - `Use as free moving montage` configures the existing recorder: local Canvas draws scenes in the correct order, with a mild dark dissolve on cuts. Client must separately tap the existing **Create video** action. User photo, narration, ambient audio, consent and affirmations stay independently controlled; changing manual template/duration resets the planned montage.
 - EN/RU/ES and keyboard focus/reduced motion/mobile widths 320–430px. Nothing starts on mount, auto-submits or auto-plays.
