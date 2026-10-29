@@ -582,7 +582,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const ui = studioCopy[locale];
   const supportUi = supportDesignCopy[locale];
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
-  const [scoresTouched,setScoresTouched] = useState(false);
+  const [touchedScores,setTouchedScores] = useState<Partial<Record<(typeof checkOrder)[number],number>>>({});
   const [theme, setTheme] = useState<VideoTheme>("energy");
   const [videoCategory, setVideoCategory] = useState<VideoCategory>("energy");
   const effect: Effect = "glow";
@@ -1069,7 +1069,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <Icon size={16} aria-hidden="true"/>
                   <input type="range" min={1} max={10} step={1} value={scores[key]}
                     aria-label={ui.themes[key]}
-                    onChange={event=>{setScoresTouched(true);setScores(prev=>({...prev,[key]:Number(event.currentTarget.value)}));}}/>
+                    onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
                   <output>{scores[key]}</output>
                 </span>
               </label>;
@@ -1344,7 +1344,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         onChange={setAffirmations} disabled={recording||preparing}/>
 
       <MandalaGuidedCourse locale={locale} theme={theme}
-        selfRatings={scoresTouched ? scores : {}} disabled={recording||preparing}
+        selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
           // This is preparation, NOT a render or a claimed downloadable video.
           selectCategory(session.theme);
