@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
+import { HolisticAgentMemoryPanel, type MyAgentMemory } from "@/components/holistic-agent-memory-panel";
 import styles from "./holistic-language-conversation.module.css";
 
 type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru"; durationMinutes?: number };
@@ -24,7 +25,7 @@ const locales = {
     ready:"Local model is ready", unavailable:"This device cannot run the local model. The guide still works.",
     pilot:"Optional local conversation: after download, recent messages are processed only on your device, not sent to a chat API. The model does not access your private profile.",
     local:"Local AI reply", stop:"Turn off local AI", stopAnswer:"Stop reply", writing:"Writing a response on your device…", error:"Local conversation failed; the checked guidance remains.",
-    modelNotice:"The model runtime and weights are downloaded from external hosts only after your click; no ChatGPT account or token is needed.",
+    modelNotice:"The model runtime and weights are downloaded from external hosts only after your click; no ChatGPT account or token is needed. Saved preferences are only added when you explicitly turn on their use.",
     publicAudio:"I found published Reiki course introduction audio. This is not a standalone guided meditation.",
   },
   ru: {
@@ -37,7 +38,7 @@ const locales = {
     ready:"Локальная модель готова", unavailable:"На этом устройстве модель не запускается. Обычный проводник продолжит работать.",
     pilot:"Добровольный локальный диалог: после загрузки модель обрабатывает последние реплики только на вашем устройстве, не отправляя их в чат-API. Личный профиль она не читает.",
     local:"Ответ локального AI", stop:"Выключить локальный AI", stopAnswer:"Остановить ответ", writing:"Формулирую ответ на вашем устройстве…", error:"Локальный диалог недоступен; проверенная подсказка сохранена.",
-    modelNotice:"Программный модуль и веса загружаются с внешних хостов только по вашему нажатию. Аккаунт ChatGPT и токены не требуются.",
+    modelNotice:"Код и веса модели загружаются с внешних хостов по нажатию. Токены ChatGPT не требуются. Сохранённые пожелания используются только после отдельного разрешения в панели памяти.",
     publicAudio:"Нашлись опубликованные вступительные аудио курса Reiki. Это не самостоятельная медитация.",
   },
   es: {
@@ -50,7 +51,7 @@ const locales = {
     ready:"Modelo local listo", unavailable:"Este dispositivo no admite el modelo local. La guía sigue funcionando.",
     pilot:"Diálogo local opcional: tras la descarga, el modelo procesa los últimos mensajes solo en tu dispositivo, sin enviarlos a una API. No accede a tu perfil privado.",
     local:"Respuesta de IA local", stop:"Apagar IA local", stopAnswer:"Detener respuesta", writing:"Redactando una respuesta en tu dispositivo…", error:"Falló el diálogo local; se conserva la guía verificada.",
-    modelNotice:"El módulo y sus pesos se descargan de servidores externos solo si lo autorizas. No se necesita ChatGPT ni tokens.",
+    modelNotice:"El módulo y sus pesos se descargan de servidores externos solo si lo autorizas. No necesitas ChatGPT. Los recuerdos se usan solo con tu permiso adicional.",
     publicAudio:"Se encontraron introducciones de audio publicadas del curso Reiki. No son meditaciones guiadas independientes.",
   },
 } as const;
@@ -72,6 +73,7 @@ export function HolisticLanguageConversation({
   const [modelMode,setModelMode] = useState<"off"|"loading"|"ready"|"failed">("off");
   const [modelProgress,setModelProgress] = useState(0);
   const [generating,setGenerating] = useState(false);
+  const [savedMemory,setSavedMemory] = useState<MyAgentMemory[]>([]);
   const [modelError,setModelError] = useState("");
   const modelWorker=useRef<Worker | null>(null);
   const requestCounter=useRef(0);
@@ -159,7 +161,7 @@ export function HolisticLanguageConversation({
     const localRequestId=++requestCounter.current;
     const localContext=prepareLocalConversation({
       history:entries.map(entry=>({role:entry.role,text:entry.generated||entry.text})),
-      currentMessage:value,decision:result,locale,
+      currentMessage:value,decision:result,locale,memory:savedMemory,
     });
     setState(result.state);
     setEntries(prev=>[...prev,
@@ -254,6 +256,7 @@ export function HolisticLanguageConversation({
         </button>
       </div>
     </form>
+    <HolisticAgentMemoryPanel locale={locale} onUse={setSavedMemory}/>
     {modelExperiment ? <div className={styles.experiment} data-local-model-experiment>
       <p><Volume2 size={16} aria-hidden="true"/>{t.gpu}</p>
       <small>{t.pilot} {t.modelNotice}</small>
