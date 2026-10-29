@@ -45,8 +45,8 @@ test("same portrait on left, persistent scrolling WhatsApp-like messages on righ
   assert.match(guide, /role="log" aria-label=\{t\.title\} aria-live="polite"/);
   assert.match(guide, /el\.scrollTop = el\.scrollHeight/);
   assert.match(guide, /\{ role: "user", text: answer \}, \{ role: "guide", text: reply \}/);
-  assert.match(css, /\.dialogue \{ display: grid; grid-template-columns: 100px minmax\(0,1fr\)/);
-  assert.match(css, /\.thread \{ display: flex; flex-direction: column/);
+  assert.match(css, /\.dialogue\s*\{\s*display:\s*grid; grid-template-columns:\s*90px minmax\(0, 1fr\)/);
+  assert.match(css, /\.thread\s*\{\s*display:\s*flex; flex-direction: column/);
   assert.match(css, /overflow-y: auto; overflow-x: hidden/);
   assert.match(css, /\.bubbleUser\s*\{\s*animation: guide-message-in/);
   assert.match(css, /\.bubbleGuide\s*\{\s*animation: guide-message-in/);
@@ -103,15 +103,15 @@ test("recommendation UX keeps one primary CTA, relevant alternatives, and honest
   assert.match(guide, /data-support-guide-primary-title/);
   assert.match(guide, /data-support-guide-context/);
   assert.match(guide, /data-support-guide-time-preference/);
-  assert.match(guide, /t\\.ux\\.benefit\\[format\\]/);
-  assert.match(guide, /t\\.ux\\.durationWarning/);
-  assert.match(guide, /const alternativeOrder: Format\\[\\] = topic === "money"/);
-  assert.match(guide, /item\\.id !== "meditation" \\|\\| !!selectedVideo/);
-  assert.match(guide, /t\\.ux\\.firstAction\\[format\\]/);
-  assert.match(guide, /className=\\{styles\\.progressTrack\\}/);
-  assert.match(css, /scroll-margin-top:\\s*calc\\(108px \\+ env\\(safe-area-inset-top/);
-  assert.match(css, /\\.alternative\\s*\\{\\s*display: grid; grid-template-columns:/);
-  assert.doesNotMatch(guide, /t\\.formatLabels\\[format\\] — \\{need\\}/);
+  assert.match(guide, /t\.ux\.benefit\[format\]/);
+  assert.match(guide, /t\.ux\.durationWarning/);
+  assert.match(guide, /const alternativeOrder: Format\[\] = topic === "money"/);
+  assert.match(guide, /item\.id !== "meditation" \|\| !!selectedVideo/);
+  assert.match(guide, /t\.ux\.firstAction\[format\]/);
+  assert.match(guide, /className=\{styles\.progressTrack\}/);
+  assert.match(css, /scroll-margin-top:\s*calc\(108px \+ env\(safe-area-inset-top/);
+  assert.match(css, /\.alternative\s*\{\s*display: grid; grid-template-columns:/);
+  assert.doesNotMatch(guide, /t\.formatLabels\[format\] — \{need\}/);
   for (const phrase of [
     "An enquiry is not a booking", "Заявка не означает запись", "Una solicitud no es una reserva",
     "Timing and terms must be confirmed", "Время и условия согласуются отдельно",
