@@ -388,3 +388,152 @@
  .reikiChecks,.reikiLine{grid-template-columns:1fr}
  .reikiKindButtons button{font-size:.66rem}
 }
+
+/* 29 Oct approved service studio: photographic three-screen creator with the
+   actual existing save/revision/upload controls. No mock price or calendar. */
+.galleryStrip{
+  display:flex;align-items:stretch;gap:8px;min-width:0;padding:11px 12px;
+  border-top:1px solid #e9e3d9;background:#fffdf8
+}
+.galleryStrip>button{
+  display:grid;place-items:center;flex:0 1 70px;min-width:0;max-width:70px;
+  aspect-ratio:1;border:1px solid #e4e3d8;border-radius:12px;overflow:hidden;
+  background:#f7f3ec;color:#28745f;cursor:pointer
+}
+.galleryStrip>button img{width:100%;height:100%;object-fit:cover}
+.galleryStrip .selectedThumb{border:2px solid #009f80;box-shadow:0 0 0 2px #d7f1e5}
+.galleryStrip .galleryAdd{border-style:dashed;background:#fcfaf5;font:850 24px/1 system-ui,sans-serif}
+.galleryStrip .galleryAdd span{display:none}
+.galleryStrip button:disabled{opacity:.55;cursor:wait}
+.introTipCard{
+  display:flex;gap:10px;align-items:flex-start;margin:5px 0;
+  padding:12px;border:1px solid #f6e9c9;border-radius:12px;
+  background:linear-gradient(105deg,#fff4dc,#fff8ec);color:#775425
+}
+.introTipCard>svg{flex:none;margin-top:1px;color:#bd831d}
+.introTipCard>span{display:grid;gap:3px}
+.introTipCard strong{font:800 .78rem/1.25 system-ui,sans-serif}
+.introTipCard small{font:530 .74rem/1.4 system-ui,sans-serif}
+.durationGroup{display:grid;gap:8px;margin:0;padding:0;border:0;min-width:0}
+.durationGroup legend{padding:0 0 8px;color:#4c453d;font:780 .77rem/1.35 system-ui,sans-serif}
+.durationChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.durationChoices>button{min-height:44px;padding:8px 5px;border:1px solid #e2d9ca;
+  border-radius:10px;background:#fffcf7;color:#675f54;
+  font:730 .74rem/1.25 system-ui,sans-serif;cursor:pointer}
+.durationChoices>button[aria-pressed="true"]{background:#008d72;color:#fff;border-color:#008d72}
+.durationChoices>button:disabled{opacity:.55;cursor:wait}
+.bookingNotice{display:flex;align-items:flex-start;gap:9px;margin:0!important;
+  padding:12px;border:1px solid #d9e7e1;border-radius:12px;background:#f1f8f4;
+  color:#436758;font:550 .74rem/1.45 system-ui,sans-serif!important}
+.bookingNotice svg{flex:none;color:#27816a;margin-top:1px}
+.detailRows{display:grid;gap:9px}
+.detailRows .advanced{background:#fffdf9;border:1px solid #e8ded0;border-radius:13px}
+.detailRows .advanced>summary,.detailRows .detailLink{
+  display:flex;align-items:center;gap:12px;min-height:54px;padding:12px 14px;
+  color:#285d4e;font:740 .82rem/1.35 system-ui,sans-serif
+}
+.detailRows .advanced>summary>svg:first-child,.detailRows .detailLink>svg:first-child{flex:none;color:#16846d}
+.detailRows .advanced>summary>span,.detailRows .detailLink>span{flex:1;min-width:0}
+.detailRows .advanced>summary>svg:last-child{margin-left:auto}
+.detailRows .detailLink{
+  width:100%;text-align:left;background:#fffdf9;border:1px solid #e8ded0;
+  border-radius:13px;cursor:pointer
+}
+.detailRows .detailLink>svg:last-child{margin-left:auto}
+.detailRows .detailLink:disabled{opacity:.58;cursor:wait}
+.detailRows .advanced[open]>summary{background:#eff7f0;color:#176a59}
+.detailRows .advancedContent{padding:14px}
+.detailRows :is(summary,button):focus-visible{outline:3px solid #23836b;outline-offset:2px}
+@media(max-width:650px){
+ .quickForm{padding-bottom:calc(158px + env(safe-area-inset-bottom,0px))}
+ .stageTabs{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+   gap:0;margin:2px 0 6px;padding:5px 0 9px}
+ .stageTabs:before{position:absolute;content:"";height:2px;background:#d3d6cc;
+   top:20px;left:16%;right:16%;pointer-events:none}
+ .stageTabs button,.stageTabs button[aria-pressed="true"]{
+   position:relative;display:flex;flex-direction:column;gap:6px;justify-content:flex-start;
+   min-height:56px;padding:3px 2px!important;border:0!important;box-shadow:none!important;
+   background:transparent!important;color:#6b6c66!important
+ }
+ .stageTabs button span{display:grid;place-items:center;flex:none;width:29px;height:29px;
+   border-radius:50%;background:#c9c9c3;color:#fff;font-size:13px}
+ .stageTabs button[aria-pressed="true"] span{background:#007c6c;color:#fff}
+ .stageTabs button[aria-pressed="true"] strong{color:#007665}
+ .stageTabs button strong{font:760 clamp(10px,2.8vw,12px)/1.22 system-ui,sans-serif!important;
+   text-align:center;overflow:visible;white-space:normal;overflow-wrap:break-word}
+ .serviceCanvas{display:grid;grid-template-columns:minmax(0,1fr);
+   background:#fffdf9;border-radius:19px;border-color:#e8e2d8}
+ .photoCanvas,.photoCanvas>img,.emptyPhoto{min-height:265px;max-height:320px}
+ .photoCanvas{height:clamp(265px,75vw,320px);aspect-ratio:auto;border-radius:0}
+ .photoCanvas>img,.emptyPhoto{height:100%;width:100%;object-fit:cover}
+ .emptyPhoto{background-position:center}
+ .photoButton{bottom:12px;right:12px;min-height:46px;padding:8px 13px;font-size:12px}
+ .galleryStrip{grid-row:2;gap:7px;padding:10px 12px}
+ .galleryStrip>button{flex:1 1 0;max-width:70px;min-width:0;aspect-ratio:1}
+ .contentCanvas{grid-row:3;padding:15px 14px 16px;gap:13px}
+ .visualTitle,.visualSummary{gap:6px}
+ .visualTitle>span,.visualSummary>span{font-size:12px;color:#4c5c51}
+ .visualTitle input{height:49px;min-height:49px!important;padding:10px 11px!important;
+   border:1px solid #e2d9cb!important;border-radius:12px!important;background:#fffefc!important;
+   font:700 16px/1.28 system-ui,sans-serif!important;text-overflow:clip}
+ .visualSummary textarea{min-height:110px!important;height:110px!important;
+   padding:12px!important;border:1px solid #e3ddcf!important;
+   border-radius:12px!important;background:#fffefc!important;
+   font:500 16px/1.42 system-ui,sans-serif!important}
+ .contentCanvas .field{gap:7px;font-size:12px}
+ .contentCanvas .field select{font-size:16px!important;min-height:45px}
+ .contentCanvas .goalField legend{margin-bottom:8px;font-size:12px}
+ .contentCanvas .goalChips{gap:7px}
+ .contentCanvas .goal{padding:9px 11px;background:#f3f0eb;border:1px solid #e6e2da}
+ .contentCanvas .goal:has(input:checked){background:#ddf2e8;border-color:#a9d9c3}
+ .contentCanvas .goal input{width:17px;height:17px}
+ .contentCanvas .previewMeta{margin-top:2px}
+ .bookingCard{padding:15px;gap:15px;border-radius:18px;background:#fffdf9}
+ .formatTiles{gap:8px}
+ .formatTiles>button{min-height:90px;display:flex;flex-direction:column;
+   align-items:center;justify-content:center;gap:10px;padding:10px 5px;
+   border-radius:12px;background:#fffcf7;color:#596158;font-size:12px}
+ .formatTiles>button svg{color:#247e68}
+ .formatTiles>button[aria-pressed="true"]{border-color:#009c80;
+   background:#e6f5ec;box-shadow:inset 0 0 0 1px #80cdb4;color:#126c58}
+ .durationChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .durationChoices>button:last-child{grid-column:1/2}
+ .durationChoices>button{font-size:12px}
+ .stagePanel[data-service-slide="details"]{gap:13px}
+ .detailRows .advanced>summary,.detailRows .detailLink{min-height:54px;
+   padding:13px 14px;font-size:12px}
+ .footerControls{grid-template-columns:44px minmax(0,1fr);gap:7px;
+   left:max(9px,env(safe-area-inset-left,0px));
+   right:max(9px,env(safe-area-inset-right,0px));
+   padding:9px;border-radius:18px;background:#fffdfaf5}
+ .footerControls .stepNavigation>button:first-child{
+   grid-column:1;grid-row:1;min-width:44px
+ }
+ .footerControls .stepNavigation>button:nth-of-type(2){
+   grid-column:2;grid-row:1;min-height:49px!important;
+   background:linear-gradient(110deg,#00a580,#007b67);border-color:#007b67;color:#fff
+ }
+ .footerControls .actions>.draft{
+   grid-column:1/-1;grid-row:2;min-height:44px!important;background:#fffdf9!important;
+   border:1px solid #d9e1d7!important;color:#17735e!important
+ }
+ .footerControls .actions>.submit{
+   grid-column:2;grid-row:1;min-height:49px!important;
+   background:linear-gradient(110deg,#00a580,#007b67)!important
+ }
+ .footerControls:has(.stepNavigation>button:first-child:disabled)
+   .stepNavigation>button:nth-of-type(2){grid-column:1/-1}
+ .footerControls:has(.stepNavigation>button:first-child:disabled)
+   .actions>.draft{grid-column:1/-1}
+ .footerControls .actions>.pause{grid-column:1/-1;grid-row:3}
+ .quickForm:has(:is(input,textarea,select):focus) .footerControls{position:fixed}
+ .quickForm :is(input,textarea,select){scroll-margin-bottom:calc(160px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:355px){
+ .stageTabs button{min-height:58px}
+ .stageTabs button strong{font-size:10px!important}
+ .formatTiles>button{font-size:10px;min-height:85px}
+ .durationChoices{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .durationChoices>button:last-child{grid-column:auto}
+ .footerControls{grid-template-columns:42px minmax(0,1fr)}
+}

@@ -56,3 +56,32 @@ No new database, account state, CRM, pixels, messaging, payment claims, addition
 - [ ] Real Google signed-in Safari on physical iPhone → service editor → save private draft/reload/back, separately from synthetic QA.
 
 **No pixel-perfect claim from different page types.** Compare same-view/same-size renders only; personal owner screenshots are not included in public GitHub artifacts.
+
+---
+
+## Owner-approved three-screen services design · 29 Oct, 17:27 Toronto
+
+**Approval:** user explicitly approved the preceding generated three-column **Russian** mobile design image and requested implementation in the existing Holistic House service page. The image is a visual reference **in the owner chat**, not a data fixture, uploaded service photo, production screenshot, or file committed to this repository.
+
+### Page identity / actual surface
+- Overview: `/ru/app/practice?panel=services`, **authorized practitioner**, list of the master's `app.service_offerings`; public `/ru/practice` dashboard remains separate and keeps its existing five-tab dock.
+- Composer: `/ru/app/practice?panel=services&create=1&starter=session` or **Edit** from a real service card; same authenticated `MyServicesDashboard` → `SimpleServiceEditor` → owner API, no duplicate editor.
+- EN and ES mirror the service copy; where protected ES cabinet routing is not available, existing authenticated EN cabinet remains the safe fallback, never a fake /es/app route.
+
+### Visual landmarks, 320 / 354 / 390 / 430 CSS pixels
+1. **My Services:** compact cream practitioner heading + green full-width "Add new service" action; actual-count pill filters All / Active / In review / Drafts; optional compact filter; full-width photograph-led cards with first-party category art **only when the owner has uploaded no photo**, real title + short description, format, duration, currency/price and moderation badge, **Edit** for every owned service, **View** only for genuinely published `practitionerSlug/slug`.
+2. **Presentation:** horizontal progress circles for three stages, large 265–320px scenic cover (actual uploaded marketing photo wins; otherwise editor-only category art), clickable thumbnail strip from the owner's own uploaded images plus real Add control, title, short description, gentle editorial tip, editable category and client-goal chips.
+3. **Format & price:** accessible three illustrated selection tiles (online / in-person / both); 30 / 60 / 90 minutes or custom 5–1440, mandatory location for offline/hybrid, service type, verified free / fixed / from / on-request mode, actual amount and currency EUR/CAD/USD, and a preview from entered values only.
+4. **Details:** one-row accordion sections for long description, client benefits, methods/FAQ, gallery navigation, real optional audio/video field and languages/contacts; mobile full-width emerald Continue / Submit and white Draft bar above safe area. Previous stage remains reachable through the arrow and stage steps.
+5. **No false commerce:** mock image's €100/€120/€150 are illustrative, never seeded; no fake heart/favorites, discount toggle, editable schedule/free-slot picker or "paid/confirmed" claim. Availability/calendar requires a separate real scheduling source, not an image-only button. 20% fee only after independently verified paid orders; no charging or lead is created by preview.
+
+### Code and behavior mapping
+- `components/app/my-services-dashboard.jsx` and module CSS: existing authorized list, status filters, public links, edit handlers; keep unsaved-change confirmation and stable service ids.
+- `components/app/simple-service-editor.jsx` and module CSS: existing 3-step state, `makePayload`, `getServiceEditorIssue`, `PracticePhotoUpload`, `PracticeVideoField`, Save Draft and Submit/Moderation; goals/category relocated to Presentation and booking duration displayed as actual segmented controls.
+- `scripts/verify-practice-post-google-browser.mjs`: production-mode Next React hydration and pointer events, synthetic authenticated service list and real three-step editor at iPhone widths, no horizontal overflow, visible photo and footer geometry; no seeded customer data and no mocked send/payment.
+- Owners' private real-photo upload and saved/reload/Submit provider E2E **cannot be certified from synthetic Playwright fixtures**.
+
+### Release gate
+[ ] exact new HEAD CI: focused contract/unit + lint + TypeScript + production Next build + WebKit/Chromium actual overview and editor behavior, actionlint; [ ] visually inspect safe synthetic same-view screenshots; [ ] review existing open PR #2516 and production merge base/diff before merge; [ ] Vercel production READY exact merge SHA and canonical domain; [ ] owner iPhone Safari Google sign-in → real uploaded photo → saved draft/reload → moderation + published public view; no fake paid transactions.
+
+**Reference rationale:** the mock's visual rhythm is adopted, but its placeholder prices and unimplemented availability, discounts and favorites are intentionally not copied as working controls.
