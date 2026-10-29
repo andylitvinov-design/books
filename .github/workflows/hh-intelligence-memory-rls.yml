@@ -1,0 +1,43 @@
+name: Intelligence memory isolation
+on:
+  pull_request:
+    branches: ['codex/public-book-library', 'codex/hh-intelligence-*']
+    paths:
+      - 'supabase/migrations/20261029231000_hh_intelligence_feedback_memory.sql'
+      - 'tests/intelligence-memory-rls.integration.mjs'
+      - '.github/workflows/hh-intelligence-memory-rls.yml'
+permissions:
+  contents: read
+jobs:
+  memory-owner-rls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_APP_ENABLED: 'true'
+      HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_SUPABASE_URL: http://127.0.0.1:54329
+      HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3187
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
