@@ -496,13 +496,13 @@ export function HolisticSupportInlineGuide({
 
   const allowed=formats.filter(row=>!goalSelection ||
     (goalSelection.recommendationFormats??formats.map(x=>x.filter)).includes(row.filter as never));
-  const testCards=(guideTests[topic]??[]).filter(item=>item &&
+  const testCards=allowed.some(item=>item.id==="tests")?(guideTests[topic]??[]).filter(item=>item &&
     /^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key) &&
     /^\/(?:en|ru)\/client\?startTests=[a-z0-9%-]+$/.test(item.href) &&
-    Number.isFinite(item.durationMinutes)&&item.durationMinutes>0&&item.durationMinutes<=3).slice(0,2);
+    Number.isFinite(item.durationMinutes)&&item.durationMinutes>0&&item.durationMinutes<=3).slice(0,2):[];
   const mediaCandidates=(() => {
-    const matches=videos.filter(v=>/^[A-Za-z0-9_-]{11}$/.test(v.id) &&
-      videoThemes[topic].some(tag=>v.topics.includes(tag)));
+    const matches=allowed.some(item=>item.id==="meditation")?videos.filter(v=>/^[A-Za-z0-9_-]{11}$/.test(v.id) &&
+      videoThemes[topic].some(tag=>v.topics.includes(tag))):[];
     const first=topic===goalSelection?.sector&&preferredVideo&&
       /^[A-Za-z0-9_-]{11}$/.test(preferredVideo.id)&&matches.some(v=>v.id===preferredVideo.id)
         ? [preferredVideo,...matches] : matches;
@@ -526,7 +526,7 @@ export function HolisticSupportInlineGuide({
   }
   function enterTopic(next:GoalSector,answer:string=t.areas[next]) {
     setTopic(next);setSelectedTest(null);setSelectedVideoId(null);
-    const availableForTopic=(guideTests[next]??[]).some(item=>item&&/^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key));
+    const availableForTopic=allowed.some(item=>item.id==="tests")&&(guideTests[next]??[]).some(item=>item&&/^[a-z0-9][a-z0-9-]{1,95}$/.test(item.key));
     say(answer,availableForTopic?journey.inviteTest:journey.inviteTestEmpty,"test-invite");
   }
   function acceptTopic() {
@@ -700,7 +700,7 @@ export function HolisticSupportInlineGuide({
           <button type="button" onClick={showTests}>{journey.anotherTest}</button>
           <button type="button" onClick={()=>goPractice(journey.skipTest)}>{journey.skipTest}</button>
         </div> : phase==="practice-invite" ? <div className={styles.options}>
-          <button type="button" className={styles.primary} data-guide-go-meditations onClick={askMediaTime}>{journey.meditation}</button>
+          {allowed.some(x=>x.id==="meditation")?<button type="button" className={styles.primary} data-guide-go-meditations onClick={askMediaTime}>{journey.meditation}</button>:null}
           <button type="button" data-guide-short-practice onClick={startExercise}>{journey.shortPractice}</button>
           <button type="button" onClick={()=>pathPrompt(journey.other)}>{journey.other}</button>
         </div> : phase==="time" ? <div className={styles.options}>
