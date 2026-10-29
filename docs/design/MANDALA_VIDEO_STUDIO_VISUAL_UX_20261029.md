@@ -80,3 +80,37 @@ Owner follow-up: after automated release gates, compare an actual iPhone Safari 
 - Editing settings changes the live Canvas/MediaRecorder inputs; the CTA neither persists a file nor triggers paid rendering. Actual recording/export remains a separate explicitly clicked **Create video** action with existing photo/audio rights.
 - Screen-reader navigation landmarks use semantic nav, text labels, and actual anchor targets; focus ring, 44px targets, reduced-motion scrolling, 320–430px three-item nav and EN/RU/ES retained.
 - Regression coverage: structural assertions plus Chromium/WebKit public guest click/scroll/play contract. Real iPhone Safari and visual overlay remain release gates, not inferred from source tests.
+
+## Owner refinement: minimal player + two checkboxes (29 October)
+
+**Supersedes the earlier hero specification**: do not show format, duration,
+motion, scene title, helper paragraphs or the Create button *inside* the moving
+image. Those controls were explicitly removed from the hero, not from the editor.
+
+- `/{en,ru,es}/holistic-support/mandala`, guest/local video editor (same
+  route, role and state as screenshot). Two independent opt-ins in one row
+  immediately above the video: **Своё фото / цель** (unchecked by default;
+  small native photo picker link) and **Аффирмации** (unchecked by default;
+  small jump to the existing Hypnoaffirmations module). Both use the real
+  existing `backgroundOnly` / `AffirmationSettings.enabled` state.
+- Compact landscape visual (16:9, approx. 160–255 CSS px tall on 320–430px
+  phones), with a **single central Play/Pause** button. The local Canvas,
+  first-party real moving footage and user photo remain the image, with
+  no extra descriptive text or in-frame filters. Default on-film caption
+  is none, but optional authored captions and opt-in affirmations still work.
+- Immediately below: three existing navigable Design, Audio and Affirmations
+  links, plus a distinct **Create video free** (local export) button. Format,
+  style, animation speed and duration remain inside a two-column advanced
+  filter disclosure, connected to the same recorder state.
+- An additional cream/emerald banner links to the **existing** optional
+  `MandalaGuidedCourse` on the same page: **Создать персональную программу
+  видеотерапии**. It switches to Video therapy mode and scrolls to the
+  eight-session planning UI; it does not generate eight videos, provide
+  treatment, charge a card or persist any private health/test data.
+  The first scene can be generated for free, seven others are previews.
+- Mobile contract covers 320/390/430 RU, 390 EN/ES in Chromium/WebKit:
+  no select/text inside hero, one central play, checkbox mirroring,
+  output-format retention and therapy planner availability.
+  Actual screenshots/overlay and physical iPhone browser QA still required.
+
+Status: Implemented in existing PR #2510, not merged/live yet at this document update.
