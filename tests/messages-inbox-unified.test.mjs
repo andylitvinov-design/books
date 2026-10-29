@@ -71,7 +71,10 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
-  assert.equal((nav.match(/id: '/g)||[]).length,6)
+  // Desktop Account navigation gained the approved My Progress destination.
+  // The iPhone dock still has four links plus its separate Home anchor.
+  assert.equal((nav.match(/id: '/g)||[]).length,7)
+  assert.match(nav,/id: 'progress'/)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
   assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
