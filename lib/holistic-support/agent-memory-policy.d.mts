@@ -6,3 +6,4 @@ export type AgentPreference={kind:AgentMemoryKind;value:string};
 export function validateMemoryPreference(kind:string,value:unknown):string|null;
 export function approvedMemoryForLocalPrompt(items:unknown):AgentPreference[];
 export function applyAgentMemoryForTurn(previous:LanguageState,memory:unknown):LanguageState;
+export function proposeAgentMemoryPreference(message:unknown):AgentPreference|null;
