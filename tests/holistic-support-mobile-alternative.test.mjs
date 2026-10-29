@@ -369,10 +369,13 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
     assert.ok(gallery.includes(key + ":"), "real intent " + key);
     assert.ok(gallery.includes(method), "practice label " + method);
   }
-  for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
+  for (const title of ["Поддержка энергии", "Поддержка любви", "Поддержка цели", "Поддержка сознания"]) {
     assert.ok(gallery.includes(title), title);
   }
-  assert.match(gallery, /const supportedMethods = kind === "healing" && reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\] : null/);
+  assert.match(gallery, /const supportedMethods = kind !== "healing" \? null/);
+  assert.match(gallery, /reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\]/);
+  assert.doesNotMatch(gallery, /<small>\{option\.method\}<\/small>/);
+  assert.match(gallery, /<strong>\{option\.label\}<\/strong>/);
   assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
