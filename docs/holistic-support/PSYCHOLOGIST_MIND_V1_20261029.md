@@ -133,3 +133,5 @@ const turn = consultPsychologistMind({
 **Методологические ориентиры:** NICE NG116, VA/DoD PTSD CPG 2023, SAMHSA trauma-informed care, методические материалы KIP/DGKIP. Решение о клинической применимости всегда принимает квалифицированный специалист. Разработка кода сама по себе не устанавливает клиническую эффективность.
 
 Дополнительно диалоговый модуль распознаёт явные просьбы остановиться, сообщения «стало хуже», неопределённость и вопрос «почему?». При stop он возвращает client_paused, при ухудшении — paused_for_review; упражнение не запускается автоматически.
+
+**Уточнение practitioner draft:** для отдельных сессий выводятся clinicianDiscussionIds (например, kip_clinical, psychodynamic_interpretation), но они не попадают в выполняемые methodIds; clinicianMethodsRunnableByAI=false. Для trauma_support выдаётся отдельный список specialistDiscussionOptions (CPT/EMDR/exposure) **без привязки к сессиям**: выбор требует клинической оценки, самостоятельная травма-фокусированная процедура не запускается.
