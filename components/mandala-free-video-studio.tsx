@@ -738,6 +738,14 @@ const quickVideoCopy = {
 const quickStylePosters = [
   "mountain-air","golden-harvest","desert-light","morning-dew","gentle-falls","solar-surge",
 ] as const;
+const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
+  energy:["mountain-air","solar-surge","desert-light","sunbeam-flow","river-power","sun-flight"],
+  money:["prosperity-coast","golden-harvest","cosmic-flow","abundance-circle","opportunity-falls","radiant-portal"],
+  relationships:["blossom-garden","heart-light","warm-connection","two-circles","warm-connection","heart-light"],
+  goals:["light-path","open-door","guiding-stars","meaning-tree","light-path","open-door"],
+  life:["meadow-morning","wildflower-dance","fern-awakening","lone-tree","coastal-freedom","sun-flight"],
+  health:["morning-dew","sea-breeze","calm-sea","mossy-stream","gentle-falls","morning-dew"],
+};
 const quickThemeOrder: VideoTheme[] = ["energy","money","relationships","goals","life","health"];
 
 export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
@@ -761,7 +769,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(true);
-  const [otherScene, setOtherScene] = useState<LocalSceneId>("solar-surge");
+  const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [aspect, setAspect] = useState<Aspect>("portrait");
@@ -1316,10 +1324,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setQuickStyleIndex(index);
     setBrightness(index===1||index===5?"bright":"soft");
     setSpeed(index===2||index===5?"dynamic":"slow");
-    const scene = activeTemplates[index % activeTemplates.length];
-    if(!scene)return;
-    if(theme==="money")setMoneyScene(scene.id as MoneySceneId);
-    else setOtherScene(scene.id as LocalSceneId);
+    const sceneId = quickStyleSceneIds[theme][index];
+    if(!sceneId)return;
+    if(theme==="money")setMoneyScene(sceneId as MoneySceneId);
+    else setOtherScene(sceneId as LocalSceneId);
     setSuggestion("");
     setPreviewPlaying(false);
   };
@@ -1383,7 +1391,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const Icon=[Zap,Coins,Heart,Target,Sprout,HeartPulse][index];
               return <button key={value} type="button" data-video-quick-theme={value}
                 data-tone={value} aria-pressed={theme===value} disabled={recording||preparing}
-                onClick={()=>{setQuickStyleIndex(0);selectCategory(value);}}>
+                onClick={()=>{setQuickStyleIndex(0);selectCategory(value);
+                  const id=quickStyleSceneIds[value][0];
+                  if(value==="money")setMoneyScene(id as MoneySceneId);
+                  else setOtherScene(id as LocalSceneId);
+                }}>
                 <Icon size={18} aria-hidden="true"/><span>{ui.themes[value]}</span>
               </button>;
             })}
@@ -1416,7 +1428,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <img src={photoUrl} alt="" draggable={false}/>
               </> : <><Camera size={24} aria-hidden="true"/><span>{quick.pick}</span></>}
             </button>
-            {activeTemplates.slice(0,5).map(scene=>{
+            {activeTemplates.slice(0,6).map(scene=>{
               const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
               const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
                 getThemedRealFilm(theme,scene.id as LocalSceneId)?.poster||
