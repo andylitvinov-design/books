@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { AGENT_MEMORY_VERSION,AGENT_MEMORY_KEYS,validateMemoryPreference,approvedMemoryForLocalPrompt } from "../lib/holistic-support/agent-memory-policy.mjs";
+import { AGENT_MEMORY_VERSION,AGENT_MEMORY_KEYS,validateMemoryPreference,approvedMemoryForLocalPrompt,applyAgentMemoryForTurn } from "../lib/holistic-support/agent-memory-policy.mjs";
 import {prepareLocalConversation} from "../lib/holistic-support/local-conversation-contract.mjs";
 test("only explicitly permitted keys and bounded values are saved",()=>{
  assert.equal(AGENT_MEMORY_VERSION,"hh-agent-memory-v1");
@@ -38,4 +38,26 @@ test("without opt-in memory remains absent from local conversation",()=>{
   currentMessage:"I need help.",decision:{status:"clarify",state:{locale:"en"}},
  });
  assert.deepEqual(request.memory,[]);
+});
+
+test("saved preferences affect only a derived turn state, never the ongoing state",()=>{
+ const previous={version:"holistic-language-2.1",address:"neutral",brevity:"normal",excluded:[],topic:"energy",format:"video"};
+ const memory=[{kind:"response_length",value:"short"},{kind:"communication_style",value:"informal"},
+   {kind:"avoid_format",value:"video"}];
+ const effective=applyAgentMemoryForTurn(previous,memory);
+ assert.equal(effective.brevity,"short");
+ assert.equal(effective.address,"informal");
+ assert.deepEqual(effective.excluded,["video"]);
+ assert.deepEqual(previous.excluded,[]);
+ assert.equal(previous.address,"neutral");
+ assert.equal(applyAgentMemoryForTurn(previous,[]),previous);
+});
+test("explicit current dialogue style takes priority over saved memory",()=>{
+ const previous={address:"formal",brevity:"detailed",excluded:["audio"]};
+ const effective=applyAgentMemoryForTurn(previous,[
+  {kind:"communication_style",value:"informal"},{kind:"response_length",value:"short"},
+  {kind:"avoid_format",value:"video"},
+ ]);
+ assert.equal(effective.address,"formal");assert.equal(effective.brevity,"detailed");
+ assert.deepEqual(effective.excluded,["audio","video"]);
 });
