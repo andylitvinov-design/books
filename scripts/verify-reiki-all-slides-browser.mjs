@@ -561,7 +561,22 @@ async function verifyPrivatePhonePhoto(page, locale, width) {
     await picker.setInputFiles({name:"synthetic-test.jpg",mimeType:"image/jpeg",
       buffer:Buffer.from(photoFixture,"base64")});
     const saved=page.locator("[data-reiki-photo-saved]");
-    await expect(saved).toBeVisible({timeout:30000});
+    // A user-visible failed JPEG decode/upload must be diagnosed, never
+    // disguised as a 30-second timeout waiting for a success receipt.
+    await page.waitForFunction(() => {
+      const panel=document.querySelector("[data-reiki-initiation-photo]");
+      return Boolean(panel?.querySelector("[data-reiki-photo-saved]") ||
+        panel?.querySelector('[role="alert"]'));
+    },null,{timeout:30000});
+    const localError=await page.locator('[data-reiki-initiation-photo] [role="alert"]').textContent()
+      .catch(()=>null);
+    const capturedPhoto=await saved.count();
+    console.log("REIKI_PRIVATE_PHOTO_RECEIPT_OR_ERROR",JSON.stringify({
+      engine:engineName,locale,width,photoSaved:capturedPhoto===1,
+      error:localError?.slice(0,160)??null,
+    }));
+    assert.equal(localError,null,"Private photo decode/storage must succeed before marking saved");
+    await expect(saved).toBeVisible({timeout:10000});
     await expect(saved.locator("img")).toHaveAttribute("referrerpolicy","no-referrer");
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),
       "Private photo mobile slide must have no horizontal overflow");
