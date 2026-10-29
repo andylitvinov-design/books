@@ -4,6 +4,7 @@
  * Uses a synthetic 1px photo and verifies the encoded locally generated sound.
  */
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { chromium, webkit } from "@playwright/test";
 
@@ -380,6 +381,24 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           return Boolean(button && !button.disabled && master && master.readyState >= 2);
         },undefined,{timeout:25000});
         assert.equal(await create.isEnabled(), true);
+        // Capture the real rendered AUDIO-ONLY section on the same public
+        // guest route and iPhone viewport, without iOS browser chrome.
+        if(locale==="ru"&&[320,390,430].includes(width)){
+          const panel=page.locator("[data-video-audio-section]");
+          const dimensions=await panel.locator("[data-video-audio-tracks] [data-video-music]").first()
+            .evaluate(node=>{
+              const rect=node.getBoundingClientRect(),font=getComputedStyle(node.querySelector("strong")).fontSize;
+              return {height:rect.height,width:rect.width,font};
+            });
+          assert.ok(dimensions.height>=60 && dimensions.width>200 && parseFloat(dimensions.font)>=13,
+            "readable 44px+ audio-only rows at "+width+": "+JSON.stringify(dimensions));
+          const attach=await panel.locator("[data-video-audio-attach]").boundingBox();
+          assert.ok(attach && attach.height>=44,
+            "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
+          mkdirSync("artifacts/mandala-audio",{recursive:true});
+          await panel.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
+            animations:"disabled",timeout:20000});
+        }
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
         // Every preset must now be an actual first-party HTTP audio file
