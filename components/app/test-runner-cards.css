@@ -322,3 +322,28 @@
 @media (prefers-reduced-motion: reduce) {
   .hh-test-experience * { animation: none !important; transition: none !important; }
 }
+
+
+/* The guest runner already has a labelled overall heading in its progress card.
+   Keep the in-flow H2 accessible to section labelling without showing it twice. */
+.client-entry-shell .hh-test-heading-accessible {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Never style a fieldset as a decorative group when it owns actual controls. */
+.hh-test-experience .hh-test-question-card legend.hh-test-question-caption {
+  float: none;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+/* A native answer menu must not be zoomed by mobile Safari. */
+@media (max-width: 700px) {
+  .hh-test-experience :is(.cabinet-day-count-select,.hh-day-count-select) select { font-size: 16px; }
+}
