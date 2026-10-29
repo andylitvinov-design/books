@@ -49,7 +49,7 @@ test('invalid consent, malformed ciphertext and duplicate operations fail closed
 test('explicit save is default off, idempotent, owner scoped and deletable even when disabled',async()=>{
   const off={...config,intelligenceMemoryEnabled:false}, on={...config,intelligenceMemoryEnabled:true}
   assert.equal(config.intelligenceMemoryEnabled,false)
-  const operationId=randomUUID(), input={operationId,consent:true,itemId:'youtube:w2BN-HYmHUk',feedback:'not_useful'}
+  const operationId=randomUUID(), input={operationId,consent:true,expectedRevision:0,itemId:'youtube:w2BN-HYmHUk',feedback:'not_useful'}
   await assert.rejects(saveIntelligenceFeedback(off,a,input),/INTELLIGENCE_MEMORY_DISABLED/)
   await assert.rejects(saveIntelligenceFeedback(on,a,{...input,consent:false}),/CONSENT_REQUIRED/)
   await assert.rejects(saveIntelligenceFeedback(on,a,{...input,ownerId:B}),/UNKNOWN_FIELD/)
@@ -62,20 +62,37 @@ test('explicit save is default off, idempotent, owner scoped and deletable even 
   assert.equal(other.records.length,1)
   assert.equal(owner.records.some(record=>record.itemId===input.itemId),true)
   assert.equal(other.records.some(record=>record.itemId===input.itemId),false)
-  assert.equal((await deleteIntelligenceFeedback(off,a,{operationId})).deleted,true)
-  assert.equal((await deleteIntelligenceFeedback(off,a,{operationId})).deleted,false)
+  assert.equal((await deleteIntelligenceFeedback(off,a,{operationId,expectedRevision:0})).deleted,true)
+  await assert.rejects(deleteIntelligenceFeedback(off,a,{operationId,expectedRevision:0}),/INTELLIGENCE_MEMORY_STALE/)
+  await assert.rejects(saveIntelligenceFeedback(on,a,input),/INTELLIGENCE_MEMORY_STALE/)
+  assert.equal((await exportIntelligenceFeedback(off,a)).records.some(record=>record.itemId===input.itemId),false)
+  const retryWithNewConsent={...input,operationId:randomUUID(),expectedRevision:1}
+  await saveIntelligenceFeedback(on,a,retryWithNewConsent)
+  await assert.rejects(deleteIntelligenceFeedback(off,a,{all:true,expectedRevision:0}),/INTELLIGENCE_MEMORY_STALE/)
+  assert.equal((await exportIntelligenceFeedback(off,a)).records.some(record=>record.itemId===input.itemId),true)
+  await deleteIntelligenceFeedback(off,a,{operationId:retryWithNewConsent.operationId,expectedRevision:1})
+  const foreignState=await rawAs(b,'hh_app_backend',db=>db.query('select revision from app_private.intelligence_feedback_state where account_id=$1',[A]))
+  assert.equal(foreignState.rowCount,0)
+  await assert.rejects(rawAs(a,'authenticated',db=>db.query('select * from app_private.intelligence_feedback_state')),/permission denied/)
+  assert.equal((await exportIntelligenceFeedback(off,b)).revision,0)
   assert.equal((await exportIntelligenceFeedback(off,b)).records.length,1)
 })
 test('owner deletion removes only own feedback, and account deletion cascades',async()=>{
   const removed=await rawAs(a,'hh_app_backend',db=>db.query('delete from app_private.intelligence_feedback_memory where account_id=$1',[A]))
   assert.equal(removed.rowCount,1)
-  await saveIntelligenceFeedback({...config,intelligenceMemoryEnabled:true},a,{operationId:randomUUID(),consent:true,itemId:'course:reiki-preview',feedback:'useful'})
-  assert.equal((await deleteIntelligenceFeedback(config,a,{all:true})).deleted,true)
+  const revision=(await exportIntelligenceFeedback(config,a)).revision
+  const pending={operationId:randomUUID(),consent:true,expectedRevision:revision,itemId:'course:reiki-preview',feedback:'useful'}
+  await saveIntelligenceFeedback({...config,intelligenceMemoryEnabled:true},a,pending)
+  assert.equal((await deleteIntelligenceFeedback(config,a,{all:true,expectedRevision:revision})).deleted,true)
+  assert.equal((await exportIntelligenceFeedback(config,a)).records.length,0)
+  await assert.rejects(saveIntelligenceFeedback({...config,intelligenceMemoryEnabled:true},a,pending),/INTELLIGENCE_MEMORY_STALE/)
   assert.equal((await exportIntelligenceFeedback(config,a)).records.length,0)
   assert.equal((await rawAs(b,'hh_app_backend',db=>db.query('select 1 from app_private.intelligence_feedback_memory'))).rowCount,1)
+  await deleteIntelligenceFeedback(config,b,{operationId:randomUUID(),expectedRevision:0})
   const db=await adminClient()
   try {
     await db.query('delete from app.accounts where id=$1',[B])
     assert.equal((await db.query('select 1 from app_private.intelligence_feedback_memory where account_id=$1',[B])).rowCount,0)
+    assert.equal((await db.query('select 1 from app_private.intelligence_feedback_state where account_id=$1',[B])).rowCount,0)
   } finally {await db.end()}
 })
