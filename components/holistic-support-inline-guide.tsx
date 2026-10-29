@@ -685,7 +685,7 @@ export function HolisticSupportInlineGuide({
       <div className={[styles.dialogue, phase === "recommendations" ? styles.dialogueComplete : ""].join(" ")}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
           <Image alt="" src="/images/holistic-house/support-reference-avatar.webp"
-            width={128} height={160} sizes="(max-width: 390px) 75px, 100px" />
+            width={128} height={160} sizes="(max-width: 340px) 63px, (max-width: 390px) 72px, 90px" />
           <span className={styles.online} aria-hidden="true" />
         </div>
         <div className={styles.thread} ref={threadRef} data-support-guide-thread
