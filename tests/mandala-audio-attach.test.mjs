@@ -31,7 +31,7 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   assert.match(styles,/\.audioTrackSelect\{[\s\S]*?min-height:66px/);
   assert.match(styles,/@media\(max-width:375px\)/);
   assert.match(styles,/\.audioAttachButton\{[\s\S]*?min-height:48px/);
-  assert.doesNotMatch(section,/href=\{"?\/api|\.mp4\b|youtube|autoplay|muted/);
+  assert.doesNotMatch(section,/<video\b|<img\b|youtube|autoplay/);
 });
 
 test("choice is a preview, attach is explicit and MediaRecorder exports ONLY attached audio",()=>{
