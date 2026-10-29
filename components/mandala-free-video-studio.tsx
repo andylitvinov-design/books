@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
@@ -294,7 +295,7 @@ const audioCopy = {
     empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected sound",
     search:"Find a sound…",sort:"Sort",byTopic:"Best match",byName:"Name A–Z",
     videoLength:"Video length",loop:"8–16 s loops · repeat for video",showMore:"Show all sounds",showLess:"Show fewer",newTrack:"New",byNew:"New sounds first",
-    pick:"Select",picked:"Selected",attach:"Attach to video",attached:"Attached to video",
+    pick:"Select",picked:"Selected",play:"Play",pause:"Pause",attach:"Attach to video",attached:"Attached to video",
     detach:"Remove from video",needsAttach:"Select a sound and tap Attach to video before export.",
     applied:"Sound is attached to this video setup. Create the video again to save a file with this sound.",
     chooseFirst:"Choose a sound",noAudioInfo:"No sound is attached. Select a sound or create a silent video.",
@@ -315,7 +316,7 @@ const audioCopy = {
     empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранный звук",
     search:"Найти звук…",sort:"Сортировка",byTopic:"Подходящие",byName:"По названию",
     videoLength:"Длина видео",loop:"Петли 8–16 с · повтор до конца видео",showMore:"Показать все звуки",showLess:"Свернуть список",newTrack:"Новое",byNew:"Сначала новые",
-    pick:"Выбрать",picked:"Выбран",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
+    pick:"Выбрать",picked:"Выбран",play:"Прослушать",pause:"Пауза",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
     detach:"Убрать звук из видео",needsAttach:"Выберите дорожку и нажмите «Прикрепить к видео» перед сохранением.",
     applied:"Дорожка прикреплена к настройкам ролика. Создайте видео заново, чтобы получить файл со звуком.",
     chooseFirst:"Выберите звук",noAudioInfo:"Звук не прикреплён. Выберите дорожку либо создайте видео без звука.",
@@ -336,7 +337,7 @@ const audioCopy = {
     empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
     search:"Buscar sonido…",sort:"Orden",byTopic:"Recomendados",byName:"Nombre A–Z",
     videoLength:"Duración del vídeo",loop:"Bucles 8–16 s · se repiten en vídeo",showMore:"Ver todos los sonidos",showLess:"Mostrar menos",newTrack:"Nuevo",byNew:"Nuevos primero",
-    pick:"Elegir",picked:"Elegido",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
+    pick:"Elegir",picked:"Elegido",play:"Escuchar",pause:"Pausar",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
     detach:"Quitar sonido del vídeo",needsAttach:"Elige un sonido y pulsa Adjuntar antes de guardar el vídeo.",
     applied:"Audio adjunto a este vídeo. Créalo de nuevo para guardar el archivo con sonido.",
     chooseFirst:"Elige un sonido",noAudioInfo:"No hay audio adjunto. Elige un sonido o crea un vídeo sin él.",
@@ -1141,6 +1142,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setMusicWarning(ui.soundUnavailable);
     }
   }
+  // A direct PLAY button exists on every sound row.
+  // flushSync mounts the selected native <audio> during the same trusted click:
+  // important for iOS user-activation rules; there is no autoplay or upload.
+  function playAudioTrack(choice: Exclude<AmbientMusic,"none">){
+    if(recording||preparing||micRecording)return;
+    const same=!uploadedAudio&&music===choice;
+    if(same){toggleSoundPreview();return;}
+    flushSync(()=>{
+      setAudioAuto(false);
+      chooseMusic(choice);
+    });
+    const player=audioPreviewRef.current;
+    if(!player){setMusicWarning(ui.soundUnavailable);return;}
+    try {
+      if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
+      player.muted=false;
+      try{player.volume=Math.min(1,Math.max(0,soundVolume/100));}
+      catch{/* iOS hardware volume controls media audio. */}
+      void player.play().catch(()=>{
+        stopSoundPreview();
+        if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
+      });
+    }catch{
+      stopSoundPreview();
+      setMusicWarning(ui.soundUnavailable);
+    }
+  }
   function clearUploadedAudio(){
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
@@ -1831,6 +1859,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {visibleAudio.map((track,index)=><div className={videoStyles.audioTrackRow}
               key={track.id} data-audio-id={track.id} data-audio-kind={track.kind}
               data-audio-duration={track.durationSeconds} data-audio-new={track.new}>
+              <button type="button" className={videoStyles.audioPlayButton}
+                data-video-audio-play={track.id}
+                aria-pressed={!uploadedAudio&&music===track.id&&soundPreview}
+                aria-label={(music===track.id&&!uploadedAudio&&soundPreview?audioUi.pause:audioUi.play)+" — "+track.name[locale]}
+                onClick={()=>playAudioTrack(track.id as Exclude<AmbientMusic,"none">)}>
+                {music===track.id&&!uploadedAudio&&soundPreview
+                  ? <Pause size={19} fill="currentColor" aria-hidden="true"/>
+                  : <Play size={19} fill="currentColor" aria-hidden="true"/>}
+              </button>
               <button type="button" className={videoStyles.audioTrackSelect}
                 data-video-music={track.id} aria-pressed={!uploadedAudio&&music===track.id}
                 onClick={()=>{setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
