@@ -1156,6 +1156,35 @@
   .videoFeedChoose { font-size: 11px; }
 }
 
+
+/* Guest video energy is a transparent local preview limit, not DRM or a paid gate.
+   Keep the original hero, four featured posters and filtered YouTube feed unchanged. */
+.playButton:disabled { cursor: not-allowed; opacity: .7; box-shadow: none; }
+.playButton:disabled:hover { filter: none; }
+
+/* Optional video reflection is placed after the existing YouTube player.
+   It never claims to verify watch-time and stores no personal response. */
+.videoReflection { display: flex; align-items: center; justify-content: space-between;
+  gap: 13px; margin: 9px 2px; padding: 13px 16px; border: 1px solid #b6d9c2;
+  border-radius: 16px; background: #eff8ee; color: #24513e; }
+.videoReflection > div:first-child { display: grid; gap: 5px; flex: 1 1 auto; min-width: 0; }
+.videoReflection strong { font-size: 15px; line-height: 1.35; }
+.videoReflection p { margin: 0; color: #5f7166; font-size: 12px; line-height: 1.35; }
+.videoReflectionActions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.videoReflectionActions button { display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 43px; padding: 8px 12px; border: 1px solid #079264;
+  border-radius: 12px; background: #07895f; color: white; font-weight: 800; font-size: 13px; }
+.videoReflectionActions .videoReflectionLater { border-color: #b9d9bf; background: #fffdf6;
+  color: #33674f; }
+.videoReflectionCheck { flex: none; color: #0a9268; }
+@media (max-width: 430px) {
+  .videoReflection { align-items: stretch; flex-direction: column; gap: 8px;
+    margin: 5px 0; padding: 10px 12px; border-radius: 13px; }
+  .videoReflection strong { font-size: 14px; }
+  .videoReflectionActions { width: 100%; }
+  .videoReflectionActions button { flex: 1 1 auto; min-height: 45px; font-size: 12px; }
+}
+
 /* Verified Reiki previews: €0 is online learning, not personal initiation. */
 .reikiPills,.videoMetaPills { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
 .reikiPills { margin-top:9px; }
