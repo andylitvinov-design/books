@@ -6,13 +6,15 @@ const base=process.env.HH_INTELLIGENCE_BASE_URL || 'http://127.0.0.1:3187'
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('LOCAL_SITE_REQUIRED')
 const tools=process.env.HH_INTELLIGENCE_BROWSER_TOOLS
 if (!tools) throw new Error('HH_INTELLIGENCE_BROWSER_TOOLS_REQUIRED')
-const {chromium}=createRequire(`${tools}/package.json`)('playwright')
+const browsers=createRequire(`${tools}/package.json`)('playwright')
+const name=process.env.HH_TEST_BROWSER || 'chromium'
+if (!['chromium','webkit'].includes(name)) throw new Error('UNSUPPORTED_BROWSER')
 for(let i=0;i<90;i++) {
   try {if((await fetch(`${base}/en/holistic-support`)).ok) break} catch { /* starting */ }
   if(i===89) throw new Error('LOCAL_SITE_UNAVAILABLE')
   await new Promise(resolve=>setTimeout(resolve,1000))
 }
-const browser=await chromium.launch({headless:true,...(process.env.HH_BROWSER_EXECUTABLE?{executablePath:process.env.HH_BROWSER_EXECUTABLE}:{})})
+const browser=await browsers[name].launch({headless:true,...(process.env.HH_BROWSER_EXECUTABLE?{executablePath:process.env.HH_BROWSER_EXECUTABLE}:{})})
 try {
   const page=await browser.newPage({viewport:{width:390,height:844}})
   await page.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
@@ -60,5 +62,5 @@ try {
   await consent.check()
   assert.notEqual(await card.getByRole('link').first().getAttribute('href'),firstHref)
   await testPage.close();await page.close()
-  console.log(JSON.stringify({browser:'chromium',storage:'isolated-postgresql',consent:'passed',questions:count,result:'visible-after-reload',feedback:'session-only',next:'different-test'}))
+  console.log(JSON.stringify({browser:name,storage:'isolated-postgresql',consent:'passed',questions:count,result:'visible-after-reload',feedback:'session-only',next:'different-test'}))
 } finally {await browser.close()}

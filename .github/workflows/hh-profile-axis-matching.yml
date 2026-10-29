@@ -161,7 +161,7 @@ jobs:
       - name: Install browser for isolated guest journey
         run: |
           npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Complete a synthetic guest test journey with PostgreSQL
         env:
           HH_INTELLIGENCE_BROWSER_TOOLS: /tmp/hh-intelligence-browser
@@ -170,4 +170,5 @@ jobs:
           node node_modules/next/dist/bin/next dev --port 3187 > /tmp/hh-intelligence-guest-server.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          node scripts/verify-intelligence-guest-journey.mjs
+          HH_TEST_BROWSER=chromium node scripts/verify-intelligence-guest-journey.mjs
+          HH_TEST_BROWSER=webkit node scripts/verify-intelligence-guest-journey.mjs
