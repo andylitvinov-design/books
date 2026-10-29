@@ -105,12 +105,13 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await root.locator('[data-support-video]').count(), 4,
             label + " back to Energy restores four original recordings");
 
-          // Below those same four featured thumbnails is a true vertical
-          // catalogue (7 verified RU originals, 4 English originals on EN/ES).
+          // Below the four featured thumbnails: RU includes 7 verified Russian
+          // originals PLUS the same 4 reviewed English originals. EN/ES have 4.
+          // Do not accidentally hide the English sources in the Russian locale.
           const feed = root.locator('[data-support-meditation-feed]');
           assert.equal(await feed.count(), 1, label + " vertical meditation feed exists");
           const feedItems = feed.locator('[data-support-meditation-feed-item]');
-          assert.equal(await feedItems.count(), locale === "ru" ? 7 : 4,
+          assert.equal(await feedItems.count(), locale === "ru" ? 11 : 4,
             label + " complete source-backed list instead of the four featured items");
           const feedText = await feedItems.last().locator('[class*="videoFeedDescription"]').innerText();
           assert.ok(feedText.trim().length > 25, label + " relevant readable description beside poster");
