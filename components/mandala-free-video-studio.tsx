@@ -1252,16 +1252,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           // First video: scenic meadow-morning master, not a generic money/energy clip.
           selectCategory(session.videoTheme);
           if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
-          setBackgroundOnly(true);
+          // Keep the visitor's photo choice: free course setup must not turn it off.
+          if(!photoUrl)setBackgroundOnly(true);
           setDuration(60);
           setSpeed("slow");
           setCaptionMode("custom");
           setCustomCaption(session.title);
           // Preserve the chosen personal goal on the meadow visuals with
           // original, user-readable supportive phrases from that goal's theme.
-          setAffirmations({...defaultAffirmations,enabled:true,selected:[],
+          setAffirmations(current=>({...defaultAffirmations,enabled:current.enabled,selected:[],
             custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
-            visibility:["large"]});
+            visibility:["large"]}));
           setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
             locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
             "Session 1 scene is ready. Create and download the video in the editor below.");
