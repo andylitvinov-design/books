@@ -1353,8 +1353,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setSpeed("slow");
           setCaptionMode("custom");
           setCustomCaption(session.title);
+          // Resource-imagery invitations become visible, readable overlays;
+          // the actual footage/audio still comes from the existing local editor.
           setAffirmations({...defaultAffirmations,enabled:true,selected:[0,1,2],
-            custom:"",visibility:["large"]});
+            custom:session.scenes.map(line=>Array.from(line).slice(0,90).join("")).join("\n"),
+            visibility:["large"]});
           setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
             locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
             "Session 1 scene is ready. Create and download the video in the editor below.");
