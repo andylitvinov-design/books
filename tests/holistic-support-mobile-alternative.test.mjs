@@ -450,7 +450,11 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(gallery, /price > 100/);
   assert.match(gallery, /priceOptions: matchingPriceOptions/);
   assert.match(gallery, /REIKI_FREE_COURSE_PATH/);
-  assert.match(gallery, /free-initiation#initiation-choices/);
+  assert.match(gallery, /listPublicReikiAcademyOffers\(locale\)\.filter\(offer => offer\.kind === "initiation"\)/);
+  assert.match(gallery, /const selectedInitiation = reikiInitiations\.find\(offer => offer\.id === reikiInitiationId\) \|\| null/);
+  assert.match(gallery, /selectedInitiation\?\.href \|\| reikiInitiations\[0\]\?\.href/);
+  assert.match(gallery, /data-support-reiki-initiation-types/);
+  assert.doesNotMatch(gallery, /free-initiation#initiation-choices/);
   assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
