@@ -1,8 +1,9 @@
 # Holistic House · Персональная видеотерапия: интерактивный курс сессий
 
-**Продуктовое ТЗ v3.0 · 29 октября 2026 (America/Toronto)**  
+**Продуктовое ТЗ v3.1 · 29 октября 2026 (America/Toronto)**  
 **Статус: КОНЦЕПЦИЯ / SPEC ONLY.** Эта запись НЕ означает, что Session Player, серверное сохранение трёх замеров, готовые восемь фильмов, озвученные медитации, клиническая проверка, оплата или live E2E реализованы.  
 **Canonical issue:** https://github.com/andylitvinov-design/books/issues/2503  
+**Техническое задание и поэтапный implementation plan:** [PERSONAL_VIDEO_THERAPY_TECHNICAL_DESIGN_AND_ROADMAP_20261029.md](./PERSONAL_VIDEO_THERAPY_TECHNICAL_DESIGN_AND_ROADMAP_20261029.md).  
 **Source branch для реализации:** codex/public-book-library, не GitHub default codex/bootstrap-books.  
 **Сайт:** https://holistichouse.vercel.app/ru/holistic-support/mandala  
 **Связанные задачи:** #2397 (локальный видеоредактор), #2502 (аффирмации), #2501 (My Progress), #540 (ОПОРА), #840 (AI/Reiki course), #1223 (валидность шкал), #338 (My Test), #985 (CRM/privacy), #990 (оплаты).  
