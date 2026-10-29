@@ -484,7 +484,7 @@ try {
             }
             await russian.locator('button.academy-video-poster').click();
             const alena = russian.locator('iframe');
-            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0');
+            await expect(alena).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1');
             await expect(alena).toHaveAttribute('title', /Alena|Алёна/);
             await expect(page.frameLocator('#tantra-russian-video-testimonials iframe').locator('#player-fixture')).toHaveText('Allowed YouTube renderer');
             journey.stage = { phase: 'per-participant-close-cleanup' };
