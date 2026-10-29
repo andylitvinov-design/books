@@ -1707,7 +1707,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {photoUrl && !backgroundOnly ? (
         <label className={videoStyles.consent}>
           <input type="checkbox" data-video-photo-consent checked={photoConsent}
-            disabled={recording||preparing} onChange={event=>setPhotoConsent(event.target.checked)}/>
+            disabled={recording||preparing} onChange={event=>{
+              const consented=event.currentTarget.checked;
+              setPhotoConsent(consented);
+              // Safari may evict the decoded muted MP4 while the visitor
+              // configures the editor. Re-arm only on this explicit gesture:
+              // do not enable export until a genuine video frame decodes.
+              const master=premiumVideoRef.current;
+              if(consented && previewPlaying && activeFilm && master && master.readyState<2){
+                setPremiumReady(false);
+                if(master.networkState===master.NETWORK_EMPTY ||
+                  master.networkState===master.NETWORK_IDLE) master.load();
+                void master.play().catch(()=>{
+                  if(aliveRef.current)setNotice(ui.videoUnavailable);
+                });
+              }
+            }}/>
           <span>{ui.consent}</span>
         </label>
       ) : null}
