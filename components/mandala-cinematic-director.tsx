@@ -17,7 +17,7 @@ export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;s
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
-type Props={locale:PublicLocale;theme:VideoTheme;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void};
+type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
@@ -84,7 +84,7 @@ const copy={
     themes:{energy:"Energía",money:"Dinero y trabajo",relationships:"Relaciones",goals:"Metas y sentido",life:"Vida",health:"Descanso y bienestar"}},
 } as const;
 const FIELDS:Field[]=["theme","difficulty","goal","profile"];
-export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboard}:Props){
+export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onApplyStoryboard}:Props){
   const t=copy[locale]||copy.en;
   const [expanded,setExpanded]=useState(false);
   const [editing,setEditing]=useState<Field|null>(null);
@@ -104,7 +104,8 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
   const editRef=useRef<HTMLButtonElement>(null);
   const plan=useMemo(()=>buildCinematicStoryboard({
     locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
-  }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid]);
+    mode:therapyMode?"therapy":"creative",
+  }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -237,6 +238,11 @@ export function MandalaCinematicDirector({locale,theme,disabled,onApplyStoryboar
       <button type="button" className={css.primary} data-director-create-plan disabled={disabled}
         onClick={onPlan}><Sparkles size={17} aria-hidden="true"/>{generated?t.refresh:t.plan}</button>
       <p className={css.privacy}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>
+      {therapyMode?<p className={css.privacy} data-director-therapy-review role="note">
+        {locale==="ru"?"Это ресурсная образная практика, не лечение или диагноз. Полная персональная терапевтическая программа требует проверки специалистом.":
+          locale==="es"?"Es una práctica de imaginación, no un diagnóstico ni tratamiento. El programa terapéutico personalizado requiere revisión profesional.":
+          "This is a resource-oriented imagery practice, not diagnosis or treatment. A full personalized therapy programme requires practitioner review."}
+      </p>:null}
       {generated?<div className={css.story} data-director-storyboard>
         <h4>{t.shots} · {manifest.durationSeconds} {t.seconds}</h4>
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
