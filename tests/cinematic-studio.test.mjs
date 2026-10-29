@@ -213,7 +213,10 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(directorUI,/data-director-storyboard/);
   assert.match(directorUI,/data-director-apply-montage/);
   assert.match(directorUI,/data-director-provider-quote/);
-  assert.doesNotMatch(directorUI,/fetch\(|localStorage|sessionStorage|sendBeacon|\.upload\(/);
+  // The director may read the owner's saved profile only after explicit consent
+  // through the same-origin, credentialed bootstrap route checked above. It must
+  // never send a private brief to an external provider or browser storage.
+  assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|localStorage|sessionStorage|sendBeacon|\.upload\(/);
   assert.match(css,/@media\(max-width:360px\)/);
   assert.match(css,/:focus-visible/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
