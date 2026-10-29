@@ -660,6 +660,20 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           ]);
           const montageBytes=await bufferFromStream(await clip.createReadStream());
           assert.ok(montageBytes.length>10000,"recorded cinematic montage is not a storyboard screenshot");
+          // Verify the downloaded file contains genuinely different moving
+          // visual stages, not a 4-card storyboard wrapped in a movie container.
+          const shotFrame=at=>spawnSync("ffmpeg",["-v","error","-i","pipe:0",
+            "-ss",String(at),"-frames:v","1","-vf","scale=16:16",
+            "-pix_fmt","rgb24","-f","rawvideo","pipe:1"],
+            {input:montageBytes,maxBuffer:1024*1024});
+          const firstStage=shotFrame(2),lastStage=shotFrame(18);
+          assert.equal(firstStage.status,0,"storyboard first shot must decode from actual MP4/WebM");
+          assert.equal(lastStage.status,0,"storyboard last shot must decode from actual MP4/WebM");
+          assert.equal(firstStage.stdout.length,768);
+          assert.equal(lastStage.stdout.length,768);
+          const pixelDifference=firstStage.stdout.reduce((sum,color,index)=>
+            sum+Math.abs(color-lastStage.stdout[index]),0);
+          assert.ok(pixelDifference>800,"first and fourth real encoded scenes must differ: "+pixelDifference);
           const montageProbe=spawnSync("ffprobe",["-v","error","-show_entries",
             "stream=codec_type","-of","json","-"],{input:montageBytes,encoding:"utf8"});
           assert.equal(montageProbe.status,0,"cinematic montage media decodes");
