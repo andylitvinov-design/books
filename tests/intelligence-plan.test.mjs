@@ -199,4 +199,9 @@ test('a symbolic course preview requires its own explicit choice and points to t
   assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',session:{dismissedIds:['course:reiki-preview']}},{})).status,'no_match')
   assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',intent:{...request.intent,maxDurationMinutes:5}},{})).status,'no_match')
   await assert.rejects(planIntelligenceRequest({...request,courseSelection:'other'},{}),/INVALID_INTELLIGENCE_REQUEST/)
+  for (const [locale, lessonLanguage] of [['en','en'],['ru','ru'],['es','en']]) {
+    const local=await planIntelligenceRequest({...request,courseSelection:'reiki_preview',intent:{...request.intent,language:locale}},{})
+    assert.equal(local.primary.lessonLanguage,lessonLanguage)
+    assert.equal(local.primary.href,`/${lessonLanguage}/academy/principles-of-energywork/learn`)
+  }
 });
