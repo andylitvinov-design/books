@@ -20,6 +20,39 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
+// A bounded BASE source contract, not computed responsive layout proof.
+// Inspect one exact top-level standalone .hh-scale rule; pseudo-class and
+// descendant variants are out of scope. Ambiguous exact-selector rules fail closed.
+function hasSixMilestoneColumns(css) {
+  const clean = css.replace(/\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g,
+    token => token.startsWith('/*') ? ' ' : '__HH_QUOTED_VALUE__')
+  if (/\/\*|\*\/|["'\\]/.test(clean)) return false
+  const columnProperties = new Set(['grid-template-columns', 'grid-template', 'grid', 'all'])
+  let blocks = 0, columns = null
+  for (const match of clean.matchAll(/\.hh-scale(?![\w-])([^{}]*)\{/g)) {
+    const prefix = clean.slice(0, match.index)
+    const topLevel = (prefix.match(/\{/g) || []).length === (prefix.match(/\}/g) || []).length
+    const boundary = Math.max(prefix.lastIndexOf('{'), prefix.lastIndexOf('}')) + 1
+    const selector = prefix.slice(boundary) + '.hh-scale' + match[1]
+    const members = selector.split(',').map(value => value.trim())
+    if (!members.includes('.hh-scale')) continue
+    if (!topLevel || members.length !== 1) return false
+    if (++blocks !== 1) return false
+    const body = /^([^{}]*)\}/.exec(clean.slice(match.index + match[0].length))
+    if (!body) return false
+    const declarations = []
+    for (const item of body[1].split(';').map(value => value.trim()).filter(Boolean)) {
+      const declaration = /^([a-z-]+)\s*:\s*([^!]*)$/i.exec(item)
+      if (!declaration) return false
+      declarations.push([declaration[1].toLowerCase(), declaration[2].trim()])
+    }
+    for (const [property, value] of declarations) {
+      if (columnProperties.has(property)) columns = property === 'grid-template-columns' ? value : null
+    }
+  }
+  return blocks === 1 && /^repeat\(\s*6\s*,\s*minmax\(\s*0\s*,\s*1fr\s*\)\s*\)$/i.test(columns || '')
+}
+
 test('My Course describes exactly six EN/RU sequential steps and six optional goals', () => {
   assert.equal(COURSE_STEPS.length, 6)
   assert.equal(Object.keys(GROWTH_GOALS).length, 6)
@@ -113,7 +146,7 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /<MyCourse data=\{data\} locale=\{locale\}/)
   assert.match(shell, /root \+ '\/course'/)
   assert.match(shell, /hh-mobile-app-nav/)
-  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
+  assert.ok(hasSixMilestoneColumns(css))
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
   const completion=read('components/app/course-completion-review.jsx')
@@ -745,4 +778,41 @@ test('guests get a brief Google course invitation, while signed-in clients can i
   assert.match(css, /@media\(max-width:530px\)/)
   assert.match(css, /\.phases\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.doesNotMatch(preview, /localStorage|sessionStorage|fetch\(|dangerouslySetInnerHTML|client data/i)
+})
+
+test('base .hh-scale source contract accepts formatting and rejects false declarations', () => {
+  for (const css of [
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale {\n display: grid;\n grid-template-columns: repeat( 6, minmax( 0, 1fr ) );\n}',
+    '.hh-scale { /* genuine declaration follows */ grid-template-columns/**/: repeat(6, minmax(0, 1fr)); }',
+    '.hh-scale { grid-template-columns:repeat(5,minmax(0,1fr)); grid-template-columns:repeat(6,minmax(0,1fr)); }',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}@media(max-width:600px){.hh-scale:not(.hh-scale-words){grid-template-columns:repeat(4,minmax(0,1fr));}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}.hh-app .hh-quick-question .hh-scale:not(.hh-scale-words){grid-template-columns:repeat(5,minmax(0,1fr));}',
+  ]) assert.equal(hasSixMilestoneColumns(css), true)
+  for (const css of [
+    '.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,2fr));}',
+    '.hh-scale{display:grid;} .unrelated{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale-other{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.other .hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale{--grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale{x-grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale{/* grid-template-columns:repeat(6,minmax(0,1fr)); */}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));& > span{color:red;}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));& > span{color:red;}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));@media(min-width:1px){color:red;}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));grid: none;}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));grid-template: none;}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));all: unset;}',
+    '.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr)) !important;grid-template-columns:repeat(6,minmax(0,1fr));}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));gr\\69d-template-columns:repeat(5,minmax(0,1fr));}',
+    '.other{content:"}.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}"}',
+    '.hh-scale{grid-template-/**/columns:repeat(6,minmax(0,1fr));}',
+    '@media (min-width:1px){.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}@supports(display:grid){.hh-scale{grid-template-columns:repeat(5,minmax(0,1fr));}}',
+    '.hh-scale{grid-template-columns:repeat(6,minmax(0,1fr));}.hh-scale,.other{grid-template-columns:repeat(5,minmax(0,1fr));}',
+  ]) assert.equal(hasSixMilestoneColumns(css), false)
 })
