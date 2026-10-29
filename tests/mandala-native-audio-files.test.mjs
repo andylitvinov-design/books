@@ -133,7 +133,7 @@ test("unsupported codecs fail explicitly instead of substituting silent video",a
   assert.equal(await h.api.startUploadedAudio(file,80),null);
   assert.equal(h.audioSession.type,"ambient");
   assert.ok(h.contexts[0].closed);
-  assert.match(client,/if\(\(music !== "none" \|\| uploadedAudio\) && !musicSession\)/);
+  assert.match(client,/if\(attachedAudio && !musicSession\)/);
   assert.match(client,/data-video-audio-rights/);
   assert.match(client,/!uploadedAudio \|\| audioRights/);
 });
@@ -151,7 +151,7 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.doesNotMatch(client,/URL\.createObjectURL\(createAmbientPreviewWav/);
   assert.match(client,/audioPlaybackError/);
   assert.match(client,/data-video-audio-direct/);
-  assert.match(client,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
+  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }
