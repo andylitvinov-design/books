@@ -652,7 +652,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const sharedThumbnailPhoto = !backgroundOnly && thumbnailPhoto && thumbnailPhoto.url === photoUrl ? thumbnailPhoto.image : null;
   // A newly chosen local portrait opts in to photo output; unchecking it later
   // keeps the photo private on this page but exports a background-only clip.
-  useEffect(() => { if (photoUrl) setBackgroundOnly(false); }, [photoUrl]);
+  useEffect(() => { setBackgroundOnly(!photoUrl); }, [photoUrl]);
   useEffect(() => {
     let disposed = false;
     if (!photoUrl) return;
@@ -1134,6 +1134,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </div>
 
       <section className={videoStyles.catalogShell} data-video-catalog aria-labelledby="video-catalog-heading">
+        <header className={videoStyles.catalogHeading}>
+          <div>
+            <h2 id="video-catalog-heading">{supportUi.catalogTitle}</h2>
+            <p>{supportUi.catalogIntro}</p>
+          </div>
+          <button type="button" onClick={()=>{
+            setShowAllMoney(true);
+            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
+          }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button>
+        </header>
         <div className={videoStyles.photoQuickRow} data-mandala-output-mode role="group" aria-label={ui.title}>
           <label className={videoStyles.photoInclude}>
             <input type="checkbox" data-video-photo-include
@@ -1146,16 +1156,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Camera size={15} aria-hidden="true"/>{photoUrl?ui.replaceGoalPhoto:ui.pickGoalPhoto}
           </button>
         </div>
-        <header className={videoStyles.catalogHeading}>
-          <div>
-            <h2 id="video-catalog-heading">{supportUi.catalogTitle}</h2>
-            <p>{supportUi.catalogIntro}</p>
-          </div>
-          <button type="button" onClick={()=>{
-            setShowAllMoney(true);
-            document.getElementById("video-templates")?.scrollIntoView({behavior:"smooth",block:"start"});
-          }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button>
-        </header>
         <div className={videoStyles.categoryRail} data-video-category-rail role="group" aria-label={supportUi.topThemes}>
           {videoCategories.map(item=>{
             const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:item==="life"?Sprout:HeartPulse;

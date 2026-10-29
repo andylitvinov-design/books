@@ -257,18 +257,19 @@ test("owner-requested compact photo choice and deeper options keep one functiona
   const css=read("components/mandala-video-mobile.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   const photo=studio.indexOf("data-video-photo-include");
+  const header=studio.indexOf("className={videoStyles.catalogHeading}");
   const categories=studio.indexOf("data-video-category-rail");
   const hero=studio.indexOf("data-video-mandala-hero");
   const gallery=studio.indexOf('id="video-templates"');
   const filters=studio.indexOf("data-video-catalog-filters");
-  assert.ok(photo>0 && photo<categories && categories<hero && hero<gallery && gallery<filters,
+  assert.ok(header>0 && header<photo && photo<categories && categories<hero && hero<gallery && gallery<filters,
     "photo checkbox → topics → video → scenes → optional filters");
   assert.match(studio,/checked=\{!backgroundOnly\}/);
   assert.match(studio,/\(backgroundOnly \|\| Boolean\(photoUrl\)\)/,
     "checked photo mode must not enable a video without photo");
   assert.match(studio,/onChange=\{event=>setBackgroundOnly\(!event\.currentTarget\.checked\)\}/);
   assert.match(studio,/data-video-photo-link[\s\S]*?onClick=\{onPickPhoto\}/);
-  assert.match(studio,/useEffect\(\(\) => \{ if \(photoUrl\) setBackgroundOnly\(false\); \}, \[photoUrl\]\)/);
+  assert.match(studio,/useEffect\(\(\) => \{ setBackgroundOnly\(!photoUrl\); \}, \[photoUrl\]\)/);
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/data-video-advanced-filters/);
