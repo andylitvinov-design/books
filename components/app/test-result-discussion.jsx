@@ -7,7 +7,7 @@ import { ArrowRight, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles } fro
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import {
   buildTestResultDiscussion, discussionTopicForTags,
-  interpretTestDiscussionQuestion, testDiscussionOffers,
+  interpretTestDiscussionQuestion, discussionFormatFromText, testDiscussionOffers,
 } from '@/lib/assessments/test-result-discussion.mjs'
 import styles from './test-result-discussion.module.css'
 
@@ -25,7 +25,18 @@ const COPY = {
     professional:'If symptoms concern you, consult a qualified healthcare professional. This is not a diagnosis.',
     urgent:'If you are in immediate danger, contact local emergency services or someone you trust. This guide cannot handle crises.',
     followup:'I can help you choose a theme, but one score does not establish its cause or treatment.',
-    reset:'Start again', more:'Other available tests',
+    reset:'Start again', more:'Explore another option', source:'Recorded result', published:'Source range',
+    same:'Yes, this is relevant', uncertain:'Not sure yet', different:'Not really / another scale',
+    relevanceYes:'Thanks. Your experience matters more than a single number. What would you prefer now?',
+    relevanceUnclear:'That is fine. One score cannot explain the whole situation. Choose another measure or tell me what you would like to clarify.',
+    relevanceNo:'We do not have to treat this score as a problem. Choose another measure if you wish.',
+    format:'Choose a next step', change:'Discuss another measure',
+    formatNote:'The suggestions are based on your chosen topic and format, not a medical prediction.',
+    why:'How the recommendations were selected',
+    method:'What this guide can and cannot infer', previous:'Earlier comparable test',
+    count:'There is no comparable earlier test; one measurement cannot show a trend.',
+    sourceStep:'Optional small step from the original report:',
+    video:'Video', course:'Practice or course', test:'Another test', session:'Personal consultation',
     privacy:'Results are used only on this page; questions stay in this browser tab, not sent to external AI, CRM or analytics.',
     disclaimer:'Questionnaires describe answers, not diagnoses, medical advice or promised outcomes.',
   },
@@ -42,7 +53,18 @@ const COPY = {
     professional:'Если симптомы беспокоят, обсудите их с квалифицированным медицинским специалистом. Это не диагноз.',
     urgent:'Если есть непосредственная опасность, обратитесь в местную экстренную службу или к человеку, которому доверяете. Этот помощник не предназначен для кризисных ситуаций.',
     followup:'Я помогу выбрать тему материалов, но один показатель не позволяет установить причину или назначить лечение.',
-    reset:'Начать заново', more:'Другие доступные тесты',
+    reset:'Начать заново', more:'Другие варианты', source:'Ваш показатель', published:'Диапазон источника',
+    same:'Да, для меня актуально', uncertain:'Пока не уверен', different:'Нет, другой показатель',
+    relevanceYes:'Спасибо. Ваш опыт важнее одного балла. Что вам сейчас больше подходит?',
+    relevanceUnclear:'Это нормально. Один балл не объясняет всей ситуации. Выберите другую шкалу или уточните ваш вопрос.',
+    relevanceNo:'Не будем считать этот балл проблемой. При желании выберите другой показатель.',
+    format:'Какой следующий шаг выбрать?', change:'Обсудить другой показатель',
+    formatNote:'Подбор учитывает вашу тему и выбранный формат, а не прогнозирует медицинский результат.',
+    why:'На чём основан подбор',
+    method:'Как консультант читает тест и чего не может определить', previous:'Предыдущий совместимый замер',
+    count:'Сопоставимого предыдущего замера нет — по одному тесту нельзя оценить динамику.',
+    sourceStep:'Необязательный небольшой шаг из исходного отчёта:',
+    video:'Видео', course:'Практика или курс', test:'Следующий тест', session:'Личная консультация',
     privacy:'Результаты используются только на этой странице. Текст вопросов остаётся во вкладке, не передаётся внешним ИИ, CRM или аналитике.',
     disclaimer:'Тесты описывают ответы, не устанавливают диагноз и не гарантируют результата.',
   },
@@ -59,7 +81,18 @@ const COPY = {
     professional:'Si los síntomas preocupan, consulta a un profesional sanitario. No es un diagnóstico.',
     urgent:'Si estás en peligro inmediato, contacta a emergencias o alguien de confianza. Esta guía no atiende crisis.',
     followup:'Puedo ayudarte a elegir un tema, no deducir causas ni tratamientos de una puntuación.',
-    reset:'Empezar de nuevo', more:'Más pruebas disponibles',
+    reset:'Empezar de nuevo', more:'Explorar otra opción', source:'Resultado registrado', published:'Rango de origen',
+    same:'Sí, me resulta relevante', uncertain:'Todavía no lo sé', different:'No, otra escala',
+    relevanceYes:'Gracias. Tu experiencia importa más que un número. ¿Cómo te gustaría continuar?',
+    relevanceUnclear:'No pasa nada. Un resultado no explica toda la situación. Elige otra escala o aclara tu pregunta.',
+    relevanceNo:'No hace falta considerar esta puntuación un problema. Puedes elegir otro indicador.',
+    format:'Elige un siguiente paso', change:'Comentar otro indicador',
+    formatNote:'Las opciones siguen el tema y el formato que elegiste, no una predicción clínica.',
+    why:'Cómo se eligieron las opciones',
+    method:'Cómo interpretar el informe y sus límites', previous:'Medición anterior comparable',
+    count:'No hay otra medición comparable; un solo test no muestra tendencias.',
+    sourceStep:'Sugerencia opcional del informe original:',
+    video:'Vídeo', course:'Práctica o curso', test:'Otra prueba', session:'Consulta personal',
     privacy:'Tus preguntas se quedan en esta pestaña; no se envían a IA externas, CRM ni analítica.',
     disclaimer:'Los cuestionarios describen respuestas, no diagnostican ni garantizan resultados.',
   },
@@ -68,10 +101,10 @@ const COPY = {
 const Bubble = ({role,children}) => <div className={role==='user'?styles.userBubble:styles.guideBubble}
   data-discussion-message={role}>{children}</div>
 
-export function TestResultDiscussion({result,locale='en',initiallyOpen=false}) {
+export function TestResultDiscussion({result,locale='en',initiallyOpen=false,history=null}) {
   const lang=['ru','es'].includes(locale)?locale:'en', t=COPY[lang]
   const report=useMemo(()=>buildAssessmentResultReport(result,lang),[result,lang])
-  const model=useMemo(()=>buildTestResultDiscussion({result,report,locale:lang}),[result,report,lang])
+  const model=useMemo(()=>buildTestResultDiscussion({result,report,locale:lang,history}),[result,report,lang,history])
   const [open,setOpen]=useState(Boolean(initiallyOpen))
   const [turns,setTurns]=useState([])
   const [question,setQuestion]=useState('')
