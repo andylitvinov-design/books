@@ -1,0 +1,42 @@
+name: HH CI prune superseded queued runs
+
+# pull_request_target executes the trusted BASE-branch script. Never check out
+# untrusted PR HEAD while possessing a GITHUB_TOKEN with actions:write.
+on:
+  pull_request_target:
+    branches: ['codex/public-book-library']
+    types: [synchronize, closed, reopened]
+  push:
+    branches: ['codex/public-book-library']
+
+permissions: {}
+concurrency:
+  group: hh-ci-prune-${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prune:
+    if: github.repository == 'andylitvinov-design/books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # A PR cannot substitute the privileged script with attacker code.
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.base.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed stale-run policy
+        run: node --test tests/ci-prune-stale-runs.test.mjs
+      - name: Cancel verified superseded queued PR runs (limit 20)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HH_CI_PRUNE_LIMIT: '20'
+          HH_CI_RELEASE_BRANCH: codex/public-book-library
+        run: node scripts/ci-prune-stale-runs.mjs
