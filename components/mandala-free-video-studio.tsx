@@ -1466,7 +1466,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setSoundPreview(true);setMusicWarning("");}}
             onPause={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
             onEnded={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
-            onError={()=>{setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);}}
+            onError={()=>{
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;
+              setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
+            }}
             onLoadedMetadata={event=>{
               if(uploadedAudio && Number.isFinite(event.currentTarget.duration) &&
                 event.currentTarget.duration>180)setMusicWarning(ui.audioTooLong);
