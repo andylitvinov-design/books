@@ -553,7 +553,6 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
   };
   const chooseReikiInitiation = (id: string | null) => {
     setReikiInitiationId(id); setMethod(""); setSelectedId(null); setOrderOpen(false);
-    setReikiTab("main");
   };
   const reikiStage = kind === "healing" ? (
     <section className={styles.reikiStage} data-support-reiki-central data-support-reiki-sales-hero data-active-tab={reikiTab}
@@ -704,8 +703,6 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
                   data-support-reiki-open-offers>{r.show}<ArrowRight size={17}/></a> :
                 <button type="button" className={styles.reikiApply}
                   onClick={() => setReikiTab("filter")}>{r.choose}<Filter size={17}/></button>}
-            <button type="button" className={styles.reikiSecondary}
-              onClick={() => setReikiTab("filter")}>{r.tabs.filter}</button>
           </div>
           <small className={styles.reikiCaution}>{r.notBooked}</small>
         </div>}
