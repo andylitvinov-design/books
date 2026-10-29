@@ -17,7 +17,7 @@ for (const browserType of [chromium, webkit]) {
   const browser = await browserType.launch({ headless: true });
   try {
     for (const locale of ["ru", "en", "es"]) {
-      for (const width of [320, 390, 430]) {
+      for (const width of [320, 354, 390, 430]) {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
@@ -155,6 +155,49 @@ for (const browserType of [chromium, webkit]) {
             assert.ok(photo.y<=assessment.bottom && photo.y>=assessment.y-2,label+" photo centered between panels");
           }
           if(width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-"+width+".png",fullPage:true});
+
+          // Owner-approved first-step band: five intentional choices but only
+          // FOUR motivational scores. Values untouched at 5/10 are not results.
+          const quick=root.locator('[data-support-quick-goals]');
+          assert.equal(await quick.count(),1,label+" one first-step band below dashboard");
+          assert.equal(await quick.locator('[data-support-quick-goal]').count(),5,label+" five choices");
+          assert.equal(await root.locator('[data-support-quick-goal][aria-pressed="true"]').count(),0,
+            label+" no fabricated user selection");
+          assert.equal(await root.locator('[data-support-quick-goal-basis]').count(),0,
+            label+" no unrequested personal goal explanation");
+          assert.equal(await root.locator('[class*="progressAverage"] strong').innerText(),"—",
+            label+" untouched five scores are not a measured average");
+          const qaLabels={en:{stress:"Less stress",work:"Work & money"},ru:{stress:"Меньше стресса",work:"Работа и деньги"},
+            es:{stress:"Menos estrés",work:"Trabajo y dinero"}};
+          await quick.locator('[data-support-quick-goal="stress"]').click();
+          await page.waitForFunction(() => document.querySelector('[data-support-quick-goal="stress"]')
+            ?.getAttribute("aria-pressed")==="true",null,{timeout:8000});
+          assert.equal(await root.locator('[data-support-active-focus] strong').innerText(),
+            qaLabels[locale].stress,label+" explicit stress focus, not arbitrary lowest score");
+          assert.equal(await root.locator('[data-support-quick-goal-basis]').count(),1,
+            label+" source-tagged preview and honest match label");
+          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
+            label+" no duplicate/fake videos");
+          if (width===390) await page.screenshot({
+            path:output+"/"+browserType.name()+"-"+locale+"-390-chosen-stress.png",fullPage:true});
+          await quick.locator('[data-support-quick-goal="work"]').click();
+          assert.equal(await root.locator('[data-support-active-focus] strong').innerText(),
+            qaLabels[locale].work,label+" business choice changes real focus");
+          await quick.locator('[data-support-quick-skip]').click();
+          assert.equal(await root.locator('[data-support-quick-goal][aria-pressed="true"]').count(),0,
+            label+" skip resets selected need");
+          assert.equal(await root.locator('[data-support-quick-goal-basis]').count(),0,
+            label+" skip does not keep a stale recommended preview");
+          // A quick goal also opens the EXISTING interactive guide on explicit
+          // Match; nothing is recorded as a lead or automatically played.
+          await quick.locator('[data-support-quick-goal="stress"]').click();
+          await root.locator('[data-support-recommendations]').click();
+          await root.locator('[data-support-inline-guide]').waitFor({state:"visible",timeout:9000});
+          assert.equal(await root.locator('[data-support-applied-goal]').count(),1,
+            label+" accepted quick goal is passed to existing guide and catalog");
+          await quick.locator('[data-support-quick-skip]').click();
+          assert.equal(await root.locator('[data-support-inline-guide]').count(),0,
+            label+" skip closes the quick selection and guide");
 
           // Real input and the accessible mock's actual single-screen interactions.
           const current = root.locator('[data-support-scale="relationships"] input[type="range"]');
