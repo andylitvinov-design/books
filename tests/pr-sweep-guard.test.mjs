@@ -1,0 +1,87 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease } from '../lib/ci/pr-sweep-guard.mjs';
+
+const sha = x => x.repeat(40);
+const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
+const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
+
+test('passes clean current HEAD only when core gate and applicable specialists succeed',()=>{
+  const checks=[check('release-ready'),check('unit-build'),check('database'),check('browser (chromium, core)'),check('browser (webkit, core)')];
+  const result=analyzeCI({pr:pr(),paths:['components/app/app-workspace.jsx'],checks});
+  assert.equal(result.ci_ready,true);
+  assert.deepEqual(result.blockers,[]);
+});
+
+test('rejects successful release-ready alongside actual specialist failure (PR #2526 regression)',()=>{
+  const result=analyzeCI({pr:pr(),paths:['docs/manual.md'],checks:[check('release-ready'),check('module-routing','completed','failure')]});
+  assert.equal(result.ci_ready,false);
+  assert.ok(result.blockers.includes('FAILED:module-routing:failure'));
+});
+
+test('missing specialist blocks: path-filtered skip is not treated as green',()=>{
+  const result=analyzeCI({pr:pr(),paths:['supabase/migrations/20261029.sql'],checks:[check('release-ready')]});
+  assert.equal(result.ci_ready,false);
+  assert.ok(result.blockers.includes('MISSING:database'));
+  assert.ok(result.blockers.includes('MISSING:billing-database'));
+  assert.ok(result.blockers.includes('MISSING:interpretation-database'));
+  assert.ok(result.blockers.includes('MISSING:verify'));
+});
+
+test('draft, changed base, pending, missing core, cancelled and wrong HEAD all block',()=>{
+  assert.ok(analyzeCI({pr:pr({draft:true}),paths:['docs/a.md'],checks:[check('release-ready')]}).blockers.includes('PR_IS_DRAFT'));
+  assert.ok(analyzeCI({pr:pr({base:{ref:'main',sha:sha('b')}}),paths:['docs/a.md'],checks:[check('release-ready')]}).blockers.includes('NON_PRODUCTION_TARGET'));
+  assert.ok(analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[check('release-ready','in_progress',null)]}).blockers.includes('WAITING:release-ready'));
+  assert.ok(analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[]}).blockers.includes('MISSING:release-ready'));
+  assert.ok(analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[check('release-ready','completed','cancelled')]}).blockers.includes('NOT_SUCCESS:release-ready:cancelled'));
+  const wrong={...check('release-ready'),head_sha:sha('c')};
+  assert.ok(analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[wrong]}).blockers.includes('WRONG_HEAD:release-ready'));
+});
+
+test('duplicate check contexts cannot hide a previous failure from another workflow',()=>{
+  const result=analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[check('release-ready','completed','failure',9),check('release-ready','completed','success',10)]});
+  assert.equal(result.ci_ready,false);
+  assert.ok(result.blockers.includes('AMBIGUOUS_CHECK:release-ready'));
+});
+
+test('failed legacy commit status blocks despite core success',()=>{
+  const result=analyzeCI({pr:pr(),paths:['docs/a.md'],checks:[check('release-ready')],statuses:[{context:'external-security',state:'failure'}]});
+  assert.equal(result.ci_ready,false);
+  assert.ok(result.blockers.includes('COMMIT_STATUS:external-security:failure'));
+});
+
+test('evidence fingerprint changes on head, base, check result or changed paths',()=>{
+  const input={pr:pr(),paths:['docs/a.md'],checks:[check('release-ready')]};
+  const k=evidenceKey(input);
+  assert.equal(k,evidenceKey(input));
+  assert.notEqual(k,evidenceKey({...input,pr:pr({head:{sha:sha('c')}})}));
+  assert.notEqual(k,evidenceKey({...input,pr:pr({base:{ref:'codex/public-book-library',sha:sha('d')}})}));
+  assert.notEqual(k,evidenceKey({...input,checks:[check('release-ready','completed','failure')]}));
+  assert.notEqual(k,evidenceKey({...input,paths:['docs/b.md']}));
+  assert.notEqual(k,evidenceKey({...input,statuses:[{context:'external-security',state:'pending'}]}));
+});
+
+test('oldest active GitHub comment claim wins, even after HEAD changes',()=>{
+  const now=Date.parse('2026-10-29T12:00:00Z');
+  const a=makeLease({owner:'work-repair',head_sha:sha('a'),base_sha:sha('b'),now});
+  const b=makeLease({owner:'chat-triage',head_sha:sha('c'),base_sha:sha('d'),now:now+2000});
+  const comments=[{id:24,body:renderLease(b),created_at:new Date(now+2000).toISOString()}, {id:23,body:renderLease(a),created_at:new Date(now).toISOString()}];
+  assert.equal(activeLease(comments,now+3000)?.state.owner,'work-repair');
+  assert.equal(activeLease(comments,now+13*60_000),null);
+  assert.equal(parseLease('not a claim'),null);
+  assert.equal(parseLease(renderLease(a))?.owner,'work-repair');
+});
+
+test('specialists include core app, DB, security, payments and OPORA for global changes',()=>{
+  const checks=productionSpecialists(['package.json']);
+  for(const name of ['unit-build','database','billing-database','interpretation-database','module-routing','verify','public-services','browser (webkit, core)']){
+    assert.ok(checks.includes(name),name);
+  }
+  assert.deepEqual(productionSpecialists(['docs/operations/a.md']),[]);
+});
+
+test('bad owner, SHA and oversized leases are rejected',()=>{
+  assert.throws(()=>makeLease({owner:'x',head_sha:sha('a'),base_sha:sha('b')}),/INVALID_OWNER/);
+  assert.throws(()=>makeLease({owner:'work-owner',head_sha:'bad',base_sha:sha('b')}),/INVALID_SHA/);
+  assert.throws(()=>makeLease({owner:'work-owner',head_sha:sha('a'),base_sha:sha('b'),leaseMinutes:300}),/INVALID_LEASE_DURATION/);
+});
