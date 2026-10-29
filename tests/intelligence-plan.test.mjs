@@ -21,6 +21,19 @@ test('audio without an approved playable source is clearly a no-match in each la
   }
 });
 
+test('an empty eligible catalog is distinguished from a technical failure in each language', async () => {
+  for (const language of ['en','ru','es']) {
+    const request={...body,intent:{language,selectedTopics:['energy'],formats:['test']}};
+    const empty=await planIntelligenceRequest(request,{loadTests:async()=>({})});
+    const failed=await planIntelligenceRequest(request,{loadTests:async()=>{throw new Error('offline')}});
+    assert.equal(empty.status,'no_match');
+    assert.equal(failed.status,'unavailable');
+    assert.match(empty.explanation, language==='en' ? /no matching/i : language==='ru' ? /не нашл/i : /no encontramos/i);
+    assert.notEqual(empty.explanation,failed.explanation);
+    assert.equal(empty.primary,undefined);
+  }
+});
+
 test('plans one real, eligible meditation and returns a private-data-free response', async () => {
   assert.equal((await planIntelligenceRequest(body, { loadCatalog:loader })).status,'no_match');
   const result = await planIntelligenceRequest(videoBody, { loadCatalog: loader });
@@ -64,6 +77,7 @@ test('crisis language in untrusted catalog titles is never emitted as a recommen
   const badVideo = { ...videos.find(video => video.youtube_id === sourceId), title: 'I want to die' };
   const result = await planIntelligenceRequest(videoBody, { loadCatalog: async () => ({ videos:[badVideo], publishedSourceIds:[sourceId] }) });
   assert.equal(result.status, 'no_match');
+  assert.match(result.explanation,/no matching/i);
   assert.equal(JSON.stringify(result).includes('I want to die'), false);
 });
 test('crisis handoff and empty results are localized without inventing audio in another language', async () => {
