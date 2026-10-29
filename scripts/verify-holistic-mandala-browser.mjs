@@ -109,6 +109,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           engine+" "+locale+" "+width+"px compact video touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
+        // Reference-state capture: the approved owner screenshot starts with
+        // the default ENERGY topic, before browser QA switches to MONEY.
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await page.locator("[data-hypno-overview]").screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
+            animations:"disabled",
+          });
+        }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
