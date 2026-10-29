@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
   CINEMATIC_THEMES,CINEMATIC_STYLES,CINEMATIC_PLAN_VERSION,
-  buildCinematicStoryboard,customizeCinematicShot,findCinematicShot,safeCinematicPrompt,
+  buildCinematicStoryboard,customizeCinematicShot,cinematicPreviewSeconds,findCinematicShot,safeCinematicPrompt,
 } from "../lib/mandala/cinematic-director.mjs";
 import {
   CINEMATIC_PROVIDER_CATALOG,listCinematicRoutes,evaluateCinematicSpend,
@@ -39,6 +39,39 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
     }
   }
 });
+test("long-running cinematic preview loops actual scene times and synchronized affirmations",()=>{
+  const film=buildCinematicStoryboard({theme:"money",durationSeconds:20,locale:"ru"});
+  assert.equal(cinematicPreviewSeconds(film,0),0);
+  assert.equal(cinematicPreviewSeconds(film,5),5);
+  assert.equal(cinematicPreviewSeconds(film,19.999),19.999);
+  assert.equal(cinematicPreviewSeconds(film,20),0,"start scene one on the next preview loop");
+  assert.equal(cinematicPreviewSeconds(film,25),5);
+  assert.equal(cinematicPreviewSeconds(film,47),7);
+  assert.equal(cinematicPreviewSeconds(film,NaN),0);
+  assert.equal(cinematicPreviewSeconds(film,-1),0);
+  assert.equal(cinematicPreviewSeconds(null,2),0);
+  assert.equal(findCinematicShot(film.shots,cinematicPreviewSeconds(film,22))?.number,1);
+  assert.equal(findCinematicShot(film.shots,cinematicPreviewSeconds(film,28))?.number,2);
+  assert.match(studio,/const filmSecond=storyboard\?cinematicPreviewSeconds\(storyboard,time\):time/);
+  assert.match(studio,/const frameSecond=cinematicPlan\?cinematicPreviewSeconds\(cinematicPlan,elapsed\):elapsed/);
+  assert.match(studio,/paintVideoAffirmations\(ctx,frameSecond,affirmationLines,affirmations\)/,
+    "looping visual stage and timed affirmations must share one clock");
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/,
+    "final encoded video still uses the original bounded timeline");
+});
+
+test("storyboard scene selectors show real localized scene names without touching safe export prompts",()=>{
+  assert.match(directorUI,/function sceneDisplayName\(theme:VideoTheme,sceneId:string,locale:PublicLocale\)/);
+  assert.match(directorUI,/moneyScenes\.find\(item=>item\.id===sceneId\)\?\.label\[locale\]/);
+  assert.match(directorUI,/otherVideoScenes\[theme\]\.find\(item=>item\.id===sceneId\)\?\.label\[locale\]/);
+  assert.match(directorUI,/sceneDisplayName\(shot\.theme,shot\.sceneId,locale\)/);
+  assert.match(directorUI,/sceneDisplayName\(item\.theme,item\.sceneId,locale\)/);
+  assert.match(directorUI,/data-director-scene-choice=\{shot.number\}/);
+  const plan=buildCinematicStoryboard({theme:"money",locale:"ru",wish:"достойная оплата"});
+  assert.match(plan.shots[2].providerPrompt,/cinematic|natural|scene/i);
+  assert.doesNotMatch(JSON.stringify(plan),/достойная оплата/);
+});
+
 test("user wish influences the curated scene order without entering any provider prompt",()=>{
   const p=buildCinematicStoryboard({locale:"ru",theme:"money",style:"dream",
     wish:"Хочу "+prefix+" c рассветом и доходом",avoid:"избегать темноты "+prefix});
