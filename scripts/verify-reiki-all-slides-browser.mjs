@@ -720,8 +720,11 @@ async function verifyShortViewport(page,locale) {
     }
   }
 
-  await expectFits("welcome-video"); // owner intro is the first screen, ahead of the course
-  await page.locator("button[data-energywork-next]").click();
+  // Match the actual approved course order asserted above. The visitor
+  // first sees the welcome and experience check-in, THEN the author's video.
+  // Never assert a video-first order that the curriculum does not render.
+  assert.deepEqual(expectedSequence.slice(0,4),
+    ["welcome-01","welcome-02","welcome-video","flight-01"]);
   await expectFits("welcome-01");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("welcome-02");
@@ -729,6 +732,8 @@ async function verifyShortViewport(page,locale) {
   await expectFits("welcome-02"); // inspect the longest end-of-list selection
   await page.locator('input[name="welcome-02"][value="beginner"]').check();
   await expectFits("welcome-02"); // and the normal intro choice
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("welcome-video");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-01");
   await page.locator("button[data-energywork-next]").click();
