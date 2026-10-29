@@ -6,6 +6,8 @@ import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, 
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
+import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
+import {moneyScenes} from "@/lib/mandala/money-flow-effects";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-cinematic-director.module.css";
@@ -84,6 +86,13 @@ const copy={
     applied:"Montaje preparado. Pulsa el botón existente Crear vídeo.",noData:"No se enviaron datos a proveedores.",
     themes:{energy:"Energía",money:"Dinero y trabajo",relationships:"Relaciones",goals:"Metas y sentido",life:"Vida",health:"Descanso y bienestar"}},
 } as const;
+// Names are taken from the same three-language scene catalog as the original
+// editor. English visualCue/providerPrompt remains internal to the disclosure
+// and offline owner handoff, not the primary client-facing shot label.
+function sceneDisplayName(theme:VideoTheme,sceneId:string,locale:PublicLocale):string{
+  if(theme==="money")return moneyScenes.find(item=>item.id===sceneId)?.label[locale]||sceneId;
+  return otherVideoScenes[theme].find(item=>item.id===sceneId)?.label[locale]||sceneId;
+}
 const FIELDS:Field[]=["theme","difficulty","goal","profile"];
 export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onApplyStoryboard,onInvalidateStoryboard}:Props){
   const t=copy[locale]||copy.en;
@@ -266,7 +275,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
           className={css.shot} data-director-shot={shot.number}>
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
-          <div><strong>{shot.title}</strong><p>{shot.visualCue}</p>
+          <div><strong>{shot.title}</strong><p>{t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
             <label className={css.sceneChoice}>
               <span>{t.sceneChoice}</span>
@@ -274,7 +283,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
                 onChange={event=>chooseShot(shot.number,event.currentTarget.value)}>
                 {plan.sceneChoices.filter(item=>item.theme===shot.theme||item.sceneId===shot.sceneId)
                   .map(item=><option key={item.sceneId} value={item.sceneId}>
-                    {item.visualCue}
+                    {sceneDisplayName(item.theme,item.sceneId,locale)}
                   </option>)}
               </select>
             </label>
