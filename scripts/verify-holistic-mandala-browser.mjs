@@ -443,12 +443,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // guest route and iPhone viewport, without iOS browser chrome.
         if(locale==="ru"&&[320,390,430].includes(width)){
           const panel=page.locator("[data-video-audio-section]");
-          const dimensions=await panel.locator("[data-video-audio-tracks] [data-video-music]").first()
+          const dimensions=await panel.locator("[data-video-audio-tracks] [data-audio-id]").first()
             .evaluate(node=>{
               const rect=node.getBoundingClientRect(),font=getComputedStyle(node.querySelector("strong")).fontSize;
               return {height:rect.height,width:rect.width,font};
             });
           assert.ok(dimensions.height>=60 && dimensions.width>200 && parseFloat(dimensions.font)>=13,
+            "all audio rows retain legible text and span the phone");
+          const playTargets=await panel.locator("[data-video-audio-tracks] [data-video-audio-play]")
+            .evaluateAll(nodes=>nodes.map(node=>({height:node.getBoundingClientRect().height,
+              width:node.getBoundingClientRect().width})));
+          assert.equal(playTargets.length,5,"show five sound rows before expanding");
+          assert.ok(playTargets.every(target=>target.height>=44&&target.width>=44),
+            "every initially displayed Play button is touch-accessible");
             "readable 44px+ audio-only rows at "+width+": "+JSON.stringify(dimensions));
           const attach=await panel.locator("[data-video-audio-attach]").boundingBox();
           assert.ok(attach && attach.height>=44,
@@ -471,6 +478,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.ok(await page.locator("[data-video-audio-tracks] [data-video-music]").count()>=2);
           await page.locator('[data-video-audio-kind="all"]').click();
           await page.locator('[data-video-audio-mood="all"]').click();
+          await page.locator('[data-video-audio-kind="melody"]').click();
+          assert.ok(await page.locator('[data-video-music="kalimba"]').count(),
+            "new melody category filters real tracks");
+          await page.locator('[data-video-audio-kind="all"]').click();
           const localFavorite=page.locator("[data-video-audio-tracks] [data-video-audio-favorite]").first();
           await localFavorite.click();
           assert.equal(await localFavorite.getAttribute("aria-pressed"),"true","local heart is a working control");
@@ -496,11 +507,18 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
           await page.locator("[data-video-audio-more]").click();
-          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
-            "expanded audio-only library contains all 13 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),34,
+            "expanded audio-only library contains all 34 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-audio-play]').count(),34,
+            "every offered track has a separate left-side Play button");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
-            "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
-            await page.locator('[data-video-music="'+preset+'"]').click();
+            "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse",
+            "soft-piano","kalimba","harp","flute","celesta","strings","marimba","lullaby",
+            "handpan","forest","stream","waterfall","fireplace","night","birdsong",
+            "singing-bowl","wind-chimes","crystal","cosmos","soft-beat","earth-drum"]) {
+            // Press Play DIRECTLY from the row: no preliminary Select click.
+            const playButton=page.locator('[data-video-audio-play="'+preset+'"]');
+            await playButton.click();
             const native=page.locator("[data-video-audio-player]");
             await native.waitFor({state:"attached",timeout:12000});
             const src=await native.getAttribute("src");
@@ -512,7 +530,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
               preset+" is served with an actual WAV media MIME");
             const body=Buffer.from(await response.body());
             assert.equal(body.subarray(0,4).toString("ascii"),"RIFF",preset+" starts with WAV PCM header");
-            await page.locator("[data-video-music-preview]").click();
+            assert.equal(await playButton.getAttribute("aria-pressed"),"true",
+              preset+" direct row Play must visibly switch to Pause");
             await page.waitForFunction(() => {
               const a=document.querySelector("[data-video-audio-player]");
               return a && a.error === null && a.readyState >= 2 && a.currentTime > .3;
@@ -523,9 +542,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
             }));
             assert.equal(detail.error,null,preset+" native media error");
             assert.ok(detail.duration>=7 && detail.currentTime>.3,preset+" actually plays");
+            assert.equal(Math.round(detail.duration),
+              ["harmony","prosperity","energy","love","meditation","rain","ocean","breeze",
+               "focus","grounding","breath","sunrise","pulse"].includes(preset)?8:16,
+              preset+" must have a truthful native duration");
             assert.equal(await page.locator("[data-video-audio-direct]").count(),0,
               "healthy preset must not show direct-open error fallback");
-            await page.locator("[data-video-music-preview]").click();
+            await playButton.click();
+            assert.equal(await playButton.getAttribute("aria-pressed"),"false",
+              preset+" second row Play click pauses playback");
           }
         }
         if (engine === "chromium" && locale === "ru" && width === 390) {
