@@ -17,6 +17,10 @@ The GitHub default codex/bootstrap-books is NOT the Holistic House production ta
 - Guardrails: input safety and approved catalog decisions outrank model text,
   which cannot create links, diagnoses, bookings, sales, prescriptions or memory.
 - Existing release-verified Reiki intro audio, not video-editor soundtracks.
+- Explicit natural-language requests ("Запомни, меня зовут…", "remember I
+  prefer short replies", "recuerda…") produce a visible confirmation card.
+  NO memory save occurs unless the visitor presses Remember; the server still
+  requires authenticated account, origin check and prior memory consent.
 - Explicit memory UI: preferred name, style of address, response length,
   avoided format, optional one-line personal emphasis; edit/export/delete.
 - Existing server auth + RLS transaction, per-row AES-GCM using existing seal
