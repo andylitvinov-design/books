@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, ChevronDown, ChevronRight, CirclePlay, Film, Pencil, SlidersHorizontal, Sparkles, Target, WandSparkles } from "lucide-react";
@@ -101,10 +101,7 @@ export function MandalaHypnoCompact({
   const scale=settings.textScale||"medium";
   const selectedCount=settings.selected.length;
   const [showHint,setShowHint]=useState(false);
-  useEffect(()=>{
-    setProblemIndex(0); setGoalId(topicGoals[theme][0]);
-    setProblemNote(""); setGoalNote("");
-  },[theme]);
+
   const toggle=(panel:Exclude<EditPanel,null>)=>setOpen(current=>current===panel?null:panel);
   const propose=()=>{
     const suggestions=buildHypnoRequestPhrases(locale,theme,problemIndex,goalId);
