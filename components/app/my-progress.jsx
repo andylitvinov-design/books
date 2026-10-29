@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import {
+  Activity, ArrowRight, BookOpen, CalendarDays, CheckCircle2,
+  ChevronRight, ClipboardCheck, Clock3, FileText, Flower2,
+  GraduationCap, Leaf, Play, PlaySquare, RotateCw, ShieldCheck,
+  Sparkles, UserRound, Video, NotebookPen,
+} from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { buildMyProgress } from '@/lib/app/my-progress.mjs'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
@@ -10,179 +17,363 @@ import styles from './my-progress.module.css'
 const COPY = {
   en: {
     eyebrow:'MY HOUSE · MY JOURNEY', title:'My Progress',
-    intro:'Your saved tests, courses, practices, reports, requests and private video mandalas — together in one chronological history.',
-    tests:'Tests', courses:'Courses', practices:'Practices', mandalas:'Video mandalas',
-    all:'All', videos:'Watched videos', reports:'Reports', services:'Services', notes:'Check-ins & notes',
-    history:'Activity history', saved:'Saved', completed:'Completed', watched:'Marked watched', mastered:'Self-marked mastered', in_progress:'In progress',
+    intro:'Your learning, personal practices and saved materials — all in one place.',
+    profile:'My private space', profileOpen:'My profile', personal:'Personal history',
+    history:'History', historyAll:'View all', library:'My library',
+    videos:'Videos', tests:'Tests', courses:'Courses', practices:'Practices',
+    mandalas:'Video mandalas', reports:'Reports', services:'Requests', notes:'Check-ins',
+    all:'All', countTests:'completed', countCourses:'started', countVideos:'marked', countPractices:'done',
+    recentVideos:'Recently marked videos', noVideos:'No videos marked as watched yet',
+    noVideosHelp:'In the Academy, open a video and choose “I watched this” after watching.',
+    exploreVideos:'Explore videos', videoSource:'Academy', replay:'Watch again',
+    myMandalas:'My video mandalas', mandalaCollection:'Your privately saved MP4 videos',
+    noMandalas:'Your saved video mandalas will appear here.',
+    mandalaCreate:'Create a mandala', mandalaOpen:'Open my videos',
+    resume:'Continue where you left off', resumeNow:'Continue', resumeEmpty:'Explore a course or take a test',
+    recentActivity:'All activity', recentIntro:'The records below are based on actual saves and confirmations.',
+    saved:'Saved', completed:'Completed', watched:'Marked watched',
+    mastered:'Marked as mastered', in_progress:'In progress',
     active:'In progress', paused:'Paused', draft:'Draft', closed:'Closed', archived:'Archived',
-    logged:'Recorded', requested:'Requested (not booked)', contacted:'Contacted',
-    cancelled:'Cancelled', unavailable:'No longer available', pending:'Pending',
-    open:'Open', more:'Show more', empty:'Nothing saved in this category yet.',
-    partial:'Some sources could not be loaded. The activity shown below is incomplete. Refresh to try again.',
-    loading:'Checking your private saved progress…',
-    watchTitle:'Academy video viewing marks',
-    watchNote:'Open an Academy video, then explicitly mark it as watched or mastered. These are your own confirmations, not automatic measurements of playback or skill.',
-    watchAction:'Explore video courses', mandalaNote:'Only completed MP4 files explicitly saved to your private account are included. Browser-only edits and device downloads cannot be recovered here.',
-    mandalaAction:'Open my saved videos', compare:'Compare test results',
-    courseAction:'Continue my courses', privacy:'Visible only inside your signed-in account. No clinical score is shared with a practitioner, messaging app or marketing tracker.',
-    foot:'Finishing a practice records participation, not a guaranteed change in wellbeing.',
-    countCourses:'started / saved', countTests:'completed', countPractices:'confirmed', countMandalas:'cloud saved', countVideos:'self-marked',
-    refresh:'Refresh progress',
+    logged:'Recorded', requested:'Request sent, not booked', contacted:'Contacted',
+    cancelled:'Cancelled', unavailable:'Unavailable', pending:'Pending',
+    open:'Open', more:'Show more', empty:'No saved records in this section yet.',
+    partial:'Some sources could not be loaded. This history is incomplete. Refresh to retry.',
+    loading:'Loading your saved history…', refresh:'Refresh',
+    videoNote:'Video marks are your own confirmations, not automatic playback or proof of skills.',
+    mandalaNote:'Only completed MP4 files explicitly saved to your private account are shown. Local edits and downloads are not cloud saves.',
+    videoHref:'Open the Academy', coursesHref:'My courses', testsHref:'My tests',
+    privacy:'Private to your signed-in account. Test answers and health details are not sent to video providers or marketing trackers.',
+    foot:'Participation and test scores are not a promise of health improvement.',
+    masteredCount:'mastered', markHelp:'Watch and mark videos in the Academy',
+    itemCount:'items', noProfileName:'My House',
+    noSavedVideos:'Nothing saved yet. Explore the Academy or create your first video.',
   },
   ru: {
     eyebrow:'МОЙ ДОМ · МОЙ ПУТЬ', title:'Мой прогресс',
-    intro:'Пройденные тесты, курсы, практики, отчёты, заявки и сохранённые видеомандалы — в одной истории по датам.',
-    tests:'Тесты', courses:'Курсы', practices:'Практики', mandalas:'Видеомандалы',
-    all:'Всё', videos:'Просмотренные видео', reports:'Отчёты', services:'Услуги', notes:'Наблюдения',
-    history:'История активности', saved:'Сохранено', completed:'Завершено', watched:'Отмечено просмотренным', mastered:'Отмечено освоенным', in_progress:'В процессе',
+    intro:'Ваше обучение, практики и сохранённые материалы — в одном месте.',
+    profile:'Личное пространство', profileOpen:'Мой профиль', personal:'Моя история',
+    history:'История', historyAll:'Вся история', library:'Моя библиотека',
+    videos:'Видео', tests:'Тесты', courses:'Курсы', practices:'Практики',
+    mandalas:'Видео-мандалы', reports:'Отчёты', services:'Заявки', notes:'Наблюдения',
+    all:'Всё', countTests:'пройдено', countCourses:'начато', countVideos:'отмечено', countPractices:'выполнено',
+    recentVideos:'Просмотренные видео', noVideos:'Пока нет отмеченных просмотренных видео',
+    noVideosHelp:'Откройте ролик в Академии и после просмотра нажмите «Я посмотрел(а)».',
+    exploreVideos:'Смотреть видео', videoSource:'Академия', replay:'Смотреть снова',
+    myMandalas:'Мои видео-мандалы', mandalaCollection:'Готовые MP4 в личном хранилище',
+    noMandalas:'Здесь появятся ваши сохранённые видео-мандалы.',
+    mandalaCreate:'Создать мандалу', mandalaOpen:'Открыть мои видео',
+    resume:'Продолжить с того места', resumeNow:'Продолжить', resumeEmpty:'Выбрать курс или тест',
+    recentActivity:'Вся активность', recentIntro:'Только фактические сохранения и подтверждённые вами действия.',
+    saved:'Сохранено', completed:'Завершено', watched:'Отмечено просмотренным',
+    mastered:'Отмечено освоенным', in_progress:'В процессе',
     active:'В процессе', paused:'Приостановлено', draft:'Черновик', closed:'Закрыто', archived:'В архиве',
-    logged:'Записано', requested:'Заявка (не запись)', contacted:'Связались',
-    cancelled:'Отменена', unavailable:'Больше недоступно', pending:'Ожидает',
-    open:'Открыть', more:'Показать ещё', empty:'В этой категории пока нет сохранённых записей.',
-    partial:'Часть источников сейчас недоступна. История ниже неполная. Обновите данные и попробуйте снова.',
-    loading:'Проверяем сохранённый прогресс вашего аккаунта…',
-    watchTitle:'Отметки о просмотренных видео Академии',
-    watchNote:'Откройте видео в Академии, затем отметьте «Я посмотрел(а)» или «Я освоил(а)». Это ваше подтверждение, а не автоматический подсчёт просмотра.',
-    watchAction:'Перейти к видеокурсам', mandalaNote:'Здесь только готовые MP4, явно сохранённые в приватном кабинете. Несохранённые проекты браузера и скачивания на устройство восстановить отсюда нельзя.',
-    mandalaAction:'Мои сохранённые видео', compare:'Динамика тестов',
-    courseAction:'Продолжить курсы', privacy:'Эта информация видна только после входа. Результаты тестов не отправляются практику, в мессенджеры или рекламную аналитику.',
-    foot:'Выполнение практики означает участие, но не гарантирует улучшение состояния.',
-    countCourses:'начато / сохранено', countTests:'завершено', countPractices:'подтверждено', countMandalas:'сохранено в облаке', countVideos:'отмечено лично',
-    refresh:'Обновить прогресс',
+    logged:'Записано', requested:'Заявка, ещё не запись', contacted:'Связались',
+    cancelled:'Отменено', unavailable:'Недоступно', pending:'Ожидает',
+    open:'Открыть', more:'Показать ещё', empty:'В этом разделе пока нет сохранённых записей.',
+    partial:'Часть источников недоступна. История неполная. Обновите данные и попробуйте снова.',
+    loading:'Загружаем сохранённую историю…', refresh:'Обновить',
+    videoNote:'Отметки о видео ставите вы сами. Это не автоматический просмотр и не доказательство освоения.',
+    mandalaNote:'Показаны только готовые MP4, сохранённые в приватном кабинете. Локальные проекты и скачивания не считаются облачными сохранениями.',
+    videoHref:'Открыть Академию', coursesHref:'Мои курсы', testsHref:'Мои тесты',
+    privacy:'Приватно для вашего аккаунта. Ответы тестов и сведения о здоровье не передаются видеосервисам или рекламной аналитике.',
+    foot:'Пройденные занятия и результаты тестов не означают гарантированного улучшения состояния.',
+    masteredCount:'освоено', markHelp:'Смотреть и отмечать видео в Академии',
+    itemCount:'записей', noProfileName:'Мой дом',
+    noSavedVideos:'Пока ничего не сохранено. Откройте Академию или создайте первое видео.',
   },
   es: {
     eyebrow:'MI CASA · MI CAMINO', title:'Mi progreso',
-    intro:'Tests, cursos, prácticas, informes, solicitudes y videomandalas guardadas, en una sola cronología privada.',
-    tests:'Tests', courses:'Cursos', practices:'Prácticas', mandalas:'Videomandalas',
-    all:'Todo', videos:'Vídeos vistos', reports:'Informes', services:'Servicios', notes:'Registros',
-    history:'Historial de actividad', saved:'Guardado', completed:'Completado', watched:'Marcado visto', mastered:'Marcado aprendido', in_progress:'En curso',
+    intro:'Tu aprendizaje, prácticas y materiales guardados, en un solo lugar.',
+    profile:'Mi espacio privado', profileOpen:'Mi perfil', personal:'Mi historial',
+    history:'Historial', historyAll:'Ver todo', library:'Mi biblioteca',
+    videos:'Vídeos', tests:'Tests', courses:'Cursos', practices:'Prácticas',
+    mandalas:'Videomandalas', reports:'Informes', services:'Solicitudes', notes:'Registros',
+    all:'Todo', countTests:'completados', countCourses:'iniciados', countVideos:'marcados', countPractices:'realizadas',
+    recentVideos:'Vídeos marcados como vistos', noVideos:'Todavía no has marcado vídeos vistos',
+    noVideosHelp:'Abre un vídeo en la Academia y, después de verlo, elige “Lo he visto”.',
+    exploreVideos:'Explorar vídeos', videoSource:'Academia', replay:'Ver otra vez',
+    myMandalas:'Mis videomandalas', mandalaCollection:'MP4 guardados de forma privada',
+    noMandalas:'Tus videomandalas guardadas aparecerán aquí.',
+    mandalaCreate:'Crear mandala', mandalaOpen:'Abrir mis vídeos',
+    resume:'Continúa donde lo dejaste', resumeNow:'Continuar', resumeEmpty:'Elegir un curso o test',
+    recentActivity:'Toda la actividad', recentIntro:'Solo acciones realmente guardadas o confirmadas por ti.',
+    saved:'Guardado', completed:'Completado', watched:'Marcado visto',
+    mastered:'Marcado aprendido', in_progress:'En curso',
     active:'En curso', paused:'Pausado', draft:'Borrador', closed:'Cerrado', archived:'Archivado',
-    logged:'Registrado', requested:'Solicitud (sin reserva)', contacted:'Contactado',
+    logged:'Registrado', requested:'Solicitud, no reserva', contacted:'Contactado',
     cancelled:'Cancelado', unavailable:'No disponible', pending:'Pendiente',
-    open:'Abrir', more:'Mostrar más', empty:'Todavía no hay registros guardados en esta categoría.',
-    partial:'Algunas fuentes no se han podido cargar. La cronología está incompleta. Actualiza para intentarlo de nuevo.',
-    loading:'Comprobando tu progreso guardado…',
-    watchTitle:'Mis vídeos de Academy marcados',
-    watchNote:'Abre un vídeo en Academy y márcalo como visto o aprendido. Es tu confirmación, no una medición automática.',
-    watchAction:'Explorar los vídeos', mandalaNote:'Solo se incluyen MP4 guardados expresamente en tu cuenta privada; los proyectos locales no pueden recuperarse aquí.',
-    mandalaAction:'Mis vídeos guardados', compare:'Comparar tests',
-    courseAction:'Continuar mis cursos', privacy:'Solo visible en tu cuenta. No compartimos resultados con profesionales, mensajes ni analítica publicitaria.',
-    foot:'Terminar una práctica no garantiza una mejora de bienestar.',
-    countCourses:'iniciados / guardados', countTests:'completados', countPractices:'confirmadas', countMandalas:'guardadas en nube', countVideos:'marcados por mí',
-    refresh:'Actualizar progreso',
+    open:'Abrir', more:'Mostrar más', empty:'Aún no hay registros guardados en esta sección.',
+    partial:'Algunas fuentes no están disponibles. El historial está incompleto. Actualiza e inténtalo de nuevo.',
+    loading:'Cargando tu historial…', refresh:'Actualizar',
+    videoNote:'Las marcas son confirmaciones tuyas, no reproducciones medidas ni prueba de dominio.',
+    mandalaNote:'Solo aparecen MP4 guardados en tu cuenta privada; los proyectos y las descargas locales no son copias en la nube.',
+    videoHref:'Abrir la Academia', coursesHref:'Mis cursos', testsHref:'Mis tests',
+    privacy:'Privado en tu cuenta. Las respuestas y datos de salud no se comparten con proveedores de vídeo ni analítica publicitaria.',
+    foot:'La participación y las puntuaciones no garantizan mejoras de bienestar.',
+    masteredCount:'aprendidos', markHelp:'Ver y marcar vídeos en Academia',
+    itemCount:'registros', noProfileName:'Mi casa',
+    noSavedVideos:'Aún no has guardado nada. Explora Academia o crea tu primer vídeo.',
   },
 }
 
-const FILTERS = ['all','tests','courses','practices','videos','mandalas','reports','services','notes']
-const DATE_LOCALES = {en:'en-US',ru:'ru-RU',es:'es-ES'}
-function dateLabel(value,locale) {
-  try { return new Intl.DateTimeFormat(DATE_LOCALES[locale] || DATE_LOCALES.en,
-    {dateStyle:'medium',timeStyle:'short'}).format(new Date(value)) }
-  catch { return '' }
+const DATE_LOCALES = { en:'en-US', ru:'ru-RU', es:'es-ES' }
+const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes']
+const LIBRARY = [
+  { id:'videos', Icon:PlaySquare, tone:'video' },
+  { id:'courses', Icon:BookOpen, tone:'course' },
+  { id:'tests', Icon:ClipboardCheck, tone:'test' },
+  { id:'mandalas', Icon:Sparkles, tone:'mandala' },
+  { id:'practices', Icon:Flower2, tone:'practice' },
+  { id:'reports', Icon:FileText, tone:'report' },
+  { id:'services', Icon:CalendarDays, tone:'service' },
+  { id:'notes', Icon:NotebookPen, tone:'note' },
+]
+const ICONS = Object.fromEntries(LIBRARY.map(({id,Icon})=>[id,Icon]))
+
+function dateLabel(value, locale) {
+  try {
+    return new Intl.DateTimeFormat(DATE_LOCALES[locale] || DATE_LOCALES.en,
+      {day:'numeric',month:'short',year:'numeric'}).format(new Date(value))
+  } catch { return '' }
 }
 function Status({status,t}) {
   return <span className={styles.status} data-progress-status={status}>{t[status] || t.saved}</span>
 }
+function VideoHistoryCard({entry,lang,t}) {
+  // User explicitly marked a catalog video. No watch-time or completion
+  // percentage is inferred from playback. Never load thumbnails for test data.
+  const videoId=entry.id.startsWith('videos:')?entry.id.slice(7):''
+  const validId=/^[A-Za-z0-9_-]{11}$/.test(videoId)
+  const href=validId?'https://www.youtube.com/watch?v='+videoId:'/'+lang+'/academy/videos'
+  return <article className={styles.videoCard} data-progress-video-history>
+    <a href={href} target={validId?'_blank':undefined} rel={validId?'noopener noreferrer':undefined}
+      aria-label={entry.title+' · '+t.replay}>
+      <div className={styles.videoPoster}>
+        {validId && <Image src={'https://i.ytimg.com/vi/'+videoId+'/mqdefault.jpg'} alt=""
+          width={320} height={180} unoptimized loading="lazy" referrerPolicy="no-referrer" />}
+        <span className={styles.videoPlay} aria-hidden="true"><Play size={17} fill="currentColor" /></span>
+        <span className={styles.posterBadge}><CheckCircle2 size={12}/>{entry.status==='mastered'?t.mastered:t.watched}</span>
+      </div>
+      <strong className={styles.videoTitle}>{entry.title}</strong>
+      <span className={styles.videoMeta}>{t.videoSource} · {dateLabel(entry.at,lang)}</span>
+    </a>
+  </article>
+}
+function MandalaCard({entry,lang,t}) {
+  return <article className={styles.mandalaCard}>
+    <Link href={entry.href || '/'+lang+'/app/videos'} prefetch={false} aria-label={entry.title+' · '+t.open}>
+      <div className={styles.mandalaCover}>
+        <Sparkles size={36} strokeWidth={1.5} aria-hidden="true"/>
+        <span className={styles.mandalaPlay}><Play size={17} fill="currentColor"/></span>
+      </div>
+      <strong>{entry.title}</strong>
+      <small>{entry.detail} · {dateLabel(entry.at,lang)}</small>
+    </Link>
+  </article>
+}
+function ActivityRow({entry,lang,t}) {
+  const Icon=ICONS[entry.category] || Activity
+  return <li className={styles.entry} data-category={entry.category}>
+    <span className={styles.entryIcon} aria-hidden="true"><Icon size={19} strokeWidth={1.9}/></span>
+    <div className={styles.entryBody}>
+      <div className={styles.entryTop}>
+        <span>{t[entry.category]}</span>
+        <time dateTime={entry.at}>{dateLabel(entry.at,lang)}</time>
+      </div>
+      <strong>{entry.title}</strong>
+      {entry.detail && <p>{entry.detail}</p>}
+      <Status status={entry.status} t={t}/>
+    </div>
+    {entry.href && <Link className={styles.entryOpen} href={entry.href} prefetch={false}
+      aria-label={t.open+' · '+entry.title}><ChevronRight size={20}/></Link>}
+  </li>
+}
 
-export default function MyProgress({ data, locale = 'en' }) {
-  const lang = Object.hasOwn(COPY,locale) ? locale : 'en'
-  const t = COPY[lang]
-  const accountId = data?.account?.id
-  const [sources,setSources] = useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0})
-  const [reloadKey,setReloadKey] = useState(0)
-  const [filter,setFilter] = useState('all')
-  const [shown,setShown] = useState(30)
-  useEffect(() => {
-    if (!accountId) return
-    let active = true
+export default function MyProgress({ data, locale='en' }) {
+  const lang=Object.hasOwn(COPY,locale)?locale:'en'
+  const t=COPY[lang]
+  const accountId=data?.account?.id
+  const accountName=typeof data?.account?.displayName==='string'
+    ? data.account.displayName.trim().slice(0,70) : ''
+  const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
+  const root='/'+lang+'/app'
+  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0})
+  const [reloadKey,setReloadKey]=useState(0)
+  const [filter,setFilter]=useState('all')
+  const [shown,setShown]=useState(24)
+
+  useEffect(()=>{
+    if(!accountId) return
+    let active=true
     setSources({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0})
-    const endpoints = ['course','academy-energywork','personal-videos','video-progress']
-    Promise.allSettled(endpoints.map(endpoint => appFetch(endpoint,undefined,'GET',{accountId})))
-      .then(results => {
-        if (!active) return
-        const values = results.map(item => item.status === 'fulfilled' ? item.value : null)
+    const endpoints=['course','academy-energywork','personal-videos','video-progress']
+    Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
+      .then(results=>{
+        if(!active) return
+        const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
           growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],loading:false,
-          // Cloud video storage may be disabled and remains an optional category.
-          failed:results.filter((item,index) => item.status === 'rejected' &&
-            !(index === 2 && item.reason?.code === 'FEATURE_UNAVAILABLE')).length,
+          failed:results.filter((item,index)=>item.status==='rejected' &&
+            !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length,
         })
       })
-    return () => { active = false }
+    return ()=>{active=false}
   },[accountId,reloadKey])
 
-  const progress = useMemo(() => buildMyProgress({
-    bootstrap:data || {}, growth:sources.growth, energywork:sources.energywork,
-    videos:sources.videos,videoProgress:sources.videoProgress,titleOfTest:assessmentHistoryTitle,locale:lang,
+  const progress=useMemo(()=>buildMyProgress({
+    bootstrap:data||{},growth:sources.growth,energywork:sources.energywork,
+    videos:sources.videos,videoProgress:sources.videoProgress,
+    titleOfTest:assessmentHistoryTitle,locale:lang,
   }),[data,sources,lang])
-  const filtered = useMemo(() => filter === 'all'
-    ? progress.entries : progress.entries.filter(item => item.category === filter),
-  [filter,progress])
-  const root = '/' + lang + '/app'
-  const overview = [
-    {key:'tests',value:progress.totals.tests,label:t.tests,detail:t.countTests},
-    {key:'courses',value:progress.totals.courses,label:t.courses,detail:t.countCourses},
-    {key:'practices',value:progress.totals.practices,label:t.practices,detail:t.countPractices},
-    {key:'mandalas',value:progress.totals.mandalas,label:t.mandalas,detail:t.countMandalas},
-    {key:'videos',value:progress.totals.watchedVideos,label:t.videos,detail:t.countVideos},
+  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'),[progress])
+  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'),[progress])
+  const lastActivity=useMemo(()=>progress.entries.filter(entry=>
+    entry.category==='tests'&&entry.status==='in_progress'
+    || entry.category==='courses'&&['active','paused','draft'].includes(entry.status)
+  )[0], [progress])
+  const filtered=useMemo(()=>filter==='all' ? progress.entries
+    : progress.entries.filter(entry=>entry.category===filter),[progress,filter])
+  const mastered=videos.filter(entry=>entry.status==='mastered').length
+  const overview=[
+    {id:'tests',number:progress.totals.tests,caption:t.countTests,Icon:ClipboardCheck},
+    {id:'courses',number:progress.totals.courses,caption:t.countCourses,Icon:GraduationCap},
+    {id:'videos',number:progress.totals.watchedVideos,caption:t.countVideos,Icon:PlaySquare},
+    {id:'practices',number:progress.totals.practices,caption:t.countPractices,Icon:Flower2},
   ]
+  const countFor=id=>progress.entries.filter(entry=>entry.category===id).length
+  const jumpTo=id=>{setFilter(id);setShown(24)}
   return <section className={styles.page} data-my-progress data-account-progress-loaded={!sources.loading}>
-    <header className={styles.head}>
-      <p className={styles.kicker}>{t.eyebrow}</p>
-      <h1>{t.title}</h1>
-      <p>{t.intro}</p>
-      <div className={styles.quickLinks}>
-        <Link href={root + '/history'}>{t.compare}</Link>
-        <Link href={root + '/course?view=courses'}>{t.courseAction}</Link>
-        <button type="button" onClick={() => setReloadKey(k => k + 1)} disabled={sources.loading}>{t.refresh}</button>
+    <header className={styles.hero}>
+      <div className={styles.heroEyebrow}><Leaf size={14} aria-hidden="true"/>{t.eyebrow}</div>
+      <div className={styles.identity}>
+        <div className={styles.avatar} aria-hidden="true">
+          {accountInitial || <UserRound size={32} strokeWidth={1.6}/>}
+        </div>
+        <div className={styles.identityCopy}>
+          <h1>{t.title}</h1>
+          <p>{accountName || t.noProfileName} <span aria-hidden="true">·</span> {t.profile}</p>
+          <Link href={root+'/portrait'} prefetch={false}>{t.profileOpen}<ArrowRight size={14}/></Link>
+        </div>
+      </div>
+      <p className={styles.heroIntro}>{t.intro}</p>
+      <div className={styles.metrics} aria-label={t.personal}>
+        {overview.map(({id,number,caption,Icon})=><button type="button" key={id}
+          className={styles.metric} onClick={()=>jumpTo(id)}>
+          <Icon size={18} strokeWidth={1.9} aria-hidden="true"/>
+          <strong>{number}</strong>
+          <span>{t[id]}</span>
+          <small>{caption}</small>
+        </button>)}
       </div>
     </header>
-    <div className={styles.stats} aria-label={t.history}>
-      {overview.map(item => <div key={item.key} className={styles.stat}>
-        <strong>{item.value}</strong><span>{item.label}</span><small>{item.detail}</small>
-      </div>)}
-    </div>
-    <div className={styles.historyHead}>
-      <h2>{t.history}</h2>
-      <small>{progress.entries.length}</small>
-    </div>
-    <nav className={styles.filters} aria-label={t.history}>
-      {FILTERS.map(key => <button key={key} type="button" aria-pressed={filter===key}
-        className={filter===key ? styles.selected : ''} onClick={() => {setFilter(key);setShown(30)}}>
-        {t[key]}
-      </button>)}
-    </nav>
-    {sources.loading && <p className={styles.note} role="status">{t.loading}</p>}
-    {!sources.loading && sources.failed > 0 && <p className={styles.warning} role="alert">{t.partial}</p>}
-    {filter === 'videos' && <div className={styles.notice}>
-      <strong>{t.watchTitle}</strong>
-      <p>{t.watchNote}</p>
-      <Link href={'/' + lang + '/academy'}>{t.watchAction}</Link>
-    </div>}
-    {(filter === 'mandalas' || filter === 'all') && <p className={styles.note}>
-      {t.mandalaNote} <Link href={root + '/videos'}>{t.mandalaAction}</Link>
-    </p>}
-    <ol className={styles.timeline}>
-      {filtered.slice(0,shown).map(item => <li key={item.id} className={styles.item}>
-        <div className={styles.itemTop}>
-          <time dateTime={item.at}>{dateLabel(item.at,lang)}</time>
-          <Status status={item.status} t={t}/>
+
+    {sources.loading && <p className={styles.loading} role="status">{t.loading}</p>}
+    {!sources.loading && sources.failed>0 && <p className={styles.warning} role="alert">{t.partial}</p>}
+
+    <section className={styles.section} aria-labelledby="hh-progress-watch-title">
+      <div className={styles.sectionHead}>
+        <div><span className={styles.sectionEyebrow}>{t.history}</span>
+          <h2 id="hh-progress-watch-title">{t.recentVideos}</h2></div>
+        <a href="#hh-progress-activity" onClick={()=>jumpTo('videos')} className={styles.sectionLink}>
+          {t.historyAll}<ChevronRight size={18}/>
+        </a>
+      </div>
+      {videos.length ? <>
+        <div className={styles.videoRail} role="list" aria-label={t.recentVideos}>
+          {videos.slice(0,12).map(video=><div role="listitem" key={video.id}>
+            <VideoHistoryCard entry={video} lang={lang} t={t}/>
+          </div>)}
         </div>
-        <div className={styles.itemRow}>
-          <div className={styles.itemBody}>
-            <span className={styles.category}>{t[item.category]}</span>
-            <h3>{item.title}</h3>
-            {item.detail && <p>{item.detail}</p>}
-          </div>
-          {item.href && <Link className={styles.open} href={item.href} prefetch={false}>{t.open}</Link>}
+        <p className={styles.sectionFoot}><CheckCircle2 size={14} aria-hidden="true"/>
+          {videos.length} {t.countVideos} · {mastered} {t.masteredCount}. {t.videoNote}</p>
+      </> : <div className={styles.videoEmpty}>
+        <span className={styles.emptyIcon}><Play size={25} fill="currentColor" aria-hidden="true"/></span>
+        <div><strong>{t.noVideos}</strong><p>{t.noVideosHelp}</p>
+          <Link href={'/'+lang+'/academy/videos'} prefetch={false}>{t.exploreVideos}<ArrowRight size={16}/></Link>
         </div>
-      </li>)}
-    </ol>
-    {!sources.loading && !filtered.length && <div className={styles.empty}>{t.empty}</div>}
-    {filtered.length > shown && <button className={styles.more} type="button"
-      onClick={() => setShown(count => count+30)}>{t.more}</button>}
+      </div>}
+    </section>
+
+    <section className={styles.section} aria-labelledby="hh-progress-library-title">
+      <div className={styles.sectionHead}>
+        <div><span className={styles.sectionEyebrow}>Holistic House</span>
+          <h2 id="hh-progress-library-title">{t.library}</h2></div>
+      </div>
+      <div className={styles.library}>
+        {LIBRARY.map(({id,Icon,tone})=><a key={id} href="#hh-progress-activity"
+          className={styles.libraryTile} data-tone={tone}
+          onClick={()=>jumpTo(id)} aria-label={t[id]+': '+countFor(id)}>
+          <span className={styles.libraryIcon}><Icon size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+          <span className={styles.libraryCopy}><strong>{t[id]}</strong>
+            <small>{countFor(id)} {t.itemCount}</small></span>
+          <ChevronRight className={styles.libraryArrow} size={18} aria-hidden="true"/>
+        </a>)}
+      </div>
+    </section>
+
+    <section className={styles.section} aria-labelledby="hh-progress-resume-title">
+      <div className={styles.sectionHead}>
+        <div><span className={styles.sectionEyebrow}>{t.personal}</span>
+          <h2 id="hh-progress-resume-title">{t.resume}</h2></div>
+      </div>
+      <div className={styles.resume}>
+        <span className={styles.resumeIcon}><BookOpen size={25} aria-hidden="true"/></span>
+        <div className={styles.resumeContent}>
+          <strong>{lastActivity?.title || t.resumeEmpty}</strong>
+          {lastActivity && <div className={styles.resumeStatus}><Status status={lastActivity.status} t={t}/>{lastActivity.detail && <small>{lastActivity.detail}</small>}</div>}
+        </div>
+        <Link href={lastActivity?.href || root+'/course?view=courses'} prefetch={false} className={styles.resumeAction}>
+          {t.resumeNow}<ArrowRight size={17}/>
+        </Link>
+      </div>
+    </section>
+
+    <section className={styles.section} aria-labelledby="hh-progress-mandalas-title">
+      <div className={styles.sectionHead}>
+        <div><span className={styles.sectionEyebrow}>{t.mandalaCollection}</span>
+          <h2 id="hh-progress-mandalas-title">{t.myMandalas}</h2></div>
+        <Link href={root+'/videos'} prefetch={false} className={styles.sectionLink}>
+          {t.mandalaOpen}<ChevronRight size={18}/>
+        </Link>
+      </div>
+      {mandalas.length?<div className={styles.mandalaRail}>
+        {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}/>)}
+      </div>:<div className={styles.mandalaEmpty}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <span>{t.noMandalas}</span>
+        <Link href={'/'+lang+'/holistic-support/mandala'} prefetch={false}>{t.mandalaCreate}<ArrowRight size={15}/></Link>
+      </div>}
+    </section>
+
+    <section className={styles.section} id="hh-progress-activity" aria-labelledby="hh-progress-activity-title">
+      <div className={styles.sectionHead}>
+        <div><span className={styles.sectionEyebrow}>{t.recentIntro}</span>
+          <h2 id="hh-progress-activity-title">{t.recentActivity}</h2></div>
+        <button type="button" className={styles.refresh} disabled={sources.loading}
+          onClick={()=>setReloadKey(key=>key+1)} aria-label={t.refresh}>
+          <RotateCw size={18} aria-hidden="true"/>
+        </button>
+      </div>
+      <nav className={styles.filters} aria-label={t.recentActivity}>
+        {FILTERS.map(id=><button key={id} type="button" aria-pressed={filter===id}
+          className={filter===id?styles.filterActive:''}
+          onClick={()=>jumpTo(id)}>{t[id]}</button>)}
+      </nav>
+      {filter==='videos'&&<p className={styles.explanation}><ShieldCheck size={16}/>{t.videoNote}
+        <Link href={'/'+lang+'/academy/videos'} prefetch={false}>{t.videoHref}</Link></p>}
+      {filter==='mandalas'&&<p className={styles.explanation}><ShieldCheck size={16}/>{t.mandalaNote}</p>}
+      {filtered.length?<ol className={styles.timeline}>
+        {filtered.slice(0,shown).map(entry=><ActivityRow key={entry.id} entry={entry} lang={lang} t={t}/>)}
+      </ol>:<div className={styles.emptyState}>
+        <Clock3 size={24} aria-hidden="true"/><p>{sources.loading?t.loading:t.empty}</p>
+        <Link href={'/'+lang+'/academy/videos'}>{t.markHelp}<ArrowRight size={15}/></Link>
+      </div>}
+      {filtered.length>shown&&<button type="button" className={styles.more}
+        onClick={()=>setShown(count=>count+24)}>{t.more}<ChevronRight size={16}/></button>}
+    </section>
     <footer className={styles.footer}>
-      <p>{t.privacy}</p><p>{t.foot}</p>
+      <ShieldCheck size={17} aria-hidden="true"/>
+      <div><p>{t.privacy}</p><p>{t.foot}</p></div>
     </footer>
   </section>
 }
