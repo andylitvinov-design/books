@@ -1560,19 +1560,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setPreviewPlaying(false);
   };
   const openQuickDetailed = (anchor:string) => {
+    // Commit the fragment synchronously from the user's click. A native
+    // anchor jump while <details> is closed may otherwise be lost in WebKit.
+    if(window.location.hash !== "#"+anchor)window.location.hash="#"+anchor;
     setQuickDetailedOpen(true);
-    window.setTimeout(()=>{
-      const section = document.getElementById(anchor);
-      if (!section) return;
-      // Opening the collapsed disclosure can replace the clicked anchor
-      // before WebKit performs its default navigation. Retain a real URL
-      // fragment for mobile deep links and back/forward, then scroll.
-      if (window.location.hash !== "#" + anchor) window.location.hash = anchor;
-      section.scrollIntoView({
-        behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
-        block:"start",
-      });
-    },80);
+    // Wait for the expanded DOM before scrolling; avoid competing smooth
+    // animations when switching multiple editor tabs on a narrow screen.
+    const jump=()=>{
+      document.getElementById(anchor)?.scrollIntoView({behavior:"auto",block:"start"});
+    };
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
+    window.setTimeout(jump,180);
   };
   const createQuickVideo = () => {
     if(audioNeedsAttachment){
@@ -1718,7 +1716,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div><h3 id="quick-hypno-title"><Sparkles size={21} aria-hidden="true"/>{quick.hypno}</h3>
               <p>{quick.hypnoHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
-              onClick={()=>openQuickDetailed("video-hypnosis")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-hypnosis");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
           </div>
           <div className={videoStyles.quickHypnoOptions}>
             <button type="button" data-video-quick-phrases="ready" aria-pressed={affirmations.enabled}
@@ -1744,7 +1742,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{quick.visual}</h3>
               <p>{quick.visualHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
-              onClick={()=>openQuickDetailed("video-templates")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
           </div>
           <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
             {quickStylePosters.map((poster,index)=><button type="button" key={poster}
@@ -1766,7 +1764,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div><h3 id="quick-audio-title"><Music2 size={21} aria-hidden="true"/>{quick.audio}</h3>
               <p>{quick.audioHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
-              onClick={()=>openQuickDetailed("video-audio")}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-audio");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
           </div>
           <div className={videoStyles.quickAudioFilters} role="group" aria-label={quick.audio}>
             {([["nature",quick.nature],["tones",quick.tones],["pulse",quick.pulse],["all",quick.all]] as const)
