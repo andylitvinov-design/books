@@ -5,13 +5,14 @@ import { ArrowRight, MessageCircle, RotateCcw, Send, Sparkles, Volume2 } from "l
 import type { PublicLocale } from "@/lib/public-locales";
 import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
+import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
 import styles from "./holistic-language-conversation.module.css";
 
 type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru"; durationMinutes?: number };
 type GuideTest = { key: string; title: string; href: string; durationMinutes: number };
 type Suggestion = { id: string; kind: string; title: string; href?: string; videoId?: string };
-type Entry = { role: "visitor" | "agent"; text: string; suggestions?: Suggestion[] };
-type WorkerReply = { type: string; requestId?: number; text?: string; progress?: number; message?: string };
+type Entry = { role: "visitor" | "agent"; text: string; suggestions?: Suggestion[]; requestId?: number; generated?: string };
+type WorkerReply = { type: string; requestId?: number; text?: string; progress?: number; chars?: number; message?: string };
 const locales = {
   en: {
     title:"Open conversation", subtitle:"Tell me what you want in your own words.",
@@ -21,8 +22,8 @@ const locales = {
     verified:"Verified materials", watch:"Select video", open:"Open resource",
     gpu:"Try a local language model", load:"Download model to this device", loading:"Loading local model",
     ready:"Local model is ready", unavailable:"This device cannot run the local model. The guide still works.",
-    pilot:"Optional experiment: a large model is downloaded to your device. The model only rephrases approved public guidance; your personal messages are not given to the model.",
-    local:"Locally generated wording", stop:"Stop local model", error:"Local wording is unavailable; verified guidance is unchanged.",
+    pilot:"Optional local conversation: after download, recent messages are processed only on your device, not sent to a chat API. The model does not access your private profile.",
+    local:"Local AI reply", stop:"Turn off local AI", stopAnswer:"Stop reply", writing:"Writing a response on your device…", error:"Local conversation failed; the checked guidance remains.",
     modelNotice:"The model runtime and weights are downloaded from external hosts only after your click; no ChatGPT account or token is needed.",
     publicAudio:"I found published Reiki course introduction audio. This is not a standalone guided meditation.",
   },
@@ -34,8 +35,8 @@ const locales = {
     verified:"Проверенные материалы", watch:"Выбрать видео", open:"Открыть материал",
     gpu:"Попробовать локальную языковую модель", load:"Загрузить модель на устройство", loading:"Загрузка локальной модели",
     ready:"Локальная модель готова", unavailable:"На этом устройстве модель не запускается. Обычный проводник продолжит работать.",
-    pilot:"Добровольный эксперимент: на устройство загружается большая модель. Она только перефразирует проверенную публичную подсказку, не получая ваши личные сообщения.",
-    local:"Формулировка локальной модели", stop:"Выключить локальную модель", error:"Локальная формулировка недоступна; проверенный ответ остаётся без изменений.",
+    pilot:"Добровольный локальный диалог: после загрузки модель обрабатывает последние реплики только на вашем устройстве, не отправляя их в чат-API. Личный профиль она не читает.",
+    local:"Ответ локального AI", stop:"Выключить локальный AI", stopAnswer:"Остановить ответ", writing:"Формулирую ответ на вашем устройстве…", error:"Локальный диалог недоступен; проверенная подсказка сохранена.",
     modelNotice:"Программный модуль и веса загружаются с внешних хостов только по вашему нажатию. Аккаунт ChatGPT и токены не требуются.",
     publicAudio:"Нашлись опубликованные вступительные аудио курса Reiki. Это не самостоятельная медитация.",
   },
@@ -47,18 +48,12 @@ const locales = {
     verified:"Materiales verificados", watch:"Elegir vídeo", open:"Abrir recurso",
     gpu:"Probar un modelo local", load:"Descargar el modelo", loading:"Cargando el modelo local",
     ready:"Modelo local listo", unavailable:"Este dispositivo no admite el modelo local. La guía sigue funcionando.",
-    pilot:"Experimento opcional: se descarga un modelo grande al dispositivo. Solo reformula una respuesta pública revisada y no recibe tus mensajes personales.",
-    local:"Redacción del modelo local", stop:"Detener modelo local", error:"No está disponible la reformulación local; se conserva la respuesta verificada.",
+    pilot:"Diálogo local opcional: tras la descarga, el modelo procesa los últimos mensajes solo en tu dispositivo, sin enviarlos a una API. No accede a tu perfil privado.",
+    local:"Respuesta de IA local", stop:"Apagar IA local", stopAnswer:"Detener respuesta", writing:"Redactando una respuesta en tu dispositivo…", error:"Falló el diálogo local; se conserva la guía verificada.",
     modelNotice:"El módulo y sus pesos se descargan de servidores externos solo si lo autorizas. No se necesita ChatGPT ni tokens.",
     publicAudio:"Se encontraron introducciones de audio publicadas del curso Reiki. No son meditaciones guiadas independientes.",
   },
 } as const;
-function validGenerated(text: string) {
-  const clean = text.trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 180);
-  return clean.length > 15 && clean.length < 181 &&
-    !/https?:|www\.|@|<|>|[$€£]|\d{2,}|гарантир|лечит|диагноз|treatment|diagnos|cure|garantiz|curar|precio/i.test(clean)
-    ? clean : "";
-}
 export function HolisticLanguageConversation({
   locale, seedTopic, videos, tests, enabledFormats, onVideo,
 }: {
@@ -76,10 +71,11 @@ export function HolisticLanguageConversation({
   const [hasGpu,setHasGpu] = useState(false);
   const [modelMode,setModelMode] = useState<"off"|"loading"|"ready"|"failed">("off");
   const [modelProgress,setModelProgress] = useState(0);
-  const [localPhrase,setLocalPhrase] = useState("");
+  const [generating,setGenerating] = useState(false);
   const [modelError,setModelError] = useState("");
   const modelWorker=useRef<Worker | null>(null);
   const requestCounter=useRef(0);
+  const activeLocalContext=useRef<LocalContext|null>(null);
   const audioCounter=useRef(0);
   const threadRef=useRef<HTMLDivElement>(null);
   const modelExperiment=process.env.NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL === "true";
@@ -95,12 +91,20 @@ export function HolisticLanguageConversation({
   function haltModel() {
     modelWorker.current?.terminate();
     modelWorker.current=null;
-    setModelMode("off");setModelProgress(0);setLocalPhrase("");setModelError("");
+    setModelMode("off");setModelProgress(0);setGenerating(false);setModelError("");
+    activeLocalContext.current=null;
     requestCounter.current+=1;
     audioCounter.current+=1;
   }
+  function stopAnswer() {
+    modelWorker.current?.postMessage({type:"cancel"});
+    requestCounter.current+=1;
+    activeLocalContext.current=null;
+    setGenerating(false);
+  }
   function reset() {
-    haltModel();
+    stopAnswer();
+    audioCounter.current+=1;
     setEntries([{role:"agent",text:t.first}]);
     setState(createLanguageSession({locale,seedTopic,enabledFormats}));
     setDraft("");
@@ -115,15 +119,26 @@ export function HolisticLanguageConversation({
         const data=event.data;
         if(data.type==="progress")setModelProgress(Math.max(0,Math.min(100,data.progress??0)));
         if(data.type==="ready")setModelMode("ready");
-        if(data.type==="partial" && data.requestId===requestCounter.current) {
-          setLocalPhrase(validGenerated(data.text??""));
-        }
+        if(data.type==="started" && data.requestId===requestCounter.current)
+          setGenerating(true);
         if(data.type==="complete" && data.requestId===requestCounter.current) {
-          setLocalPhrase(validGenerated(data.text??""));
+          const request=activeLocalContext.current?.request;
+          const localeForReply=activeLocalContext.current?.locale;
+          const approved=acceptLocalConversationReply(data.text,{
+            request,locale:localeForReply,
+          });
+          if(approved) setEntries(prev=>prev.map(entry=>entry.role==="agent" &&
+            entry.requestId===data.requestId?{...entry,generated:approved}:entry));
+          activeLocalContext.current=null;
+          setGenerating(false);
         }
         if(data.type==="error"){
+          if(data.requestId===undefined) {
+            setModelMode("failed");worker.terminate();modelWorker.current=null;
+          } else if(data.requestId!==requestCounter.current) return;
+          activeLocalContext.current=null;
+          setGenerating(false);
           setModelError(t.error);
-          if(data.requestId===undefined){setModelMode("failed");worker.terminate();modelWorker.current=null;}
         }
       };
       worker.onerror=()=>{setModelMode("failed");setModelError(t.error);
@@ -135,20 +150,24 @@ export function HolisticLanguageConversation({
   }
   function submit() {
     const value=draft.trim();
-    if(!value)return;
+    if(!value || generating)return;
     // Only previously verified public catalog props; never submit private tests.
     const result=turnLanguageAgent({
       text:value,previous:state,locale,
       catalog:{videos,tests},
     });
+    const localRequestId=++requestCounter.current;
+    const localContext=prepareLocalConversation({
+      history:entries,currentMessage:value,decision:result,locale,
+    });
     setState(result.state);
     setEntries(prev=>[...prev,
       {role:"visitor",text:value.slice(0,4000)},
-      {role:"agent",text:result.text,suggestions:result.suggestions as Suggestion[]},
+      {role:"agent",text:result.text,suggestions:result.suggestions as Suggestion[],
+        requestId:localRequestId},
     ].slice(-36));
     setDraft("");
-    setLocalPhrase("");
-    requestCounter.current+=1;
+    setModelError("");
     audioCounter.current+=1;
     if(result.state.format==="audio" && result.status==="no_match" &&
        result.state.maxDurationMin===null && result.state.topic) {
@@ -173,12 +192,17 @@ export function HolisticLanguageConversation({
         });
       }
     }
-    if(result.status==="recommend" && modelMode==="ready" && result.allowLocalRewrite &&
-       modelWorker.current) {
-      modelWorker.current.postMessage({type:"cancel"});
+    // Local generative dialogue receives only current-tab messages. It NEVER
+    // receives protected tests, profile, identity, authorized offers or secrets.
+    // Active audio retrieval stays deterministic until the manifest is checked.
+    if(["recommend","clarify","no_match"].includes(result.status) &&
+       !(result.state.format==="audio" && result.status==="no_match") &&
+       modelMode==="ready" && modelWorker.current && localContext) {
+      activeLocalContext.current=localContext;
+      setGenerating(true);
       modelWorker.current.postMessage({
-        type:"generate",requestId:requestCounter.current,locale:result.state.locale,
-        seed:result.text.slice(0,300),
+        type:"generate",requestId:localRequestId,
+        context:localContext,turns:localContext.turns,
       });
     }
   }
@@ -189,7 +213,9 @@ export function HolisticLanguageConversation({
       {entries.map((entry,i)=><div key={i}
         className={entry.role==="visitor"?styles.visitor:styles.agent}>
         <span className={styles.speaker}>{entry.role==="visitor"?t.you:t.reply}</span>
-        <p>{entry.text}</p>
+        <p>{entry.generated||entry.text}</p>
+        {entry.generated && entry.text!==entry.generated ?
+          <p className={styles.verifiedContext}>{entry.text}</p> : null}
         {entry.suggestions?.length ? <div className={styles.materials}>
           <strong>{t.verified}</strong>
           {entry.suggestions.map(s=><div key={s.id} className={styles.material}>
@@ -203,9 +229,12 @@ export function HolisticLanguageConversation({
           </div>)}
         </div> : null}
       </div>)}
-      {localPhrase && modelMode==="ready" ?
-        <div className={styles.generated}><Sparkles size={15} aria-hidden="true"/>
-          <span>{t.local}: {localPhrase}</span></div> : null}
+      {generating && modelMode==="ready" ?
+        <div className={styles.generated} role="status">
+          <Sparkles size={15} aria-hidden="true"/>
+          <span>{t.writing}</span>
+          <button type="button" onClick={stopAnswer}>{t.stopAnswer}</button>
+        </div> : null}
     </div>
     <form className={styles.form} onSubmit={event=>{event.preventDefault();submit();}}>
       <label htmlFor="holistic-free-dialogue-input">{t.title}</label>
@@ -219,7 +248,7 @@ export function HolisticLanguageConversation({
         <button type="button" className={styles.reset} onClick={reset}>
           <RotateCcw size={15} aria-hidden="true"/>{t.clear}
         </button>
-        <button type="submit" disabled={!draft.trim()} className={styles.send}>
+        <button type="submit" disabled={!draft.trim()||generating} className={styles.send}>
           <Send size={16} aria-hidden="true"/>{t.send}
         </button>
       </div>
