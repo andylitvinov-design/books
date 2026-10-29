@@ -352,11 +352,12 @@
   }
 }
 
-/* ABOUT_ARCHIVE_ROOT_CLIP: the independently scrollable testimonial rail must
-   never expand the page's horizontal scroll extent on 320px phones. Keep the
-   inner overflow-x:auto for swipe/keyboard access; clip only the outer card. */
+/* ABOUT_ARCHIVE_ROOT_CLIP: isolate the horizontally scrollable testimonials
+   from the document's scroll width on 320px iPhones. overflow-x:hidden
+   establishes a scroll container; the inner .videoGrid retains independent
+   overflow-x:auto for touch, pointer and keyboard horizontal navigation. */
 .section[data-personal-testimonials="about"] {
   min-width: 0;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
