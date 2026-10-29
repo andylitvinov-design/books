@@ -7,6 +7,11 @@ on:
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'
+      - 'components/app/simple-service-editor.jsx'
+      - 'components/app/simple-service-editor.module.css'
+      - 'components/app/my-services-dashboard.module.css'
+      - 'components/app/practice-dashboard.css'
+      - 'components/app/practice-workspace.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'app/*/practice/page.jsx'
@@ -18,6 +23,11 @@ on:
     paths:
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
+      - 'components/app/simple-service-editor.jsx'
+      - 'components/app/simple-service-editor.module.css'
+      - 'components/app/my-services-dashboard.module.css'
+      - 'components/app/practice-dashboard.css'
+      - 'components/app/practice-workspace.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'scripts/verify-practice-post-google-browser.mjs'
@@ -45,14 +55,14 @@ jobs:
         run: |
           node --check scripts/verify-practice-post-google-browser.mjs
           node --test tests/practice-google-return-and-services-v5.test.mjs tests/practitioner-preview-auth.test.mjs
-          npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
+          npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/simple-service-editor.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |
           mkdir -p /tmp/holistic-practice-browser
           npm install --prefix /tmp/holistic-practice-browser --no-audit --no-fund playwright@1.63.0
           /tmp/holistic-practice-browser/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Render signed-in Practice and verify OAuth intent
+      - name: Render real protected editor after signed-in Practice (Chromium and WebKit)
         run: |
           mkdir -p artifacts/practice-after-google
           npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
