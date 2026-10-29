@@ -667,3 +667,6 @@
   .catalogShell .hero{min-height:157px}
 }
 @media(prefers-reduced-motion:reduce){.catalogShell .heroPlay{transition:none}}
+
+/* The four accessible choices now live in the disclosure, not over the film. */
+.moreFilters .catalogFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
