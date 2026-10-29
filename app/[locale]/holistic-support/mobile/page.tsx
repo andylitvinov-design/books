@@ -10,7 +10,7 @@ import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord,
 import { metadataBaseFor } from "@/data/site-metadata";
 import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
 
-type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
+type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
 
 // These recordings are attributed to Andrey in the existing approved sources:
 // English guided meditations and the historical PsiMaster / Andrey archive.
@@ -93,7 +93,11 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   if (!isPublicLocale(locale)) notFound();
   // Internal journeys from Mandala open the same new-design experience.
   // Ignore unknown query values instead of forwarding an untrusted route.
-  const requestedView = (await searchParams).view;
+  const query = await searchParams;
+  const requestedView = query.view;
+  // A safe editorial video theme, never an assessment result or private health field.
+  const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
+    ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
   const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
 
@@ -180,6 +184,6 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const guideTests = buildSupportGuideTestShortlists({ locale });
   return (
     <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
-      initialChoice={initialChoice} guideTests={guideTests} />
+      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests} />
   );
 }

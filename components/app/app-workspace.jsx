@@ -22,6 +22,8 @@ import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { TestResultDiscussion } from '@/components/app/test-result-discussion'
+import { TEST_DISCUSSION_INTENT_KEY } from '@/lib/assessments/test-result-discussion.mjs'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { TestDynamics } from '@/components/app/test-dynamics'
@@ -455,8 +457,11 @@ export default function AppWorkspace({ locale, path = [] }) {
     // assessment in a selected battery. Navigation never loses its result.
     if (destination !== 'next') {
       await load()
-      router.push(root + '/results/' + encodeURIComponent(result.id) +
-        (planId ? '?plan=' + encodeURIComponent(planId) : ''))
+      const planQuery = planId ? '?plan=' + encodeURIComponent(planId) : ''
+      const discussQuery = destination === 'discuss'
+        ? (planQuery ? '&discuss=1' : '?discuss=1') + '#hh-test-result-discussion'
+        : ''
+      router.push(root + '/results/' + encodeURIComponent(result.id) + planQuery + discussQuery)
       return
     }
     if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
@@ -814,6 +819,17 @@ export default function AppWorkspace({ locale, path = [] }) {
   )
 }
 
+function savedGuestDiscussionTarget(destination, sourceKind, intentId) {
+  if (sourceKind !== 'guest_result' || typeof window === 'undefined') return destination
+  try {
+    if (window.sessionStorage.getItem(TEST_DISCUSSION_INTENT_KEY) === intentId) {
+      window.sessionStorage.removeItem(TEST_DISCUSSION_INTENT_KEY)
+      return destination + '?discuss=1#hh-test-result-discussion'
+    }
+  } catch { /* Private browser mode: the saved result still opens safely. */ }
+  return destination
+}
+
 function SaveContinuation({ data, locale, reload, onComplete }) {
   const params = useSearchParams()
   const router = useRouter()
@@ -863,7 +879,7 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
       const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      const destination=next||savedResourcePath(locale,saved.sourceKind,saved.resource.id)
+      const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,saved.sourceKind,saved.resource.id),saved.sourceKind,intentId)
       if(onComplete)onComplete(destination)
       else router.replace(destination)
     } catch (e) {
@@ -896,7 +912,7 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
       const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      const destination=next||savedResourcePath(locale,intent.sourceKind,intent.resourceId)
+      const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,intent.sourceKind,intent.resourceId),intent.sourceKind,intentId)
       if(onComplete)onComplete(destination)
       else router.replace(destination)
       return
@@ -1859,7 +1875,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
         <TestFinishActions locale={locale} courseMode={courseMode}
           disabled={busy || Boolean(operation.current) || Boolean(completion.current) || !allAnswered}
-          onReport={() => finish('report')} onNext={() => finish('next')} />
+          onReport={() => finish('report')} onNext={() => finish('next')}
+          onDiscuss={!courseMode ? () => finish('discuss') : null} />
       )}
       <div className="hh-actions hh-runner-actions">
         {mode !== 'quick' && (
@@ -3015,14 +3032,21 @@ function ResultPage({ id, locale, data }) {
   const focusScaleKey = searchParams?.get('scale') || null
   const [retaking, setRetaking] = useState(false)
   const [retakeError, setRetakeError] = useState(null)
+  // Only initialize the personal conversation after an owner-scoped GET for
+  // this exact saved result, never from an unconfirmed bootstrap snapshot.
+  const [discussionLoadedId, setDiscussionLoadedId] = useState(null)
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
     [error, setError] = useState(null)
   useEffect(() => {
     let live = true
+    setDiscussionLoadedId(null)
     appFetch('results/' + id)
       .then((r) => {
-        if (live) setResult(r)
+        if (live) {
+          setResult(r)
+          setDiscussionLoadedId(r?.id === id ? id : null)
+        }
       })
       .catch((e) => {
         if (live) setError(e)
@@ -3034,6 +3058,9 @@ function ResultPage({ id, locale, data }) {
   if (error) return <p role="alert">{message(error, c)}</p>
   if (!result) return <p>{c.loading}</p>
   const changeSummary = resultChangeSummary(result, data.results, locale)
+  const sourceReport = buildAssessmentResultReport(result, locale)
+  const allowOptionalConsultation = sourceReport.verified !== false &&
+    !sourceReport.sections?.some(section => section.recommendedReview === true)
   const series = seriesFor(data.results, result),
     previous = series
       .filter(
@@ -3082,6 +3109,8 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
+      {discussionLoadedId === result.id && <TestResultDiscussion key={result.id + ':' + locale} result={result} locale={locale}
+        history={data.results || []} initiallyOpen={searchParams?.get('discuss') === '1'} />}
       <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
       <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
@@ -3182,7 +3211,7 @@ function ResultPage({ id, locale, data }) {
         </aside>
       )}
 
-      <ResultConsultationCta locale={locale} />
+      {allowOptionalConsultation && <ResultConsultationCta locale={locale} />}
 
       <footer className="hh-result-footer">
         <p className="hh-result-source">
