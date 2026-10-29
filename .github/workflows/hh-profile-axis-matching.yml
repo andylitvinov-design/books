@@ -20,6 +20,7 @@ on:
       - 'tests/holistic-intelligence-card.test.mjs'
       - 'components/holistic-intelligence-card.jsx'
       - 'components/holistic-intelligence-card.module.css'
+      - 'scripts/verify-intelligence-browser.mjs'
       - 'components/app/app-workspace.jsx'
       - 'lib/holistic-support/meditation-discovery-server.ts'
       - 'app/api/app/**/route.js'
@@ -80,3 +81,23 @@ jobs:
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
         run: npm run build
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Public intelligence journey in Chromium and WebKit
+        env:
+          HH_INTELLIGENCE_BROWSER_TOOLS: /tmp/hh-intelligence-browser
+        run: |
+          npm run start -- --port 3187 > /tmp/hh-intelligence-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          HH_TEST_BROWSER=chromium node scripts/verify-intelligence-browser.mjs
+          HH_TEST_BROWSER=webkit node scripts/verify-intelligence-browser.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-browser-screenshots
+          path: /tmp/hh-intelligence-evidence
+          if-no-files-found: ignore
