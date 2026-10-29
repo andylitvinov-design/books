@@ -944,10 +944,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
+      const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
+      const previewFps=window.innerWidth<=600
+        ? (previewCores<=2?12:previewCores>=6?24:18):24;
       const draw = (now: number) => {
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
-        if (now - lastFrame >= 80 && !document.hidden) {
+        if (now - lastFrame >= 1000 / previewFps && !document.hidden) {
           const elapsed=(now-startedAt)/1000;
           // A long-running Play preview should repeat the real 4-scene film
           // and timed affirmations instead of holding indefinitely on shot 4.
@@ -1002,8 +1005,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!ctx) throw new Error("Canvas unsupported");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
-      const framesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
+      // Device-aware recording increases smoothness when affordable, while
+      // retaining the old 12/15 fps fallback on low-core iPhones. These are
+      // requested rates, not a claim that MediaRecorder never drops frames.
+      const baselineFramesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
         ? 25 : quality === "fullhd" ? 12 : 15;
+      const cores = Number.isFinite(navigator.hardwareConcurrency)
+        ? Math.max(1,navigator.hardwareConcurrency) : 4;
+      const phone = window.innerWidth <= 600;
+      const suggestedFps = phone
+        ? (quality === "fullhd" ? (cores>=6 ? 20 : 16) : (cores>=6 ? 24 : 20))
+        : (quality === "fullhd" ? (cores>=8 ? 25 : 20) : (cores>=8 ? 30 : 24));
+      const framesPerSecond = baselineFramesPerSecond === 25 || (phone && cores<=2)
+        ? baselineFramesPerSecond : suggestedFps;
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
