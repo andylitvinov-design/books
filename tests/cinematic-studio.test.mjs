@@ -84,6 +84,12 @@ test("visual avoid rules do not leak private text or force an untrusted prompt",
     avoid:"water, ocean, stream "+prefix});
   assert.ok(p.shots.every(s=>!s.providerPrompt.includes(prefix)));
   assert.ok(p.shots.some(s=>s.sceneId==="morning-dew"));
+  assert.equal(new Set(p.shots.map(s=>s.sceneId)).size,4,
+    "avoidance cannot quietly give four copies of the same artwork");
+  assert.ok(p.shots.every(s=>!/(?:ocean|sea|water|coast|stream|wave)/i.test(s.visualCue)),
+    "water avoidance must hold even when the selected health theme has few safe scenes");
+  assert.ok(p.shots.some(s=>s.theme!=="health"),
+    "a real, separately identified first-party motif should cover a narrow category");
   assert.throws(()=>buildCinematicStoryboard({theme:"clinic-UNKNOWN"}),/invalid_cinematic_theme/);
   assert.equal(findCinematicShot(p.shots,0)?.number,1);
   assert.equal(findCinematicShot(p.shots,p.durationSeconds)?.number,4);
