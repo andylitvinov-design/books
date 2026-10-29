@@ -1748,7 +1748,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     }
 
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
+    <section className={`hh-runner hh-panel hh-runner--${mode} hh-test-experience ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-test-card-system="v1" data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
@@ -1793,13 +1793,17 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       {mode === 'quick' ? (
         <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
           {def.questions.map((item, step) => (
-            <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
-              <legend>
-                <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
-                {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
-                <TraumaSectionInstructions question={item} />
-                <h2>{item.text}</h2>
+            <fieldset className="hh-quick-question hh-test-question-card" key={item.id}
+              data-answer-state={Object.prototype.hasOwnProperty.call(run.answers || {}, item.id) ? 'answered' : 'pending'}
+              disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
+              <legend className="hh-test-question-caption">
+                <span className="hh-test-question-number" aria-hidden="true">{step + 1}</span>
+                <span className="hh-test-question-label">{modeCopy.question} {step + 1} / {def.questions.length}</span>
+                {Object.prototype.hasOwnProperty.call(run.answers || {}, item.id) && <span className="hh-test-question-check" aria-label={locale === 'ru' ? 'Отвечено' : 'Answered'}>✓</span>}
               </legend>
+              {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(item.section)}</p>}
+              <TraumaSectionInstructions question={item} />
+              <h2 lang={def.instrumentLocale}>{item.text}</h2>
               {def.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
                 <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
               )}
@@ -1811,12 +1815,17 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
           <p className="hh-quick-hint">{modeCopy.tap}</p>
         </div>
       ) : question ? (
-        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
-          <legend>
-            {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
-            <TraumaSectionInstructions question={question} />
-            <h1>{question.text}</h1>
+        <fieldset className="hh-runner-question hh-test-question-card hh-test-question-card--guided"
+          data-answer-state={Object.prototype.hasOwnProperty.call(run.answers || {}, question.id) ? 'answered' : 'pending'}
+          disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
+          <legend className="hh-test-question-caption">
+            <span className="hh-test-question-number" aria-hidden="true">{index + 1}</span>
+            <span className="hh-test-question-label">{modeCopy.question} {index + 1} / {def.questions.length}</span>
+            {Object.prototype.hasOwnProperty.call(run.answers || {}, question.id) && <span className="hh-test-question-check" aria-label={locale === 'ru' ? 'Отвечено' : 'Answered'}>✓</span>}
           </legend>
+          {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
+          <TraumaSectionInstructions question={question} />
+          <h1 lang={def.instrumentLocale}>{question.text}</h1>
           {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
             <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
           )}
