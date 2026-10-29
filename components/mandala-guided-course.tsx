@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Check, ChevronDown, Download, Headphones, LockKeyhole, Pause, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -87,28 +87,33 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
   const [planOpen,setPlanOpen] = useState(false);
   const [speaking,setSpeaking] = useState(false);
+  const profileRequestRef = useRef(0);
   const actualGoals = goals.length ? goals : [theme];
   const plan = useMemo(()=>buildPersonalImageryCourse({
     locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence
   }),[locale,theme,goals,selfRatings,profileEvidence]);
   const sessions = plan.sessions as Session[];
-  useEffect(()=>()=>{if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
+  useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
+    profileRequestRef.current++;
     setProfileEvidence([]);setProfileStatus("idle");setConsent(false);
     setGoals(prev=>prev.includes(goal)?prev.filter(value=>value!==goal):
       prev.length<3?[...prev,goal]:[...prev.slice(1),goal]);
   };
   const withdraw=()=>{
+    profileRequestRef.current++;
     setConsent(false);setProfileEvidence([]);setProfileStatus("idle");
   };
   async function loadPrivateProfile(){
     if(!consent || disabled || profileStatus==="loading")return;
+    const requestId=++profileRequestRef.current;
     setProfileStatus("loading");setProfileEvidence([]);
     try{
       const response=await fetch("/api/app/bootstrap?view=portrait",{
         method:"GET",credentials:"same-origin",cache:"no-store",redirect:"error",
         headers:{"Accept":"application/json"},referrerPolicy:"no-referrer",
       });
+      if(requestId!==profileRequestRef.current)return;
       if(response.status===401 || response.status===403){setProfileStatus("signin");return;}
       if(!response.ok)throw new Error("private profile unavailable");
       const data:unknown=await response.json();
@@ -119,9 +124,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       const {buildPsychPortrait}=await import("@/lib/assessments/psych-portrait.js");
       const portrait=buildPsychPortrait(data.results);
       const evidence=selectVerifiedCourseEvidence(portrait,actualGoals) as Evidence[];
+      if(requestId!==profileRequestRef.current)return;
       setProfileEvidence(evidence);
       setProfileStatus(evidence.length?"ready":"empty");
-    } catch {setProfileEvidence([]);setProfileStatus("error");}
+    } catch {if(requestId===profileRequestRef.current){setProfileEvidence([]);setProfileStatus("error");}}
   }
   function speak(script:string){
     if(typeof window==="undefined" || !("speechSynthesis" in window))return;
