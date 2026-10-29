@@ -2,7 +2,7 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,IdCard,Link2,MessageCircle,RefreshCw} from 'lucide-react'
+import {ArrowLeft,ArrowRight,IdCard,Link2,MessageCircle,RefreshCw,Search,SlidersHorizontal,ChevronRight} from 'lucide-react'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesContactCard from './messages-contact-card'
 import DirectMessageInbox from './direct-message-inbox'
@@ -89,7 +89,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
   locale='en',accountId,requests=[],businessEnquiries=[],telegramUrl='',
-  websiteLoading=false,websiteUnavailable=false,onReload,
+  websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,onClientsCount,onDetailChange,
 }){
   const t=COPY[locale]||COPY.en
   const [crmState,setCrmState]=useState({loading:true,error:false,threads:[],partial:false})
@@ -97,6 +97,7 @@ export default function MessagesSimpleInbox({
   const [portraits,setPortraits]=useState({})
   const [selectedKey,setSelectedKey]=useState('')
   const [search,setSearch]=useState('')
+  const [unreadOnly,setUnreadOnly]=useState(false)
   const [tab,setTab]=useState('chats')
   const [linkCopied,setLinkCopied]=useState(false)
   const [openDetail,setOpenDetail]=useState(false)
@@ -157,9 +158,16 @@ export default function MessagesSimpleInbox({
   // One canonical owner-scoped row set: filter by source, never duplicate a CRM lead.
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
-  const tabTotal=tab==='requests'?requestsCount:chatsCount
-  const tabLoading=tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
-  const displayed=filterInboxRows(rows,tab,search)
+  const tabTotal=embedded?rows.length:tab==='requests'?requestsCount:chatsCount
+  const tabLoading=embedded?(websiteLoading||crmState.loading):
+    tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
+  const displayed=embedded
+    ?rows.filter(row=>(!unreadOnly||row.unread>0)&&
+      [row.name,row.source,row.preview,row.item?.message,row.item?.question].some(value=>
+        String(value||'').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
+    :filterInboxRows(rows,tab,search)
+  useEffect(()=>{if(embedded)onClientsCount?.(rows.length)},[embedded,rows.length,onClientsCount])
+  useEffect(()=>{if(embedded)onDetailChange?.(openDetail)},[embedded,openDetail,onDetailChange])
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
@@ -239,9 +247,10 @@ export default function MessagesSimpleInbox({
     onReload?.()
   }
 
-  return <section className={styles.shell} aria-label={t.title} data-simple-messages data-detail-open={openDetail?'true':'false'}>
+  return <section className={styles.shell} aria-label={t.title} data-simple-messages
+    data-embedded={embedded||undefined} data-detail-open={openDetail?'true':'false'}>
     {offline&&<p className={styles.offline} role="status">{t.offline}</p>}
-    <header className={styles.heading}>
+    {!embedded&&<header className={styles.heading}>
       <div><h1>{t.title}</h1><span>{t.hint}{unreadCount>0?' · '+unreadCount:''}</span></div>
       <div className={styles.headingActions}>
         {publicBotUrl&&<button type="button" className={styles.shareLink}
@@ -257,8 +266,8 @@ export default function MessagesSimpleInbox({
           <RefreshCw size={19} aria-hidden="true"/>
         </button>
       </div>
-    </header>
-    <div className={styles.tabs} role="tablist" aria-label={t.tabs}>
+    </header>}
+    {!embedded&&<div className={styles.tabs} role="tablist" aria-label={t.tabs}>
       {[['chats',t.chats,chatsCount],['requests',t.requestsTab,requestsCount]].map(([id,label,count])=>
         <button type="button" role="tab" key={id} id={'hh-simple-tab-'+id}
           aria-controls="hh-simple-list-panel" aria-selected={tab===id} tabIndex={tab===id?0:-1}
@@ -273,21 +282,30 @@ export default function MessagesSimpleInbox({
           }}>
           {label}<span aria-hidden="true">{count}</span>
         </button>)}
-    </div>
+    </div>}
     <div className={styles.window} ref={inboxWindowRef}>
       <aside className={styles.people} id="hh-simple-list-panel" role="tabpanel"
         aria-labelledby={'hh-simple-tab-'+tab}>
-        <label className={styles.search}>
-          <span className={styles.srOnly}>{t.search}</span>
-          <input type="search" value={search} placeholder={t.search}
-            onChange={e=>setSearch(e.target.value)} autoComplete="off"/>
-        </label>
+        <div className={styles.findRow}>
+          <label className={styles.search}>
+            <Search size={19} aria-hidden="true"/>
+            <span className={styles.srOnly}>{t.search}</span>
+            <input type="search" value={search}
+              placeholder={embedded?(locale==='ru'?'Поиск по клиентам и сообщениям':locale==='es'?'Buscar clientes y mensajes':'Search clients and messages'):t.search}
+              onChange={e=>setSearch(e.target.value)} autoComplete="off"/>
+          </label>
+          {embedded&&<button type="button" className={styles.unreadFilter}
+            aria-pressed={unreadOnly}
+            aria-label={locale==='ru'?'Только непрочитанные':locale==='es'?'Solo no leídos':'Unread only'}
+            title={locale==='ru'?'Только непрочитанные':locale==='es'?'Solo no leídos':'Unread only'}
+            onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
+        </div>
         <div className={styles.peopleScroll}>
           {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!tabTotal&&!tabLoading?<p className={styles.info}>{tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
-          {tabTotal>0&&!displayed.length&&search.trim()&&<p className={styles.info}>{t.noMatches}</p>}
+          {!tabTotal&&!tabLoading?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
           {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
-          {websiteUnavailable&&tab==='requests'&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {websiteUnavailable&&(embedded||tab==='requests')&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}
             className={selectedKey===row.key?styles.personSelected:styles.person}
@@ -296,18 +314,23 @@ export default function MessagesSimpleInbox({
               portrait={row.kind==='crm'&&portraits[row.id]?{threadId:row.id,messageId:portraits[row.id]}:null}/>
             <span className={styles.personText}>
               <span className={styles.personHead}><strong>{row.name}</strong><time>{fmtDate(row.at,locale)}</time></span>
+              {embedded&&<span className={styles.threadFlag} data-state={row.unread>0?'new':row.needsReply?'waiting':'active'}>
+                {row.unread>0?(locale==='ru'?'Новые сообщения':locale==='es'?'Mensajes nuevos':'New messages'):
+                  row.needsReply?t.waiting:(locale==='ru'?'Диалог':locale==='es'?'Conversación':'Conversation')}
+              </span>}
               <span className={styles.preview}>{row.preview||row.source}</span>
-              <small>{row.source}</small>
+              <small className={styles.sourceTag}>{row.source}</small>
             </span>
             {row.unread>0?<span className={styles.unread} aria-label={String(row.unread)}>{row.unread}</span>:
               row.needsReply?<span className={styles.needsReplyDot} aria-label={t.waiting}/>:null}
+            {embedded&&<ChevronRight size={16} className={styles.rowChevron} aria-hidden="true"/>}
           </button>)}
           {tab==='chats'&&crmState.partial&&<a className={styles.history}
             href={'/'+locale+'/app/practice?panel=crm&crmTab=messages'}>{t.more}</a>}
         </div>
       </aside>
       <div className={styles.detail} aria-live="polite"
-        hidden={Boolean(selected)&&!inMessagesTab(selected,tab)}>
+        hidden={Boolean(selected)&&!embedded&&!inMessagesTab(selected,tab)}>
         {selected&&<header className={styles.personBar}>
           <button type="button" className={styles.back} onClick={()=>{setOpenDetail(false);setShowCard(false)}}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>
