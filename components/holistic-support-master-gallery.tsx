@@ -577,6 +577,10 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
           </button>
         ))}
       </div>
+      {reikiTab === "main" && <button type="button" className={styles.reikiStageTopFilter}
+        data-support-reiki-hero-filter onClick={() => setReikiTab("filter")}>
+        <SlidersHorizontal size={17} aria-hidden="true"/>{r.choose}
+      </button>}
       {reikiTab === "filter" && <div className={styles.reikiPhotoIntro} data-support-reiki-photo-intro>
         <span className={styles.reikiPill}><HandHeart size={14} aria-hidden="true"/>{t.healing}</span>
         <strong>{r.heroTitle}</strong>
@@ -700,9 +704,7 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
                 data-support-reiki-request onClick={() => setOrderOpen(true)}>{r.request}<ArrowRight size={17}/></button> :
               reikiFormat !== "session" && !selectedMaster && (reikiAcademyOffers.length > 0 || reikiLearningMatches) ?
                 <a className={styles.reikiApply} href="#support-reiki-offers"
-                  data-support-reiki-open-offers>{r.show}<ArrowRight size={17}/></a> :
-                <button type="button" className={styles.reikiApply}
-                  onClick={() => setReikiTab("filter")}>{r.choose}<Filter size={17}/></button>}
+                  data-support-reiki-open-offers>{r.show}<ArrowRight size={17}/></a> : null}
           </div>
           <small className={styles.reikiCaution}>{r.notBooked}</small>
         </div>}
