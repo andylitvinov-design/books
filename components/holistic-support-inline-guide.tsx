@@ -82,7 +82,7 @@ const copy = {
     ux: {
       ready: "Your route is ready", focus: "Your focus", primary: "RECOMMENDED FIRST STEP",
       duration: "Time you have", durationWarning: "This is your preference, not the duration of a recording or practitioner session.",
-      preferred: "Your chosen format", local: "Based on your answers", planStart: "Explore",
+      local: "Based on your answers",
       benefit: {
         meditation: "Try an available recording. Check its actual duration before starting.",
         tests: "A free self-check to explore your current priorities.",
@@ -150,7 +150,7 @@ const copy = {
     ux: {
       ready: "Маршрут подобран", focus: "Ваш запрос", primary: "РЕКОМЕНДУЕМЫЙ ПЕРВЫЙ ШАГ",
       duration: "У вас есть", durationWarning: "Это ваше пожелание, а не длительность записи или сессии мастера.",
-      preferred: "Выбранный формат", local: "На основе ваших ответов", planStart: "Откройте",
+      local: "На основе ваших ответов",
       benefit: {
         meditation: "Попробуйте опубликованную практику. Длительность записи уточняется при открытии.",
         tests: "Бесплатная самопроверка поможет прояснить текущие приоритеты.",
@@ -218,7 +218,7 @@ const copy = {
     ux: {
       ready: "Tu ruta está lista", focus: "Tu objetivo", primary: "PRIMER PASO RECOMENDADO",
       duration: "Tiempo disponible", durationWarning: "Es tu preferencia, no la duración de una grabación o sesión.",
-      preferred: "Formato elegido", local: "Según tus respuestas", planStart: "Explora",
+      local: "Según tus respuestas",
       benefit: {
         meditation: "Prueba una grabación publicada. Comprueba su duración al abrirla.",
         tests: "Una autoevaluación gratuita para explorar tus prioridades.",
@@ -467,9 +467,6 @@ export function HolisticSupportInlineGuide({
     videoThemes[topic].some(category => preferredVideo.topics.includes(category))
     ? preferredVideo : matchingVideo ?? null;
   const category = testJourney[goalSectorFocus[topic]];
-  const summary = t.areas[topic] + " · " + (need || talk.notSure) +
-    (detail ? " · " + detail : "") + " · " +
-    (minutes === null ? t.later : minutes + " min") + " · " + t.formatLabels[format];
   const progress = phase === "review" || phase === "topic" ? 1
     : phase === "need" || phase === "detail" ? 2
       : phase === "time" ? 3 : phase === "format" ? 4 : 5;
