@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { flushSync } from "react-dom";
 import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -283,9 +283,15 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  // A WebKit input may dispatch a late change after Save + Next. Do not let
+  // that event dirty the accepted sector or mutate inputs of the next one.
+  const activeSectorRef = useRef(sector);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
-  const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
+  const markDirty = () => {
+    if (activeSectorRef.current !== sector) return;
+    setDirty(previous => ({ ...previous, [sector]: true }));
+  };
   const isAccepted = (id: GoalSector) => {
     // Keep edited, unsaved categories unaccepted. WebKit may dispatch the
     // previous number field's blur/change AFTER an atomic Save + Next and mark
@@ -302,6 +308,7 @@ export function HolisticSupportGoalFilter({
     if (value === sector) return;
     setDrafts(previous => ({ ...previous, [sector]: snapshotCurrent() }));
     const next = drafts[value] ?? accepted[value];
+    activeSectorRef.current = value;
     setSector(value);
     setConcerns(next?.concerns ?? []);
     setTasks(next?.tasks ?? []);
@@ -310,6 +317,7 @@ export function HolisticSupportGoalFilter({
     setCurrency(next?.currency ?? "CAD");
   }
   function toggle(id: string, values: string[], update: (next: string[]) => void) {
+    if (activeSectorRef.current !== sector) return;
     update(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
     markDirty();
   }
@@ -319,6 +327,7 @@ export function HolisticSupportGoalFilter({
     return ratings[id] ?? { current, desired: Math.max(current, 8) };
   }
   function updateRating(id: string, index: number, field: keyof GoalRating, value: number) {
+    if (activeSectorRef.current !== sector) return;
     setRatings(previous => ({
       ...previous, [id]: { ...getRating(id, index), ...previous[id], [field]: value },
     }));
@@ -326,6 +335,7 @@ export function HolisticSupportGoalFilter({
   }
   // Blank money values remain blank; no fabricated income or target is stored.
   function updateAmount(id: string, field: keyof GoalAmount, raw: string, max: number) {
+    if (activeSectorRef.current !== sector) return;
     const numeric = raw === "" ? null : Number(raw);
     if (numeric !== null && (!Number.isFinite(numeric) || numeric < 0 || numeric > max)) return;
     setAmounts(previous => ({
@@ -362,6 +372,7 @@ export function HolisticSupportGoalFilter({
     const index = sectorOrder.findIndex(item => item.id === sector);
     const nextId = sectorOrder[(index + 1) % sectorOrder.length].id;
     const next = drafts[nextId] ?? accepted[nextId];
+    activeSectorRef.current = nextId;
     flushSync(() => {
       setDrafts(previous => ({ ...previous, [sector]: snapshot }));
       setAccepted(previous => ({ ...previous, [sector]: snapshot }));
@@ -388,6 +399,7 @@ export function HolisticSupportGoalFilter({
       recommendationFormats: [...selectedFormats] });
   }
   function reset() {
+    activeSectorRef.current = "energy";
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     setDrafts({}); setAccepted({}); setDirty({});
     onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);
