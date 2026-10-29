@@ -472,4 +472,164 @@ provider_failed, download_failed, qa_rejected, delivery_failed, refund_review.
 ---
 
 **Этот v2 раздел является программой реализации, а не декларацией о выполнении P2–P6.** Предыдущая v1 техническая документация и реальный код из merged #2534 сохраняются выше для трассировки. Продолжать работу по existing epic #2397, а не создавать параллельный продукт.
+---
 
+# Приложение v3.0 · Как перейти от монтажа готовых сцен к настоящей качественной AI-видеогенерации
+**Зафиксировано 29 октября 2026 · ТЗ / gap analysis · НЕ код новой генерации, НЕ разрешение на оплату.**  
+**Основной epic:** books #2397. Прежнее ТЗ v2 (разделы 1–12) остаётся в силе; этот раздел уточняет **критический путь получения НОВЫХ движущихся кадров из запроса клиента** и минимально необходимую инфраструктуру. Реализация бесплатной студии уже перенесена через merged PR #2534; старый #2518 закрыт и не должен возвращаться в production.
+
+## 13. Диагноз: чего в существующей системе действительно нет
+
+Сегодня MandalaFreeVideoStudio + cinematic-director.mjs делают новое сочетание уже существующих first-party video assets и процедурных Canvas-сцен; могут записать настоящий MP4/WebM в браузере, но **не создают новые AI-видеокадры по свободному тексту**. cinematic-production.mjs хранит потенциальные имена моделей и правила платной генерации в чистых функциях, а не реальный server-to-provider pipeline. Kling API owner-only уже имеет отдельный пилот, но фактическая оплаченная генерация на пользовательском сайте и E2E клиентская доставка не подтверждены. HeyGen для проверенного Andrey Digital Twin, не для общего генератора фантастических сцен.
+
+Последний прочитанный Google Doc **Holistic House — Video Studio · 96 вопросов, 3 ответа + свой вариант · 5 разделов · ТЗ v1.2**:
+https://docs.google.com/document/d/1UUyGu8cVcxD4qJpgv5BUTi-_57c7eMJAWX4epeMA3pM/edit
+— **16 Personalization / 12 Principal / 18 Advanced / 34 Pro / 16 Extra = 96 стабильных ответов**, плюс **30 внутренних шкал**. Это UX-концепция, ещё **не** 96 работающих элементов сайта и не 96 параметров, поддерживаемых видеомоделью. Не заставлять клиента отвечать на все 96 вопросов ради одного 15–30-секундного ролика.
+
+Отсутствующие реальные технические способности:
+- **Computational generation**: оплачиваемый provider AI или действительно локальная GPU-модель, выдающая новые пиксели и движение (Text-to-Video / Image-to-Video / First+Last Frame).
+- **Keyframe/reference/character consistency**: якорные изображения + единый паспорт героя/мира/цвета/камеры и преемственность между клипами.
+- **Capabilities-aware compilation**: перевод 96 ответов в конкретные поддерживаемые настройки модели с честными fallback; неподдерживаемый virtual lens/fps/seed не выдавать за управление движком.
+- **Trusted render runtime**: настоящая очередь, техническая готовность модели, лимиты GPU/стоимости, provider credentials, долгоживущий background worker, защита от повторного платного POST.
+- **Verified production media chain**: приём новых байтов MP4, декодирование, дефекты, монтаж аудио/субтитров, приватное хранение и подтверждённая доставка.
+- **Quality iteration**: просмотр опорных кадров ДО затрат, переписывание одного плохого shot, контроль похожести героя и художественной связности. Внешняя модель не обязана воспроизвести все 96 пожеланий одним prompt.
+
+## 14. Один общий проект VideoProject вместо множества независимых генераторов
+
+**Не начинать с UI-каталога моделей.** Выстроить единую нормализованную схему поверх уже имеющихся модулей:
+
+~~~ts
+type Answers = Record<string,{
+  optionId?: "option_1"|"option_2"|"option_3";
+  customText?: string; // ограничен по длине, local only, never provider
+  origin: "manual"|"suggested_unaccepted"|"accepted_suggestion";
+}>;
+type VideoProject = {
+  projectId: string; revision: number; locale: "en"|"ru"|"es";
+  scope: "guest_local"|"client_private"|"owner_public";
+  briefSchemaVersion: "hh-video-96-v1.2";
+  answers: Answers; // ONLY in memory or explicit protected/encrypted account save
+  supportedSettings: Record<string,unknown>;  // compiled, typed, no raw private data
+  creativeSpecVersion: string; styleBibleId: string;
+  shots: ShotRecipe[]; activePlanHash: string;
+  workflow: "local_mix"|"self_hosted_ai"|"approved_provider_ai";
+};
+type ShotRecipe = {
+  shotId:string; order:number; startMs:number; durationMs:number;
+  semanticRole:"opening"|"resource"|"change"|"integration";
+  subjectReferenceId?:string; environmentReferenceId?:string;
+  startKeyframeAssetId?:string; endKeyframeAssetId?:string;
+  cameraPresetId:string; paletteId:string; visualStyleId:string;
+  permittedVisualTokens:string[]; blockedVisualTokens:string[];
+  modelCapabilitiesRequired:string[];
+  outputAssetId?:string; status:"planned"|"keyframes_ready"|"rendering"|
+    "asset_verified"|"qa_approved"|"failed";
+};
+~~~
+
+**Хранилище ответов и внешняя генерация разделены физически:**
+A. PrivateBrief: запросы/цели/результаты тестов/собственные фото/предпочтения; guest = память браузера, signed-in = только opt-in protected encrypted records.  
+B. SafeVisualRecipe: только vetted non-personal symbol/style/camera/lighting/shot reference IDs, без clientId, raw wish, test results, здоровья, CRM, фотографий и биометрии.  
+C. ApprovedRenderRequest: **сервер вновь** собирает безопасные подсказки из allowlist по asset ID + версии; клиентский произвольный prompt и price не доверяются.
+
+Схема запретов сохраняется даже если клиент выбирает «я волк/орёл/мифический герой». Безопасный внешний запрос описывает **вымышленного** персонажа, не конкретное лицо клиента; resemblance=0. Для likeness=3 по фото/голосу нужна **отдельная будущая** оценка биометрии/прав/приватности/разрешения, нельзя незаметно переслать оригинал в Kling. «Клиент будет похож на себя» нельзя обещать, пока нет законного, доступного и одобренного identity-preserving provider path. Andrey avatar — только заранее верифицированный private Digital Twin по действующей SOP.
+
+### 14.1 Программное сопоставление 96 вопросов и 30 шкал
+
+Один реестр с неизменными ID PERSONAL_01..16, BASIC_01..12, ADV_01..18, PRO_01..34, EXTRA_01..16. Для каждого: type, required=false (кроме выбранной цели/основного режима), defaults, constraints, question EN/RU/ES, options x3, customText, privacyClass, scope=global|shot|audio|delivery, capabilityKey, fallbackRule, costEffect. Внутренние 30 шкал — слой derived settings, а **не ещё 30 вопросов**.
+
+Порядок разрешения конфликтов: explicit user override > explicit client choices > accepted recommendations > preset defaults. У каждого значения хранится source/provenance; AI suggestions никогда не считаются consent и не замещают ручное поле. На экране 4 компактных поля и 3–5 Principal вопросов, остальные открываются контекстно. При смене модели показывать «поддерживается / творческая подсказка / недоступно». Не сохранять сырые ответы в Analytics, URL или public localStorage.
+
+Маппинг, который реально влияет на движок: aspect/duration/scene count → model-valid configuration; shot camera/motion/style → curated visual prompt или supported control; keyframes/reference/identity → только модели с доказанным reference support; голос/субтитры/музыка → post-production либо проверенные native audio capabilities; бюджет/публикация/профиль → **отдельные серверные permissions**, никогда prompt-текст.
+
+## 15. Главный секрет качества — «сначала постоянные референсы, затем движение»
+
+Простой prompt «красивый фильм о счастье, 20 секунд» даёт дрейф персонажей, непредсказуемую камеру и несвязанные кадры. Нужен управляемый **3-stage generation graph**:
+
+**A. Director / shot planning (free, deterministic):**
+1. Преобразовать тему в arc: открытие → образ опоры → перемена → интеграция; scenes 2–6 по выбранному duration и capability, не жёстко «всегда четыре» в будущем Pro.
+2. Создать immutable **Style Bible**: палитра 3–5 цветов, материал/эпоха, свет, погода/время суток, допустимые объекты, темп, камера, ракурс, aspect, negatives и banned personal tokens.
+3. Создать **Reference Pack**: окружение, образ абстрактного героя/животного, 1 ключевой исходный кадр и при необходимости 1 конечный на сцену; одни и те же approved fictional identity/style references для соседних кадров. Без клиентского фото вовне.
+4. Выдать 4 раскадровочных stills и понятный prompt на рус/анг/исп; если в будущем provider принимает English, переводить **только** обезличенную художественную сцену, никогда личный wish.
+5. Клиент смотрит сцены/референсы и подтверждает визуальную идею **перед** запуском дорогих движущихся кадров.
+
+**B. Actual generation (needs compute):**
+- **Text-to-Video** — когда нет референсов, абстрактный фон/уникальный B-roll; дешёвый короткий approved clip.
+- **Image-to-Video** — основной управляемый маршрут: исходная утверждённая композиция + описанное движение/камера.
+- **First/Last Frame** — при требовании совпадения соседних сцен; конец N связан с началом N+1, не отправлять случайно несколько несогласованных prompt.
+- **Reference-to-Video / Omni** — только при подтверждённой поддержке конкретной моделью и разрешённых не-клиентских изображениях/видео; не предполагать переносимость reference IDs.
+- Generate одного preview candidate на shot, возврат QA, **локальный retry только неудачной сцены** с новой ревизией. Не создавать по 3 дорогих варианта для всех кадров без нового cap.
+- Если внешнего AI нет, показать честный Free Original Mix из approved existing masters, а не «новый AI-generated footage».
+
+**C. Professional assembly:**
+- Единый точный timeline с duration/hold/transition; небольшие мягкие переходы и consistent grade; различать оптический zoom/camera hint и реальную camera-path поддержку.
+- Озвучка/текст/оригинальная музыка и субтитры собираются **после** приёма видеоклипов; избегать генерации надписей внутри диффузионного видеорендера.
+- Плеер показывает реальный preview master; после записи отдельный verified download и возможное добровольное private-save. Вспомогательные posters никогда не представлять вместо настоящего MP4.
+
+Для героев «животное / птица / вымышленный человек» сначала подтвердить **постоянный дизайн** (силуэт, одежда, цвет, две опорные позы), затем генерировать shot N. Риск «птичка превращается в другого героя» решать reference lock и asset QA, не только дополнительными словами в prompt.
+
+## 16. Реальная инфраструктура генерации: две стратегии, без фантазии «бесплатный облачный GPU»
+
+| Стратегия | Что реально генерируется | Ресурсы, ограничения, следующий шаг |
+| --- | --- | --- |
+| Free local mix — уже есть | новые комбинации уже снятых или программно нарисованных сцен, не new AI footage | Улучшить библиотеки, keyframe preview, editor/export/iPhone, лицензии; API cost = 0 |
+| **Self-hosted LTX 2.5 Fast через ComfyUI** | новые видеокадры по text/image/start-end refs, действительно locally computed | Нужен **реально доступный** Windows/Linux NVIDIA GPU с достаточной VRAM либо совместимый мощный Apple Silicon; скачать модель/веса и принять лицензию, проверить коммерческие права/версии и нагрузку, выбрать worker. Не на iPhone и не в Vercel Serverless. Offline/local ≠ без затрат на оборудование, энергию и инфраструктуру |
+| Kling owner neutral pilot | короткий уникальный public-sanitized B-roll | Уже существующий owner Kling adapter; Kling 4.0 28.10.2026 позволяет до 30s, 10 keyframes/Omni, но **для API требуется Flagship Resource Pack либо подтверждённый paid balance**. Owner approval + exact quote до render. Не включать массовый клиентский запуск |
+| Runway/Higgsfield/иной aggregator | альтернативные новые видео при реальной entitlement | Runway ChatGPT workspace on 29.10: availableVideoModels=[] несмотря на image models и 500 plan credits. Plugin ≠ backend API. Higgsfield API использует отдельный prepaid баланс; не подключать оба до оценки первого рабочего канала |
+
+**Документация на момент проверки:** Kling API https://kling.ai/document-api/updates/api?date=2026-02-11; LTX ComfyUI https://docs-dev.ltx.io/open-source-model/integration-tools/comfy-ui; desktop/аппаратные требования https://github.com/Lightricks/LTX-Desktop; Runway models https://docs.dev.runwayml.com/api/; Higgsfield https://higgsfield.ai/creator-hub/help-center/integrations/what-is-the-higgsfield-api .
+
+**Технический POC собственного AI без pay-per-call:** read-only аудит реального оборудования → выбрать локальную модель и pin checkpoint+dependencies → проверить отдельно license/commercial-use → установить isolated ComfyUI, авторизованный local API под VPN/loopback, без публичного 8188 → выполнить **один безличный тест text-to-video и один first/last-frame 5s** из искусственных референсов → ffprobe, время GPU/VRAM/ошибки, p95 и сравнение с текущим first-party montage. Текущий подключённый MacBook Remote Desktop был OFFLINE, инструментальный месячный лимит исчерпан; actual GPU/VRAM/OS memory не подтверждены. POC невозможен без доступного устройства или платного GPU хостинга. Никаких ожиданий, что iPhone или Vercel edge смогут воспроизводимо рендерить AI video.
+
+**Честная стоимость:** у self-host возможно 0 оплаты внешнему видеопровайдеру, но ненулевая GPU/энергия/время/хранилище. Полностью бесплатная неограниченная облачная коммерческая генерация качественного видео **не доказана**. У платной стратегии цена определяется серверной quote конкретной модели, resolution, seconds, audio/keyframe refs, не таблицей рекламных тарифов. Для пилота выбираем **одну** модель, один художественный нейтральный 5s-клип, одну утверждённую сумму; остальные отключены.
+
+## 17. Product + worker + cost ledger: реализация без дублирования инфраструктуры
+
+**Вход:** клиент жмёт «Создать раскадровку» (0 credits), видит кадры и style Bible, выбирает «Free original mix» или «Новые AI-кадры» и **явно просит котировку**. Пока нет реального backend capabilities+price+payment/approval — показывать estimate unavailable, не создаём fake provider job.
+
+**Сервер:** начать с расширения существующих lib/mandala/cinematic-production.mjs и lib/kling-video.mjs. Модель provider adapter должна отдавать capabilities (version, resolutions, ratios, maxDuration, supportsKeyframe/characterReferences/audio, commercialRights, cost, enabled) и fail closed. Генерация содержит только signed server-validated safe visual IDs; raw user prompt = NO. Долгоживущий task должен жить в DB, не в browser state/Vercel function.
+
+**DB минимально:** видео-проект может остаться guest local и private encrypted только после save consent; для платного owner-neutral рендера по плану v2 app_private.video_render_jobs + events, unique (owner,idempotencyKeyHash), уникальные provider external task IDs; payment/owner approval/cost cap linked by server; content hash/version for every shot. Для видео-ассетов использовать существующий реестр как индекс и приватный bucket только для фактических client masters, не создавать новый публичный media bucket без нужды.
+
+**Job sequence:** planned → keyframes_reviewed → quote_verified → owner_approved → payment_verified (только если заявлена клиентская продажа) → reserved → submitted → processing → downloaded → decoded → qa_passed → available_private/available_public_approved. При network timeout POST: submitted_unknown, только GET по внешнему request ID/reconciliation; **никаких слепых повторов платного POST**. Любой новый shot revision инвалидирует старую quote, а предыдущее оплаченноe задание не должно потеряться или списаться второй раз.
+
+**Processing:** отдельный trusted worker со строго bounded CPU/GPU/storage, mTLS/VPN для self-hosted ComfyUI, short-lived signed source URLs, allowlisted ingress/egress для provider video URLs и SSRF защита, claim lease с fencing token. На Vercel Next API только авторизованный orchestration/status, не 30s full-model infer и не multi-GB FFmpeg. Stop = остановить новые задания, не «отменить» уже списанную генерацию без provider receipt.
+
+**Приватная доставка:** текущий app_private.personal_videos принимает MP4 ≤12MB, 3 файла/user и 4 темы; canvas-webm сюда не выдавать, life/health не записывать под чужим theme. Если AI mastered video крупнее — отдельная оценка storage/egress/owner consent/entitlement и защищённый asset manifest, не поднимать caps втихую. Public-site assets архивируются Drive → только по отдельному QA и approval YouTube/Metricool, private никогда YouTube.
+
+## 18. Качество как измеряемый acceptance, не «магическая» кнопка
+
+**Автоматический media QA:** каждый output — реальные байты на собственном storage, проверка SHA-256, ftyp/container, video codec, duration±допуск, expected aspect/resolution/FPS, no broken/truncated frames, ffmpeg freezedetect/blackdetect/scene-change, измеренный звук/субтитры/громкость при выборе audio. Если источник 720p и output 1080p upscale — обозначать **upscaled 1080**, а не native 1080. Плавность переходов и отсутствие мигания/нежелательных кадров проверяются на извлечённых sample frames.
+
+**Художественный QA (вначале человек):** оценка 1–5 по (a) соответствие заявленному визуальному запросу, (b) стабильность героя/среды/цвета, (c) естественность движения/камеры, (d) отсутствие грубых артефактов/текста/подмены, (e) звук/субтитры, (f) privacy/licensing. Низкий балл отправляет **только конкретный shot** на правку, а не весь ролик. Показывать пользователю реальные preview и возможность заменить/regenerate один кадр. Не обещать 100% точного исполнения свободного запроса.
+
+**Репрезентативный пилот (только synthetic non-client prompts):**
+A. 20-секундное атмосферное 16:9 видео «солнечный луг → свет через деревья → тропа → горизонт», без героя.  
+B. 15–30-секундное 9:16 видео с **одним вымышленным** орлом и стабильным внешним видом между кадрами, без клиентского фото.  
+C. 30-секундный сценический ролик в двух версиях стиля, с оригинальной разрешённой музыкой, RU/EN/ES безопасными субтитрами.  
+Для каждого тестировать storyboarding/keyframes → real AI 5s clip (только после approvals) → master FFmpeg → ffprobe/PCM → private/public gate → actual iPhone 320–430. Отдельно тест без AI: все три сценария должны давать честный Free Original Mix, где нет unavailable assets.
+
+**Предлагаемые KPI для решения о launch, не измеренные результаты:** 0 неразрешённых paid submits/PII uploads, 0 двойных оплаченных задач, 100% готовых файлов декодируются и имеют checksum, owner QA без серьёзных артефактов, корректная стоимость успешного MP4 и понятный процент повторной генерации кадра. Публичный click, storyboard или media GET 200 не означают завершённый фильм.
+
+## 19. Конкретная очередь разработки: критический путь к «реально генерирует»
+
+| Этап | Код/контракт в существующем продукте | Definition of Done |
+| --- | --- | --- |
+| G0 — baseline | сверить production HEAD/READY, #2534/#2566/#2550, 96-field Google Doc, current Kling flags, реальные 4 сцены/фильмы | один список truly implemented / proposed / gated, нет merge старого #2518 |
+| **G1 — 96→VideoProject compiler** | versioned schema+registry, 30 scale mapping, provenance/consents, modelCapabilities, scene/shot overrides и safe prompt firewall в существующем lib/mandala | 5 категорий и 96 IDs тестируются; базовые 4 поля — быстрый UI, unsupported fields marked; no PII into safe JSON |
+| **G2 — Style Bible + Keyframe Studio** | добавить утверждаемые 4 stills, first/last-frame manifest, 1 fictional character identity asset, visual do-not-use tags, scene revision/checksum | каждый shot имеет референс/визуальную причину, редактируется без уничтожения остальных |
+| **G3a — Free moving render** | доработать текущий Canvas/MediaRecorder/FFmpeg, asset/source rights, audio/subtitles, safe frame transitions, profile privacy | скачанный MP4/WebM имеет реальный motion+audio, iPhone/WebKit acceptance; honest local-only label |
+| **G3b — ONE true AI backend proof** | либо ComfyUI+LTX self-hosted capability/license/hardware POC, либо owner-approved Kling 4.0/2.5 neutral 5s, not both mandatory | **новый**, ранее не существовавший MP4 generated from synthetic prompt, provider/GPU receipt, actual decoded frames+QA |
+| **G4 — trusted render queue** | server jobs/outbox/receipt, signed provider media ingest, concurrency/lease, 0 default budgets, callback/status, per-shot retry | timeout/retry never double bills; provider task ID + bytes/hash + account-appropriate delivery readback |
+| **G5 — one real user film** | keyframes→1 or several actual new short AI shots→existing FFmpeg→sound/subtitles→cabinet opt-in+secure delivery | owner-approved sample plays from signed-in client account, user A/B privacy tests, actual iPhone playback |
+| **G6 — scale + 8 sessions** | leverage #2503 approved scripts/voice/media; style bible per language, reuse licensed background clips, transparent entitlement and progress | 8 **actual** reviewed files for claimed locale, no false unlocked course or medical claims |
+
+**Самые важные первые три программные задачи:** (1) единый проверяемый compiler для 96 вопросов и capabilities, (2) keyframe/reference pack + согласованная style Bible, (3) один фактически работающий T2V/I2V worker и реальный тестовый MP4. Пока пункт (3) не готов, продукт технически умеет только **ремикс**, даже если интерфейс назван AI Studio. Не тратить время на ещё 20 фильтров и дорогие генерации прежде этих трёх блоков.
+
+## 20. Зависимости и разрешения владельца — отдельно, по достижении gate
+
+- **Если выбираем self-hosted**: только read-only проверка владельцем GPU/VRAM/RAM/OS+SSD и license, подключённая машина/защищённый runtime; отсутствие готового оборудования = честный blocker. Устройство не подключено и GPU не подтверждён; не предполагать бесплатный сервер.
+- **Если выбираем paid Kling pilot**: конкретная модель/доступ/правовая лицензия, реальный provider quote, отдельно согласованная верхняя сумма и один разрешённый клип без лица/личных данных; до этого НЕ включать платные флаги.
+- **Для клиентской доставки и продаж**: отдельно privacy/save consent, A/B E2E, поддерживаемая оплата и specialist review для клинических программ; последующая публикация — самостоятельное explicit approval.
+
+**Итоговый инженерный принцип:** Video Studio становится настоящим text-to-video продуктом лишь после прохождения G3b (новые байты AI-клипа + QA) и G4/G5 (безопасный повторяемый путь до пользователя), а не после добавления формы, ссылок на провайдеров, красивой карточки или успеха сборки сайта. Это приложение дополняет программу v2, не заменяет утверждённые бесплатные модули.
