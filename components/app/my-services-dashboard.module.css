@@ -321,14 +321,20 @@
 }
 .dashboard[data-practice-services-new-design] .cardChevron{color:#9b8f7f}
 .dashboard[data-practice-services-new-design] .editor[data-service-composer-focus]{
-  order:3;
+  order:3;padding:0;margin:0;min-width:0;
+}
+.dashboard[data-practice-services-new-design]:has([data-service-composer-focus])>.inner{
+  gap:7px;
 }
 .dashboard[data-practice-services-new-design]:has([data-service-composer-focus]) .actions{
-  order:1;grid-template-columns:1fr;
+  order:1;display:flex;justify-content:flex-start;gap:0;margin:0;
 }
 .dashboard[data-practice-services-new-design]:has([data-service-composer-focus]) .actions>button{
-  background:#e5f2e9!important;color:#176d58!important;
-  border-color:#c5e2d3!important;box-shadow:none!important
+  width:auto;max-width:100%;min-height:44px!important;
+  padding:7px 12px!important;border-radius:13px!important;
+  background:#e7f5ed!important;color:#146950!important;
+  border:1px solid #c9e7d5!important;box-shadow:none!important;
+  font:760 12px/1.24 system-ui,sans-serif!important
 }
 @media(max-width:650px){
  .dashboard[data-practice-services-new-design] .serviceCard>summary{
