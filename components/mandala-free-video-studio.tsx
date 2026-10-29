@@ -387,6 +387,34 @@ function ThemedSceneThumbnail({ theme, scene, photo, title }: {
   return <canvas ref={ref} width={176} height={228} className={videoStyles.templateArt} aria-hidden="true"/>;
 }
 
+// Only one visible, explicitly selected real MP4 decodes in the gallery.
+function ThemedFilmThumbnail({film,scene,photo,title,playing}: {
+  film:Pick<FilmSource,"src"|"poster">;scene:LocalSceneId;
+  photo:HTMLImageElement|null;title:string;playing:boolean;
+}) {
+  const ref=useRef<HTMLVideoElement>(null);
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    if(typeof IntersectionObserver==="undefined"){setVisible(true);return;}
+    const observer=new IntersectionObserver(([entry])=>setVisible(Boolean(entry?.isIntersecting)),
+      {threshold:.05,rootMargin:"100px"});
+    observer.observe(el);return ()=>observer.disconnect();
+  },[]);
+  useEffect(()=>{
+    const video=ref.current;if(!video)return;
+    if(!playing||!visible){video.pause();return;}
+    video.muted=true;
+    void video.play().catch(()=>{/* iOS may require another direct tap. */});
+    return ()=>video.pause();
+  },[playing,visible,film.src]);
+  return <video ref={ref} muted playsInline loop preload="none" src={film.src} poster={film.poster}
+    aria-label={title} data-mandala-scene-preview={scene} data-real-mp4={film.src}
+    data-photo-overlay-available={photo?"true":"false"}
+    data-scene-playing={playing&&visible?"true":"false"}
+    className={styles.moneyFlowThumb}/>;
+}
+
 // A video-only codec string can silently drop the selected audio track on
 // Safari. Prefer codecs that explicitly include AAC/Opus, then let the
 // actual MediaRecorder constructor validate each candidate with this stream.
@@ -697,18 +725,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // gesture; play is only attempted following a visitor's preview/render.
   useEffect(()=>{
     setPremiumReady(false);
-  },[activeMoneyFilm?.src]);
+  },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
     if(!video)return;
-    if(!activeMoneyFilm || (!previewPlaying && !recording && !preparing)){
+    if(!activeFilm || (!previewPlaying && !recording && !preparing)){
       video.pause();
       return;
     }
     video.muted=true;
     video.loop=true;
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
-  },[activeMoneyFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
+  },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
   // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
   // tapped: selection itself is the explicit playback gesture.
@@ -773,7 +801,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
-      if(theme==="money") {
+      if(activeFilm) {
         const master=premiumVideoRef.current;
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
         await master.play();
@@ -972,11 +1000,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
-    const actual: VideoTheme = next==="health" ? "energy" : next;
-    setTheme(actual);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
+    setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     setPreviewPlaying(false);setBackgroundOnly(false);setThemeMenuOpen(false);
-    if(actual==="money")setMoneyScene("golden-rain");
-    else {setMoneyScene(null);setOtherScene(next==="health" ? "gentle-shield" : otherVideoScenes[actual][0].id);}
+    if(next==="money")setMoneyScene("golden-rain");
+    else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
   };
 
   const resetVideoSettings=()=>{
@@ -1006,11 +1033,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video lang={locale} aria-label={ui.title}>
-      {activeMoneyFilm ? <video
-        key={activeMoneyFilm.src} ref={premiumVideoRef}
-        src={activeMoneyFilm.src} poster={activeMoneyFilm.poster}
+      {activeFilm ? <video
+        key={activeFilm.src} ref={premiumVideoRef}
+        src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
-        data-mandala-master-mp4={activeMoneyFilm.src}
+        data-mandala-master-mp4={activeFilm.src}
         onCanPlay={()=>setPremiumReady(true)}
         onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
         aria-hidden="true"
@@ -1102,7 +1129,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </header>
         <div className={videoStyles.categoryRail} data-video-category-rail role="group" aria-label={supportUi.topThemes}>
           {videoCategories.map(item=>{
-            const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:Leaf;
+            const Icon=item==="energy"?Zap:item==="money"?Coins:item==="relationships"?Heart:item==="goals"?Target:item==="life"?Sprout:HeartPulse;
             return <button type="button" key={item} data-video-category={item} data-tone={item}
               aria-pressed={videoCategory===item} disabled={recording||preparing}
               onClick={()=>selectCategory(item)}>
@@ -1121,7 +1148,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 else {
                   const scene=event.currentTarget.value as LocalSceneId;
                   setOtherScene(scene);
-                  if(videoCategory==="health"&&scene!=="gentle-shield")setVideoCategory("energy");
+                  // Wellness retains its independent category.
                 }
               }}>
               {theme==="money"
@@ -1148,7 +1175,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-hero-promo={!photoUrl&&!backgroundOnly&&!previewPlaying&&!recording?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
-        <div className={videoStyles.heroPromo} aria-hidden="true" />
+        <div className={videoStyles.heroPromo} aria-hidden="true"
+          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.30),rgba(6,28,29,.53)),url("${activeFilm.poster}")`} : undefined} />
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
           <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
             height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
@@ -1217,6 +1245,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {backgroundOnly?<small>{ui.backgroundHint}</small>:null}
       </fieldset>}
+      {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
+        {locale==="ru"?"Эти спокойные видеосюжеты — для отдыха и внимания, не медицинские рекомендации.":
+          locale==="es"?"Estos vídeos son para descansar y prestar atención, no son consejos médicos.":
+          "These calm videos support reflection and rest; they are not medical advice."}
+      </p>}
       <section className={videoStyles.templates} id="video-templates" data-mandala-money-effects
         aria-labelledby="video-templates-heading">
         <div className={videoStyles.sectionHeading}>
@@ -1242,7 +1275,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 playing={moneyScene===money.id&&previewPlaying&&!recording}/>
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{name}</span>
-              {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
+              {getRealMoneyFilm(money.id).src.includes("/film-collection-v2/") ? <span className={videoStyles.filmBadge}>FULL HD</span> : null}
+               {moneyScene===money.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
               <span className={videoStyles.srOnly}>{index+1}</span>
             </button>;
           }) : visibleTemplates.map(scene=>{
@@ -1252,9 +1286,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               className={videoStyles.templateTile} disabled={recording||preparing}
               aria-pressed={otherScene===other.id}
               onClick={()=>{setSuggestion("");setOtherScene(other.id);setPreviewPlaying(true);
-                if(videoCategory==="health"&&other.id!=="gentle-shield")setVideoCategory("energy");}}>
-              <ThemedSceneThumbnail theme={theme} scene={other.id}
-                title={other.label[locale]} photo={sharedThumbnailPhoto}/>
+                }}>
+              {getThemedRealFilm(theme,other.id) ?
+                 <ThemedFilmThumbnail film={getThemedRealFilm(theme,other.id)!} scene={other.id}
+                   title={other.label[locale]} photo={backgroundOnly?null:sharedThumbnailPhoto}
+                   playing={otherScene===other.id&&previewPlaying&&!recording}/> :
+                 <ThemedSceneThumbnail theme={theme} scene={other.id}
+                   title={other.label[locale]} photo={sharedThumbnailPhoto}/>}
+               {getThemedRealFilm(theme,other.id) ? <span className={videoStyles.filmBadge}>FULL HD</span> : null}
               <span className={videoStyles.tileShade} aria-hidden="true"/>
               <span className={videoStyles.tileName}>{other.label[locale]}</span>
               {otherScene===other.id ? <span className={videoStyles.tileCheck}><Check size={14} aria-hidden="true"/></span>:null}
