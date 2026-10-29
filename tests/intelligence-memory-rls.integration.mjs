@@ -7,7 +7,7 @@ import { getAppConfig } from '../lib/app/config.js'
 import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal, openSealed } from '../lib/app/crypto.js'
-import { saveIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback } from '../lib/app/intelligence-feedback.js'
+import { saveIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback, intelligenceFeedbackStatus } from '../lib/app/intelligence-feedback.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
@@ -49,6 +49,8 @@ test('invalid consent, malformed ciphertext and duplicate operations fail closed
 test('explicit save is default off, idempotent, owner scoped and deletable even when disabled',async()=>{
   const off={...config,intelligenceMemoryEnabled:false}, on={...config,intelligenceMemoryEnabled:true}
   assert.equal(config.intelligenceMemoryEnabled,false)
+  assert.deepEqual(await intelligenceFeedbackStatus(off,a),{managementAvailable:true,saveEnabled:false})
+  assert.deepEqual(await intelligenceFeedbackStatus(on,a),{managementAvailable:true,saveEnabled:true})
   const operationId=randomUUID(), input={operationId,consent:true,expectedRevision:0,itemId:'youtube:w2BN-HYmHUk',feedback:'not_useful'}
   await assert.rejects(saveIntelligenceFeedback(off,a,input),/INTELLIGENCE_MEMORY_DISABLED/)
   await assert.rejects(saveIntelligenceFeedback(on,a,{...input,consent:false}),/CONSENT_REQUIRED/)
