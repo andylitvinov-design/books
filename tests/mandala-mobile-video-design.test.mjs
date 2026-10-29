@@ -247,7 +247,10 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/data-video-audio-section/);
   assert.match(studio,/data-video-hypnosis-section/);
   assert.match(studio,/studioMode==="therapy"/);
-  assert.match(studio,/data-hero-promo=\{!photoUrl&&!previewPlaying&&!recording/);
+  // A selected four-shot cinematic timeline must display its actual first frame,
+  // never the single-shot promotional poster above the shared preview.
+  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
+  assert.match(studio,/const activeFilm = cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-therapy-toggle/);
