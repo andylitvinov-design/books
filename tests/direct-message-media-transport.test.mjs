@@ -158,7 +158,7 @@ test('voice messages can be recorded, previewed, discarded and sent only on tap'
  assert.match(voice,/120000/)
  assert.match(voice,/session\.discard/)
  assert.match(voice,/onRecordingChange/)
- assert.match(ui,/recording\|\|!activeId/)
+ assert.match(ui,/recording\|\|inspectingVideo\|\|!activeId/)
  for(const label of ['en','ru','es'])assert.match(voice,new RegExp('\\b'+label+':\\{'))
  assert.doesNotMatch(voice,/onRecorded\?\.\(.*fetch|autoPublish|sendMessage/)
 })
