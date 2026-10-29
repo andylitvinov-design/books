@@ -560,7 +560,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector]
     : quickGoal ? quickGoalFocus[quickGoal] : lowestFocus;
-  const suggested = useMemo(() => recommendation && editedCheckins.length > 0
+  const suggested = useMemo(() => recommendation && editedCheckins.length === checkinOrder.length
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, editedCheckins, videos, locale]);
   const goalMatch = useMemo(() => goalSelection
@@ -645,7 +645,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     if (!goalSelection && editedCheckins.length === 0) {
       scrollToSupport("support-quick-goals"); return;
     }
-    setRecommendation(editedCheckins.length ? asFocusScores(scores) : null);
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null);
     setGoalFilterOpen(false);
     setGuideVersion(previous => previous + 1); setGuideOpen(true);
     scrollToSupport("support-goal-results");
@@ -681,7 +681,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
       formats.includes(id) && inlineChoice[id]);
     // Three "Now → Want" measures remain independent. Applying them must
     // never overwrite the dedicated check-in, which syncs on every drag.
-    setRecommendation(editedCheckins.length ? asFocusScores(scores) : null);
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null);
     setQuickGoal(null);
     setGoalSelection(value);
     setGuideVersion(previous => previous + 1); setGuideOpen(true);
@@ -749,7 +749,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const guidePreferredVideo = goalMatch?.videos[0] ?? null;
   const openGuideVideo = (id: string | null) => {
     if (goalSelection && !activeGoalFormats.includes("meditation")) { openGoalFilter(); return; }
-    setRecommendation(asFocusScores(scores)); setChoice("meditation"); setGoalFilterOpen(false);
+    setRecommendation(editedCheckins.length === checkinOrder.length ? asFocusScores(scores) : null); setChoice("meditation"); setGoalFilterOpen(false);
     setTheme("all"); setProgram("all"); setMaster("all");
     setSelectedId(id); setPlaying(false);
     scrollToSupport("support-meditation-player");
