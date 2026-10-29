@@ -351,3 +351,21 @@ test("current two-video-mode compact opt-ins have actual 44px touch targets at m
   assert.ok(studio.indexOf("data-video-preview-choices") < studio.indexOf("data-video-mandala-hero"));
   assert.ok(studio.indexOf('id="video-templates"') < studio.indexOf("data-video-advanced-filters"));
 });
+
+
+test("LIVE regression: canonical video editor has one Support dock, not duplicate bottom menus", () => {
+  const route=read("app/[locale]/holistic-support/mandala/page.tsx");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const dock=read("components/holistic-support-mandala-dock.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} \/>/);
+  assert.match(route, /<MandalaMeditationClient locale=\{locale\}/);
+  assert.match(studio, /data-video-mandala-hero/);
+  assert.match(studio, /data-video-support-layout/);
+  assert.match(studio, /id="personal-video-result"/);
+  assert.match(studio, /data-mandala-video-download/);
+  assert.match(studio, /data-video-photo-consent/);
+  assert.match(dock, /data-mandala-support-bottom-nav/);
+  assert.doesNotMatch(studio, /<nav className=\{videoStyles\.bottomNav\}/);
+  assert.match(browser, /exactly one Support dock/);
+});
