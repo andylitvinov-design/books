@@ -283,11 +283,11 @@ async function handle(request, { params }) {
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching/intake`
               : continueTo === 'practice-preview'
-                // Auth returns to the SAME public practitioner dashboard,
-                // never the legacy editor. The validated action is only a
-                // proposed next step the person may select after signing in.
-                ? `${origin}/${locale}/practice${profi && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)
-                    ? '?ready='+encodeURIComponent(profi) : ''}`
+                // Return to the identical canonical Practice dashboard for
+                // guest and signed-in users. Older action-code continuations
+                // stay allowlisted but never inject a layout-shifting banner.
+                // The user explicitly chooses a protected editor after login.
+                ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'

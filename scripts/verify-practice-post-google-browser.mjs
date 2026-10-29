@@ -90,6 +90,51 @@ for(const engine of [chromium,webkit]){
       }finally{await page.close()}
     }
 
+    // Historical bookmarked OAuth links must never recreate the large
+    // "Continue: Create" panel in the approved practitioner screenshot.
+    for(const locale of ['ru','en','es']){
+      const label=engine.name()+'-'+locale+'-stale-ready'
+      const page=await browser.newPage({viewport:{width:390,height:844},
+        hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
+      await api(page,true)
+      try{
+        const response=await page.goto(origin+'/'+locale+'/practice?ready=create',{waitUntil:'domcontentloaded'})
+        assert.equal(response?.status(),200,label+' HTTP')
+        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='signed')
+        await page.waitForFunction(()=>!location.search)
+        assert.equal(await page.locator('[data-practice-after-google]').count(),0,label+' no continuation banner')
+        assert.equal(await page.locator('[class*="quickGrid"] > button').count(),6,label+' six first-screen creation tiles')
+        results.push({label,ok:true,mode:'synthetic legacy OAuth URL cleanup'})
+      }finally{await page.close()}
+    }
+
+    // A guest clicking Create -> Google on the approved dashboard must not
+    // send profi=create: that formerly injected the unwanted second screenshot.
+    for(const locale of ['ru','en','es']){
+      const label=engine.name()+'-'+locale+'-public-google'
+      const page=await browser.newPage({viewport:{width:390,height:844},
+        hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
+      await api(page,false)
+      let payload=null
+      await page.route('**/api/app/auth/start',route=>{
+        payload=route.request().postDataJSON()
+        return respond(route,200,{redirectUrl:'https://accounts.google.com/o/oauth2/v2/auth?synthetic=1'})
+      })
+      await page.route('https://accounts.google.com/**',route=>
+        route.fulfill({status:200,contentType:'text/html',body:'<html>synthetic OAuth</html>'}))
+      try{
+        await page.goto(origin+'/'+locale+'/practice',{waitUntil:'domcontentloaded'})
+        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='guest')
+        await page.locator('[class*="quickGrid"] > button').first().click()
+        await page.locator('button[class*="modalPrimary"]').click()
+        await page.waitForURL(url=>url.hostname==='accounts.google.com')
+        assert.equal(payload?.continueTo,'practice-preview',label+' same dashboard after login')
+        assert.equal(payload?.profi,undefined,label+' no extra Continue banner')
+        assert.equal(payload?.locale,locale,label+' preserve locale')
+        results.push({label,ok:true,mode:'synthetic guest create -> Google continuation'})
+      }finally{await page.close()}
+    }
+
     // Reproduce the real broken starting URL before Google sign-in, without making an external OAuth request.
     for(const locale of ['ru','en']){
       const label=engine.name()+'-'+locale+'-legacy-auth'

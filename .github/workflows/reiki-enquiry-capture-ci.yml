@@ -12,6 +12,7 @@ on:
       - "lib/practitioners/remote-energy-support.js"
       - "lib/whatsapp-enquiry.js"
       - "tests/reiki-mobile-order-crm.test.mjs"
+      - "tests/holistic-support-consultation-tests-separation.test.mjs"
       - "scripts/verify-reiki-mobile-order-browser.mjs"
       - "components/energywork-reiki-capture.tsx"
       - "components/kundalini-reiki-course.tsx"
@@ -59,6 +60,7 @@ jobs:
           tests/reiki-mobile-order-crm.test.mjs
           tests/remote-energy-support-booking.test.mjs
           tests/energywork-kundalini-ygg-study.test.mjs
+          tests/holistic-support-consultation-tests-separation.test.mjs
       - name: Type-check Next app
         run: npx --no-install tsc --noEmit
       - name: Lint changed components
@@ -68,6 +70,7 @@ jobs:
           components/contact-channel-chooser.tsx
           components/remote-energy-support-booking.tsx
           components/holistic-support-master-gallery.tsx
+          tests/holistic-support-consultation-tests-separation.test.mjs
           components/holistic-support-mobile.tsx
           components/energywork-reiki-capture.tsx
           components/kundalini-reiki-course.tsx
