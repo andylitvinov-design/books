@@ -1890,6 +1890,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {studioMode==="therapy" ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={uploadedAudio?uploadedAudio.file.name:(selectedAudio?.name[locale]||"")}
+        audioSrc={uploadedAudio?(audioRights?uploadedAudio.url:null):previewAudioUrl}
         pace={speed} brightness={brightness}
         affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
         focus={meditationFocus} disabled={recording||preparing}/>:null}
