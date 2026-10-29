@@ -70,13 +70,27 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
-        // Screenshot-led iPhone hierarchy: two modes, four themes, optional
-        // photo, compact live-preview filters, templates, audio, affirmations.
-        const modes=page.locator("[data-video-mode-switch]");
-        await modes.waitFor({state:"visible",timeout:12000});
-        assert.equal(await modes.locator("button").count(),2);
-        assert.equal(await page.locator('[data-video-mode="pump"]').getAttribute("aria-pressed"),"true");
-        assert.equal(await page.locator('[data-video-mode="therapy"]').getAttribute("aria-pressed"),"false");
+        // Screenshot-led iPhone hierarchy: navy diagnostic strip, daily picks,
+        // restored 3-column assessment, one neutral-by-default therapy button,
+        // four topics and the two independent photo/affirmation options.
+        const promo=page.locator("[data-video-diagnostic-banner]");
+        const promoRect=await promo.boundingBox();
+        assert.ok(promoRect && promoRect.height>=44 && promoRect.height<=66,
+          engine+" "+locale+" "+width+"px half-height diagnostic strip: "+JSON.stringify(promoRect));
+        const picks=page.locator("[data-video-daily-picks]");
+        await picks.waitFor({state:"visible",timeout:12000});
+        assert.equal(await picks.locator("a").count(),4,"four actionable daily recommendations");
+        for (const link of await picks.locator("a").all()) assert.ok((await link.getAttribute("href"))?.startsWith("/"+locale+"/"),
+          "recommendations must link to existing localized pages");
+        const supportTop=page.locator("[data-video-support-layout]");
+        await supportTop.waitFor({state:"visible",timeout:12000});
+        assert.equal(await supportTop.locator('input[type="range"]').count(),4);
+        const therapyButton=page.locator("[data-video-therapy-toggle]");
+        await therapyButton.waitFor({state:"visible",timeout:12000});
+        assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
+        assert.equal(await page.locator("[data-video-mode-switch]").count(),0,"removed segmented mode picker");
+        const inactiveTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
+        assert.equal(inactiveTherapyBackground,"none","ordinary video must not look therapy-active");
         assert.equal(await page.locator("[data-video-category-rail] button").count(),4);
         assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false,
           "background-only is the default; adding a personal photo is opt-in");
@@ -110,7 +124,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           "the film frame is compact at "+width+"px");
         const landmarks=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
-          return ["[data-video-mode-switch]","[data-video-category-rail]",
+          return ["[data-video-diagnostic-banner]","[data-video-daily-picks]",
+            "[data-video-support-layout]","[data-video-category-rail]",
             "[data-video-preview-choices]","[data-video-mandala-hero]",
             "[data-video-therapy-banner]","#video-templates",
             "[data-video-audio-section]","[data-video-hypnosis-section]"]
@@ -123,21 +138,19 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
         await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
-        assert.equal(await page.locator('[data-video-mode="therapy"]').getAttribute("aria-pressed"),"true");
-        await page.locator('[data-video-mode="pump"]').click();
+        assert.equal(await therapyButton.getAttribute("aria-pressed"),"true");
+        const activeTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
+        assert.match(activeTherapyBackground,/gradient/i,"chosen therapy entry must turn green");
+        await therapyButton.click();
         await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
+        assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
         await page.locator("[data-video-advanced-filters] > summary").click();
         await page.locator("[data-video-advanced-aspect]").selectOption("landscape");
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-video-advanced-aspect]").selectOption("portrait");
         await page.locator("[data-video-advanced-filters] > summary").click();
-        await page.locator("[data-video-support-more] > summary").click();
-        const supportTop=page.locator("[data-video-support-layout]");
-        await supportTop.waitFor({state:"visible",timeout:12000});
-        assert.equal(await supportTop.locator('input[type="range"]').count(),4);
         await page.locator("[data-video-recommend-focus]").click();
         assert.equal(await page.locator('[data-video-theme="energy"]').getAttribute("aria-pressed"),"true");
-        await page.locator("[data-video-support-more] > summary").click();
 
                 // New Talisman-style controls drive the same local renderer and settings.
         const catalog=page.locator("[data-video-catalog]");
@@ -487,8 +500,8 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // MP4 and personal goal affirmations, then the SAME local recorder and
         // downloadable playable media as the existing video studio.
         if (engine === "chromium" && locale === "ru" && width === 390) {
-          await page.locator('[data-video-mode="therapy"]').click();
-          assert.equal(await page.locator('[data-video-mode="therapy"]').getAttribute("aria-pressed"),"true");
+          await page.locator("[data-video-therapy-toggle]").click();
+          assert.equal(await page.locator("[data-video-therapy-toggle]").getAttribute("aria-pressed"),"true");
           await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
           assert.equal(await page.locator("[data-video-studio-mode]").getAttribute("data-video-studio-mode"),"therapy");
           const programmeLayout=await page.evaluate(()=>{

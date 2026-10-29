@@ -318,7 +318,7 @@ const supportDesignCopy = {
     check:"1. Check in with yourself", scoreGuide:"Rate each area from 1 to 10",
     help:"2. Choose what helps", test:"Tests", focus:"Focus",
     shortTools:{meditation:"Video",test:"Test",talisman:"Talisman",reiki:"Reiki"},
-    mandala:"Video mandala",recommend:"Find my focus",
+    mandala:"Video therapy",recommend:"Find my focus",
     meditation:"Meditation", testSession:"Session", talisman:"Talisman",
     reiki:"Reiki support", courses:"Courses", masters:"Masters",
     catalogTitle:"Video mandala",catalogIntro:"Choose a theme and create your own video",allScenes:"All scenes",health:"Wellbeing",
@@ -343,7 +343,7 @@ const supportDesignCopy = {
     check:"1. Оцени себя сейчас", scoreGuide:"Поставь баллы от 1 до 10",
     help:"2. Выбери, что поможет",test:"Тесты",focus:"Фокус",
     shortTools:{meditation:"Видео",test:"Тест",talisman:"Талисман",reiki:"Рейки"},
-    mandala:"Видео-мандала",recommend:"Подобрать",
+    mandala:"Видео-терапия",recommend:"Подобрать",
     meditation:"Медитация", testSession:"Сессия",talisman:"Талисман",
     reiki:"Рейки поддержка",courses:"Курсы",masters:"Мастера",
     catalogTitle:"Видео-мандала",catalogIntro:"Выбери тему и создай своё видео",allScenes:"Все сюжеты",health:"Здоровье",
@@ -368,7 +368,7 @@ const supportDesignCopy = {
     check:"1. Evalúa cómo estás",scoreGuide:"Valora del 1 al 10",
     help:"2. Elige lo que te ayuda",test:"Pruebas",focus:"Enfoque",
     shortTools:{meditation:"Vídeo",test:"Test",talisman:"Talismán",reiki:"Reiki"},
-    mandala:"Vídeo mandala",recommend:"Elegir tema",
+    mandala:"Videoterapia",recommend:"Elegir tema",
     meditation:"Meditación",testSession:"Sesión",talisman:"Talismán",
     reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",
     catalogTitle:"Vídeo mandala",catalogIntro:"Elige un tema y crea tu vídeo",allScenes:"Todas las escenas",health:"Bienestar",
@@ -1225,16 +1225,97 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       /> : null}
 
 
-      <div className={videoStyles.quickStart} data-video-quick-start>
-        <div className={videoStyles.modePicker} data-video-mode-switch role="group" aria-label={layout.modeLabel}>
-          {(["pump","therapy"] as const).map(mode=>
-            <button type="button" key={mode} data-video-mode={mode}
-              aria-pressed={studioMode===mode} disabled={recording||preparing}
-              onClick={()=>{setStudioMode(mode);setNotice("");}}>
-              {mode==="pump"?<Zap size={18} aria-hidden="true"/>:<HandHeart size={18} aria-hidden="true"/>}
-              {layout[mode]}
-            </button>)}
+      <nav className={videoStyles.dailyPicks} data-video-daily-picks
+        aria-label={locale==="ru"?"Рекомендации на сегодня":locale==="es"?"Recomendaciones de hoy":"Recommendations for today"}>
+        <strong>Picks of the Day</strong>
+        <div className={videoStyles.dailyPicksRail}>
+          <Link href={"/"+locale+"/client/tests?focus="+
+            (videoCategory==="goals"?"meaning":videoCategory==="relationships"?"relationships":videoCategory==="money"?"clarity":videoCategory==="health"?"health":"body")}
+            prefetch={false}>{locale==="ru"?"Мои тесты":locale==="es"?"Mis tests":"My Test"}</Link>
+          <Link href={"/"+locale+"/holistic-support/mobile?view=meditation#support-mobile-experience"}
+            prefetch={false}>{locale==="ru"?"Медитация":locale==="es"?"Meditación":"Meditation"}</Link>
+          <Link href={"/"+locale+"/services/free-situation-review"}
+            prefetch={false}>{locale==="ru"?"Бесплатный разбор":locale==="es"?"Análisis gratis":"Free Diagnostic"}</Link>
+          <Link href={"/"+locale+"/courses"}
+            prefetch={false}>{locale==="ru"?"Программа обучения":locale==="es"?"Programa de estudio":"Study Program"}</Link>
         </div>
+      </nav>
+      <div className={videoStyles.supportTop} data-video-support-layout>
+        <section className={videoStyles.assessmentCard} aria-labelledby="video-assessment-heading">
+          <h2 id="video-assessment-heading">{supportUi.check}</h2>
+          <p>{supportUi.scoreGuide}</p>
+          <div className={videoStyles.assessmentScales}>
+            {checkOrder.map(key=>{
+              const Icon=key==="energy"?Zap:key==="money"?Coins:key==="relationships"?Heart:Target;
+              return <label className={videoStyles.assessmentScale} key={key} data-tone={key}>
+                <span>{ui.themes[key]}</span>
+                <span className={videoStyles.scaleControls}>
+                  <Icon size={16} aria-hidden="true"/>
+                  <input type="range" min={1} max={10} step={1} value={scores[key]}
+                    aria-label={ui.themes[key]}
+                    onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
+                  <output>{scores[key]}</output>
+                </span>
+              </label>;
+            })}
+          </div>
+          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/holistic-support/mobile?view=tests"} prefetch={false}>
+            <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
+          </Link>
+        </section>
+
+        <section className={videoStyles.centerProfile} aria-label={ui.stepPhoto}>
+          <button type="button" className={videoStyles.photoPortrait} data-video-profile-photo-picker
+            disabled={recording||preparing} aria-label={photoUrl?ui.replace:ui.addPhoto}
+            onClick={onPickPhoto}>
+            {photoUrl ? (
+              // This is a private local blob, never optimized or uploaded.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoUrl} alt="" draggable={false}/>
+            ) : <span className={videoStyles.photoEmpty}>
+                {/* Approved reference artwork only; never used as a customer photo
+                    or submitted to the video-generation renderer. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={videoStyles.referencePortrait}
+                  src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true" />
+              </span>}
+            <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
+          </button>
+          <div className={videoStyles.profileFocus}><small>{supportUi.focus}</small><strong>{ui.themes[lowestTheme]}</strong></div>
+          <button type="button" className={videoStyles.recommendButton}
+            disabled={recording||preparing} data-video-recommend-focus
+            onClick={()=>selectCategory(lowestTheme)}>
+            <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
+          </button>
+          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
+        </section>
+
+        <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
+          <h2 id="video-tools-heading">{supportUi.help}</h2>
+          <div className={videoStyles.supportToolGrid}>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=meditation#support-mobile-experience"} prefetch={false}
+              className={videoStyles.toolPrimary}><Play size={23} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.meditation}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.meditation}</span></Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=consultation"} prefetch={false}>
+              <TestTubeDiagonal size={23} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.testSession}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.test}</span></Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=talisman"} prefetch={false}>
+              <Sparkles size={24} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.talisman}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.talisman}</span></Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=healing#support-mobile-experience"} prefetch={false}>
+              <HandHeart size={24} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.reiki}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.reiki}</span></Link>
+          </div>
+          <div className={videoStyles.supportShortcuts}>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=pump"} prefetch={false}>{supportUi.courses}</Link>
+            <Link href={"/"+locale+"/holistic-support/mobile?view=masters"} prefetch={false}>{supportUi.masters}</Link>
+          </div>
+          <button type="button" className={videoStyles.videoMandalaChoice}
+            data-video-therapy-toggle aria-pressed={studioMode==="therapy"}
+            disabled={recording||preparing}
+            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setNotice("");}}>
+            <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
+          </button>
+        </section>
+      </div>
+
+      <div className={videoStyles.quickStart} data-video-quick-start>
         {studioMode==="therapy" ? <p className={videoStyles.therapyHint} role="note">
           {layout.therapyHint} <a href="#guided-video-series">{layout.therapyJump}</a>
         </p> : null}
@@ -1749,82 +1830,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section>
       </details>
-      <details className={videoStyles.supportMore} data-video-support-more>
-        <summary>{layout.personalFocus}</summary>
-      <div className={videoStyles.supportTop} data-video-support-layout>
-        <section className={videoStyles.assessmentCard} aria-labelledby="video-assessment-heading">
-          <h2 id="video-assessment-heading">{supportUi.check}</h2>
-          <p>{supportUi.scoreGuide}</p>
-          <div className={videoStyles.assessmentScales}>
-            {checkOrder.map(key=>{
-              const Icon=key==="energy"?Zap:key==="money"?Coins:key==="relationships"?Heart:Target;
-              return <label className={videoStyles.assessmentScale} key={key} data-tone={key}>
-                <span>{ui.themes[key]}</span>
-                <span className={videoStyles.scaleControls}>
-                  <Icon size={16} aria-hidden="true"/>
-                  <input type="range" min={1} max={10} step={1} value={scores[key]}
-                    aria-label={ui.themes[key]}
-                    onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
-                  <output>{scores[key]}</output>
-                </span>
-              </label>;
-            })}
-          </div>
-          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/holistic-support/mobile?view=tests"} prefetch={false}>
-            <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
-          </Link>
-        </section>
-
-        <section className={videoStyles.centerProfile} aria-label={ui.stepPhoto}>
-          <button type="button" className={videoStyles.photoPortrait} data-video-profile-photo-picker
-            disabled={recording||preparing} aria-label={photoUrl?ui.replace:ui.addPhoto}
-            onClick={onPickPhoto}>
-            {photoUrl ? (
-              // This is a private local blob, never optimized or uploaded.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoUrl} alt="" draggable={false}/>
-            ) : <span className={videoStyles.photoEmpty}>
-                {/* Approved reference artwork only; never used as a customer photo
-                    or submitted to the video-generation renderer. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={videoStyles.referencePortrait}
-                  src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true" />
-              </span>}
-            <span className={videoStyles.cameraCircle}><Camera size={15} aria-hidden="true"/></span>
-          </button>
-          <button type="button" className={videoStyles.videoMandalaChoice}
-            onClick={()=>document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"})}>
-            <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
-          </button>
-          <div className={videoStyles.profileFocus}><small>{supportUi.focus}</small><strong>{ui.themes[lowestTheme]}</strong></div>
-          <button type="button" className={videoStyles.recommendButton}
-            disabled={recording||preparing} data-video-recommend-focus
-            onClick={()=>selectCategory(lowestTheme)}>
-            <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
-          </button>
-          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
-        </section>
-
-        <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
-          <h2 id="video-tools-heading">{supportUi.help}</h2>
-          <div className={videoStyles.supportToolGrid}>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=meditation#support-mobile-experience"} prefetch={false}
-              className={videoStyles.toolPrimary}><Play size={23} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.meditation}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.meditation}</span></Link>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=consultation"} prefetch={false}>
-              <TestTubeDiagonal size={23} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.testSession}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.test}</span></Link>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=talisman"} prefetch={false}>
-              <Sparkles size={24} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.talisman}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.talisman}</span></Link>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=healing#support-mobile-experience"} prefetch={false}>
-              <HandHeart size={24} aria-hidden="true"/><span className={videoStyles.toolFull}>{supportUi.reiki}</span><span className={videoStyles.toolCompact}>{supportUi.shortTools.reiki}</span></Link>
-          </div>
-          <div className={videoStyles.supportShortcuts}>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=pump"} prefetch={false}>{supportUi.courses}</Link>
-            <Link href={"/"+locale+"/holistic-support/mobile?view=masters"} prefetch={false}>{supportUi.masters}</Link>
-          </div>
-        </section>
-      </div>
-      </details>
-
       {photoUrl && !backgroundOnly ? (
         <label className={videoStyles.consent}>
           <input type="checkbox" data-video-photo-consent checked={photoConsent}
