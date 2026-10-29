@@ -262,23 +262,18 @@ export default function AppWorkspace({ locale, path = [] }) {
         : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
           ? 'course'
           : proPanel === 'profile' ? 'profile' : proPanel === 'requests' ? 'requests' : null
-      // Website sign-in always returns to the ORIGINAL Practice showcase.
-      // Only an explicit second click may enter a private editor. Native
-      // handoff keeps its established deep-link semantics and secure PKCE.
-      const publicPracticeAction = proPanel === 'services'
-        ? proCreate
-          ? (['diagnostic','energy','personal','reiki','intro','workshop'].includes(proStarter) ? proStarter : 'service')
-          : 'services'
-        : proPanel === 'materials'
-          ? searchParams.get('materialTab') === 'courses'
-            ? (proCreate ? 'course' : 'courseList') : 'materials'
-          : ['clients','requests','analytics','profile'].includes(proPanel) ? proPanel : null
+      // Returning from the legacy private editor after Google sign-in must
+      // display the EXACT owner-approved Practice dashboard first. Never add
+      // ?ready=service here: that inserts a continuation panel above the six
+      // reference tiles and shifts the hero down on iPhone. A signed-in user
+      // can select any real action directly on the dashboard.
+      // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
-            : { continueTo: 'practice-preview', ...(publicPracticeAction ? { profi: publicPracticeAction } : {}) }
+            : { continueTo: 'practice-preview' }
           : {}),
         ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
