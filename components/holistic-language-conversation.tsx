@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, MessageCircle, RotateCcw, Send, Sparkles, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
+import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import styles from "./holistic-language-conversation.module.css";
 
 type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru"; durationMinutes?: number };
@@ -23,6 +24,7 @@ const locales = {
     pilot:"Optional experiment: a large model is downloaded to your device. The model only rephrases approved public guidance; your personal messages are not given to the model.",
     local:"Locally generated wording", stop:"Stop local model", error:"Local wording is unavailable; verified guidance is unchanged.",
     modelNotice:"The model runtime and weights are downloaded from external hosts only after your click; no ChatGPT account or token is needed.",
+    publicAudio:"I found published Reiki course introduction audio. This is not a standalone guided meditation.",
   },
   ru: {
     title:"Свободный разговор", subtitle:"Напишите о своей ситуации своими словами.",
@@ -35,6 +37,7 @@ const locales = {
     pilot:"Добровольный эксперимент: на устройство загружается большая модель. Она только перефразирует проверенную публичную подсказку, не получая ваши личные сообщения.",
     local:"Формулировка локальной модели", stop:"Выключить локальную модель", error:"Локальная формулировка недоступна; проверенный ответ остаётся без изменений.",
     modelNotice:"Программный модуль и веса загружаются с внешних хостов только по вашему нажатию. Аккаунт ChatGPT и токены не требуются.",
+    publicAudio:"Нашлись опубликованные вступительные аудио курса Reiki. Это не самостоятельная медитация.",
   },
   es: {
     title:"Conversación libre", subtitle:"Describe lo que necesitas con tus propias palabras.",
@@ -47,6 +50,7 @@ const locales = {
     pilot:"Experimento opcional: se descarga un modelo grande al dispositivo. Solo reformula una respuesta pública revisada y no recibe tus mensajes personales.",
     local:"Redacción del modelo local", stop:"Detener modelo local", error:"No está disponible la reformulación local; se conserva la respuesta verificada.",
     modelNotice:"El módulo y sus pesos se descargan de servidores externos solo si lo autorizas. No se necesita ChatGPT ni tokens.",
+    publicAudio:"Se encontraron introducciones de audio publicadas del curso Reiki. No son meditaciones guiadas independientes.",
   },
 } as const;
 function validGenerated(text: string) {
@@ -76,6 +80,7 @@ export function HolisticLanguageConversation({
   const [modelError,setModelError] = useState("");
   const modelWorker=useRef<Worker | null>(null);
   const requestCounter=useRef(0);
+  const audioCounter=useRef(0);
   const threadRef=useRef<HTMLDivElement>(null);
   const modelExperiment=process.env.NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL === "true";
 
@@ -92,6 +97,7 @@ export function HolisticLanguageConversation({
     modelWorker.current=null;
     setModelMode("off");setModelProgress(0);setLocalPhrase("");setModelError("");
     requestCounter.current+=1;
+    audioCounter.current+=1;
   }
   function reset() {
     haltModel();
@@ -143,6 +149,30 @@ export function HolisticLanguageConversation({
     setDraft("");
     setLocalPhrase("");
     requestCounter.current+=1;
+    audioCounter.current+=1;
+    if(result.state.format==="audio" && result.status==="no_match" &&
+       result.state.maxDurationMin===null && result.state.topic) {
+      const ticket=audioCounter.current;
+      const slots=publicReikiAudioSlots({topic:result.state.topic,locale:result.state.locale});
+      if(slots.length) {
+        void Promise.all(slots.map(async lesson=>{
+          try {
+            // Public lesson identifier only. Do NOT send the message, user ID or private tests.
+            const endpoint="/api/reiki-intro-audio?lesson="+lesson+"&locale="+result.state.locale;
+            const response=await fetch(endpoint,{credentials:"omit"});
+            if(!response.ok)return null;
+            return verifiedPublicReikiIntro(await response.json(),{lesson,locale:result.state.locale});
+          } catch {return null;}
+        })).then(items=>{
+          if(ticket!==audioCounter.current)return;
+          const approved=items.filter((item):item is NonNullable<typeof item>=>item!==null);
+          if(!approved.length)return;
+          setEntries(prev=>prev.map((entry,index)=>index===prev.length-1 &&
+            entry.role==="agent" && entry.text===result.text
+            ? {...entry,text:t.publicAudio,suggestions:approved} :entry));
+        });
+      }
+    }
     if(result.status==="recommend" && modelMode==="ready" && result.allowLocalRewrite &&
        modelWorker.current) {
       modelWorker.current.postMessage({type:"cancel"});
