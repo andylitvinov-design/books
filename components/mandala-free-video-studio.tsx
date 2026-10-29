@@ -11,6 +11,7 @@ import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
+import {cinematicPreviewSeconds} from "@/lib/mandala/cinematic-director.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -650,14 +651,15 @@ function paintCinematicFrame(
   theme:VideoTheme,otherScene:LocalSceneId,speed:Speed,brightness:Brightness,
   realVideo:HTMLVideoElement|null,storyboard:CinematicStoryboard|null,
 ) {
-  const shot=storyboard?.shots.find(s=>time>=s.startSeconds &&
-    time<s.startSeconds+s.durationSeconds) || storyboard?.shots.at(-1);
+  const filmSecond=storyboard?cinematicPreviewSeconds(storyboard,time):time;
+  const shot=storyboard?.shots.find(s=>filmSecond>=s.startSeconds &&
+    filmSecond<s.startSeconds+s.durationSeconds) || storyboard?.shots.at(-1);
   if(!shot){
     paint(ctx,image,effect,time,aspect,moneyScene,caption,theme,otherScene,
       speed,brightness,realVideo);
     return;
   }
-  const localTime=Math.max(0,time-shot.startSeconds);
+  const localTime=Math.max(0,filmSecond-shot.startSeconds);
   paint(ctx,image,effect,localTime,aspect,
     shot.theme==="money"?shot.sceneId as MoneySceneId:null,
     caption,shot.theme,shot.sceneId as LocalSceneId,speed,brightness,null);
@@ -946,8 +948,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (cancelled || jobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 80 && !document.hidden) {
-          paintCinematicFrame(ctx,image,effect,(now-startedAt)/1000,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
-          paintVideoAffirmations(ctx,(now-startedAt)/1000,affirmationLines,affirmations);
+          const elapsed=(now-startedAt)/1000;
+          // A long-running Play preview should repeat the real 4-scene film
+          // and timed affirmations instead of holding indefinitely on shot 4.
+          const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
+          paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
+          paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
           lastFrame = now;
         }
         animation = window.requestAnimationFrame(draw);
