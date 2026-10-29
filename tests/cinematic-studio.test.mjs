@@ -159,6 +159,16 @@ test("free montage manifest always has a bounded, contiguous timeline and explic
   assert.throws(()=>buildCinematicAssemblyManifest(p,{audio:"user_approved"}),/audio_rights_required/);
   assert.equal(buildCinematicAssemblyManifest(p,{audio:"user_approved",licensedAudio:true}).rightsConfirmed,true);
 });
+test("four style choices visibly grade the SAME local Canvas frames in preview and recorded file",()=>{
+  for(const style of ["warm","nature","dream","minimal"])
+    assert.ok(studio.includes('storyboard.styleId==="'+style+'"'),
+      style+" must change actual video pixels, not only a paid-provider prompt");
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,0,aspect/);
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
+  assert.match(studio,/ctx\.createRadialGradient\(w\*\.53,h\*\.36/);
+  assert.match(studio,/ctx\.fillRect\(0,0,w,h\)/);
+});
+
 test("no-cost offline FFmpeg assembler validates local rights and builds explicit H264/AAC graph",()=>{
   const input={version:"hh-assembly-1",locale:"ru",aspect:"landscape",audioMode:"narration_with_music",
     clips:[1,2,3,4].map(i=>({file:"clip-"+i+".mp4",seconds:5,rightsConfirmed:true})),
