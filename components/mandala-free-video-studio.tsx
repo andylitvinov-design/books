@@ -1990,13 +1990,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
       <nav className={videoStyles.editorJumpNav} data-video-editor-nav aria-label={layout.editorNavLabel}>
-        <a href="#video-templates" data-video-editor-tab="design">
+        <a href="#video-templates" data-video-editor-tab="design"
+          onClick={()=>openQuickDetailed("video-templates")}>
           <Film size={17} aria-hidden="true"/>{layout.designTab}
         </a>
-        <a href="#video-audio" data-video-editor-tab="audio">
+        <a href="#video-audio" data-video-editor-tab="audio"
+          onClick={()=>openQuickDetailed("video-audio")}>
           <Music2 size={17} aria-hidden="true"/>{layout.audioTab}
         </a>
-        <a href="#video-hypnosis" data-video-editor-tab="affirmations">
+        <a href="#video-hypnosis" data-video-editor-tab="affirmations"
+          onClick={()=>openQuickDetailed("video-hypnosis")}>
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
