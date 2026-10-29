@@ -447,6 +447,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           assert.match(firstScript,/Личные границы/);
           assert.equal(await page.locator("[data-guided-score-provenance]").count(),0,
             "no private profile imported without consent");
+          // Preserve both opt-ins when applying the first free symbolic video.
+          const photoBeforeGuided=await page.locator("[data-video-photo-enabled]").isChecked();
+          const affirmationsBeforeGuided=await page.locator("[data-video-affirmations-feature]").isChecked();
           await page.locator("[data-guided-free-video]").click();
           await page.waitForFunction(()=>{
             const master=document.querySelector("[data-mandala-master-mp4]");
@@ -456,8 +459,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           },undefined,{timeout:30000});
           assert.equal(await page.locator('[data-video-duration="60"]').getAttribute("aria-pressed"),"true",
             "default guided course length is 60 seconds");
-          assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false,
-            "guided free-video setup uses the existing background-only recorder");
+          assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),photoBeforeGuided,
+            "guided first video preserves the visitor's photo/background choice");
+          assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),affirmationsBeforeGuided,
+            "guided first video preserves the visitor's affirmations checkbox");
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
           // Keep automated media verification bounded at 10s; the default
