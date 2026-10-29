@@ -110,7 +110,7 @@ test("selected safe symbol enriches a personalized meditation without interpreti
     intent:{focus:"stress",symbolId:"tree"}});
   assert.equal(result.status,"script_ready");
   assert.equal(result.symbolId,"tree");
-  assert.ok(result.script.includes("дерево"));
+  assert.match(result.script,/дерево/iu);
   assert.equal(result.noSymbolInterpretation,true);
   const risky=ask("meditation",{consent:{resourceImagery:true},
     intent:{focus:"stress",symbolId:"cave"}});
