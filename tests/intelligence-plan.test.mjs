@@ -64,3 +64,41 @@ test('interface and soundtrack languages stay separate', async () => {
   assert.equal(result.primary.audioLanguage, 'en');
   assert.match(result.explanation, /выбранной/);
 });
+test('saved coaching topic is read only with explicit consent and no current focus', async () => {
+  let reads=0
+  const loadCoaching=async()=>{reads++;return {course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'Private goal',approvedAt:'2026-01-01T00:00:00Z'}}}}}
+  const request={...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}}
+  const result=await planIntelligenceRequest(request,{loadCatalog:loader,loadCoaching})
+  assert.equal(reads,1)
+  assert.equal(result.status,'no_match') // The single original fixture has no money topic.
+  assert.equal(JSON.stringify(result).includes('Private goal'),false)
+  await planIntelligenceRequest({...request,intent:{language:'en',selectedTopics:['energy']}},{loadCatalog:loader,loadCoaching})
+  await planIntelligenceRequest({...request,preflight:undefined},{loadCatalog:loader,loadCoaching})
+  await planIntelligenceRequest({...request,profileFocus:undefined},{loadCatalog:loader,loadCoaching})
+  assert.equal(reads,1)
+});
+test('a confirmed saved topic can rank a genuinely eligible synthetic source without exposing the plan', async () => {
+  const source={...videos.find(video=>video.youtube_id===sourceId),goals:['money'],goal_weights:{money:90}}
+  const loadCoaching=async()=>({course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'private goal',approvedAt:'2026-01-01T00:00:00Z'}}}})
+  const result=await planIntelligenceRequest({...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}},{loadCatalog:async()=>({videos:[source],publishedSourceIds:[sourceId]}),loadCoaching})
+  assert.equal(result.status,'recommend')
+  assert.match(result.explanation,/saved coaching topic/)
+  assert.equal(JSON.stringify(result).includes('private goal'),false)
+});
+test('unapproved, missing, sensitive and future coaching data never becomes a focus', async () => {
+  const request={...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}}
+  for(const current of [
+    {status:'active',clientTopic:'money',actionPlan:{goal:'x',approvedAt:'2026-01-01T00:00:00Z'}},
+    {status:'completed',clientTopic:'money'},
+    {status:'completed',clientTopic:'sexuality',actionPlan:{goal:'x',approvedAt:'2026-01-01T00:00:00Z'}},
+    {status:'completed',clientTopic:'money',actionPlan:{goal:'x',approvedAt:'2999-01-01T00:00:00Z'}},
+  ]) {
+    const result=await planIntelligenceRequest(request,{loadCatalog:loader,loadCoaching:async()=>({course:{current}})})
+    assert.equal(result.status,'clarify')
+  }
+});
+test('unavailable private source never becomes a fabricated saved focus', async () => {
+  const result=await planIntelligenceRequest({...body,profileFocus:'confirmed_coaching_topic',intent:{language:'en'}},{loadCatalog:loader,loadCoaching:async()=>{throw Error('private detail')}})
+  assert.equal(result.status,'unavailable')
+  assert.equal(JSON.stringify(result).includes('private detail'),false)
+});

@@ -10,6 +10,8 @@ const COPY = {
 }
 const LANGUAGES = {en:'English',ru:'Русский',es:'Español'}
 const FOCUS = {en:'Your focus',ru:'Выбранная тема',es:'Tu tema'}
+const SAVED = {en:'Use my saved coaching topic for this request',ru:'Использовать мою сохранённую тему коучинга для этого запроса',es:'Usar mi tema de coaching guardado para esta solicitud'}
+const PROFILE_NOTE = {en:'Your profile is used only if you select your saved coaching topic; test results are not used.',ru:'Профиль используется только если вы выберете сохранённую тему коучинга; результаты тестов не используются.',es:'Tu perfil se usa solo si eliges tu tema de coaching guardado; no se usan resultados de tests.'}
 
 /** @param {{locale?:string, surface?:string, accountId?:string, videos?:object[], publishedSourceIds?:string[], audioLanguage?:string}} props */
 export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accountId, videos, publishedSourceIds, audioLanguage }) {
@@ -24,7 +26,7 @@ export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accou
     const current=++generation.current
     setBusy(true);setFeedback('');setStarted(false)
     try {
-      const body={requestId:globalThis.crypto.randomUUID(),surface,intent:{language:lang,audioLanguage:audioLanguage||lang,selectedTopics:[goal],formats:['video']},preflight,session:{dismissedIds:excluded}}
+      const body={requestId:globalThis.crypto.randomUUID(),surface,intent:{language:lang,audioLanguage:audioLanguage||lang,selectedTopics:goal==='saved'?[]:[goal],formats:['video']},preflight,session:{dismissedIds:excluded},...(goal==='saved'?{profileFocus:'confirmed_coaching_topic'}:{})}
       let output
       if(surface==='meditation'){
         const { planIntelligenceRequest }=await import('@/lib/holistic-support/intelligence-plan.mjs')
@@ -39,13 +41,13 @@ export function HolisticIntelligenceCard({ locale='en', surface='cabinet', accou
   function another(){if(!answers||!result?.primary)return;const next=[...new Set([...dismissed,result.primary.id])].slice(-80);setDismissed(next);void suggest(answers,next)}
   const choices=handler=><div className={styles.actions}>{['yes','no','unsure'].map(value=><button key={value} type="button" onClick={()=>handler(value)}>{t[value]}</button>)}</div>
   return <section className={styles.root} aria-label={t.title} data-holistic-intelligence>
-    <h3>{t.title}</h3><p>{t.intro}</p>
-    {step==='topic'&&<div className={styles.question}><label htmlFor={`hh-intelligence-topic-${surface}`}>{t.topic}</label><select id={`hh-intelligence-topic-${surface}`} value={goal} onChange={event=>{setGoal(event.target.value);setDismissed([])}}><option value="">{t.choose}</option>{Object.entries(t.goals).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><button type="button" disabled={!goal} onClick={()=>setStep('danger')}>{t.next}</button></div>}
+    <h3>{t.title}</h3><p>{surface==='cabinet'?PROFILE_NOTE[lang]:t.intro}</p>
+    {step==='topic'&&<div className={styles.question}><label htmlFor={`hh-intelligence-topic-${surface}`}>{t.topic}</label><select id={`hh-intelligence-topic-${surface}`} value={goal} onChange={event=>{setGoal(event.target.value);setDismissed([])}}><option value="">{t.choose}</option>{Object.entries(t.goals).map(([key,label])=><option key={key} value={key}>{label}</option>)}{surface==='cabinet'&&<option value="saved">{SAVED[lang]}</option>}</select><button type="button" disabled={!goal} onClick={()=>setStep('danger')}>{t.next}</button></div>}
     {step==='danger'&&<div className={styles.question}><p>{t.danger}</p>{choices(answerFirst)}</div>}
     {step==='thoughts'&&!busy&&<div className={styles.question}><p>{t.thoughts}</p>{choices(answerSecond)}</div>}
     {busy&&<p role="status">{t.wait}</p>}
     {step==='result'&&!busy&&result&&<div className={styles.result} role={result.status==='safety_handoff'?'alert':'status'}>
-      {result.primary?<><small>{FOCUS[lang]}: {t.goals[goal]}</small><strong>{result.primary.title}</strong><p>{result.explanation}</p><small>{t.audio}: {LANGUAGES[result.primary.audioLanguage]||result.primary.audioLanguage}</small>
+      {result.primary?<><small>{FOCUS[lang]}: {goal==='saved'?SAVED[lang]:t.goals[goal]}</small><strong>{result.primary.title}</strong><p>{result.explanation}</p><small>{t.audio}: {LANGUAGES[result.primary.audioLanguage]||result.primary.audioLanguage}</small>
         <div className={styles.actions}><a href={result.primary.href} target="_blank" rel="noopener noreferrer" onClick={()=>setStarted(true)}>{t.start}</a><button type="button" onClick={another}>{t.other}</button><button type="button" onClick={another}>{t.unsuitable}</button></div>
         {started&&(!feedback?<div className={styles.feedback}><span>{t.helpful}</span>{['useful','notUseful','skip'].map(key=><button type="button" key={key} onClick={()=>key==='notUseful'?another():setFeedback(key)}>{t[key]}</button>)}</div>:feedback==='skip'?null:<p>{t.thanks}</p>)}
       </>:<p>{result.explanation||t.unavailable}</p>}

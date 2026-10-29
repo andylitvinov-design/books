@@ -43,3 +43,8 @@ test('session dismissals are bounded identifiers, not private history records', 
   for (const session of [{ accountId: 'other' }, { dismissedIds: ['bad/id'] }, { dismissedIds: Array(81).fill('x') }])
     assert.throws(() => validateIntelligenceRequest({ ...valid(), session }), /INVALID_INTELLIGENCE_REQUEST/);
 });
+test('saved coaching topic requires an explicit cabinet-only request', () => {
+  assert.equal(validateIntelligenceRequest({ ...valid(), profileFocus:'confirmed_coaching_topic' }).profileFocus, 'confirmed_coaching_topic');
+  assert.throws(()=>validateIntelligenceRequest({ ...valid(), surface:'meditation', profileFocus:'confirmed_coaching_topic' }),/INVALID_INTELLIGENCE_REQUEST/);
+  assert.throws(()=>validateIntelligenceRequest({ ...valid(), profileFocus:'all_private_data' }),/INVALID_INTELLIGENCE_REQUEST/);
+});

@@ -97,6 +97,8 @@ routeSource = routeSource
     `import { requireSameOrigin, requestOrigin } from '${new URL('../lib/app/config.js', import.meta.url)}'; const getAppConfig = () => (${JSON.stringify({...config, origins:[origin]})})`)
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
     'export const accountWrites = []; const createAppRepository = () => ({ensureAccount: async actor => accountWrites.push(actor.id)})')
+  .replace(/import \{ readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries \} from '@\/lib\/app\/personal-coaching'/,
+    `import { savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '${new URL('../lib/app/personal-coaching.js', import.meta.url)}'; export const coachingReads=[]; const readPersonalCoaching=async (_,actor)=>{ coachingReads.push(actor.id); return {course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'private test goal',approvedAt:'2026-01-01T00:00:00Z'}}}} }`)
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
   .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
   .replace("const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')", `const loadMeditationDiscovery = async () => ({ videos: ${JSON.stringify(meditationFixture)}, publishedSourceIds: ['HqfixazXqRY'] })`)
@@ -141,6 +143,14 @@ test('intelligence route enforces origin and verified session before planning', 
   const secondResult = await route.POST(request(body, {origin, cookie:secondCookies}), params)
   assert.equal(secondResult.status, 200)
   assert.equal(JSON.stringify(await secondResult.json()).includes(second.id), false)
+  const readsBefore = route.coachingReads.length
+  const savedBody = {...body, intent:{language:'en'}, profileFocus:'confirmed_coaching_topic'}
+  const saved = await route.POST(request(savedBody, {origin, cookie:secondCookies}), params)
+  assert.equal(saved.status, 200)
+  assert.deepEqual(route.coachingReads.slice(readsBefore),[second.id])
+  assert.equal(JSON.stringify(await saved.json()).includes('private test goal'),false)
+  await route.POST(request({...savedBody,preflight:undefined}, {origin, cookie:secondCookies}), params)
+  assert.equal(route.coachingReads.length,readsBefore+1)
 })
 async function routeStart(cookies = [], intentId, continueTo = null) {
   const req = new NextRequest(origin + '/api/app/auth/start', { method:'POST', headers:{

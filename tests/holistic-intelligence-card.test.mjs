@@ -27,3 +27,9 @@ test('compact card begins with an explicit topic choice in each supported locale
     assert.ok(!html.includes('I am in immediate danger'))
   }
 })
+test('saved coaching topic is offered only in the authenticated cabinet',()=>{
+  const cabinet=renderToStaticMarkup(React.createElement(exports.HolisticIntelligenceCard,{locale:'en',surface:'cabinet'}))
+  const guest=renderToStaticMarkup(React.createElement(exports.HolisticIntelligenceCard,{locale:'en',surface:'meditation',videos:[],publishedSourceIds:[]}))
+  assert.ok(cabinet.includes('Use my saved coaching topic for this request'))
+  assert.ok(!guest.includes('Use my saved coaching topic for this request'))
+})

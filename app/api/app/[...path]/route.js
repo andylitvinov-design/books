@@ -561,7 +561,10 @@ async function handle(request, { params }) {
       const { planIntelligenceRequest } = await import('@/lib/holistic-support/intelligence-plan.mjs')
       const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')
       try {
-        return json(await planIntelligenceRequest(body, { loadCatalog: loadMeditationDiscovery }))
+        return json(await planIntelligenceRequest(body, {
+          loadCatalog: loadMeditationDiscovery,
+          loadCoaching: () => readPersonalCoaching(config, actor),
+        }))
       } catch (error) {
         if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
           throw new AppError('INVALID_INTELLIGENCE_REQUEST', 400)
