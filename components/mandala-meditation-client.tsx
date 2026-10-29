@@ -199,23 +199,10 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   // A second iPhone Photos/Files choice must invalidate an earlier async decode.
   const photoChoiceEpoch = useRef(0);
   const closeButton = useRef<HTMLButtonElement | null>(null);
-  // WebKit may dispatch a synthetic click (detail 0) after pointerup. If
-  // both events toggle state, fullscreen opens and immediately closes.
-  // Record the pointer activation, consume its following click once, and
-  // still support keyboard/screen-reader click without a preceding pointer.
-  const pointerHandledRef = useRef(false);
+  // One native click works for mouse, touch and keyboard/assistive technology.
+  // Running pointerup AND click state changes can instantly undo the focus
+  // transition on WebKit after a React render. Never toggle twice per gesture.
   function toggleFocusMode() { setFocusMode(value => !value); }
-  function onFocusPointerUp() {
-    pointerHandledRef.current = true;
-    toggleFocusMode();
-  }
-  function onFocusClick() {
-    if (pointerHandledRef.current) {
-      pointerHandledRef.current = false;
-      return;
-    }
-    toggleFocusMode();
-  }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
   useEffect(() => () => { photoChoiceEpoch.current += 1; }, []);
@@ -329,8 +316,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}
-          aria-pressed={focusMode} onPointerDown={() => { pointerHandledRef.current = false; }}
-          onPointerUp={onFocusPointerUp} onClick={onFocusClick}>
+          aria-pressed={focusMode} onClick={toggleFocusMode}>
           {focusMode ? <Minimize2 size={18} aria-hidden="true" /> : <Expand size={18} aria-hidden="true" />}
           {focusMode ? t.leave : t.focus}
         </button>

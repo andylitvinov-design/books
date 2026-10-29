@@ -67,10 +67,11 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   const client = read("components/mandala-meditation-client.tsx");
   const styles = read("components/mandala-meditation.module.css");
   assert.match(client, /setFocusMode\(/);
-  assert.match(client, /onPointerUp=\{onFocusPointerUp\}/);
-  assert.match(client, /onClick=\{onFocusClick\}/);
-  assert.match(client, /if \(pointerHandledRef\.current\)/);
-  assert.match(client, /pointerHandledRef\.current = false/);
+  // One handler for physical touch, mouse and synthetic keyboard click:
+  // the prior pointerup + click pair could double-toggle in WebKit.
+  assert.match(client, /aria-pressed=\{focusMode\} onClick=\{toggleFocusMode\}/);
+  assert.match(client, /function toggleFocusMode\(\) \{ setFocusMode\(value => !value\); \}/);
+  assert.doesNotMatch(client, /onPointerUp=\{onFocusPointerUp\}|onFocusClick|pointerHandledRef/);
   assert.doesNotMatch(client, /lastFocusPress/);
   assert.match(client, /event\.key === "Escape"/);
   assert.match(client, /document\.body\.style\.overflow = "hidden"/);
