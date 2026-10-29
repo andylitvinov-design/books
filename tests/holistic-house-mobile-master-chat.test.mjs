@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {directMessengerRecipient,directMessengerReturnPath} from '../lib/app/direct-messenger-handoff.mjs'
+import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '../lib/app/direct-messenger-handoff.mjs'
 import {classifyHolisticHouseNativeAuth} from '../lib/native/deep-link-policy.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -40,6 +40,22 @@ test('OAuth returns to precisely the approved practitioner slug, never to arbitr
     assert.throws(()=>directMessengerReturnPath(locale,'master-anna'),/INVALID_LOCALE/)
 })
 
+test('new account setup keeps the practitioner and language, but never skips consent',()=>{
+  assert.equal(directMessengerSetupPath('ru','andy-litvinov'),
+    '/ru/app/portrait?afterSignIn=messages&chatLocale=ru&to=andy-litvinov')
+  assert.equal(directMessengerSetupPath('es','andy-litvinov'),
+    '/en/app/portrait?afterSignIn=messages&chatLocale=es&to=andy-litvinov')
+  assert.equal(directMessengerSetupPath('en'),
+    '/en/app/portrait?afterSignIn=messages&chatLocale=en')
+  const workspace=read('components/app/app-workspace.jsx')
+  assert.match(workspace,/searchParams.get\('afterSignIn'\)==='messages'/)
+  assert.match(workspace,/fresh\?\.account\?\.onboardingState==='active'/)
+  assert.match(workspace,/directMessengerReturnPath\(/)
+  assert.match(workspace,/router.replace\(destination\)/)
+  const callback=read('app/api/app/[...path]/route.js')
+  assert.match(callback,/account.onboardingState!=='active'/)
+  assert.match(callback,/directMessengerSetupPath\(locale,recipientSlug\)/)
+})
 test('native Google OAuth carries only a validated public master slug back to the WebView',()=>{
   const native=classifyHolisticHouseNativeAuth(
     'holistichouse://auth/callback?code=sample123&locale=es&continue=direct-messages&recipientSlug=master-anna')
