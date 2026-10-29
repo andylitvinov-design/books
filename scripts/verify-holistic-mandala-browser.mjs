@@ -210,6 +210,31 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"true");
         const activeTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
         assert.match(activeTherapyBackground,/gradient/i,"chosen therapy entry must turn green");
+        // Production-stacked local meditation: real text and downloads must use
+        // the SAME six-panel editor's theme/therapy state (no paid AI calls).
+        const meditation=page.locator("[data-video-personal-meditation]");
+        await meditation.waitFor({state:"visible",timeout:12000});
+        const writeMeditation=page.locator("[data-meditation-generate]");
+        await writeMeditation.click();
+        const firstScript=await page.locator("[data-meditation-script]").inputValue();
+        assert.ok(firstScript.includes({ru:"ПЕРСОНАЛЬНАЯ МЕДИТАЦИЯ",en:"PERSONAL MEDITATION",es:"MEDITACIÓN PERSONAL"}[locale]),
+          "the selected locale generates a real personal meditation");
+        assert.equal(await page.locator("[data-meditation-method]").inputValue(),"imagery");
+        await page.locator("[data-meditation-method]").selectOption("grounding");
+        await page.locator("[data-meditation-length]").selectOption("12");
+        await writeMeditation.click();
+        const grounded=await page.locator("[data-meditation-script]").inputValue();
+        assert.ok(grounded.length>firstScript.length && grounded!==firstScript,
+          "meditation method and length must change the actual guidance");
+        assert.ok(await page.locator("[data-meditation-listen]").isVisible(),
+          "real on-device voice button must be available");
+        const [meditationDownload]=await Promise.all([
+          page.waitForEvent("download",{timeout:15000}),
+          page.locator("[data-meditation-download]").click(),
+        ]);
+        assert.equal(meditationDownload.suggestedFilename(),"holistic-house-personal-meditation-"+locale+".txt");
+        assert.ok((await bufferFromStream(await meditationDownload.createReadStream())).length>150,
+          "downloaded UTF-8 meditation is not a decorative action");
         // Close from the adjacent in-view exit, not by scrolling thousands
         // of pixels back to an old toolbar button (flaky WebKit tap target).
         await page.locator("[data-video-therapy-exit]").click();
