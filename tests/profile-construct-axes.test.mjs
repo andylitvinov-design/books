@@ -363,61 +363,70 @@ function actualWizardLogic(names, functions, context) {
   return runInNewContext(script, context, { timeout: 1000 })
 }
 
-test('actual finder and checkbox handlers retain strict scope, one fit metric, stable rows and independent 12-key modes', () => {
-  const names = ['modeKind', 'rankedCandidates', 'recommendedKeys', 'recommendedTests', 'fiveMoreTests',
-    'featuredTestKeys', 'eligibleTestKeys', 'fitByKey', 'extraMatchPercent', 'remainingTestKeys', 'extraMatches', 'displayTests']
+test('actual 3-kind finder preserves chosen-scope safety, stable cards and a mixed 12-test cap', () => {
+  const names = ['rankedCandidates', 'recommendedKeys', 'recommendedTests', 'additionalCandidates',
+    'fiveMoreTests', 'featuredTestKeys', 'eligibleTestKeys', 'fitByKey', 'extraMatchPercent',
+    'remainingTestKeys', 'extraMatches', 'displayTests']
   const keys = Array.from({ length: 15 }, (_, i) => 'match-' + String(i).padStart(2, '0'))
-  const entry = (key, extra = {}) => ({ key, title: key, minutes: 2, questions: 5, scales: [],
+  const entry = (key, extra = {}) => ({ key, title: key, minutes: 2, questions: 5,
     testKind: 'monitoring', selectable: true, free: true, startable: true, rightsStatus: 'cleared', ...extra })
   const tests = [...keys.map(key => entry(key)), entry('unrelated'), entry('same-area-unselected'),
     entry('professional', { testKind: 'professional' }), entry('paid', { free: false }),
     entry('reference', { startable: false }), entry('restricted', { rightsStatus: 'restricted' })]
-  const scaleGroups = [{ area: 'work', scales: tests.map(test => ({ id: test.key + '::f',
-    testKey: test.key, label: 'Focus', researchAxisId: test.key === 'unrelated' ? 'connection::empathy'
-      : test.key === 'same-area-unselected' ? 'work::functioning' : 'work::focus' })) }]
-  const context = { tests, scaleGroups, selectedScaleIds: ['match-00::f'], selectedAxisRefs: ['work::focus'],
-    batteryMode: 'questionnaires', selectedKeys: [], showMore: false, search: '', timeFilter: 'all',
-    sortFilter: 'relevant', locale: 'en', recommendProfileTopThreeTests, rankProfileAxisTests, profileResearchAxisLabel }
+  const scaleGroups = [{ area: 'work', scales: tests.map(test => ({
+    id: test.key + '::f', testKey: test.key, label: 'Focus',
+    researchAxisId: test.key === 'unrelated' ? 'connection::empathy' :
+      test.key === 'same-area-unselected' ? 'work::functioning' : 'work::focus',
+  })) }]
+  const context = { tests, scaleGroups, selectedScaleIds: ['match-00::f'],
+    selectedAxisRefs: ['work::focus'], batteryMode: 'all', selectedKeys: [], showMore: false,
+    search: '', timeFilter: 'all', sortFilter: 'relevant', locale: 'en',
+    recommendProfileTopThreeTests, rankProfileAxisTests, profileResearchAxisLabel }
   const plain = value => JSON.parse(JSON.stringify(value))
-  const listSnapshot = result => plain({ primary: result.recommendedTests.map(item => item.test.key),
-    five: result.fiveMoreTests.map(item => item.test.key), overflow: result.displayTests.map(item => item.key) })
+  const evaluate = (extra = {}) => actualWizardLogic(names, ['toggleTest'], {
+    ...context, ...extra, setSelectedKeys: () => { throw Error('unexpected selection change') },
+  })
+  const snapshot = result => plain({ primary: result.recommendedTests.map(item => item.test.key),
+    five: result.fiveMoreTests.map(item => item.test.key),
+    more: result.displayTests.map(item => item.key) })
   for (const locale of ['en', 'ru', 'es']) {
-    const evaluate = (extra = {}) => actualWizardLogic(names, ['toggleTest'], { ...context, locale,
-      setSelectedByMode: () => { throw new Error('unexpected selection update') }, ...extra })
-    const collapsed = evaluate()
-    assert.deepEqual(listSnapshot(collapsed), { primary: keys.slice(0, 3), five: keys.slice(3, 8), overflow: [] })
-    const expanded = evaluate({ showMore: true })
-    assert.deepEqual(listSnapshot(expanded).overflow, keys.slice(8))
-    const all = [...listSnapshot(expanded).primary, ...listSnapshot(expanded).five, ...listSnapshot(expanded).overflow]
-    assert.equal(new Set(all).size, 15, 'no duplicates across the three lists')
-    for (const key of keys) {
-      const ranked = expanded.rankedCandidates.find(item => item.key === key)
-      assert.equal(expanded.extraMatchPercent(key), ranked.matchPercent, 'one metric in every list')
-    }
-    for (const selectedKeys of [[], [keys[10]], keys.slice(0, 12)]) {
-      assert.deepEqual(listSnapshot(evaluate({ selectedKeys })), listSnapshot(collapsed))
-      assert.deepEqual(listSnapshot(evaluate({ selectedKeys, showMore: true })), listSnapshot(expanded),
-        'including the expanded tail: unchecking never removes or reorders a row')
-    }
-    assert.deepEqual(listSnapshot(evaluate({ selectedScaleIds: [], selectedAxisRefs: [], showMore: true })),
-      { primary: [], five: [], overflow: [] }, 'no chosen topics must not broaden the catalogue')
-    assert.deepEqual(listSnapshot(evaluate({ batteryMode: 'pro', showMore: true })),
-      { primary: ['professional'], five: [], overflow: [] })
-    assert.deepEqual(listSnapshot(evaluate({ showMore: true, search: keys[10] })).overflow, [keys[10]])
-    assert.deepEqual(listSnapshot(evaluate({ showMore: true, timeFilter: '1' })).overflow, [])
-    let selectedByMode = { questionnaires: [keys[0]], pro: ['professional'] }
-    const handler = evaluate({ setSelectedByMode: update => { selectedByMode = plain(update(selectedByMode)) } })
-    for (const key of ['unrelated', 'same-area-unselected', 'professional', 'paid', 'reference', 'restricted', 'missing'])
-      handler.toggleTest(key)
-    assert.deepEqual(selectedByMode, { questionnaires: [keys[0]], pro: ['professional'] },
-      'scope guard must reject invalid keys even when there is room below the cap')
-    selectedByMode = { questionnaires: keys.slice(0, 12), pro: ['professional'] }
+    const view = extra => evaluate({ locale, ...extra })
+    const all = snapshot(view({ showMore: true }))
+    assert.deepEqual(all.primary, keys.slice(0, 3))
+    assert.deepEqual(all.five, keys.slice(3, 8))
+    assert.deepEqual(all.more, [...keys.slice(8), 'professional'])
+    assert.equal(new Set([...all.primary, ...all.five, ...all.more]).size, 16)
+    assert.deepEqual(snapshot(view({ batteryMode: 'questionnaires', showMore: true })).more,
+      keys.slice(8))
+    const professional = snapshot(view({ batteryMode: 'pro', showMore: true }))
+    assert.deepEqual(professional.primary, all.primary)
+    assert.deepEqual(professional.five, ['professional'])
+    assert.deepEqual(professional.more, [])
+    for (const selectedKeys of [[], keys.slice(0, 12), ['professional']])
+      assert.deepEqual(snapshot(view({ selectedKeys, showMore: true })), all)
+    const result = view({ showMore: true })
+    for (const invalid of ['unrelated', 'same-area-unselected', 'paid', 'reference', 'restricted'])
+      assert.equal(result.eligibleTestKeys.has(invalid), false, invalid)
+    assert.equal(result.eligibleTestKeys.has('professional'), true)
+    assert.deepEqual(snapshot(view({ selectedScaleIds: [], selectedAxisRefs: [], showMore: true })),
+      { primary: [], five: [], more: [] })
+    assert.deepEqual(snapshot(view({ showMore: true, search: 'match-10' })).more, ['match-10'])
+    assert.deepEqual(snapshot(view({ showMore: true, timeFilter: '1' })).more, [])
+    let selectedKeys = [keys[0], 'professional']
+    const handler = actualWizardLogic(names, ['toggleTest'], { ...context, locale,
+      setSelectedKeys: update => { selectedKeys = plain(update(selectedKeys)) } })
+    for (const invalid of ['unrelated', 'same-area-unselected', 'paid', 'reference', 'restricted', 'missing'])
+      handler.toggleTest(invalid)
+    assert.deepEqual(selectedKeys, [keys[0], 'professional'])
+    selectedKeys = keys.slice(0, 11).concat('professional')
+    handler.toggleTest(keys[11])
+    assert.equal(selectedKeys.length, 12, 'both kinds count toward the same limit')
     handler.toggleTest(keys[12])
-    assert.deepEqual(selectedByMode, { questionnaires: keys.slice(0, 12), pro: ['professional'] })
-    handler.toggleTest(keys[0])
+    assert.equal(selectedKeys.length, 12, '13th selection is blocked')
+    handler.toggleTest('professional')
     handler.toggleTest(keys[12])
-    assert.deepEqual(selectedByMode.questionnaires, [...keys.slice(1, 12), keys[12]])
-    assert.deepEqual(selectedByMode.pro, ['professional'], 'other mode must not change')
+    assert.ok(selectedKeys.includes(keys[12]))
+    assert.equal(selectedKeys.length, 12)
   }
 })
 
