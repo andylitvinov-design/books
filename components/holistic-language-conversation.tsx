@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, MessageCircle, RotateCcw, Send, Sparkles, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { createLanguageSession, turnLanguageAgent } from "@/lib/holistic-support/language-agent.mjs";
-import { applyAgentMemoryForTurn } from "@/lib/holistic-support/agent-memory-policy.mjs";
+import { applyAgentMemoryForTurn, approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memory-policy.mjs";
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
 import { HolisticAgentMemoryPanel, type MyAgentMemory } from "@/components/holistic-agent-memory-panel";
@@ -86,6 +86,23 @@ export function HolisticLanguageConversation({
   useEffect(()=>{
     setHasGpu(typeof window!=="undefined" && window.isSecureContext && typeof navigator!=="undefined" && "gpu" in navigator);
     return ()=>{modelWorker.current?.terminate();modelWorker.current=null;};
+  },[]);
+  // Account memory is read only when the feature is released and the owner
+  // explicitly consented to automatic use. Server auth+RLS control all reads.
+  useEffect(()=>{
+    if(process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED!=="true")return;
+    let active=true;
+    void fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"})
+      .then(async response=>response.ok?await response.json():null)
+      .then((data:unknown)=>{
+        if(!active)return;
+        const safe=data&&typeof data==="object"?data as {
+          consent?:boolean;useInDialogue?:boolean;items?:MyAgentMemory[]
+        }:null;
+        setSavedMemory(safe?.consent===true && safe.useInDialogue===true
+          ?approvedMemoryForLocalPrompt(safe.items):[]);
+      }).catch(()=>{if(active)setSavedMemory([]);});
+    return ()=>{active=false;};
   },[]);
   useEffect(()=>{
     if(threadRef.current) threadRef.current.scrollTop=threadRef.current.scrollHeight;
