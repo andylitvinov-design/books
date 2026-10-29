@@ -11,6 +11,7 @@ export type AffirmationSettings = {
   density: AffirmationDensity;
   frequency: AffirmationFrequency;
   visibility: AffirmationVisibility[];
+  presetOverride?: string[];
 };
 
 export const defaultAffirmations: AffirmationSettings = {
@@ -164,7 +165,9 @@ function cleanLine(text: string): string {
 export function linesForVideoAffirmations(
   locale: VideoLocale, theme: VideoTheme, settings: AffirmationSettings,
 ): string[] {
-  const options = suggestedVideoAffirmations[locale][theme];
+  const options = Array.isArray(settings.presetOverride) && settings.presetOverride.length === 5 &&
+    settings.presetOverride.every(text => typeof text === "string" && text.trim().length && text.length <= 90 && !/[<>]/.test(text))
+    ? settings.presetOverride : suggestedVideoAffirmations[locale][theme];
   const selected = [...new Set(settings.selected)]
     .filter(index => Number.isInteger(index) && index >= 0 && index < options.length)
     .slice(0, 5)
@@ -231,4 +234,105 @@ export function paintVideoAffirmations(
   if (settings.visibility.includes("frame") && phase >= 1 && phase < 1 + 1 / 25) {
     write(lines[baseIndex], height * 0.52, Math.max(22, size * 0.042), 0.7, true);
   }
+}
+
+
+// Owner-approved editing topics are not clinical recommendations or outcomes.
+// Keep phrases non-clinical, optional, revisable and local to the editor.
+export type VideoAffirmationGoal =
+  "recovery" | "rhythm" | "strength" | "value" | "planning" | "stability" |
+  "connection" | "boundaries" | "dialogue" | "clarity" | "progress" | "meaning";
+type GoalCopy = { id: VideoAffirmationGoal; label: string; sentence: string };
+export const affirmationGoalCatalog: Record<VideoLocale, GoalCopy[]> = {
+  en: [
+    {id:"recovery",label:"Rest & recovery",sentence:"I give myself time to recharge"},
+    {id:"rhythm",label:"Calmer rhythm",sentence:"I make room for a calmer pace"},
+    {id:"strength",label:"My energy",sentence:"I take small steps to support my energy"},
+    {id:"value",label:"Value my work",sentence:"My work and my time have value"},
+    {id:"planning",label:"Money planning",sentence:"I can plan finances one step at a time"},
+    {id:"stability",label:"Financial choices",sentence:"I make financial choices with care"},
+    {id:"connection",label:"Warm connection",sentence:"I make space for mutual connections"},
+    {id:"boundaries",label:"My boundaries",sentence:"I can say yes or no with respect"},
+    {id:"dialogue",label:"Open dialogue",sentence:"I can speak honestly and listen kindly"},
+    {id:"clarity",label:"My direction",sentence:"I clarify one priority at a time"},
+    {id:"progress",label:"Steady progress",sentence:"One manageable step moves me forward"},
+    {id:"meaning",label:"Meaning & purpose",sentence:"My actions can reflect my values"},
+  ],
+  ru: [
+    {id:"recovery",label:"Отдых и восстановление",sentence:"Я даю себе время восстановить силы"},
+    {id:"rhythm",label:"Спокойный ритм",sentence:"Я выбираю более спокойный ритм"},
+    {id:"strength",label:"Моя энергия",sentence:"Я поддерживаю силы небольшими шагами"},
+    {id:"value",label:"Ценность моего труда",sentence:"Мой труд и моё время имеют ценность"},
+    {id:"planning",label:"Планирование денег",sentence:"Я планирую финансы постепенно"},
+    {id:"stability",label:"Финансовые решения",sentence:"Я принимаю денежные решения осознанно"},
+    {id:"connection",label:"Тёплые отношения",sentence:"Я открываю пространство для взаимного контакта"},
+    {id:"boundaries",label:"Личные границы",sentence:"Я могу говорить да и нет с уважением"},
+    {id:"dialogue",label:"Открытый диалог",sentence:"Я говорю искренне и слушаю внимательно"},
+    {id:"clarity",label:"Ясность направления",sentence:"Я постепенно проясняю свои приоритеты"},
+    {id:"progress",label:"Движение к цели",sentence:"Один посильный шаг приближает меня к цели"},
+    {id:"meaning",label:"Смысл и ценности",sentence:"Я выбираю действия, созвучные моим ценностям"},
+  ],
+  es: [
+    {id:"recovery",label:"Descanso y recuperación",sentence:"Me doy tiempo para recuperar fuerzas"},
+    {id:"rhythm",label:"Ritmo tranquilo",sentence:"Me permito elegir un ritmo más tranquilo"},
+    {id:"strength",label:"Mi energía",sentence:"Cuido mi energía con pequeños pasos"},
+    {id:"value",label:"Valorar mi trabajo",sentence:"Mi trabajo y mi tiempo tienen valor"},
+    {id:"planning",label:"Planificación económica",sentence:"Planifico mis finanzas paso a paso"},
+    {id:"stability",label:"Decisiones financieras",sentence:"Tomo decisiones económicas conscientes"},
+    {id:"connection",label:"Conexión cálida",sentence:"Hago espacio para vínculos recíprocos"},
+    {id:"boundaries",label:"Mis límites",sentence:"Puedo decir sí y no con respeto"},
+    {id:"dialogue",label:"Diálogo sincero",sentence:"Hablo con sinceridad y escucho con cuidado"},
+    {id:"clarity",label:"Claridad de rumbo",sentence:"Aclaro mis prioridades paso a paso"},
+    {id:"progress",label:"Avanzar con calma",sentence:"Un paso posible me acerca a mis metas"},
+    {id:"meaning",label:"Sentido y valores",sentence:"Elijo acciones acordes con mis valores"},
+  ],
+};
+
+const measuredAxisCopy: Record<VideoLocale, Record<string, string>> = {
+  en: {
+    stress:"I can slow down when demands are high",anxiety:"I can take one steady breath",
+    sleep:"I make space for a restful evening",energy:"I notice what restores my energy",
+    embodiment:"I listen to my body with kindness",mood:"I treat my feelings with patience",
+    emotional_regulation:"I can pause before responding",resource:"I can notice small sources of support",
+    self_support:"I speak to myself kindly",clarity:"I can take one question at a time",
+    focus:"I return my attention to one task",functioning:"I can organize tasks into small steps",
+    meaning:"I give time to what matters to me",relationships:"I can connect without losing myself",
+    boundaries:"I can protect my time with respect",
+  },
+  ru: {
+    stress:"Я могу замедлиться при высокой нагрузке",anxiety:"Я могу сделать один спокойный вдох",
+    sleep:"Я создаю время для вечернего отдыха",energy:"Я замечаю то, что пополняет мои силы",
+    embodiment:"Я бережно прислушиваюсь к телу",mood:"Я отношусь к своим чувствам с терпением",
+    emotional_regulation:"Я могу сделать паузу перед ответом",resource:"Я замечаю небольшие источники поддержки",
+    self_support:"Я обращаюсь к себе с добротой",clarity:"Я могу прояснять один вопрос за раз",
+    focus:"Я возвращаю внимание к одной задаче",functioning:"Я делю задачи на посильные шаги",
+    meaning:"Я уделяю время важному для меня",relationships:"Я могу сближаться и оставаться собой",
+    boundaries:"Я с уважением защищаю своё время",
+  },
+  es: {
+    stress:"Puedo bajar el ritmo cuando hay presión",anxiety:"Puedo respirar con calma",
+    sleep:"Hago espacio para descansar por la noche",energy:"Reconozco lo que restaura mi energía",
+    embodiment:"Escucho mi cuerpo con amabilidad",mood:"Trato mis sentimientos con paciencia",
+    emotional_regulation:"Puedo pausar antes de responder",resource:"Reconozco pequeñas fuentes de apoyo",
+    self_support:"Me hablo con amabilidad",clarity:"Aclaro una cuestión a la vez",
+    focus:"Vuelvo a una sola tarea",functioning:"Divido tareas en pasos pequeños",
+    meaning:"Dedico tiempo a lo importante",relationships:"Puedo conectar sin perderme",
+    boundaries:"Protejo mi tiempo con respeto",
+  },
+};
+
+export function personalizedVideoAffirmations(
+  locale: VideoLocale, theme: VideoTheme, measuredAxes: readonly string[] = [],
+  priorities: readonly VideoAffirmationGoal[] = [],
+): string[] {
+  const catalog = affirmationGoalCatalog[locale];
+  const chosen = [...new Set(priorities)].slice(0,3).flatMap(id => catalog.filter(item => item.id === id));
+  const axes = [...new Set(measuredAxes)].filter(axis => Object.hasOwn(measuredAxisCopy[locale],axis)).slice(0,3);
+  const phrases = [
+    ...chosen.map(item => item.sentence),
+    ...axes.map(axis => measuredAxisCopy[locale][axis]),
+    ...suggestedVideoAffirmations[locale][theme],
+    ...suggestedVideoAffirmations[locale].goals,
+  ];
+  return [...new Set(phrases.map(cleanLine).filter(Boolean))].slice(0,5);
 }

@@ -9,6 +9,7 @@ import type {
   AffirmationDensity, AffirmationFrequency, AffirmationSettings, AffirmationVisibility,
 } from "@/lib/mandala/video-affirmations";
 import css from "./mandala-video-affirmations.module.css";
+import { MandalaPersonalAffirmations } from "./mandala-personal-affirmations";
 
 const text = {
   en: {
@@ -68,7 +69,8 @@ export function MandalaVideoAffirmations({
   disabled?: boolean;
 }) {
   const ui = text[locale];
-  const suggestions = suggestedVideoAffirmations[locale][theme];
+  const suggestions = settings.presetOverride?.length === 5
+    ? settings.presetOverride : suggestedVideoAffirmations[locale][theme];
   const lines = linesForVideoAffirmations(locale,theme,settings);
   const customCount = settings.custom.split(/\r?\n/).filter(line=>line.trim()).length;
   const update = (change: Partial<AffirmationSettings>) => onChange({...settings,...change});
@@ -100,6 +102,7 @@ export function MandalaVideoAffirmations({
         </label>
       </div>
       <p className={css.description}>{ui.description}</p>
+      <MandalaPersonalAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}/>
       <fieldset className={css.controls} disabled={disabled}>
         <legend className={css.sectionLabel}>{ui.suggested} <small>{settings.selected.length}/5 {ui.selected}</small></legend>
         <div className={css.suggestions}>

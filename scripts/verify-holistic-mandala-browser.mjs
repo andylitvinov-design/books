@@ -221,6 +221,15 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         // Public iPhone control E2E: local affirmations change the live preview
         // and are included by the same canvas renderer in final recordings.
         const affirmationsPanel = page.locator("[data-video-affirmations]");
+        assert.equal(await page.locator("[data-video-personal-suggest]").count(),1);
+        await page.locator("[data-video-goals-toggle]").click();
+        assert.equal(await page.locator("[data-video-goals-toggle]").getAttribute("aria-expanded"),"true");
+        await page.locator('[data-video-goal="recovery"]').click();
+        await page.locator('[data-video-goal="clarity"]').click();
+        assert.equal(await page.locator('[data-video-goal="recovery"]').getAttribute("aria-pressed"),"true");
+        await page.locator("[data-video-goals-apply]").click();
+        assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
+        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I give myself time|Я даю себе время|Me doy tiempo/i);
         await affirmationsPanel.waitFor({state:"visible",timeout:12000});
         assert.equal(await affirmationsPanel.locator("[data-video-affirmation-preset]").count(),5);
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),false);
