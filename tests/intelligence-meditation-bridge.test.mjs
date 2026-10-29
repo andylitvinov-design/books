@@ -18,6 +18,18 @@ test('symbolic practices need explicit interest and unknown approach fails close
   assert.equal(reasonAcrossMeditations({...base,includeSymbolic:true}).status,'recommend');
 });
 
+test('agent excludes unapproved external discovery candidates even when they are link-only', () => {
+  const original=videos.find(video=>video.youtube_id===sourceId);
+  const candidate={...original,source_kind:'external',metadata_confidence:'public_listing',
+    discovery_status:'link_only',editorial_status:'candidate',embed_status:'unverified',
+    rights_status:'pending_embed_check',metadata_checked_at:'2026-10-29',
+    youtube_oembed_checked_at:'2026-10-29',claims_risk:'low',content_type:'guided'};
+  assert.equal(reasonAcrossMeditations({...base,videos:[candidate],publishedSourceIds:[]}).status,'no_match');
+  const approved={...candidate,editorial_status:'approved',embed_status:'confirmed',
+    rights_status:'embed_approved',content_checked_at:'2026-10-29'};
+  assert.equal(reasonAcrossMeditations({...base,videos:[approved],publishedSourceIds:[]}).status,'recommend');
+});
+
 test('uses the actual meditation ranker and a published original as a real action', () => {
   const result = reasonAcrossMeditations(base);
   assert.equal(result.status, 'recommend');
