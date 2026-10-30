@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
+import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
 import type { NatureBed } from "@/lib/mandala/voice-audio-mix";
 import css from "./mandala-affirmation-voice.module.css";
 
@@ -54,19 +55,40 @@ const copy={
     finished:"Voz en el vídeo",status:"Duración",seconds:"s"
   }
 } as const;
+const levelCopy={
+  ru:{voice:"Голос",music:"Музыка",balanced:"Изменение громкости не расходует бесплатные запросы.",remixing:"Обновляем баланс без повторного вызова Gemini…"},
+  en:{voice:"Voice",music:"Music",balanced:"Changing volume does not consume another free voice request.",remixing:"Updating the balance without calling Gemini again…"},
+  es:{voice:"Voz",music:"Música",balanced:"Cambiar el volumen no consume otra solicitud gratuita.",remixing:"Ajustando el volumen sin llamar a Gemini…"}
+} as const;
+const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
+  meditation:{ru:"Медитация",en:"Meditation",es:"Meditación"},
+  harmony:{ru:"Гармония",en:"Harmony",es:"Armonía"},
+  prosperity:{ru:"Процветание",en:"Prosperity",es:"Prosperidad"},
+  energy:{ru:"Энергия",en:"Energy",es:"Energía"},
+  love:{ru:"Любовь",en:"Love",es:"Amor"},
+  focus:{ru:"Концентрация",en:"Focus",es:"Concentración"},
+  grounding:{ru:"Заземление",en:"Grounding",es:"Arraigo"},
+  breath:{ru:"Дыхание",en:"Breathing",es:"Respiración"},
+  sunrise:{ru:"Рассвет",en:"Sunrise",es:"Amanecer"},
+  pulse:{ru:"Ритм",en:"Pulse",es:"Pulso"}
+};
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,
+  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,onInvalidate,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
+  onInvalidate?:()=>void;
 }) {
   const t=copy[locale];
+  const levels=levelCopy[locale];
   const speechText=enabled?affirmationNarrationText(lines):"";
   const [language,setLanguage]=useState<SpeechLanguage>(locale);
   const [voiceId,setVoiceId]=useState("maya");
   const [bed,setBed]=useState<Bed>("none");
+  const [voiceLevel,setVoiceLevel]=useState(90);
+  const [musicLevel,setMusicLevel]=useState(12);
   const [consent,setConsent]=useState(false);
   const [available,setAvailable]=useState(false);
   const [busy,setBusy]=useState(false);
@@ -77,6 +99,10 @@ export function MandalaAffirmationVoice({
   const jobRef=useRef(0);
   const controllerRef=useRef<AbortController|null>(null);
   const audioUrlRef=useRef("");
+  const balanceTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const voiceDataRef=useRef<{blob:Blob;seconds:number;mixSeconds:number}|null>(null);
+  const onInvalidateRef=useRef(onInvalidate);
+  onInvalidateRef.current=onInvalidate;
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
 
@@ -90,20 +116,63 @@ export function MandalaAffirmationVoice({
   },[]);
 
   useEffect(()=>{
+    if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
+    if(voiceDataRef.current)onInvalidateRef.current?.();
+    voiceDataRef.current=null;
     const previous=audioUrlRef.current;
     if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
     jobRef.current++;
     controllerRef.current?.abort();
     setBusy(false);setMixing(false);setAudioUrl("");setMessage("");setSpeechSeconds(0);
     onGeneratingRef.current(false);
-  },[speechText,voiceId,language,bed]);
+  },[speechText,voiceId,language]);
 
   useEffect(()=>()=> {
     jobRef.current++;
+    if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
     controllerRef.current?.abort();
     if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
     onGeneratingRef.current(false);
   },[]);
+
+  async function renderBalance(
+    clip:{blob:Blob;seconds:number;mixSeconds:number},
+    selected:{bed:Bed;voiceLevel:number;musicLevel:number},
+    job:number,
+  ){
+    setMixing(true);
+    onGeneratingRef.current(true);
+    try{
+      // Offline remix is deterministic: it never asks Google to synthesize again.
+      const audio=await mixVoiceWithNature(clip.blob,selected.bed,clip.mixSeconds,selected);
+      if(audio.size>15*1024*1024)throw new Error("TOO_LONG");
+      if(job!==jobRef.current)return;
+      const file=new File([audio],"holistic-house-affirmations-"+language+"-"+voiceId+".wav",{type:"audio/wav"});
+      const uri=URL.createObjectURL(file);
+      if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(clip.seconds);
+      onAttach({file,spokenText:speechText,voiceId,language,speechSeconds:clip.seconds,mixSeconds:clip.mixSeconds,bed:selected.bed});
+      setMessage(t.ready);
+    }catch(error){
+      if(job!==jobRef.current)return;
+      const code=error instanceof Error?error.message:"";
+      setMessage(code==="TOO_LONG"?t.tooLong:t.error);
+    }finally{
+      if(job===jobRef.current){setMixing(false);onGeneratingRef.current(false);}
+    }
+  }
+  function updateBalance(next:{bed:Bed;voiceLevel:number;musicLevel:number}){
+    setBed(next.bed);setVoiceLevel(next.voiceLevel);setMusicLevel(next.musicLevel);
+    const clip=voiceDataRef.current;
+    if(!clip)return;
+    const job=++jobRef.current;
+    if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
+    onInvalidateRef.current?.();
+    if(audioUrlRef.current){URL.revokeObjectURL(audioUrlRef.current);audioUrlRef.current="";}
+    setAudioUrl("");setMixing(true);setMessage(levels.remixing);
+    onGeneratingRef.current(true);
+    balanceTimerRef.current=setTimeout(()=>{balanceTimerRef.current=null;void renderBalance(clip,next,job);},250);
+  }
 
   async function createAudio(){
     if(!available||disabled||busy||!speechText||!consent)return;
@@ -131,25 +200,16 @@ export function MandalaAffirmationVoice({
       if(seconds>59)throw new Error("TOO_LONG");
       const mixSeconds=durationChoices.find(candidate=>candidate>=Math.ceil(seconds+0.4)&&candidate>=durationSeconds) || 60;
       if(job!==jobRef.current)return;
-      let audio=voice;
-      if(bed!=="none"){
-        setMixing(true);
-        audio=await mixVoiceWithNature(voice,bed,mixSeconds);
-        if(audio.size>15*1024*1024)throw new Error("TOO_LONG");
-      }
       if(job!==jobRef.current)return;
-      const file=new File([audio],"holistic-house-affirmations-"+language+"-"+voiceId+".wav",{type:"audio/wav"});
-      const uri=URL.createObjectURL(file);
-      if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(seconds);
-      onAttach({file,spokenText:speechText,voiceId,language,speechSeconds:seconds,mixSeconds,bed});
-      setMessage(t.ready);
+      const clip={blob:voice,seconds,mixSeconds};
+      voiceDataRef.current=clip;
+      await renderBalance(clip,{bed,voiceLevel,musicLevel},job);
     } catch(e) {
       if(job!==jobRef.current)return;
       const code=e instanceof Error?e.message:"";
       if(code!=="AbortError")setMessage(code==="QUOTA"?t.quota:code==="TOO_LONG"?t.tooLong:t.error);
     } finally {
-      if(job===jobRef.current){setBusy(false);setMixing(false);controllerRef.current=null;onGeneratingRef.current(false);}
+      if(job===jobRef.current){setBusy(false);controllerRef.current=null;onGeneratingRef.current(false);}
     }
   }
   return <section className={css.panel} id="video-affirmation-voice" data-video-affirmation-voice aria-labelledby="video-affirmation-voice-title">
@@ -177,18 +237,34 @@ export function MandalaAffirmationVoice({
       </label>
       <label>{t.background}
         <select data-video-affirmation-bed value={bed} disabled={busy||disabled}
-          onChange={event=>setBed(event.currentTarget.value as Bed)}>
-          {(["none","ocean","rain","breeze"] as const).map(p=><option key={p} value={p}>{t[p]}</option>)}
+          onChange={event=>updateBalance({bed:event.currentTarget.value as Bed,voiceLevel,musicLevel})}>
+          <option value="none">{t.none}</option>
+          {VOICE_BED_PRESETS.map(p=><option key={p} value={p}>
+            {p==="ocean"||p==="rain"||p==="breeze"?t[p]:backgroundNames[p]?.[locale]||p}
+          </option>)}
         </select>
       </label>
     </div>
+    <div className={css.levels} role="group" aria-label={levels.voice+" / "+levels.music}>
+      <label>{levels.voice} · {voiceLevel}%
+        <input data-video-voice-volume type="range" min={0} max={100} step={5}
+          disabled={disabled||busy} value={voiceLevel}
+          onChange={event=>updateBalance({bed,voiceLevel:Number(event.currentTarget.value),musicLevel})}/>
+      </label>
+      <label>{levels.music} · {musicLevel}%
+        <input data-video-bed-volume type="range" min={0} max={100} step={5}
+          disabled={disabled||busy||bed==="none"} value={musicLevel}
+          onChange={event=>updateBalance({bed,voiceLevel,musicLevel:Number(event.currentTarget.value)})}/>
+      </label>
+    </div>
+    <small className={css.hint}>{levels.balanced}</small>
     <label className={css.consent}>
       <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
         disabled={busy||disabled||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
       <span>{t.consent}</span>
     </label>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!available||!speechText||!consent||busy||disabled}
+      disabled={!available||!speechText||!consent||busy||mixing||disabled}
       onClick={()=>void createAudio()}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
       {busy?mixing?t.mixing:t.busy:t.generate}
