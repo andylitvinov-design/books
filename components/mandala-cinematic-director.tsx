@@ -25,6 +25,8 @@ type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
 const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
 type QuestionGroup=typeof QUESTION_GROUPS[number];
+type StudioQuestion={id:string;scope:string;labels:Record<PublicLocale,string>;
+  options:readonly {id:string;labels:Record<PublicLocale,string>}[]};
 type BriefMusicPreference="none"|"calm"|"energetic";
 type BriefCaptionPreference="none"|"phrases"|"subtitles";
 type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;intentText?:string;onIntentTextChange?:(value:string)=>void;onMusicPreference?:(choice:BriefMusicPreference)=>void;onCaptionPreference?:(choice:BriefCaptionPreference)=>void;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
@@ -165,11 +167,11 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
     durationSeconds:(projectFields.durationSeconds||seconds) as 15|20|30|60,wish:goal+" "+difficulty,avoid,
     mode:therapyMode?"therapy":"creative",
   }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode,projectFields]);
-  const initialQuestions=useMemo(()=>questionsForDraft({intentText:visualIdea,answers:questionAnswers}),[visualIdea,questionAnswers]);
+  const initialQuestions=useMemo(()=>questionsForDraft({intentText:visualIdea,answers:questionAnswers}) as readonly StudioQuestion[],[visualIdea,questionAnswers]);
   const activeSceneAnswers=selectedShotNumber===null?{}:shotAnswers[selectedShotNumber]||{};
   const categoryAnswers=questionGroup==="pro"?activeSceneAnswers:questionAnswers;
   const categoryQuestions=useMemo(()=>questionsForGroup({intentText:visualIdea,answers:categoryAnswers,group:questionGroup,
-    sceneSelected:Boolean(selectedShotNumber),extraSelected:questionGroup==="extra"&&generated}),[visualIdea,categoryAnswers,questionGroup,selectedShotNumber,generated]);
+    sceneSelected:Boolean(selectedShotNumber),extraSelected:questionGroup==="extra"&&generated}) as readonly StudioQuestion[],[visualIdea,categoryAnswers,questionGroup,selectedShotNumber,generated]);
   const visibleCategoryQuestions=generated?categoryQuestions.filter(question=>!initialQuestions.some(initial=>initial.id===question.id)):[];
   const plan:CinematicStoryboard=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
   const showStoryboard=generated && generatedMode===therapyMode;
