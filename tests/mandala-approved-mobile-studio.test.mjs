@@ -64,6 +64,6 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/25th frame|25th|Brief frames and hypnoaffirmations/);
   assert.match(script,/approved-studio\.png/);
   assert.match(script,/touchTargets\.every\(rect=>rect\.width>=44&&rect\.height>=44\)/);
-  assert.match(script,/startFromHero|createVideo/);
+  assert.match(script,/data-mandala-video-generate/);
   assert.match(script,/ffprobe|ffmpeg/);
 });
