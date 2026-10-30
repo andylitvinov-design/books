@@ -209,7 +209,6 @@ export function MandalaAffirmationVoice({
       if(seconds>59)throw new Error("TOO_LONG");
       const mixSeconds=durationChoices.find(candidate=>candidate>=Math.ceil(seconds+0.4)&&candidate>=durationSeconds) || 60;
       if(job!==jobRef.current)return;
-      if(job!==jobRef.current)return;
       const clip={blob:voice,seconds,mixSeconds};
       voiceDataRef.current=clip;
       await renderBalance(clip,{bed,voiceLevel,musicLevel},job);
