@@ -7,12 +7,12 @@ import {mount,nodes,findButton,textOf} from './helpers/route-pipeline-harness.mj
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels={
-  en:{next:'Continue',yes:'Yes, I’m ready',no:'Not now',prompt:/Exercise 1.*Find a little calm/,
-    action:'Look at three objects',try:'I tried it'},
+  en:{next:'Continue',yes:'Yes, I’m ready',no:'Not now',prompt:/Exercise 1.*Find your personal anchor/,
+    action:'Find a personal anchor instead of merely counting objects.',try:'I tried it'},
   ru:{next:'Продолжить',yes:'Да, готов(а)',no:'Не сейчас',prompt:/Упражнение № 1/,
-    action:'Посмотрите на три предмета',try:'Я попробовал(а)'},
+    action:'Ищем личный знак опоры — не просто считаем предметы.',try:'Я попробовал(а)'},
   es:{next:'Continuar',yes:'Sí, quiero probar',no:'Ahora no',prompt:/Ejercicio 1/,
-    action:'Mira tres objetos',try:'Lo intenté'},
+    action:'Busca una señal de apoyo, no solo cuentes objetos.',try:'Lo intenté'},
 }
 
 function fixture(locale){
@@ -72,7 +72,9 @@ for(const locale of ['en','ru','es']){
         'After consent show the goal before its instructions')
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-overview-purpose']==='true'))
       assert.equal(findButton(f.h.tree,d.try),undefined,'Preview cannot report an attempt')
-      await tap(f.h,d.next)
+      // Four voluntary AS-6.0 experience cards now precede the practice.
+      // Traverse real Continue actions without skipping consent or saving a session.
+      await advanceOporaTo(f.h,'practice',d.next)
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-current-screen']==='practice'))
       assert.ok(textOf(f.h.tree).includes(d.action))
       assert.ok(findButton(f.h.tree,d.try),'Reporting remains voluntary, after the instruction')
