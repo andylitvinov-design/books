@@ -64,10 +64,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(payloads[0].voiceId,"maya");
       assert.equal(payloads[0].consent,true);
       assert.equal(payloads[0].language,locale);
-      const selected=await page.locator("[data-video-audio-selected]").innerText();
-      assert.match(selected,/holistic-house-affirmations/);
-      const attached=await page.locator("[data-video-audio-attached]").innerText();
-      assert.match(attached,/holistic-house-affirmations/);
+      const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
+      // These filename panels belong to the advanced editor. Open its real
+      // disclosure before checking the filenames as visible UI evidence.
+      const advanced=page.locator("[data-video-quick-legacy]");
+      assert.equal(await advanced.getAttribute("open"),null);
+      await advanced.locator(":scope > summary").click();
+      const selectedFile=page.locator("[data-video-audio-selected] strong");
+      const attachedFile=page.locator("[data-video-audio-attached] strong");
+      await selectedFile.waitFor({state:"visible"});
+      await attachedFile.waitFor({state:"visible"});
+      assert.equal(await selectedFile.innerText(),expectedFileName);
+      assert.equal(await attachedFile.innerText(),expectedFileName);
+      await advanced.locator(":scope > summary").click();
+      await selectedFile.waitFor({state:"hidden"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
       if(engine==="chromium") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
@@ -105,3 +115,4 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
     }finally{await context.close();}
   }finally{await browser.close();}
 }
+
