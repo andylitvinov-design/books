@@ -1752,3 +1752,241 @@
  .audioSection .audioTrackList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
  .audioSection .blockHeading{grid-template-columns:minmax(0,1fr) 180px}
 }
+
+
+/* 30 Oct owner correction: the ONE original Canvas/MediaRecorder screen now
+   lives before the format accordion. The genuine H.264 sample stays miniature,
+   while Popular Templates and 24 compiled films form ONE shared library. */
+.quickBuilder>.previewStage{
+  display:grid;gap:10px;padding:14px;border:1px solid #badbca;border-radius:23px;
+  background:linear-gradient(150deg,#e9f6ed,#fffef9 68%);
+  box-shadow:0 9px 25px rgba(21,85,62,.08)
+}
+.previewStageHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.previewStageHeading>div{flex:1;min-width:0}
+.previewStageHeading small{display:block;color:#248568;font:800 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.07em}
+.previewStageHeading h3{margin:4px 0 5px!important;color:#174c3f;font:800 clamp(19px,3.2vw,25px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.previewStageHeading p{max-width:600px;color:#61786c;font:500 12px/1.43 Arial,Helvetica,sans-serif}
+.previewStageBadge{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:32px;max-width:36%;padding:7px 9px;border-radius:999px;
+  border:1px solid #bedac9;background:#f5fbf4;color:#147454;
+  text-align:center;font:800 10.5px/1.2 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.studio .previewStage .hero{width:100%;min-width:0;min-height:0;max-height:460px;
+  aspect-ratio:16/9;margin:0;border-radius:19px;overflow:hidden}
+.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+  min-height:0;max-height:460px;aspect-ratio:16/9}
+.previewMiniSource{display:grid;grid-template-columns:minmax(0,1fr) minmax(122px,39%);
+  align-items:center;gap:12px;min-width:0;padding:9px 11px;
+  border:1px solid #d8e8dc;border-radius:14px;background:#fffdf7}
+.previewMiniSource>div:first-child{display:grid;gap:4px;min-width:0}
+.previewMiniSource strong{color:#225441;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.previewMiniSource small{color:#6b7c72;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.previewMiniSource .quickFormatDemo{max-width:228px;justify-self:end;box-shadow:0 2px 8px rgba(6,56,40,.13)}
+.previewMiniSource .quickFormatDemo .quickPreviewPlay{width:44px;height:44px}
+.quickBuilder>.sceneLibrary{display:grid;gap:10px;padding:13px 13px 14px;border-radius:22px;
+  background:#fffdf7;border:1px solid #e8e9de;box-shadow:0 6px 20px #193e2d0e}
+.sceneLibraryHeading{display:grid;gap:4px}
+.sceneLibraryHeading h3{display:flex;align-items:center;gap:8px;
+  color:#174b3f;font:800 clamp(18px,3vw,23px)/1.2 Arial,Helvetica,sans-serif}
+.sceneLibraryHeading h3 svg{flex:none;color:#158667}
+.sceneLibraryHeading p{color:#688075;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.sceneLibrary .templates{margin:2px 0 0;padding:3px 0 11px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary [data-free-film-compilation-catalog]{margin:0;padding:3px 0 10px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary .templates .sectionHeading{margin-bottom:5px}
+.sceneLibrary .templates .sectionHeading h3,
+.sceneLibrary [data-free-film-compilation-catalog] h3{color:#205642;font-size:15px}
+.sceneLibrary .templateRail{display:grid;grid-auto-flow:column;
+  grid-auto-columns:clamp(104px,27%,153px);gap:8px;overflow-x:auto;
+  overscroll-behavior-x:contain;padding:3px 3px 10px;scroll-snap-type:x proximity}
+.sceneLibrary .templateTile{min-width:0;scroll-snap-align:start}
+.sceneLibrary .filmBadge{font-size:9px}
+.previewCoverOptions{min-width:0;border:1px solid #cfe4d6;border-radius:14px;background:#f5faf4}
+.previewCoverOptions>summary{display:flex;align-items:center;gap:9px;min-height:48px;
+  padding:10px 12px;color:#23694f;font:800 13px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.previewCoverOptions>summary::-webkit-details-marker{display:none}
+.previewCoverOptions>summary svg:last-child{margin-left:auto;transition:transform .2s ease}
+.previewCoverOptions[open]>summary svg:last-child{transform:rotate(180deg)}
+.previewCoverOptions>.quickSection{margin:0;padding:10px;border:0;border-top:1px solid #deede2;
+  border-radius:0 0 14px 14px;background:#fffef9;box-shadow:none}
+.previewCoverOptions .quickImageRail{max-width:100%;overflow-x:auto}
+.previewCoverOptions :is(summary,button,input):focus-visible{outline:3px solid #d9b56d;outline-offset:2px}
+/* The format list has its full width now; no squeezed 36/64 split. */
+.quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+.quickFormatStack{gap:9px}
+.quickFormatTitleLabel strong{font-size:clamp(13px,2.25vw,16px)}
+.quickFormatTitleLabel small{font-size:12px}
+.quickFormatBenefits li{font-size:12px;line-height:1.35}
+.quickFormatQuality button{min-height:44px;font-size:11px}
+@media(max-width:759px){
+  .quickBuilder>.previewStage,.quickBuilder>.sceneLibrary{padding:12px 10px}
+  .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:0;max-height:none;aspect-ratio:16/9}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .quickFormatTitle{gap:8px;min-height:49px;padding:9px 11px}
+  .quickFormatTitleLabel strong{font-size:14px}
+  .quickFormatTitleLabel small{font-size:11px}
+  .quickFormatBenefits li{font-size:11.5px;line-height:1.3}
+  .quickFormatQuality button{font-size:11px;min-height:44px}
+  .quickFormatPrice strong{font-size:18px}
+  /* The original sticky rail covered video cards and CTA on iPhone. */
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;margin:6px 0 2px}
+}
+@media(max-width:355px){
+  .previewStageHeading h3{font-size:18px}
+  .previewStageBadge{max-width:32%;font-size:9px;padding:6px}
+  .previewMiniSource{gap:7px;padding:7px;grid-template-columns:minmax(0,1fr) minmax(118px,45%)}
+  .previewMiniSource strong{font-size:12px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatTitleLabel strong{font-size:13px}
+  .quickFormatQuality button{font-size:10px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .previewCoverOptions>summary svg:last-child{transition:none}
+}
+
+/* Integrate #2694 compact iPhone override after #2695 big stage and live #2696 audio. */
+
+/* Owner mobile screenshot reconciliation · 2026-10-30.
+   This is the real canonical editor, not a second mobile-only renderer.
+   The bottom order stays IN FLOW on phones so it never obscures scenes,
+   while the existing desktop product format/checkout gates remain intact. */
+.quickBrandBar{display:none}
+.quickHeaderPlay{position:absolute;z-index:2;left:50%;top:55%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:48px;height:48px;border:2px solid #fff;
+  border-radius:50%;background:#183e34ba;color:#fff;box-shadow:0 3px 13px #162f2770}
+.quickHeaderPlay:disabled{opacity:.65}
+.quickHeaderPlay:focus-visible{outline:3px solid #e7bb60;outline-offset:3px}
+.quickDisclosure{margin:-4px 3px 2px!important;color:#60786c;
+  font:500 11px/1.35 Arial,Helvetica,sans-serif}
+.quickExtras{min-width:0;border:1px solid #e3eade;border-radius:14px;
+  background:#fffdf8;overflow:hidden}
+.quickExtras>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:45px;padding:9px 13px;color:#173f35;
+  font:800 15px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.quickExtras>summary::-webkit-details-marker{display:none}
+.quickExtras>summary svg{flex:none;color:#148064;transition:transform .15s ease}
+.quickExtras[open]>summary svg{transform:rotate(180deg)}
+.quickExtraActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  padding:0 9px 10px}
+.quickExtraActions button{display:flex;align-items:center;justify-content:center;gap:5px;
+  min-width:0;min-height:44px;padding:5px 7px;border:1px solid #d8e6da;
+  border-radius:10px;background:#f2f8f0;color:#17664f;
+  font:700 11px/1.18 Arial,Helvetica,sans-serif}
+.quickExtraActions button svg{flex:none}
+@media(max-width:759px){
+  .studio{padding-top:0}
+  .quickBuilder{gap:7px;padding-bottom:5px}
+  .quickBrandBar{display:flex;align-items:center;gap:9px;min-height:45px;
+    padding:3px 5px 6px;color:#123e34}
+  .quickBrandBack{display:grid;place-items:center;flex:none;width:42px;height:42px;
+    border-radius:13px;color:#185d4c;text-decoration:none}
+  .quickBrandBack svg{transform:rotate(180deg)}
+  .quickBrandBar>strong{display:flex;align-items:center;gap:6px;min-width:0;
+    flex:1;white-space:nowrap;font:850 clamp(15px,4.4vw,19px)/1 Arial,Helvetica,sans-serif;
+    letter-spacing:-.025em}
+  .quickBrandBar>strong svg{flex:none;color:#167e65}
+  .quickBrandFree{display:flex;align-items:center;gap:3px;flex:none;
+    padding:5px 7px;border-radius:999px;background:#e2f5e8;color:#117053;
+    font:800 10.5px/1.1 Arial,Helvetica,sans-serif}
+  .quickHeader{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);
+    min-height:174px;margin:0;padding:12px 12px 10px;border-radius:18px}
+  .quickHeaderText h2{max-width:16ch;font-size:clamp(22px,5.65vw,27px);
+    line-height:1.06;letter-spacing:-.035em}
+  .quickHeaderText p{max-width:29ch;margin-top:6px;font-size:clamp(11px,2.85vw,12.5px);
+    line-height:1.25}
+  .quickHeaderArt{margin:-12px -12px -10px -3px}
+  .quickHeaderArt img{object-position:50% 40%}
+  .quickHeader>button{top:8px;right:6px;max-width:70%;
+    min-height:35px;padding:5px 8px;font-size:10px}
+  .quickHeaderPlay{width:48px;height:48px;top:58%}
+  .quickBenefits{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+    padding:8px 4px;border-radius:15px}
+  .quickBenefits span{justify-content:center;gap:4px;min-height:50px;padding:0 3px;
+    font-size:clamp(9.5px,2.65vw,11px);line-height:1.16}
+  .quickBenefits span:nth-child(3){border-left:1px solid #e7eae2}
+  .quickBenefits svg{width:20px;height:20px}
+  .quickDisclosure{font-size:10px;line-height:1.3;margin:-3px 3px 0!important}
+  .quickBuilder>.quickSection{padding:10px 9px 11px;gap:8px;border-radius:16px}
+  .quickBuilder .quickSectionHeading{gap:7px}
+  .quickBuilder .quickSectionHeading h3{font-size:clamp(16px,4.2vw,19px);
+    line-height:1.18;gap:6px}
+  .quickBuilder .quickSectionHeading h3 svg{width:18px;height:18px}
+  .quickBuilder .quickSectionHeading p{font-size:11px;line-height:1.24;margin-top:2px}
+  .quickBuilder .quickSectionHeading a,.quickBuilder .quickSectionHeading .quickEdit{
+    min-height:44px;max-width:100px;padding:4px;font-size:11px;line-height:1.18}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(66px,19%,85px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity;scroll-padding-inline:2px}
+  .quickBuilder .quickThemeRail button{min-height:112px;padding:7px;
+    gap:4px;border-radius:13px;scroll-snap-align:start}
+  .quickBuilder .quickThemeRail button .quickThemeIcon{width:32px;height:32px}
+  .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:19px;height:19px}
+  .quickBuilder .quickThemeRail button .quickThemeName{font-size:clamp(9.7px,2.6vw,11px);
+    line-height:1.12;overflow-wrap:break-word}
+  .quickBuilder .quickThemeRail button[aria-pressed="true"]{padding:6px}
+  .quickBuilder [data-video-quick-tier]{padding:10px 8px 9px;gap:7px}
+  .quickFormatGrid{grid-template-columns:minmax(0,40fr) minmax(0,60fr);gap:7px}
+  .quickFormatDetails{padding:0 7px 7px}
+  .quickFormatBenefits li{font-size:10px;line-height:1.2}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitle{padding:5px 6px}
+  .quickFormatQuality button{min-height:44px}
+  .quickBuilder [data-video-quick-tier] .quickTierNote{font-size:10px;line-height:1.24}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,19%,87px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity}
+  .quickBuilder .quickStyles button{gap:3px;scroll-snap-align:start}
+  .quickBuilder .quickStyles button img{aspect-ratio:1.1;border-radius:10px}
+  .quickBuilder .quickStyles button span{min-height:16px;
+    font-size:clamp(10px,2.7vw,11.5px);line-height:1.16;font-weight:750}
+  .quickBuilder .quickHint{font-size:10px;line-height:1.26}
+  .quickBuilder .quickWish{min-height:47px}
+  .quickBuilder .quickWish input{min-height:44px;padding:8px 0;font-size:13px}
+  .quickPersonalActions{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .quickPersonalActions button{flex-direction:column;min-height:48px;padding:5px 3px;
+    gap:4px;border-radius:11px;font-size:clamp(9.5px,2.6vw,11px);line-height:1.12}
+  .quickPersonalActions svg{width:18px;height:18px}
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.13fr);
+    gap:6px;margin:2px 0 0;padding:0}
+  .quickOrderSummary{min-height:58px;padding:7px 9px;border-radius:13px}
+  .quickOrderSummary strong{font-size:clamp(16px,4.4vw,20px)}
+  .quickOrderSummary small{font-size:10px}
+  .quickOrderBar .quickGenerate{min-height:58px;margin:0;padding:7px;
+    border-radius:13px;font-size:clamp(12px,3.4vw,15px);line-height:1.15}
+  .quickOrderBar .quickGenerate svg{width:17px;height:17px;flex:none}
+  .quickExtras>summary{font-size:14px}
+  .quickExtraActions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quickExtraActions button:last-child{grid-column:1/-1}
+  .quickTherapy{min-height:44px}
+}
+@media(max-width:379px){
+  .quickHeader{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);min-height:181px}
+  .quickHeaderText h2{font-size:clamp(21px,6vw,23px)}
+  .quickHeaderText p{font-size:11px}
+  .quickBrandFree{font-size:10px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatDemo{max-height:180px}
+  .quickFormatTitleLabel strong{font-size:12px}
+  .quickFormatBenefits li{font-size:11px}
+  .quickFormatQuality button{font-size:10.5px}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(67px,24%,76px)}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,24%,81px)}
+  .quickPersonalActions button{font-size:9.6px}
+}
+@media(max-width:340px){
+  .quickBrandBar>strong{font-size:15px}
+  .quickBrandFree svg{display:none}
+  .quickHeader{min-height:192px}
+  .quickHeader>button{max-width:70%;font-size:9.5px}
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+
+/* Video Studio-only iPhone promo treatment. Keep this in the dedicated
+   Mandala editor module so unrelated service/checkout/CRM pages and their
+   Public Services CI matrix are not affected by the editor's presentation. */
+@media(max-width:640px){
+  :global([data-mandala-meditation-page]):has(.studio) :global([data-video-diagnostic-banner]){display:none}
+}
+
