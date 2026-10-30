@@ -272,3 +272,37 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
+
+
+## Roadmap V3 — 30 October 2026: reduce daily PR waiting, not security coverage
+
+### Measured 24-hour baseline and accounting
+
+- Period: 2026-10-29 12:00 UTC → 2026-10-30 12:00 UTC (approximately the last 24 hours at collection). Actual GitHub Actions REST `created` windows of three hours, with a one-hour split for a capped window, returned about **11,400 workflow runs**. Event-filtered counts returned roughly **8,923 pull_request** and **2,501 push** runs; GitHub indexing changes while collecting, so treat this as an approximate baseline, **not billed runner minutes**.
+- Current repository: **90 workflow YAML definitions**, **393 open PRs**, of which **268 are Draft** (68% at observation). In the same 24-hour search window, **135 PRs created / 58 merged**. Draft share of open PRs does NOT prove draft share of workflow events.
+- Nonrandom 500-run diagnostic sample across several UTC windows: 181 canceled, 61 skipped, 103 failed and 155 succeeded. Of 103 failures, **50** belonged to two repeatedly jobless `push` workflows named `.github/workflows/practice-visual-services.yml` and `.github/workflows/hh-my-progress-release.yml`. These runs had zero jobs in the sample: treat as workflow/parser/startup diagnostic work, **not** a failed application test, and never mark them green or suppress them without actual Actions annotations. Sample percentages must **not** be blindly extrapolated to all 11,400 runs.
+- Report savings as **aggregate PR-minutes/day**: ten PRs each unblocked five minutes earlier save 50 PR-minutes, not 50 minutes of calendar time. Report runner-minutes/day separately. A jobless failed run consumes no useful runner minutes but can increase triage or gate waiting.
+- Estimate assumptions: 58 daily merges, some 5–25 relevant browser PRs and 20–60 major code PRs; 2–7-minute duplicate builds, 3–12-minute browser stage savings, bursty GitHub queues. These are **hypotheses**, not realized measured savings. Overlapping measures must NOT be added to produce a promised total.
+
+| Priority | Measure; existing owner / delivery gate | Estimated aggregate PR waiting saved per day | Estimated runner-min/day saved |
+| --- | --- | ---: | ---: |
+| P0 | **Stage core build on Ready, not Draft** (this change). Draft receives cheap scope only; on Ready all original unit/lint/TS/build plus immutable-base exact-head specialist gate execute. `ready_for_review` and `converted_to_draft` are explicit. Merge queue/manual unchanged. | **120–350 PR-min** | **300–1,200** |
+| P0 | **Parallel browser cases two at a time**, not unbounded (#2647 already in progress). Preserve all Chromium/WebKit, locale, source, real media/download and failure assertions; compare wall times and reject instability. | **40–180 PR-min** | **-40 to +40** (parallelism can cost more CPU) |
+| P0 | **OPORA no duplicate unit invocations and exact My Courses path filter** (#2648 already merged; do not repeat). Verify 47 original distinct tests and original course/privacy/browser coverage. | **15–70 PR-min** | **20–90** |
+| P0 | **Cancel only superseded PR-head runs** using existing concurrency and trusted production stale-prune; never cancel a currently required SHA or override production push acceptance. Audit remaining top offenders before any edit. | **50–200 PR-min** | **80–300** |
+| P1 | **Investigate zero-job workflow failures** by run `check_suite` / workflow annotations and branch SHA; determine root cause before editing or retiring any YAML. Never whitelist failure or delete required jobs to turn a check green. | **30–120 PR-min** (triage/gate delay) | **0–20** |
+| P1 | **Share global TypeScript/Next build** with unconditional Ready core for two or three additional non-browser specialist suites only where exact source/security tests remain and no compiled server fixture is required. Source-specific build and provider E2E retain their own jobs. | **40–150 PR-min** | **100–400** |
+| P1 | **Reuse pinned browser installation / isolated fixture cache** for repetitive Chromium/WebKit jobs after verifying clean per-PR identity isolation and no stale test assets. No shared authenticated storage or unredacted traces. | **20–100 PR-min** | **40–180** |
+| P1 | **One PR owner/lease and one merge handoff** across Repair, Triage, Work and DOT; avoid two workers making competing commits or repeated full portfolio sweeps. Keep focused 1–3-PR batches and exact-HEAD statuses. | **45–140 PR-min** | **0–40** |
+| P1, OWNER | **Protected production branch + native auto-merge** only after required `release-ready`, specialist review, conversations, no force push, and live negative-test readback. GitHub admin permissions required. Without ruleset, leave native auto-merge disabled. | **90–240 PR-min** (approval-to-merge idle time) | ~0 |
+| P2 | **Seven-day daily measurement and rollback**: p50/p90 first-green, green→merge, merge→Vercel READY+alias, runner-min/PR, duplicate canceled/zero-job events, affected specialist coverage and regressions. Publish a before/after table, rollback any false-green/unsafe skip. | **0 directly** (enables validation); ~10–30 human triage minutes/day possible | ~0 |
+
+### Sequential execution and release gates
+
+1. **This PR:** one existing `hh-pr-core-release.yml` workflow and its existing `tests/pr-fast-lane.test.mjs` contracts. Only the lightweight `classify-change` runs on Draft; expensive `core-lint-types-build` and `release-ready` run on non-Draft Ready / manual / merge_group. A Ready transition MUST trigger full exact-head CI. It is forbidden to merge or count Draft/skipped checks as green. Check actionlint, CI Sweep Guard, negative Draft/Ready source tests and actual Ready CI; commit to production only after successful gate, then Vercel READY exact SHA/alias.
+2. **Already owned:** #2647 bounded browser concurrency and merged #2648 OPORA deduplication. Do not create duplicate PRs. Hold #2647 until real complete Chromium/WebKit run passes at exact HEAD; compare runtime versus baseline.
+3. **Next independent scoped PRs:** zero-job Actions diagnostic with actual annotation evidence; other high-frequency superseded-run cancellation and exact safe build overlap audit. Keep source data and provider account tests.
+4. **After Ready acceptance:** harden Vercel and iPhone EN/RU/ES smoke per affected product; no HTTP 200 or mock click as booking/payment/provider E2E. Update issue #1419 and this program with SHA, measured run durations and blocked approval steps.
+5. **Administrator only:** configure exact production branch ruleset/required `release-ready` (not globally required optional path workflows), approvals and native auto-merge. Verify live settings before activation. Never change GitHub default bootstrap branch implicitly.
+
+**Outcome criterion:** after seven full days of comparable workload, seek a **nonadditive 180–600 aggregate PR-min/day reduction** (3–10 hours of combined PR waiting across the release queue), with no lost specialist coverage, false-green mergers or worse live delivery. This is a measurement target and remains **UNVERIFIED** until actual before/after runs confirm it.

@@ -2,6 +2,7 @@ name: HH PR core release gate
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -70,7 +71,7 @@ jobs:
   code:
     name: core-lint-types-build
     needs: scope
-    if: needs.scope.outputs.docs_only != 'true'
+    if: needs.scope.outputs.docs_only != 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -116,7 +117,7 @@ jobs:
   release-ready:
     name: release-ready
     needs: [scope, code]
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:

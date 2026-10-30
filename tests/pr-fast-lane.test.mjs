@@ -73,7 +73,8 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /^  merge_group:/m);
   assert.match(source, /^  release-ready:/m);
   assert.match(source, /^    needs: \[scope, code\]/m);
-  assert.match(source, /^    if: always\(\)/m);
+  assert.ok(source.includes("if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)"), 'Draft must not emit release-ready');
+  assert.doesNotMatch(source, /^    if: always\(\)\s*$/m, 'unconditional merge eligibility on Draft');
   assert.match(source, /git diff --no-renames --name-only -z/);
   assert.match(source, /docs\/\*\.md\|README\.md/);
   assert.match(source, /npm ci --no-audit --no-fund/);
@@ -419,4 +420,25 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   const about=workflow('holistic-about-video-check.yml');
   assert.match(about,/npx tsc --noEmit/);
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+});
+
+
+test('core Draft staging never bypasses Ready, manual, or merge-queue acceptance', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const eventBlock = source.split('  pull_request:\n')[1]?.split('  merge_group:')[0];
+  assert.ok(eventBlock, 'core must retain the production PR trigger');
+  assert.match(eventBlock, /branches: \['codex\\/public-book-library'\]/);
+  for (const event of ['opened', 'synchronize', 'reopened', 'ready_for_review', 'converted_to_draft']) {
+    assert.ok(eventBlock.includes(event), 'missing Draft/Ready transition: ' + event);
+  }
+  const guard = "(github.event_name != 'pull_request' || github.event.pull_request.draft == false)";
+  assert.ok(source.includes("if: needs.scope.outputs.docs_only != 'true' && " + guard), 'Draft must skip expensive core job');
+  assert.ok(source.includes('if: always() && ' + guard), 'Draft must not get green release-ready');
+  assert.ok(source.includes('  merge_group:\n    types: [checks_requested]'));
+  assert.ok(source.includes('  workflow_dispatch:'));
+  assert.match(source, /    if: needs.scope.outputs.ci_only != 'true'\n        run: npx --no-install tsc --noEmit/);
+  assert.match(source, /    if: needs.scope.outputs.ci_only != 'true'\n        run: npm run build/);
+  assert.ok(source.includes('ci-specialist-aggregate.mjs'), 'Ready still verifies exact-head specialists');
+  assert.ok(source.includes('cancel-in-progress: true'), 'superseded PR commits cancel correctly');
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
