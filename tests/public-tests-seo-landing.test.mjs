@@ -126,3 +126,16 @@ test("SEO mobile QA installs pinned isolated Chromium without mutating repositor
  assert.match(script,/const widths = \[320, 390, 430\]/);
  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
+
+
+test("public tests mobile text and written review remain accessible", () => {
+  assert.ok(css.includes('.page[data-free-entry-landing="tests"] .hero .lead{font-size:16px'),
+    "The actual phone intro, not the decorative eyebrow, must be readable at >=15px");
+  assert.ok(landing.includes('href={"/" + locale + "/services/free-situation-review"}'),
+    "Offer the real local free written review without creating a lead on click");
+  for (const label of ["Free personal written review", "Бесплатный личный письменный разбор",
+    "Revisión personal gratuita por escrito"])
+    assert.ok(landing.includes(label), "Missing translated written review CTA: " + label);
+  assert.ok(css.includes(".testReviewLink{display:inline-flex;align-items:center;min-height:44px"),
+    "Optional mobile review control must have a 44px touch target");
+});

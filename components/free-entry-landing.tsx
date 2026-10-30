@@ -682,6 +682,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <p className={styles.testDirectKicker}>{common.free}</p>
               <h2 id="free-tests-direct-title">{freeTestDirectCopy[locale].title}</h2>
               <p>{freeTestDirectCopy[locale].lead}</p>
+              <Link className={styles.testReviewLink} href={"/" + locale + "/services/free-situation-review"} prefetch={false}>
+                {locale === "ru" ? "Бесплатный личный письменный разбор" : locale === "es" ? "Revisión personal gratuita por escrito" : "Free personal written review"}
+              </Link>
             </div>
             <Link className={styles.primary} href={testsHref} prefetch={false}
               data-benchmark-free-test-open>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link>
