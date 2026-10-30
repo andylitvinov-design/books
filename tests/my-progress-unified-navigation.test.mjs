@@ -104,14 +104,16 @@ test('practitioner offerings stay behind original private Practice; client order
   assert.match(inbox, /myOrderInbox\(actor\)/)
   assert.doesNotMatch(progress, /appFetch\('crm\//)
   assert.match(support, /Шкалы, фото и история просмотра не отправляются на сервер/)
-  assert.match(support, /const markCurrentVideoWatched = async/)
   assert.match(support, /data-support-account-video-mark/)
-  assert.match(support, /status: "watched"/)
-  assert.match(support, /response.status === 401/)
-  assert.match(support, /savedVideos.includes\(selected.id\)/)
-  // Only the explicit self-confirmation saves video progress; Play remains local.
-  const onPlay = support.slice(support.indexOf('const startVideo = () =>'), support.indexOf('const markCurrentVideoWatched'))
-  assert.doesNotMatch(onPlay, /video-progress|fetch\(/)
+  assert.match(support, /<AcademyVideoProgress key=\{selected.id\}/)
+  assert.doesNotMatch(support, /fetch\(|localStorage|sessionStorage/)
+  const tracker=source('components/app/academy-video-progress.jsx')
+  assert.match(tracker, /appFetch\('video-progress'/)
+  assert.match(tracker, /save\('watched'\)/)
+  assert.match(tracker, /failure.status===401/)
+  // Clicking Play alone keeps an ephemeral on-screen counter, without writing a watch mark.
+  const onPlay = support.slice(support.indexOf('const startVideo = () =>'), support.indexOf('const changeChoice = '))
+  assert.doesNotMatch(onPlay, /video-progress|appFetch\(|fetch\(/)
 })
 
 test('existing labs, saved development and 90-day coaching appear with only neutral source references',()=>{
