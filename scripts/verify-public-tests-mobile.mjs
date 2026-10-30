@@ -1,7 +1,9 @@
 // Read-only production browser QA for public SEO entry pages. No login,
 // form submission, client identifiers or private URL navigation.
 // Run: node scripts/verify-public-tests-mobile.mjs
-import { chromium } from "@playwright/test";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.HH_SEO_PLAYWRIGHT_PACKAGE || "playwright");
 import { mkdir, writeFile } from "node:fs/promises";
 
 const canonicalOrigin = "https://holistichouse.vercel.app";

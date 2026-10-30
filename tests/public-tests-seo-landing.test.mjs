@@ -109,3 +109,20 @@ test("PR SEO mobile browser executes all nine public EN/RU/ES viewports on isola
  assert.match(browser,/no login|No login|No login,|No login,/i);
  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
+
+
+test("SEO mobile QA installs pinned isolated Chromium without mutating repository dependencies",()=>{
+ const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+ const script=read("scripts/verify-public-tests-mobile.mjs");
+ assert.match(workflow,/npm install --prefix \/tmp\/hh-seo-browser-tools --no-audit --no-fund playwright@1\.63\.0/);
+ assert.match(workflow,/\/tmp\/hh-seo-browser-tools\/node_modules\/\.bin\/playwright install --with-deps chromium/);
+ assert.match(workflow,/HH_SEO_PLAYWRIGHT_PACKAGE: \/tmp\/hh-seo-browser-tools\/node_modules\/playwright/);
+ assert.doesNotMatch(workflow,/npx --no-install playwright install/);
+ assert.match(script,/import \{ createRequire \} from "node:module"/);
+ assert.match(script,/require\(process\.env\.HH_SEO_PLAYWRIGHT_PACKAGE \|\| "playwright"\)/);
+ assert.match(workflow,/public-tests-mobile:\n    runs-on: ubuntu-latest/);
+ assert.match(workflow,/HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(script,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+ assert.match(script,/const widths = \[320, 390, 430\]/);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});

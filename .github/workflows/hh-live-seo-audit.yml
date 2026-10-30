@@ -129,12 +129,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Install Chromium for real public-page QA
-        run: npx --no-install playwright install --with-deps chromium
+      - name: Install isolated pinned Chromium for real public-page QA
+        run: |
+          npm install --prefix /tmp/hh-seo-browser-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-seo-browser-tools/node_modules/.bin/playwright install --with-deps chromium
       - name: Allow the Git-triggered production deployment to settle
         if: github.event_name == 'push'
         run: sleep 160
       - name: Validate EN/RU/ES public tests at 320/390/430px
+        env:
+          HH_SEO_PLAYWRIGHT_PACKAGE: /tmp/hh-seo-browser-tools/node_modules/playwright
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             npx next dev --hostname 127.0.0.1 --port 3182 > /tmp/hh-public-tests-next.log 2>&1 &
