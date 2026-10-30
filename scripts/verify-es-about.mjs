@@ -8,6 +8,8 @@ import { chromium, webkit, expect } from '@playwright/test';
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3201';
 const evidence = '/tmp/site-video-evidence';
+// Exact source-backed About inventory; translated labels do not replace original audio.
+const aboutTestimonialIds = ["Dk0LBmOivQo","aUJde6A-9p0","fE6sD1zr1Js","itjo2_z2NGk","4NrryHcEF1A","hYwRNMxIMjc","MIVLm1GUTtM","ttQxUHopaUM","VABgpmn4ZYA","muOnIHllI7E"];
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 mkdirSync(evidence, { recursive: true });
@@ -49,21 +51,37 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        const testimonials = page.locator('[data-personal-testimonials="about"]');
+        await expect(testimonials).toHaveCount(1);
+        const cards = testimonials.locator('[data-testimonial-video-id]');
+        await expect(cards).toHaveCount(aboutTestimonialIds.length);
+        assert.deepEqual((await cards.evaluateAll(nodes =>
+          nodes.map(node => node.getAttribute('data-testimonial-video-id')))).sort(),
+          [...aboutTestimonialIds].sort(), 'Exact reviewed About testimonial identities');
+        for (const id of aboutTestimonialIds) {
+          const card = testimonials.locator(`[data-testimonial-video-id="${id}"]`);
+          await expect(card.locator('.site-video-player--minimal')).toHaveCount(1);
+          await expect(card.locator('.site-video-player')).toHaveAttribute('lang', 'es');
+          await expect(card.locator('.site-video-watch-link')).toHaveCount(0);
+          await expect(card.locator('span[id][lang="es"]')).toHaveCount(1);
+        }
+        await expect(testimonials.getByText('Ruso · RU', { exact: true })).toHaveCount(4);
+        await expect(testimonials.getByText('Inglés · EN', { exact: true })).toHaveCount(6);
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
-        const intro = page.locator('[data-video-locale="es"]');
+        const intro = page.locator('[data-video-slot="about-intro"][data-video-locale="es"]');
         await expect.poll(() => intro.locator('img.site-video-poster').evaluate(el => el.complete && el.naturalWidth >= 320)).toBe(true);
         assert.equal(await page.locator('iframe').count(), 0);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('Avatar IA');
         await expect(intro.locator('.site-video-duration')).toHaveText('0:31');
         await expect(intro.locator('img.site-video-poster')).toHaveAttribute('src', /psychic-alchemy-es-v1/);
         await expect(intro.locator('.site-video-player')).toHaveAttribute('lang', 'es');
-        await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         const summary = intro.locator('summary');
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
         await summary.press('Enter');
         const capture = page.locator('[data-consultation-capture="personal"]');
@@ -100,7 +118,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish free-assessment topic changed locally, no navigation or submission', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }
@@ -111,3 +129,4 @@ try {
   assert.ok((await sitemap.text()).includes('https://holistichouse.vercel.app/es/about'));
   writeFileSync(`${evidence}/${live ? 'live' : 'local'}-es-about-results.json`, JSON.stringify({ scope: live ? 'read-only production' : 'isolated production build', results, newRender: false, messageSent: false }, null, 2));
 } finally { if (app) app.kill('SIGTERM'); }
+

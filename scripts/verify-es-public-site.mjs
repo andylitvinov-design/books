@@ -31,19 +31,19 @@ async function assertSpanishNavigation(page, path) {
   // Keep the three visible visitor needs and free written review in the header.
   const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
-  if (path !== '/es') first.push('/en/app');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  if (path === '/es') {
-    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-    await expect(cabinet).toHaveAccessibleName('Mi espacio');
-  } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+  await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+  await expect(cabinet).toHaveAccessibleName('Mi espacio');
   const destinations = [
-    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
-    '/es/explore/business', '/es/books', '/es/pro',
-    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
-    '/es/services', '/es/academy', '/es/about',
+    '/es/services/free-situation-review',
+    '/es', '/es/services/free-situation-review', '/es/academy', '/es/personality-profiles',
+    '/es/services/alchemy-of-soul', '/es/pro', '/es/holistic-support',
+    '/es/shop', '/es/cart', '/es/install',
+    '/es/explore/energy', '/es/explore/love', '/es/explore/business', '/es/library', '/es/events',
+    '/es/temple-insights', '/es/services', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -57,9 +57,9 @@ async function assertSpanishNavigation(page, path) {
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
   for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(links.nth(2)).toHaveAccessibleName('Energía');
-  await expect(links.nth(3)).toHaveAccessibleName('Amor');
-  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
+  for (const [id, label] of [['energy', 'Cuerpo y energía'], ['love', 'Estrés y relaciones'], ['business', 'Dinero y negocios']]) {
+    await expect(menu.locator(`[data-nav-item="${id}"]`)).toHaveAccessibleName(label);
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -104,7 +104,11 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
+  const activeCourseTab = page.locator('.mobile-bottom-navigation [aria-current="page"]');
+  await expect(activeCourseTab).toHaveCount(1);
+  await expect(activeCourseTab).toHaveAttribute('data-nav-item', 'courses');
+  await expect(activeCourseTab).toHaveAttribute('href', '/es/academy');
+  await expect(activeCourseTab).toHaveAccessibleName('Cursos');
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
@@ -199,7 +203,17 @@ try {
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
             await assertSpanishHomeAlternates(page);
-            if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
+            const carousel = page.locator('[data-home-section-carousel]');
+            await expect(carousel).toHaveCount(1);
+            await expect(carousel).toBeVisible();
+            const heroLinks = carousel.locator('[data-home-nav-section]');
+            assert.deepEqual(await heroLinks.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-home-nav-section'))),
+              ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet']);
+            await expect(carousel.locator('[data-home-slide]')).toHaveCount(1);
+            const activeSlide = await carousel.locator('[data-home-slide]').getAttribute('data-home-slide');
+            await expect(carousel.locator('[data-home-nav-active="true"]')).toHaveCount(1);
+            await expect(carousel.locator('[data-home-nav-active="true"]')).toHaveAttribute('data-home-nav-section', activeSlide);
+            await expect(carousel.locator(`[data-home-slide-action="${activeSlide}"]`)).toBeVisible();
           }
           if(path==='/es/client') {
             // Also exercise desktop hover without clicking a language.
@@ -240,12 +254,18 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // On public client pages the Cabinet is a direct link; on Home
-        // the separate My Space control opens a dialog instead.
-        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
+        // The global provider owns My Space on every public page. Use its
+        // guest profile link, or the existing unavailable-state Cabinet fallback.
+        // Never click Google sign-in or submit private/account data.
+        const accountTrigger = page.locator('.site-navigation .site-cabinet-entry');
+        await expect(accountTrigger).toHaveAttribute('aria-haspopup','dialog');
+        await click(accountTrigger);
+        const spaceDialog = page.locator('#home-personal-space-dialog');
+        await expect(spaceDialog).toBeVisible();
+        const accountLink = spaceDialog.locator('[data-space-link="profile"], a[href="/en/app"]');
         await expect(accountLink).toHaveCount(1);
         await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
+        assert.ok(['/en/app/portrait', '/en/app'].includes(await accountLink.getAttribute('href')));
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
@@ -289,7 +309,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, full catalog in More, My Space dialog on Home; Enter/Tab/Escape',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, full catalog in More, global My Space dialog; Enter/Tab/Escape',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
@@ -324,3 +344,4 @@ try {
 } finally {
   try {saveDiagnostics();} finally {if(proxy){proxy.closeAllConnections();proxy.close();} if(app)app.kill('SIGTERM');}
 }
+

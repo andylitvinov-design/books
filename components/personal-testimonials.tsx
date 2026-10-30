@@ -47,6 +47,16 @@ export const testimonialVideos = {
   ],
 } as const;
 
+// Translate display labels only; the original video identity and Russian audio stay unchanged.
+const russianTestimonialTitlesEs: Readonly<Record<string, string>> = {
+  m9RfDgK76PU: "Antón Korchinski — testimonio sobre el trabajo",
+  MIVLm1GUTtM: "Yuri Goncharenko — testimonio de un cliente",
+  ttQxUHopaUM: "Constelaciones empresariales — testimonio",
+  VABgpmn4ZYA: "Tatiana Razumóvskaya — testimonio sobre consultoría empresarial",
+  muOnIHllI7E: "Evaluación exprés — testimonio",
+  "5oj0BIbLT4w": "Elena Bajtina — testimonio de una clienta",
+};
+
 const copy = {
   ru: {
     eyebrow: "Реальные истории",
@@ -130,7 +140,9 @@ export function PersonalTestimonials({
   const renderVideoCards = (
     items: ReadonlyArray<{ id: string; title: string; language: "en" | "ru" }>,
     showLanguage = false,
-  ) => items.map((item) => (
+  ) => items.map((item) => locale === "es" && item.language === "ru"
+    ? { ...item, title: russianTestimonialTitlesEs[item.id] ?? item.title }
+    : item).map((item) => (
     <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
       {showLanguage ? (
         <p className={styles.videoLanguageTag}>
@@ -141,6 +153,7 @@ export function PersonalTestimonials({
       ) : null}
       <SiteVideoPlayer
         video={{ youtubeId: item.id, language: item.language, title: item.title }}
+        textLanguage={locale === "es" ? "es" : item.language}
         locale={locale}
         compact
         minimal={isAbout}
@@ -240,3 +253,4 @@ export function PersonalTestimonials({
     </section>
   );
 }
+

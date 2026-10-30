@@ -14,6 +14,8 @@ on:
       - 'components/home-testimonial-more.tsx'
       - 'tests/home-testimonial-lazy-disclosure.test.mjs'
       - 'tests/personal-testimonials*.test.mjs'
+      - 'tests/site-video-editor-lifecycle.test.mjs'
+      - 'tests/admin-session-lifecycle.test.mjs'
       - 'components/spanish-*'
       - 'components/page-video.tsx'
       - 'components/psychic-alchemy-intro-video*'
@@ -56,6 +58,8 @@ on:
       - 'components/home-testimonial-more.tsx'
       - 'tests/home-testimonial-lazy-disclosure.test.mjs'
       - 'tests/personal-testimonials*.test.mjs'
+      - 'tests/site-video-editor-lifecycle.test.mjs'
+      - 'tests/admin-session-lifecycle.test.mjs'
       - 'components/spanish-*'
       - 'components/site-navigation.tsx'
       - 'components/public-site-header.tsx'
@@ -112,6 +116,9 @@ jobs:
         run: |
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
           node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs
+          # Verify real v2 admin session binding and the same public video
+          # editorial state machine without bypassing Google/Supabase auth.
+          node --test tests/site-video-editor-lifecycle.test.mjs tests/admin-session-lifecycle.test.mjs
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
           npx tsc --noEmit
       - name: Install isolated browser test dependencies without changing the app lockfile

@@ -47,3 +47,57 @@ test('Spanish preview is the exact small frame extracted from the archived Spani
   assert.equal(createHash('sha256').update(poster).digest('hex'), '53646820605fbd228ec1511b11f9701cbba6127b8b79fb7863a101ee7ad5347c');
   assert.doesNotMatch(source('components/site-video-player.tsx'), /Expires=|Signature=|\.mp4\?/);
 });
+
+test('ES About checks exact archived identities without relaxing Spanish UI or original audio', () => {
+  const browser = source('scripts/verify-es-about.mjs');
+  const testimonials = source('components/personal-testimonials.tsx');
+  const archived = testimonials.match(/locallyArchivedVideoPosterIds = new Set\(\[([\s\S]*?)\]\)/);
+  const expected = browser.match(/const aboutTestimonialIds = (\[[^\n]+\]);/);
+  assert.ok(archived);
+  assert.ok(expected, 'ES browser must identify exact reviewed cards');
+  const archivedIds = [...archived[1].matchAll(/"([A-Za-z0-9_-]{11})"/g)].map(match => match[1]).sort();
+  assert.deepEqual(JSON.parse(expected[1]).sort(), archivedIds);
+  assert.doesNotMatch(browser, /\.about-video-grid/);
+  assert.ok(browser.includes("assert.doesNotMatch(await page.locator('main').innerText(), /[\\u0400-\\u04ff]/)"));
+  assert.ok(browser.includes("getByText('Ruso · RU', { exact: true })"));
+  assert.ok(browser.includes("getByText('Inglés · EN', { exact: true })"));
+  const labels = testimonials.match(/const russianTestimonialTitlesEs:[^=]+ = \{([\s\S]*?)\n\};/);
+  assert.ok(labels, 'Russian originals need translated Spanish display labels');
+  assert.doesNotMatch(labels[1], /[\u0400-\u04ff]/);
+  const ru = testimonials.match(/  ru: \[([\s\S]*?)\],\n  en: \[/)[1];
+  const ruIds = [...ru.matchAll(/id: "([A-Za-z0-9_-]{11})"/g)].map(match => match[1]);
+  assert.equal(ruIds.length, 6);
+  for (const id of ruIds) assert.ok(labels[1].includes(id), id);
+  assert.ok(testimonials.includes('locale === "es" && item.language === "ru"'));
+  assert.ok(testimonials.includes('title: russianTestimonialTitlesEs[item.id] ?? item.title'));
+  assert.ok(testimonials.includes('video={{ youtubeId: item.id, language: item.language, title: item.title }}'));
+  assert.ok(testimonials.includes('textLanguage={locale === "es" ? "es" : item.language}'));
+  assert.ok(source('app/es/about/page.tsx').includes('locale="es" variant="about"'));
+  assert.equal((browser.match(/intro\.locator\('\.site-video-watch-link'\)\)\.toHaveCount\(0\)/g) || []).length, 2);
+  assert.ok(browser.includes("'https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b'"));
+});
+
+test('ES testimonial title projection preserves every original identity and audio language', () => {
+  const testimonials = source('components/personal-testimonials.tsx');
+  const labels = testimonials.match(/const russianTestimonialTitlesEs:[^=]+ = \{([\s\S]*?)\n\};/);
+  assert.ok(labels, 'Spanish labels must exist for the Russian archive');
+  const translations = Object.fromEntries([...labels[1].matchAll(/"?([A-Za-z0-9_-]{11})"?: "([^"]+)"/g)].map(match => [match[1], match[2]]));
+  const ru = testimonials.match(/  ru: \[([\s\S]*?)\],\n  en: \[/)[1];
+  const originals = [...ru.matchAll(/id: "([^"]+)", title: "([^"]+)", language: "(ru)"/g)].map(match => ({id:match[1],title:match[2],language:match[3]}));
+  assert.equal(originals.length, 6);
+  const projection = testimonials.match(/\) => (items\.map\(\(item\) => locale === "es"[\s\S]*?: item\))\.map/);
+  assert.ok(projection, 'Actual rendering must use the Spanish label projection');
+  // Execute only the reviewed pure map expression, never the component or its imports.
+  const translate = new Function('items', 'locale', 'russianTestimonialTitlesEs', 'return ' + projection[1]);
+  for (const locale of ['ru', 'en']) assert.deepEqual(translate(originals, locale, translations), originals);
+  const spanish = translate(originals, 'es', translations);
+  assert.deepEqual(spanish.map(({id,language}) => ({id,language})), originals.map(({id,language}) => ({id,language})));
+  for (const item of spanish) {
+    assert.equal(item.title, translations[item.id]);
+    assert.doesNotMatch(item.title, /[\u0400-\u04ff]/);
+    assert.match(item.title, /testimonio/);
+  }
+  assert.ok(testimonials.includes('locale === "es" ? "Ruso · RU"'));
+});
+
+
