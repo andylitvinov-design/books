@@ -666,8 +666,8 @@ const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
     "theme": "health",
     "label": {
       "ru": "Вода и дыхание",
-      "en": "Agua y respiración",
-      "es": "Water and breath"
+      "en": "Water and breath",
+      "es": "Agua y respiración"
     },
     "clips": [
       "river-power",
@@ -820,17 +820,24 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
 function compileFreeFilmPreset(preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect):CinematicStoryboard {
   // Existing safe timing model, but every shot is an actual licensed MP4.
   // Stock edits use an independent plan version to FAIL-CLOSED paid AI prompts.
+  if(![10,20,30,60].includes(durationSeconds))throw Error("unsupported_free_film_length");
   const base=buildCinematicStoryboard({
     theme:preset.theme,locale,style:"nature",aspect,
     durationSeconds:durationSeconds===10?20:durationSeconds
   });
+  const step=Math.floor(durationSeconds/4),remainder=durationSeconds-step*4;
+  let start=0;
   const shots=base.shots.map((shot:{id:string;number:number;title:string;startSeconds:number;durationSeconds:number},i:number)=>{
     const sceneId=preset.clips[i], shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
     if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))throw Error("unavailable_free_film_clip");
-    return {...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
+    const shotLength=step+(i<remainder?1:0);
+    const result={...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
+      startSeconds:start,durationSeconds:shotLength,
       providerPrompt:""}; // A montage never becomes a provider prompt.
+    start+=shotLength;
+    return result;
   });
-  return {...base,version:FREE_FILM_PLAN_VERSION,shots,
+  return {...base,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
     sceneChoices:shots.map((shot:{sceneId:string;theme:VideoTheme})=>({
       sceneId:shot.sceneId,theme:shot.theme,visualCue:preset.label.en
     })),
@@ -1522,6 +1529,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         film:firstPartyFilmFor(shot.theme,shot.sceneId)
       }))
     : [];
+  const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
+    ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
   const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
     FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
   // These are the SAME original, source-backed scenes as the full gallery.
@@ -2358,8 +2367,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 aria-hidden="true"
               /> : <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={theme==="money"?getRealMoneyFilm(moneyScene||"golden-rain").poster:
-                  getThemedRealFilm(theme,otherScene)?.poster||quickCanvasPoster(otherScene)} alt=""/>
+                <img src={freeFilmPoster||(theme==="money"?getRealMoneyFilm(moneyScene||"golden-rain").poster:
+                  getThemedRealFilm(theme,otherScene)?.poster||quickCanvasPoster(otherScene))} alt=""/>
               </>}
               <button type="button" className={videoStyles.quickPreviewPlay}
                 aria-label={previewPlaying?approved.previewPause:activeFilm?approved.previewPlay:approved.previewFallback}
@@ -2556,7 +2565,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               aria-pressed={usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id}
               disabled={recording||preparing} className={videoStyles.templateTile}
               onClick={()=>{
-                const nextDuration=duration===10?20:duration;
+                const nextDuration=duration;
                 const plan=compileFreeFilmPreset(preset,locale,nextDuration,aspect);
                 setActiveFreeFilmPreset(preset.id);
                 setTheme(preset.theme);setVideoCategory(preset.theme);
