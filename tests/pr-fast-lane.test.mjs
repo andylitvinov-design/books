@@ -619,3 +619,31 @@ test('Growth/Courses Draft gating preserves complete Ready specialist source pri
   assert.match(core,/ci-specialist-aggregate\.mjs/);
   assert.match(core,/PR_DRAFT/);
 });
+
+
+test('Personal Coaching keeps all private guided-session contracts while delegating duplicate Core compile', () => {
+  const coaching = workflow('hh-personal-coaching-session.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const ready = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const delegated = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(coaching, /^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(coaching.includes('  focused-verification:\n    ' + ready + '\n'));
+  assert.ok(coaching.includes('  workflow_dispatch:'));
+  for (const entry of [
+    'tests/personal-coaching-session.test.mjs',
+    'tests/coaching-intelligence-state.test.mjs',
+    'tests/coaching-author-audio-synthetic.test.mjs',
+    'tests/tradition-coaching-persistence.test.mjs',
+    'tests/business-coaching-90-days.test.mjs',
+    'tests/academy-discovery-hero.test.mjs',
+    'npx --no-install eslint',
+    'npm ci --no-audit --no-fund',
+  ]) assert.ok(coaching.includes(entry), 'Personal Coaching must retain original checks: ' + entry);
+  assert.ok(coaching.includes('- name: TypeScript noEmit\n        ' + delegated + '\n        run: npx --no-install tsc --noEmit'));
+  assert.ok(coaching.includes('- name: Build production Next.js\n        ' + delegated + '\n        run: npm run build'));
+  assert.match(core, /name: release-ready/);
+  assert.match(core, /run: npx --no-install tsc --noEmit/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(coaching, /continue-on-error:\s*true/);
+});
