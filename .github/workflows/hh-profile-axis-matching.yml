@@ -1,22 +1,10 @@
 name: Holistic House axis-to-offer matching
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library', 'feat/holistic-intelligence-core-20261029']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
-      - 'lib/holistic-support/client-reasoning-core.mjs'
-      - 'lib/holistic-support/client-reasoning-bridge.mjs'
-      - 'tests/client-reasoning-core.test.mjs'
-      - 'tests/client-reasoning-bridge.test.mjs'
-      - 'lib/holistic-support/holistic-guide-adapter.mjs'
-      - 'lib/holistic-support/holistic-guide-adapter.d.mts'
-      - 'tests/holistic-guide-adapter.test.mjs'
-      - 'lib/holistic-support/holistic-intelligence.mjs'
-      - 'lib/holistic-support/psychologist-mind.mjs'
-      - 'lib/holistic-support/psychologist-mind.d.mts'
-      - 'tests/psychologist-mind.test.mjs'
-      - 'docs/holistic-support/PSYCHOLOGIST_MIND_V1_20261029.md'
-      - 'lib/holistic-support/holistic-intelligence.d.mts'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
       - 'lib/holistic-support/client-intent-model.mjs'
       - 'lib/holistic-support/client-intent-model.d.mts'
@@ -30,9 +18,69 @@ on:
       - 'components/app/my-tests-dashboard.jsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'tests/axis-offer-matcher.test.mjs'
-      - 'tests/holistic-intelligence.test.mjs'
       - 'docs/myspace/PROFILE_AXIS_OFFER_MATCHING_V1_20261028.md'
+      - 'lib/holistic-support/client-reasoning-core.mjs'
+      - 'lib/holistic-support/client-reasoning-bridge.mjs'
+      - 'lib/holistic-support/intelligence-request.mjs'
+      - 'tests/intelligence-request.test.mjs'
+      - 'tests/intelligence-meditation-bridge.test.mjs'
+      - 'lib/holistic-support/intelligence-risk.mjs'
+      - 'tests/intelligence-risk.test.mjs'
+      - 'lib/home-conversation.mjs'
+      - 'lib/ideas-guidance.mjs'
+      - 'data/ideas-aphorisms.json'
+      - 'tests/client-reasoning-core.test.mjs'
+      - 'tests/client-reasoning-bridge.test.mjs'
+      - 'lib/holistic-support/axis-offer-ranker.mjs'
+      - 'tests/axis-offer-ranker.test.mjs'
+      - 'tests/meditation-catalog-candidates.test.mjs'
+      - 'data/holistic-support/axis-offer-crosswalk-v1.csv'
+      - 'data/academy/meditation-catalog-candidates-20261028.json'
+      - 'data/academy/meditation-filter-facets-20261028.json'
+      - 'lib/holistic-support/holistic-guide-adapter.mjs'
+      - 'lib/holistic-support/holistic-guide-adapter.d.mts'
+      - 'tests/holistic-guide-adapter.test.mjs'
+      - 'lib/holistic-support/holistic-intelligence.mjs'
+      - 'lib/holistic-support/psychologist-mind.mjs'
+      - 'lib/holistic-support/psychologist-mind.d.mts'
+      - 'tests/psychologist-mind.test.mjs'
+      - 'tests/psychologist-practice-engine.test.mjs'
+      - 'lib/holistic-support/kip-symbol-registry.mjs'
+      - 'lib/holistic-support/psychologist-video-curricula.mjs'
+      - 'lib/holistic-support/psychologist-meditation-composer.mjs'
+      - 'docs/holistic-support/PSYCHOLOGIST_PRACTICE_ENGINE_V1_20261029.md'
+      - 'docs/holistic-support/PSYCHOLOGIST_MIND_V1_20261029.md'
+      - 'lib/holistic-support/holistic-intelligence.d.mts'
+      - 'lib/holistic-support/conversation-context.mjs'
+      - 'tests/conversation-context.test.mjs'
+      - 'scripts/owned-agent-gateway.mjs'
+      - 'tests/owned-agent-gateway.test.mjs'
+      - 'tests/natural-dialogue.test.mjs'
+      - 'lib/holistic-support/natural-dialogue.mjs'
+      - 'lib/holistic-support/natural-dialogue.d.mts'
+      - 'app/api/holistic-agent/turn/route.js'
+      - 'components/holistic-agent-chat.tsx'
+      - 'components/holistic-agent-chat.module.css'
+      - 'app/[locale]/holistic-support/agent/page.tsx'
+      - 'lib/holistic-support/owned-ollama.mjs'
+      - 'docs/holistic-support/HOLISTIC_INTELLIGENCE_CONVERSATIONAL_AGENT_V3_20261029.md'
+      - 'tests/holistic-intelligence.test.mjs'
+      - 'tests/holistic-agent-consented-profile.test.mjs'
       - '.github/workflows/hh-profile-axis-matching.yml'
+      - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/portrait-test-quick-actions.jsx'
+      - 'components/app/portrait-test-quick-actions.module.css'
+      - 'lib/profile/portrait-test-suggestions.js'
+      - 'tests/portrait-report-actions.test.mjs'
+      - 'tests/portrait-sector-take-test.test.mjs'
+      - 'components/app/test-explorer.module.css'
+      - 'lib/assessments/portrait-sectors.js'
+      - 'tests/portrait-sectors.test.mjs'
+      - 'tests/portrait-rays-responsive.test.mjs'
+      - 'tests/portrait-one-screen-mobile.test.mjs'
+      - 'scripts/verify-app-r1.mjs'
+      - '.github/workflows/hh-portrait-sectors.yml'
 permissions:
   contents: read
 concurrency:
@@ -40,6 +88,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -54,10 +103,14 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/psychologist-mind.test.mjs tests/client-request-relevance-v2.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs
+        run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/axis-offer-ranker.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-request-relevance-v2.test.mjs tests/conversation-context.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/natural-dialogue.test.mjs tests/owned-agent-gateway.test.mjs tests/psychologist-mind.test.mjs tests/psychologist-practice-engine.test.mjs tests/holistic-agent-consented-profile.test.mjs
+      - name: Portrait four-sector, missing-value, responsive and privacy contracts
+        run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/holistic-intelligence.mjs lib/holistic-support/holistic-guide-adapter.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs lib/holistic-support/psychologist-mind.mjs tests/psychologist-mind.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs app/[locale]/holistic-support/agent/page.tsx components/holistic-agent-chat.tsx lib/holistic-support/conversation-context.mjs lib/holistic-support/holistic-guide-adapter.mjs lib/holistic-support/holistic-intelligence.mjs lib/holistic-support/kip-symbol-registry.mjs lib/holistic-support/natural-dialogue.mjs lib/holistic-support/owned-ollama.mjs lib/holistic-support/psychologist-meditation-composer.mjs lib/holistic-support/psychologist-mind.mjs lib/holistic-support/psychologist-video-curricula.mjs scripts/owned-agent-gateway.mjs scripts/verify-site-video-browser.mjs tests/client-request-relevance-v2.test.mjs tests/conversation-context.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/natural-dialogue.test.mjs tests/owned-agent-gateway.test.mjs tests/psychologist-mind.test.mjs tests/psychologist-practice-engine.test.mjs tests/holistic-agent-consented-profile.test.mjs
       - name: TypeScript check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
