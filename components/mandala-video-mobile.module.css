@@ -1477,7 +1477,7 @@
   background:linear-gradient(130deg,#fffff9,#fffbef);
   box-shadow:0 0 0 1px #f7d98b,0 0 15px #dba74153,0 3px 8px #674b241a}
 .quickFormatTitle{display:flex;align-items:center;gap:7px;width:100%;min-width:0;
-  min-height:43px;padding:6px 8px;border:0;border-radius:12px;
+  min-height:44px;padding:6px 8px;border:0;border-radius:12px;
   background:transparent;text-align:left;color:#173f35;cursor:pointer}
 .quickFormatTitle>svg:first-child{flex:none;width:18px;height:18px;color:#068968}
 .quickFormatTitleLabel{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
@@ -1525,7 +1525,7 @@
 @media(max-width:759px){
   .quickFormatGrid{grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:7px}
   .quickFormatCard{border-radius:11px}
-  .quickFormatTitle{gap:5px;min-height:43px;padding:5px 6px}
+  .quickFormatTitle{gap:5px;min-height:44px;padding:5px 6px}
   .quickFormatTitle>svg:first-child{width:16px;height:16px}
   .quickFormatChevron{width:13px;height:13px}
   .quickFormatDetails{padding:0 6px 7px;gap:5px}
