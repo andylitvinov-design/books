@@ -7,6 +7,7 @@ import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { publicReikiIntroAudio } from "@/lib/academy/reiki-intro-audio-store";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendations";
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
@@ -110,7 +111,20 @@ export async function POST(request) {
     const axisOffers=publishedAxisOffers({
       locale:body.locale, services, videos:publishedVideos(body.locale),
     });
-    const enabledFormats=["video","test","course","service"];
+    // A chosen format is a hard user constraint, not a licence to fill empty
+    // results with another medium. Public course introductions remain distinct
+    // from nonplayable editor soundtracks and private practitioner recordings.
+    const enabledFormats=body.preferredFormat ? [body.preferredFormat] :
+      ["video","test","course","service"];
+    const publicAudio=body.preferredFormat==="audio" && body.locale!=="es" &&
+      safety.status==="clear" && !recentUnsafe
+      ? (await Promise.all(["flight","tantra","kundalini","yggdrasil","initiation"]
+        .map(async lesson=>{
+          const published=await publicReikiIntroAudio(lesson,body.locale);
+          return published ? {...published,locale:body.locale,lesson,
+            verifiedPublicManifest:true} : null;
+        }))).filter(Boolean)
+      : [];
     const decision=buildHolisticGuidedTurn({
       locale:body.locale,
       intent:{goal,rawUtterance:body.message,chosenAxes,
@@ -120,7 +134,7 @@ export async function POST(request) {
       consent:{paidSuggestions:false,measuredPersonalization:useMeasurements,
         profilePersonalization:useMeasurements},
       profile:{measurements},
-      safety, catalogs:{services,axisOffers},
+      safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio},
     });
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({
