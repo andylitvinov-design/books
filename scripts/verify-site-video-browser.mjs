@@ -81,7 +81,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
