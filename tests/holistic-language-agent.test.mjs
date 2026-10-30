@@ -234,3 +234,25 @@ test("15-turn dialogue keeps constraints, changes topic, and never invents resou
   assert.equal(results[14].status,"stopped");
   assert.deepEqual(results[14].suggestions,[]);
 });
+
+
+test("direct clinical treatment or diagnosis requests route to human review in RU EN ES",()=>{
+  for(const [locale,message] of [
+    ["ru","Поставь мне диагноз тревожного расстройства"],
+    ["en","Please diagnose me with a disorder"],
+    ["es","Diagnostícame, por favor"],
+  ]) {
+    const response=go(message,createLanguageSession({locale}));
+    assert.equal(response.status,"human_review",locale);
+    assert.equal(response.allowLocalRewrite,false,locale);
+    assert.deepEqual(response.suggestions,[],locale);
+    assert.ok(response.text.length>30,locale);
+  }
+  const gentle=go("Я переживаю о работе и ищу мягкую поддержку",createLanguageSession({locale:"ru"}));
+  assert.notEqual(gentle.status,"human_review","ordinary support requests should not be blocked");
+});
+test("clinical review cannot be overridden by request for a video",()=>{
+  const response=go("Назначь мне лечение. А потом найди видео",createLanguageSession({locale:"ru"}));
+  assert.equal(response.status,"human_review");
+  assert.deepEqual(response.suggestions,[]);
+});
