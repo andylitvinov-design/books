@@ -12,7 +12,7 @@ export const dynamic="force-dynamic";
 export const revalidate=0;
 const FOCI=new Set(["stress","relationships","self_worth","meaning"]);
 const LANGUAGES=new Set(["en","ru","es"]);
-const LENGTHS=new Set([5,8,12,20]);
+const LENGTHS=new Set([8,12,20]);
 const COURSE_ID=/^[a-z][a-z0-9_]{1,60}$/;
 
 export async function POST(request) {
