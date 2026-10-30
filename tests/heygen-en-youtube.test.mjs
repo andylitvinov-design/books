@@ -47,6 +47,18 @@ test('completed HeyGen status must supply an actual captioned MP4; never substit
    apiKey:'test-api-key-12345',fetcher:async()=>okJson({
      data:{status:'completed',captioned_video_url:MEDIA_URL}})})
  assert.equal(url,MEDIA_URL)
+ // Legacy v1 calls the burned-in captions video_url_caption. Never treat
+ // caption_url (plain .srt) as media, and do not re-render the source.
+ let calls=0
+ const legacy=await resolveHeygenCaptionedUrl(ID,{
+   apiKey:'test-api-key-12345',fetcher:async endpoint=>{
+     calls++
+     if(endpoint.includes('/v3/videos/'))return okJson({error:'legacy only'},404)
+     return okJson({data:{status:'completed',video_url_caption:MEDIA_URL,
+       caption_url:'https://files2.heygen.ai/subtitles.srt'}})
+   }})
+ assert.equal(legacy,MEDIA_URL)
+ assert.equal(calls,2)
  assert.equal(await resolveHeygenCaptionedUrl(ID,{mediaUrl:MEDIA_URL}),MEDIA_URL)
 })
 test('English channel verifies both OAuth mine=true and current @aatapro handle',async()=>{
