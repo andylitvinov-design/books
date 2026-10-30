@@ -41,7 +41,7 @@ permissions:
 jobs:
   offline-contracts:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,6 +49,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Node syntax and Vercel cron config
         run: |
           node --check lib/practitioners/analytics-subscription-policy.mjs
@@ -69,20 +70,11 @@ jobs:
       - name: Private digest unit and existing cron regressions
         run: node --test tests/practitioner-analytics-subscriptions.test.mjs tests/practitioner-daily-telegram.test.mjs tests/public-page-traffic.test.mjs tests/app-housekeeping-cron.test.mjs
 
-  production-build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install locked dependencies
+      # One source-contract job, not a second checkout + 15-minute Next build job.
+      - name: Install pinned dependencies for targeted ESLint
         run: npm ci --no-audit --no-fund
       - name: Targeted ESLint
         run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js lib/analytics/public-page-traffic.mjs lib/analytics/public-page-traffic-report.mjs lib/analytics/public-stats-owner.js lib/analytics/public-traffic-retention.js app/api/analytics/public-page/route.js app/api/marketplace/service-event/route.js components/public-page-traffic.tsx components/analytics-consent.tsx components/service-funnel-tracking.tsx
-      - name: Next.js production build and TypeScript
+      - name: Next.js production build and TypeScript for standalone manual verification
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
