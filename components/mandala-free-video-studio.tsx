@@ -1379,6 +1379,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // This local File is generated from consented text and actually attached to
     // the MediaRecorder audio stream; not a silent video or a preview label.
     setAudioRights(true);
+    // Voice and bed levels are already mastered into this WAV; keep video
+    // export at unity gain instead of silently reducing both by another 20%.
+    setSoundVolume(100);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
       spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds});
     if(duration!==clip.mixSeconds){setDuration(clip.mixSeconds as (typeof durations)[number]);setCinematicPlan(null);}
@@ -1781,6 +1784,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
             enabled={affirmations.enabled} durationSeconds={duration}
             disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
+            onInvalidate={()=>setAttachedAudio(current=>
+              current?.kind==="file"&&current.narration?null:current)}
             onGenerating={setVoiceGenerating}/>
           {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
             {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
