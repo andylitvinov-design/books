@@ -25,7 +25,7 @@ const text = {
     register:"Для озвучки собственного текста необходим вход в личный кабинет. Бесплатные образцы можно прослушивать без входа.",
     background:"Природный фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать WAV с природой",prepareMix:"Подготовить WAV с природой",mixing:"Смешиваем дорожки…",
-    unavailable:"Облачная генерация пока не активирована: нужен отдельный ключ Google AI Studio из проекта без биллинга.",
+    unavailable:"Облачная озвучка недоступна до проверки бесплатной квоты и ключа Google AI Studio. Платные запросы не выполняются.",
     ready:"Бесплатный API подключён. Создайте короткий образец.",error:"Не удалось создать запись. Попробуйте другой голос.",quota:"Бесплатная квота исчерпана. Платный рендер не запускается.",signIn:"Для своего текста войдите в кабинет.",privacy:"Превью образца не отправляет личные данные. Свой текст передаётся Google только после отдельного согласия и нажатия кнопки.",
     mixedError:"Невозможно создать звуковую смесь в этом браузере. Скачайте голос отдельно.",audio:"Прослушивание с выбранным фоном",notice:"Голоса — выбранные профили; итоговое звучание требует прослушивания на обоих языках.",
     noText:"Напишите текст или выберите фрагмент из медитации.",noConsent:"Для передачи своего текста требуется согласие.",general:"API временно недоступен.",
@@ -41,7 +41,7 @@ const text = {
     register:"Sign in to your account for your own text. Public voice samples do not require an account.",
     background:"Nature background",none:"No background",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download nature WAV",prepareMix:"Prepare nature WAV",mixing:"Mixing audio…",
-    unavailable:"Cloud generation is not enabled yet: a separate Google AI Studio key from a billing-disabled project is required.",
+    unavailable:"Cloud narration requires a verified Google AI Studio free-tier key and quota. Paid requests are never started.",
     ready:"Free API is connected. Generate a short sample.",error:"Could not generate audio. Please try another voice.",quota:"Free quota is exhausted. No paid rendering will be used.",signIn:"Sign in to generate your own script.",privacy:"Public samples never transmit personal text. Your script is sent to Google only after separate consent and a button click.",
     mixedError:"Could not mix audio in this browser. You can still download voice-only WAV.",audio:"Preview with selected background",notice:"Voices are curated profiles, pending real listening checks in both languages.",
     noText:"Enter your text or use a meditation excerpt.",noConsent:"Your explicit consent is required before transmitting text.",general:"API is temporarily unavailable.",
@@ -57,7 +57,7 @@ const text = {
     register:"Debes iniciar sesión para generar tu propio texto. Las pruebas públicas no lo requieren.",
     background:"Sonido natural",none:"Sin sonido",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     generate:"Generar voz por API",loading:"Generando audio…",voice:"Descargar voz · WAV",mixed:"Descargar WAV con naturaleza",prepareMix:"Preparar WAV con naturaleza",mixing:"Mezclando audio…",
-    unavailable:"La generación aún no está habilitada; hace falta una clave independiente de Google AI Studio sin facturación.",
+    unavailable:"La narración en la nube requiere una clave gratuita verificada y cuota disponible. No se usan solicitudes pagadas.",
     ready:"El API gratuito está conectado. Genera una prueba.",error:"No se pudo generar audio. Prueba otra voz.",quota:"Cuota gratuita agotada. No se ejecutarán renders de pago.",signIn:"Inicia sesión para usar texto propio.",privacy:"Las muestras públicas no envían datos personales. Tu texto solo se envía con consentimiento explícito.",
     mixedError:"No se pudo mezclar en este navegador. Descarga la voz por separado.",audio:"Escuchar con sonido natural",notice:"Los perfiles deben verificarse auditivamente en ambos idiomas.",
     noText:"Escribe un texto o usa tu meditación.",noConsent:"Necesitas dar consentimiento explícito.",general:"El API no está disponible.",
@@ -65,9 +65,9 @@ const text = {
   }
 } as const;
 const balanceCopy={
-  ru:{voice:"Громкость голоса",music:"Громкость музыки",mix:"Подготовить WAV с выбранным балансом",save:"Скачать сведённый WAV",other:"Другие авторские фоны",note:"Баланс сохраняется в скачиваемом WAV. Для итогового видео прикрепите этот WAV через «Добавить аудиофайл»."},
-  en:{voice:"Voice volume",music:"Music volume",mix:"Prepare balanced WAV",save:"Download balanced WAV",other:"More original soundtracks",note:"Your levels are embedded in the WAV. To use it in a video, attach this WAV with Add audio file."},
-  es:{voice:"Volumen de voz",music:"Volumen de música",mix:"Preparar WAV equilibrado",save:"Descargar WAV mezclado",other:"Otros fondos originales",note:"Los niveles se guardan en el WAV. Para usarlo en un vídeo, adjunta el archivo en Añadir audio."}
+  ru:{voice:"Громкость голоса",music:"Громкость музыки",mix:"Подготовить WAV с выбранным балансом",save:"Скачать сведённый WAV",other:"Другие авторские фоны",note:"Для видеоредактора используйте «Добавить в видео»; на отдельной странице скачайте WAV и прикрепите его через «Добавить аудиофайл»."},
+  en:{voice:"Voice volume",music:"Music volume",mix:"Prepare balanced WAV",save:"Download balanced WAV",other:"More original soundtracks",note:"In the video editor use Add to video; on the standalone page download this WAV and attach it with Add audio file."},
+  es:{voice:"Volumen de voz",music:"Volumen de música",mix:"Preparar WAV equilibrado",save:"Descargar WAV mezclado",other:"Otros fondos originales",note:"En el editor usa Añadir al vídeo; en esta página descarga el WAV y adjúntalo como archivo."}
 } as const;
 const extraBeds = VOICE_BED_PRESETS.filter(value=>!["ocean","rain","breeze"].includes(value));
 const bedNames:Record<string,{ru:string;en:string;es:string}>={
@@ -83,11 +83,15 @@ const bedNames:Record<string,{ru:string;en:string;es:string}>={
   pulse:{ru:"Ритм",en:"Pulse",es:"Pulso"}
 };
 
-export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
-  locale:PublicLocale;sourceText?:string;ambientSrc?:string|null
+export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,onAudioReady}:{
+  locale:PublicLocale;sourceText?:string;ambientSrc?:string|null;
+  onAudioReady?:(file:File)=>Promise<boolean>;
 }) {
   const t=text[locale];
   const b=balanceCopy[locale];
+  const attachLabel=locale==="ru"?"Добавить озвучку в видео":locale==="es"?"Añadir narración al vídeo":"Add narration to video";
+  const attachedLabel=locale==="ru"?"Звуковая дорожка передана в видеоредактор.":locale==="es"?"Audio añadido al editor de vídeo.":"Audio attached to the video editor.";
+  const attachError=locale==="ru"?"Не удалось прикрепить дорожку: проверьте длину речи и настройки видео.":locale==="es"?"No se pudo añadir: revisa la duración y el vídeo.":"Could not attach this narration: check speech length and video settings.";
   const [language,setLanguage]=useState<VoiceLanguage>(initialLanguage(locale));
   const [voiceId,setVoiceId]=useState("mark");
   const [mode,setMode]=useState<Mode>("sample");
@@ -102,6 +106,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   const [mixing,setMixing]=useState(false);
   const [audioUrl,setAudioUrl]=useState("");
   const [mixedUrl,setMixedUrl]=useState("");
+  const [mixedBlob,setMixedBlob]=useState<Blob|null>(null);
+  const [attaching,setAttaching]=useState(false);
   const [wav,setWav]=useState<Blob|null>(null);
   const [notice,setNotice]=useState("");
   const latestRef=useRef(0);
@@ -139,7 +145,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     setMixing(false);
     if(stop){audioRef.current?.pause();stopNature();}
     if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
-    setMixedUrl("");
+    setMixedUrl("");setMixedBlob(null);setAttaching(false);
   }
   function resetAudio(){
     latestRef.current++;
@@ -150,7 +156,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     natureRef.current?.pause();
     if(urlRef.current){URL.revokeObjectURL(urlRef.current);urlRef.current="";}
     if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
-    setMixedUrl("");setAudioUrl("");setWav(null);setNotice("");
+    setMixedUrl("");setMixedBlob(null);setAttaching(false);setAudioUrl("");setWav(null);setNotice("");
     setBusy(false);
   }
   function sourceToText(){
@@ -223,11 +229,22 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
       const uri=URL.createObjectURL(mixed);
       if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
       mixedRef.current=uri;
-      setMixedUrl(uri);
+      setMixedBlob(mixed);setMixedUrl(uri);
       // Safari needs a genuine second tap on an <a download> element; an
       // asynchronous synthetic click after OfflineAudioContext is unreliable.
     }catch{if(token===mixJobRef.current)setNotice(t.mixedError);}
     finally{if(token===mixJobRef.current)setMixing(false);}
+  }
+  async function attachAudio(){
+    if(!onAudioReady||!mixedBlob||attaching)return;
+    setAttaching(true);setNotice("");
+    try {
+      // This file remains local; it is the exact WAV heard/downloaded by the visitor.
+      const file=new File([mixedBlob],"holistic-house-meditation-"+language+"-"+voiceId+".wav",{type:"audio/wav"});
+      const success=await onAudioReady(file);
+      setNotice(success?attachedLabel:attachError);
+    } catch {setNotice(attachError);}
+    finally{setAttaching(false);}
   }
   function chooseBackground(value:Background) {
     invalidateMix(true);setBackground(value);
@@ -346,6 +363,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
           </a>:<button type="button" disabled={mixing} onClick={()=>void downloadMixed()}>
             <Download size={16} aria-hidden="true"/>{mixing?t.mixing:b.mix}
           </button>}
+          {onAudioReady&&mixedBlob?<button type="button" disabled={attaching} data-voice-add-to-video
+            onClick={()=>void attachAudio()}><Download size={16} aria-hidden="true"/>{attachLabel}</button>:null}
         </div>
       </div>:null}
       {notice?<p role="status" aria-live="polite" className={css.error}>{notice}</p>:null}
