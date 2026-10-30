@@ -28,8 +28,10 @@ test("the approved native video editor uses one real local renderer and stable o
   assert.ok(page.indexOf("<HolisticSupportMandalaDock")<
     page.indexOf("<MandalaMeditationClient"),"header must render above editor");
   assert.match(pageCss,/@media\(max-width:759px\)\{\.slimDiagnostic\{display:none\}\}/);
-  assert.match(globalBanner,/holistic-support\\\/\\\/(?:mobile\\\|mandala)/);
-  assert.match(supportCss,/@media\\\(min-width:641px\\\)\\\{\\\.mandalaAppHeader\\\{display:none\\\}\\\}/);
+  assert.ok(globalBanner.includes("holistic-support") && globalBanner.includes("(?:mobile|mandala)"),
+    "the sitewide promo must be hidden for the canonical video editor");
+  assert.ok(supportCss.includes("@media(min-width:641px){.mandalaAppHeader{display:none}}"),
+    "the app header must not duplicate the desktop header on tablets");
   assert.match(dock,/<Leaf size=\{24\}/);
   assert.match(css,/\.quickGenerate\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
