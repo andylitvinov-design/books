@@ -139,3 +139,12 @@
  .order img{width:66px}
  .orderText>strong{font-size:12px}
 }
+
+/* Opt-in alert offer after a real order; never suggests provider delivery is live. */
+.notifyInvite{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 13px;
+ border:1px solid #d6e6dc;border-radius:14px;background:#f4faf5;color:#275445;margin:0 0 12px}
+.notifyInvite>svg{flex:none;color:#19836a}.notifyInvite>div{flex:1 1 155px;min-width:0}
+.notifyInvite strong{font-size:13px}.notifyInvite p{font-size:12px;line-height:1.4;margin:3px 0 0;color:#60756a}
+.notifyInvite a{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#127354;
+ padding:7px 8px;border-radius:8px;text-decoration:none;min-height:38px}
+.notifyInvite a:focus-visible{outline:3px solid #127354;outline-offset:2px}

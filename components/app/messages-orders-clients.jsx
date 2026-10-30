@@ -19,7 +19,10 @@ const TEXT={
   materials:'Materials and progress',materialsInfo:'Delivered materials appear in your private Cabinet after confirmation.',
   myPractice:'My practices',payment:'Payment',paymentInfo:'A request is not a confirmed booking or payment.',
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
-  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
+  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
+  notifyTitle:'Do not miss your practitioner’s reply',
+  notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',
+  notifyAction:'Notification settings'},
  ru:{title:'Заявки',subtitle:'Ваши заказы и переписка с мастерами в одном месте.',
   orders:'Мои заказы',clients:'Клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
   all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',
@@ -32,7 +35,10 @@ const TEXT={
   materials:'Материалы и результат',materialsInfo:'Выданные материалы откроются в защищённом кабинете после подтверждения.',
   myPractice:'Мои практики',payment:'Оплата',paymentInfo:'Заявка ещё не означает запись или подтверждённую оплату.',
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
-  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
+  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
+  notifyTitle:'Не пропустите ответ мастера',
+  notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',
+  notifyAction:'Настроить уведомления'},
  es:{title:'Solicitudes',subtitle:'Tus pedidos y conversaciones con profesionales en un solo lugar.',
   orders:'Mis pedidos',clients:'Clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
   all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',
@@ -45,7 +51,10 @@ const TEXT={
   materials:'Materiales y resultado',materialsInfo:'Los materiales entregados aparecen en tu cuenta privada después de la confirmación.',
   myPractice:'Mis prácticas',payment:'Pago',paymentInfo:'Una solicitud no confirma una reserva ni un pago.',
   newer:'Nueva respuesta',signIn:'Inicia sesión para ver tus pedidos',search:'Buscar profesional',more:'Las solicitudes anteriores están en Consultas.',
-  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.'},
+  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.',
+  notifyTitle:'No te pierdas la respuesta',
+  notifyInfo:'Configura los avisos en tu teléfono o Telegram al cerrar el sitio.',
+  notifyAction:'Configurar avisos'},
 }
 const STATES={
  en:{requested:'Waiting for practitioner',contacted:'Discussing details',reschedule_proposed:'Time change proposed',confirmed:'Confirmed by practitioner',in_progress:'In progress',completed:'Completed',declined:'Declined',cancelled:'Cancelled'},
@@ -147,6 +156,13 @@ export default function MessagesOrdersClients({locale='en',children}){
       </button>
     </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
+      {!loading&&!error&&orders.length>0&&!selected&&
+        <aside className={styles.notifyInvite}>
+          <Bell size={19} aria-hidden="true"/>
+          <div><strong>{t.notifyTitle}</strong><p>{t.notifyInfo}</p></div>
+          <Link href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+            prefetch={false}>{t.notifyAction}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </aside>}
       {!selected&&<div className={styles.filters} aria-label={t.orders}>
         {[['all',t.all],['waiting',t.waiting],['working',t.working],['finished',t.finished]].map(([key,label])=>
           <button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}
