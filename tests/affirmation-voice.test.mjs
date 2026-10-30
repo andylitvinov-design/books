@@ -55,6 +55,8 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(page,/onAttach=\{attachGeneratedAffirmationAudio\}/);
   assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
   assert.match(page,/narrationInvalid/);
+  assert.match(page,/attachedAudio\.voiceId!==voicePreferences\.voiceId/);
+  assert.match(page,/onPreferencesChange=\{setVoicePreferences\}/);
   assert.match(client,/data-video-generate-affirmation-audio/);
   assert.match(client,/mode:"affirmations"/);
   assert.match(client,/consent:true/);
