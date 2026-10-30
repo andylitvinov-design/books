@@ -116,3 +116,38 @@ test('Draft staging retains release and manual verification events', () => {
   }
   assert.match(read('hh-crm-source-check.yml'), /^  workflow_dispatch:/m);
 });
+
+const prodBuildReuse = [
+  ['hh-profile-axis-matching.yml', ['TypeScript check','Build site'], 'axis-unit-types-build'],
+  ['hh-energywork-ai.yml', ['TypeScript verification','Production compile'], 'verify'],
+];
+
+test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/^  pull_request:\s*\n\s+branches: \['codex\/public-book-library'\]/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  for(const [workflow,stepNames,job] of prodBuildReuse){
+    const src=read(workflow);
+    assert.match(src,/^  pull_request:\s*\n\s+types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+    assert.match(src,/if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
+    assert.match(src,new RegExp('^  '+job+':','m'));
+    const ifLine="if: \${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+    for(const step of stepNames){
+      assert.ok(src.includes('- name: '+step+'\n        '+ifLine+'\n        run:'),workflow+' must reuse core '+step+' only on production PR');
+    }
+    assert.match(src,/run: npm ci --no-audit --no-fund/);
+    assert.match(src,/node --test/);
+    assert.match(src,/eslint/);
+    assert.match(src,/run: npm run build/);
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+});
+test('Energywork cancels superseded PR commits only, never manual verification',()=>{
+  const src=read('hh-energywork-ai.yml');
+  assert.match(src,/^  workflow_dispatch:/m);
+  assert.ok(src.includes("group: hh-energywork-\${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(src.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' }}"));
+});
