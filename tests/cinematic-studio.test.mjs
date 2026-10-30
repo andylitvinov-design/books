@@ -23,7 +23,7 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
   assert.equal(CINEMATIC_THEMES.length,6);
   assert.equal(Object.keys(CINEMATIC_STYLES).length,4);
   for(const locale of ["en","ru","es"])for(const theme of CINEMATIC_THEMES){
-    for(const durationSeconds of [20,30,60]){
+    for(const durationSeconds of [20,30]){
       const p=buildCinematicStoryboard({locale,theme,durationSeconds,style:"nature",aspect:"portrait"});
       assert.equal(p.version,CINEMATIC_PLAN_VERSION);
       assert.equal(p.shotCount,4);
@@ -37,6 +37,17 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
       assert.equal(p.noExternalClientData,true);
       assert.equal(p.paidRenderApproved,false);
     }
+  }
+});
+test("a one-minute montage has six distinct contiguous shots and a valid manifest",()=>{
+  for(const locale of ["en","ru","es"])for(const theme of CINEMATIC_THEMES){
+    const plan=buildCinematicStoryboard({locale,theme,durationSeconds:60});
+    assert.equal(plan.shotCount,6);
+    assert.equal(new Set(plan.shots.map(shot=>shot.sceneId)).size,6);
+    assert.equal(plan.shots.reduce((sum,shot)=>sum+shot.durationSeconds,0),60);
+    assert.equal(buildCinematicAssemblyManifest(plan).clips.length,6);
+    assert.equal(cinematicPreviewSeconds(plan,61),1);
+    assert.ok(safeCinematicPrompt(plan,6));
   }
 });
 test("a fifteen-second brief keeps its explicitly selected duration",()=>{

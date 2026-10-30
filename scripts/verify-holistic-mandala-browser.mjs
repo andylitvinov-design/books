@@ -1045,6 +1045,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(montageProbe.status,0,"cinematic montage media decodes");
           assert.ok(JSON.parse(montageProbe.stdout).streams.some(s=>s.codec_type==="video"));
           assert.deepEqual(uploaded,[],"no client photo/wish or render was uploaded to a provider");
+          await director.getByRole('button',{name:'60 сек',exact:true}).click();
+          await director.locator('[data-director-create-plan]').click();
+          assert.equal(await director.locator('[data-director-shot]').count(),6,
+            'a 60-second storyboard contains six scenes');
+          assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");

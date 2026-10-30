@@ -11,6 +11,14 @@ const project=({locale='ru',theme='energy'}={})=>
   buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
+test('a one-minute plan compiles all six shot prompts without changing their timeline',()=>{
+  const plan=buildCinematicStoryboard({locale:'ru',theme:'energy',style:'dream',durationSeconds:60});
+  const packet=compileCinematicReferencePack({plan,visualIdea:'Белый орёл летит над горами'});
+  assert.equal(packet.shots.length,6);
+  assert.equal(packet.shots.reduce((sum,shot)=>sum+shot.seconds,0),60);
+  assert.ok(packet.shots.every(shot=>shot.artOnlyPrompt));
+});
+
 test('fictional purple phoenix and glass temple survive in the art-only plan',()=>{
   const visualIdea='Личная заметка SECRET_912: фиолетовый феникс летит внутри стеклянного храма';
   const packet=compileCinematicReferencePack({plan:project(),visualIdea});
