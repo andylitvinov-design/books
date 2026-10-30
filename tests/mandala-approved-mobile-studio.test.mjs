@@ -43,16 +43,24 @@ test("the approved native video editor uses one real local renderer and stable o
   assert.match(source,/else setOtherScene\(scene\.id as LocalSceneId\)/);
 });
 
-test("three compact practice cards preserve 16:9 live video and disabled paid checkout",()=>{
+test("shared widescreen preview and mutually exclusive format accordion keep paid formats gated",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-section="4"'));
+  assert.match(tier,/data-video-quick-live-preview/);
+  assert.equal((tier.match(/data-video-quick-live-preview/g)||[]).length,1,
+    "only one first-party video is displayed to the left");
+  assert.match(tier,/data-video-practice-accordion/);
   assert.match(tier,/formatPracticeOrder\.map\(format=>/);
   assert.match(tier,/data-video-practice-card=\{format\}/);
   assert.match(tier,/data-video-practice-pick=\{format\}/);
+  assert.match(tier,/data-video-practice-details=\{format\}/);
+  assert.match(tier,/aria-expanded=\{selected\}/);
+  assert.match(tier,/hidden=\{!selected\}/,
+    "only the active format can reveal its detailed benefits and tiers");
+  assert.match(tier,/aria-controls=\{"video-practice-details-"/);
   assert.match(tier,/formatQualityOrder\.map\(level=>/);
   assert.match(tier,/data-video-quality-option=\{format\+"-"\+level\}/);
-  assert.match(tier,/data-video-quick-live-preview/);
   assert.match(tier,/draftFormatPrices\[format\]\[practiceLevels\[format\]\]/);
   assert.match(source,/data-video-price-summary aria-live="polite"/);
   assert.match(source,/selectedDraftPrice=draftFormatPrices\[practiceType\]\[practiceLevels\[practiceType\]\]/);
@@ -62,15 +70,16 @@ test("three compact practice cards preserve 16:9 live video and disabled paid ch
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\}/);
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
-  assert.match(css,/@media\(max-width:369px\)/);
+  assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
+  assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
+  assert.match(css,/@media\(max-width:355px\)/);
+  assert.doesNotMatch(tier,/data-video-demo-preview/,"one preview, not three duplicated players");
   assert.doesNotMatch(tier,/(?:purchase|checkout|wallet|debit|spend)[A-Za-z]*\s*\(/i,
-    "no unverified provider calls or balance mutations from the preview cards");
+    "no unverified provider calls or balance mutations from preview cards");
   for(const locale of ["ru","en","es"]){
     assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?unavailable:"));
     assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?pending:"));
   }
-  assert.match(source,/getThemedRealFilm\("health","calm-sea"\)/);
-  assert.match(source,/getThemedRealFilm\("life","meadow-morning"\)/);
   assert.match(source,/noAI:"Бесплатно/);
 });
 
