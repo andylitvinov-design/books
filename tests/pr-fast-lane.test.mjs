@@ -163,10 +163,21 @@ const classifierCases = [
   ['merge queue docs change', 'docs/start.md', null, 'edit', false, 'merge_group'],
   ['newline code filename', 'source\nfile.ts', 'docs/moved.md', 'rename', false],
   ['missing base', 'docs/start.md', null, 'edit', false, 'pull_request', true],
+  ['CI workflow YAML edit', '.github/workflows/example.yml', null, 'edit', false, 'pull_request', false, true],
+  ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
+  ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI policy test edit', 'tests/pr-fast-lane.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI workflow validation test edit', 'tests/ci-workflow-globs.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI YAML plus runtime code', '.github/workflows/example.yml', 'app/api/payments/route.js', 'mixed', false],
+  ['CI YAML rename to runtime file', '.github/workflows/example.yml', 'components/example.tsx', 'rename', false],
+  ['dependency lockfile edit', 'package-lock.json', null, 'edit', false],
+  ['Supabase SQL migration', 'supabase/migrations/20261030_sensitive.sql', null, 'edit', false],
+  ['auth API edit', 'app/api/auth/route.js', null, 'edit', false],
+  ['CI instructions update', 'AGENTS.md', null, 'edit', false],
 ];
 
-for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false] of classifierCases) {
-  test(`docs-only classifier: ${name}`, () => {
+for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false, expectedCiOnly = false] of classifierCases) {
+  test(`fail-closed PR classifier: ${name}`, () => {
     const dir = mkdtempSync(join(tmpdir(), 'hh-fast-lane-'));
     const env = { PATH: process.env.PATH, HOME: dir, TMPDIR: dir,
       GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
@@ -209,7 +220,7 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
         assert.equal(result.signal, null, 'invalid base is a normal Git failure, not timeout');
         assert.ok(!existsSync(join(dir, 'output')) || !readFileSync(join(dir, 'output'), 'utf8').includes('docs_only=true'));
       } else {
-        assert.equal(readFileSync(join(dir, 'output'), 'utf8').trim(), `docs_only=${expected}`);
+        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -325,5 +336,22 @@ test('two confirmed source-only specialist suites delegate duplicate TypeScript 
     const s=workflow(filename);
     assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
     assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  }
+});
+
+test('CI-only fast lane retains exact policy checks and refuses broad source skips',()=>{
+  const core=workflow('hh-pr-core-release.yml');
+  const actionlint=workflow('hh-actionlint.yml');
+  assert.ok(core.includes("ci_only: $"+"{{ steps.diff.outputs.ci_only }}"));
+  for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
+  assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
+  assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(core,/npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
+  assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
+  for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
+    const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
+    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
 });
