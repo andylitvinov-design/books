@@ -44,3 +44,11 @@
 @media(min-width:720px){.voice{min-height:111px}.voiceTop{flex-direction:row;align-items:center;justify-content:space-between}}
 
 .downloadLink{text-decoration:none}
+
+.levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px;margin:10px 0;border:1px solid #d5e6d9;border-radius:13px;background:#fffefa}
+.levels label{display:flex;flex-direction:column;gap:8px;color:#35664d;font-size:12px;font-weight:800;min-width:0}
+.levels input{width:100%;accent-color:#08795a;min-height:36px}
+.levels input:disabled{opacity:.35}
+.moreBeds{display:flex;align-items:center;gap:10px;color:#527563;font-size:12px;margin:8px 0 0}
+.moreBeds select{flex:1;min-width:0;min-height:44px;padding:8px;border:1px solid #cee1d5;border-radius:10px;background:white;color:#205740}
+@media(max-width:390px){.levels{grid-template-columns:1fr;gap:6px}}
