@@ -175,7 +175,13 @@ try {
         await courseCard.getByRole('button',{name:next,exact:true}).click()
         await courseCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
         await stableAdvance(coursePage,courseCard.getByRole('button',{name:next,exact:true}))
-        await courseCard.getByRole('button',{name:continueCourse,exact:true}).click()
+        try { await courseCard.getByRole('button',{name:continueCourse,exact:true}).click() }
+        catch(error) {
+          console.log(JSON.stringify({phase:'course-choice',locale,path:new URL(coursePage.url()).pathname,
+            buttons:await courseCard.locator('button').allTextContents(),
+            selects:await courseCard.locator('select').evaluateAll(nodes=>nodes.map(node=>({id:node.id,value:node.value}))) }))
+          throw error
+        }
         await courseCard.getByRole('button',{name:no,exact:true}).click()
         await courseCard.getByRole('button',{name:no,exact:true}).click()
         await courseCard.getByRole('button',{name:skip,exact:true}).click()
