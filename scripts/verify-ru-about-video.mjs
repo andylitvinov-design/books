@@ -88,7 +88,14 @@ try {
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
       assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
-      assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+      // About now uses the owner-approved 10-video provenance-checked
+      // testimonial archive, not the retired three-item about-video-grid.
+      // Check actual public video components, not a decorative count.
+      const testimonials = page.locator('[data-personal-testimonials="about"]');
+      await expect(testimonials.locator('[data-testimonial-video-id]')).toHaveCount(10);
+      await expect(testimonials.locator('.site-video-player')).toHaveCount(10);
+      assert.equal(await testimonials.locator('iframe').count(), 0,
+        'testimonials must not load third-party media until the user presses Play');
       await page.close();
     } finally { await browser.close(); }
   }
