@@ -2,7 +2,8 @@
 
 /**
  * Optional device-local speech preview. No TTS API, audio download, voice
- * cloning, upload or storage. Browser voices may not exist for every locale.
+ * cloning, app-controlled upload or storage. Browser/OS voices may use network
+ * services according to the browser vendor's policy; do not claim offline.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 type Locale="ru"|"en"|"es";
@@ -10,13 +11,13 @@ type Segment={id:string;text:string;optionalSilenceSeconds:number};
 const copy={
   ru:{voice:"Голос устройства",start:"Прослушать на устройстве",
     stop:"Остановить",unavailable:"На этом устройстве нет доступной озвучки.",
-    note:"Бесплатный голос устройства. Качество зависит от браузера; тишина сокращена для предпросмотра. MP3 не создан."},
+    note:"Голос браузера; некоторые системные голоса могут использовать интернет. Качество зависит от устройства, паузы сокращены. MP3 не создан."},
   en:{voice:"Device voice",start:"Listen on this device",stop:"Stop",
     unavailable:"Speech is not available on this device.",
-    note:"Free device voice. Quality depends on the browser; pauses are shortened for preview. No MP3 is created."},
+    note:"Browser voice; some system voices may use online services. Quality varies by device and pauses are shortened. No MP3 is created."},
   es:{voice:"Voz del dispositivo",start:"Escuchar en este dispositivo",stop:"Detener",
     unavailable:"La voz no está disponible en este dispositivo.",
-    note:"Voz gratuita del dispositivo. La calidad depende del navegador; las pausas son breves. No se crea un MP3."},
+    note:"Voz del navegador; algunas voces del sistema pueden usar servicios en línea. La calidad varía; pausas breves. No se crea un MP3."},
 };
 export function MeditationWriterDeviceVoice({locale,segments}:{
   locale:Locale;segments:Segment[];
