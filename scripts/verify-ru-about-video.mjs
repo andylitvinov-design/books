@@ -68,8 +68,11 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        await expect(intro.locator('.site-video-watch-link')).toBeVisible();
-        await expect(intro.locator('.site-video-watch-link')).toHaveAttribute('href', `https://app.heygen.com/share/${videoId}`);
+        // About is deliberately website-only (internalOnly): the transcript
+        // is keyboard-accessible, but no offsite HeyGen watch link leaks.
+        // Keep the exact inline player assertion below as the real playback gate.
+        assert.equal(await intro.locator('.site-video-watch-link').count(), 0,
+          'Website-only RU About keeps external watch links hidden even after transcript expansion');
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
