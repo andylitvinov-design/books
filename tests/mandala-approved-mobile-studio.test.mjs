@@ -68,7 +68,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\}/);
+  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\}/,\n    "free video is gated until all four genuine stock clips are ready");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
@@ -166,7 +166,7 @@ test("twenty-four unique first-party four-shot free compilations use verified st
     for(const locale of ["ru","en","es"])assert.ok(film.label[locale]?.trim());
     groups.set(film.theme,(groups.get(film.theme)||0)+1);
     for(const clip of film.clips){
-      assert.ok(money.includes('"'+clip+'"') || themed.includes('film("'+clip+'")'),
+      assert.ok(money.includes('"'+clip+'"') || money.includes(clip+': {src:ROOT+"'+clip+'.mp4"') || themed.includes('film("'+clip+'")'),
         "every storyboard clip exists as a pre-encoded first-party MP4: "+clip);
       originalClips.add(clip);
     }

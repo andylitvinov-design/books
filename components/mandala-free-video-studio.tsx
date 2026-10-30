@@ -1376,7 +1376,7 @@ const postVideoSupportCopy = {
     consultationText:"30 minutes · €50 or 60 minutes · €100. Clarify your question and next step with Andrey.",
     consultationAction:"Choose a consultation",
     energy:"Personal energy support",
-    energyText:"Remote wellbeing practice or live online session with a practitioner. See the available format and published price first.",
+    energyText:"Remote wellbeing practice or live online session with a practitioner. See the available format and listed price first.",
     energyAction:"Explore energy support",
     privacy:"Save your video first: it is not automatically stored in your account. Your words, photo and video are not transferred. A request is not a booking or payment.",
   },
