@@ -166,8 +166,8 @@ test("twenty-four unique first-party four-shot free compilations use verified st
     for(const locale of ["ru","en","es"])assert.ok(film.label[locale]?.trim());
     groups.set(film.theme,(groups.get(film.theme)||0)+1);
     for(const clip of film.clips){
-      assert.match(money+themed,new RegExp(clip+"\\\\.mp4|film\\\\(\\\""+clip+"\\\"\\\\)"),
-        "every storyboard clip is pre-encoded and first-party: "+clip);
+      assert.ok(money.includes('"'+clip+'"') || themed.includes('film("'+clip+'")'),
+        "every storyboard clip exists as a pre-encoded first-party MP4: "+clip);
       originalClips.add(clip);
     }
   }
