@@ -139,7 +139,9 @@ try {
     await card.getByRole('button',{name:copy.en.other,exact:true}).click()
     assert.equal(await card.getByRole('link').first().getAttribute('href'),'/en/services/free-situation-review')
   } finally { await servicePage.close() }
-  const coursePage=await browser.newPage({viewport:{width:390,height:844}})
+  // Keep the synthetic guest response ahead of the app service worker.
+  // PWA caching remains a separate verification scope.
+  const coursePage=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'})
   try {
     // The CI site has no client database. Simulate only the existing guest
     // authentication response; the course learner itself remains real.
