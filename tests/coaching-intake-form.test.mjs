@@ -130,6 +130,11 @@ test('API auth, origin, bounded body and OAuth safe redirect to localized coachi
   // even when additional approved continuations are added to the allowlist.
   assert.match(api, /\['enquiry','coaching-intake'(?:,'[^']+')*\]\.includes\(body\.continueTo\)/)
   assert.match(api, /\['enquiry','coaching-intake'(?:,'[^']+')*\]\.includes\(url\.searchParams\.get\('continue'\)\)/)
+  // The Spanish callback has four strictly enumerated first-party uses.
+  // Private direct-messages requires a verified recipient, never an open URL.
+  assert.match(api, /\['enquiry','coaching-intake','practice-preview','direct-messages'\]/)
+  assert.match(api, /if \(recipientSlug !== null\) \{\s*if \(continueTo !== 'direct-messages'\)/)
+  assert.match(api, /safeEnquiryReturnPath\(returnPath, locale\)/)
   assert.match(api, /'enquiry','coaching-intake'/)
   assert.doesNotMatch(repo, /hh_app_inbox|app\.crm_contacts/)
 })
