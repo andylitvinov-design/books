@@ -26,7 +26,8 @@ const copy = {
     axis:"Тема профиля (необязательно)",axisNone:"Без дополнительной оси",format:"Предпочитаемый формат",
     allFormats:"Любой подходящий",useTests:"Разрешаю учесть мои сохранённые тесты по выбранной оси только для этого запроса",
     evidenceUsed:"Учтено наличие проверенного результата; баллы не передавались нейросети.",
-    kinds:{video:"Видео",audio:"Аудио",test:"Тест",course:"Курс",service:"Сессия"}},
+    kinds:{video:"Видео",audio:"Аудио",test:"Тест",course:"Курс",service:"Сессия"},
+    hide:"Не предлагать снова",tried:"Я попробовал",localFeedback:"Мои отметки действуют только в этом диалоге и не сохраняются в кабинете."},
   en:{ title:"Chat with the AI guide",disclosure:"I am Holistic House's AI guide, not a human or a therapist.",
     intro:"Describe your question. With your permission, verified results for your selected topic can inform suggestions without sharing scores with a model.",
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
@@ -39,7 +40,8 @@ const copy = {
     axis:"Profile topic (optional)",axisNone:"No extra axis",format:"Preferred format",
     allFormats:"Any suitable option",useTests:"Allow saved test evidence for this axis and this request only",
     evidenceUsed:"Verified test evidence informed the match; raw scores were not sent to a language model.",
-    kinds:{video:"Video",audio:"Audio",test:"Test",course:"Course",service:"Session"}},
+    kinds:{video:"Video",audio:"Audio",test:"Test",course:"Course",service:"Session"},
+    hide:"Don't suggest again",tried:"I tried it",localFeedback:"These choices apply only to this conversation; they are not saved to your account."},
   es:{ title:"Habla con el asistente de IA",disclosure:"Soy el asistente de IA de Holistic House, no una persona ni terapeuta.",
     intro:"Describe tu pregunta. Con tu permiso se pueden considerar resultados del eje elegido sin enviar puntuaciones al modelo.",
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
@@ -52,7 +54,8 @@ const copy = {
     axis:"Tema del perfil (opcional)",axisNone:"Sin dimensión adicional",format:"Formato preferido",
     allFormats:"Cualquier opción adecuada",useTests:"Permito usar pruebas guardadas del eje elegido solo para esta consulta",
     evidenceUsed:"Se consideró la existencia de una prueba verificada; no se enviaron puntuaciones al modelo.",
-    kinds:{video:"Vídeo",audio:"Audio",test:"Prueba",course:"Curso",service:"Sesión"}},
+    kinds:{video:"Vídeo",audio:"Audio",test:"Prueba",course:"Curso",service:"Sesión"},
+    hide:"No volver a sugerir",tried:"Lo probé",localFeedback:"Estas marcas solo se aplican a esta conversación y no se guardan en tu cuenta."},
 } as const;
 
 type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
@@ -67,6 +70,8 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
   const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
   const [useSavedTests,setUseSavedTests]=useState(false);
   const [evidenceUsed,setEvidenceUsed]=useState(false);
+  const [dismissedIds,setDismissedIds]=useState<string[]>([]);
+  const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
@@ -90,7 +95,8 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
           selectedGoal:null,ownedInferenceConsent:mode==="owned"&&agree,
           chosenAxes:axisRef?[axisRef]:[],
           preferredFormat:format||null,
-          usePrivateProfile:useSavedTests&&Boolean(axisRef)}),
+          usePrivateProfile:useSavedTests&&Boolean(axisRef),
+          feedback:{dismissedIds,completedIds}}),
       });
       if(!response.ok)throw Error("CHAT_UNAVAILABLE");
       const data=await response.json() as AgentReply;
@@ -171,15 +177,24 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
     </div>
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
-    {choices.length>0&&<div className={styles.choices}><h2>{t.suggestions}</h2>
-      {choices.map(x=><a key={x.id} href={x.href} rel="noreferrer">{x.title} · {t.option}</a>)}
-    </div>}
+    {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).length>0&&
+      <div className={styles.choices}><h2>{t.suggestions}</h2>
+        {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).map(x=>
+          <div className={styles.offer} key={x.id}>
+            <a href={x.href} rel="noreferrer">{x.title} · {t.option}</a>
+            <div className={styles.feedbackActions}>
+              <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
+              <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
+            </div>
+          </div>)}
+        <small className={styles.muted}>{t.localFeedback}</small>
+      </div>}
     {status&&<p role="status">{status}</p>}
     <form onSubmit={submit} className={styles.form}>
       <textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
