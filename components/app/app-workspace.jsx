@@ -584,7 +584,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
-    { id: 'wallet', label: locale === 'ru' ? 'Баланс' : 'Balance', href: root + '/wallet', icon: Wallet },
+    { id: 'wallet', label: locale === 'ru' ? 'Пополнить баланс' : 'Top up', href: root + '/wallet', icon: Wallet },
   ]
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.

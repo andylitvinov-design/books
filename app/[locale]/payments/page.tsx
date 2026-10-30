@@ -8,7 +8,8 @@ import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog
 import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
 import { configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad40, configuredStandaloneSquareSessionCad50, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
-import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
+import { getSquareGatewayConfig, getSquareWalletGatewayConfig } from "@/lib/commerce/square-gateway";
+import { walletSettings } from "@/lib/wallet/model";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { configuredPayPalHostedLinks, buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
 import styles from "./payments.module.css";
@@ -17,6 +18,9 @@ type PageProps = { params: Promise<{ locale: string }> };
 const copy = {
   en: {
     back: "Services", tag: "PAYMENT OPTIONS · ONE-TIME SERVICES",
+    topupTitle: "Top up your Holistic House account",
+    topupText: "A separate account balance for future services and digital materials. Only enabled and provider-approved payment methods are shown.",
+    topupAction: "Top up balance",
     title: "Pay for your personal session",
     lead: "Choose a fixed-price consultation. Please agree a suitable session time with Andrey before making a payment.",
     payee: "PayPal recipient", method: "Payment type", methodValue: "Goods & Services (not Friends & Family)",
@@ -42,6 +46,9 @@ const copy = {
   },
   ru: {
     back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
+    topupTitle: "Пополнить баланс Holistic House",
+    topupText: "Отдельный счёт для будущих услуг и цифровых материалов. Доступны только подключённые и согласованные с провайдером способы оплаты.",
+    topupAction: "Пополнить баланс",
     title: "Оплата личной консультации",
     lead: "Выберите консультацию с фиксированной стоимостью. Перед оплатой согласуйте с Андреем удобное время сеанса.",
     payee: "Получатель в PayPal", method: "Тип платежа", methodValue: "Товары и услуги (не друзьям и семье)",
@@ -67,6 +74,9 @@ const copy = {
   },
   es: {
     back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
+    topupTitle: "Recargar el saldo de Holistic House",
+    topupText: "Un saldo separado para futuros servicios y materiales digitales. Sólo mostramos métodos de pago aprobados. El saldo se gestiona por ahora en inglés.",
+    topupAction: "Recargar saldo (en inglés)",
     title: "Paga tu consulta personal",
     lead: "Elige una consulta de precio fijo. Acuerda la fecha y hora con Andrey antes de enviar el pago.",
     payee: "Destinatario de PayPal", method: "Tipo de pago", methodValue: "Productos y servicios (no amigos y familiares)",
@@ -131,6 +141,11 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
   const { locale } = await params;
   if (!localeAllowed(locale)) notFound();
   const t = copy[locale];
+  const wallet = walletSettings();
+  // Wallet funding is an independent catalogue, never the fixed-price
+  // consultation payment links. Do not advertise unapproved funding rails.
+  const walletTopupAvailable = wallet.enabled &&
+    (wallet.paypalEnabled || (wallet.squareEnabled && getSquareWalletGatewayConfig().enabled));
   const commerce = getCommerceConfig();
   const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   const enabled = personalPayPalEnabled();
@@ -156,6 +171,14 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
           <h1 id="personal-payment-title">{t.title}</h1>
           <p>{t.lead}</p>
         </div>
+        {walletTopupAvailable ? <section className={styles.combined} data-unified-wallet-topup>
+          <div><strong>{t.topupTitle}</strong><p>{t.topupText}</p></div>
+          <div className={styles.combinedActions}>
+            <Link className={styles.payButton}
+              href={locale === "es" ? "/en/app/wallet" : "/" + locale + "/app/wallet"}
+              data-unified-wallet-link>{t.topupAction} <ArrowUpRight size={17} aria-hidden="true" /></Link>
+          </div>
+        </section> : null}
         {(squareApiEnabled || Object.keys(squareLinks).length > 0) ? <div className={styles.notice} data-square-cad-disclosure>
           <ShieldCheck size={22} aria-hidden="true" />
           <div className={styles.noticeText}><strong>Square · CAD</strong><small>{squareApiEnabled ? t.squareApiInfo : t.squareInfo}</small></div>

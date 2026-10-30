@@ -150,3 +150,29 @@ test('wallet checkout remains resumable and both payment methods are visible wit
   assert.match(admin, /proof.transactionId/)
   assert.match(admin, /proof.amount/)
 })
+
+// Holistic House owner decision 2026-10-30: prepaid wallet integrates PayPal
+// and Square, not the legacy subscription processor. Those older codepaths
+// remain in the repository but must not enter the wallet purchase flow.
+test('wallet checkout supports only PayPal and Square and preserves a single top-up catalogue', () => {
+  const walletPaths = [
+    'lib/wallet/model.js',
+    'lib/wallet/service.js',
+    'components/wallet/wallet-panel.jsx',
+    'app/api/app/wallet/[action]/route.js',
+    'app/admin/api/wallet/route.js',
+  ]
+  for (const path of walletPaths) {
+    const source = file(path)
+    assert.equal(source.toLowerCase().includes('stripe'), false, path)
+  }
+  const wallet = file('components/wallet/wallet-panel.jsx')
+  assert.match(wallet, /data-wallet-method="paypal_personal"/)
+  assert.match(wallet, /data-wallet-method="square_api"/)
+  assert.match(wallet, /title: 'Пополнить баланс'/)
+  const payments = file('app/[locale]/payments/page.tsx')
+  assert.match(payments, /data-unified-wallet-link/)
+  assert.match(payments, /getSquareWalletGatewayConfig\(\)\.enabled/)
+  assert.match(payments, /walletTopupAvailable/)
+  assert.doesNotMatch(payments, /data-unified-wallet-topup[\s\S]{0,700}buildSquarePaymentForServices/)
+})

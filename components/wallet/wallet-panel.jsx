@@ -6,7 +6,7 @@ import styles from './wallet-panel.module.css'
 
 const COPY = {
   ru: {
-    eyebrow: 'HOLISTIC HOUSE · МОЙ СЧЁТ', title: 'Мой баланс',
+    eyebrow: 'HOLISTIC HOUSE · МОЙ СЧЁТ', title: 'Пополнить баланс',
     intro: 'Пополняйте баланс для будущих цифровых материалов и услуг Holistic House.',
     amount: 'Сумма пополнения', currency: 'Все суммы в канадских долларах (CAD).',
     own: 'Или укажите свою сумму', presets: 'Быстрое пополнение', paypal: 'PayPal · перевод',
@@ -31,7 +31,7 @@ const COPY = {
     successHint: 'Возвращайтесь в этот кабинет после оплаты. Здесь можно продолжить или проверить заказ.',
   },
   en: {
-    eyebrow: 'HOLISTIC HOUSE · MY ACCOUNT', title: 'My balance',
+    eyebrow: 'HOLISTIC HOUSE · MY ACCOUNT', title: 'Top up balance',
     intro: 'Add credit to your balance for future Holistic House digital materials and services.',
     amount: 'Top-up amount', currency: 'All amounts are in Canadian dollars (CAD).',
     own: 'Or enter your amount', presets: 'Quick top-up', paypal: 'PayPal · transfer',
