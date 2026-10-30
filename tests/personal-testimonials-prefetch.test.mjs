@@ -71,3 +71,13 @@ test('free review shows all twelve genuine videos vertically with original-langu
   assert.match(source, /\{isAbout && <p className=\{styles\.swipeHint\}>/);
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.section\[data-personal-testimonials="all"\] \.videoItem/);
 });
+
+test('English and Spanish pages localize Russian testimonial titles while retaining original audio', () => {
+  for (const locale of ['en', 'es']) for (const [variant, count] of [['about', 4], ['all', 6]]) {
+    const rendered = nodes(render(locale, variant))
+    const players = rendered.filter(node => node.type === 'video-fixture' && node.props.video.language === 'ru')
+    assert.equal(players.length, count, variant + ' retains the source-backed Russian-language videos')
+    for (const player of players) assert.doesNotMatch(player.props.video.title, /[\u0400-\u04ff]/)
+    assert.ok(players.every(player => player.props.video.language === 'ru'))
+  }
+})

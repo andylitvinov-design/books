@@ -718,18 +718,23 @@ try {
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
 
- // The new public course presentation is a real mobile-first landing,
- // with seven expandable skills and all 14 days accessible before consent.
+ // Guests first see the seven-day preview and explicit sign-in choice. The
+ // linked public programme still exposes all 14 days without enrolling.
  for (const [language, title] of [
-   ['en',/Stress Relief/],
-   ['ru',/Антистресс/],
+   ['en',/What will you learn in week one/],
+   ['ru',/Что вас ждёт в первую неделю/],
  ]) {
    await page.goto(origin+'/'+language+'/app/course?program=stress')
    const landing=page.locator('[data-opora-guest-landing]')
    await expect(landing).toBeVisible({timeout:20000})
    await expect(landing.getByRole('heading',{name:title,level:1})).toBeVisible()
-   await expect(landing.locator('[data-antistress-start-tests]')).toBeVisible()
-   const overview=landing.locator('[data-course-before-signup="guest"]')
+   await expect(landing.locator('[data-opora-preview-day]')).toHaveCount(7)
+   await expect(landing.locator('[data-course-google-signin]')).toBeVisible()
+   const publicProgramme=landing.locator('a[href="/'+language+'/courses/antistress"]')
+   await expect(publicProgramme).toBeVisible()
+   await publicProgramme.click()
+   await expect(page).toHaveURL(origin+'/'+language+'/courses/antistress')
+   const overview=page.locator('[data-antistress-full-day-scheme] [data-course-before-signup="guest"]')
    await expect(overview).toBeVisible()
    await expect(overview.locator('[data-course-phase]')).toHaveCount(7)
    await expect(overview.locator('[data-course-skill-accordion]')).toHaveCount(7)
@@ -747,7 +752,7 @@ try {
    await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
  }
  await page.setViewportSize({width:390,height:844})
- passed('anonymous EN/RU OPORA landing exposes seven skills and all 14 days without account access')
+ passed('anonymous EN/RU OPORA preview and public programme expose seven skills and 14 days without enrolment')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})

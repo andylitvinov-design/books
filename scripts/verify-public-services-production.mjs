@@ -464,7 +464,8 @@ try {
     for (const [slug, kind] of coreServices) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
-        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
+        const response = await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "domcontentloaded", timeout: 60000 });
+        assert.equal(response?.status(), 200, locale + "/" + slug + ": public service response");
         const main = page.locator('main[data-core-service-detail="' + kind + '"]');
         await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);

@@ -47,6 +47,27 @@ export const testimonialVideos = {
   ],
 } as const;
 
+// Translations describe the same published testimonials; the video language
+// remains Russian and is shown separately on every mixed-language card.
+const russianVideoTitles: Record<"en" | "es", Record<string, string>> = {
+  en: {
+    m9RfDgK76PU: "Anton Korchinsky — testimonial about the work",
+    MIVLm1GUTtM: "Yuri Goncharenko — client testimonial",
+    ttQxUHopaUM: "Business constellations — testimonial",
+    VABgpmn4ZYA: "Tatiana Razumovskaya — business consultation testimonial",
+    muOnIHllI7E: "Express assessment — testimonial",
+    "5oj0BIbLT4w": "Elena Bakhtina — client testimonial",
+  },
+  es: {
+    m9RfDgK76PU: "Anton Korchinsky — testimonio sobre el trabajo",
+    MIVLm1GUTtM: "Yuri Goncharenko — testimonio de un cliente",
+    ttQxUHopaUM: "Constelaciones empresariales — testimonio",
+    VABgpmn4ZYA: "Tatiana Razumovskaya — testimonio de consultoría empresarial",
+    muOnIHllI7E: "Evaluación exprés — testimonio",
+    "5oj0BIbLT4w": "Elena Bakhtina — testimonio de una clienta",
+  },
+};
+
 const copy = {
   ru: {
     eyebrow: "Реальные истории",
@@ -140,7 +161,8 @@ export function PersonalTestimonials({
         </p>
       ) : null}
       <SiteVideoPlayer
-        video={{ youtubeId: item.id, language: item.language, title: item.title }}
+        video={{ youtubeId: item.id, language: item.language,
+          title: item.language === "ru" && locale !== "ru" ? (russianVideoTitles[locale][item.id] ?? item.title) : item.title }}
         locale={locale}
         compact
         minimal={isAbout}
