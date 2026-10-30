@@ -119,6 +119,8 @@ test('free meditation and affirmation mixing expose independent voice and music 
   assert.match(mixer,/VOICE_BED_PRESETS/);
   assert.match(mixer,/preset==="none"/);
   assert.match(mixer,/OfflineAudioContext/);
+  assert.match(mixer,/mixPcmWavs/);
+  assert.match(mixer,/UNSUPPORTED_WAV_PCM/);
   assert.match(cloud,/data-voice-volume/);
   assert.match(cloud,/data-music-volume/);
   assert.match(cloud,/data-voice-background-extra/);
