@@ -111,6 +111,9 @@ test('practitioner offerings stay behind original private Practice; client order
   assert.match(tracker, /appFetch\('video-progress'/)
   assert.match(tracker, /save\('watched'\)/)
   assert.match(tracker, /failure.status===401/)
+  // ES video labels remain Spanish, while the private account is EN/RU only.
+  assert.match(tracker, /const accountLang=lang==='es'\?'en':lang/)
+  assert.match(tracker, /href=\{'\/'\+accountLang\+'\/app\/progress'\}/)
   // Clicking Play alone keeps an ephemeral on-screen counter, without writing a watch mark.
   const onPlay = support.slice(support.indexOf('const startVideo = () =>'), support.indexOf('const changeChoice = '))
   assert.doesNotMatch(onPlay, /video-progress|appFetch\(|fetch\(/)
