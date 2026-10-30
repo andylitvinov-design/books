@@ -247,12 +247,45 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/data-video-audio-section/);
   assert.match(studio,/data-video-hypnosis-section/);
   assert.match(studio,/studioMode==="therapy"/);
-  assert.match(studio,/data-hero-promo=\{!photoUrl&&!previewPlaying&&!recording/);
+  // A selected four-shot cinematic timeline must display its actual first frame,
+  // never the single-shot promotional poster above the shared preview.
+  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
+  assert.match(studio,/const activeFilm = cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-therapy-toggle/);
   assert.match(browser,/data-hero-promo/);
   assert.doesNotMatch(studio,/data-video-theme-toggle|videoStyles\.backgroundChoices/);
+});
+
+test("all three video editor deep links cancel native hash navigation before expanding details", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  for(const [tab,target] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
+    const start=studio.indexOf('data-video-editor-tab="'+tab+'"');
+    const end=studio.indexOf("</a>",start);
+    assert.ok(start>0&&end>start,"editor anchor is preserved: "+tab);
+    const link=studio.slice(start,end);
+    assert.ok(link.includes('href="#'+target+'"')||
+      studio.slice(start-45,start).includes('href="#'+target+'"'),
+      "semantic native deep link is preserved: "+tab);
+    assert.match(link,/onPointerDown=\{event=>\{/);
+    assert.match(link,/event\.pointerType==="mouse"&&event\.button===0/);
+    assert.ok(link.includes('openQuickDetailed("'+target+'")'),
+      "WebKit primary mouse-down activates the intended destination: "+tab);
+    assert.ok(link.includes('event.preventDefault();openQuickDetailed("'+target+'")'),
+      "keyboard/click fallback prevents the original native hash race: "+tab);
+  }
+  // A router or WebKit layout transition may reset a fragment after the
+  // first click, so the controlled panel repairs the hash on the next frame.
+  assert.match(studio,/window\.history\.pushState\(window\.history\.state,"",path\+desired\)/);
+  assert.match(studio,/window\.history\.replaceState\(window\.history\.state,"",path\+desired\)/);
+  assert.match(studio,/const current=\(\)=>token===quickNavTokenRef\.current/);
+  assert.match(studio,/setQuickDetailedOpen\(true\)/);
+  assert.match(studio,/requestAnimationFrame\(\(\)=>window\.requestAnimationFrame\(jump\)\)/);
+  assert.match(studio,/data-video-current-tab=\{quickNavTarget\}/);
+  assert.match(studio,/behavior:"instant" as ScrollBehavior/);
+  assert.match(studio,/block:"nearest"/);
+  assert.doesNotMatch(studio,/window\.setTimeout\(jump,/);
 });
 
 test("mandala header settings actual JSX has an accessible name in all three locales", async () => {
@@ -299,7 +332,7 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(studio,/data-video-editor-nav aria-label=\{layout\.editorNavLabel\}/);
+  assert.match(studio,/data-video-editor-nav[^>]*aria-label=\{layout\.editorNavLabel\}/);
   for(const [tab,id] of [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]]){
     assert.ok(studio.includes('href="#'+id+'" data-video-editor-tab="'+tab+'"'),tab+" must be a real same-page link");
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
