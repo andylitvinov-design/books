@@ -41,6 +41,11 @@ test("only curated scenery tokens reach the suggested external visual prompt",()
    assert.doesNotMatch(actual,/@|\\+1\\s*\\(416\\)/);
    assert.match(actual,/One independent cinematic visual shot/);
  }
+ const unrelated=compileVideoVisualPrompt({visualDescription:"My name is Mark and I live on Main Street"});
+ assert.doesNotMatch(unrelated,/quiet reflective surface of water|softly lit tree/i);
+ const intended=compileVideoVisualPrompt({visualDescription:"Un árbol cerca del mar con agua"});
+ assert.match(intended,/softly lit tree/);
+ assert.match(intended,/reflective surface of water/);
  const source=file("lib/mandala/video-ai-prompt.mjs");
  assert.match(source,/VISUAL_CUES/);
  assert.doesNotMatch(source,/\+"Requested visible composition: "\+visual/);
