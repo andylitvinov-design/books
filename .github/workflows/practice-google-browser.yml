@@ -1,6 +1,7 @@
 name: Practice after Google — original dashboard browser acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'app/api/app/**/route.js'
@@ -22,10 +23,15 @@ on:
       - 'components/practice-showcase.module.css'
       - 'scripts/verify-practice-post-google-browser.mjs'
       - '.github/workflows/practice-google-browser.yml'
+concurrency:
+  group: hh-practice-google-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 jobs:
   signed-in-mock-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:
@@ -58,7 +64,7 @@ jobs:
           npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 120); do
+          for ((i=1; i<=120; i++)); do
             if curl --silent --fail http://127.0.0.1:3121/ru/practice > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/practice-after-google-next.log; exit 1; fi
             sleep 2

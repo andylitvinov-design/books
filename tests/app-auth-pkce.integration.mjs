@@ -97,7 +97,7 @@ routeSource = routeSource
   .replace(/import \{ getAppConfig, requireSameOrigin, requestOrigin \} from '@\/lib\/app\/config'/,
     `import { requireSameOrigin, requestOrigin } from '${new URL('../lib/app/config.js', import.meta.url)}'; const getAppConfig = () => (${JSON.stringify({...config, origins:[origin]})})`)
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
-    'export const accountWrites = []; const createAppRepository = () => ({ensureAccount: async actor => accountWrites.push(actor.id)})')
+    'export const accountWrites = []; export let syntheticOnboardingState = "active"; export const setSyntheticOnboardingState = value => { syntheticOnboardingState = value }; const createAppRepository = () => ({ensureAccount: async actor => { accountWrites.push(actor.id); return { onboardingState: syntheticOnboardingState } }})')
   .replace(/import \{ readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries \} from '@\/lib\/app\/personal-coaching'/,
     `import { savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '${new URL('../lib/app/personal-coaching.js', import.meta.url)}'; export const coachingReads=[]; const readPersonalCoaching=async (_,actor)=>{ coachingReads.push(actor.id); return {course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'private test goal',approvedAt:'2026-01-01T00:00:00Z'}}}} }`)
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
@@ -176,10 +176,10 @@ test('intelligence route enforces origin and verified session before planning', 
   await route.POST(request({...savedBody,preflight:undefined}, {origin, cookie:secondCookies}), params)
   assert.equal(route.coachingReads.length,readsBefore+1)
 })
-async function routeStart(cookies = [], intentId, continueTo = null) {
+async function routeStart(cookies = [], intentId, continueTo = null, extra = {}) {
   const req = new NextRequest(origin + '/api/app/auth/start', { method:'POST', headers:{
     origin, 'content-type':'application/json', cookie:cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; '),
-  }, body:JSON.stringify({locale:'en', ...(intentId ? {intentId} : {}), ...(continueTo ? {continueTo} : {})}) })
+  }, body:JSON.stringify({locale:'en', ...(intentId ? {intentId} : {}), ...(continueTo ? {continueTo} : {}), ...extra}) })
   const response = await route.POST(req, {params:Promise.resolve({path:['auth','start']})})
   assert.equal(response.status, 200)
   const {redirectUrl} = await response.json(), url = new URL(redirectUrl)
@@ -194,6 +194,73 @@ async function routeCallback(flow, cookies, options={}) {
   const req = new NextRequest(url, {headers:{cookie:cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')}})
   return route.GET(req,{params:Promise.resolve({path:['auth','callback']})})
 }
+test('real Google OAuth returns to the exact master chat after a mobile sign-in',async t=>{
+  const flow=await routeStart([],null,'direct-messages',{locale:'ru',recipientSlug:'master-anna'})
+  assert.equal(flow.callback.searchParams.get('continue'),'direct-messages')
+  assert.equal(flow.callback.searchParams.get('recipientSlug'),'master-anna')
+  provider(t,flow.challenge)
+  const response=await routeCallback(flow,flow.cookies)
+  assert.equal(response.status,303)
+  assert.equal(response.headers.get('location'),origin+'/ru/app/messages?to=master-anna')
+  assert(response.cookies.getAll().some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
+})
+
+test('first-time account consent returns to the chosen practitioner, not a blocked inbox',async t=>{
+  route.setSyntheticOnboardingState('pending')
+  try{
+    const flow=await routeStart([],null,'direct-messages',{locale:'ru',recipientSlug:'master-anna'})
+    provider(t,flow.challenge)
+    const response=await routeCallback(flow,flow.cookies)
+    assert.equal(response.status,303)
+    assert.equal(response.headers.get('location'),
+      origin+'/ru/app/portrait?afterSignIn=messages&chatLocale=ru&to=master-anna')
+  }finally{route.setSyntheticOnboardingState('active')}
+})
+test('Spanish new-user messenger consent uses existing English Cabinet, then Spanish chat',async t=>{
+  route.setSyntheticOnboardingState('pending')
+  try{
+    const flow=await routeStart([],null,'direct-messages',{locale:'es',recipientSlug:'master-ana'})
+    provider(t,flow.challenge)
+    const response=await routeCallback(flow,flow.cookies)
+    assert.equal(response.status,303)
+    assert.equal(response.headers.get('location'),
+      origin+'/en/app/portrait?afterSignIn=messages&chatLocale=es&to=master-ana')
+  }finally{route.setSyntheticOnboardingState('active')}
+})
+test('native OAuth transfers public master slug only; PKCE is exchanged in-app',async()=>{
+  const flow=await routeStart([],null,'direct-messages',{locale:'es',recipientSlug:'master-ana',native:true})
+  const response=await routeCallback(flow,flow.cookies)
+  assert.equal(response.status,303)
+  const handoff=new URL(response.headers.get('location'))
+  assert.equal(handoff.protocol,'holistichouse:')
+  assert.equal(handoff.hostname,'auth')
+  assert.equal(handoff.pathname,'/callback')
+  assert.equal(handoff.searchParams.get('locale'),'es')
+  assert.equal(handoff.searchParams.get('continue'),'direct-messages')
+  assert.equal(handoff.searchParams.get('recipientSlug'),'master-ana')
+  assert.equal(handoff.searchParams.get('code'),'synthetic-code')
+})
+
+test('master chat OAuth never accepts arbitrary redirect paths or invalid recipient slugs',async()=>{
+  for(const body of [
+    {locale:'en',continueTo:'direct-messages',recipientSlug:'../admin'},
+    {locale:'ru',continueTo:'direct-messages',recipientSlug:'master?next=https://evil.example'},
+    {locale:'en',continueTo:'direct-messages',recipientSlug:'a'},
+    {locale:'es',continueTo:'direct-messages',recipientSlug:'A'.repeat(91)},
+    {locale:'en',continueTo:'cabinet',recipientSlug:'master-1'},
+    {locale:'ru',recipientSlug:'master-1'},
+  ]){
+    const req=new NextRequest(origin+'/api/app/auth/start',{method:'POST',headers:{
+      origin,'content-type':'application/json',
+    },body:JSON.stringify(body)})
+    const response=await route.POST(req,{params:Promise.resolve({path:['auth','start']})})
+    assert.equal(response.status,400,JSON.stringify(body))
+  }
+  const forged=new NextRequest(origin+'/api/app/auth/callback?locale=en&code=foo&continue=cabinet&recipientSlug=master-1')
+  const denied=await route.GET(forged,{params:Promise.resolve({path:['auth','callback']})})
+  assert.equal(denied.status,400)
+})
+
 test('overlapping route starts exchange the selected flow and return only to its exact Save intent', async t => {
   const intentA='30000000-0000-4000-8000-000000000001',intentB='30000000-0000-4000-8000-000000000002'
   const a=await routeStart([],intentA), b=await routeStart(a.cookies,intentB)
