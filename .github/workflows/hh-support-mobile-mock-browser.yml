@@ -90,13 +90,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Install audited project dependencies
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
           node --test tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
           npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
-          npx tsc --noEmit --pretty false
+      - name: Full TypeScript on non-production PR or production push
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |
           mkdir -p /tmp/hh-support-mock-tools
@@ -108,9 +111,14 @@ jobs:
           npx next dev --hostname 127.0.0.1 --port 3118 > /tmp/hh-support-mock-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for ((i=1; i<=120; i++)); do
+          for ((attempt=1; attempt<=120; attempt++)); do
             if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            if (( attempt == 120 )); then
+              echo 'Support mock server did not become ready after 120 attempts' >&2
+              tail -80 /tmp/hh-support-mock-next.log
+              exit 1
+            fi
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs

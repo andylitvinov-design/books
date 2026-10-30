@@ -289,6 +289,38 @@ test('PR-number cancellation browser suites use shellchecked bounded readiness l
   }
 });
 
+
+
+test('Ideas & Coaching Ready validates original browsers without Draft churn or duplicate TypeScript', () => {
+  const source=read('hh-ideas-coaching-public.yml');
+  const core=read('hh-pr-core-release.yml');
+  assert.match(source,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(source,/^    branches: \[codex\/public-book-library\]/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.match(source,/^concurrency:\s*\n  group: hh-ideas-coaching-/m);
+  const dollar=String.fromCharCode(36);
+  assert.ok(source.includes('group: hh-ideas-coaching-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(source.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  const jobGate='    if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(source.includes('  public-coaching-release:\n'+jobGate+'\n'),
+    'Only a Ready PR or manual dispatch may run expensive browser acceptance');
+  const tsGate='        if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes('      - name: TypeScript noEmit\n'+tsGate+'\n        run: npx --no-install tsc --noEmit'),
+    'Manual/other branch typecheck stays, production PR relies on core');
+  for(const preserved of [
+    'node --test tests/public-coaching-discovery.test.mjs',
+    '- name: Next.js production build\n        run: npm run build',
+    'playwright install --with-deps chromium webkit',
+    'node scripts/verify-coaching-lounge-mobile.mjs',
+    'node scripts/verify-holistic-support-browser.mjs',
+    'node scripts/verify-ideas-mobile-browser.mjs'
+  ]) assert.ok(source.includes(preserved),'Missing original browser acceptance: '+preserved);
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('Mandala Draft gating preserves complete Ready video and audio acceptance', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
@@ -325,4 +357,32 @@ test('Support Mobile Draft skips costly mock browser; Ready and production push 
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes("      - '.github/workflows/hh-support-mobile-mock-browser.yml'"));
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+
+test('wave 5: Support Mock delegates only duplicate production PR TypeScript to unconditional Core', () => {
+  const core=read('hh-pr-core-release.yml');
+  const mock=read('hh-support-mobile-mock-browser.yml');
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/^  release-ready:/m);
+  assert.match(mock,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(mock,/^  push:/m);
+  assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.ok(mock.includes('- name: Full TypeScript on non-production PR or production push\n        if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"+'\n        run: npx --no-install tsc --noEmit --pretty false'));
+  assert.match(mock,/node-version: '22'\s*\n          cache: npm/);
+  assert.match(mock,/node --test tests\/greek-video-series\.test\.mjs/);
+  assert.match(mock,/npx eslint/);
+  assert.match(mock,/playwright install --with-deps chromium webkit/);
+  assert.ok(mock.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(mock.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
+  assert.doesNotMatch(mock,/continue-on-error:\s*true/);
+});
+
+test('wave 5: Support Mock readiness loop is bounded, strict and ShellCheck-clean',()=>{
+  const mock=read('hh-support-mobile-mock-browser.yml');
+  assert.match(mock,/for \(\(attempt=1; attempt<=120; attempt\+\+\)\); do/);
+  assert.match(mock,/if \(\( attempt == 120 \)\); then/);
+  assert.match(mock,/tail -80 \/tmp\/hh-support-mock-next\.log/);
+  assert.match(mock,/exit 1/);
+  assert.doesNotMatch(mock,/for i in \$\(seq 1 120\)/);
 });
