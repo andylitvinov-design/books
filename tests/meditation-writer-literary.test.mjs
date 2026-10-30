@@ -50,7 +50,8 @@ test("bad LLM text is rejected after generation",async()=>{
  }
 });
 test("explicit exclusions and model-proposed authorizations never override brief",async()=>{
- const p=prepare("gentle_simple","ru",{avoidElements:["water","breath_focus"]});
+ // An image explicitly conflicting with water avoidance is not an eligible baseline.
+ const p=prepare("gentle_simple","ru",{motifId:"supportive_object",avoidElements:["water","breath_focus"]});
  const check=reviewNarrationSegment({
    brief:p.brief,beat:p.brief.beats[0],
    text:"Вода тихо течёт неподалёку. Дышите глубже и следите за своим дыханием, так всё обязательно станет хорошо.",
