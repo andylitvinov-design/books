@@ -594,8 +594,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.ok(attach && attach.height>=44,
             "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
           mkdirSync("artifacts/mandala-audio",{recursive:true});
-          await panel.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
-            animations:"disabled",timeout:20000});
+          // The playing canvas can prevent element screenshots from reaching
+          // Playwright's stability condition. The full-page synthetic capture
+          // retains the audio panel and avoids waiting on its moving ancestor.
+          await panel.evaluate(element=>element.scrollIntoView({block:"start",behavior:"instant"}));
+          await page.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
+            fullPage:true,animations:"disabled",timeout:30000});
         }
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
