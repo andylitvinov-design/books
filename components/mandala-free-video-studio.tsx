@@ -10,6 +10,7 @@ import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
+import { MandalaCloudVoiceStudio } from "./mandala-cloud-voice-studio";
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
 import type { AffirmationVoiceResult, AffirmationVoicePreferences } from "./mandala-affirmation-voice";
 import { affirmationNarrationText } from "@/lib/mandala/affirmation-voice.mjs";
@@ -1918,6 +1919,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <HandHeart size={18} aria-hidden="true"/>{quick.therapy}
         </button>
       </section>
+
+      <details id="voice-studio" className={videoStyles.extraControls} data-video-voice-studio>
+        <summary><AudioLines size={17} aria-hidden="true"/>{locale==="ru"
+          ?"Озвучить свой текст · 6 голосов RU/EN"
+          :locale==="es"?"Crear voz desde texto · 6 voces RU/EN"
+          :"Generate voice from text · 6 RU/EN voices"}</summary>
+        <MandalaCloudVoiceStudio locale={locale}/>
+      </details>
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
         open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>

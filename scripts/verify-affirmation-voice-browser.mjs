@@ -110,6 +110,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
+      const voicePanel=page.locator("[data-video-voice-studio]");
+      await voicePanel.locator(":scope > summary").click();
+      const studio=voicePanel.locator("[data-voice-studio]");
+      await studio.waitFor({state:"visible"});
+      assert.equal(await studio.locator("[data-voice-id]").count(),6);
+      await studio.locator("[data-voice-studio-generate]").click();
+      await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
+      const sample=payloads.find(item=>item.mode==="sample");
+      assert.ok(sample,engine+" free text-to-speech sample reached provider");
+      assert.equal(sample.voiceId,"mark");
+      assert.equal(sample.language,locale);
+      assert.ok(!("text" in sample),"public voice sample never sends private content");
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + real local nature WAV attachment + stale guard\n");
     }finally{await context.close();}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Download, Headphones, Leaf, LoaderCircle, Play, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { presetAudioUrl } from "@/lib/mandala/local-video-music";
@@ -24,7 +24,7 @@ const text = {
     register:"Для озвучки собственного текста необходим вход в личный кабинет. Бесплатные образцы можно прослушивать без входа.",
     background:"Природный фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать WAV с природой",prepareMix:"Подготовить WAV с природой",mixing:"Смешиваем дорожки…",
-    unavailable:"Облачная генерация пока не активирована: нужен отдельный ключ Google AI Studio из проекта без биллинга.",
+    unavailable:"Генерация сейчас недоступна. Проверьте подключение Gemini и бесплатный тариф проекта.",
     ready:"Озвучка настроена. Создайте короткий образец, чтобы проверить доступность.",error:"Не удалось создать запись. Попробуйте другой голос.",quota:"Бесплатная квота исчерпана. Платный рендер не запускается.",signIn:"Для своего текста войдите в кабинет.",privacy:"Превью образца не отправляет личные данные. Свой текст передаётся Google только после отдельного согласия и нажатия кнопки.",
     mixedError:"Невозможно создать звуковую смесь в этом браузере. Скачайте голос отдельно.",audio:"Прослушивание с выбранным фоном",notice:"Голоса — выбранные профили; итоговое звучание требует прослушивания на обоих языках.",
     noText:"Напишите текст или выберите фрагмент из медитации.",noConsent:"Для передачи своего текста требуется согласие.",general:"API временно недоступен.",
@@ -40,7 +40,7 @@ const text = {
     register:"Sign in to your account for your own text. Public voice samples do not require an account.",
     background:"Nature background",none:"No background",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download nature WAV",prepareMix:"Prepare nature WAV",mixing:"Mixing audio…",
-    unavailable:"Cloud generation is not enabled yet: a separate Google AI Studio key from a billing-disabled project is required.",
+    unavailable:"Cloud generation is unavailable. Check the Gemini connection and free-tier settings.",
     ready:"Voice generation is configured. Generate a short sample to check availability.",error:"Could not generate audio. Please try another voice.",quota:"Free quota is exhausted. No paid rendering will be used.",signIn:"Sign in to generate your own script.",privacy:"Public samples never transmit personal text. Your script is sent to Google only after separate consent and a button click.",
     mixedError:"Could not mix audio in this browser. You can still download voice-only WAV.",audio:"Preview with selected background",notice:"Voices are curated profiles, pending real listening checks in both languages.",
     noText:"Enter your text or use a meditation excerpt.",noConsent:"Your explicit consent is required before transmitting text.",general:"API is temporarily unavailable.",
@@ -68,6 +68,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   locale:PublicLocale;sourceText?:string;ambientSrc?:string|null
 }) {
   const t=text[locale];
+  const titleId=useId();
   const [language,setLanguage]=useState<VoiceLanguage>(initialLanguage(locale));
   const [voiceId,setVoiceId]=useState("mark");
   const [mode,setMode]=useState<Mode>("sample");
@@ -205,10 +206,10 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   }
   const groups=["male","female"] as const;
   return (
-    <section className={css.shell} data-voice-studio lang={locale} aria-labelledby="voice-studio-title">
+    <section className={css.shell} data-voice-studio lang={locale} aria-labelledby={titleId}>
       <header className={css.heading}>
         <div className={css.emblem}><Headphones size={22} aria-hidden="true"/></div>
-        <div><small>{t.eyebrow}</small><h2 id="voice-studio-title">{t.title}</h2></div>
+        <div><small>{t.eyebrow}</small><h2 id={titleId}>{t.title}</h2></div>
       </header>
       <p className={css.intro}>{t.intro}</p>
       <div className={css.language} role="group" aria-label={t.language}>
