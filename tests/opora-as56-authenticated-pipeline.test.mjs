@@ -5,7 +5,8 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
@@ -66,7 +67,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      const daily=oporaAs60Day(day,locale)
+      const daily=oporaAs60VariedDay(day,locale)
       assert.ok(realLifeChoice?.label,'Archive choices must remain available')
       assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
       assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
@@ -82,7 +83,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player, t.save)
       assert.equal(requests, 1)
       assert.ok(receipt)
-      assert.ok(textOf(player.tree).includes(t.receipt))
+      assert.ok(textOf(player.tree).includes(day===14
+        ?oporaEndingCopy(locale).congratsFinal
+        :oporaEndingCopy(locale).congratsTitle.replace('{day}',String(day))))
       const saved = owner.sessions.at(-1)
       assert.equal(saved.lesson_id, data.lesson.id)
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -154,7 +157,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
-    assert.ok(textOf(player.tree).includes(t.receipt))
+    assert.ok(textOf(player.tree).includes(oporaEndingCopy(locale).congratsTitle.replace('{day}','1')))
   } finally { player.unmount() }
 })
 
