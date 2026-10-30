@@ -8,6 +8,7 @@ import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal, openSealed } from '../lib/app/crypto.js'
 import { saveIntelligenceFeedback, editIntelligenceFeedback, exportIntelligenceFeedback, deleteIntelligenceFeedback, matchingUnhelpfulFeedback, intelligenceFeedbackStatus } from '../lib/app/intelligence-feedback.js'
+import { hasActiveIntelligenceCourse } from '../lib/app/intelligence-course.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
@@ -24,6 +25,18 @@ before(async()=>{
   }
 })
 after(closeDatabase)
+
+test('active course availability is owner scoped and ignores paused courses',async()=>{
+  assert.deepEqual(await hasActiveIntelligenceCourse(config,a),{hasActiveCourse:false})
+  assert.deepEqual(await hasActiveIntelligenceCourse(config,b),{hasActiveCourse:false})
+  const id=randomUUID()
+  await rawAs(a,'hh_app_backend',db=>db.query(
+    "insert into app_private.growth_courses(id,account_id,consented_at,status) values($1,$2,now(),'active')",[id,A]))
+  assert.deepEqual(await hasActiveIntelligenceCourse(config,a),{hasActiveCourse:true})
+  assert.deepEqual(await hasActiveIntelligenceCourse(config,b),{hasActiveCourse:false})
+  await rawAs(a,'hh_app_backend',db=>db.query("update app_private.growth_courses set status='paused' where id=$1 and account_id=$2",[id,A]))
+  assert.deepEqual(await hasActiveIntelligenceCourse(config,a),{hasActiveCourse:false})
+})
 
 test('separately consented records are isolated by owner and direct clients have no access',async()=>{
   for(const [who,id] of [[a,first],[b,second]]) await rawAs(who,'hh_app_backend',db=>db.query(
