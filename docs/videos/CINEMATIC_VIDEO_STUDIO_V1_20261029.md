@@ -646,3 +646,22 @@ C. 30-секундный сценический ролик в двух верс�
 - **Для клиентской доставки и продаж**: отдельно privacy/save consent, A/B E2E, поддерживаемая оплата и specialist review для клинических программ; последующая публикация — самостоятельное explicit approval.
 
 **Итоговый инженерный принцип:** Video Studio становится настоящим text-to-video продуктом лишь после прохождения G3b (новые байты AI-клипа + QA) и G4/G5 (безопасный повторяемый путь до пользователя), а не после добавления формы, ссылок на провайдеров, красивой карточки или успеха сборки сайта. Это приложение дополняет программу v2, не заменяет утверждённые бесплатные модули.
+## 21. Исполняемая программа и журнал реализации G0–G6 — 29.10.2026
+
+Единый epic: books #2397. Source of truth остаётся ЭТОТ документ, а не копия в новом проекте. UX source: https://docs.google.com/document/d/1UUyGu8cVcxD4qJpgv5BUTi-_57c7eMJAWX4epeMA3pM/edit (на момент readback актуальный аудит v1.4). Важно: 96 стабильных вопросных ID — справочник, не анкета на 96 шагов; 49 условных вопросов, 47 демотированы; 30 прежних шкал плюс 3 новых = 33 именованных значения. Клиенту предлагать одно свободное описание, затем не больше двух-трёх уточнений по недостающим субъекту и действию.
+
+| Этап | Реализация/исходные файлы | Exit gate |
+| --- | --- | --- |
+| G0 Аудит | Проверить actual production READY/branch/SHA; #2534 (merged) и параллельные #2566/#2550; Runway/owner GPU | Не дублировать editor, подтвердить границы API и платных возможностей |
+| G1 Компилятор | Добавить lib/mandala/cinematic-creative-brief.mjs: 96 IDs, 49 contextual, 33 внутренних значений, распознавание художественного субъекта/действия без raw external prompt; в текущем mandala-cinematic-director.tsx — компактное локальное поле «Что в кадре», максимум 2 нужных вопроса | RU/EN/ES, тест скрытых личных токенов, ноль сетевых provider POST и дублирования 96 вопросов, Browser E2E |
+| G2 Черновые референсы | 4 text-only start/end frame, style Bible, единый fictional identity key, verifiable local scene mapping | Точно указать actualGeneratedImages=false; это НЕ готовые AI картинки |
+| G2 Фактические keyframes | Добавить лицензированный still/source/image model, asset registry с SHA256, размером и правами | 4 действительно видимых изображений, character continuity, review |
+| G3a Free | Существующий Canvas/MediaRecorder и owner FFmpeg, true codec/audio/export + recovery | Декодируемые движущиеся кадры/PCM в Chromium и WebKit; отдельный real iPhone |
+| G3b True AI | Один self-hosted LTX/ComfyUI GPU либо один owner-approved Kling short neutral job, не оба сразу | НОВЫЕ пиксели и движение в подтверждённом MP4, job/compute receipt, hash, human QA; отдельный spend consent |
+| G4 Оркестратор | Server owner auth, quote, expense cap, DB idempotent lease/outbox, provider timeout reconcile, no double paid POST | One order=one paid attempt, real task/provider receipt, no silent repeated bill |
+| G5 Доставка | Reuse current private My Videos MP4 auth/consent/RLS/quotas, not public YouTube | Account A upload/read/delete and B denied, signed read real video E2E |
+| G6 8 Sessions | Reuse #2503 Session Player, 8 scripts, real 8 approved audio/video masters, separate entitlement | 8 files per claimed locale and real validated payment/delivery, practitioner QA |
+
+Current implementation PR covers ONLY G1/G2 text-only plus read-only GPU readiness audit. It does not generate any new AI footage; external code routes remain disabled and non-billable. Current Runway ChatGPT team has availableVideoModels=[], and remote MacBook is offline with exhausted remote tool quota. Cannot assert hardware or model availability, install weights, spend credits, or pass a real provider E2E. The optional read-only owner hardware probe is scripts/video-ai-gpu-readiness.mjs; it never claims an executable local model, even with an adequate GPU.
+
+Release policy: exact-head specialized unit tests + lint + TypeScript + Next build + actual Chromium/WebKit, no secrets; merge only to codex/public-book-library after success, then Vercel READY exact production commit and canonical domain. G2 real image + G3b GPU/provider + G4 paid job + G5 private E2E remain separate, explicitly blocked. Do not treat this PR as finished prompt-to-video.

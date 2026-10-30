@@ -163,10 +163,21 @@ const classifierCases = [
   ['merge queue docs change', 'docs/start.md', null, 'edit', false, 'merge_group'],
   ['newline code filename', 'source\nfile.ts', 'docs/moved.md', 'rename', false],
   ['missing base', 'docs/start.md', null, 'edit', false, 'pull_request', true],
+  ['CI workflow YAML edit', '.github/workflows/example.yml', null, 'edit', false, 'pull_request', false, true],
+  ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
+  ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI policy test edit', 'tests/pr-fast-lane.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI workflow validation test edit', 'tests/ci-workflow-globs.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI YAML plus runtime code', '.github/workflows/example.yml', 'app/api/payments/route.js', 'mixed', false],
+  ['CI YAML rename to runtime file', '.github/workflows/example.yml', 'components/example.tsx', 'rename', false],
+  ['dependency lockfile edit', 'package-lock.json', null, 'edit', false],
+  ['Supabase SQL migration', 'supabase/migrations/20261030_sensitive.sql', null, 'edit', false],
+  ['auth API edit', 'app/api/auth/route.js', null, 'edit', false],
+  ['CI instructions update', 'AGENTS.md', null, 'edit', false],
 ];
 
-for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false] of classifierCases) {
-  test(`docs-only classifier: ${name}`, () => {
+for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false, expectedCiOnly = false] of classifierCases) {
+  test(`fail-closed PR classifier: ${name}`, () => {
     const dir = mkdtempSync(join(tmpdir(), 'hh-fast-lane-'));
     const env = { PATH: process.env.PATH, HOME: dir, TMPDIR: dir,
       GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
@@ -209,7 +220,7 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
         assert.equal(result.signal, null, 'invalid base is a normal Git failure, not timeout');
         assert.ok(!existsSync(join(dir, 'output')) || !readFileSync(join(dir, 'output'), 'utf8').includes('docs_only=true'));
       } else {
-        assert.equal(readFileSync(join(dir, 'output'), 'utf8').trim(), `docs_only=${expected}`);
+        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -234,5 +245,113 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     assert.ok(!patterns.includes('.github/workflows/' + name), name + ' must use core/actionlint for YAML-only changes');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
+  }
+});
+
+test('App R1 and IA retain specialist tests but avoid duplicate global validation on production PRs', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /tsc --noEmit/);
+  assert.match(core, /eslint/);
+  const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const app = workflow('hh-app-r1.yml');
+  const appUnit = app.split('  unit-build:\n')[1]?.split('  course-banner-browser:\n')[0];
+  assert.ok(appUnit, 'App R1 unit-build job exists');
+  for (const [name, command] of [
+    ['Lint complete repository including literal App Router paths', 'npm run lint'],
+    ['Production-mode build, app flags absent', 'npm run build'],
+    ['Full TypeScript (core release-ready owns production PR typing)', 'npx --no-install tsc --noEmit'],
+  ]) {
+    assert.ok(appUnit.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
+  }
+  assert.match(appUnit, /node --conditions=react-server --test/);
+  assert.match(appUnit, /npm run pwa:check && npm run native:check/);
+  assert.match(app, /run: npm run test:app:db/);
+  const ia = workflow('ia-v2.yml');
+  for (const [name, command] of [
+    ['Full lint outside production PR (core release-ready owns production lint)', 'npm run lint'],
+    ['Full TypeScript outside production PR (core release-ready owns production typing)', 'npx --no-install tsc --noEmit'],
+  ]) {
+    assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
+  }
+  assert.match(ia, /run: npm run test:unit/);
+  assert.match(ia, /run: npm run build/);
+  assert.match(ia, /run: npm run verify:ia-v2/);
+});
+
+// Exact single-purpose exclusions are safe only with positive installer coverage.
+// Test the same ordered Node glob semantics as the trusted release aggregator.
+test('public installer changes use their dedicated real mobile gate, not unrelated public-services E2E',()=>{
+  const patterns=name=>{
+    const s=workflow(name);
+    const pr=s.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
+    return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(x=>x[1]);
+  };
+  const covered=(pats,file)=>{
+    let matched=false;
+    for(const pattern of pats){
+      const neg=pattern.startsWith('!');
+      if(requireGlob(file,neg?pattern.slice(1):pattern))matched=!neg;
+    }
+    return matched;
+  };
+  const services=patterns('hh-public-services-production.yml');
+  const installer=patterns('holistic-house-mobile-install.yml');
+  for(const file of ['tests/holistic-house-free-install.test.mjs','tests/holistic-house-native-public-downloads.test.mjs']){
+    assert.equal(covered(services,file),false,file+' must not launch the unrelated 20-minute Alchemy/Reiki suite');
+    assert.equal(covered(installer,file),true,file+' MUST retain real PWA/browser/manifest checks');
+  }
+  for(const file of [
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'tests/holistic-support-meditations.test.mjs',
+    'tests/holistic-talisman-mobile-categories.test.mjs',
+    'components/holistic-support-mobile.tsx',
+    'app/ru/services/alchemy-of-soul/page.tsx',
+    'app/es/business/consultation/page.tsx',
+    'scripts/verify-holistic-master-browser.mjs',
+    'tests/practitioner-remote-energy-support.test.mjs'
+  ])assert.equal(covered(services,file),true,file+' must still run public services acceptance');
+});
+
+test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
+  const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /tsc --noEmit/);
+  const specs=[
+    ['hh-public-test-collections.yml',[['Verify Next.js production build','npm run build']],['tests/public-test-topic-collections.test.mjs','tests/profile-construct-axes.test.mjs']],
+    ['hh-kling-video.yml',[['TypeScript','npx tsc --noEmit'],['Next.js build','npm run build']],['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
+  ];
+  for(const [filename,guardedSteps,domainContracts] of specs){
+    const s=workflow(filename);
+    for(const [name,command] of guardedSteps){
+      const exact='- name: '+name+'\n        '+skip+'\n        run: '+command;
+      assert.ok(s.includes(exact), filename+' must retain global '+name+' outside production-targeted PR only');
+    }
+    for(const src of domainContracts) assert.ok(s.includes(src),filename+' domain contract removed: '+src);
+    assert.ok(s.includes("      - '.github/workflows/"+filename+"'"),filename+' must trigger its own edited workflow for domain validation');
+    assert.ok(!s.includes('continue-on-error: true'),filename+' cannot bypass real test errors');
+  }
+  for(const filename of ['hh-kling-video.yml']) {
+    const s=workflow(filename);
+    assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
+    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  }
+});
+
+test('CI-only fast lane retains exact policy checks and refuses broad source skips',()=>{
+  const core=workflow('hh-pr-core-release.yml');
+  const actionlint=workflow('hh-actionlint.yml');
+  assert.ok(core.includes("ci_only: $"+"{{ steps.diff.outputs.ci_only }}"));
+  for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
+  assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
+  assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(core,/npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
+  assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
+  for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
+    const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
+    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
 });
