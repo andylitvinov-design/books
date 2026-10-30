@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ArrowRight, Camera, ChevronDown, Clock3, Globe2, Image as ImageIcon, Leaf, MapPin, Send, Save } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Camera, ChevronDown, Clock3, FileText, Globe2, Image as ImageIcon, Leaf, Lightbulb, ListChecks, MapPin, Monitor, Send, Save, Sparkles, UsersRound, Video } from 'lucide-react'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
 import { getServiceEditorIssue, servicePreviewPrice } from '@/lib/practitioners/service-editor-steps.mjs'
@@ -149,6 +149,17 @@ Object.assign(TEXT.es,{
  createFirst:'Puedes editar esta tarjeta ahora. Todavía no está publicada.'
 })
 
+const STUDIO_TEXT={
+  en:{gallery:'Your photos',addPhoto:'Add photo',cover:'Use as cover',category:'Service category',
+    tags:'Client goals',tip:'Tip',tipBody:'Explain clearly whom this service may suit. Only reviewed offers become public.',
+    time:'Duration',other:'Other duration',booking:'Session times are agreed after a request. No live availability is shown.'},
+  ru:{gallery:'Ваши фотографии',addPhoto:'Добавить фото',cover:'Сделать обложкой',category:'Категория услуги',
+    tags:'Цели клиента',tip:'Совет',tipBody:'Кратко опишите, чем полезна услуга и кому подходит. Перед публикацией она проходит проверку.',
+    time:'Продолжительность',other:'Другое время',booking:'Время согласуется после заявки. Свободные слоты пока не отображаются.'},
+  es:{gallery:'Tus fotos',addPhoto:'Añadir foto',cover:'Usar como portada',category:'Categoría del servicio',
+    tags:'Objetivos',tip:'Consejo',tipBody:'Explica para quién es el servicio. La publicación requiere revisión.',
+    time:'Duración',other:'Otra duración',booking:'La hora se acuerda tras una solicitud. No se muestran horas libres en tiempo real.'},
+}
 const REIKI_METHODS = ['Kundalini Reiki', 'Tantra Reiki', 'Runic Reiki', 'Reiki Yggdrasil']
 const REIKI_KINDS = ['session', 'initiation', 'course']
 const REIKI_DURATIONS = [10, 20, 30, 60]
@@ -248,10 +259,11 @@ function initialDraft(item,locale,starter='') {
 }
 
 export default function SimpleServiceEditor({item,starter='',locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange,onMediaBusyChange}){
-  const lang=TEXT[locale]?locale:'en', c=TEXT[lang]
+  const lang=TEXT[locale]?locale:'en', c=TEXT[lang], ui=STUDIO_TEXT[lang]
   const [videoBusy,setVideoBusy]=useState(false),[photoBusy,setPhotoBusy]=useState(false)
   const [draft,setDraft]=useState(()=>initialDraft(item,lang,starter))
   const [stage,setStage]=useState(0)
+  const [customDuration,setCustomDuration]=useState(()=>{const value=initialDraft(item,lang,starter).durationMinutes;return value!=null&&value!==''&&![30,60,90].includes(Number(value))})
   const [photoToolsOpen,setPhotoToolsOpen]=useState(false)
   const [touched,setTouched]=useState(false)
   const [formIssue,setFormIssue]=useState('')
@@ -333,6 +345,11 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const photos=Array.isArray(draft.photos)?draft.photos:[]
   const photo=photos[0]||''
   const stageLabels=[c.stageIntro,c.stageOffer,c.stageDetails]
+  // Keep the full localized names for assistive technology; use concise,
+  // legible labels in three equal iPhone columns instead of ellipses.
+  const stageShortLabels=lang==='ru'?['Описание','Формат и цена','Детали']
+    :lang==='es'?['Presentación','Formato y precio','Detalles']
+    :['About','Format & price','Details']
   const area=AREAS[draft.areaKey]||AREAS.personal_development
   const areaTitle=area[lang==='ru'?1:lang==='es'?2:0]
   const formatLabel=draft.deliveryFormat==='in_person'?c.inPerson:draft.deliveryFormat==='hybrid'?c.hybrid:c.online
@@ -346,7 +363,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
         {item?.status&&<small className={styles.realStatus}>{c.statusLabel}: {item.status}</small>}
       </div>
       <label className={styles.langSelect}>
-        <span><Globe2 size={15} aria-hidden="true"/>{c.language}</span>
+        <span><Globe2 size={15} aria-hidden="true"/>{lang==='ru'?'Язык':lang==='es'?'Idioma':'Language'}</span>
         <select aria-label={c.language} value={activeLanguage} onChange={event=>{setActiveLanguage(event.target.value);setFormIssue('')}} disabled={locked}>
           <option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option>
         </select>
@@ -357,7 +374,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       {stageLabels.map((label,index)=><button key={label} type="button" aria-label={label} aria-current={stage===index?'step':undefined}
         aria-pressed={stage===index} className={stage===index?styles.activeStage:''}
         onClick={()=>{if(!locked){setStage(index);setFormIssue('')}}} disabled={locked}>
-        <span>{index+1}</span><strong>{label.slice(label.indexOf('·')+1).trim()}</strong>
+        <span>{index+1}</span><strong>{stageShortLabels[index]}</strong>
       </button>)}
     </div>
     {stage===0&&<section className={styles.stagePanel} data-service-slide="presentation" aria-label={c.stageIntro}>
@@ -370,7 +387,22 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
               <ImageIcon size={30} aria-hidden="true"/><small>{c.photoEmpty}</small>
             </div>}
           <button type="button" className={styles.photoButton} disabled={locked} onClick={()=>setPhotoToolsOpen(open=>!open)}
-            aria-expanded={photoToolsOpen}><Camera size={17} aria-hidden="true"/>{photo?c.photoOpen:c.photoAdd}</button>
+            aria-expanded={photoToolsOpen} aria-label={photo?c.photoOpen:c.photoAdd}>
+            <Camera size={17} aria-hidden="true"/>
+            {photo?(lang==='ru'?'Изменить фото':lang==='es'?'Cambiar foto':'Change photo')
+              :(lang==='ru'?'Добавить фото':lang==='es'?'Añadir foto':'Add photo')}</button>
+        </div>
+        <div className={styles.galleryStrip} data-service-gallery-strip aria-label={ui.gallery}>
+          {photos.map((image,index)=><button key={image} type="button"
+            className={index===0?styles.selectedThumb:styles.galleryThumb}
+            aria-label={index===0?c.publicPhoto:ui.cover+' '+(index+1)}
+            aria-current={index===0?'true':undefined}
+            disabled={locked} onClick={()=>{if(index>0)set('photos',[image,...photos.filter((_,i)=>i!==index)])}}>
+            <img src={image} alt="" loading="lazy"/>
+          </button>)}
+          {photos.length<5&&<button type="button" className={styles.galleryAdd}
+            onClick={()=>setPhotoToolsOpen(true)} disabled={locked}
+            aria-label={ui.addPhoto}>+ <span>{ui.addPhoto}</span></button>}
         </div>
         <div className={styles.contentCanvas}>
           <p className={styles.contentKicker}>HOLISTIC HOUSE · {areaTitle}</p>
@@ -384,6 +416,24 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
             <textarea rows={3} maxLength={500} placeholder={c.shortExample} aria-required="true"
               value={short} onChange={event=>setCopy('shortDescription',event.target.value)} disabled={locked}/>
           </label>
+          <div className={styles.introTipCard}><Lightbulb size={18} aria-hidden="true"/>
+            <span><strong>{ui.tip}</strong><small>{ui.tipBody}</small></span>
+          </div>
+          <label className={styles.field}><span>{ui.category}</span>
+            <select value={draft.areaKey} disabled={locked} onChange={event=>set('areaKey',event.target.value)}>
+              {Object.entries(AREAS).map(([key,names])=><option key={key} value={key}>{names[lang==='ru'?1:lang==='es'?2:0]}</option>)}
+            </select>
+          </label>
+          <fieldset className={styles.goalField} data-service-goals>
+            <legend>{ui.tags}</legend>
+            <div className={styles.goalChips}>
+              {GOALS.map(([key,en,ru,es])=><label key={key} className={styles.goal}>
+                <input type="checkbox" checked={(draft.goals||[]).includes(key)} disabled={locked}
+                  onChange={event=>changeGoal(key,event.target.checked)}/>
+                <span>{lang==='ru'?ru:lang==='es'?es:en}</span>
+              </label>)}
+            </div>
+          </fieldset>
           <div className={styles.previewMeta}><span>{formatLabel}</span><span>{priceSummary}</span></div>
           <div className={styles.previewCta}><span>{c.previewCta}<ArrowRight size={16} aria-hidden="true"/></span>
             <small>{c.previewCtaNote}</small></div>
@@ -516,9 +566,10 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       {!isReiki&&<div className={styles.bookingCard}>
         <fieldset className={styles.formatGroup}><legend>{c.format}</legend>
           <div className={styles.formatTiles} role="group" aria-label={c.format}>
-            {([['online',c.online],['in_person',c.inPerson],['hybrid',c.hybrid]]).map(([key,label])=>
+            {([['online',c.online,Monitor],['in_person',c.inPerson,MapPin],['hybrid',c.hybrid,UsersRound]]).map(([key,label,Icon])=>
               <button type="button" key={key} aria-pressed={draft.deliveryFormat===key}
-                onClick={()=>set('deliveryFormat',key)} disabled={locked}>{label}</button>)}
+                onClick={()=>set('deliveryFormat',key)} disabled={locked}>
+                <Icon size={23} aria-hidden="true"/><span>{label}</span></button>)}
           </div>
         </fieldset>
         {draft.deliveryFormat!=='online'&&<label className={styles.field}>
@@ -526,30 +577,32 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
           <input maxLength={200} value={draft.locationLabel||''} placeholder={c.locationExample}
             aria-required="true" disabled={locked} onChange={event=>set('locationLabel',event.target.value)}/>
         </label>}
-        <div className={styles.twoFields}>
-          <label className={styles.field}><span>{c.topic}</span>
-            <select value={draft.areaKey} disabled={locked} onChange={event=>set('areaKey',event.target.value)}>
-              {Object.entries(AREAS).map(([key,names])=><option key={key} value={key}>{names[lang==='ru'?1:lang==='es'?2:0]}</option>)}
-            </select>
-          </label>
-          <label className={styles.field}><span>{c.type}</span>
-            <select value={draft.offeringType} disabled={locked} onChange={event=>set('offeringType',event.target.value)}>
-              {c.offering.map(([key,label])=><option key={key} value={key}>{label}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className={styles.twoFields}>
-          <label className={styles.field}><span>{c.price}</span>
-            <select value={draft.pricingMode} disabled={locked} onChange={event=>set('pricingMode',event.target.value)}>
-              <option value="free">{c.free}</option><option value="fixed">{c.fixed}</option>
-              <option value="from">{c.from}</option><option value="contact">{c.contact}</option>
-            </select>
-          </label>
-          <label className={styles.field}><span>{c.duration}</span>
-            <input type="number" inputMode="numeric" min={5} max={1440} value={draft.durationMinutes??''}
-              placeholder={c.durationExample} disabled={locked} onChange={event=>set('durationMinutes',event.target.value)}/>
-          </label>
-        </div>
+        <label className={styles.field}><span>{c.type}</span>
+          <select value={draft.offeringType} disabled={locked} onChange={event=>set('offeringType',event.target.value)}>
+            {c.offering.map(([key,label])=><option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <fieldset className={styles.durationGroup} data-service-duration>
+          <legend>{ui.time}</legend>
+          <div className={styles.durationChoices}>
+            {[30,60,90].map(minutes=><button key={minutes} type="button"
+              disabled={locked} aria-pressed={!customDuration&&Number(draft.durationMinutes)===minutes}
+              onClick={()=>{setCustomDuration(false);set('durationMinutes',minutes)}}>{minutes} min</button>)}
+            <button type="button" disabled={locked} aria-pressed={customDuration}
+              onClick={()=>setCustomDuration(true)}>{ui.other}</button>
+          </div>
+          {customDuration&&<label className={styles.field}><span>{c.durationNote}</span>
+            <input type="number" inputMode="numeric" min={5} max={1440}
+              value={draft.durationMinutes??''} placeholder={c.durationExample}
+              disabled={locked} onChange={event=>set('durationMinutes',event.target.value)}/>
+          </label>}
+        </fieldset>
+        <label className={styles.field}><span>{c.price}</span>
+          <select value={draft.pricingMode} disabled={locked} onChange={event=>set('pricingMode',event.target.value)}>
+            <option value="free">{c.free}</option><option value="fixed">{c.fixed}</option>
+            <option value="from">{c.from}</option><option value="contact">{c.contact}</option>
+          </select>
+        </label>
         {paid&&<div className={styles.priceFields}>
           <label className={styles.field}><span>{c.amount} *</span>
             <input type="number" inputMode="decimal" min={0} max={100000} step="0.01" value={draft.confirmedPrice??''}
@@ -585,59 +638,78 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
           <span>{c.fromPreview}</span><strong>{priceSummary}</strong>
           {draft.durationMinutes&&<small>{draft.durationMinutes} {c.duration}</small>}
         </div>
+        <p className={styles.bookingNotice}><Clock3 size={16} aria-hidden="true"/>{ui.booking}</p>
       </div>}
     </section>}
     {stage===2&&<section className={styles.stagePanel} data-service-slide="details" aria-label={c.stageDetails}>
       <div className={styles.panelHead}><strong><Leaf size={17}/>{c.detailsHeading}</strong><span>03 / 03</span></div>
       <p className={styles.stageTip}>{c.detailsTip}</p>
-      <div className={styles.mediaCard}>
-        <PracticeVideoField locale={locale} introductions={draft.serviceIntroductions||[]}
-          onIntroductionsChange={value=>set('serviceIntroductions',value)}
-          onBusyChange={value=>{setVideoBusy(value);onMediaBusyChange?.(value)}}/>
-      </div>
-      <details className={styles.advanced} data-service-advanced-details>
-        <summary><span>{c.addLanguages}</span><ChevronDown size={18} aria-hidden="true"/></summary>
-        <div className={styles.advancedContent}>
-          <p className={styles.help}>{c.helper}</p>
-          <label className={styles.field}><span>{c.languages}</span>
-            <input value={languagesText} disabled={locked} placeholder={c.languagesExample}
-              onChange={event=>{mark();setLanguagesText(event.target.value)}}/>
-          </label>
-          <label className={styles.field}><span>{c.detailed}</span>
-            <textarea rows={3} maxLength={4000} value={draft.copy[activeLanguage]?.description||''} disabled={locked}
-              onChange={event=>setCopy('description',event.target.value)}/>
-          </label>
-          <fieldset className={styles.goalField}><legend>{c.goals}</legend>
-            <div className={styles.goalChips}>
-              {GOALS.map(([key,en,ru,es])=><label key={key} className={styles.goal}>
-                <input type="checkbox" checked={(draft.goals||[]).includes(key)} disabled={locked}
-                  onChange={event=>changeGoal(key,event.target.checked)}/>
-                <span>{lang==='ru'?ru:lang==='es'?es:en}</span>
-              </label>)}
-            </div>
-          </fieldset>
-          {!isReiki&&<label className={styles.field}><span>{c.methods}</span>
-            <input value={methodsText} disabled={locked} onChange={event=>{mark();setMethodsText(event.target.value)}}/>
-          </label>}
-          <label className={styles.field}><span>{c.benefits}</span>
-            <textarea rows={3} value={benefitsText} disabled={locked}
-              onChange={event=>{mark();setBenefitsText(event.target.value)}}/>
-          </label>
-          <label className={styles.field}><span>{c.faq}</span>
-            <textarea rows={3} value={faqText} disabled={locked} onChange={event=>{mark();setFaqText(event.target.value)}}/>
-          </label>
-          <div className={styles.twoFields}>
-            <label className={styles.field}><span>{c.whatsapp}</span>
-              <input type="tel" inputMode="tel" placeholder="+14161234567" maxLength={18} value={draft.whatsapp||''}
-                disabled={locked} onChange={event=>set('whatsapp',event.target.value)}/>
-            </label>
-            <label className={styles.field}><span>{c.telegram}</span>
-              <input placeholder="@username" maxLength={33} value={draft.telegram||''}
-                disabled={locked} onChange={event=>set('telegram',event.target.value)}/>
+      <div className={styles.detailRows} data-service-detail-accordions>
+        <details className={styles.advanced} data-service-advanced-details>
+          <summary><FileText size={18} aria-hidden="true"/><span>{c.detailed}</span><ChevronDown size={18} aria-hidden="true"/></summary>
+          <div className={styles.advancedContent}>
+            <p className={styles.help}>{c.helper}</p>
+            <label className={styles.field}><span>{c.detailed}</span>
+              <textarea rows={5} maxLength={4000} value={draft.copy[activeLanguage]?.description||''}
+                disabled={locked} onChange={event=>setCopy('description',event.target.value)}/>
             </label>
           </div>
-        </div>
-      </details>
+        </details>
+        <details className={styles.advanced}>
+          <summary><Sparkles size={18} aria-hidden="true"/><span>{c.benefits}</span><ChevronDown size={18} aria-hidden="true"/></summary>
+          <div className={styles.advancedContent}>
+            <label className={styles.field}><span>{c.benefits}</span>
+              <textarea rows={4} value={benefitsText} disabled={locked}
+                onChange={event=>{mark();setBenefitsText(event.target.value)}}/>
+            </label>
+          </div>
+        </details>
+        <details className={styles.advanced}>
+          <summary><ListChecks size={18} aria-hidden="true"/><span>{c.methods} / {c.faq}</span><ChevronDown size={18} aria-hidden="true"/></summary>
+          <div className={styles.advancedContent}>
+            {!isReiki&&<label className={styles.field}><span>{c.methods}</span>
+              <input value={methodsText} disabled={locked}
+                onChange={event=>{mark();setMethodsText(event.target.value)}}/>
+            </label>}
+            <label className={styles.field}><span>{c.faq}</span>
+              <textarea rows={4} value={faqText} disabled={locked}
+                onChange={event=>{mark();setFaqText(event.target.value)}}/>
+            </label>
+          </div>
+        </details>
+        <button type="button" className={styles.detailLink} disabled={locked}
+          onClick={()=>{setStage(0);setPhotoToolsOpen(true)}}>
+          <ImageIcon size={18} aria-hidden="true"/><span>{c.photo}</span><ArrowRight size={18} aria-hidden="true"/>
+        </button>
+        <details className={styles.advanced}>
+          <summary><Video size={18} aria-hidden="true"/><span>{c.mediaPreview}</span><ChevronDown size={18} aria-hidden="true"/></summary>
+          <div className={styles.advancedContent}>
+            <PracticeVideoField locale={locale} introductions={draft.serviceIntroductions||[]}
+              onIntroductionsChange={value=>set('serviceIntroductions',value)}
+              onBusyChange={value=>{setVideoBusy(value);onMediaBusyChange?.(value)}}/>
+          </div>
+        </details>
+        <details className={styles.advanced}>
+          <summary><Globe2 size={18} aria-hidden="true"/><span>{c.addLanguages}</span><ChevronDown size={18} aria-hidden="true"/></summary>
+          <div className={styles.advancedContent}>
+            <label className={styles.field}><span>{c.languages}</span>
+              <input value={languagesText} disabled={locked} placeholder={c.languagesExample}
+                onChange={event=>{mark();setLanguagesText(event.target.value)}}/>
+            </label>
+            <div className={styles.twoFields}>
+              <label className={styles.field}><span>{c.whatsapp}</span>
+                <input type="tel" inputMode="tel" placeholder="+14161234567" maxLength={18}
+                  value={draft.whatsapp||''} disabled={locked}
+                  onChange={event=>set('whatsapp',event.target.value)}/>
+              </label>
+              <label className={styles.field}><span>{c.telegram}</span>
+                <input placeholder="@username" maxLength={33} value={draft.telegram||''}
+                  disabled={locked} onChange={event=>set('telegram',event.target.value)}/>
+              </label>
+            </div>
+          </div>
+        </details>
+      </div>
     </section>}
     {formIssue&&<p role="alert" className={styles.formIssue}>{formIssue}</p>}
     <div className={styles.footerControls} data-service-editor-footer>

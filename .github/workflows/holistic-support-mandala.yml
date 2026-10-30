@@ -106,7 +106,7 @@ jobs:
             echo "Waiting for local Mandala server, attempt ${i}/60" >&2
             sleep 2
           done
-          if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
+          if [ "$ready" -ne 1 ]; then echo "Mandala did not start after $i startup probes"; cat /tmp/hh-mandala-next.log; exit 1; fi
           node scripts/verify-holistic-mandala-browser.mjs
       - name: Upload synthetic audio-only iPhone screenshots
         if: always()

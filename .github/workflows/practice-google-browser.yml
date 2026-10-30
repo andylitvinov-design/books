@@ -8,17 +8,33 @@ on:
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'
+      - 'components/app/simple-service-editor.jsx'
+      - 'components/app/simple-service-editor.module.css'
+      - 'components/app/my-services-dashboard.module.css'
+      - 'components/app/practice-dashboard.css'
+      - 'components/app/practice-workspace.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
+      - 'tests/practice-service-mobile-one-screen.test.mjs'
+      - 'tests/practice-public-private-unified.test.mjs'
+      - 'tests/profi-hub.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
+      - 'tests/practice-service-mobile-one-screen.test.mjs'
+      - 'tests/practice-public-private-unified.test.mjs'
+      - 'tests/profi-hub.test.mjs'
       - '.github/workflows/practice-google-browser.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
+      - 'components/app/simple-service-editor.jsx'
+      - 'components/app/simple-service-editor.module.css'
+      - 'components/app/my-services-dashboard.module.css'
+      - 'components/app/practice-dashboard.css'
+      - 'components/app/practice-workspace.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'scripts/verify-practice-post-google-browser.mjs'
@@ -50,23 +66,25 @@ jobs:
       - name: Focused auth, layout and regression source tests
         run: |
           node --check scripts/verify-practice-post-google-browser.mjs
-          node --test tests/practice-google-return-and-services-v5.test.mjs tests/practitioner-preview-auth.test.mjs
-          npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
+          node --test tests/practice-google-return-and-services-v5.test.mjs tests/practice-service-mobile-one-screen.test.mjs tests/practice-public-private-unified.test.mjs tests/profi-hub.test.mjs tests/practitioner-preview-auth.test.mjs
+          npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/simple-service-editor.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
           npx tsc --noEmit --pretty false
+      - name: Compile production Next application before browser acceptance
+        run: npm run build
       - name: Install Chromium and WebKit
         run: |
           mkdir -p /tmp/holistic-practice-browser
           npm install --prefix /tmp/holistic-practice-browser --no-audit --no-fund playwright@1.63.0
           /tmp/holistic-practice-browser/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Render signed-in Practice and verify OAuth intent
+      - name: Render production-mode protected editor after signed-in Practice (Chromium and WebKit)
         run: |
           mkdir -p artifacts/practice-after-google
-          npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
+          npx next start --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for ((i=1; i<=120; i++)); do
             if curl --silent --fail http://127.0.0.1:3121/ru/practice > /dev/null; then break; fi
-            if ! kill -0 "$APP_PID" 2>/dev/null; then tail -90 /tmp/practice-after-google-next.log; exit 1; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then echo "Server exited during startup probe $i"; tail -90 /tmp/practice-after-google-next.log; exit 1; fi
             sleep 2
           done
           node scripts/verify-practice-post-google-browser.mjs

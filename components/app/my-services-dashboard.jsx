@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, BookOpen, BriefcaseBusiness, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Heart, Leaf, Plus, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, BookOpen, BriefcaseBusiness, CheckCircle2, ChevronDown, Clock3, ClipboardList, Heart, Leaf, MapPin, Monitor, Pencil, Plus, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { filterPracticeServices } from '@/lib/practitioners/filter-owned-services.mjs'
+import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import styles from './my-services-dashboard.module.css'
 
 const AREAS = {
@@ -24,10 +25,11 @@ const COPY = {
     area:'Topic',allAreas:'All topics',format:'Format',anyFormat:'Any format',online:'Online',inPerson:'In person',hybrid:'Online or in person',
     price:'Price',anyPrice:'Any price',free:'Free',priced:'With a price',contact:'Price on request',
     status:'Status',all:'All services',published:'Published',review:'Under review',draft:'Drafts / paused',draftOne:'Draft',
-    total:'Services',clear:'Clear filters',viewAll:'Explore all services',add:'Add service',edit:'Edit service',close:'Back to my services',discard:'Close without saving changes?',
+    total:'Services',clear:'Clear filters',viewAll:'Explore all services',add:'Add new service',edit:'Edit',close:'Back to my services',discard:'Close without saving changes?',
     showing:'Showing',noResults:'No matching services. Change your filters or clear the search.',filters:'active filters',
     untitled:'Untitled service',changes:'Changes needed',paused:'Paused',suspended:'Suspended',min:'min',hybrid:'Online or in person',
     allShort:'All',publishedShort:'Active',reviewShort:'In review',draftShort:'Drafts',
+    preview:'View',private:'Not public',pending:'Awaiting review',illustration:'Category illustration',
   },
   ru: {
     choose:'Фильтры услуг',hide:'Скрыть фильтры',hint:'Тема · формат · цена',collapse:'Нажмите, чтобы закрыть фильтры',
@@ -36,10 +38,11 @@ const COPY = {
     area:'Тема',allAreas:'Все темы',format:'Формат',anyFormat:'Любой формат',online:'Онлайн',inPerson:'Лично',hybrid:'Онлайн или лично',
     price:'Цена',anyPrice:'Любая цена',free:'Бесплатно',priced:'С указанной ценой',contact:'По запросу',
     status:'Статус',all:'Все услуги',published:'Опубликованные',review:'На проверке',draft:'Черновики / пауза',draftOne:'Черновик',
-    total:'Услуги',clear:'Сбросить фильтры',viewAll:'Все услуги сайта',add:'Добавить услугу',edit:'Редактировать услугу',close:'К моим услугам',discard:'Закрыть редактор без сохранения изменений?',
+    total:'Услуги',clear:'Сбросить фильтры',viewAll:'Все услуги сайта',add:'Добавить новую услугу',edit:'Редактировать',close:'К моим услугам',discard:'Закрыть редактор без сохранения изменений?',
     showing:'Показано',noResults:'Нет подходящих услуг. Измените фильтры или сбросьте поиск.',filters:'активных фильтров',
     untitled:'Без названия',changes:'Нужны правки',paused:'На паузе',suspended:'Приостановлено',min:'мин',hybrid:'Онлайн или лично',
-    allShort:'Все',publishedShort:'Активные',reviewShort:'Проверка',draftShort:'Черновики',
+    allShort:'Все',publishedShort:'Активные',reviewShort:'На проверке',draftShort:'Черновики',
+    preview:'Просмотр',private:'Не опубликовано',pending:'Ожидает проверки',illustration:'Иллюстрация',
   },
   es: {
     choose:'Filtrar servicios',hide:'Ocultar filtros',hint:'Tema · formato · precio',collapse:'Cerrar filtros',
@@ -48,11 +51,40 @@ const COPY = {
     area:'Tema',allAreas:'Todos los temas',format:'Formato',anyFormat:'Cualquier formato',online:'En línea',inPerson:'Presencial',hybrid:'En línea o presencial',
     price:'Precio',anyPrice:'Cualquier precio',free:'Gratis',priced:'Con precio',contact:'Precio a consultar',
     status:'Estado',all:'Todos',published:'Publicados',review:'En revisión',draft:'Borradores / pausa',draftOne:'Borrador',
-    total:'Servicios',clear:'Restablecer filtros',viewAll:'Explorar todos los servicios',add:'Añadir servicio',edit:'Editar servicio',close:'Volver a mis servicios',discard:'¿Cerrar sin guardar los cambios?',
+    total:'Servicios',clear:'Restablecer filtros',viewAll:'Explorar todos los servicios',add:'Añadir nuevo servicio',edit:'Editar',close:'Volver a mis servicios',discard:'¿Cerrar sin guardar los cambios?',
     showing:'Mostrando',noResults:'No hay coincidencias. Cambia los filtros.',filters:'filtros activos',
     untitled:'Sin título',changes:'Necesita cambios',paused:'En pausa',suspended:'Suspendido',min:'min',hybrid:'En línea o presencial',
-    allShort:'Todos',publishedShort:'Activos',reviewShort:'Revisión',draftShort:'Borradores',
+    allShort:'Todos',publishedShort:'Activos',reviewShort:'En revisión',draftShort:'Borradores',
+    preview:'Ver',private:'No publicado',pending:'En revisión',illustration:'Ilustración',
   },
+}
+
+// Only first-party images are used when the practitioner has not uploaded a cover.
+// A category illustration is never represented as the master's own photo.
+const CATEGORY_COVERS={
+  emotional_psychological:'/images/holistic-house/hero-olive-incense.webp',
+  body_somatic:'/images/holistic-house/hero-olive-incense.webp',
+  relationships:'/images/holistic-house/video-posters/constellations-en-v1.webp',
+  homeopathy_holistic:'/images/holistic-house/distance-homeopathy.webp',
+  energy_spiritual:'/academy/reiki-yggdrasil/source/basic-program.jpg',
+  career_purpose:'/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+  business_money:'/images/holistic-house/video-posters/constellations-en-v1.webp',
+  personal_development:'/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+}
+
+function ServiceCover({item,label,kind,Icon}){
+  const [failed,setFailed]=useState(false)
+  const uploaded=item.draftCopy?.photos?.[0]||item.photos?.[0]||''
+  const image=uploaded&&!failed?uploaded:null
+  const background=CATEGORY_COVERS[item.areaKey]||CATEGORY_COVERS.personal_development
+  return <div className={styles.serviceCover} data-service-cover data-has-uploaded-photo={Boolean(image)}
+    style={{backgroundImage:`linear-gradient(0deg,rgba(5,39,31,.32),transparent 55%),url("${background}")`}}>
+    {image&&<img src={image} alt="" loading="lazy" onError={()=>setFailed(true)}/>}
+    <span className={styles.coverIcon}><Icon size={17} aria-hidden="true"/></span>
+    <span className={styles.coverStatus} data-status={item.status}>
+      <span className={styles.statusDot} aria-hidden="true"/>{label}
+    </span>
+  </div>
 }
 
 export default function MyServicesDashboard({items=[],locale='en',createRequest=0,quota,busy=false,renderEditor}) {
@@ -95,9 +127,25 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const serviceKind=item=>item.reikiOffer?'reiki':item.offeringType==='course'?'course':
     item.areaKey==='relationships'?'relationship':item.areaKey==='business_money'?'business':'service'
   const serviceIcon={service:Leaf,reiki:Heart,course:BookOpen,relationship:Heart,business:BriefcaseBusiness}
-  const priceLabel=item=>item.pricingMode==='free'?c.free:item.pricingMode==='contact'?c.contact:item.confirmedPrice!=null
-    ? ((item.pricingMode==='from'?(lang==='ru'?'От ':lang==='es'?'Desde ':'From '):'')+[item.currency,item.confirmedPrice].filter(Boolean).join(' '))
-    : c.contact
+  const priceLabel=item=>{
+    const draft=item.draftCopy||{}
+    const mode=draft.pricingMode||item.pricingMode
+    const amount=draft.confirmedPrice??item.confirmedPrice
+    const currency=draft.currency||item.currency||'CAD'
+    if(mode==='free')return c.free
+    if(mode==='contact'||amount==null||amount==='')return c.contact
+    if(!['fixed','from'].includes(mode)||!Number.isFinite(Number(amount)))return c.contact
+    try{
+      const formatted=new Intl.NumberFormat(lang==='ru'?'ru-RU':lang==='es'?'es-ES':'en-GB',{
+        style:'currency',currency,maximumFractionDigits:2,
+      }).format(Number(amount))
+      return (mode==='from'?(lang==='ru'?'От ':lang==='es'?'Desde ':'From '):'')+formatted
+    }catch{return c.contact}
+  }
+  const openEditor=item=>{
+    if(busy||mediaBusy)return
+    setEditingId(item.id);setEditDirty(false);setCreating(false);setCreateDirty(false)
+  }
   return <section className={styles.dashboard} data-practice-services-new-design
     aria-label={c.title}>
     <div className={styles.inner}>
@@ -167,27 +215,41 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
       {!composing&&<p className={styles.count} role="status" aria-live="polite">{c.showing} {visible.length} / {items.length}</p>}
       {creating&&canAdd&&<div className={styles.editor} data-service-composer-focus>{renderEditor(null,setCreateDirty,setMediaBusy)}</div>}
       {editingItem&&<div className={styles.editor} data-service-composer-focus data-edit-service={editingItem.id}>{renderEditor(editingItem,setEditDirty,setMediaBusy)}</div>}
-      {!composing&&<div className={styles.list}>
+      {!composing&&<div className={styles.list} data-service-card-list>
         {visible.map(item=>{
           const kind=serviceKind(item)
           const Icon=serviceIcon[kind]||Sparkles
-          return <details key={item.id+':'+item.revision} className={styles.serviceCard}
-            onToggle={event=>{if(event.currentTarget.open){setEditingId(item.id);setEditDirty(false)}}}>
-          <summary>
-            <span className={styles.serviceIcon} data-service-kind={kind}>
-              {(item.draftCopy?.photos?.[0]||item.photos?.[0])
-                ? <img src={item.draftCopy?.photos?.[0]||item.photos?.[0]} alt="" loading="lazy" />
-                : <Icon size={21} aria-hidden="true"/>}
-            </span>
-            <span className={styles.serviceInfo}>
-              <strong>{item.localizedCopy?.[lang]?.title||item.copy?.title||item.localizedCopy?.en?.title||c.untitled}</strong>
-              <small>{item.deliveryFormat==='in_person'?c.inPerson:item.deliveryFormat==='hybrid'?c.hybrid:c.online}{item.durationMinutes?' · '+item.durationMinutes+' '+c.min:''}</small>
-              <small className={styles.price}>{priceLabel(item)}</small>
-            </span>
-            <span className={styles.status} data-status={item.status}>{statusLabel(item.status)}</span>
-            <ChevronRight className={styles.cardChevron} size={16} aria-hidden="true"/>
-          </summary>
-        </details>})}
+          const draft=item.draftCopy||{}
+          const localized=draft.copy?.[lang]||draft.copy?.en||item.localizedCopy?.[lang]||item.localizedCopy?.en||{}
+          const title=localized.title||item.localizedCopy?.[lang]?.title||item.copy?.title||c.untitled
+          const description=(localized.shortDescription||item.copy?.shortDescription||'').trim()
+          const delivery=draft.deliveryFormat||item.deliveryFormat
+          const duration=draft.durationMinutes??item.durationMinutes
+          const formatLabel=delivery==='in_person'?c.inPerson:delivery==='hybrid'?c.hybrid:c.online
+          const hasPublicLink=item.status==='published'&&Boolean(item.slug&&item.practitionerSlug)
+          return <article key={item.id+':'+item.revision} className={styles.serviceCard}
+            data-service-list-item data-status={item.status}>
+            <ServiceCover item={item} kind={kind} Icon={Icon} label={statusLabel(item.status)}/>
+            <div className={styles.serviceInfo}>
+              <h3>{title}</h3>
+              {description&&<p className={styles.description}>{description}</p>}
+              <div className={styles.cardMeta}>
+                <span>{delivery==='in_person'?<MapPin size={15} aria-hidden="true"/>:<Monitor size={15} aria-hidden="true"/>}{formatLabel}</span>
+                {duration!=null&&duration!==''&&<span><Clock3 size={15} aria-hidden="true"/>{duration} {c.min}</span>}
+                <strong className={styles.price}>{priceLabel(item)}</strong>
+              </div>
+              <div className={styles.cardActions}>
+                <button type="button" disabled={busy||mediaBusy} onClick={()=>openEditor(item)}
+                  data-service-edit-action><Pencil size={15} aria-hidden="true"/>
+                  {c.edit}</button>
+                {hasPublicLink
+                  ? <Link href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
+                    {c.preview}<ArrowUpRight size={15} aria-hidden="true"/></Link>
+                  : <span className={styles.unpublishedHint}>{item.status==='submitted'?c.pending:c.private}</span>}
+              </div>
+            </div>
+          </article>
+        })}
       </div>}
       {items.length===0&&!creating&&canAdd&&<p className={styles.empty}>{lang==='ru'?'Пока нет услуг. Добавьте своё первое предложение.':lang==='es'?'Aún no hay servicios. Añade tu primera oferta.':'No services yet. Add your first offer.'}</p>}
       {!composing&&items.length>0&&!visible.length&&<p className={styles.empty} role="status">{c.noResults}</p>}

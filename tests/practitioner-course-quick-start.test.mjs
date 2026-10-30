@@ -11,10 +11,10 @@ test('a course starts with its author-entered title and first editable screen',(
  assert.match(builder,/data-course-quick-start/)
  assert.match(builder,/const title=newTitle\.trim\(\)/)
  assert.match(builder,/if\(!title\)\{setError\(t\.enterTitle\);return\}/)
- assert.match(builder,/course=\{title,description:'',locale:newLocale,slides:\[makeSlide\(\)\]\}/)
+ assert.match(builder,/course=\{title,description:'',locale:newLocale,contentType:isMeditation\?meditationType\+'_meditation':'course',slides:\[isMeditation\?\{\.\.\.makeSlide\(\),kind:meditationType\}:makeSlide\(\)\]\}/)
  assert.doesNotMatch(builder,/title:t\.new,description:'',locale:/)
  assert.match(builder,/onSubmit=\{event=>void create\(event\)\}/)
- assert.match(builder,/setCreating\(!list\.length\)/)
+ assert.match(builder,/setCreating\(Boolean\(startCreate\)\|\|!list\.length\)/)
 })
 
 test('editing stays in one workspace and protects pending changes and active slide',()=>{

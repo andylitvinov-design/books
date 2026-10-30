@@ -12,6 +12,10 @@ const serviceCss=read('components/app/my-services-dashboard.module.css')
 const practice=read('components/app/practice-workspace.jsx')
 const account=read('components/app/app-workspace.jsx')
 const innerNav=read('components/app/practice-inner-navigation.jsx')
+const editor=read('components/app/simple-service-editor.jsx')
+const editorCss=read('components/app/simple-service-editor.module.css')
+const practiceCss=read('components/app/practice-dashboard.css')
+const editorBrowser=read('scripts/verify-practice-post-google-browser.mjs')
 
 test('Google login keeps the same Practice dashboard without an extra Continue panel',()=>{
  assert.match(callback,/continueTo === 'practice-preview'/)
@@ -43,6 +47,15 @@ test('Pro explicit start remains available, while Google sign-in never forwards 
  assert.match(front,/signedIn && practice \? String\(active\) : t\.countUnknown/)
 })
 
+test('explicit protected entry performs fresh-document navigation with a new CSP nonce',()=>{
+ assert.match(front,/if \(signedIn\) \{\s*\/\/ Use a new document for the protected cabinet:[\s\S]*?window\.location\.assign\(destination\(locale, key\)\)/)
+ assert.match(front,/window\.location\.assign\(destination\(locale, nextAction\)\)/)
+ assert.match(front,/window\.location\.assign\(destination\(locale, key\)\)/)
+ assert.match(editorBrowser,/__publicPracticeDocumentMarker/)
+ assert.match(editorBrowser,/fresh document, not a fragile Next SPA chunk transition/)
+ assert.match(callback,/continueTo === 'practice-preview'/)
+})
+
 test('service list uses one inner header, real totals, functional filters, existing editor',()=>{
  assert.match(account,/practiceInner \? 'hh-app hh-app--practice-inner'/)
  assert.match(practice,/<PracticeInnerHeader locale=\{locale\} panel=\{activePanel\}/)
@@ -56,10 +69,14 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.match(service,/aria-pressed=\{status===entry\.key\}/)
  assert.match(service,/onClick=\{\(\)=>setStatus\(entry\.key\)\}/)
  assert.match(service,/visible\.map\(item=>\{/)
- assert.match(service,/<\/details>\}\)\}\s*<\/div>\}/)
+ assert.match(service,/<\/article>\s*\}\)\}/)
+ assert.match(service,/data-service-card-list/)
+ assert.match(service,/data-service-edit-action/)
+ assert.match(service,/getPublicServiceDetailHref\(locale,item\.practitionerSlug,item\.slug\)/)
  assert.match(service,/item\.localizedCopy\?\.\[lang\]\?\.title/)
  assert.match(service,/data-status=\{item\.status\}/)
- assert.match(service,/onToggle=\{event=>\{if\(event\.currentTarget\.open\)/)
+ assert.match(service,/onClick=\{\(\)=>openEditor\(item\)\}/)
+ assert.doesNotMatch(service,/onToggle=\{event=>/)
  assert.match(service,/renderEditor\(null,setCreateDirty,setMediaBusy\)/)
  assert.match(service,/renderEditor\(editingItem,setEditDirty,setMediaBusy\)/)
  assert.match(serviceCss,/\.dashboard\[data-practice-services-new-design\]/)
@@ -68,6 +85,57 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.match(serviceCss,/@media\(max-width:350px\)/)
  assert.match(serviceCss,/:has\(\[data-service-composer-focus\]\)/)
  assert.doesNotMatch(service,/fakePayment|new SupabaseClient|createServiceForGuest/)
+})
+
+test('the signed-in service editor is rendered and mobile-safe, not merely reached by URL',()=>{
+ assert.match(editorBrowser,/editor\.waitFor\(\{state:'visible'/)
+ assert.match(editorBrowser,/synthetic account only/)
+ assert.match(editorBrowser,/no truncated three-step headings/)
+ assert.match(editorBrowser,/Save\/Next actually rests at the iPhone bottom/)
+ assert.match(editorBrowser,/no commission card under the wizard/)
+ assert.match(editorBrowser,/input\.fill\('Synthetic service title'\)/)
+ assert.match(editor,/stageShortLabels/)
+ assert.match(editor,/Формат и цена/)
+ assert.match(editor,/Formato y precio/)
+ assert.match(editor,/Format & price/)
+ assert.match(editor,/aria-label=\{label\}/)
+ assert.match(innerNav,/hh-practice-service-editor-heading/)
+ assert.match(innerNav,/servicesEditTitle:'Новая услуга'/)
+ assert.match(editorCss,/bottom:calc\(8px \+ env\(safe-area-inset-bottom,0px\)\)/)
+ assert.doesNotMatch(editorCss,/bottom:calc\(74px \+ env\(safe-area-inset-bottom,0px\)\)/)
+ assert.match(editorCss,/overflow:visible;white-space:normal;text-overflow:clip/)
+ assert.match(practiceCss,/Service-editor visual continuity: approved practitioner home/)
+ assert.match(practiceCss,/\.hh-practice-fee-notice\{display:none!important\}/)
+ assert.match(serviceCss,/\.editor\[data-service-composer-focus\]\{\s*order:3;padding:0/)
+})
+
+test('approved photo-led service mock uses real owned values and editable three-screen form',()=>{
+ assert.match(service,/data-service-cover/)
+ assert.match(service,/data-has-uploaded-photo/)
+ assert.match(service,/CATEGORY_COVERS/)
+ assert.match(service,/statusLabel\(item\.status\)/)
+ assert.match(service,/const amount=draft\.confirmedPrice\?\?item\.confirmedPrice/)
+ assert.match(service,/const hasPublicLink=item\.status==='published'/)
+ assert.doesNotMatch(service,/confirmedPrice:100|confirmedPrice:120|confirmedPrice:150/)
+ assert.match(serviceCss,/\.serviceCover\{/)
+ assert.match(serviceCss,/\.cardActions\{/)
+ assert.match(serviceCss,/\.statusTabs button\[aria-pressed=true\]/)
+ for(const key of ['data-service-gallery-strip','data-service-goals','data-service-duration',
+   'data-service-detail-accordions','data-service-photo-tools','data-service-save-actions'])
+  assert.ok(editor.includes(key),key)
+ assert.match(editor,/set\('photos',\[image,\.\.\.photos\.filter/)
+ assert.match(editor,/set\('durationMinutes',minutes\)/)
+ assert.match(editor,/onSave\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
+ assert.match(editor,/onSaveAndSubmit\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
+ assert.match(editorCss,/\.galleryStrip\{/)
+ assert.match(editorCss,/\.durationChoices\{/)
+ assert.match(editorCss,/\.detailRows\{/)
+ assert.match(editorCss,/\.footerControls\{grid-template-columns:44px minmax\(0,1fr\)/)
+ assert.match(editorBrowser,/sampleServices/)
+ assert.match(editorBrowser,/real protected component with synthetic records only/)
+ assert.match(editorBrowser,/owner-approved scenic service cover/)
+ assert.match(editorBrowser,/synthetic fixture bootstrap CORS diagnostic/)
+ assert.doesNotMatch(editor,/availabilitySlots|bookConfirmed|discountPercent|chargeCustomer/)
 })
 
 test('legacy web Google sign-in returns to clean original Practice with no layout-shifting Continue banner',()=>{
@@ -124,6 +192,7 @@ test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>
  for(const path of ['components/practice-showcase.jsx',
    'components/app/my-services-dashboard.jsx','components/app/practice-workspace.jsx',
    'components/app/app-workspace.jsx','components/app/practice-inner-navigation.jsx',
+   'components/app/simple-service-editor.jsx',
    'app/api/app/[...path]/route.js']){
   const result=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
     compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}})
