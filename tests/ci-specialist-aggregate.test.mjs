@@ -121,3 +121,14 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.doesNotThrow(()=>parsePrTrigger(readFileSync(file,'utf8'),file),name);
   }
 });
+
+test('unexpected real PR failures and unassociated jobless PR runs are never ignored',()=>{
+  const other='.github/workflows/unmapped.yml';
+  const unrelated=run({path:other,id:752,status:'completed',conclusion:'failure'});
+  const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),unrelated]});
+  assert.deepEqual(state.observedUnrelated,[other+':failure']);
+  const missingAssociation=run({id:753,path:other,pull_requests:[],conclusion:'failure'});
+  const orphans=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),missingAssociation]});
+  assert.deepEqual(orphans.orphanFailures,['753:failure']);
+  assert.deepEqual(inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({path:'.github/workflows/hh-pr-core-release.yml',status:'in_progress',conclusion:null})]}).observedUnrelated,[]);
+});

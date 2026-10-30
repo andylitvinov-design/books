@@ -82,12 +82,14 @@ export async function verify(api,ctx,files,options={}) {
   for (;;) {
     const allRuns=await api.runs(ctx.head);
     state=inspectWorkflowRuns({expected,runs:allRuns,pr});
-    if (state.pushFailures.length || state.failed.length) {
-      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,push:state.pushFailures}));
+    if (state.pushFailures.length || state.orphanFailures.length || state.failed.length ||
+        state.observedUnrelated.some(x => x.includes(':failure') || x.includes(':cancelled') || x.includes(':timed_out'))) {
+      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,push:state.pushFailures,
+        orphan:state.orphanFailures,other:state.observedUnrelated}));
     }
-    if (!state.missing.length && !state.pending.length) break;
+    if (!state.missing.length && !state.pending.length && !state.observedUnrelated.length) break;
     if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
+      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending,other:state.observedUnrelated}));
     }
     await delay(pollMs);
   }
