@@ -33,7 +33,7 @@ type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:bo
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get a sequence of connected scenes.",
-    open:"Plan my film",close:"Close director",edit:"Edit",done:"Done",back:"Back",
+    open:"Plan my film",close:"Close director",edit:"Edit",done:"Done",back:"Back",showMore:"Show more questions",
     visualIdea:"What would you like to see happen on screen?",
     visualIdeaPlaceholder:"For example: A white eagle flies over mountains and becomes a constellation of light",
     visualIdeaHelp:"Optional. This stays on your device. Only known fictional visual elements appear in the safe reference pack.",
@@ -65,7 +65,7 @@ const copy={
     themes:{energy:"Energy",money:"Money & work",relationships:"Relationships",goals:"Goals & purpose",life:"Everyday life",health:"Rest & wellbeing"}},
   ru:{title:"Кинорежиссёр",tag:"НОВОЕ · ЛОКАЛЬНО И ПРИВАТНО",
     intro:"Опишите желаемые изменения и атмосферу. Получите последовательность связанных сцен.",
-    open:"Спланировать фильм",close:"Закрыть режиссёра",edit:"Изменить",done:"Готово",back:"Назад",
+    open:"Спланировать фильм",close:"Закрыть режиссёра",edit:"Изменить",done:"Готово",back:"Назад",showMore:"Показать ещё вопросы",
     visualIdea:"Что вы хотите увидеть в кадре?",
     visualIdeaPlaceholder:"Например: Белый орёл летит над горами и превращается в созвездие",
     visualIdeaHelp:"Необязательное поле. Текст остаётся на устройстве; в безопасный план попадают только распознанные вымышленные образы.",
@@ -97,7 +97,7 @@ const copy={
     themes:{energy:"Энергия",money:"Деньги и работа",relationships:"Отношения",goals:"Цели и смыслы",life:"Жизнь",health:"Отдых и самочувствие"}},
   es:{title:"Director cinematográfico",tag:"NUEVO · LOCAL Y PRIVADO",
     intro:"Describe los cambios y el ambiente que deseas explorar. Crea una secuencia de escenas conectadas.",
-    open:"Planificar mi película",close:"Cerrar director",edit:"Editar",done:"Listo",back:"Volver",
+    open:"Planificar mi película",close:"Cerrar director",edit:"Editar",done:"Listo",back:"Volver",showMore:"Mostrar más preguntas",
     visualIdea:"¿Qué quieres ver en la pantalla?",
     visualIdeaPlaceholder:"Por ejemplo: Un águila blanca vuela sobre las montañas y se transforma en una constelación",
     visualIdeaHelp:"Opcional. El texto permanece en tu dispositivo; el plan seguro solo incluye elementos ficticios reconocidos.",
@@ -146,6 +146,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const [localVisualIdea,setLocalVisualIdea]=useState("");
   const visualIdea=intentText??localVisualIdea;
   const [questionGroup,setQuestionGroup]=useState<QuestionGroup>("principal");
+  const [questionLimit,setQuestionLimit]=useState(4);
   const [revisingQuestion,setRevisingQuestion]=useState<string|null>(null);
   const [questionAnswers,setQuestionAnswers]=useState<Record<string,{selectedOptionId:string|null;customText:string|null;confirmed:boolean}>>({});
   const [selectedShotNumber,setSelectedShotNumber]=useState<number|null>(null);
@@ -175,8 +176,9 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const activeSceneAnswers=selectedShotNumber===null?{}:shotAnswers[selectedShotNumber]||{};
   const categoryAnswers=questionGroup==="pro"?activeSceneAnswers:questionAnswers;
   const categoryQuestions=useMemo(()=>questionsForGroup({intentText:visualIdea,answers:categoryAnswers,group:questionGroup,
-    sceneSelected:Boolean(selectedShotNumber),extraSelected:questionGroup==="extra"&&generated}) as readonly StudioQuestion[],[visualIdea,categoryAnswers,questionGroup,selectedShotNumber,generated]);
-  const visibleCategoryQuestions=generated?categoryQuestions.filter(question=>!initialQuestions.some(initial=>initial.id===question.id)):[];
+    sceneSelected:Boolean(selectedShotNumber),extraSelected:questionGroup==="extra"&&generated,limit:49}) as readonly StudioQuestion[],[visualIdea,categoryAnswers,questionGroup,selectedShotNumber,generated]);
+  const availableCategoryQuestions=generated?categoryQuestions.filter(question=>!initialQuestions.some(initial=>initial.id===question.id)):[];
+  const visibleCategoryQuestions=availableCategoryQuestions.slice(0,questionLimit);
   const plan:CinematicStoryboard=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
   const showStoryboard=generated && generatedMode===therapyMode;
   const shotDirections=useMemo(()=>plan.shots.map(shot=>({shotId:shot.id,answers:shotAnswers[shot.number]||{}})),[plan,shotAnswers]);
@@ -337,7 +339,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
       <section className={css.questionCategories} data-director-contextual-questions>
         <nav className={css.categoryTabs} aria-label="Video Studio categories">
           {QUESTION_GROUPS.map(group=><button type="button" key={group} data-director-category={group}
-            aria-pressed={questionGroup===group} onClick={()=>setQuestionGroup(group)}>{t.categories[group]}</button>)}
+            aria-pressed={questionGroup===group} onClick={()=>{setQuestionGroup(group);setQuestionLimit(4);}}>{t.categories[group]}</button>)}
         </nav>
         {[...Object.entries(questionAnswers).map(([id,answer])=>({id,answer,scene:false})),
           ...(selectedShotNumber===null?[]:Object.entries(activeSceneAnswers).map(([id,answer])=>({id,answer,scene:true})))].filter(({answer})=>answer.confirmed).map(({id,answer,scene})=>{
@@ -382,6 +384,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
                 onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value,sceneScoped);}} disabled={disabled}/>
             </fieldset>;
           }):<small>{questionGroup==="pro"&&selectedShotNumber===null?t.selectShot:t.noQuestions}</small>:null}
+          {generated&&availableCategoryQuestions.length>questionLimit?<button type="button" disabled={disabled}
+            onClick={()=>setQuestionLimit(limit=>limit+4)}>{t.showMore}</button>:null}
         </div>
       </section>
       <div className={css.fields}>

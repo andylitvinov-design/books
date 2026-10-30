@@ -1050,6 +1050,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(await director.locator('[data-director-shot]').count(),6,
             'a 60-second storyboard contains six scenes');
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
+          await director.locator('[data-director-category="advanced"]').click();
+          const moreQuestions=director.getByRole('button',{name:'Показать ещё вопросы',exact:true});
+          await moreQuestions.click();
+          assert.ok(await director.locator('[data-director-contextual-questions] fieldset').count()>4,
+            'later optional creative questions are reachable without answering earlier ones');
           await director.locator('[data-director-category="principal"]').click();
           const durationQuestion=director.locator('fieldset').filter({has:director.getByText('Какой длины нужен ролик?',{exact:true})});
           await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();
