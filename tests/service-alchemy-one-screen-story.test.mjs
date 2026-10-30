@@ -64,3 +64,30 @@ test("Alchemy browser waits for semantic DOM readiness, preserving every release
  const css=read("components/alchemy-soul-landing.module.css");
  assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
 });
+
+
+test("public services browser uses DOM readiness while preserving every real privacy, media and booking gate",()=>{
+ const source=read("scripts/verify-public-services-production.mjs");
+ assert.equal((source.match(/waitUntil:\s*["']domcontentloaded["']/g)||[]).length,10);
+ assert.doesNotMatch(source,/waitUntil:\s*["']networkidle["']/);
+ for(const contract of [
+   "Public acceptance may run only against an isolated loopback server",
+   "assert.equal(directoryResponse?.status(), 200",
+   'await visible(main.locator("h1"))',
+   'await visible(page.locator("#services-conversion-title"))',
+   "data-business-consulting",
+   "data-alchemy-lead-form",
+   "data-booking-payment-options",
+   "data-alchemy-panel",
+   "The dedicated Services catalog must load",
+   "The free consultation hub reuses the same three offers",
+   "assertNoDevIssueOverlay",
+   "assertViewport",
+ ]) assert.ok(source.includes(contract),"Required real acceptance was lost: "+contract);
+ for(const image of ["photo","portrait"])assert.ok(
+   source.includes('await expect('+image+').toHaveJSProperty("complete", true, { timeout: 15000 })'),
+   image+" must load before genuine naturalWidth is checked");
+ assert.match(source,/naturalWidth > 100/);
+ assert.match(source,/naturalWidth > 20/);
+ assert.doesNotMatch(source,/continue-on-error/);
+});
