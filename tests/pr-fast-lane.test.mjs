@@ -505,3 +505,61 @@ test('Reports Development Programme keeps its focused verification and separate 
   assert.match(reports, /npx --no-install eslint/);
   assert.doesNotMatch(reports,/continue-on-error:\s*true/);
 });
+
+ 
+// Wave 5: protect every specialist suite while eliminating redundant compilation.
+test('CI wave 5 delegates only duplicate global TS/build on protected Ready PRs', () => {
+  const guard = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const specs = [
+    ['dao-iching-library.yml', ['Build exact app (without Vercel paid preview)', 'Typecheck exact app'], 'tests/dao-hexagrams.test.mjs'],
+    ['hh-personal-coaching-session.yml', ['TypeScript noEmit', 'Build production Next.js'], 'lib/personal-coaching/'],
+    ['practice-material-previews.yml', ['TypeScript regression', 'Production Next.js build'], 'tests/practice-material-preview-url.test.mjs'],
+    ['admin-seo-dashboard.yml', ['Typecheck', 'Production build'], 'tests/admin-seo-dashboard.test.mjs'],
+    ['compact-lead-capture-ci.yml', ['TypeScript and production build with unchanged payment gates'], 'tests/compact-lead-channel-handoff.test.mjs'],
+  ];
+  for (const [name, delegatedSteps, retainedContract] of specs) {
+    const source = workflow(name);
+    for (const label of delegatedSteps)
+      assert.ok(source.includes('- name: ' + label + '\n        ' + guard + '\n'), name + ' must delegate global TS/build to exact-head Core: ' + label);
+    assert.ok(source.includes(retainedContract), name + ' removed its original domain checks');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  const dao = workflow('dao-iching-library.yml');
+  assert.ok(dao.includes("github.event.pull_request.number || github.run_id"));
+  assert.ok(dao.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
+});
+
+test('CI wave 5 CRM, App Browser and live performance do not duplicate runner work', () => {
+  const crm = workflow('hh-crm-source-check.yml');
+  assert.match(crm, /^  crm:\s*$/m);
+  assert.doesNotMatch(crm, /^  build:\s*$/m, 'redundant CRM Next build job should not run for every PR');
+  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
+  assert.ok(crm.includes('npm run build'), 'independent manual CRM build remains');
+  assert.ok(crm.includes('node --test tests/crm-salesbot-flow.test.mjs'));
+  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
+  const appBrowser = workflow('hh-app-browser.yml');
+  assert.equal((appBrowser.match(/^      matrix:/gm) || []).length, 1, 'the four browser scenarios require one summary job');
+  assert.ok(appBrowser.includes('browser: [chromium, webkit]') && appBrowser.includes('suite: [core, extended]'));
+  assert.ok(appBrowser.includes('run: test "$MATRIX_RESULT" = success'));
+  assert.ok(appBrowser.includes('    needs: browser\n'), 'all four matrix combinations remain blocking');
+  const perf = workflow('hh-public-performance-audit.yml');
+  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
+  assert.ok(perf.includes('Validate targeted safety and booking contracts'));
+  assert.match(perf, /^  push:\s*$/m, 'live performance must still be checked on a trusted release');
+  assert.match(perf, /^  workflow_dispatch:\s*$/m);
+});
+
+test('CI wave 5 preserves live browser E2E in Public Services and Mandala', () => {
+  const services = workflow('hh-public-services-production.yml');
+  assert.ok(services.includes('node scripts/verify-public-services-production.mjs'));
+  assert.ok(services.includes('npm run build'), 'local browser tests need a real production bundle');
+  assert.ok(!services.includes('npx tsc --noEmit'), 'Core already enforces full typing');
+  const mandala = workflow('holistic-support-mandala.yml');
+  assert.ok(mandala.includes('npm run build'));
+  assert.ok(mandala.includes('node scripts/verify-holistic-mandala-browser.mjs'));
+  assert.ok(!mandala.includes('- name: Typecheck\n'), 'Core owns duplicate typing');
+});
