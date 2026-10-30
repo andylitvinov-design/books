@@ -36,6 +36,22 @@ test('only missing subject or action produces at most two contextual questions; 
   assert.deepEqual(videoStudioContextQuestions('Красивый фильм',{subjectChoice:'forged',actionChoice:'forged'}),['subject','action']);
   assert.deepEqual(videoStudioContextQuestions(''),[]);
 });
+test('negative actor requests must not turn an explicitly avoided creature into the film hero',()=>{
+  const cases=[
+    ['ru','Без орла, пусть волк путешествует по лесу','wolf'],
+    ['en',"Don't want an eagle, a fox travels through forest",'fox'],
+    ['es','Sin águila, el lobo viaja por el bosque','wolf'],
+  ];
+  for(const [locale,visualIdea,expected] of cases){
+    const plan=project({locale});
+    const packet=compileCinematicReferencePack({plan,visualIdea});
+    assert.equal(packet.recognized.subject,expected);
+    assert.ok(!JSON.stringify(packet).includes(visualIdea));
+    assert.equal(packet.externalTransferApproved,false);
+    assert.equal(packet.newAiVideoAvailable,false);
+  }
+  assert.deepEqual(videoStudioContextQuestions('Не хочу орла, нет другого героя'),['subject','action']);
+});
 test('new fictional eagle metamorphosis produces safe text-only keyframes but no fake AI frames',()=>{
   for(const [locale,idea] of [
     ['ru','Моя тайна 74829: Белый орёл летит над горами и превращается в созвездие'],
