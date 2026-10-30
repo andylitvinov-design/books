@@ -9,6 +9,7 @@ import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import { MandalaVideoCodeRedeemer } from "./mandala-video-code-redeem";
+import {compileVideoVisualPrompt} from "@/lib/mandala/video-ai-prompt.mjs";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
 import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -941,6 +942,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoAiReady,setVideoAiReady] = useState(false);
   const [creationMode,setCreationMode] = useState<"catalog"|"generated">("catalog");
   const [freeVideoPlan,setFreeVideoPlan] = useState<FreeVideoPlan|null>(null);
+  const [visualDescription,setVisualDescription]=useState("");
   const updateFreeVideoPlan=useCallback((next:FreeVideoPlan)=>setFreeVideoPlan(next),[]);
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
@@ -1009,6 +1011,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
   const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
+  // Pay-as-you-go prompt uses ONLY chosen VISUAL motifs, not the separate
+  // psychological wish, test results, or notes from the client's profile.
+  const suggestedAiPrompt=compileVideoVisualPrompt({
+    theme,locale,
+    scene:creationMode==="generated"?(freeVideoPlan?.family||"light"):
+      theme==="money"?(moneyScene||"golden-rain"):otherScene,
+    color:creationMode==="generated"?(freeVideoPlan?.palette||"gold"):
+      theme==="relationships"?"violet":theme==="energy"?"ocean":"gold",
+    motion:speed==="dynamic"?"dynamic":"calm",
+    visualDescription:creationMode==="generated"?visualDescription:"",
+  });
   const activeFilm = cinematicPlan ? null : activeMoneyFilm || activeThemedFilm;
   const effectiveFilm=creationMode==="generated"?null:activeFilm;
   const proceduralScene=creationMode==="generated"?freeVideoPlan:null;
@@ -1747,7 +1760,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {tierMode==="smart"?<p>{tier.freeExpl}</p>:null}
           {!videoAiReady?<p>{tier.blocked}</p>:null}
           <MandalaVideoCodeRedeemer key={tierMode} locale={locale}
-            tier={tierMode==="smart"?"smart":"pro"} onAvailability={setVideoAiReady}/>
+            tier={tierMode==="smart"?"smart":"pro"} onAvailability={setVideoAiReady}
+            suggestedPrompt={suggestedAiPrompt}/>
           <button type="button" disabled={recording||preparing}
             data-video-tier-storyboard onClick={prepareAiStoryboard}>
             <Film size={17} aria-hidden="true"/>{tier.prep}<ArrowRight size={15} aria-hidden="true"/>
@@ -1786,7 +1800,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaFreeVideoGenerator key={locale} locale={locale}
             theme={theme} aspect={aspect} duration={duration} disabled={creationMode!=="generated"||recording||preparing}
             localPortrait={!backgroundOnly&&photoConsent?sharedThumbnailPhoto:null}
-            onPlanChange={updateFreeVideoPlan}/>
+            onPlanChange={updateFreeVideoPlan}
+            onVisualDescriptionChange={setVisualDescription}/>
         </div>
 
         <section className={videoStyles.quickSection} data-video-quick-section="1"
