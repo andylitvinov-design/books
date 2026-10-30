@@ -72,10 +72,14 @@ jobs:
       - run: npm run test:unit
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
-      - run: npm run lint
+      - name: Full lint outside production PR (core release-ready owns production lint)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm run lint
       - run: npm run native:check && npm run pwa:check
       - run: npm run build
-      - run: npx --no-install tsc --noEmit
+      - name: Full TypeScript outside production PR (core release-ready owns production typing)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
