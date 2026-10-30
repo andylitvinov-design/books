@@ -591,3 +591,48 @@ test('all 14 Public Services browser suites use semantic readiness rather than n
       script + ': do not suppress networkidle timeouts');
   }
 });
+
+
+test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
+  const source = workflow('hh-public-services-production.yml');
+  const required = [
+    'verify-alchemy-one-screen.mjs',
+    'verify-business-quiz-mobile.mjs',
+    'verify-ideas-mobile-browser.mjs',
+    'verify-holistic-master-browser.mjs',
+    'verify-reiki-mobile-order-browser.mjs',
+    'verify-holistic-support-recommendations-mobile.mjs',
+    'verify-talisman-google-checkout-browser.mjs',
+    'verify-holistic-topics-browser.mjs',
+    'verify-direction-focus-mobile.mjs',
+    'verify-public-services-production.mjs',
+    'verify-home-consultation-first-screen.mjs',
+    'verify-contact-channel-chooser-browser.mjs',
+    'verify-service-cart-browser.mjs',
+    'verify-storefront-shop-browser.mjs',
+  ];
+  const cases = [...source.matchAll(/run_case "([^"]+\.mjs)" node scripts\/([a-z0-9-]+\.mjs)/g)];
+  assert.deepEqual(
+    cases.map((match) => {
+      assert.equal(match[1], match[2], 'script must retain its exact reporting label');
+      return match[1];
+    }).sort(),
+    [...required].sort(),
+    'every original real Chromium/WebKit, payment, consent and localized browser script must still run exactly once',
+  );
+  assert.match(source, /lane_a\(\) \{/);
+  assert.match(source, /lane_b\(\) \{/);
+  assert.match(source, /lane_a &\s*\n\s*lane_a_pid=\$!/);
+  assert.match(source, /lane_b &\s*\n\s*lane_b_pid=\$!/);
+  assert.match(source, /wait "\$lane_a_pid" \|\| \{[^}]*status=1;/);
+  assert.match(source, /wait "\$lane_b_pid" \|\| \{[^}]*status=1;/);
+  assert.match(source, /return "\$failed"/);
+  assert.match(source, /return "\$code"/);
+  assert.match(source, /printf 'case,status,seconds\\n'/);
+  assert.match(source, /next-production-build/);
+  assert.match(source, /home-rsc-local\.json/);
+  assert.match(source, /TTFB_SAMPLES=3 node scripts\/measure-hh-public-ttfb\.mjs/);
+  assert.match(source, /exit "\$status"/);
+  assert.match(source, /timeout-minutes: 20/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});

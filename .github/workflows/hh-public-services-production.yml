@@ -135,11 +135,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
-          if ! npm run build > artifacts/public-services-production/build.log 2>&1; then
-            echo "::error::Public Services production build failed"
+          printf 'case,status,seconds\n' > artifacts/public-services-production/timings.csv
+          acceptance_started=$SECONDS
+          build_started=$SECONDS
+          build_code=0
+          npm run build > artifacts/public-services-production/build.log 2>&1 || build_code=$?
+          if (( build_code != 0 )); then
+            printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+            echo "::error::Public Services production build failed (exit $build_code)"
             tail -n 100 artifacts/public-services-production/build.log
             exit 1
           fi
+          printf 'next-production-build,PASS,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -162,41 +169,73 @@ jobs:
             exit 1
           fi
           status=0
-          printf 'case,status,seconds\n' > artifacts/public-services-production/timings.csv
+          # Keep the original 14 real acceptance suites, including payment,
+          # consent, browser engines and RU/EN/ES viewports. One Next server,
+          # two bounded independent lanes, never extra jobs or required checks.
+          # Each suite writes its own diagnostics; both lanes MUST be awaited.
           run_case() {
             local label="$1"; shift
             local started=$SECONDS
-            local result=PASS
             local code=0
-            "$@" || code=$?
+            local outcome=PASS
+            local log="artifacts/public-services-production/$label.log"
+            "$@" > "$log" 2>&1 || code=$?
             if (( code != 0 )); then
-              status=1
-              result=FAIL
-              echo "::error::Public Services browser case ${label} failed (exit ${code})"
+              outcome=FAIL
+              echo "::error::Public Services browser case $label failed (exit $code)"
+              tail -n 100 "$log" || true
+            else
+              echo "$label: PASS in $((SECONDS-started))s"
+              tail -n 3 "$log" || true
             fi
-            printf '%s,%s,%s\n' "$label" "$result" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
-            echo "${label}: ${result} in $((SECONDS-started))s"
+            printf '%s,%s,%s\n' "$label" "$outcome" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
+            return "$code"
           }
-          # Alchemy chapter geometry, 320-430px EN/RU/ES, including 320x568.
-          run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs
-          run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs
-          run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs
-          run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs
-          run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs
-          run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs
-          run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs
-          run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs
-          run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs
-          run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs
-          run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs
-          # Capture safe aggregate HTML / Flight metrics from THIS PR's local
-          # production build; the separate public audit reads old live alias.
-          # Never upload Flight contents or private routes.
-          TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json || status=$?
-          run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs
-          run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs
-          run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs
-          {
+          lane_a() {
+            local failed=0
+            # Alchemy covers 320–430px, three languages and booking consent.
+            run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
+            run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
+            run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
+            run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
+            return "$failed"
+          }
+          lane_b() {
+            local failed=0
+            run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs || failed=1
+            run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
+            run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
+            run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
+            run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
+            run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
+            return "$failed"
+          }
+          lane_a &
+          lane_a_pid=$!
+          lane_b &
+          lane_b_pid=$!
+          trap 'kill "$lane_a_pid" "$lane_b_pid" "$SERVER_PID" 2>/dev/null || true' EXIT
+          wait "$lane_a_pid" || { echo "::error::Public Services acceptance lane A failed"; status=1; }
+          wait "$lane_b_pid" || { echo "::error::Public Services acceptance lane B failed"; status=1; }
+          # Measure unladen production TTFB *after* browsers finish, never under
+          # concurrent test load; do not save HTML, Flight bodies or private data.
+          metrics_started=$SECONDS
+          if TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json 2> artifacts/public-services-production/ttfb-stderr.log; then
+            printf 'home-rsc-local,PASS,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+          else
+            echo "::error::Public Services local performance measurement failed"
+            tail -n 40 artifacts/public-services-production/ttfb-stderr.log || true
+            printf 'home-rsc-local,FAIL,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+            status=1
+          fi
+          printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
+          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
+          cat artifacts/public-services-production/timings.csv
+                    {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
             grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true
           } > artifacts/public-services-production/server-diagnostics.txt
