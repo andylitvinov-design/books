@@ -938,7 +938,14 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
           await director.locator('[data-director-contextual-questions] button:has-text("Летит")').click();
           assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          await newVisualIdea.fill("Без орла, нет другого героя");
+          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),1,
+            "revised exclusion invalidates only the contradicted subject, preserving the action");
+          assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
+          await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
+          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
           await director.locator('[data-director-create-plan]').click();
+          assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
             "four connected first-party local video shots");
           assert.match(await director.locator('[data-director-shot="1"] > div > p').innerText(),
@@ -1061,3 +1068,4 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
 }
 assert.equal(passes, 10);
 console.log("Mandala browser E2E:", passes, "of", passes, "checks passed");
+

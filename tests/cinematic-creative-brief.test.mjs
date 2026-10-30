@@ -52,6 +52,37 @@ test('negative actor requests must not turn an explicitly avoided creature into 
   }
   assert.deepEqual(videoStudioContextQuestions('Не хочу орла, нет другого героя'),['subject','action']);
 });
+test('a revised brief exclusion overrides a previously confirmed subject without discarding valid answers',()=>{
+  const cases=[
+    ['ru','Без орла, нет другого героя','Без орла, пусть волк путешествует по лесу'],
+    ['en','Without an eagle, no other character','Without an eagle, a wolf travels through forest'],
+    ['es','Sin águila, sin otro personaje','Sin águila, el lobo viaja por el bosque'],
+  ];
+  for(const [locale,negative,replacement] of cases){
+    const plan=project({locale});
+    const answers={subjectChoice:'eagle',actionChoice:'flight'};
+    const blocked=compileCinematicReferencePack({plan,visualIdea:negative,answers});
+    assert.equal(blocked.recognized.subject,null);
+    assert.equal(blocked.recognized.action,'flight');
+    assert.equal(blocked.understood,false);
+    assert.deepEqual(blocked.contextualQuestions,['subject']);
+    assert.deepEqual(videoStudioContextQuestions(negative,answers),['subject']);
+    assert.ok(blocked.shots.every(shot=>shot.reference.characterKey===null));
+    const replaced=compileCinematicReferencePack({plan,visualIdea:replacement,answers});
+    assert.equal(replaced.recognized.subject,'wolf');
+    assert.equal(replaced.recognized.action,'journey');
+    assert.deepEqual(replaced.contextualQuestions,[]);
+    const retained=compileCinematicReferencePack({plan,visualIdea:'A beautiful story',answers});
+    assert.equal(retained.recognized.subject,'eagle');
+    assert.equal(retained.recognized.action,'flight');
+    assert.deepEqual(retained.contextualQuestions,[]);
+    for(const packet of [blocked,replaced,retained]){
+      assert.equal(packet.externalTransferApproved,false);
+      assert.equal(packet.paidRenderApproved,false);
+      assert.equal(packet.newAiVideoAvailable,false);
+    }
+  }
+});
 test('new fictional eagle metamorphosis produces safe text-only keyframes but no fake AI frames',()=>{
   for(const [locale,idea] of [
     ['ru','Моя тайна 74829: Белый орёл летит над горами и превращается в созвездие'],
@@ -137,3 +168,4 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(css,/:focus-visible/);
   assert.doesNotMatch(ui,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
 });
+

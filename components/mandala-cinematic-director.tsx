@@ -282,7 +282,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
             <div className={css.chips}>
               {(kind==="subject"?["eagle","wolf","landscape"]:["flight","metamorphosis","journey"]).map((id,i)=>
                 <button type="button" key={id} disabled={disabled}
-                  aria-pressed={(kind==="subject"?subjectChoice:actionChoice)===id}
+                  aria-pressed={(kind==="subject"?referencePack.recognized.subject:actionChoice)===id}
                   onClick={()=>{
                     if(kind==="subject")setSubjectChoice(id);else setActionChoice(id);
                     invalidate();
@@ -426,3 +426,4 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     </div>:null}
   </section>;
 }
+
