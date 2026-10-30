@@ -1583,3 +1583,38 @@
   .quickOrderSummary{padding:7px 8px}
   .quickOrderBar .quickGenerate{padding:8px 5px;font-size:12.5px}
 }
+
+
+/* Optional post-render human handoff. The local video and Save actions stay primary. */
+.postVideoSupport{display:grid;gap:8px;min-width:0;margin:16px 0 0;padding:12px;
+  border:1px solid #e5d4ae;border-radius:15px;
+  background:linear-gradient(135deg,#fffcf4,#f5fbf4);color:#24493c}
+.postVideoSupport h4{margin:0;font:800 16px/1.25 Arial,Helvetica,sans-serif;color:#244a3d}
+.postVideoSupport .postVideoSupportLead{margin:0;color:#5b7266;font:500 12.5px/1.4 Arial,Helvetica,sans-serif}
+.postVideoSupportGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.postVideoSupportItem{display:flex;gap:9px;min-width:0;padding:10px;border:1px solid #dce9dd;
+  border-radius:12px;background:#fffdfa}
+.postVideoSupportIcon{display:grid;flex:none;place-items:center;width:31px;height:31px;
+  border-radius:10px;background:#eaf4e8;color:#138366}
+.postVideoSupportBody{display:grid;align-content:start;gap:5px;min-width:0;flex:1}
+.postVideoSupportBody strong{color:#214c3e;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.postVideoSupport .postVideoSupportBody p{margin:0;color:#607269;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.postVideoSupportBody a{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
+  width:fit-content;max-width:100%;min-height:44px;padding:8px 11px;margin-top:2px;
+  border:1px solid #b7d9c7;border-radius:10px;background:#edf7ee;color:#126747;
+  font:800 12px/1.2 Arial,Helvetica,sans-serif;text-decoration:none;overflow-wrap:anywhere}
+.postVideoSupportBody a:hover{border-color:#119c77;background:#e5f4e9}
+.postVideoSupportBody a:focus-visible{outline:3px solid #c09b52;outline-offset:2px}
+.postVideoSupportBody a svg{flex:none}
+.postVideoSupport .postVideoSupportPrivacy{margin:0;color:#698074;font:500 11.5px/1.4 Arial,Helvetica,sans-serif}
+@media(max-width:759px){
+  .postVideoSupport{gap:7px;padding:10px}
+  .postVideoSupportGrid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .postVideoSupportItem{padding:9px}
+  .postVideoSupportBody a{width:100%;justify-content:center}
+}
+@media(max-width:355px){
+  .postVideoSupport h4{font-size:15px}
+  .postVideoSupportItem{gap:7px;padding:8px}
+  .postVideoSupportIcon{width:29px;height:29px}
+}
