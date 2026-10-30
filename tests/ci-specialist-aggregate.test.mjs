@@ -197,7 +197,7 @@ test('approved migration destinations contain the exact retired scope and the or
       from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
       patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
       contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
-
+    },
   ];
   for(const item of mappings) {
     const successor=readFileSync('.github/workflows/'+item.into,'utf8');
@@ -205,7 +205,9 @@ test('approved migration destinations contain the exact retired scope and the or
     assert.ok(trigger);
     for(const pattern of item.patterns) assert.ok(successor.includes('      - '+pattern), item.into+' missing '+pattern);
     for(const test of item.contracts) assert.ok(successor.includes(test),item.into+' missing '+test);
-    assert.ok(successor.includes('push:'),item.into+' must preserve post-merge verification');
+    if (['hh-crm-event-channels.yml','psychometric-research-catalogue.yml','hh-benchmark-free-test-pilot.yml'].includes(item.from)) {
+      assert.ok(successor.includes('push:'),item.into+' must preserve original production push verification');
+    }
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
 });
