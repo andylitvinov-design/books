@@ -4,193 +4,317 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0a1020">
+  <meta name="theme-color" content="#0b1220">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>PR Control Tower · Holistic House</title>
+  <title>Очередь PR · Holistic House</title>
   <style>
-    :root{color-scheme:dark;--bg:#09101c;--card:#111d2e;--panel:#101b2b;--border:#24354d;--fg:#edf4ff;--mute:#92a5bc;--blue:#65baff;--teal:#64e5d0;--amber:#f8c478;--red:#f08c93;--good:#72dfb3;--radius:20px}
-    *{box-sizing:border-box}body{margin:0;min-width:320px;color:var(--fg);background:radial-gradient(ellipse at 78% -10%,#17344c 0,transparent 43%),radial-gradient(ellipse at -8% 55%,#122540 0,transparent 38%),var(--bg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
-    a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button,select{font:inherit}button{cursor:pointer}.shell{max-width:1360px;margin:0 auto;padding:30px 24px 64px}
-    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:25px}.eyebrow{color:var(--teal);font-size:11px;font-weight:800;letter-spacing:2.4px;text-transform:uppercase}.top h1{font-size:clamp(30px,5vw,49px);letter-spacing:-1.9px;font-weight:750;margin:6px 0 5px;line-height:1.15}.subtitle{font-size:14px;color:var(--mute);margin:0}.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
-    .btn,.selector{border:1px solid #30455e;border-radius:12px;background:#17273b;color:#e5effd;padding:10px 13px;min-height:41px;transition:background .2s}.btn:hover{background:#21364f}.btn.primary{background:#c7e8ff;color:#102035;border-color:#c7e8ff;font-weight:750}.btn:disabled{opacity:.55;cursor:wait}.live-dot{display:inline-block;background:#79e2b4;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 4px #79e2b424;margin:0 8px 1px 0}.live-dot.offline{background:var(--amber);box-shadow:0 0 0 4px #f8c47824}
-    .meta{display:flex;gap:13px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:12px;margin-bottom:20px}.meta .dot{width:3px;height:3px;background:#526b87;border-radius:50%}.panel{background:linear-gradient(160deg,#15243a,#111d2e 64%);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 30px #03091534}
-    .decision{padding:27px 30px;display:grid;grid-template-columns:1fr minmax(215px,340px);gap:24px;align-items:center;position:relative;overflow:hidden}.decision:before{content:"";position:absolute;width:290px;height:290px;border-radius:50%;background:#f5c57113;filter:blur(45px);right:-140px;top:-130px;pointer-events:none}.decision .kicker{font-size:12px;letter-spacing:1px;font-weight:750;color:var(--mute);text-transform:uppercase}.decision h2{font-size:clamp(23px,3vw,32px);letter-spacing:-.6px;line-height:1.15;margin:8px 0}.decision p{color:#b6c7da;margin:7px 0 0;font-size:14px;max-width:780px}.verdict{align-self:stretch;border:1px solid #3c4d63;border-radius:16px;padding:19px;display:flex;flex-direction:column;justify-content:center;gap:9px;background:#1c2b3c}.verdict.good{border-color:#33765f;background:#163e39}.verdict.warn{border-color:#80633e;background:#3b3027}.verdict.busy{border-color:#884e5c;background:#432833}.verdict.unknown{border-color:#42556d;background:#1a293d}.verdict .tag{font-size:12px;font-weight:800;letter-spacing:.4px}.verdict .why{font-size:13px;color:#d2e0ec}.verdict .icon{font-size:22px}
-    .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:27px 0 12px}.section-head h2{font-size:17px;letter-spacing:-.1px;margin:0}.section-head .hint{font-size:12px;color:var(--mute)}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{background:linear-gradient(155deg,#182940,#112033);border:1px solid var(--border);border-radius:18px;padding:19px;min-height:147px;overflow:hidden}.metric .name{font-size:12px;color:#a8bbd1;font-weight:650}.metric .val{font-weight:760;font-size:clamp(26px,3vw,39px);line-height:1.1;letter-spacing:-1.5px;margin:14px 0 8px;white-space:nowrap;font-variant-numeric:tabular-nums}.metric .detail{font-size:12px;color:var(--mute);line-height:1.4}.metric.turq .val{color:var(--teal)}.metric.sky .val{color:var(--blue)}.metric.amber .val{color:var(--amber)}.metric.rose .val{color:var(--red)}
-    .content-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:14px}.chart-panel{padding:24px;min-width:0}.chart-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.chip{background:#1c3145;color:#aecbde;border:1px solid #2b465e;border-radius:20px;padding:4px 10px;font-size:11px}.chart-legend{display:flex;gap:18px;color:#9db0c7;font-size:12px}.chart-legend span{display:inline-flex;align-items:center;gap:7px}.key{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--blue)}.key.merge{background:var(--teal)}.chart{height:228px;margin-top:16px;border-bottom:1px solid #38506b;position:relative;display:grid;align-items:end;grid-auto-columns:minmax(8px,1fr);grid-auto-flow:column;gap:5px;padding:17px 2px 16px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),#28364a calc(25% - 1px),#28364a 25%)}.chart .bar-pair{height:100%;display:flex;align-items:end;justify-content:center;gap:2px;position:relative}.chart .bar{width:42%;max-width:18px;border-radius:4px 4px 0 0;min-height:0;background:linear-gradient(180deg,#7bd4ff,#3998d3)}.chart .bar.merged{background:linear-gradient(180deg,#81f7df,#3cae98)}.chart .axis-label{position:absolute;bottom:-26px;color:#889db4;font-size:10px;left:50%;transform:translateX(-50%);white-space:nowrap}.no-chart{height:228px;display:flex;justify-content:center;align-items:center;color:var(--mute);font-size:13px;text-align:center;border:1px dashed #344862;border-radius:14px;margin-top:15px;padding:24px}
-    .status-panel{padding:23px}.progress-line{margin-top:20px}.progress-header{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#c5d3e2}.progress-header b{font-size:18px;color:#edf4ff;font-variant-numeric:tabular-nums}.track{height:9px;border-radius:20px;background:#2a394e;overflow:hidden;margin-top:8px}.fill{height:100%;border-radius:20px;transition:width .35s}.fill.r{background:linear-gradient(90deg,#f3a4ad,#e5768a)}.fill.b{background:linear-gradient(90deg,#68b4f3,#528bcf)}.fill.g{background:linear-gradient(90deg,#70e8cb,#39c9ad)}.note{font-size:12px;color:var(--mute);margin:17px 0 0;line-height:1.6}.small-link{display:inline-block;margin-top:12px;font-size:12px}
-    .history{overflow:hidden}.history-head{padding:21px 22px 12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.history h2{font-size:17px;margin:0}.scroll-table{overflow-x:auto}.history table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px;text-align:right}.history th{background:#18273a;padding:13px 16px;color:#92a7be;font-size:11px;font-weight:750;border-top:1px solid #293a50}.history th:first-child,.history td:first-child{text-align:left;padding-left:22px}.history td{padding:13px 16px;border-top:1px solid #25374c;color:#e6f0fd;font-variant-numeric:tabular-nums}.history tr:hover td{background:#162840}.history .hour{color:#b3c9da}.history .good-text{color:var(--teal)}.history .warn-text{color:var(--amber)}.history .muted{color:#687e94}.source{font-size:10px;color:#7f9cb3}.empty{padding:35px 22px;color:var(--mute);text-align:center}
-    .foot{border-top:1px solid #27394c;margin-top:24px;padding-top:20px;color:#869ab0;font-size:12px;line-height:1.7}.foot strong{color:#bacadd}.foot a{font-size:12px}.message{font-size:13px;color:var(--amber);margin:12px 0 0;min-height:0}.settings{display:flex;align-items:center;gap:9px;color:#97aac0;font-size:12px;flex-wrap:wrap}.settings select{min-height:35px;font-size:12px;padding:5px 8px}.spinner{width:13px;height:13px;display:inline-block;border:2px solid #6c879d;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:970px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{grid-template-columns:1fr}.top{flex-wrap:wrap}.decision{grid-template-columns:1fr}.verdict{min-height:95px}}
-    @media(max-width:560px){.shell{padding:20px 13px 42px}.top h1{font-size:35px}.toolbar{width:100%;justify-content:flex-start}.decision{padding:19px;gap:15px}.decision h2{font-size:24px}.metric{padding:16px 13px;min-height:139px}.metric .val{font-size:32px}.metrics{gap:9px}.chart-panel,.status-panel{padding:17px}.chart{gap:2px}.section-head{align-items:flex-start;flex-direction:column;gap:3px}.history th,.history td{padding:11px 10px}}
-    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#111e30;--panel-hi:#16243a;--line:#2a3a50;--ink:#edf3fd;--soft:#adc1d6;--muted:#839bb3;--blue:#89c8ff;--green:#7ae0bd;--amber:#f1be75;--rose:#f39a9b;--radius:14px}
+    *{box-sizing:border-box}
+    body{margin:0;min-width:320px;background:var(--bg);color:var(--ink);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+    button,a{font:inherit}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button{cursor:pointer}
+    .shell{max-width:1270px;margin:auto;padding:21px 22px 28px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+    .brand{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+    .eyebrow{color:var(--green);font-size:10px;font-weight:850;letter-spacing:1.8px;text-transform:uppercase}
+    h1{font-size:clamp(23px,3vw,31px);line-height:1.15;letter-spacing:-.75px;margin:0;font-weight:770}
+    .actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+    .meta{color:var(--muted);font-size:11px;white-space:nowrap}
+    .btn{background:#182b42;color:#e6f1ff;border:1px solid #38516a;border-radius:9px;padding:7px 11px;min-height:34px;font-weight:650}
+    .btn:hover{background:#21364c}.btn:disabled{opacity:.6;cursor:wait}.btn:focus-visible,.range:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+    .overview{display:flex;align-items:center;gap:13px;margin-top:15px;padding:13px 15px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);flex-wrap:wrap}
+    .signal-dot{height:10px;width:10px;border-radius:50%;background:var(--muted);flex:none}
+    .signal-dot.good{background:var(--green)}.signal-dot.warn{background:var(--amber)}.signal-dot.busy{background:var(--rose)}
+    .summary-text{min-width:0;flex:1 1 360px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+    .summary-text strong{font-size:16px;letter-spacing:-.25px}.summary-text span{color:var(--soft);font-size:12px}
+    .overview .asof{font-size:11px;color:var(--muted);white-space:nowrap}
+    .stats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel);margin-top:9px}
+    .stat{padding:10px 13px;border-right:1px solid var(--line);min-width:0}.stat:last-child{border-right:0}
+    .stat-name{color:var(--soft);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stat-value{font-size:clamp(21px,2.5vw,29px);font-weight:800;letter-spacing:-.7px;line-height:1.16;margin-top:4px;font-variant-numeric:tabular-nums}
+    .stat-value.merge{color:var(--green)}.stat-value.wait{color:var(--amber)}.stat-value.go{color:var(--blue)}
+    .stat-sub{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .timeline-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:23px 0 10px}
+    .timeline-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.timeline-title h2{font-size:17px;margin:0;letter-spacing:-.2px}.timeline-title small{font-size:11px;color:var(--muted)}
+    .periods{display:flex;align-items:center;gap:3px;background:#152239;border:1px solid var(--line);border-radius:10px;padding:3px}
+    .range{border:0;color:var(--soft);background:transparent;border-radius:7px;min-height:30px;padding:5px 9px;font-size:11px;font-weight:700}
+    .range[aria-pressed="true"]{background:#324962;color:var(--ink)}
+    .legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:0 0 10px}
+    .legend b{color:var(--soft);font-weight:750}.legend .created{color:var(--blue)}.legend .merged{color:var(--green)}
+    .day-block{margin:0 0 15px}.day-heading{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:0 0 7px}
+    .day-heading h3{font-size:12px;font-weight:780;margin:0;color:#d8e7f6}
+    .day-heading .day-sub{color:var(--muted);font-size:11px}
+    .hours{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+    .hour-card{background:var(--panel);border:1px solid var(--line);border-top:2px solid #51657e;border-radius:11px;padding:10px 11px 9px;min-width:0;min-height:130px;position:relative}
+    .hour-card.good{border-top-color:var(--green)}.hour-card.warn{border-top-color:var(--amber)}.hour-card.busy{border-top-color:var(--rose)}
+    .hour-card.is-now{background:var(--panel-hi);outline:1px solid #5d86a7;outline-offset:-1px}
+    .hour-top{display:flex;justify-content:space-between;align-items:baseline;gap:4px;margin-bottom:10px}
+    .hour-time{font-size:13px;font-weight:820;font-variant-numeric:tabular-nums;color:var(--ink)}
+    .hour-source{color:var(--muted);font-size:10px;white-space:nowrap}
+    .hour-numbers{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+    .hour-number{font-size:21px;line-height:1.03;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+    .hour-number.created{color:var(--blue)}.hour-number.merged{color:var(--green)}
+    .hour-label{font-size:10px;color:var(--soft);margin-top:3px}
+    .hour-bottom{border-top:1px solid #2a3b51;padding-top:7px;display:flex;justify-content:space-between;gap:6px;align-items:center;color:var(--soft);font-size:11px;font-variant-numeric:tabular-nums}
+    .hour-bottom .waiting{color:var(--amber)}.hour-bottom .queue{color:var(--muted)}
+    .hour-footer{margin-top:4px;display:flex;justify-content:space-between;gap:4px;font-size:10px;color:var(--muted)}
+    .delta-up{color:var(--rose)}.delta-down{color:var(--green)}
+    .gap-card{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6px;border:1px dashed #3a4b61;border-radius:11px;min-height:105px;color:var(--muted);padding:12px 8px;background:#10192a}
+    .gap-card strong{color:var(--soft);font-size:12px}.gap-card span{font-size:11px}
+    .timeline-empty{border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--soft);font-size:12px}
+    .bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:13px;padding-top:10px}
+    .bottom .state{font-size:11px;color:var(--muted)}.bottom .state.error{color:var(--amber)}
+    details{font-size:11px;color:var(--muted);max-width:900px}summary{color:var(--soft);cursor:pointer;list-style:none;font-weight:650}summary::-webkit-details-marker{display:none}summary:before{content:'ⓘ ';color:var(--blue)}
+    details p{line-height:1.55;margin:7px 0 0}.foot-links{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:11px}
+    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:1150px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stat:nth-child(4){border-right:0}.stat:nth-child(n+5){border-top:1px solid var(--line)}.hours{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media(max-width:680px){.shell{padding:13px 12px 22px}.top{gap:8px}.brand{gap:6px}.eyebrow{font-size:9px}.meta{width:100%;text-align:right}.actions{margin-left:auto}.overview{margin-top:10px;padding:10px 11px;gap:9px}.summary-text{flex-basis:230px;gap:3px}.summary-text strong{font-size:14px}.summary-text span{font-size:11px}.overview .asof{width:100%;padding-left:19px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stat{padding:9px 8px}.stat-name{font-size:10px}.stat-value{font-size:24px}.stat-sub{font-size:9px}.timeline-bar{margin:16px 0 9px}.hours{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.hour-card{padding:8px 8px 7px;min-height:121px}.hour-number{font-size:20px}.hour-top{margin-bottom:8px}.hour-bottom{font-size:10px}.hour-footer{font-size:9px}.legend{gap:10px;font-size:10px}.periods{width:100%;justify-content:space-between}.range{flex:1}.timeline-title small{font-size:10px}}
+    @media(max-width:380px){.hours{grid-template-columns:repeat(3,minmax(0,1fr))}.hour-card{padding:8px 6px}.hour-number{font-size:18px}.hour-time{font-size:12px}.hour-source{font-size:9px}.stat-value{font-size:22px}.stat-sub{display:none}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
   </style>
 </head>
 <body>
 <main class="shell">
   <header class="top">
-    <div><div class="eyebrow">HOLISTIC HOUSE / GITHUB OPERATIONS</div><h1>PR Control Tower</h1><p class="subtitle">Поток задач · готовность к merge · загрузка CI · история по часам</p></div>
-    <div class="toolbar"><a class="btn" href="https://github.com/andylitvinov-design/books/pulls?q=is%3Aopen" target="_blank" rel="noopener noreferrer">Все PR ↗</a><button class="btn primary" id="refresh" type="button">↻ Обновить</button></div>
+    <div class="brand"><span class="eyebrow">Holistic House</span><h1>Очередь PR</h1></div>
+    <div class="actions"><a class="btn" href="https://github.com/andylitvinov-design/books/actions" target="_blank" rel="noopener noreferrer">GitHub CI ↗</a><button class="btn" id="refresh" type="button">↻ Обновить</button></div>
+    <div class="meta" id="freshness" aria-live="polite">Загрузка статистики…</div>
   </header>
-  <div class="meta" aria-live="polite"><span><span class="live-dot offline" id="online-dot"></span><span id="freshness">Загрузка данных…</span></span><span class="dot"></span><span>Время: Торонто (EDT/EST)</span><span class="dot"></span><span id="limits">Часовые снимки: GitHub + локальная история</span></div>
-  <section class="panel decision" aria-labelledby="decision-title">
-    <div><div class="kicker">Решение о запуске новых задач</div><h2 id="decision-title">Определяю загрузку…</h2><p id="decision-copy">Сравниваю активные CI, очередь проверок и достоверность текущих показателей.</p></div>
-    <div id="verdict" class="verdict unknown"><div class="icon" id="verdict-icon">◷</div><div class="tag" id="verdict-tag">ОЖИДАНИЕ ДАННЫХ</div><div class="why" id="verdict-why">Нет актуального замера</div></div>
+  <section class="overview" aria-label="Рекомендация для запуска PR" aria-live="polite">
+    <i id="signal" class="signal-dot" aria-hidden="true"></i>
+    <div class="summary-text"><strong id="recommendation">Проверяю загрузку CI…</strong><span id="recommendation-reason">Нужны свежие данные GitHub</span></div>
+    <span class="asof" id="scope-label">Production · codex/public-book-library</span>
   </section>
-  <div class="section-head"><h2>Очередь и работа прямо сейчас</h2><span class="hint">Открытые PR ≠ подтверждённые ready-to-merge</span></div>
-  <section class="metrics" aria-label="Очередь pull requests">
-    <div class="metric"><div class="name">Всего открытых PR</div><div class="val" id="m-open">—</div><div class="detail">По всему репозиторию</div></div>
-    <div class="metric sky"><div class="name">В очереди на production</div><div class="val" id="m-prod">—</div><div class="detail">base: codex/public-book-library</div></div>
-    <div class="metric amber"><div class="name">PR в активной обработке</div><div class="val" id="m-processing">—</div><div class="detail" id="d-processing">По подтверждённым CI / рабочим lease; минимум</div></div>
-    <div class="metric turq"><div class="name">Подтверждено готовых к merge</div><div class="val" id="m-ready">—</div><div class="detail" id="d-ready">Только проверенная выборка CI Triage</div></div>
+  <section class="stats" aria-label="Состояние прямо сейчас">
+    <div class="stat"><div class="stat-name">PR prod</div><div class="stat-value" id="now-prod">—</div><div class="stat-sub" id="now-total">всего открыто —</div></div>
+    <div class="stat"><div class="stat-name">Новые / ч</div><div class="stat-value go" id="now-created">—</div><div class="stat-sub">созданных PR</div></div>
+    <div class="stat"><div class="stat-name">Merge / ч</div><div class="stat-value merge" id="now-merged">—</div><div class="stat-sub">реально смержено</div></div>
+    <div class="stat"><div class="stat-name">CI идёт</div><div class="stat-value" id="now-running">—</div><div class="stat-sub">workflow runs</div></div>
+    <div class="stat"><div class="stat-name">CI ждёт</div><div class="stat-value wait" id="now-queued">—</div><div class="stat-sub">workflow runs</div></div>
+    <div class="stat"><div class="stat-name">В работе</div><div class="stat-value" id="now-work">—</div><div class="stat-sub">минимум</div></div>
+    <div class="stat"><div class="stat-name">Ready</div><div class="stat-value merge" id="now-ready">—</div><div class="stat-sub">выборка CI Triage</div></div>
   </section>
-  <div class="section-head"><h2>Движение за последние 60 минут</h2><span class="hint" id="window-stamp">GitHub API</span></div>
-  <section class="metrics" aria-label="Новые pull requests и проверки">
-    <div class="metric sky"><div class="name">Создано новых PR</div><div class="val" id="m-created">—</div><div class="detail">Число новых заявок, не commits</div></div>
-    <div class="metric turq"><div class="name">Смержено PR</div><div class="val" id="m-merged">—</div><div class="detail">Только фактический merged_at</div></div>
-    <div class="metric rose"><div class="name">Сейчас выполняется CI</div><div class="val" id="m-running">—</div><div class="detail">GitHub Actions workflow runs</div></div>
-    <div class="metric amber"><div class="name">CI ожидает запуска</div><div class="val" id="m-queued">—</div><div class="detail">Queued workflow runs, не jobs</div></div>
-  </section>
-  <div class="section-head"><h2>Динамика нагрузки</h2><span class="hint">Последние 24 часовых снимка</span></div>
-  <div class="content-grid">
-    <section class="panel chart-panel" aria-labelledby="trend-title"><div class="chart-tools"><h2 id="trend-title" style="margin:0;font-size:16px">Создано и смержено по часам</h2><div class="chart-legend"><span><i class="key"></i>Новые PR</span><span><i class="key merge"></i>Merge</span></div></div><div id="chart-area"><div class="no-chart">История появится после первого сохранённого часового замера.</div></div><p class="note" id="chart-note">Автоматические снимки пополняются существующим CI Triage каждый час в :20 по Торонто.</p></section>
-    <section class="panel status-panel" aria-labelledby="load-title"><div class="chart-tools"><h2 id="load-title" style="margin:0;font-size:16px">Загрузка потока</h2><span class="chip" id="load-chip">Ожидание</span></div>
-      <div class="progress-line"><div class="progress-header"><span>Выполняется CI</span><b id="b-running">—</b></div><div class="track"><div class="fill b" id="bar-running" style="width:0"></div></div></div>
-      <div class="progress-line"><div class="progress-header"><span>CI в ожидании</span><b id="b-queued">—</b></div><div class="track"><div class="fill r" id="bar-queued" style="width:0"></div></div></div>
-      <div class="progress-line"><div class="progress-header"><span>Draft в production-очереди</span><b id="b-draft">—</b></div><div class="track"><div class="fill g" id="bar-draft" style="width:0"></div></div></div>
-      <p class="note">Индикатор — рекомендация для планирования push, а не запрет новых PR. GitHub не сообщает через эти счётчики реальное число свободных раннеров.</p>
-      <div class="settings"><label for="sensitivity">Чувствительность:</label><select id="sensitivity" class="selector"><option value="low">Осторожная</option><option value="normal" selected>Обычная</option><option value="high">Максимальная загрузка</option></select></div>
-      <a class="small-link" href="https://github.com/andylitvinov-design/books/actions" target="_blank" rel="noopener noreferrer">Открыть запуски GitHub Actions ↗</a>
-    </section>
+  <div class="timeline-bar">
+    <div class="timeline-title"><h2>Динамика по часам</h2><small>Один час — одна карточка · время Торонто</small></div>
+    <div class="periods" role="group" aria-label="Период истории">
+      <button class="range" type="button" data-hours="6" aria-pressed="false">6 ч</button>
+      <button class="range" type="button" data-hours="12" aria-pressed="true">12 ч</button>
+      <button class="range" type="button" data-hours="24" aria-pressed="false">24 ч</button>
+      <button class="range" type="button" data-hours="72" aria-pressed="false">3 дня</button>
+    </div>
   </div>
-  <div class="section-head"><h2>История по часам</h2><span class="hint">До 7 дней · данные сохраняются без запуска нового CI</span></div>
-  <section class="panel history" aria-labelledby="history-title"><div class="history-head"><h2 id="history-title">Журнал замеров</h2><div class="toolbar"><select class="selector" id="history-period" aria-label="Период истории"><option value="24">24 часа</option><option value="72">3 дня</option><option value="168">7 дней</option></select><button class="btn" id="download-csv" type="button">↓ CSV</button><button class="btn" id="save-local" type="button">Сохранить локально</button></div></div>
-    <div class="scroll-table"><table><thead><tr><th>Час (Торонто)</th><th>Новые</th><th>Merge</th><th>Открыто</th><th>В работе*</th><th>CI идёт</th><th>CI ждёт</th><th>Источник</th></tr></thead><tbody id="history-body"><tr><td colspan="8" class="empty">Часовые данные загружаются…</td></tr></tbody></table></div>
-  </section>
-  <p id="error-message" class="message" role="status" aria-live="polite"></p>
-  <footer class="foot"><strong>Как читаются показатели.</strong> Открытые и созданные PR считаются по GitHub Search; merge — по GitHub merged-фильтру. «CI выполняется / ждёт» — число workflow runs, а не individual jobs или занятых раннеров. «PR в активной обработке» — наблюдаемый минимум из отдельных PR, связанных с выполняемыми runs, и действующих work leases из ограниченной выборки CI Triage. «Готовы к merge» — только подтверждённые exact-head кандидаты в <a href="https://github.com/andylitvinov-design/books/issues/1419#issuecomment-6532482940" target="_blank" rel="noopener noreferrer">канонической очереди</a>, а не проверка всех PR. «Merged» не означает «LIVE»: развёртывание на Vercel отслеживается отдельно. При отсутствии данных числа не подменяются нулями. Содержимое страницы только читает публичный GitHub API, не хранит токены, не создаёт PR, не запускает CI и не изменяет репозиторий.</footer>
+  <p class="legend"><span><b class="created">+</b> Новые PR</span><span><b class="merged">✓</b> Merge</span><span><b>▶</b> Выполняется CI</span><span><b>◷</b> CI ждёт</span><span><b>PR</b> Открыто в production</span></p>
+  <section id="days" aria-label="Почасовая история" aria-live="polite"><div class="timeline-empty">Получаю историю GitHub. Неизвестные часы останутся без чисел.</div></section>
+  <div class="bottom"><div class="state" id="status" role="status" aria-live="polite">Автообновление: CI каждые 5 минут, общая статистика каждые 30 минут.</div><div class="foot-links"><button class="btn" id="download-csv" type="button">↓ CSV</button><a href="https://github.com/andylitvinov-design/books/issues/1419#issuecomment-6532482940" target="_blank" rel="noopener noreferrer">Очередь Triage ↗</a></div></div>
+  <details><summary>Как читать показатели и насколько они точны</summary><p>«Новые» и «Merge» — события за 60 минут до каждого замера, не коммиты. Нельзя складывать их между неполными или нерегулярными измерениями и считать точным итогом календарного дня. «CI идёт» и «CI ждёт» — число workflow runs, а не занятых раннеров и не отдельных jobs. «PR в обработке» — <strong>минимум</strong> распознанных PR в CI и подтверждённых рабочих leases; не полный учёт работы всех исполнителей. «Готовы» — только проверенные PR из ограниченной выборки Triage. Цвет верхней границы карточки — оценка нагрузки CI, не правило блокировки merge. Новые PR не запрещены; при высокой нагрузке разумнее избежать одновременного массового push. История строится из GitHub Triage и локальных снимков браузера, пропуски не заполняются придуманными числами. Merge не означает deployed/LIVE. Страница только читает GitHub API и не запускает проверки. Данные этого часа могут обновляться в течение часа.</p></details>
 </main>
 <script>
 'use strict';
 (() => {
-  // HH_PR_HOURLY_METRICS_V1. The public repo provides data; no GitHub token is stored in this page.
+  // HH_PR_HOURLY_METRICS_V1: use existing CI Triage hourly snapshots; no new workflow.
   const REPO = 'andylitvinov-design/books';
   const BASE = 'codex/public-book-library';
   const API = 'https://api.github.com';
-  const QUEUE_COMMENT = 6532482940;
+  const COMMENT = 6532482940;
   const TIMEZONE = 'America/Toronto';
   const STORAGE = 'hh-pr-control-tower-v1-' + REPO;
-  const PULSE_MS = 5 * 60 * 1000;
-  const FULL_MS = 30 * 60 * 1000;
-  const fmtTime = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-  const fmtHour = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,day:'2-digit',month:'2-digit',hour:'2-digit',hour12:false});
+  const PULSE_MS = 5 * 60000;
+  const FULL_MS = 30 * 60000;
+  const FORMAT_NUM = new Intl.NumberFormat('ru-RU');
+  const FORMAT_CLOCK = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,hour:'2-digit',minute:'2-digit',hour12:false});
+  const FORMAT_DAY = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,weekday:'long',day:'numeric',month:'long'});
+  const FORMAT_DAY_KEY = new Intl.DateTimeFormat('en-CA', {timeZone:TIMEZONE,year:'numeric',month:'2-digit',day:'2-digit'});
   const $ = (id) => document.getElementById(id);
-  const nowISO = () => new Date().toISOString();
-  const hourUTC = (date) => new Date(Math.floor(date.getTime()/3600000)*3600000).toISOString();
-  const number = (x) => Number.isFinite(x) && x >= 0 ? x : null;
-  const human = (x) => x == null ? '—' : new Intl.NumberFormat('ru-RU').format(x);
-  const asDate = (value) => {const d = new Date(value);return Number.isFinite(d.getTime()) ? d : null};
-  const minutesSince = (value) => {const d=asDate(value); return d ? Math.max(0,Date.now()-d.getTime())/60000 : Infinity};
-  const state = {counts:{},run:{},queue:null,remote:[],local:[],fullAt:null,pulseAt:null,errors:[],loading:false};
-  let lastRequestedFull = 0;
-  let lastRequestedPulse = 0;
-  const cap = (count,max) => Math.max(0,Math.min(100,Math.round(count/max*100)));
-  const escape = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function readStorage() {try {const raw=JSON.parse(localStorage.getItem(STORAGE)||'[]'); return Array.isArray(raw) ? raw.filter(isSnapshot).slice(-168) : []} catch{return []}}
-  function writeStorage() {try {localStorage.setItem(STORAGE,JSON.stringify(state.local.slice(-168)))}catch{}}
-  function isSnapshot(s) {return s && typeof s==='object' && asDate(s.hour_utc) && asDate(s.captured_at) && (number(s.open_total)!==null || number(s.running_runs)!==null)}
-  state.local=readStorage();
-  function values(s){return {created:number(s.created_60m),merged:number(s.merged_60m),open:number(s.open_total),running:number(s.running_runs),queued:number(s.queued_runs),processing:number(s.active_prs_in_ci)}}
-  async function github(path) {
-    const response=await fetch(API+path,{headers:{'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});
-    if (!response.ok){const reset=response.headers.get('x-ratelimit-reset');let extra='';if(response.status===403 && reset){const at=new Date(Number(reset)*1000);if(Number.isFinite(at.getTime())) extra='; лимит API до '+fmtTime.format(at)}throw Error('GitHub API '+response.status+extra)}
-    return response.json();
+  const num = (x) => Number.isSafeInteger(x) && x >= 0 ? x : null;
+  const text = (x) => x == null ? '—' : FORMAT_NUM.format(x);
+  const validDate = (x) => {const d=new Date(x);return Number.isFinite(d.valueOf())?d:null};
+  const age = (x) => {const d=validDate(x);return d?Math.max(0,Date.now()-d.valueOf())/60000:Infinity};
+  const hourKey = (date) => new Date(Math.floor(date.valueOf()/3600000)*3600000).toISOString();
+  const htmlEscape = (s) => String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const state = {counts:{},run:{},queue:null,remote:[],local:[],fullAt:null,pulseAt:null,errors:[],loading:false,range:(window.innerWidth<680?6:12)};
+  let lastFullRequest=0,lastPulseRequest=0;
+  const isSnapshot = (s) => s && typeof s==='object' && validDate(s.hour_utc) && validDate(s.captured_at) && (num(s.open_total)!==null||num(s.running_runs)!==null);
+  try {const saved=JSON.parse(localStorage.getItem(STORAGE)||'[]');if(Array.isArray(saved))state.local=saved.filter(isSnapshot).slice(-168)} catch {}
+  function writeStorage(){try{localStorage.setItem(STORAGE,JSON.stringify(state.local.slice(-168)))}catch{}}
+  async function github(path){
+    const res=await fetch(API+path,{headers:{'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});
+    if(!res.ok){const reset=res.headers.get('x-ratelimit-reset');const date=reset?new Date(Number(reset)*1000):null;const hint=res.status===403&&date&&validDate(date)?' · лимит до '+FORMAT_CLOCK.format(date):'';throw Error('GitHub API '+res.status+hint)}
+    return res.json();
   }
-  const search=async(q) => {const data=await github('/search/issues?q='+encodeURIComponent('repo:'+REPO+' is:pr '+q)+'&per_page=1');if(data.incomplete_results)throw Error('Неполный результат GitHub Search');const n=number(data.total_count);if(n==null)throw Error('Нет total_count для '+q);return n};
-  function parseQueue(body){for(const match of String(body||'').matchAll(/```json\s*([\s\S]*?)```/g)){try{const json=JSON.parse(match[1]);if(json.schema==='HH_READY_MERGE_QUEUE_V2')return json}catch{}}return null}
-  async function getQueue(){const doc=await github('/repos/'+REPO+'/issues/comments/'+QUEUE_COMMENT);const queue=parseQueue(doc.body);if(!queue)throw Error('Канонический JSON очереди не найден');return queue}
-  function pullNumbers(rows){const set=new Set();for(const run of rows||[]){for(const pr of run.pull_requests||[]){if(Number.isInteger(pr.number) && (!pr.base || !pr.base.ref || pr.base.ref===BASE))set.add(pr.number)}}return [...set]}
-  async function pulse(){const [running,queued]=await Promise.allSettled([
-    github('/repos/'+REPO+'/actions/runs?status=in_progress&per_page=100'),
-    github('/repos/'+REPO+'/actions/runs?status=queued&per_page=1')]);
-    const issues=[];
-    if(running.status==='fulfilled'){const d=running.value;state.run.running=number(d.total_count);state.run.ciPrNumbers=pullNumbers(d.workflow_runs);state.run.ciCoverage=(d.workflow_runs||[]).length>=state.run.running;}
-    else{state.run.running=null;state.run.ciPrNumbers=[];issues.push(String(running.reason?.message||running.reason))}
-    if(queued.status==='fulfilled')state.run.queued=number(queued.value.total_count);
-    else{state.run.queued=null;issues.push(String(queued.reason?.message||queued.reason))}
-    state.pulseAt=nowISO();state.errors=issues;lastRequestedPulse=Date.now();render();
+  async function count(query){
+    const data=await github('/search/issues?q='+encodeURIComponent('repo:'+REPO+' is:pr '+query)+'&per_page=1');
+    if(data.incomplete_results||num(data.total_count)==null)throw Error('Неполный поиск: '+query);
+    return data.total_count;
   }
-  async function full(){if(state.loading)return;state.loading=true;$('refresh').disabled=true;$('refresh').textContent='Обновляю…';
-    const from=new Date(Date.now()-3600000).toISOString().replace(/\.\d{3}Z$/,'Z');
-    const tasks={
-      open:search('is:open'),prod:search('is:open base:'+BASE),draft:search('is:open draft:true base:'+BASE),
-      created:search('created:>='+from),merged:search('merged:>='+from),
-      queue:getQueue()
+  function parseQueue(body){
+    for(const m of String(body||'').matchAll(/```json\s*([\s\S]*?)```/g)){
+      try{const json=JSON.parse(m[1]);if(json.schema==='HH_READY_MERGE_QUEUE_V2')return json}catch{}
+    }
+    return null;
+  }
+  function pullNumbers(runs){
+    const found=new Set();
+    for(const run of runs||[])for(const pr of run.pull_requests||[]){if(Number.isInteger(pr.number)&&(!pr.base?.ref||pr.base.ref===BASE))found.add(pr.number)}
+    return [...found];
+  }
+  async function pulse(){
+    lastPulseRequest=Date.now();
+    const results=await Promise.allSettled([
+      github('/repos/'+REPO+'/actions/runs?status=in_progress&per_page=100'),
+      github('/repos/'+REPO+'/actions/runs?status=queued&per_page=1')
+    ]);
+    const errors=[];
+    if(results[0].status==='fulfilled'){
+      const r=results[0].value;state.run.running=num(r.total_count);state.run.ciPrNumbers=pullNumbers(r.workflow_runs);
+      state.run.ciCoverage=(r.workflow_runs||[]).length>=(state.run.running??Infinity);
+    }else{state.run.running=null;state.run.ciPrNumbers=[];errors.push(String(results[0].reason?.message||results[0].reason))}
+    if(results[1].status==='fulfilled')state.run.queued=num(results[1].value.total_count);
+    else{state.run.queued=null;errors.push(String(results[1].reason?.message||results[1].reason))}
+    state.pulseAt=new Date().toISOString();state.errors=errors;
+    saveLocal(false);render();
+  }
+  async function full(){
+    if(state.loading)return;
+    state.loading=true;lastFullRequest=Date.now();$('refresh').disabled=true;$('refresh').textContent='Обновляю…';
+    const since=new Date(Date.now()-3600000).toISOString().replace(/\.\d{3}Z$/,'Z');
+    const requests={
+      open:count('is:open'),prod:count('is:open base:'+BASE),draft:count('is:open draft:true base:'+BASE),
+      created:count('created:>='+since),merged:count('merged:>='+since),
+      queue:github('/repos/'+REPO+'/issues/comments/'+COMMENT)
     };
-    const keys=Object.keys(tasks),results=await Promise.allSettled(Object.values(tasks));const errs=[];
-    results.forEach((result,i)=>{const key=keys[i];if(result.status==='fulfilled'){if(key==='queue'){state.queue=result.value;const telemetry=state.queue.hourly_metrics_v1;state.remote=telemetry?.schema==='HH_PR_HOURLY_METRICS_V1' && Array.isArray(telemetry.snapshots)?telemetry.snapshots.filter(isSnapshot).slice(-168):[]} else state.counts[key]=result.value;}else{if(key==='queue'){state.queue=null;state.remote=[]}else state.counts[key]=null;errs.push(key+': '+String(result.reason?.message||result.reason))}});
-    state.fullAt=nowISO();state.errors=errs;lastRequestedFull=Date.now();await pulse();state.errors=[...errs,...state.errors];state.loading=false;$('refresh').disabled=false;$('refresh').textContent='↻ Обновить';saveLocal(false);render();
+    const keys=Object.keys(requests),out=await Promise.allSettled(Object.values(requests));const errors=[];
+    out.forEach((v,i)=>{
+      const key=keys[i];
+      if(v.status==='fulfilled'){
+        if(key==='queue'){
+          const q=parseQueue(v.value.body);
+          if(q){state.queue=q;const h=q.hourly_metrics_v1;state.remote=h?.schema==='HH_PR_HOURLY_METRICS_V1'&&Array.isArray(h.snapshots)?h.snapshots.filter(isSnapshot).slice(-168):[]}
+          else errors.push('Формат часовой очереди пока отсутствует');
+        }else state.counts[key]=v.value;
+      }else {if(key!=='queue')state.counts[key]=null;errors.push(key+': '+String(v.reason?.message||v.reason))}
+    });
+    state.fullAt=new Date().toISOString();
+    try{await pulse()}catch(e){errors.push(String(e?.message||e))}
+    state.errors=[...errors,...state.errors];state.loading=false;$('refresh').disabled=false;$('refresh').textContent='↻ Обновить';
+    saveLocal(false);render();
   }
-  function recentWorkPrs() {
-    const s=state.remote.at(-1);if(!s || minutesSince(s.captured_at)>75)return [];
-    return Array.isArray(s.work_pr_numbers) ? s.work_pr_numbers.filter(Number.isInteger) : [];
+  function workNumbers(){
+    const recent=state.remote.at(-1);
+    if(!recent||age(recent.captured_at)>75||!Array.isArray(recent.work_pr_numbers))return [];
+    return recent.work_pr_numbers.filter(Number.isInteger);
   }
-  function workInProgress(){const ci=state.run.ciPrNumbers||[];const work=recentWorkPrs();return [...new Set([...ci,...work])].length}
-  function snapshot(){return {hour_utc:hourUTC(new Date()),captured_at:nowISO(),created_60m:state.counts.created??null,merged_60m:state.counts.merged??null,open_total:state.counts.open??null,open_prod:state.counts.prod??null,draft_prod:state.counts.draft??null,running_runs:state.run.running??null,queued_runs:state.run.queued??null,active_prs_in_ci:(state.run.ciPrNumbers||[]).length,work_pr_numbers:recentWorkPrs(),ready_verified:state.queue?.verified_ready?.length??null,source:'local_browser',sampled_work_prs:true}}
-  function saveLocal(force){if(!state.fullAt || !state.pulseAt)return;const snap=snapshot();if(!isSnapshot(snap))return;
-    const i=state.local.findIndex(x=>x.hour_utc===snap.hour_utc);if(i<0)state.local.push(snap);else if(force || minutesSince(state.local[i].captured_at)>15)state.local[i]=snap;
-    state.local.sort((a,b)=>a.hour_utc.localeCompare(b.hour_utc));state.local=state.local.slice(-168);writeStorage();if(force){$('error-message').textContent='Снимок сохранён на этом устройстве. Для общей истории используется CI Triage.';renderHistory()}
+  function processingCount(){return [...new Set([...(state.run.ciPrNumbers||[]),...workNumbers()])].length}
+  function snapshot(){
+    const cf=age(state.fullAt)<=80,cr=age(state.pulseAt)<=12;
+    return {hour_utc:hourKey(new Date()),captured_at:new Date().toISOString(),
+      created_60m:cf?state.counts.created??null:null,merged_60m:cf?state.counts.merged??null:null,
+      open_total:cf?state.counts.open??null:null,open_prod:cf?state.counts.prod??null:null,
+      draft_prod:cf?state.counts.draft??null:null,running_runs:cr?state.run.running??null:null,
+      queued_runs:cr?state.run.queued??null:null,active_prs_in_ci:cr&&state.run.running!==null?(state.run.ciPrNumbers||[]).length:null,
+      work_pr_numbers:workNumbers(),ready_verified:state.queue?.verified_ready?.length??null,
+      source:'local_browser',sampled_work_prs:true};
   }
-  function history(){const map=new Map();for(const s of state.local)map.set(s.hour_utc,s);for(const s of state.remote)map.set(s.hour_utc,s);return [...map.values()].filter(isSnapshot).sort((a,b)=>b.hour_utc.localeCompare(a.hour_utc)).slice(0,168)}
-  function decision(){const run=state.run.running,queued=state.run.queued;const fresh=minutesSince(state.pulseAt)<=12;
-    if(!fresh||run==null||queued==null)return {tone:'unknown',icon:'◷',tag:'НЕДОСТАТОЧНО ДАННЫХ',title:'Нужен свежий замер CI',why:'Нельзя определять свободную ёмкость по устаревшим или неполным данным.',copy:'Обновите данные. При сетевой ошибке сохраняется история, но рекомендация о запуске новых PR отключена.'};
-    const thresholds={low:[3,1,8,3],normal:[6,2,12,6],high:[12,4,22,10]};
-    const [greenRun,greenQueue,redRun,redQueue]=thresholds[$('sensitivity').value]||thresholds.normal;
-    if(queued>redQueue||run>redRun)return {tone:'busy',icon:'●',tag:'ОЧЕРЕДЬ ПЕРЕГРУЖЕНА',title:'Лучше готовить изменения без push',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'Новые независимые PR разрешены, но массовые push сейчас усилят очередь. Выгоднее завершать готовые локальные изменения и отдавать один пакет на проверку.'};
-    if(queued>greenQueue||run>greenRun)return {tone:'warn',icon:'◑',tag:'УМЕРЕННАЯ НАГРУЗКА',title:'Запускайте новые PR по одному',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'Можно запускать небольшие независимые PR, проверяя динамику очереди. Не отменяйте текущие проверки и не делайте повторные промежуточные push.'};
-    return {tone:'good',icon:'✓',tag:'ЕСТЬ ОКНО ДЛЯ НОВЫХ PR',title:'Можно запускать следующую задачу',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'По наблюдаемой очереди CI нагрузка невысока. Это оценка, а не подтверждение свободных раннеров; независимые PR по-прежнему проходят обычные проверки.'};
+  function saveLocal(force){
+    if(!state.fullAt||!state.pulseAt)return;
+    const s=snapshot();if(!isSnapshot(s))return;
+    const index=state.local.findIndex(x=>x.hour_utc===s.hour_utc);
+    if(index===-1)state.local.push(s);else if(force||age(state.local[index].captured_at)>4)state.local[index]=s;
+    state.local.sort((a,b)=>a.hour_utc.localeCompare(b.hour_utc));state.local=state.local.slice(-168);writeStorage();
   }
-  function setText(id,text){$(id).textContent=text}
+  function history(){
+    const map=new Map();for(const s of state.remote)map.set(s.hour_utc,s);
+    for(const s of state.local){const prev=map.get(s.hour_utc);if(!prev||validDate(s.captured_at)>validDate(prev.captured_at))map.set(s.hour_utc,s)}
+    return [...map.values()].filter(isSnapshot).sort((a,b)=>b.hour_utc.localeCompare(a.hour_utc)).slice(0,168);
+  }
+  function loadTone(run,queue){
+    if(run==null||queue==null)return 'unknown';
+    if(queue>6||run>12)return 'busy';
+    if(queue>2||run>6)return 'warn';
+    return 'good';
+  }
+  function set(id,content){$(id).textContent=content}
+  function renderOverview(){
+    const fresh=age(state.pulseAt)<=12,complete=age(state.fullAt)<=80;
+    const run=fresh?state.run.running:null,queue=fresh?state.run.queued:null,tone=loadTone(run,queue);
+    $('signal').className='signal-dot '+tone;
+    const descriptions={
+      unknown:['Нет актуального замера CI','Обновите показатели: неизвестную нагрузку нельзя считать нулём'],
+      busy:['CI загружена — избегать массовых push','Выполняется '+text(run)+' · ожидает '+text(queue)+' workflow runs'],
+      warn:['CI занята — новые push по одному','Выполняется '+text(run)+' · ожидает '+text(queue)+' workflow runs'],
+      good:[run===0&&queue===0?'CI свободна по наблюдаемым запускам':'Есть окно для новых PR', 'Выполняется '+text(run)+' · ожидает '+text(queue)+' workflow runs']
+    };
+    set('recommendation',descriptions[tone][0]);set('recommendation-reason',descriptions[tone][1]);
+    set('now-prod',text(complete?state.counts.prod:null));set('now-total','всего открыто '+text(complete?state.counts.open:null));
+    set('now-created',complete&&num(state.counts.created)!==null?'+'+text(state.counts.created):'—');set('now-merged',text(complete?state.counts.merged:null));
+    set('now-running',text(run));set('now-queued',text(queue));
+    set('now-work',fresh&&state.run.running!=null?'≥'+text(processingCount()):'—');
+    set('now-ready',age(state.queue?.updated_at)<=90&&Array.isArray(state.queue?.verified_ready)?text(state.queue.verified_ready.length):'—');
+    set('freshness',fresh?'CI '+FORMAT_CLOCK.format(validDate(state.pulseAt))+' · Торонто':'CI не обновлена · Торонто');
+  }
+  function localDayKey(date){return FORMAT_DAY_KEY.format(date)}
+  function renderCard(s,previousKey,isCurrent){
+    const start=validDate(s.hour_utc),captured=validDate(s.captured_at);
+    const created=num(s.created_60m),merged=num(s.merged_60m),running=num(s.running_runs),queued=num(s.queued_runs),open=num(s.open_prod);
+    const tone=loadTone(running,queued);
+    const older=previousKey?state._viewMap.get(previousKey):null;
+    const olderQueue=older?num(older.queued_runs):null;
+    let trend='';
+    if(queued!==null&&olderQueue!==null){const diff=queued-olderQueue;trend=diff===0?'=':diff>0?'<span class="delta-up">↑'+text(diff)+'</span>':'<span class="delta-down">↓'+text(-diff)+'</span>'}
+    const source=s.source==='local_browser'?'браузер':'Triage';
+    const time=FORMAT_CLOCK.format(start);const sampled=FORMAT_CLOCK.format(captured);
+    const accessible='Час '+time+'. Новых '+(created??'нет данных')+', merge '+(merged??'нет данных')+', CI идёт '+(running??'нет данных')+', CI ждёт '+(queued??'нет данных')+', открыто production '+(open??'нет данных')+'. Замер '+sampled+'.';
+    return '<article class="hour-card '+tone+(isCurrent?' is-now':'')+'" aria-label="'+htmlEscape(accessible)+'" title="'+htmlEscape(accessible)+'">'
+      +'<div class="hour-top"><span class="hour-time">'+htmlEscape(time)+'</span><span class="hour-source">'+(isCurrent&&age(s.captured_at)<=12?'сейчас':source)+'</span></div>'
+      +'<div class="hour-numbers"><div><div class="hour-number created">'+(created===null?'—':'+'+text(created))+'</div><div class="hour-label">новые</div></div><div><div class="hour-number merged">'+(merged===null?'—':'✓ '+text(merged))+'</div><div class="hour-label">merge</div></div></div>'
+      +'<div class="hour-bottom"><span>▶ '+text(running)+'</span><span class="waiting">◷ '+text(queued)+'</span></div>'
+      +'<div class="hour-footer"><span>PR '+text(open)+'</span><span>'+(trend?'Ждёт '+trend:'замер '+htmlEscape(sampled))+'</span></div></article>';
+  }
+  function renderGap(from,to){
+    const n=to-from+1;const stamp=FORMAT_CLOCK.format(new Date(from*3600000));
+    return '<div class="gap-card" aria-label="Нет замеров: '+n+' ч"><strong>'+htmlEscape(n===1?stamp+' · нет данных':n+' ч без данных')+'</strong><span>Замеры ещё не сохранены</span></div>';
+  }
+  function renderTimeline(){
+    const range=state.range;const latest=Math.floor(Date.now()/3600000),map=new Map(history().map(x=>[x.hour_utc,x]));state._viewMap=map;
+    const days=new Map();
+    for(let offset=0;offset<range;offset++){
+      const tick=latest-offset;const date=new Date(tick*3600000),day=localDayKey(date),key=hourKey(date);
+      if(!days.has(day))days.set(day,{date,slots:[]});days.get(day).slots.push({tick,key,s:map.get(key)});
+    }
+    const blocks=[];let globalHasData=false;
+    for(const {date,slots} of days.values()){
+      const known=slots.filter(x=>x.s).length;globalHasData=globalHasData||known>0;
+      const heading='<div class="day-heading"><h3>'+htmlEscape(FORMAT_DAY.format(date).replace(/^./,c=>c.toUpperCase()))+'</h3><span class="day-sub">'+known+' из '+slots.length+' часов с данными</span></div>';
+      const cards=[];
+      for(let i=0;i<slots.length;){
+        if(slots[i].s){
+          const item=slots[i];cards.push(renderCard(item.s,hourKey(new Date((item.tick-1)*3600000)),item.tick===latest));i++;continue;
+        }
+        let j=i+1;while(j<slots.length&&!slots[j].s)j++;
+        cards.push(renderGap(slots[j-1].tick,slots[i].tick));i=j;
+      }
+      blocks.push('<div class="day-block">'+heading+'<div class="hours">'+cards.join('')+'</div></div>');
+    }
+    $('days').innerHTML=blocks.join('')+(globalHasData?'':'<div class="timeline-empty">Пока нет ни одного часового замера. После загрузки появится первая карточка; пропущенные часы не будут выдаваться за нули.</div>');
+    for(const b of document.querySelectorAll('.range'))b.setAttribute('aria-pressed',Number(b.dataset.hours)===range?'true':'false');
+  }
   function render(){
-    const fresh=minutesSince(state.pulseAt)<=12,fullFresh=minutesSince(state.fullAt)<=80;
-    const d=decision();setText('decision-title',d.title);setText('decision-copy',d.copy);setText('verdict-icon',d.icon);setText('verdict-tag',d.tag);setText('verdict-why',d.why);$('verdict').className='verdict '+d.tone;setText('load-chip',d.tag);
-    setText('m-open',human(fullFresh?state.counts.open:null));setText('m-prod',human(fullFresh?state.counts.prod:null));
-    setText('m-created',human(fullFresh?state.counts.created:null));setText('m-merged',human(fullFresh?state.counts.merged:null));
-    setText('m-running',human(fresh?state.run.running:null));setText('m-queued',human(fresh?state.run.queued:null));
-    const ci=(state.run.ciPrNumbers||[]).length,hasWork=recentWorkPrs().length>0;
-    setText('m-processing',fresh?('≥'+human(workInProgress())):'—');
-    setText('d-processing',fresh?'Активные PR, различимые в CI'+(hasWork?' и подтверждённых work leases':'')+'; минимум':'Нет свежих данных о PR в работе');
-    const queueAge=minutesSince(state.queue?.updated_at);const ready=Array.isArray(state.queue?.verified_ready)?state.queue.verified_ready.length:null;
-    setText('m-ready',queueAge<=90?human(ready):'—');setText('d-ready',queueAge<=90?'Из ограниченной выборки Triage · '+fmtTime.format(asDate(state.queue.updated_at)):'Очередь Triage отсутствует или устарела');
-    setText('b-running',human(fresh?state.run.running:null));setText('b-queued',human(fresh?state.run.queued:null));setText('b-draft',human(fullFresh?state.counts.draft:null));
-    $('bar-running').style.width=fresh&&state.run.running!=null?cap(state.run.running,25)+'%':'0%';$('bar-queued').style.width=fresh&&state.run.queued!=null?cap(state.run.queued,25)+'%':'0%';$('bar-draft').style.width=fullFresh&&state.counts.draft!=null&&state.counts.prod>0?cap(state.counts.draft,state.counts.prod)+'%':'0%';
-    const date=state.pulseAt&&asDate(state.pulseAt);setText('freshness',fresh?'CI обновлено '+fmtTime.format(date):'CI требует обновления');$('online-dot').className='live-dot '+(fresh?'':'offline');
-    setText('window-stamp',state.fullAt?'Часовое окно · обновлено '+fmtTime.format(asDate(state.fullAt)):'GitHub API');
-    setText('limits',state.remote.length?'Сохранено '+state.remote.length+' серверных часовых снимков':'Пока локальные снимки; серверная история начнётся после Triage');
-    const status=state.errors.length?'Частичная загрузка: '+state.errors.join(' · '):'';setText('error-message',status);
-    renderHistory();renderChart();
+    renderOverview();renderTimeline();
+    const errors=state.errors.filter(Boolean);
+    const remote=state.remote.length;
+    $('status').className='state'+(errors.length?' error':'');
+    set('status',errors.length?'Часть показателей недоступна: '+errors.join(' · '):'История: '+remote+' общих снимков Triage · '+state.local.length+' локальных · автообновление');
   }
-  function renderHistory(){const limit=Number($('history-period').value)||24;const rows=history().slice(0,limit);const tbody=$('history-body');
-    if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Истории пока нет. Первый локальный снимок сохраняется после полной загрузки; общая история — после часового Triage.</td></tr>';return;}
-    tbody.innerHTML=rows.map(s=>{const v=values(s);const t=fmtHour.format(asDate(s.hour_utc));const server=s.source!=='local_browser';const work=Array.isArray(s.work_pr_numbers)?s.work_pr_numbers.length:0;const processing=v.processing==null?'—':'≥'+human(Math.max(v.processing,work));return '<tr><td class="hour">'+escape(t)+'</td><td>'+human(v.created)+'</td><td class="good-text">'+human(v.merged)+'</td><td>'+human(v.open)+'</td><td>'+processing+'</td><td>'+human(v.running)+'</td><td class="warn-text">'+human(v.queued)+'</td><td class="source">'+(server?'GitHub Triage':'Этот браузер')+'</td></tr>'}).join('');
-  }
-  function renderChart(){const records=history().slice(0,24).reverse(),root=$('chart-area');const avail=records.filter(s=>number(s.created_60m)!==null&&number(s.merged_60m)!==null);
-    if(!avail.length){root.innerHTML='<div class="no-chart">Пока нет часовых измерений. После первого замера здесь появятся реальные столбцы, без вымышленных значений.</div>';return;}
-    const max=Math.max(1,...avail.flatMap(s=>[s.created_60m,s.merged_60m]));
-    root.innerHTML='<div class="chart" role="img" aria-label="Часовые столбцы новых и смерженных PR">'+records.map((s,i)=>{const c=number(s.created_60m),m=number(s.merged_60m);const label=fmtHour.format(asDate(s.hour_utc));const title=escape(label+': новых '+(c??'нет данных')+', merge '+(m??'нет данных'));
-      return '<div class="bar-pair" title="'+title+'"><span class="bar" style="height:'+(c==null?0:Math.max(c>0?2:0,c/max*100))+'%"></span><span class="bar merged" style="height:'+(m==null?0:Math.max(m>0?2:0,m/max*100))+'%"></span>'+(i===0||i===records.length-1||i%6===0?'<span class="axis-label">'+escape(fmtHour.format(asDate(s.hour_utc)).split(', ').pop())+'</span>':'')+'</div>';}).join('')+'</div>';
-    setText('chart-note',records.length+' часовых интервалов. Данные — скользящие 60 минут к моменту каждого снимка; локальные замеры могут немного отличаться от записи Triage.');
-  }
-  function exportCSV(){const rows=history().slice(0,Number($('history-period').value)||24);if(!rows.length){setText('error-message','История пока пуста — экспортировать нечего.');return;}
+  function exportCSV(){
+    const rows=history();if(!rows.length){set('status','Снимков для экспорта пока нет.');return}
     const fields=['hour_utc','captured_at','created_60m','merged_60m','open_total','open_prod','draft_prod','active_prs_in_ci','running_runs','queued_runs','ready_verified','source'];
-    const csv='\ufeff'+[fields.join(';'),...rows.map(s=>fields.map(f=>{const val=s[f]==null?'':String(s[f]);return '"'+val.replace(/"/g,'""')+'"'}).join(';'))].join('\r\n');
-    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),href=URL.createObjectURL(blob),link=document.createElement('a');link.href=href;link.download='holistic-house-pr-hourly-'+new Date().toISOString().slice(0,10)+'.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(href),1000);
+    const csv='\ufeff'+[fields.join(';'),...rows.map(s=>fields.map(f=>'"'+String(s[f]??'').replace(/"/g,'""')+'"').join(';'))].join('\r\n');
+    const link=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    link.href=url;link.download='pr-control-tower-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
-  $('refresh').addEventListener('click',()=>{if(Date.now()-lastRequestedFull<60000){setText('error-message','Полная загрузка доступна не чаще раза в минуту, чтобы не расходовать лимит GitHub API.');return;}void full()});
-  $('save-local').addEventListener('click',()=>saveLocal(true));$('download-csv').addEventListener('click',exportCSV);
-  $('history-period').addEventListener('change',()=>{renderHistory();renderChart()});
-  $('sensitivity').addEventListener('change',render);
-  const tick=()=>{if(document.hidden)return;const now=Date.now();if(now-lastRequestedFull>=FULL_MS)void full();else if(now-lastRequestedPulse>=PULSE_MS)void pulse().then(()=>saveLocal(false)).catch(e=>{state.errors=[String(e.message||e)];render()})};
-  window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);
+  $('refresh').addEventListener('click',()=>{if(Date.now()-lastFullRequest<60000){set('status','Повторить полный запрос можно через минуту — берегём лимит GitHub API.');return}void full()});
+  $('download-csv').addEventListener('click',exportCSV);
+  for(const b of document.querySelectorAll('.range'))b.addEventListener('click',()=>{state.range=Number(b.dataset.hours);renderTimeline()});
+  const tick=()=>{if(document.hidden)return;const now=Date.now();if(now-lastFullRequest>=FULL_MS)void full();else if(now-lastPulseRequest>=PULSE_MS)void pulse()};
+  document.addEventListener('visibilitychange',tick);window.addEventListener('focus',tick);
   setInterval(tick,60000);render();void full();
 })();
 </script>
