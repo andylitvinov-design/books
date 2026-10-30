@@ -16,7 +16,13 @@ on:
       - 'components/practice-showcase.module.css'
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
+      - 'tests/practice-service-mobile-one-screen.test.mjs'
+      - 'tests/practice-public-private-unified.test.mjs'
+      - 'tests/profi-hub.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
+      - 'tests/practice-service-mobile-one-screen.test.mjs'
+      - 'tests/practice-public-private-unified.test.mjs'
+      - 'tests/profi-hub.test.mjs'
       - '.github/workflows/practice-google-browser.yml'
   push:
     branches: ['codex/public-book-library']
@@ -54,7 +60,7 @@ jobs:
       - name: Focused auth, layout and regression source tests
         run: |
           node --check scripts/verify-practice-post-google-browser.mjs
-          node --test tests/practice-google-return-and-services-v5.test.mjs tests/practitioner-preview-auth.test.mjs
+          node --test tests/practice-google-return-and-services-v5.test.mjs tests/practice-service-mobile-one-screen.test.mjs tests/practice-public-private-unified.test.mjs tests/profi-hub.test.mjs tests/practitioner-preview-auth.test.mjs
           npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/simple-service-editor.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
           npx tsc --noEmit --pretty false
       - name: Compile production Next application before browser acceptance

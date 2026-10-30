@@ -17,14 +17,18 @@ test('mobile service authoring has full-width work surface without nested panel 
   assert.match(practiceCss, /width:100%;max-width:none;margin:0;padding:0/)
 })
 
-test('first service slide is compact and touch controls remain accessible on iPhone', () => {
+test('first service slide matches approved large-cover iPhone design with accessible controls', () => {
   assert.match(editor, /data-service-slide="presentation"/)
   assert.match(editor, /data-service-visual-canvas/)
-  assert.match(css, /\.photoCanvas\{aspect-ratio:auto;height:89px\}/)
+  assert.match(editor, /data-service-gallery-strip/)
+  assert.match(editor, /data-service-goals/)
+  assert.match(editor, /data-service-duration/)
+  assert.match(editor, /data-service-detail-accordions/)
+  assert.match(css, /\.photoCanvas\{height:clamp\(265px,75vw,320px\);aspect-ratio:auto/)
   assert.match(css, /\.photoButton\{[\s\S]*?min-height:44px/)
-  assert.match(css, /\.visualTitle input\{[\s\S]*?font:650 16px/)
+  assert.match(css, /\.visualTitle input\{height:49px;[\s\S]*?font:700 16px/)
   assert.match(css, /\.visualSummary textarea\{[\s\S]*?font:500 16px/)
-  assert.match(css, /\.stageTabs button strong\{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis/)
+  assert.match(css, /\.stageTabs button strong\{font:760 clamp\(10px,2\.8vw,12px\)[\s\S]*?white-space:normal/)
   assert.match(css, /@media\(max-width:355px\)/)
   assert.match(css, /\.previewCta\{display:none\}/)
   assert.match(editor, /c\.previewCtaNote/) // Still available in full desktop preview.
@@ -46,14 +50,14 @@ test('all three steps, photo/video uploads, translations and real moderation act
   assert.match(editor, /onPause\(item\)/)
 })
 
-test('fixed mobile action dock remains above app nav; disables during uploads and releases when keyboard opens', () => {
+test('fixed emerald mobile action dock stays stable on first tap and above hidden app nav', () => {
   assert.match(editor, /data-service-editor-footer/)
   assert.match(editor, /disabled=\{locked\} onClick=\{saveDraft\}/)
   assert.match(editor, /const locked=busy\|\|videoBusy\|\|photoBusy/)
-  assert.match(css, /\.footerControls\{[\s\S]*?position:fixed;z-index:45/)
-  assert.match(css, /bottom:calc\(74px \+ env\(safe-area-inset-bottom,0px\)\)/)
+  assert.match(css, /\.footerControls\{[\s\S]*?position:fixed;z-index:75/)
+  assert.match(css, /bottom:calc\(8px \+ env\(safe-area-inset-bottom,0px\)\)/)
   assert.match(css, /\.footerControls \.stepNavigation>span/) // CSS nested selectors keep controls in the dock.
   assert.match(css, /\.footerControls:has\(\.stepNavigation>button:first-child:disabled\)/)
-  assert.match(css, /\.quickForm:has\(:is\(input,textarea,select\):focus\) \.footerControls\{[\s\S]*?position:static/)
-  assert.match(css, /\.footerControls \.actions>\.submit\{[\s\S]*?background:#812c49!important/)
+  assert.match(css, /\.quickForm:has\(:is\(input,textarea,select\):focus\) \.footerControls\{position:fixed\}/)
+  assert.match(css, /\.footerControls \.actions>\.submit\{[\s\S]*?background:linear-gradient\(110deg,#00a580,#007b67\)!important/)
 })

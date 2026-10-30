@@ -35,7 +35,7 @@ test('first practitioner screen is public in EN/RU/ES, never a Google gate',()=>
  assert.match(middleware,/new URL\('\/' \+ oldPractice\[1\] \+ '\/practice', request\.url\)/)
 })
 
-test('all public showcase actions resume after Google login at existing protected pages',()=>{
+test('all public showcase actions return to the same dashboard after Google and require an explicit next click',()=>{
  const actionKeys=['create','service','session','meditation','talisman','reiki','course','material',
   'meditationList','talismanList','reikiList','courseList','clients','requests','messages',
   'services','materials','analytics','profile']
@@ -48,10 +48,11 @@ test('all public showcase actions resume after Google login at existing protecte
  assert.equal((server.match(/validPracticeContinuation\(continueTo,profi\)/g)||[]).length,2)
  assert.match(server,/continueTo==='practice-preview'/)
  assert.match(server,/continueTo==='my-practice'/)
- assert.match(server,/profi && Object\.hasOwn\(PRACTICE_PREVIEW_ACTIONS,profi\)/)
- assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice\$\{profi && Object\.hasOwn/)
+ assert.match(server,/const validPracticeContinuation=\(continueTo,profi\)=>/)
+ assert.match(server,/The user explicitly chooses a protected editor after login/)
  assert.doesNotMatch(server,/\$\{origin\}\/\$\{locale==='es'\?'en':locale\}\$\{PRACTICE_PREVIEW_ACTIONS\[profi\]\}/)
- assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview', profi:key \}\)/)
+ assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview' \}\)/)
+ assert.doesNotMatch(showcase,/continueTo:'practice-preview', profi:key/)
  assert.match(showcase,/router\.push\(destination\(locale, key\)\)/)
  assert.match(server,/reiki:'\/app\/practice\?panel=services&create=1&starter=reiki'/)
  assert.match(server,/diagnostic:'\/app\/practice\?panel=services&create=1&starter=diagnostic'/)
