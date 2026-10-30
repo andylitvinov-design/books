@@ -1274,7 +1274,7 @@ const quickVideoCopy = {
 const approvedMobileCopy = {
   ru: {
     introTitle:"Создать персональное видео",
-    intro:"Образы и аффирмации для поддержки энергии, мотивации и уверенности. Вы выбираете цель, видео и звук.",
+    intro:"Персональное видео для поддержки энергии, мотивации и уверенности. Выберите цель, образы и звук.",
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
     directions:"1. Выберите направление",
@@ -2318,16 +2318,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
+        <nav className={videoStyles.quickBrandBar} aria-label="Holistic House">
+          <Link href={"/"+locale+"/"} prefetch={false} className={videoStyles.quickBrandBack}
+            aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
+            <ArrowRight size={20} aria-hidden="true"/>
+          </Link>
+          <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
+          <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
+        </nav>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
             <p>{approved.intro}</p>
-            <small>{approved.disclosure}</small>
           </div>
-          <div className={videoStyles.quickHeaderArt} aria-hidden="true">
-            {/* Existing approved site portrait and original film artwork. */}
+          <div className={videoStyles.quickHeaderArt}>
+            {/* Existing first-party portrait is a still. This Play button controls
+                the ONE actual MP4 preview below; no duplicate player or autoplay. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/holistic-house/support-reference-avatar.webp" alt=""/>
+            <img src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true"/>
+            <button type="button" className={videoStyles.quickHeaderPlay}
+              data-video-quick-hero-play aria-label={approved.previewPlay}
+              disabled={recording||preparing}
+              onClick={()=>{
+                if(activeFilm){
+                  const video=premiumVideoRef.current;
+                  video?.scrollIntoView({behavior:"smooth",block:"center"});
+                  if(video){video.muted=true;void video.play().then(()=>setPreviewPlaying(true))
+                    .catch(()=>setNotice(ui.videoUnavailable));}
+                }else{
+                  setPreviewPlaying(true);
+                  openQuickDetailed("video-hero");
+                }
+              }}>
+              <Play size={24} fill="currentColor" aria-hidden="true"/>
+            </button>
           </div>
           <button type="button" data-video-quick-smart disabled={recording||preparing}
             onClick={()=>{if(!uploadedAudio){setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);}
@@ -2341,6 +2365,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             return <span key={benefit}><Icon size={21} aria-hidden="true"/>{benefit}</span>;
           })}
         </div>
+        <p className={videoStyles.quickDisclosure} role="note">{approved.disclosure}</p>
 
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
@@ -2552,6 +2577,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
+        <details className={videoStyles.quickExtras} data-video-quick-extras>
+          <summary><strong>{approved.extra}</strong><ChevronDown size={20} aria-hidden="true"/></summary>
+          <div className={videoStyles.quickExtraActions}>
+            <button type="button" onClick={()=>openQuickDetailed("video-settings")}>
+              <SlidersHorizontal size={17} aria-hidden="true"/>{quick.format} · {quick.length}
+            </button>
+            <button type="button" onClick={()=>openQuickDetailed("video-audio")}>
+              <Music2 size={17} aria-hidden="true"/>{quick.audio}
+            </button>
+            <button type="button" onClick={()=>openQuickDetailed("video-hypnosis")}>
+              <Sparkles size={17} aria-hidden="true"/>{quick.hypno.replace(/^\d+\.\s*/,"")}
+            </button>
+          </div>
+        </details>
         <div className={videoStyles.quickOrderBar} data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>

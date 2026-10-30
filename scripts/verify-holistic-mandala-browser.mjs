@@ -163,6 +163,11 @@ const runEngine = async ([engine, browserType]) => {
           "preview play activates actual native video");
         await tapPlay.click();
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"false");
+        // Reference hero Play is a real control for this same original MP4.
+        await quick.locator("[data-video-quick-hero-play]").click();
+        await expect(tapPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await tapPlay.click();
+        await expect(tapPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
         assert.equal(await quick.locator("[data-video-quick-scene]").count(),6);
         await quick.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
@@ -209,6 +214,39 @@ const runEngine = async ([engine, browserType]) => {
         await affirmationsToggle.click();
         await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
         await expect(actualAffirmations).not.toBeChecked({timeout:10000});
+        // Owner reference: compact first screen, genuine hero Play, 44px targets,
+        // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
+        const layout=await page.evaluate(()=>{
+          const root=document.querySelector("[data-video-quick-builder]");
+          const header=root?.querySelector("header");
+          const brand=root?.querySelector("nav");
+          const order=root?.querySelector("[data-video-order-bar]");
+          const goals=root?.querySelector("[data-video-quick-section='1']");
+          const extras=root?.querySelector("[data-video-quick-extras]");
+          const diagnostic=document.querySelector("[data-video-diagnostic-banner]");
+          const box=node=>node?.getBoundingClientRect();
+          return {hero:box(header)?.height,brand:box(brand)?.height,
+            themes:[...goals?.querySelectorAll("[data-video-quick-theme]")||[]].map(node=>box(node)?.width),
+            orderPosition:order?getComputedStyle(order).position:null,
+            extras:!!extras,diagnosticVisible:diagnostic?
+              getComputedStyle(diagnostic).display!=="none":false};
+        });
+        assert.ok(layout.hero<=215 && layout.hero>=130,
+          engine+" "+locale+" "+width+"px first-screen hero height "+JSON.stringify(layout));
+        assert.ok(layout.brand>=40 && layout.brand<=65,
+          engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
+        assert.ok(layout.themes.length===6 && layout.themes.every(n=>n>=44),
+          engine+" "+locale+" "+width+"px scannable topic cards "+JSON.stringify(layout));
+        assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
+        assert.ok(layout.extras,"additional settings remain discoverable");
+        assert.equal(layout.diagnosticVisible,false,"marketing banner must not push down iPhone editor");
+        const heroPlay=quick.locator("[data-video-quick-hero-play]");
+        assert.equal(await heroPlay.count(),1);
+        assert.ok(await heroPlay.isEnabled());
+        const extras=quick.locator("[data-video-quick-extras]");
+        await extras.locator("summary").click();
+        await expect(extras).toHaveAttribute("open","");
+        await extras.locator("summary").click();
         const quickOverflow=await page.evaluate(()=>({
           page:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
           cards:[...document.querySelectorAll("[data-video-quick-builder] > [data-video-quick-section], [data-video-quick-builder] > [data-video-quick-tier], [data-video-quick-personal]")].map(el=>({
