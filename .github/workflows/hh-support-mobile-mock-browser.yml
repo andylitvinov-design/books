@@ -34,6 +34,7 @@ on:
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
@@ -71,10 +72,13 @@ permissions:
 concurrency:
   # Keep push and each PR independent: an unrelated PR must not cancel
   # production visual verification for this exact published commit.
-  group: hh-support-mobile-mock-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  # Never cancel independent production push verification, only stale PR heads.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   mobile-visual-parity:
+    # Draft has no merge permission; Ready reruns real EN/RU/ES iPhone E2E.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 22
     env:
@@ -109,6 +113,7 @@ jobs:
           for i in $(seq 1 120); do
             if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            echo "Waiting for local Support Mock, attempt ${i}/120" >&2
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs

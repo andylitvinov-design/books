@@ -233,3 +233,32 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });
+
+test('Draft saves Mandala and Support browser runner time without weakening Ready and production acceptance', () => {
+  const gate = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const types = "    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]";
+  for (const [name, job, script, count] of [
+    ['holistic-support-mandala.yml', 'focused-unit-types-build', 'verify-holistic-mandala-browser.mjs', 10],
+    ['hh-support-mobile-mock-browser.yml', 'mobile-visual-parity', 'verify-holistic-support-mock-fidelity.mjs', 18],
+  ]) {
+    const source = read(name);
+    assert.ok(source.includes('  pull_request:\n' + types + '\n'), name + ' must rerun on Draft to Ready');
+    assert.ok(source.includes("branches: ['codex/public-book-library']"), name + ' must target production');
+    assert.ok(source.includes('  ' + job + ':\n'), name + ' must retain browser job');
+    assert.ok(source.includes('  ' + job + ':\n' + gate + '\n'), name + ' cannot run heavy Draft CI');
+    assert.ok(source.includes(script), name + ' must execute real browser script');
+    assert.match(source, /webkit/);
+    assert.match(source, /chromium/);
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+    assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
+    assert.ok(count === 10 || count === 18);
+  }
+  const support = read('hh-support-mobile-mock-browser.yml');
+  assert.match(support, /^  push:/m, 'production visual audit must remain');
+  assert.ok(support.includes("group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(support.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
+  assert.ok(support.includes("node scripts/verify-holistic-support-mock-fidelity.mjs"));
+  const mandala = read('holistic-support-mandala.yml');
+  assert.ok(mandala.includes("node scripts/verify-holistic-mandala-browser.mjs"));
+  assert.ok(mandala.includes("holistic-support-mandala-${{ github.event.pull_request.number }}"));
+});
