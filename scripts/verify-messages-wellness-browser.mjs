@@ -70,8 +70,26 @@ for(const browserType of [chromium,webkit]){
     await root.waitFor({state:'visible',timeout:40000})
     const orderTab=root.getByRole('tab',{name:new RegExp(labels[locale].orders)})
     await orderTab.waitFor({state:'visible',timeout:30000})
-    await root.locator('#hh-orders-panel > button').filter({hasText:labels[locale].name})
-      .first().waitFor({state:'visible',timeout:35000})
+    const orderCard=root.locator('#hh-orders-panel > button')
+      .filter({hasText:labels[locale].name}).first()
+    try { await orderCard.waitFor({state:'visible',timeout:18000}) }
+    catch (firstError) {
+      // Next dev may recompile locale bundles and restart navigation once.
+      // Never hide a missing order: capture the true rendered state, retry
+      // exactly once, and fail with evidence if the same contract is still red.
+      const snapshot=await page.evaluate(()=>({
+        url:location.pathname+location.search,
+        section:document.querySelector('[data-orders-clients-hub]')?.getAttribute('data-section'),
+        visible:document.querySelector('#hh-orders-panel')?.innerText?.slice(0,900),
+        tabs:[...document.querySelectorAll('[data-orders-clients-hub] [role="tab"]')]
+          .map(node=>({text:node.textContent,selected:node.getAttribute('aria-selected')})),
+      })).catch(()=>({unavailable:true}))
+      console.error('MESSAGES_SYNTHETIC_ORDER_DIAGNOSTIC',key,JSON.stringify(snapshot),
+        'pageErrors',JSON.stringify(errors))
+      if(snapshot.section!=='orders'||!snapshot.visible)throw firstError
+      await page.reload({waitUntil:'domcontentloaded',timeout:90000})
+      await orderCard.waitFor({state:'visible',timeout:25000})
+    }
     assert.equal(await orderTab.getAttribute('aria-selected'),'true',key+' order default')
     const metrics=await page.evaluate(()=>{
       const doc=document.documentElement
