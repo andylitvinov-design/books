@@ -115,6 +115,27 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
           "three formats share one real cinematic preview");
         assert.equal(await quick.locator("[data-video-practice-accordion]").count(),1);
+        // Professional marketing is a separate, collapsed B2B experience;
+        // generation is guarded by an explicit practitioner copy/rights review.
+        const practitionerPromo=quick.locator("[data-professional-promo]");
+        assert.equal(await practitionerPromo.count(),1,
+          "one professional promo mode reuses the original video editor");
+        assert.equal(await practitionerPromo.getAttribute("open"),null,
+          "the approved personal practice accordion remains the main view");
+        await practitionerPromo.locator("summary").click();
+        await practitionerPromo.locator("[data-promo-format]").selectOption("service");
+        await practitionerPromo.locator("[data-promo-role]").selectOption("psychologist");
+        await practitionerPromo.locator("[data-promo-topic]").selectOption("relationships");
+        await practitionerPromo.locator("[data-promo-compose]").click();
+        assert.equal(await practitionerPromo.locator("[data-promo-draft]").count(),1,
+          "professional script is created locally in all languages");
+        assert.equal(await practitionerPromo.locator("[data-promo-apply]").isDisabled(),true,
+          "professional ad cannot be applied without reviewing claims and rights");
+        await practitionerPromo.locator("[data-promo-review]").check();
+        assert.equal(await practitionerPromo.locator("[data-promo-apply]").isEnabled(),true,
+          "review enables use of the existing free four-clip renderer");
+        await practitionerPromo.locator("summary").click();
+
         assert.equal(await quick.locator("[data-video-quality-option]").count(),9,
           "each expandable format retains its Basic / Smart / Pro choices");
         assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-expanded"),"true");
