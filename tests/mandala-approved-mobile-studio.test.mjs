@@ -11,6 +11,8 @@ test("the approved native video editor uses one real local renderer and stable o
   const css=read("components/mandala-video-mobile.module.css");
   const pageCss=read("components/mandala-meditation.module.css");
   const dock=read("components/holistic-support-mandala-dock.tsx");
+  const globalBanner=read("components/sitewide-antistress-banner.tsx");
+  const supportCss=read("components/holistic-support-mobile.module.css");
   assert.equal((app.match(/<MandalaFreeVideoStudio /g)||[]).length,1);
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
@@ -26,6 +28,8 @@ test("the approved native video editor uses one real local renderer and stable o
   assert.ok(page.indexOf("<HolisticSupportMandalaDock")<
     page.indexOf("<MandalaMeditationClient"),"header must render above editor");
   assert.match(pageCss,/@media\(max-width:759px\)\{\.slimDiagnostic\{display:none\}\}/);
+  assert.match(globalBanner,/holistic-support\\\/\\\/(?:mobile\\\|mandala)/);
+  assert.match(supportCss,/@media\\\(min-width:641px\\\)\\\{\\\.mandalaAppHeader\\\{display:none\\\}\\\}/);
   assert.match(dock,/<Leaf size=\{24\}/);
   assert.match(css,/\.quickGenerate\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
