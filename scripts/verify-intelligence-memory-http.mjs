@@ -143,9 +143,20 @@ try {
       await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).click()
       await card.getByText('Only the item and your answer will be saved',{exact:false}).waitFor()
       assert.equal((await call('export',a)).body.records.length,0)
-      const saveResponse=page.waitForResponse(response=>response.url().endsWith('/api/app/intelligence/feedback/save')&&response.request().method()==='POST')
       const confirmButton=card.getByRole('button',{name:'Confirm save',exact:true})
+      // WebKit can continue scrolling after an element first becomes visible.
+      // Center it and wait until its actual hit target is stable before one
+      // ordinary click; do not bypass actionability or retry the click.
+      await confirmButton.evaluate(button=>button.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}))
+      await page.waitForFunction(button=>{
+        const rect=button.getBoundingClientRect(), x=rect.left+rect.width/2, y=rect.top+rect.height/2
+        const hit=document.elementFromPoint(x,y), previous=window.__hhStableRect
+        const stable=previous&&Math.abs(previous.x-x)<0.5&&Math.abs(previous.y-y)<0.5
+        window.__hhStableRect={x,y,count:stable?previous.count+1:0}
+        return y>60&&y<innerHeight-60&&hit&&(hit===button||button.contains(hit))&&window.__hhStableRect.count>=6
+      },await confirmButton.elementHandle())
       await confirmButton.evaluate(button=>{window.__hhSyntheticClicks=0;window.__hhConfirmNode=button;window.__hhClickTarget='none';button.addEventListener('click',()=>{window.__hhSyntheticClicks++},{once:true});document.addEventListener('click',event=>{const target=event.target instanceof Element?event.target:null;const label=target?.closest('button')?.textContent?.trim();window.__hhClickTarget={tag:target?.tagName||'unknown',button:['Confirm save','Cancel','Manage saved feedback','Another option'].includes(label)?label:(label?'other-button':'none'),x:Math.round(event.clientX),y:Math.round(event.clientY)}},{capture:true,once:true})})
+      const saveResponse=page.waitForResponse(response=>response.url().endsWith('/api/app/intelligence/feedback/save')&&response.request().method()==='POST')
       await confirmButton.click()
       let savedResponse
       try {savedResponse=await saveResponse} catch(error) {
