@@ -68,7 +68,7 @@ export function MandalaFreeVideoGenerator({
   locale,theme,aspect,disabled,localPortrait,onPlanChange,
 }:Props){
   const t=copy[locale];
-  const [description,setDescription]=useState(FREE_VIDEO_EXAMPLES[locale]);
+  const [description,setDescription]=useState<string>(FREE_VIDEO_EXAMPLES[locale]);
   const [family,setFamily]=useState<Family>("auto");
   const [palette,setPalette]=useState<Palette>("auto");
   const [motion,setMotion]=useState<Motion>("auto");
