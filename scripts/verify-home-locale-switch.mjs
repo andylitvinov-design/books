@@ -155,7 +155,29 @@ async function exerciseFreeJourneys(page, engine, width) {
       const cta = id === 'analysis'
         ? chooser.locator('[data-contact-channel-chooser] button[data-contact-order]')
         : chooser.locator('a[data-home-free-action="' + id + '"]');
-      const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element instanceof HTMLAnchorElement ? element.href : null, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps
+      const beforeClick = await cta.evaluate(element => ({
+        url: location.href,
+        href: element instanceof HTMLAnchorElement ? element.href : null,
+        readyState: document.readyState,
+        hydrated: Boolean(history.state?.__NA),
+        earlyCsp: Boolean(window.__cspPreHydration),
+        reactProps: Object.keys(element).some(key => key.startsWith('__reactProps'))
+      }));
+      results.push({ engine, width, locale, entryClickAttempt: id,
+        time: Date.now(), beforeClick });
+      await cta.click();
+      if (id === 'analysis') {
+        await expect(cta).toHaveAttribute('aria-expanded','true');
+        const consentForm = chooser.locator('[data-contact-channel-chooser] form');
+        await expect(consentForm).toBeVisible();
+        await expect(consentForm.locator('input[type="checkbox"][required]')).toHaveCount(1);
+        await expect(page).toHaveURL(origin + homePath(locale));
+        results.push({ engine, width, locale, freeJourney: id,
+          consentFormVisible: true, submitted: false });
+        continue;
+      }
+      await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
+      await expect(page.locator(target)).toBeVisible();
       // In WebKit, tearing down an in-flight fetch reports an access-control error.
       // Complete the synthetic bootstrap/prefetches; retain the strict pageerror check.
       await page.waitForLoadState('networkidle');
