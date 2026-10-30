@@ -65,5 +65,6 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           HH_TEST_BROWSER=chromium node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
           HH_TEST_BROWSER=webkit node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
-          # Repeat after two Linux/WebKit runs lost the confirmation click.
+          # Repeat WebKit without retrying failures to detect the intermittent mobile click miss.
+          HH_TEST_BROWSER=webkit node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
           HH_TEST_BROWSER=webkit node --conditions=react-server scripts/verify-intelligence-memory-http.mjs
