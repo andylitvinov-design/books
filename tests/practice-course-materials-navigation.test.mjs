@@ -48,7 +48,9 @@ test('New Routes reuse protected audio editor without spawning duplicate media s
 
 test('Canonical course editor CSP permits scoped private draft upload and preview',()=>{
   assert.match(middleware,/reikiIntroAudioManager = .*courses/)
-  assert.match(middleware,/reikiIntroAudioManager \? reikiIntroAudioOrigin/)
+  const connectCsp=middleware.split('\n').find(line=>line.includes("connect-src 'self'")) || ''
+  assert.match(connectCsp,/\(\(reikiIntroAudioManager\|\|coachingOwnerAudioManager\) \? reikiIntroAudioOrigin : ''\)/)
+  assert.doesNotMatch(connectCsp,/connect-src 'self' blob:/)
   assert.match(middleware,/media-src 'self'/)
   assert.match(middleware,/connect-src 'self'/)
 })

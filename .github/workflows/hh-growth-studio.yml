@@ -2,6 +2,7 @@ name: HH Growth Studio editorial checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'app/admin/growth-studio/**'
@@ -54,6 +55,8 @@ concurrency:
 
 jobs:
   editorial-security:
+    # Draft work gets lightweight core checks; full privacy/editor tests run on Ready.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Owner editorial and storage safety
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -81,6 +84,7 @@ jobs:
         run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/growth-studio-content-radar.test.mjs tests/growth-studio-provider-readiness.test.mjs tests/practice-marketing-navigation.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs
 
   next-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Next.js production build / Growth Studio
     runs-on: ubuntu-latest
     timeout-minutes: 18
@@ -99,5 +103,10 @@ jobs:
         run: npm ci --include=dev
       - name: Render native composer disclosure with locked React
         run: node --test tests/growth-studio-composer-details-render.test.mjs
+      # The always-triggered exact-head core release gate already requires a
+      # complete Next build on Ready production PRs. Keep standalone compilation
+      # for workflow_dispatch and non-production targets; composer render and
+      # all owner-security contracts still run independently on Ready.
       - name: Next.js build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
