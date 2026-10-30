@@ -8,6 +8,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { publicReikiIntroAudio } from "@/lib/academy/reiki-intro-audio-store";
+import { listVideoProgress } from "@/lib/app/video-progress";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendations";
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
@@ -47,13 +48,14 @@ function validatedAxes(value) {
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
-    "chosenAxes","usePrivateProfile","preferredFormat","feedback"]);
+    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
     (body.selectedGoal !== null && body.selectedGoal !== undefined &&
       !GOALS.has(body.selectedGoal)) ||
     (body.usePrivateProfile !== undefined && typeof body.usePrivateProfile !== "boolean") ||
+    (body.usePrivateHistory !== undefined && typeof body.usePrivateHistory !== "boolean") ||
     (body.chosenAxes !== undefined && !validatedAxes(body.chosenAxes)) ||
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
@@ -126,6 +128,16 @@ export async function POST(request) {
     // from nonplayable editor soundtracks and private practitioner recordings.
     const enabledFormats=body.preferredFormat ? [body.preferredFormat] :
       ["video","test","course","service"];
+    // Reuse only client-affirmed watched/mastered videos from the EXISTING
+    // My Progress read model. This separate consent is opt-in per request and
+    // the private database read never occurs on unsafe turns.
+    const useHistory=body.usePrivateHistory===true && safety.status==="clear" && !recentUnsafe;
+    const completedIds=useHistory
+      ? (await listVideoProgress(config,actor)).records.filter(row=>
+          ["watched","mastered"].includes(row.status) &&
+          /^[A-Za-z0-9_-]{11}$/.test(row.videoId))
+        .slice(0,80).map(row=>"youtube:"+row.videoId)
+      : [];
     const publicAudio=body.preferredFormat==="audio" && body.locale!=="es" &&
       safety.status==="clear" && !recentUnsafe
       ? (await Promise.all(["flight","tantra","kundalini","yggdrasil","initiation"]
@@ -142,8 +154,9 @@ export async function POST(request) {
         paymentPreference:"free"},
       access:{authenticated:true,ownerScoped:true},
       consent:{paidSuggestions:false,measuredPersonalization:useMeasurements,
-        profilePersonalization:useMeasurements},
+        profilePersonalization:useMeasurements,practiceHistory:useHistory},
       profile:{measurements},
+      history:{completedIds},
       feedback:body.feedback||{},
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio},
     });
@@ -176,6 +189,7 @@ export async function POST(request) {
         suggestions,question:decision.question||null},
       suggestions, memorySaved:false, userAuthorized:true,
       usedSavedTestEvidence:useMeasurements && measurements.length>0,
+      usedSavedVideoHistory:useHistory && completedIds.length>0,
       // Browser presentation may use a local model AFTER separate on-device opt-in.
       browserModelAllowed:body.mode==="device" && safety.status==="clear",
     },{headers:PRIVATE_HEADERS}));
