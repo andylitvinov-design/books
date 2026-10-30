@@ -105,7 +105,19 @@ export function MandalaCreditWallet({locale}:{locale:PublicLocale}) {
     const status=p.get("credits");
     const topup=p.get("topup");
     if(status==="cancelled")setAlert(t.cancelled);
-    else if(status==="success")setAlert(t.success);
+    else if(status==="success"&&topup&&/^[0-9a-f-]{36}$/i.test(topup)){
+      setBusy(true);setAlert(t.success);
+      void (async()=>{
+        try{
+          const response=await fetch("/api/app/media-credits/reconcile",{
+            method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({topupId:topup}),
+          });
+          if(!response.ok)throw new Error("PAYMENT");
+          await load();setAlert(t.success);
+        }catch{setAlert(t.paymentError);}finally{setBusy(false);}
+      })();
+    } else if(status==="success")setAlert(t.success);
     else if(status==="paypal"&&topup&&/^[0-9a-f-]{36}$/i.test(topup)){
       setBusy(true);setAlert(t.paypalTry);
       void (async()=>{
