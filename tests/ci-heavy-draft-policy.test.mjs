@@ -195,3 +195,15 @@ test('wave 2: My Progress production post-merge checks keep full independent com
   assert.match(source,/run: npm run build/);
   assert.ok(source.includes("github.event_name != 'pull_request'"));
 });
+
+test('Library Feed cancels superseded PR runs while retaining manual acceptance and real browser checks', () => {
+  const source = read('library-public-feed.yml');
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  workflow_dispatch:/m);
+  assert.equal((source.match(/^concurrency:/gm) || []).length, 1);
+  assert.ok(source.includes("group: hh-library-public-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
+  assert.ok(source.includes('run: npm run build'));
+  assert.ok(source.includes('node scripts/verify-ideas-mobile-browser.mjs'));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+}

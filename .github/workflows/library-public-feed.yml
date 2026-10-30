@@ -39,6 +39,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  # Cancel only obsolete commits on the same PR; manual acceptance remains independent.
+  group: hh-library-public-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   isolated-build:
     runs-on: ubuntu-latest
