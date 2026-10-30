@@ -207,7 +207,7 @@ try {
         await goalPage.locator('#hh-portrait-tab-recommendations').click()
         const goalCard=goalPage.locator('[data-holistic-intelligence]')
         await goalCard.locator('select').selectOption('goals')
-        await goalCard.getByRole('button',{name:next,exact:true}).click()
+        await stableAdvance(goalPage,goalCard.getByRole('button',{name:next,exact:true}))
         await goalCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
         const advance=goalCard.getByRole('button',{name:next,exact:true})
         await advance.evaluate(button=>{window.__hhGoalAdvance='none';document.addEventListener('click',event=>{
