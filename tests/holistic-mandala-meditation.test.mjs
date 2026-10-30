@@ -36,9 +36,17 @@ test("public mandala adapts original seven Power Place geometries and stone-mosa
 
 test("private photo never leaves the browser and can be cropped or removed", () => {
   const client = read("components/mandala-meditation-client.tsx");
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /image\.size > 10 \* 1024 \* 1024/);
-  assert.match(client, /URL\.createObjectURL\(image\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /photoChoiceEpoch\.current/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  const preparation=read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(preparation, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(preparation, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
+  assert.match(preparation, /image\/\*,\.heic,\.heif/);
+  assert.match(preparation, /context\.drawImage\(image/);
+  assert.match(client, /const prepared = await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /URL\.createObjectURL\(prepared\)/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
   assert.match(client, /setZoom\(/);
