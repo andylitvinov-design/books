@@ -12,11 +12,16 @@ const CALLBACK='https://holistichouse.vercel.app/api/admin/telegram-video/youtub
 const CONTEXT={accountId:PRACTITIONER_ID,recordId:PRACTITIONER_ID,field:'telegram_video_oauth_state'}
 const HEADERS={'cache-control':'no-store','referrer-policy':'no-referrer'}
 export async function GET(request){
+ const selected=new URL(request.url).searchParams.get('target')
+ if(selected!==null&&selected!=='ru'&&selected!=='en')
+   return new Response('Invalid YouTube destination',{status:400,headers:HEADERS})
+ const target=selected==='en'?'en':'ru'
  // When a fresh iPhone/Telegram browser lacks the private admin cookie, enter the
  // existing verified-owner bridge and return to this exact OAuth start route.
  // A login redirect never grants YouTube access or creates a video.
  if(!await requireAdminRequest())return NextResponse.redirect(
-   'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect',
+   target==='en'?'https://holistichouse.vercel.app/admin/login':
+     'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect',
    {status:303,headers:HEADERS})
  if(!ownerVideoOauthConfigured())return new Response(
    'Google offline OAuth for Telegram videos is not configured.',{status:503,headers:HEADERS})
@@ -27,7 +32,7 @@ export async function GET(request){
    // Only an explicit owner click requests stronger metadata-edit rights.
    const visibility=request?.url?
      new URL(request.url).searchParams.get('visibility')==='1':false
-   const encrypted=seal({verifier,state,time:Date.now(),visibility},CONTEXT,config)
+   const encrypted=seal({verifier,state,time:Date.now(),visibility,target},CONTEXT,config)
    const query=new URLSearchParams({
      client_id:process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID,redirect_uri:CALLBACK,
      response_type:'code',
