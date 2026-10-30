@@ -139,8 +139,10 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
   },[]);
   useEffect(()=>{
-    if(audioRef.current)audioRef.current.volume=mixedUrl?1:voiceLevel/100;
-    if(natureRef.current)natureRef.current.volume=musicLevel/100;
+    // iOS Safari may ignore or reject software volume changes. The saved WAV
+    // still uses the precise levels through OfflineAudioContext.
+    try{if(audioRef.current)audioRef.current.volume=mixedUrl?1:voiceLevel/100;}catch{/* hardware volume only */}
+    try{if(natureRef.current)natureRef.current.volume=musicLevel/100;}catch{/* hardware volume only */}
   },[voiceLevel,musicLevel,mixedUrl]);
   function detachOldNarration(){
     if(attachedRef.current){attachedRef.current=false;onAudioInvalidated?.();}
@@ -261,10 +263,10 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     invalidateMix();
     if(kind==="voice"){
       setVoiceLevel(value);
-      if(audioRef.current)audioRef.current.volume=value/100;
+      try{if(audioRef.current)audioRef.current.volume=value/100;}catch{/* iOS hardware volume */}
     } else {
       setMusicLevel(value);
-      if(natureRef.current)natureRef.current.volume=value/100;
+      try{if(natureRef.current)natureRef.current.volume=value/100;}catch{/* iOS hardware volume */}
     }
   }
   const groups=["male","female"] as const;
