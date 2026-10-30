@@ -151,3 +151,47 @@ test('Energywork cancels superseded PR commits only, never manual verification',
   assert.ok(src.includes("group: hh-energywork-\${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
   assert.ok(src.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' }}"));
 });
+
+
+const dedupWave2 = [
+  ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build','mobile-browser']],
+  ['hh-my-progress-release.yml', ['Typecheck', 'Production build'], ['private-progress']],
+  ['hh-messenger-notification-build.yml', ['Next.js production build (no provider keys)'], ['notification-build']],
+];
+
+test('wave 2: production Ready uses one shared full build but retains real specialist tests', () => {
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  const reuse="if: \${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [filename, steps, jobs] of dedupWave2){
+    const source=read(filename);
+    assert.match(source,/^  pull_request:\s*\n\s+types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+    for(const job of jobs){
+      assert.ok(source.includes('  '+job+':\n    if: \${{ github.event_name != \'pull_request\' || github.event.pull_request.draft == false }}'),filename+' draft policy');
+    }
+    for(const step of steps){
+      assert.ok(source.includes('- name: '+step+'\n        '+reuse+'\n        run:'),filename+' build/type step must rely on core only for production PR');
+    }
+    assert.match(source,/node --test/);
+    assert.match(source,/eslint/);
+    assert.match(source,/npm run build/);
+    assert.doesNotMatch(source,/continue-on-error:\s*true/);
+  }
+});
+test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-production/manual',()=>{
+  const source=read('hh-messenger-notification-build.yml');
+  assert.ok(source.includes('npx --no-install eslint lib/app/repository.js'));
+  assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
+  assert.ok(source.includes('npx --no-install tsc --noEmit'));
+  assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
+  assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' }}"));
+  assert.match(source,/^  workflow_dispatch:/m);
+});
+test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{
+  const source=read('hh-my-progress-release.yml');
+  assert.match(source,/^  push:/m);
+  assert.match(source,/run: npm run build/);
+  assert.ok(source.includes("github.event_name != 'pull_request'"));
+});
