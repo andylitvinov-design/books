@@ -69,7 +69,9 @@ function assertSame(pr, ctx) {
 }
 
 export async function verify(api,ctx,files,options={}) {
-  const maxWait = Math.max(0,Math.min(15*60_000,Number(options.maxWaitMs ?? 12*60_000)));
+  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
+  // long enough for their results instead of rejecting a still-running check.
+  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
   const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
   const pr = await api.pr(ctx.number);
   assertSame(pr,ctx);

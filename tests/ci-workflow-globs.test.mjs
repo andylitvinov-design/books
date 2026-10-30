@@ -40,3 +40,19 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
+test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+  const s=workflow('hh-portrait-mobile-browser.yml');
+  const dollar=String.fromCharCode(36);
+  assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.match(s,/postgres:17-alpine/);
+  assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
+  assert.match(s,/verify-portrait-mobile\.mjs/);
+  assert.match(s,/^permissions:\s*\n  contents: read/m);
+  assert.ok(s.includes('for ((i=1; i<=110; i++)); do'));
+  assert.doesNotMatch(s,/continue-on-error:\s*true|actions:\s*write/);
+});
+
