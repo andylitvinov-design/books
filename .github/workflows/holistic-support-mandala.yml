@@ -17,6 +17,7 @@ on:
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/verify-free-video-worlds.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
       - 'public/audio/mandala/**'
@@ -104,6 +105,7 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
           node scripts/verify-holistic-mandala-browser.mjs
+          node scripts/verify-free-video-worlds.mjs
       - name: Upload synthetic audio-only iPhone screenshots
         if: always()
         uses: actions/upload-artifact@v4
