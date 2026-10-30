@@ -73,7 +73,9 @@ for(const engineName of ['webkit','chromium']){
           assert.ok(text.includes(item.locale==='ru'?'Safari':'Safari'),'Safari instructions')
           if(item.locale==='ru')assert.ok(text.includes('компаса'),'In-app browser exit instruction')
           const label=await action.innerText()
-          assert.ok(/Safari/.test(label),'iPhone must NOT advertise a fake one-click download')
+          assert.ok(/Install|Установить|Instalar/.test(label),'iPhone offer opens truthful manual instructions, never a binary download')
+          await action.click()
+          await page.locator('[data-hh-install-guidance]').waitFor({state:'visible',timeout:5000})
         }else{
           const label=await action.innerText()
           assert.ok(/Chrome|Установить/.test(label),'Android manual or eligible browser install')

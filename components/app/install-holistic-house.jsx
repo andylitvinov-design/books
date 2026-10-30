@@ -7,7 +7,7 @@ import {onPwaInstallPrompt,requestPwaInstallation} from '@/lib/pwa/install-promp
 const COPY={
   en:{
     title:'Holistic House on your phone',subtitle:'A free Home Screen app for your private messages, reports, tests and courses.',
-    install:'Install for free',iosHelp:'Copy link for Safari',androidHelp:'How to install in Chrome',desktopButton:'Copy free installation link',iosGuide:'iPhone: install in Safari in three steps',iosSteps:['If you are inside ChatGPT, tap the compass icon to open this page in Safari. Otherwise open holistichouse.vercel.app/en/install in Safari.','In Safari tap Share (the square with an upward arrow).','Choose Add to Home Screen → Add. Open the new Holistic House icon to access Messages.'],
+    install:'Install for free',desktopButton:'Copy free installation link',
     ios:'In Safari: tap Share → Add to Home Screen. Then open the new Holistic House icon.',
     android:'In Chrome: open the browser menu ⋮ → Install app or Add to Home screen.',
     desktop:'Open this page on your phone in Safari or Chrome to install the free app.',
@@ -21,7 +21,7 @@ const COPY={
   },
   ru:{
     title:'Holistic House на телефоне',subtitle:'Бесплатное приложение на главный экран: сообщения, отчёты, тесты и курсы.',
-    install:'Установить бесплатно',iosHelp:'Скопировать ссылку для Safari',androidHelp:'Как установить через Chrome',desktopButton:'Скопировать ссылку для установки',iosGuide:'Как установить на iPhone — 3 шага',iosSteps:['Если страница открыта внутри ChatGPT, нажмите значок компаса внизу, чтобы перейти в Safari. Или откройте holistichouse.vercel.app/ru/install прямо в Safari.','В Safari нажмите «Поделиться» (квадрат со стрелкой вверх).','Выберите «На экран Домой» → «Добавить». Откройте Holistic House с новой иконки.'],
+    install:'Установить бесплатно',desktopButton:'Скопировать ссылку для установки',
     ios:'В Safari: нажмите «Поделиться» → На экран «Домой». Затем откройте новую иконку Holistic House.',
     android:'В Chrome: меню ⋮ → «Установить приложение» или «Добавить на главный экран».',
     desktop:'Откройте эту страницу в Safari или Chrome на телефоне и установите приложение бесплатно.',
@@ -35,7 +35,7 @@ const COPY={
   },
   es:{
     title:'Holistic House en tu teléfono',subtitle:'Aplicación gratuita en la pantalla de inicio para mensajes, informes, pruebas y cursos.',
-    install:'Instalar gratis',iosHelp:'Copiar enlace para Safari',androidHelp:'Cómo instalar desde Chrome',desktopButton:'Copiar enlace de instalación gratuita',iosGuide:'iPhone: instalación en Safari en 3 pasos',iosSteps:['Si esta página está dentro de ChatGPT, pulsa el icono de la brújula para abrirla en Safari, o abre holistichouse.vercel.app/es/install en Safari.','En Safari toca Compartir (cuadrado con flecha hacia arriba).','Selecciona Añadir a la pantalla de inicio → Añadir. Abre Holistic House desde su icono.'],
+    install:'Instalar gratis',desktopButton:'Copiar enlace de instalación gratuita',
     ios:'En Safari: toca Compartir → Añadir a la pantalla de inicio. Abre Holistic House desde su nuevo icono.',
     android:'En Chrome: abre el menú ⋮ → Instalar aplicación o Añadir a la pantalla de inicio.',
     desktop:'Abre esta página en Safari o Chrome en tu teléfono para instalar la aplicación gratis.',
@@ -85,7 +85,6 @@ export default function InstallHolisticHouse({locale='en',showGuideLink=true,lan
   async function install(){
     if(installing)return
     if(!ios&&!android){await copyLink();return}
-    if(ios){await copyLink();setInstructions(true);return}
     if(!offer){setInstructions(true);return}
     setInstalling(true)
     try{
@@ -96,17 +95,13 @@ export default function InstallHolisticHouse({locale='en',showGuideLink=true,lan
   }
   if(standalone===null||standalone===true&&!landing)return null
   return <section className="hh-panel hh-section" aria-label={c.title} data-hh-install data-hh-free-install>
-    {!landing&&<h2>{c.title}</h2>}<p>{c.subtitle}</p>
+    <h2>{landing?c.guide:c.title}</h2><p>{c.subtitle}</p>
     {standalone===true?
       <><p role="status">{c.installed}</p><a className="hh-primary" href={'/'+locale+'/app/messages'}>{c.open}</a></>:
       <>
         <button type="button" className="hh-primary" disabled={installing} onClick={install} data-hh-install-action>
-          {installing?'…':ios?c.iosHelp:!android?c.desktopButton:!offer?c.androidHelp:c.install}
+          {installing?'…':!ios&&!android?c.desktopButton:c.install}
         </button>
-        {ios&&<div data-hh-ios-quicksteps aria-label={c.iosGuide}>
-          <strong>{c.iosGuide}</strong>
-          <ol>{c.iosSteps.map((step,i)=><li key={i}>{step}</li>)}</ol>
-        </div>}
         {accepted&&<p role="status" data-hh-install-accepted>{c.accepted}</p>}
         <p className="hh-fine">{ios?c.ios:android?c.android:c.desktop}</p>
         {instructions&&<div role="status" data-hh-install-guidance>

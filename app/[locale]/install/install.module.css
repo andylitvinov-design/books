@@ -78,3 +78,14 @@
   .webSection>p{margin:12px 0 0;font-size:12px}
   .webSection :global([data-hh-install-action]){min-height:52px}
 }
+
+/* Public route only: visible install guidance does not alter private Cabinet controls. */
+.iphoneHelp{margin:10px 0 2px;padding:12px 14px;border-radius:14px;background:#f0f8f4;border:1px solid #badcc9;color:#244c40}
+.iphoneHelp strong{display:block;font-size:14px;font-weight:750;color:#173e38}
+.iphoneHelp p{font-size:13px;line-height:1.45;margin:5px 0 0}
+@media(max-width:560px){
+  .webSection :global([data-hh-install] h2){display:none}
+  .webSection :global([data-hh-install] p:first-of-type){display:none}
+  .iphoneHelp{padding:10px 12px;margin:9px 0 0}
+  .iphoneHelp p{font-size:12px}
+}

@@ -10,7 +10,7 @@ const COPY={
   en:{
     title:'Install Holistic House for free',
     intro:'Install our free Home Screen app (PWA) today. Your Messenger and Cabinet are inside. Native App Store and APK editions are not yet released.',
-    cost:'Ready now · free PWA · Messenger included',available:'Available to install now',
+    cost:'Ready now · free PWA · Messenger included',available:'Available to install now',iphoneHelpTitle:'iPhone · Safari: install in 3 steps',iphoneHelp:'If you opened this inside ChatGPT, tap the compass icon to open Safari. Then tap Share → Add to Home Screen → Add.',
     open:'Open my Cabinet',messages:'Open my messages',settings:'Notification settings',
     stepsTitle:'Three steps to get started',
     steps:[
@@ -24,7 +24,7 @@ const COPY={
   ru:{
     title:'Установить Holistic House бесплатно',
     intro:'Бесплатное приложение на экран iPhone или Android — уже доступно. Внутри мессенджер и кабинет. Нативные версии App Store и APK пока не выпущены.',
-    cost:'Установка сейчас · бесплатно · с мессенджером',available:'Можно установить сейчас',
+    cost:'Установка сейчас · бесплатно · с мессенджером',available:'Можно установить сейчас',iphoneHelpTitle:'iPhone · установка через Safari',iphoneHelp:'Если вы внутри ChatGPT, нажмите значок компаса для перехода в Safari. Затем: «Поделиться» → «На экран Домой» → «Добавить».',
     open:'Открыть кабинет',messages:'Мои сообщения',settings:'Настройки уведомлений',
     stepsTitle:'Три шага для установки',
     steps:[
@@ -38,7 +38,7 @@ const COPY={
   es:{
     title:'Instala Holistic House gratis',
     intro:'Instala gratis la PWA en la pantalla de inicio del móvil. Incluye mensajería y tu espacio privado; las versiones nativas aún no se publican.',
-    cost:'Disponible ahora · gratis · con mensajería',available:'Disponible para instalar ahora',
+    cost:'Disponible ahora · gratis · con mensajería',available:'Disponible para instalar ahora',iphoneHelpTitle:'iPhone · instalar desde Safari',iphoneHelp:'Si estás dentro de ChatGPT, toca la brújula para abrir Safari. Después: Compartir → Añadir a la pantalla de inicio → Añadir.',
     open:'Abrir mi espacio',messages:'Abrir mis mensajes',settings:'Configurar notificaciones',
     stepsTitle:'Tres pasos para instalar',
     steps:[
@@ -121,6 +121,10 @@ export default async function InstallPage({params}){
       <span className={styles.available} data-hh-install-ready>{c.available}</span>
       <h2>{native.webTitle}</h2>
       <InstallHolisticHouse locale={locale} showGuideLink={false} landing/>
+      <div className={styles.iphoneHelp} data-hh-ios-quicksteps>
+        <strong>{c.iphoneHelpTitle}</strong>
+        <p>{c.iphoneHelp}</p>
+      </div>
       <p>{native.webIntro}</p>
     </section>
     <div className={styles.actions}>
