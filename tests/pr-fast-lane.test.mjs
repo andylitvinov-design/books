@@ -460,3 +460,22 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
   ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
   assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
 });
+
+test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const reports = workflow('hh-reports-development-program.yml');
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.match(reports, /^  pull_request:/m);
+  assert.match(reports, /^  push:/m);
+  assert.ok(reports.includes('.github/workflows/hh-reports-development-program.yml'));
+  assert.ok(reports.includes('- name: Verify production Next.js build without preview deployment\n        '+gate+'\n        run: npm run build'));
+  assert.ok(reports.includes('tests/reports-development-program.test.mjs'));
+  assert.ok(reports.includes('tests/goal-profile-journey.test.mjs'));
+  assert.match(reports, /node --conditions=react-server --test/);
+  assert.match(reports, /npx --no-install eslint/);
+  assert.doesNotMatch(reports,/continue-on-error:\s*true/);
+});

@@ -36,6 +36,19 @@ function syntheticAudioWav(seconds=3) {
     Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
   return bytes;
 }
+// Capture the real guest element in document coordinates without waiting for
+// a continuously animated video/canvas to become Playwright-locator 'stable'.
+// This keeps the same element pixels and does not bypass DOM/media assertions.
+async function captureSyntheticOverview(page, locator, path) {
+  const clip = await locator.evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    return {x:bounds.left+window.scrollX,y:bounds.top+window.scrollY,
+      width:bounds.width,height:bounds.height};
+  });
+  assert.ok(clip.width>0 && clip.height>0,'Synthetic Mandala overview must have visible bounds');
+  await page.screenshot({path,clip,animations:"disabled",timeout:30000});
+}
+
 const bufferFromStream = async stream => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
@@ -174,10 +187,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // the default ENERGY topic, before browser QA switches to MONEY.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await page.locator("[data-hypno-overview]").screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, page.locator("[data-hypno-overview]"),
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
@@ -413,10 +424,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // private media is captured in CI artifacts.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await compactHypno.screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, compactHypno,
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png");
         }
         const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
         assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
