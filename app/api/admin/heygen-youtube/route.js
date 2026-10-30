@@ -1,6 +1,6 @@
 import {after} from 'next/server'
 import {ownerMaterialRequest} from '@/lib/clients/material-library-http'
-import {privateJson} from '@/lib/clients/delivery-http'
+import {privateJson,smallJson} from '@/lib/clients/delivery-http'
 import {requireSameOrigin} from '@/lib/app/config'
 import {onlyKeys} from '@/lib/assessments/contracts'
 import {ownerVideoYoutubeConnected} from '@/lib/practitioners/owner-telegram-video-service'
@@ -29,8 +29,9 @@ export async function GET(request){
  })
 }
 export async function POST(request){
- return ownerMaterialRequest(request,async({config,data})=>{
+ return ownerMaterialRequest(request,async({config})=>{
    requireSameOrigin(request,config)
+   const data=await smallJson(request,8192)
    if(data.action==='publish'){
      onlyKeys(data,['action','videoId','title','description','mediaUrl',
        'rightsConfirmed','privacyConfirmed'])
@@ -60,5 +61,5 @@ export async function POST(request){
      return privateJson({job:await verifyHeygenEnglishPublication(config,data.videoId)})
    }
    return privateJson({error:'INVALID_ACTION'},400)
- },{body:true})
+ })
 }
