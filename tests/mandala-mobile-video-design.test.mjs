@@ -158,7 +158,7 @@ test("money, energy, relationships and goals have real local frame engines, not 
 test("video UI choices affect the actual free MP4/WebM recording and the user sees download/share", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const audio=read("lib/mandala/local-video-music.ts");
-  assert.match(studio,/const durations = \[10, 20, 30, 60\] as const/);
+  assert.match(studio,/const durations = \[10, 15, 20, 30, 60\] as const/);
   assert.match(studio,/formatDimensions\(aspect, quality\)/);
   assert.match(studio,/data-video-aspect=\{format\}/);
   assert.match(studio,/setSpeed\("dynamic"\)/);

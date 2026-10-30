@@ -39,6 +39,12 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
     }
   }
 });
+test("a fifteen-second brief keeps its explicitly selected duration",()=>{
+  const plan=buildCinematicStoryboard({locale:"en",theme:"energy",style:"warm",durationSeconds:15});
+  assert.equal(plan.durationSeconds,15);
+  assert.equal(plan.shots.at(-1)?.startSeconds+plan.shots.at(-1)?.durationSeconds,15);
+  assert.match(studio,/const durations = \[10, 15, 20, 30, 60\] as const/);
+});
 test("long-running cinematic preview loops actual scene times and synchronized affirmations",()=>{
   const film=buildCinematicStoryboard({theme:"money",durationSeconds:20,locale:"ru"});
   assert.equal(cinematicPreviewSeconds(film,0),0);
@@ -281,7 +287,8 @@ test("cinematic director preserves the agreed four-field profile flow without pr
 });
 test("same iPhone editor records actual four-shot canvas montage without sending private brief",()=>{
   assert.match(studio,/MandalaCinematicDirector/);
-  assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
+  assert.match(studio,/onApplyStoryboard=\{applyCinematicStoryboard\}/);
+  assert.match(studio,/const applyCinematicStoryboard=\(plan:CinematicStoryboard\)=>\{/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
   assert.match(studio,/const activeFilm = cinematicPlan \? null/);
@@ -300,4 +307,11 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(css,/@media\(max-width:360px\)/);
   assert.match(css,/:focus-visible/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+});
+test("one director-owned idea field follows the preview and shares the existing wish state",()=>{
+  assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
+  assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
+  assert.doesNotMatch(studio,/data-video-quick-wish/);
+  assert.doesNotMatch(studio,/id="personal-video-wish"/);
+  assert.match(directorUI,/onIntentTextChange/);
 });

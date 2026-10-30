@@ -930,8 +930,10 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await page.locator('[role="dialog"] button:has-text("Готово")').click();
           const newVisualIdea=director.locator('[data-director-visual-idea] textarea');
           await newVisualIdea.fill("UNSENT_TOKEN_8257: белый орёл летит над горами и превращается в созвездие");
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0,
-            "subject and action already provided: no unnecessary 96-question form");
+          assert.equal(await director.locator('[data-director-category]').count(),5,
+            "the five question categories remain compact tabs, not five mandatory forms");
+          assert.ok((await director.locator('[data-director-contextual-questions] fieldset').count())<=2,
+            "a complete visual idea never expands into a 96-question form");
           await director.locator('[data-director-create-plan]').click();
           const reference=director.locator('[data-director-reference-pack]');
           assert.match(await reference.locator('[data-director-recognized-visuals]').innerText(),/ор[её]л/i);
@@ -950,17 +952,19 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(packet.creativeReferencePack.externalTransferApproved,false);
           assert.ok(!JSON.stringify(packet).includes("UNSENT_TOKEN_8257"));
           await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
-          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),2,
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),2,
             "only two contextual clarifications when subject and action are unclear");
+          await director.locator('[data-director-contextual-questions] button:has-text("Другой герой")').click();
+          await director.locator('[data-director-contextual-questions] button:has-text("Животное или птица")').click();
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
+            "a chosen animal asks only for its identity before returning to the other missing details");
           await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Летит")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          await director.locator('[data-director-contextual-questions] button:has-text("Путешествует")').click();
           await newVisualIdea.fill("Без орла, нет другого героя");
-          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),1,
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
             "revised exclusion invalidates only the contradicted subject, preserving the action");
           assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
           await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
           await director.locator('[data-director-create-plan]').click();
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
@@ -982,6 +986,13 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(await firstScene.inputValue(),secondScene);
           assert.equal(await director.locator('[data-director-scene-choice="2"]').inputValue(),firstBefore,
             "reusing another scene swaps rather than duplicates it");
+          await director.locator('[data-director-shot-select="1"]').click();
+          assert.equal(await director.locator('[data-director-category="pro"]').getAttribute('aria-pressed'),'true',
+            "a specific shot opens the Pro director rather than a second global form");
+          await director.locator('[data-director-contextual-questions] button:has-text("Крупным планом")').click();
+          await director.locator('[data-director-shot="1"] summary').click();
+          assert.match(await director.locator('[data-director-shot="1"]').innerText(),/close-up view/i,
+            "a shot-level camera choice updates its visible technical prompt only");
           await director.locator("[data-director-apply-montage]").click();
           await page.waitForFunction(()=>document.querySelector("[data-mandala-master-mp4]")===null,
             undefined,{timeout:15000});

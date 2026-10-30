@@ -446,7 +446,7 @@ const moneyTemplates = [
 ];
 
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
-const durations = [10, 20, 30, 60] as const;
+const durations = [10, 15, 20, 30, 60] as const;
 const themeChoices: VideoTheme[] = ["money","relationships","energy","life","health","goals"];
 // Health reuses the real, locally rendered gentle-shield Energy scene.
 const videoCategories = ["energy","money","relationships","goals","life","health"] as const;
@@ -1607,6 +1607,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     startFromHero();
   };
+  const applyCinematicStoryboard=(plan:CinematicStoryboard)=>{
+    // The four locally rendered shots are approved source-backed motifs; raw
+    // client wishes, profile scores and photos remain on this device.
+    setTheme(plan.theme);setVideoCategory(plan.theme);
+    if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
+      ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
+    else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
+      ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
+    setAspect(plan.aspect);
+    setDuration(plan.durationSeconds as (typeof durations)[number]);
+    setCinematicPlan(plan);
+    setPreviewPlaying(false);
+    setNotice(locale==="ru"?"Четыре сцены подготовлены. Нажмите «Создать видео».":
+      locale==="es"?"Cuatro escenas listas. Pulsa Crear vídeo.":
+      "Four shots are ready. Select Create video to render them.");
+    document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
+  };
 
   return (
     <section className={videoStyles.studio} id="free-personal-video"
@@ -1659,13 +1676,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>;
             })}
           </div>
-          <label className={videoStyles.quickWish}>
-            <span className={videoStyles.srOnly}>{quick.wish}</span>
-            <Target size={18} aria-hidden="true"/>
-            <input data-video-quick-wish type="text" maxLength={160} value={wish}
-              disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
-          </label>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-section="2"
@@ -2060,6 +2070,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
+      <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
+        onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
+        therapyMode={studioMode==="therapy"} onInvalidateStoryboard={()=>setCinematicPlan(null)}
+        disabled={recording||preparing} onApplyStoryboard={applyCinematicStoryboard}/>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
@@ -2535,10 +2549,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
-        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
-        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
-          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
+        <p id="video-wish-heading">{ui.wishHelp}</p>
         <p>{ui.wishHelp}</p>
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
@@ -2552,26 +2563,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       </details>
       </section>
-
-      <MandalaCinematicDirector locale={locale} theme={theme} therapyMode={studioMode==="therapy"}
-        onInvalidateStoryboard={()=>setCinematicPlan(null)}
-        disabled={recording||preparing} onApplyStoryboard={plan=>{
-          // The four locally rendered shots are approved source-backed
-          // motifs; raw client wishes, profile scores and photos remain here.
-          setTheme(plan.theme);setVideoCategory(plan.theme);
-          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
-            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
-          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
-            ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
-          setAspect(plan.aspect);
-          setDuration(plan.durationSeconds as (typeof durations)[number]);
-          setCinematicPlan(plan);
-          setPreviewPlaying(false);
-          setNotice(locale==="ru"?"Четыре сцены подготовлены. Нажмите «Создать видео».":
-            locale==="es"?"Cuatro escenas listas. Pulsa Crear vídeo.":
-            "Four shots are ready. Select Create video to render them.");
-          document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
 
       <details className={videoStyles.extraControls} data-video-extra-settings>
         <summary>{layout.extraSettings}</summary>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
+import {projectFieldsFromAnswers,questionsForDraft,questionsForGroup} from "@/lib/mandala/video-studio-question-registry.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
@@ -22,7 +23,9 @@ export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;s
   sceneChoices:readonly {sceneId:string;theme:VideoTheme;visualCue:string}[]};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
-type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
+const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
+type QuestionGroup=typeof QUESTION_GROUPS[number];
+type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;intentText?:string;onIntentTextChange?:(value:string)=>void;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
@@ -36,7 +39,7 @@ const copy={
     referenceHint:"These are text descriptions of suggested keyframes, not generated pictures.",
     newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
     supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
-    understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",
+    understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",categories:{personalization:"Personalization",principal:"Principal",advanced:"Advanced",pro:"Pro Cinematic",extra:"Extra"},refine:"Refine this plan",noQuestions:"No additional questions are needed here.",selectShot:"Choose a scene card to direct this shot.",ownAnswer:"Your answer",
     theme:"Topic",difficulty:"Main challenge",goal:"Desired change",profile:"My profile",style:"Visual style",avoid:"Avoid these images",
     profileEmpty:"Not connected",profileReady:"Verified test suggestions available",
     profileConsent:"I allow the site to read my saved test results in this browser to suggest a video theme. The results are not shared with video AI services, analytics or CRM.",
@@ -67,7 +70,7 @@ const copy={
     referenceHint:"Это текстовые описания начальных и конечных кадров, а не созданные AI-картинки.",
     newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
     supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
-    understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",
+    understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",categories:{personalization:"Персонализация",principal:"Основное",advanced:"Расширенное",pro:"Про-режиссура",extra:"Дополнительно"},refine:"Уточнить этот план",noQuestions:"В этом разделе дополнительных вопросов не нужно.",selectShot:"Выберите карточку сцены для покадровой режиссуры.",ownAnswer:"Свой ответ",
     theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",profile:"Мой профиль",style:"Визуальный стиль",avoid:"Нежелательные образы",
     profileEmpty:"Не подключён",profileReady:"Есть рекомендации по проверенным тестам",
     profileConsent:"Я разрешаю прочитать мои сохранённые тесты в браузере для подбора темы видео. Результаты не передаются AI-видеосервисам, аналитике или CRM.",
@@ -98,7 +101,7 @@ const copy={
     referenceHint:"Son descripciones de fotogramas iniciales y finales, no imágenes creadas por IA.",
     newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
     supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
-    understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",
+    understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",categories:{personalization:"Personalización",principal:"Principal",advanced:"Avanzado",pro:"Pro cinematográfico",extra:"Extra"},refine:"Mejorar este plan",noQuestions:"No se necesitan más preguntas aquí.",selectShot:"Elige una tarjeta de escena para dirigir este plano.",ownAnswer:"Tu respuesta",
     theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",profile:"Mi perfil",style:"Estilo visual",avoid:"Evitar estas imágenes",
     profileEmpty:"Sin conectar",profileReady:"Hay sugerencias de tests verificados",
     profileConsent:"Autorizo consultar mis tests guardados en este navegador para sugerir temas del vídeo. Los resultados no se envían a IA de vídeo, analítica ni CRM.",
@@ -126,20 +129,25 @@ function sceneDisplayName(theme:VideoTheme,sceneId:string,locale:PublicLocale):s
   return otherVideoScenes[theme].find(item=>item.id===sceneId)?.label[locale]||sceneId;
 }
 const FIELDS:Field[]=["theme","difficulty","goal","profile"];
-export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onApplyStoryboard,onInvalidateStoryboard}:Props){
+export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,intentText,onIntentTextChange,onApplyStoryboard,onInvalidateStoryboard}:Props){
   const t=copy[locale]||copy.en;
   const [expanded,setExpanded]=useState(false);
   const [editing,setEditing]=useState<Field|null>(null);
   const [topic,setTopic]=useState<VideoTheme>(theme);
   const [difficulty,setDifficulty]=useState("");
   const [goal,setGoal]=useState("");
-  const [visualIdea,setVisualIdea]=useState("");
+  const [localVisualIdea,setLocalVisualIdea]=useState("");
+  const visualIdea=intentText??localVisualIdea;
+  const [questionGroup,setQuestionGroup]=useState<QuestionGroup>("principal");
+  const [questionAnswers,setQuestionAnswers]=useState<Record<string,{selectedOptionId:string|null;customText:string|null;confirmed:boolean}>>({});
+  const [selectedShotNumber,setSelectedShotNumber]=useState<number|null>(null);
+  const [shotAnswers,setShotAnswers]=useState<Record<number,Record<string,{selectedOptionId:string|null;customText:string|null;confirmed:boolean}>>>({});
   const [subjectChoice,setSubjectChoice]=useState("");
   const [actionChoice,setActionChoice]=useState("");
   const [avoid,setAvoid]=useState("");
   const [style,setStyle]=useState<StyleId>("warm");
   const [aspect,setAspect]=useState<"portrait"|"square"|"landscape">("landscape");
-  const [seconds,setSeconds]=useState<20|30|60>(20);
+  const [seconds,setSeconds]=useState<15|20|30|60>(20);
   const [generated,setGenerated]=useState(false);
   const [generatedMode,setGeneratedMode]=useState(therapyMode);
   const [applied,setApplied]=useState(false);
@@ -149,15 +157,25 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   const [profileSuggestions,setProfileSuggestions]=useState<VideoTheme[]>([]);
   const profileRequestRef=useRef(0);
   const editRef=useRef<HTMLButtonElement>(null);
+  const projectFields=useMemo(()=>projectFieldsFromAnswers(questionAnswers),[questionAnswers]);
   const basePlan=useMemo(()=>buildCinematicStoryboard({
-    locale,theme:topic,style,aspect,durationSeconds:seconds,wish:goal+" "+difficulty,avoid,
+    locale,theme:topic,style:(projectFields.styleId||style) as StyleId,aspect:(projectFields.aspect||aspect) as "portrait"|"square"|"landscape",
+    durationSeconds:(projectFields.durationSeconds||seconds) as 15|20|30|60,wish:goal+" "+difficulty,avoid,
     mode:therapyMode?"therapy":"creative",
-  }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
+  }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode,projectFields]);
+  const initialQuestions=useMemo(()=>questionsForDraft({intentText:visualIdea,answers:questionAnswers}),[visualIdea,questionAnswers]);
+  const activeSceneAnswers=selectedShotNumber===null?{}:shotAnswers[selectedShotNumber]||{};
+  const categoryAnswers=questionGroup==="pro"?activeSceneAnswers:questionAnswers;
+  const categoryQuestions=useMemo(()=>questionsForGroup({intentText:visualIdea,answers:categoryAnswers,group:questionGroup,
+    sceneSelected:Boolean(selectedShotNumber),extraSelected:questionGroup==="extra"&&generated}),[visualIdea,categoryAnswers,questionGroup,selectedShotNumber,generated]);
+  const visibleCategoryQuestions=generated?categoryQuestions.filter(question=>!initialQuestions.some(initial=>initial.id===question.id)):[];
   const plan:CinematicStoryboard=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
   const showStoryboard=generated && generatedMode===therapyMode;
+  const shotDirections=useMemo(()=>plan.shots.map(shot=>({shotId:shot.id,answers:shotAnswers[shot.number]||{}})),[plan,shotAnswers]);
   const referencePack=useMemo(()=>compileCinematicReferencePack({
-    visualIdea,plan,answers:{subjectChoice,actionChoice},
-  }),[visualIdea,plan,subjectChoice,actionChoice]);
+    visualIdea,plan,answers:{subjectChoice:projectFields.subjectChoice||subjectChoice,actionChoice:projectFields.actionChoice||actionChoice},
+    shotDirections,
+  }),[visualIdea,plan,subjectChoice,actionChoice,projectFields,shotDirections]);
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -219,8 +237,13 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     style:CINEMATIC_STYLES[style].name[locale],avoid:avoid||"—",
   };
   const invalidate=()=>{
-    setGenerated(false);setApplied(false);setCustomPlan(null);
+    setGenerated(false);setApplied(false);setCustomPlan(null);setSelectedShotNumber(null);
     onInvalidateStoryboard();
+  };
+  const updateVisualIdea=(value:string)=>{
+    const clean=graphemeTrim(value,2000);
+    if(onIntentTextChange)onIntentTextChange(clean);else setLocalVisualIdea(clean);
+    invalidate();
   };
   const fieldValue=(field:Field)=>field==="difficulty"?difficulty:field==="goal"?goal:avoid;
   const fieldChange=(field:Field,value:string)=>{
@@ -232,7 +255,18 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   };
   const selectTopic=(next:VideoTheme)=>{setTopic(next);invalidate();};
   const selectStyle=(next:StyleId)=>{setStyle(next);invalidate();};
-  const onPlan=()=>{setGeneratedMode(therapyMode);setGenerated(true);setApplied(false);onInvalidateStoryboard();};
+  const onPlan=()=>{setGeneratedMode(therapyMode);setGenerated(true);setApplied(false);setSelectedShotNumber(null);onInvalidateStoryboard();};
+  const answerStudioQuestion=(questionId:string,selectedOptionId:string|null,customText:string|null=null,sceneScoped=false)=>{
+    if(sceneScoped&&selectedShotNumber!==null){
+      setShotAnswers(current=>({...current,[selectedShotNumber]:{...current[selectedShotNumber],[questionId]:{selectedOptionId,customText,confirmed:true}}}));
+      setApplied(false);onInvalidateStoryboard();
+      return;
+    }
+    setQuestionAnswers(current=>({...current,[questionId]:{selectedOptionId,customText,confirmed:true}}));
+    invalidate();
+  };
+  const answerForQuestion=(question:{id:string;scope:string})=>question.scope==="scene"&&selectedShotNumber!==null?
+    shotAnswers[selectedShotNumber]?.[question.id]:questionAnswers[question.id];
   const chooseShot=(number:number,sceneId:string)=>{
     try{
       const next=customizeCinematicShot(plan,number,sceneId);
@@ -270,28 +304,39 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     {expanded?<div id="cinematic-director-content" className={css.body}>
       <label className={css.ideaInput} data-director-visual-idea>
         <strong>{t.visualIdea}</strong>
-        <textarea rows={3} maxLength={320} value={visualIdea} disabled={disabled}
+        <textarea rows={3} maxLength={2000} value={visualIdea} disabled={disabled}
           placeholder={t.visualIdeaPlaceholder}
-          onChange={event=>{setVisualIdea(event.target.value);invalidate();}}/>
+          onChange={event=>updateVisualIdea(event.target.value)}/>
         <small>{t.visualIdeaHelp}</small>
       </label>
-      {visualIdea.trim()&&referencePack.contextualQuestions.length?
-        <div className={css.contextQuestions} data-director-contextual-questions>
-          {referencePack.contextualQuestions.map(kind=><div key={kind}>
-            <strong>{kind==="subject"?t.subjectQuestion:t.actionQuestion}</strong>
-            <div className={css.chips}>
-              {(kind==="subject"?["eagle","wolf","landscape"]:["flight","metamorphosis","journey"]).map((id,i)=>
-                <button type="button" key={id} disabled={disabled}
-                  aria-pressed={(kind==="subject"?referencePack.recognized.subject:actionChoice)===id}
-                  onClick={()=>{
-                    if(kind==="subject")setSubjectChoice(id);else setActionChoice(id);
-                    invalidate();
-                  }}>
-                  {kind==="subject"?t.subjectChoices[i]:t.actionChoices[i]}
-                </button>)}
-            </div>
-          </div>)}
-        </div>:null}
+      <section className={css.questionCategories} data-director-contextual-questions>
+        <nav className={css.categoryTabs} aria-label="Video Studio categories">
+          {QUESTION_GROUPS.map(group=><button type="button" key={group} data-director-category={group}
+            aria-pressed={questionGroup===group} onClick={()=>setQuestionGroup(group)}>{t.categories[group]}</button>)}
+        </nav>
+        <div className={css.questionList}>
+          {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}>
+            <legend>{question.labels[locale]}</legend>
+            <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+              aria-pressed={questionAnswers[question.id]?.selectedOptionId===option.id}
+              onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}</button>)}</div>
+            <input value={questionAnswers[question.id]?.customText||""} placeholder={t.ownAnswer}
+              onChange={event=>answerStudioQuestion(question.id,null,event.target.value)} disabled={disabled}/>
+          </fieldset>)}
+          {generated?visibleCategoryQuestions.length?visibleCategoryQuestions.map(question=>{
+            const answer=answerForQuestion(question);
+            const sceneScoped=question.scope==="scene";
+            return <fieldset key={question.id} className={css.contextQuestion}>
+              <legend>{question.labels[locale]}</legend>
+              <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+                aria-pressed={answer?.selectedOptionId===option.id}
+                onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}</button>)}</div>
+              <input value={answer?.customText||""} placeholder={t.ownAnswer}
+                onChange={event=>answerStudioQuestion(question.id,null,event.target.value,sceneScoped)} disabled={disabled}/>
+            </fieldset>;
+          }):<small>{questionGroup==="pro"&&selectedShotNumber===null?t.selectShot:t.noQuestions}</small>:null}
+        </div>
+      </section>
       <div className={css.fields}>
         {FIELDS.map(field=><button type="button" key={field} className={css.field}
           data-director-field={field} disabled={disabled} onClick={()=>setEditing(field)}>
@@ -319,7 +364,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
           </div>
         </fieldset>
         <fieldset disabled={disabled}><legend>{t.length}</legend>
-          <div className={css.chips}>{([20,30,60] as const).map(v=>
+          <div className={css.chips}>{([15,20,30,60] as const).map(v=>
             <button key={v} type="button" aria-pressed={seconds===v}
               onClick={()=>{setSeconds(v);invalidate();}}>{v} {t.seconds}</button>)}
           </div>
@@ -336,7 +381,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
       {showStoryboard?<div className={css.story} data-director-storyboard>
         <h4>{t.shots} · {manifest.durationSeconds} {t.seconds}</h4>
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
-          className={css.shot} data-director-shot={shot.number}>
+          className={css.shot} data-director-shot={shot.number} data-director-shot-selected={selectedShotNumber===shot.number?"true":"false"}>
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
           <div><strong>{shot.title}</strong><p>{t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
@@ -350,7 +395,10 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
                   </option>)}
               </select>
             </label>
-            <details><summary>{t.safe}</summary><p>{shot.providerPrompt}</p></details></div>
+            <button type="button" className={css.shotSelect} data-director-shot-select={shot.number}
+              aria-pressed={selectedShotNumber===shot.number} disabled={disabled}
+              onClick={()=>{setSelectedShotNumber(shot.number);setQuestionGroup("pro");}}>{t.refine}</button>
+            <details><summary>{t.safe}</summary><p>{referencePack.shots[shot.number-1]?.artOnlyPrompt||shot.providerPrompt}</p></details></div>
         </article>)}</div>
         <div className={css.reference} data-director-reference-pack>
           <strong>{t.referenceTitle}</strong>

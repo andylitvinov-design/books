@@ -53,6 +53,9 @@
 .shot details{margin-top:6px;max-width:100%}
 .shot summary{cursor:pointer;font-size:11px;color:#087e5e;font-weight:800}
 .shot details p{font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.shot[data-director-shot-selected=true]{border-color:#088261;box-shadow:0 0 0 2px rgba(8,130,97,.12)}
+.shotSelect{min-height:38px;margin-top:7px;padding:7px 9px;border:1px solid #9cc9ab;border-radius:9px;background:#f5fbf6;color:#087e5e;font-size:11px;font-weight:850}
+.shotSelect[aria-pressed=true]{background:#087e5e;color:#fff;border-color:#087e5e}
 .helper{font-size:11px;line-height:1.45;color:#657c6a;margin:9px 0}
 .secondary{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .secondary :is(button,a){display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -121,6 +124,14 @@
 .contextQuestions>div{display:grid;gap:7px}
 .contextQuestions .chips button{flex:1 1 105px;font-size:12px}
 .contextQuestions .chips button[aria-pressed=true]{background:#e4eddf}
+.questionCategories{display:grid;gap:9px;margin:0 0 12px;padding:10px;border:1px solid #e7dabc;border-radius:12px;background:#fffaf0}
+.categoryTabs{display:flex;gap:6px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding:1px 0 4px;scrollbar-width:thin}
+.categoryTabs button{flex:none;min-height:44px;padding:7px 10px;border:1px solid #d3e0d5;border-radius:12px;background:#fff;color:#3b6554;font-size:11px;font-weight:850;white-space:nowrap}
+.categoryTabs button[aria-pressed=true]{background:#087e5e;border-color:#087e5e;color:#fff}
+.questionList{display:grid;gap:8px}.questionList>small{color:#6a8272;font-size:11px;line-height:1.45}
+.contextQuestion{display:grid;gap:7px;min-width:0;margin:0;padding:9px;border:1px solid #e1e9d8;border-radius:11px;background:#fffef9}
+.contextQuestion legend{padding:0 2px;color:#20543d;font-size:12px;font-weight:850}.contextQuestion .chips button{flex:1 1 90px}
+.contextQuestion input{display:block;width:100%;min-height:44px;padding:9px 10px;border:1px solid #c5d8c9;border-radius:10px;background:#fff;color:#23483b;font:inherit;font-size:12px}
 .reference{margin:10px 0 12px;border:1px solid #d9e5d9;background:#f7faf4;
  padding:12px;border-radius:13px;min-width:0}
 .reference p{font-size:12px;line-height:1.5;color:#3e6651;margin:9px 0}
@@ -131,3 +142,4 @@
 .reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
  color:#536c5c}
 .reference li span+span{color:#788c7c;margin-top:3px}
+
