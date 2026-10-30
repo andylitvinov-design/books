@@ -89,6 +89,10 @@ test('provider WAV must be a complete supported PCM stream before delivery',()=>
   assert.throws(()=>mixer.readPcmWav(wav),/TRUNCATED_WAV/);
   v.setUint32(40,4,true);v.setUint16(20,3,true);
   assert.throws(()=>mixer.readPcmWav(wav),/UNSUPPORTED_WAV_PCM/);
+  v.setUint16(20,1,true);v.setUint32(4,400,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/INVALID_RIFF_SIZE/);
+  v.setUint32(4,40,true);v.setUint16(32,4,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/UNSUPPORTED_WAV_PCM/);
 });
 test('existing personal script is reduced to speech only, without metadata or pause instructions',()=>{
   const source=[
