@@ -48,6 +48,28 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
+test('core Draft skips heavy checkout but cannot pass release-ready, and Ready restores full checks', () => {
+  const core = read('hh-pr-core-release.yml');
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
+  assert.ok(core.includes("  merge_group:"));
+  assert.ok(core.includes("  workflow_dispatch:"));
+  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  assert.ok(scope);
+  assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
+  assert.ok(core.includes("run: npm run build"));
+  assert.ok(core.includes("run: npx --no-install tsc --noEmit --pretty false"));
+  const gate = core.split('  release-ready:')[1];
+  assert.ok(gate);
+  assert.ok(gate.includes("    if: always()"));
+  assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
+  assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("[[ \"$CODE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("ci-specialist-aggregate.mjs"));
+  assert.doesNotMatch(core, /continue-on-error:\s*true/);
+});
+
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' }}";
 const supersededRunWorkflows = [
@@ -124,7 +146,7 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/^  pull_request:\s*\n\s+branches: \['codex\/public-book-library'\]/m);
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
   assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  release-ready:/m);
@@ -232,6 +254,39 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.ok(browser.includes('  browser-journey-complete:\n'));
   assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
+});
+
+const PR_NUMBER_CANCELLATION_BROWSER_PILOT = [["hh-public-journey-wave1.yml","hh-public-wave1"],["hh-public-journey-toronto-wave2.yml","hh-toronto-wave2"]];
+test('two public journey browser suites cancel superseded PR heads without other events',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const cancel="${{ github.event_name == 'pull_request' }}";
+  const required={
+    'hh-public-journey-wave1.yml':['verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs'],
+    'hh-public-journey-toronto-wave2.yml':['verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs'],
+  };
+  for(const [filename,group] of PR_NUMBER_CANCELLATION_BROWSER_PILOT){
+    const source=read(filename);
+    assert.match(source,/^  pull_request:/m,'PR coverage missing: '+filename);
+    assert.match(source,/^    paths:/m,'Path coverage missing: '+filename);
+    assert.equal((source.match(/^concurrency:/gm)||[]).length,1,filename+' must have exactly one concurrency block');
+    assert.ok(source.includes('group: '+group+'-'+suffix),filename+' must group by immutable PR number');
+    assert.ok(source.includes('cancel-in-progress: '+cancel),filename+' must not cancel production or manual');
+    assert.match(source,/^jobs:/m);
+    for(const contract of required[filename])assert.ok(source.includes(contract),filename+' lost '+contract);
+    assert.ok(!source.includes('continue-on-error: true'),filename+' cannot hide real failures');
+  }
+});
+
+
+test('PR-number cancellation browser suites use shellchecked bounded readiness loops',()=>{
+  for(const [file,limit] of [['hh-public-journey-wave1.yml',75],
+                             ['hh-public-journey-toronto-wave2.yml',75]]){
+    const source=read(file);
+    assert.ok(source.includes('for ((i=1; i<='+limit+'; i++)); do'),
+      file+' readiness loop must use the counter and remain bounded');
+    assert.ok(!source.includes('for i in $(seq 1 '+limit+'); do'),
+      file+' must not reintroduce shellcheck SC2034');
+  }
 });
 
 test('Mandala Draft gating preserves complete Ready video and audio acceptance', () => {
