@@ -1541,5 +1541,7 @@
   .videoSummaryRow[data-video-summary-row="visual"] .videoSummaryText,
   .videoSummaryRow[data-video-summary-row="affirmations"] .videoSummaryText,
   .videoSummaryRow[data-video-summary-row="effect"] .videoSummaryText{grid-column:2 / 4}
-  .videoSummaryRow>button:last-child{grid-column:4;position:relative;z-index:1}
+  .videoSummaryRow[data-video-summary-row="visual"]>button:last-child,
+  .videoSummaryRow[data-video-summary-row="affirmations"]>button:last-child,
+  .videoSummaryRow[data-video-summary-row="effect"]>button:last-child{grid-column:4;position:relative;z-index:1}
 }
