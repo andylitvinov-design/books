@@ -5,6 +5,7 @@ import { Download, Headphones, Leaf, LoaderCircle, Play, Sparkles } from "lucide
 import type { PublicLocale } from "@/lib/public-locales";
 import { presetAudioUrl } from "@/lib/mandala/local-video-music";
 import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
+import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
 import type { NatureBed } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_STUDIO_MAX_CHARS, VOICE_STUDIO_VOICES, studioExcerpt } from "@/lib/mandala/voice-studio.mjs";
 import css from "./mandala-cloud-voice-studio.module.css";
@@ -63,17 +64,38 @@ const text = {
     sourceAdded:"Se copió un fragmento de tu meditación. Revísalo antes de enviar."
   }
 } as const;
+const balanceCopy={
+  ru:{voice:"Громкость голоса",music:"Громкость музыки",mix:"Подготовить WAV с выбранным балансом",save:"Скачать сведённый WAV",other:"Другие авторские фоны",note:"Баланс сохраняется в скачиваемом WAV. Для итогового видео прикрепите этот WAV через «Добавить аудиофайл»."},
+  en:{voice:"Voice volume",music:"Music volume",mix:"Prepare balanced WAV",save:"Download balanced WAV",other:"More original soundtracks",note:"Your levels are embedded in the WAV. To use it in a video, attach this WAV with Add audio file."},
+  es:{voice:"Volumen de voz",music:"Volumen de música",mix:"Preparar WAV equilibrado",save:"Descargar WAV mezclado",other:"Otros fondos originales",note:"Los niveles se guardan en el WAV. Para usarlo en un vídeo, adjunta el archivo en Añadir audio."}
+} as const;
+const extraBeds = VOICE_BED_PRESETS.filter(value=>!["ocean","rain","breeze"].includes(value));
+const bedNames:Record<string,{ru:string;en:string;es:string}>={
+  meditation:{ru:"Медитация",en:"Meditation",es:"Meditación"},
+  harmony:{ru:"Гармония",en:"Harmony",es:"Armonía"},
+  prosperity:{ru:"Процветание",en:"Prosperity",es:"Prosperidad"},
+  energy:{ru:"Энергия",en:"Energy",es:"Energía"},
+  love:{ru:"Любовь",en:"Love",es:"Amor"},
+  focus:{ru:"Концентрация",en:"Focus",es:"Concentración"},
+  grounding:{ru:"Заземление",en:"Grounding",es:"Arraigo"},
+  breath:{ru:"Дыхание",en:"Breathing",es:"Respiración"},
+  sunrise:{ru:"Рассвет",en:"Sunrise",es:"Amanecer"},
+  pulse:{ru:"Ритм",en:"Pulse",es:"Pulso"}
+};
 
 export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   locale:PublicLocale;sourceText?:string;ambientSrc?:string|null
 }) {
   const t=text[locale];
+  const b=balanceCopy[locale];
   const [language,setLanguage]=useState<VoiceLanguage>(initialLanguage(locale));
   const [voiceId,setVoiceId]=useState("mark");
   const [mode,setMode]=useState<Mode>("sample");
   const [script,setScript]=useState("");
   const [consent,setConsent]=useState(false);
   const [background,setBackground]=useState<Background>("ocean");
+  const [voiceLevel,setVoiceLevel]=useState(90);
+  const [musicLevel,setMusicLevel]=useState(12);
   const [available,setAvailable]=useState(false);
   const [checking,setChecking]=useState(true);
   const [busy,setBusy]=useState(false);
@@ -108,6 +130,17 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     if(urlRef.current)URL.revokeObjectURL(urlRef.current);
     if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
   },[]);
+  useEffect(()=>{
+    if(audioRef.current)audioRef.current.volume=mixedUrl?1:voiceLevel/100;
+    if(natureRef.current)natureRef.current.volume=musicLevel/100;
+  },[voiceLevel,musicLevel,mixedUrl]);
+  function invalidateMix(stop=false){
+    mixJobRef.current++;
+    setMixing(false);
+    if(stop){audioRef.current?.pause();stopNature();}
+    if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
+    setMixedUrl("");
+  }
   function resetAudio(){
     latestRef.current++;
     mixJobRef.current++;
@@ -170,7 +203,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     stopNature();
     if(background==="none")return;
     const player=new Audio(presetAudioUrl(background));
-    player.volume=0.14;player.loop=true;player.preload="auto";
+    player.volume=musicLevel/100;player.loop=true;player.preload="auto";
     natureRef.current=player;
     void player.play().catch(()=>{stopNature();});
   }
@@ -181,11 +214,11 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     document.body.append(link);link.click();link.remove();
   }
   async function downloadMixed(){
-    if(!wav||background==="none"||mixing)return;
+    if(!wav||mixing)return;
     setMixing(true);setNotice("");
     const token=++mixJobRef.current;
     try{
-      const mixed=await mixVoiceWithNature(wav,background);
+      const mixed=await mixVoiceWithNature(wav,background,undefined,{voiceLevel,musicLevel});
       if(token!==mixJobRef.current)return;
       const uri=URL.createObjectURL(mixed);
       if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
@@ -197,11 +230,17 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     finally{if(token===mixJobRef.current)setMixing(false);}
   }
   function chooseBackground(value:Background) {
-    mixJobRef.current++;
-    setMixing(false);
-    audioRef.current?.pause();stopNature();
-    if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
-    setMixedUrl("");setBackground(value);
+    invalidateMix(true);setBackground(value);
+  }
+  function changeLevel(kind:"voice"|"music",value:number){
+    invalidateMix();
+    if(kind==="voice"){
+      setVoiceLevel(value);
+      if(audioRef.current)audioRef.current.volume=value/100;
+    } else {
+      setMusicLevel(value);
+      if(natureRef.current)natureRef.current.volume=value/100;
+    }
   }
   const groups=["male","female"] as const;
   return (
@@ -266,6 +305,24 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
               {t[value]}
             </button>)}
         </div>
+        <label className={css.moreBeds}>{b.other}
+          <select data-voice-background-extra value={extraBeds.includes(background as NatureBed)?background:""}
+            onChange={event=>{if(event.currentTarget.value)chooseBackground(event.currentTarget.value as NatureBed);}}>
+            <option value="">—</option>
+            {extraBeds.map(value=><option key={value} value={value}>{bedNames[value]?.[locale]||value}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className={css.levels} role="group" aria-label={b.voice+" / "+b.music}>
+        <label>{b.voice} · {voiceLevel}%
+          <input data-voice-volume type="range" min={0} max={100} step={5} value={voiceLevel}
+            onChange={event=>changeLevel("voice",Number(event.currentTarget.value))}/>
+        </label>
+        <label>{b.music} · {musicLevel}%
+          <input data-music-volume type="range" min={0} max={100} step={5} value={musicLevel}
+            disabled={background==="none"}
+            onChange={event=>changeLevel("music",Number(event.currentTarget.value))}/>
+        </label>
       </div>
       {ambientSrc?<p className={css.hint}>{locale==="ru"?"В этой версии природный фон берётся из авторской библиотеки; выбранная ранее дорожка не отправляется провайдеру.":"This pilot uses the first-party nature library; existing editor audio is never uploaded to Google."}</p>:null}
       <p role="status" className={available?css.ready:css.unavailable}>
@@ -283,15 +340,16 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
           onPause={stopNature} onEnded={stopNature} aria-label={t.audio}/>
         <div className={css.downloads}>
           <button type="button" onClick={downloadVoice}><Download size={16} aria-hidden="true"/>{t.voice}</button>
-          {background!=="none"?(mixedUrl?<a className={css.downloadLink} href={mixedUrl}
+          {mixedUrl?<a className={css.downloadLink} href={mixedUrl}
             download={"holistic-house-"+language+"-"+voiceId+"-"+background+".wav"}>
-            <Download size={16} aria-hidden="true"/>{t.mixed}
+            <Download size={16} aria-hidden="true"/>{b.save}
           </a>:<button type="button" disabled={mixing} onClick={()=>void downloadMixed()}>
-            <Download size={16} aria-hidden="true"/>{mixing?t.mixing:t.prepareMix}
-          </button>):null}
+            <Download size={16} aria-hidden="true"/>{mixing?t.mixing:b.mix}
+          </button>}
         </div>
       </div>:null}
       {notice?<p role="status" aria-live="polite" className={css.error}>{notice}</p>:null}
+      <p className={css.hint}>{b.note}</p>
       <p className={css.hint}>{t.privacy}</p>
       <p className={css.hint}>{t.notice}</p>
     </section>
