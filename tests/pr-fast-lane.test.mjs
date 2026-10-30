@@ -32,6 +32,41 @@ test('seven formerly unconditional PR workflows run only on relevant paths', () 
   }
 });
 
+test('OPORA My Courses test-only routing is exact; App R1 still verifies the full app suite', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const pathsOf = src => {
+    const block = src.match(/^  pull_request:\s*\n([\s\S]*?)(?=^permissions:|^concurrency:|^jobs:)/m);
+    assert.ok(block, 'production-targeted PR trigger required');
+    return [...block[1].matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
+  };
+  const oporaPaths = pathsOf(opora), appPaths = pathsOf(app);
+  const covers = (paths, filename) => paths.some(pattern => requireGlob(filename, pattern));
+  for (const filename of ['tests/my-course-moment-trends.test.mjs', 'tests/my-course-programs.test.mjs']) {
+    assert.ok(oporaPaths.includes(filename), 'OPORA must run its directly invoked test ' + filename);
+    assert.equal(covers(oporaPaths, filename), true);
+  }
+  assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
+  assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
+  assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
+  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
+  }
+  const module = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(module, 'OPORA unit suite must be retained');
+  const executed = [...module.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
+  assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
+  assert.equal(executed.length, 47, 'all 47 existing distinct OPORA assertions remain');
+  for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
+    assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
+  }
+  assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.match(opora, /browser: \[chromium, webkit\]/);
+  assert.match(opora, /cancel-in-progress: true/);
+  assert.doesNotMatch(opora, /continue-on-error:\s*true/);
+});
+
 test('one unconditional fail-closed release-ready gate protects core code validation', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
