@@ -42,3 +42,15 @@ test('missing key and unexpected model never reach the provider',async()=>{
   await assert.rejects(provider.requestStudioAudio({key:'synthetic-key',payload:{...request,model:'unknown'},fetchImpl}),code('TTS_PROVIDER_INVALID_MODEL'));
   assert.equal(calls,0);
 });
+test('a provider stream interrupted after partial data never returns a WAV',async()=>{
+  let reads=0;
+  const stream=new ReadableStream({
+    pull(controller){
+      if(reads++===0)controller.enqueue(new TextEncoder().encode('{"steps":'));
+      else controller.error(new Error('connection lost'));
+    },
+  });
+  await assert.rejects(provider.requestStudioAudio({key:'synthetic-key',payload:request,
+    fetchImpl:async()=>new Response(stream)}),code('TTS_PROVIDER_UNAVAILABLE'));
+  assert.equal(reads,2);
+});
