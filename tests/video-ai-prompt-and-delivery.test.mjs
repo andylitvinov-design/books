@@ -9,7 +9,7 @@ test("visual filters generate distinct HeyGen-ready prompts without a remote cal
  const a=compileVideoVisualPrompt({theme:"energy",scene:"lotus",color:"gold",
    motion:"calm",visualDescription:"Golden lotus above peaceful water"});
  const b=compileVideoVisualPrompt({theme:"goals",scene:"temple",color:"violet",
-   motion:"dynamic",visualDescription:""};
+   motion:"dynamic",visualDescription:""});
  assert.match(a,/lotus above peaceful water/i);
  assert.match(a,/stable camera/);
  assert.match(a,/warm amber/);
