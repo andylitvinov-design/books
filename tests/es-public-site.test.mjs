@@ -51,3 +51,25 @@ test('Language counterparts load on selection rather than speculative client-ent
   assert.match(navigation, /<Link prefetch=\{false\}[^>]*href=\{counterpart\(next\)\}/);
   assert.match(navigation, /onClick=\{\(\) => selectLocale\(next\)\}/);
 });
+
+
+test('expanded ES menu acceptance matches current seven quick destinations and five editorial routes',()=>{
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const navigation = source('components/site-navigation.tsx');
+  const model = source('lib/site-navigation-model.js');
+  assert.match(browser,/getCompactNavigation\('es'\)/);
+  assert.match(browser,/getSiteNavigation\('es'\)/);
+  assert.match(browser,/assert\.deepEqual\(compact\.map\(item => item\.id\)/);
+  assert.match(browser,/assert\.deepEqual\(more\.map\(item => item\.id\)/);
+  assert.match(browser,/assert\.deepEqual\(await links\.evaluateAll/);
+  assert.match(browser,/Missing required Spanish public menu destination/);
+  assert.match(browser,/toHaveAccessibleName\(expectedLabel\)/);
+  assert.match(browser,/const primaryPublicCopy/);
+  assert.match(browser,/querySelectorAll\('\[data-testimonial-video-id\]'\)/);
+  assert.match(browser,/card\.querySelector\('\[lang="ru"\]'\)/);
+  assert.match(browser,/Original RU testimonial cards must remain visible and labelled/);
+  assert.match(navigation,/const mainMenuItems = getCompactNavigation\(activeLocale\)/);
+  assert.match(navigation,/const extraMenuItems = getSiteNavigation\(activeLocale\)/);
+  assert.match(model,/compactNavigationIds = \['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple'\]/);
+  assert.doesNotMatch(browser,/links\.nth\(2\)\.toHaveAccessibleName\('Energía'\)/);
+});

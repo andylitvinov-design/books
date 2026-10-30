@@ -39,12 +39,31 @@ async function assertSpanishNavigation(page, path) {
     await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
     await expect(cabinet).toHaveAccessibleName('Mi espacio');
   } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  // Derive the complete ordering from the same reviewed public navigation
+  // model used by SiteNavigation; retain independent, exact ID/route guards so
+  // a deleted destination in that model cannot silently turn browser CI green.
+  const compact = getCompactNavigation('es');
+  const more = getSiteNavigation('es').filter(item =>
+    ['energy', 'love', 'business', 'library', 'events'].includes(item.id));
+  assert.deepEqual(compact.map(item => item.id),
+    ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']);
+  assert.deepEqual(more.map(item => item.id),
+    ['energy', 'love', 'business', 'library', 'events']);
   const destinations = [
-    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
-    '/es/explore/business', '/es/books', '/es/pro',
-    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
-    '/es/services', '/es/academy', '/es/about',
+    '/es/services/free-situation-review',
+    ...compact.map(item => item.href),
+    '/es/shop', '/es/cart', '/es/install',
+    ...more.map(item => item.href),
+    '/es/temple-insights', '/es/services', '/es/about',
   ];
+  for (const required of [
+    '/es', '/es/services/free-situation-review', '/es/academy',
+    '/es/personality-profiles', '/es/services/alchemy-of-soul',
+    '/es/pro', '/es/holistic-support', '/es/shop', '/es/cart',
+    '/es/install', '/es/explore/energy', '/es/explore/love',
+    '/es/explore/business', '/es/library', '/es/events',
+    '/es/temple-insights', '/es/services', '/es/about',
+  ]) assert.ok(destinations.includes(required), 'Missing required Spanish public menu destination: ' + required);
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
   const links = menu.locator('.site-main-menu-panel a');
@@ -57,9 +76,11 @@ async function assertSpanishNavigation(page, path) {
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
   for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(links.nth(2)).toHaveAccessibleName('Energía');
-  await expect(links.nth(3)).toHaveAccessibleName('Amor');
-  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
+  for (const [id, expectedLabel] of [
+    ['energy', 'Cuerpo y energía'],
+    ['love', 'Estrés y relaciones'],
+    ['business', 'Dinero y negocios'],
+  ]) await expect(links.locator('[data-nav-item="' + id + '"]')).toHaveAccessibleName(expectedLabel);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -104,7 +125,10 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
+  // The current seven-tab navigation explicitly selects Courses on its own
+  // public catalog page. Retain a precise single-active-tab contract.
+  await expect(page.locator('.mobile-bottom-navigation [data-nav-item="courses"][aria-current="page"]')).toHaveCount(1);
+  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
@@ -118,6 +142,7 @@ import { once } from 'node:events';
 import { mkdirSync, writeFileSync, createWriteStream, readFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
 import { getSpanishRemedySlugs } from '../data/remedies-es.js';
+import { getCompactNavigation, getSiteNavigation } from '../lib/site-navigation-model.js';
 import { assertUnsupportedSpanishPrivateLocale } from './helpers/es-private-denial-verifier.mjs';
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:3443';
@@ -194,7 +219,21 @@ try {
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
           if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
-          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
+          // Original RU testimonials are intentionally audible and labelled RU.
+          // Exclude only their source-language cards, not Spanish headings,
+          // navigation, reviews or other page content, from the translation check.
+          const primaryPublicCopy = await page.locator('main').evaluate(main => {
+            const copy = main.cloneNode(true);
+            copy.querySelectorAll('[data-testimonial-video-id]').forEach(card => {
+              if (card.querySelector('[lang="ru"]')) card.remove();
+            });
+            return copy.textContent || '';
+          });
+          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(primaryPublicCopy),
+            'No untranslated public labels (excluding authentic RU video titles): '+path);
+          if (path === '/es/about') assert.ok(
+            await page.locator('[data-personal-testimonials="about"] .site-video-caption [lang="ru"]').count() > 0,
+            'Original RU testimonial cards must remain visible and labelled');
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
