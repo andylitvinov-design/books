@@ -6,6 +6,7 @@ on:
       - feat/hh-my-courses-presets-five-tests-20261013
       - codex/course-subscriptions-commerce-20261013
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'lib/inner-growth/course-presets.js'
       - 'components/app/course-preset-catalog.*'
@@ -49,6 +50,7 @@ concurrency:
 
 jobs:
   course-presets:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Five-test presets + legacy course
     runs-on: ubuntu-latest
     timeout-minutes: 20

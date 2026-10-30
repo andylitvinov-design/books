@@ -587,3 +587,35 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
+
+
+test('Growth/Courses Draft gating preserves complete Ready specialist source privacy and account testing',()=>{
+  const ready="if: $"+ "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const files=['hh-growth-journey.yml','hh-course-presets.yml'];
+  for(const file of files){
+    const s=workflow(file);
+    assert.match(s,/^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m,file);
+    assert.ok(s.includes('    '+ready),'Only Draft can defer full specialist job: '+file);
+    assert.ok(s.includes('npm ci'),file+' must keep lockfile dependencies');
+    assert.match(s,/node (?:--conditions=react-server )?--test/,file+' must run original tests');
+    assert.match(s,/npx (?:--no-install )?eslint/,file+' must retain source lint');
+    assert.doesNotMatch(s,/continue-on-error:\s*true/,file+' fails closed');
+  }
+  const growth=workflow(files[0]);
+  assert.ok(growth.includes('  growth-content-and-build:\n    '+ready+'\n'));
+  for(const f of ['tests/growth-journey-public.test.mjs','tests/business-consultation-finder.test.mjs','tests/topic-journey-account-scope.test.mjs','tests/business-journey-consultation-banner.test.mjs']){
+    assert.ok(growth.includes(f),'Missing Growth offer/privacy test '+f);
+  }
+  const courses=workflow(files[1]);
+  assert.ok(courses.includes('  course-presets:\n    '+ready+'\n'));
+  for(const f of ['tests/my-course.test.mjs','tests/course-concurrency-ui.test.mjs','tests/course-dashboard-integration.test.mjs','tests/energywork-ai-course-private-save.test.mjs','tests/course-free-slot-restart.test.mjs']){
+    assert.ok(courses.includes(f),'Missing course consent/owner test '+f);
+  }
+  assert.match(courses,/^  workflow_dispatch:/m);
+  assert.match(courses,/^  push:/m);
+  assert.ok(courses.includes("cancel-in-progress: $"+ "{{ github.event_name == 'pull_request' }}"));
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.match(core,/PR_DRAFT/);
+});
