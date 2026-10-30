@@ -44,3 +44,20 @@
 .receiptForm input{min-height:43px;border:1px solid #bccfd6;border-radius:10px;padding:9px 12px;max-width:260px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 @media(max-width:650px){.shell{padding:19px 13px 54px}.heading{display:grid;gap:15px}.balance{min-width:0;max-width:100%;padding:17px 19px}.balance strong{font-size:29px}.card{padding:18px;border-radius:17px}.presets{display:grid;grid-template-columns:1fr 1fr}.preset,.presetActive{padding:13px 6px;text-align:center}.historyHeading{flex-wrap:wrap}.order{align-items:stretch}.receiptForm,.receiptForm label,.receiptForm input{width:100%;max-width:none}.receiptForm button{width:100%}}
+
+/* One compact catalogue for card and PayPal, with honest availability labels. */
+.providers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:680px}
+.method,.methodSelected{justify-content:flex-start;min-width:0;min-height:74px;text-align:left;padding:13px 15px}
+.method span,.methodSelected span{display:grid;gap:4px;min-width:0}
+.method strong,.methodSelected strong{display:block;font:inherit;font-size:14px;line-height:1.35}
+.method small,.methodSelected small{display:block;font-size:12px;line-height:1.25;color:#637684}
+.method:disabled{opacity:.57;cursor:not-allowed;background:#f5f6f6}
+.method:disabled strong,.method:disabled small{color:#647884}
+.ready{margin-top:17px;border:1px solid #afdcda;background:#eefaf7;border-radius:14px;padding:13px 15px}
+.ready p{font-size:14px;margin:5px 0}
+.ready .primary{margin-top:9px}
+@media(max-width:470px){.providers{grid-template-columns:1fr}.method,.methodSelected{min-height:58px;padding:10px 14px}}
+
+.reviewField{display:grid;gap:7px;flex:1 1 240px;font-size:12px;font-weight:650;color:#345162}
+.reviewField input{width:100%;min-height:42px;border:1px solid #bdd1d5;border-radius:9px;padding:9px 10px;font-size:15px;color:#143b4a}
+.reviewField input:focus-visible{outline:2px solid #0a8591;outline-offset:2px}

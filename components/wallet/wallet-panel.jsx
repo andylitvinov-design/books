@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CreditCard, Gift, RefreshCw, ShieldCheck, Wallet } from 'lucide-react'
-import { WALLET_PRESETS_MINOR } from '@/lib/wallet/model'
+import { WALLET_PRESETS_MINOR, walletSafePaymentUrl } from '@/lib/wallet/model'
 import styles from './wallet-panel.module.css'
 
 const COPY = {
@@ -22,7 +22,13 @@ const COPY = {
     reversed: 'Возврат / списание', error: 'Не удалось выполнить операцию. Проверьте данные и попробуйте снова.',
     processing: 'Проверяем поступление…',
     notice: 'Предоплаченный баланс: без переводов другим пользователям и снятия наличных. PayPal.Me не подтверждает платёж автоматически; Square зачисляет после проверки провайдера. Сумму и получателя проверьте до оплаты. Возврат — через поддержку по исходной транзакции.',
-    onlyPaypal: 'Сейчас доступно пополнение через PayPal. Оплата картой включится после подключения торгового Square API.',
+    onlyPaypal: 'Банковская карта временно недоступна: ожидается подключение торгового Square API.',
+    notConnected: 'Ожидает подключения', paypalManual: 'Подтверждение вручную', squareAuto: 'Автоматическая проверка',
+    choose: 'Выберите способ оплаты', ready: 'Заявка создана. Откройте платёжную страницу, проверьте сумму и получателя.',
+    openPay: 'Открыть защищённую оплату', review: 'PayPal зачисляется после подтверждения поступления.',
+    noMethods: 'Ни один способ пополнения сейчас не подключён. Платёж не будет создан.',
+    invalidAmount: 'Введите сумму от CA$1 до CA$1 000, максимум два знака после запятой.',
+    successHint: 'Возвращайтесь в этот кабинет после оплаты. Здесь можно продолжить или проверить заказ.',
   },
   en: {
     eyebrow: 'HOLISTIC HOUSE · MY ACCOUNT', title: 'My balance',
@@ -41,7 +47,13 @@ const COPY = {
     reversed: 'Refund / reversal', error: 'Action failed. Check the details and try again.',
     processing: 'Verifying payment…',
     notice: 'Prepaid credit: non-transferable and not redeemable for cash. PayPal.Me requires manual receipt verification; Square credits after provider verification. Check payee and final amount before paying. Refund requests are handled through support against the original transaction.',
-    onlyPaypal: 'PayPal top-ups are available now. Card checkout will activate after the Square merchant API is connected.',
+    onlyPaypal: 'Card checkout is unavailable until the Square merchant API is connected.',
+    notConnected: 'Not connected', paypalManual: 'Manual verification', squareAuto: 'Provider-verified',
+    choose: 'Choose payment method', ready: 'Top-up created. Open the secure payment page and check the amount and merchant.',
+    openPay: 'Open secure payment', review: 'PayPal credit is added after the payment is independently verified.',
+    noMethods: 'No wallet payment method is connected. No payment will be created.',
+    invalidAmount: 'Enter CA$1 to CA$1,000, with no more than two decimal places.',
+    successHint: 'Return to your account after payment. Your order can be resumed or checked here.',
   },
 }
 const money = value => new Intl.NumberFormat('en-CA', {
@@ -59,6 +71,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   const [error, setError] = useState('')
   const [receipts, setReceipts] = useState({})
   const [success, setSuccess] = useState('')
+  const [readyPayment, setReadyPayment] = useState(null)
   const operation = useRef(null)
   const isMounted = useRef(true)
   const fetchWallet = useCallback(async () => {
@@ -93,7 +106,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   }, [accountId])
   useEffect(() => {
     isMounted.current = true
-    setState(null); setError(''); setSuccess(''); operation.current = null
+    setState(null); setError(''); setSuccess(''); setReadyPayment(null); operation.current = null
     reload().then(() => {
       if (!isMounted.current) return
       const order = new URLSearchParams(window.location.search).get('squareTopup')
@@ -107,7 +120,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   const selectedProvider = providers.includes(provider) ? provider : providers[0] || null
   async function createTopup() {
     if (busy || !selectedProvider || !validAmount(amount)) return
-    setBusy('create'); setError(''); setSuccess('')
+    setBusy('create'); setError(''); setSuccess(''); setReadyPayment(null)
     const key = amount + ':' + selectedProvider
     if (operation.current?.key !== key) operation.current = { key, id: crypto.randomUUID() }
     try {
@@ -115,19 +128,14 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
         operationId: operation.current.id, amount, provider: selectedProvider, locale,
       })
       await reload()
-      if (typeof result.redirectUrl !== 'string') {
-        setError('WALLET_PAYMENT_RECONCILIATION_REQUIRED')
+      if (result.topup?.status === 'reported' || result.topup?.status === 'credited') {
+        setSuccess(t.reportDone)
         return
       }
-      const target = new URL(result.redirectUrl)
-      const isPayPal = target.protocol === 'https:' && target.hostname === 'paypal.me' &&
-        /^\/psitrends\/[0-9]+(?:\.[0-9]{2})?CAD$/.test(target.pathname)
-      const isSquare = target.protocol === 'https:' &&
-        (target.hostname === 'square.link' || target.hostname === 'checkout.square.site' ||
-          target.hostname === 'sandbox.square.link' || target.hostname === 'staging.square.link')
-      if (selectedProvider === 'paypal_personal' ? !isPayPal : !isSquare)
-        throw new Error('WALLET_PROVIDER_MISMATCH')
-      window.location.assign(target.href)
+      const url = walletSafePaymentUrl(selectedProvider, result.redirectUrl)
+      if (!url) throw new Error('WALLET_PAYMENT_RECONCILIATION_REQUIRED')
+      setReadyPayment({ url, provider: selectedProvider, id: result.topup.id })
+      setSuccess(t.ready)
     } catch (e) { setError(e.message || t.error) }
     finally { setBusy('') }
   }
@@ -154,7 +162,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
       <p className={styles.eyebrow}><Wallet size={17}/> {t.eyebrow}</p>
       <h1>{t.title}</h1><p>{t.intro}</p>
     </div><div className={styles.balance} data-wallet-balance>
-      <span>{t.total}</span><strong>{state ? money(state.balanceMinor) : '—'}</strong>
+      <span>{t.total}</span><strong>{state && Number.isSafeInteger(state.balanceMinor) ? money(state.balanceMinor) : '—'}</strong>
       <small>CAD</small>
     </div></div>
     {!state && <p role="status">{t.loading}</p>}
@@ -170,24 +178,43 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
         <div className={styles.presets}>
           {WALLET_PRESETS_MINOR.map(value => <button key={value} type="button"
             className={amount === (value / 100).toFixed(2) ? styles.presetActive : styles.preset}
-            onClick={() => setAmount((value / 100).toFixed(2))}>{money(value)}</button>)}
+            onClick={() => { setAmount((value / 100).toFixed(2)); setReadyPayment(null) }}>{money(value)}</button>)}
         </div>
         <label className={styles.field}><span>{t.own}</span>
-          <div className={styles.amountInput}><b>CA$</b><input value={amount} onChange={event => setAmount(event.target.value)}
+          <div className={styles.amountInput}><b>CA$</b><input value={amount} onChange={event => { setAmount(event.target.value.replace(',', '.')); setReadyPayment(null) }}
             type="text" inputMode="decimal" placeholder="40.00" aria-label={t.own} maxLength={7}/></div>
         </label>
-        <div className={styles.providers} role="group" aria-label={t.amount}>
-          {providers.includes('square_api') && <button type="button" className={selectedProvider === 'square_api' ? styles.methodSelected : styles.method}
-            onClick={() => setProvider('square_api')}><CreditCard size={18}/>{t.square}</button>}
-          {providers.includes('paypal_personal') && <button type="button" className={selectedProvider === 'paypal_personal' ? styles.methodSelected : styles.method}
-            onClick={() => setProvider('paypal_personal')}><Wallet size={18}/>{t.paypal}</button>}
+        <p className={styles.label}>{t.choose}</p>
+        <div className={styles.providers} role="group" aria-label={t.choose} data-wallet-payment-methods>
+          <button type="button" data-wallet-method="square_api" aria-pressed={selectedProvider === 'square_api'}
+            disabled={!providers.includes('square_api')} className={selectedProvider === 'square_api' ? styles.methodSelected : styles.method}
+            onClick={() => { setProvider('square_api'); setReadyPayment(null) }}>
+            <CreditCard size={22}/><span><strong>{t.square}</strong>
+              <small>{providers.includes('square_api') ? t.squareAuto : t.notConnected}</small></span>
+          </button>
+          <button type="button" data-wallet-method="paypal_personal" aria-pressed={selectedProvider === 'paypal_personal'}
+            disabled={!providers.includes('paypal_personal')} className={selectedProvider === 'paypal_personal' ? styles.methodSelected : styles.method}
+            onClick={() => { setProvider('paypal_personal'); setReadyPayment(null) }}>
+            <Wallet size={22}/><span><strong>{t.paypal}</strong>
+              <small>{providers.includes('paypal_personal') ? t.paypalManual : t.notConnected}</small></span>
+          </button>
         </div>
         {!providers.includes('square_api') && <p className={styles.small}>{t.onlyPaypal}</p>}
+        {!providers.length && <p className={styles.small} role="status">{t.noMethods}</p>}
         {selectedProvider === 'paypal_personal' && <p className={styles.small}>{t.receipt}</p>}
+        {!validAmount(amount) && <p className={styles.small} role="alert">{t.invalidAmount}</p>}
         <button className={styles.primary} disabled={Boolean(busy) || !validAmount(amount) || !selectedProvider}
-          type="button" onClick={createTopup}>
+          type="button" onClick={createTopup} data-wallet-create>
           {busy === 'create' ? t.loadingPay : t.pay + ' · ' + (validAmount(amount) ? money(Math.round(Number(amount) * 100)) : '—')}
         </button>
+        {readyPayment && <div className={styles.ready} data-wallet-payment-ready>
+          <p role="status">{t.ready}</p>
+          <a className={styles.primary} href={readyPayment.url} target="_blank" rel="noopener noreferrer"
+            referrerPolicy="no-referrer" data-wallet-open-payment>
+            {t.openPay} · {readyPayment.provider === 'square_api' ? t.square : 'PayPal'}
+          </a>
+          <p className={styles.small}>{t.successHint}</p>
+        </div>}
       </div>
       <p className={styles.notice}><ShieldCheck size={18} aria-hidden="true"/> {t.notice}</p>
       <div className={styles.historyHeading}><h2>{t.orderTitle}</h2><button type="button"
@@ -199,6 +226,14 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
             <span className={styles.status} data-wallet-status={order.status}>{t[order.status] || order.status}</span>
             <small>{new Date(order.createdAt).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-CA')} · {order.provider === 'paypal_personal' ? 'PayPal' : 'Square'}</small>
           </div>
+          {(order.status === 'pending' || order.status === 'checkout_ready') &&
+            walletSafePaymentUrl(order.provider, order.paymentUrl || order.checkoutUrl) && (
+              <a className={styles.secondary} data-wallet-resume-payment
+                href={walletSafePaymentUrl(order.provider, order.paymentUrl || order.checkoutUrl)}
+                target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
+                {t.openPay}
+              </a>
+            )}
           {order.provider === 'paypal_personal' && order.status === 'pending' && <div className={styles.receiptForm}>
             <label>{t.reportPlaceholder}<input value={receipts[order.id] || ''}
               onChange={event => setReceipts(value => ({ ...value, [order.id]: event.target.value }))}

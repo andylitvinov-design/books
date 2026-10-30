@@ -3,11 +3,10 @@ import { AppError } from '@/lib/assessments/contracts'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import {
-  getSquareGatewayConfig, requireSquareGateway,
-  squareWebhookValid, paymentIdFromSquareEvent,
+  getSquareGatewayConfig, getSquareWalletGatewayConfig, requireSquareGateway,
+  squareWebhookValid, paymentIdFromSquareEvent, squareApiRequest,
 } from '@/lib/commerce/square-gateway'
 import { squareCartService } from '@/lib/commerce/square-cart-service'
-import { squareApiRequest } from '@/lib/commerce/square-gateway'
 import { walletSettings } from '@/lib/wallet/model'
 import { createWalletService } from '@/lib/wallet/service'
 
@@ -38,7 +37,11 @@ async function boundedRawBody(request) {
 
 export async function POST(request) {
   try {
-    const square = getSquareGatewayConfig()
+    const servicesSquare = getSquareGatewayConfig()
+    const walletSquare = getSquareWalletGatewayConfig()
+    // Existing service orders and arbitrary CAD wallet top-ups share one
+    // merchant-signed webhook, but each retains independent approval gates.
+    const square = servicesSquare.enabled ? servicesSquare : walletSquare
     requireSquareGateway(square)
     const raw = await boundedRawBody(request)
     const signature = request.headers.get('x-square-hmacsha256-signature')
@@ -50,14 +53,19 @@ export async function POST(request) {
     const paymentId = paymentIdFromSquareEvent(event, square)
     if (!paymentId) return NextResponse.json({ received: true, handled: false }, { headers: PRIVATE_HEADERS })
     const config = getAppConfig()
-    const result = await squareCartService(config, square).verifiedWebhookEvent(event, paymentId)
-    if (result.handled) return NextResponse.json({ received: true, handled: true }, { headers: PRIVATE_HEADERS })
+    if (servicesSquare.enabled) {
+      const result = await squareCartService(config, servicesSquare).verifiedWebhookEvent(event, paymentId)
+      if (result.handled)
+        return NextResponse.json({ received: true, handled: true }, { headers: PRIVATE_HEADERS })
+    }
     const wallet = walletSettings()
-    if (!wallet.enabled || !wallet.squareEnabled)
+    if (!wallet.enabled || !wallet.squareEnabled || !walletSquare.enabled)
       return NextResponse.json({ received: true, handled: false }, { headers: PRIVATE_HEADERS })
-    const payment = await squareApiRequest(square, 'GET', '/v2/payments/' + paymentId)
-    const walletResult = await createWalletService(config).verifiedSquarePayment(payment?.payment, square)
-    return NextResponse.json({ received: true, handled: walletResult.handled }, { headers: PRIVATE_HEADERS })
+    // Never accept the event's reported amount/status. Fetch the exact Payment
+    // from the verified merchant after HMAC validation and reconcile atomically.
+    const payment = await squareApiRequest(walletSquare, 'GET', '/v2/payments/' + paymentId)
+    const result = await createWalletService(config).verifiedSquarePayment(payment?.payment, walletSquare)
+    return NextResponse.json({ received: true, handled: result.handled }, { headers: PRIVATE_HEADERS })
   } catch (error) {
     const safe = safeError(error)
     return NextResponse.json({ error: safe.code }, { status: safe.status, headers: PRIVATE_HEADERS })

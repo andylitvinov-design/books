@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   WALLET_CURRENCY, WALLET_PRESETS_MINOR, walletAmountMinor, walletPrice,
-  walletPayPalUrl, walletSettings,
+  walletPayPalUrl, walletSettings, walletSafePaymentUrl,
 } from '../lib/wallet/model.js'
+import { getSquareGatewayConfig, getSquareWalletGatewayConfig } from '../lib/commerce/square-gateway.js'
 
 const file = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -31,11 +32,16 @@ test('wallet and each payment rail fail closed without approved feature flags', 
   assert.deepEqual(walletSettings({}), { enabled: false, paypalEnabled: false, squareEnabled: false })
   const approved = { HH_APP_ENABLED: 'true', HH_WALLET_ENABLED: 'true',
     HH_WALLET_SCHEMA_APPROVED: 'true', HH_WALLET_PAYPAL_ENABLED: 'true' }
-  assert.deepEqual(walletSettings(approved), { enabled: true, paypalEnabled: true, squareEnabled: false })
+  assert.deepEqual(walletSettings(approved), { enabled: true, paypalEnabled: false, squareEnabled: false })
   assert.equal(walletSettings({ ...approved, HH_PAYPAL_PERSONAL_DISABLED: 'true' }).paypalEnabled, false)
+  assert.equal(walletSettings(approved).paypalEnabled, false, 'prepaid credits require PayPal terms approval')
   assert.equal(walletSettings({ ...approved, VERCEL_ENV: 'production' }).enabled, false)
+  assert.equal(walletSettings({ ...approved, HH_WALLET_PAYPAL_TERMS_APPROVED: 'true' }).paypalEnabled, true)
   assert.equal(walletSettings({ ...approved, VERCEL_ENV: 'production',
-    HH_APP_PRODUCTION_APPROVED: 'true', HH_WALLET_SQUARE_ENABLED: 'true' }).squareEnabled, true)
+    HH_APP_PRODUCTION_APPROVED: 'true', HH_WALLET_SQUARE_ENABLED: 'true' }).squareEnabled, false)
+  assert.equal(walletSettings({ ...approved, VERCEL_ENV: 'production',
+    HH_APP_PRODUCTION_APPROVED: 'true', HH_WALLET_SQUARE_ENABLED: 'true',
+    HH_WALLET_SQUARE_TERMS_APPROVED: 'true' }).squareEnabled, true)
 })
 test('public wallet API requires authenticated matching owner, same-origin mutations and rate limit', () => {
   const route = file('app/api/app/wallet/[action]/route.js')
@@ -74,4 +80,73 @@ test('private DB schema prevents unauthenticated credits and duplicate receipt/l
   assert.match(ui, /order\.status === 'pending'/)
   assert.match(ui, /transactionId/)
   assert.doesNotMatch(ui, /markAsPaid|localStorage\.setItem/)
+})
+
+test('unified catalogue validates PayPal and Square links, not arbitrary browser redirects', () => {
+  assert.equal(walletSafePaymentUrl('paypal_personal', walletPayPalUrl(4000)),
+    'https://paypal.me/psitrends/40.00CAD')
+  assert.equal(walletSafePaymentUrl('square_api', 'https://square.link/u/AaBbCCD123'),
+    'https://square.link/u/AaBbCCD123')
+  for (const invalid of [
+    'javascript:alert(1)', 'https://evil.example/psitrends/40.00CAD',
+    'https://paypal.me/attacker/40.00CAD', 'https://paypal.me/psitrends/1USD',
+    'https://paypal.me/psitrends/40.00CAD?email=test@example.com',
+    'https://square.link/u/AaBbCCD123?redirect=https://evil.example',
+  ]) {
+    assert.equal(walletSafePaymentUrl('paypal_personal', invalid), null)
+    assert.equal(walletSafePaymentUrl('square_api', invalid), null)
+  }
+  assert.equal(walletSafePaymentUrl('paypal_personal', 'https://square.link/u/AaBbCCD123'), null)
+})
+
+test('Square wallet merchant readiness is independent of consultation EUR/CAD price SKUs', () => {
+  const merchant = {
+    VERCEL_ENV: 'production', HH_SQUARE_API_MODE: 'production',
+    HH_SQUARE_API_ENABLED: 'true', HH_SQUARE_API_PRODUCTION_APPROVED: 'true',
+    HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED: 'true', HH_SQUARE_TAX_REVIEW_APPROVED: 'true',
+    HH_SQUARE_REFUND_TERMS_APPROVED: 'true',
+    HH_SQUARE_API_TOKEN: 'EAAAtestToken00000000000000',
+    HH_SQUARE_MERCHANT_ID: 'TESTMERCHANT001',
+    HH_SQUARE_LOCATION_ID: 'TESTLOCATION01',
+    HH_SQUARE_WEBHOOK_SIGNATURE_KEY: 'webhooksignaturesecret000000000',
+    HH_APP_ENABLED: 'true', HH_APP_PRODUCTION_APPROVED: 'true',
+    HH_WALLET_ENABLED: 'true', HH_WALLET_SCHEMA_APPROVED: 'true',
+    HH_WALLET_SQUARE_ENABLED: 'true', HH_WALLET_SQUARE_TERMS_APPROVED: 'true',
+  }
+  assert.equal(getSquareGatewayConfig(merchant).enabled, false,
+    'existing consultation checkout must stay closed without its own prices')
+  assert.equal(getSquareWalletGatewayConfig(merchant).enabled, true)
+  for (const key of [
+    'HH_SQUARE_API_TOKEN', 'HH_SQUARE_LOCATION_ID', 'HH_SQUARE_WEBHOOK_SIGNATURE_KEY',
+    'HH_SQUARE_API_PRODUCTION_APPROVED', 'HH_WALLET_SCHEMA_APPROVED',
+    'HH_WALLET_SQUARE_TERMS_APPROVED', 'HH_APP_PRODUCTION_APPROVED',
+  ]) {
+    const env = { ...merchant }
+    delete env[key]
+    assert.equal(getSquareWalletGatewayConfig(env).enabled, false, key)
+  }
+  assert.equal(getSquareWalletGatewayConfig({ ...merchant, HH_SQUARE_API_MODE: 'sandbox' }).enabled, false)
+  assert.equal(getSquareWalletGatewayConfig({ ...merchant,
+    HH_SQUARE_WEBHOOK_URL: 'https://evil.example/api/payments/square/webhook' }).enabled, false)
+})
+
+test('wallet checkout remains resumable and both payment methods are visible with honest readiness', () => {
+  const ui = file('components/wallet/wallet-panel.jsx')
+  const service = file('lib/wallet/service.js')
+  const webhook = file('app/api/payments/square/webhook/route.js')
+  assert.match(ui, /data-wallet-payment-methods/)
+  assert.match(ui, /data-wallet-method="square_api"/)
+  assert.match(ui, /data-wallet-method="paypal_personal"/)
+  assert.match(ui, /data-wallet-resume-payment/)
+  assert.match(ui, /walletSafePaymentUrl/)
+  assert.doesNotMatch(ui, /window.location.assign/)
+  assert.match(service, /getSquareWalletGatewayConfig/)
+  assert.match(service, /row.status === 'reversed'/)
+  assert.match(service, /paymentUrl: walletPayPalUrl/)
+  assert.match(webhook, /servicesSquare.enabled/)
+  assert.match(webhook, /walletSquare.enabled/)
+  assert.match(webhook, /squareWebhookValid/)
+  const admin = file('components/wallet/wallet-review.jsx')
+  assert.match(admin, /proof.transactionId/)
+  assert.match(admin, /proof.amount/)
 })

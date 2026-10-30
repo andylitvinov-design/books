@@ -10,6 +10,7 @@ export default function WalletReview() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
+  const [verified, setVerified] = useState({})
   const load = useCallback(async () => {
     try {
       const response = await fetch('/admin/api/wallet', { credentials: 'same-origin', cache: 'no-store' })
@@ -23,6 +24,15 @@ export default function WalletReview() {
   useEffect(() => { load() }, [load])
   async function review(order, action) {
     if (busy) return
+    const proof = verified[order.id] || {}
+    // The reviewer must retype the exact amount and reference from the seller's
+    // transaction record, not merely click a button prefilled with buyer claims.
+    if (action === 'approve' &&
+        (String(proof.transactionId || '').trim().toUpperCase() !== order.reference ||
+         String(proof.amount || '').trim() !== (order.amountMinor / 100).toFixed(2))) {
+      setError('Verify the CAD amount and re-enter the transaction ID from your PayPal seller activity.')
+      return
+    }
     const message = action === 'approve'
       ? 'Confirm that you independently verified this exact CAD payment, receiving account and transaction ID in the PayPal statement?'
       : action === 'reverse'
@@ -36,12 +46,13 @@ export default function WalletReview() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topupId: order.id, action, revision: order.revision, confirmed: true,
-          ...(action === 'approve' ? { amountMinor: order.amountMinor, currency: 'CAD',
-            transactionId: order.reference } : {}),
+          ...(action === 'approve' ? { amountMinor: Math.round(Number(proof.amount) * 100), currency: 'CAD',
+            transactionId: String(proof.transactionId).trim() } : {}),
         }),
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'REVIEW_FAILED')
+      setVerified(prev => ({ ...prev, [order.id]: { amount: '', transactionId: '' } }))
       await load()
     } catch (error) { setError(error.message || 'REVIEW_FAILED') }
     finally { setBusy('') }
@@ -62,6 +73,20 @@ export default function WalletReview() {
         </div>
         <div className={styles.actions}>
           {order.status === 'reported' && <>
+            <label className={styles.reviewField}>Actual CAD amount in seller activity
+              <input inputMode="decimal" placeholder="40.00" autoComplete="off"
+                value={verified[order.id]?.amount || ''}
+                onChange={event => setVerified(prev => ({
+                  ...prev, [order.id]: { ...prev[order.id], amount: event.target.value },
+                }))}/>
+            </label>
+            <label className={styles.reviewField}>Re-enter provider transaction ID from PayPal activity
+              <input placeholder="PayPal transaction reference" autoComplete="off"
+                value={verified[order.id]?.transactionId || ''}
+                onChange={event => setVerified(prev => ({
+                  ...prev, [order.id]: { ...prev[order.id], transactionId: event.target.value },
+                }))}/>
+            </label>
             <button className={styles.primary} type="button" disabled={Boolean(busy)} onClick={() => review(order,'approve')}>Verify receipt &amp; credit</button>
             <button className={styles.secondary} type="button" disabled={Boolean(busy)} onClick={() => review(order,'reject')}>Reject</button>
           </>}
