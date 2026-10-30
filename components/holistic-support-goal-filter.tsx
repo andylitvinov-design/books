@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type MouseEvent, type PointerEvent } from "react";
 import { flushSync } from "react-dom";
 import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -283,6 +283,7 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  const nextPointer = useRef<{ id: number; x: number; y: number; claimed: boolean } | null>(null);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
@@ -359,6 +360,33 @@ export function HolisticSupportGoalFilter({
     window.requestAnimationFrame(() => document.getElementById("support-goal-filter-title")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto" : "smooth", block: "start" }));
+  }
+  // Safari/WebKit can swallow a mouse click when the last numeric field
+  // commits on blur and React re-renders the form between pointerdown/click.
+  // Claim mouse intent before that blur. For touch/pen, wait for a completed
+  // short tap so a swipe to scroll never advances a category. Keyboard and
+  // assistive click activation retain the native click fallback.
+  function onNextPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    nextPointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY, claimed: false };
+    if (event.pointerType === "mouse") {
+      nextPointer.current.claimed = true;
+      nextSector();
+    }
+  }
+  function onNextPointerUp(event: PointerEvent<HTMLButtonElement>) {
+    const gesture = nextPointer.current;
+    if (!gesture || gesture.id !== event.pointerId || event.pointerType === "mouse") return;
+    if (Math.abs(event.clientX - gesture.x) <= 12 && Math.abs(event.clientY - gesture.y) <= 12) {
+      gesture.claimed = true;
+      nextSector();
+    }
+  }
+  function onNextClick(event: MouseEvent<HTMLButtonElement>) {
+    const gesture = nextPointer.current;
+    nextPointer.current = null;
+    if (gesture?.claimed && event.detail > 0) return; // Same gesture, not a second Next.
+    nextSector();
   }
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -500,7 +528,10 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.save} data-support-goal-save
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
-            onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
+            onPointerDown={onNextPointerDown}
+            onPointerUp={onNextPointerUp}
+            onPointerCancel={() => { nextPointer.current = null; }}
+            onClick={onNextClick}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
         <fieldset className={styles.formatFieldset} data-support-goal-formats>
           <legend>{t.formatTitle}</legend>

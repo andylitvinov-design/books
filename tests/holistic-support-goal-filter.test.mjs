@@ -224,3 +224,17 @@ test("new TSX parses with no diagnostics", () => {
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")),[]);
 });
+
+test("Next persists a single real money snapshot across iPhone pointer events and keyboard", () => {
+  assert.match(editor, /function onNextPointerDown\(event: PointerEvent<HTMLButtonElement>\)/);
+  assert.match(editor, /event\.pointerType === "mouse"/);
+  assert.match(editor, /nextPointer\.current\.claimed = true;\s*nextSector\(\)/);
+  assert.match(editor, /function onNextPointerUp\(event: PointerEvent<HTMLButtonElement>\)/);
+  assert.match(editor, /Math\.abs\(event\.clientX - gesture\.x\) <= 12/);
+  assert.match(editor, /if \(gesture\?\.claimed && event\.detail > 0\) return/);
+  assert.match(editor, /onPointerCancel=\{\(\) => \{ nextPointer\.current = null; \}\}/);
+  assert.match(editor, /onClick=\{onNextClick\}/);
+  const nextBlock = editor.split("function nextSector() {")[1]?.split("function onNextPointerDown")[0];
+  assert.ok(nextBlock?.includes("saveCurrent();") && nextBlock.includes("changeSector("),
+    "pointer handling must not bypass the accepted Save-before-Next contract");
+});
