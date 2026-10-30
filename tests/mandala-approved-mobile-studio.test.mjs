@@ -143,3 +143,48 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   assert.match(css,/\.postVideoSupportGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.postVideoSupportGrid\{grid-template-columns:minmax\(0,1fr\)/);
 });
+
+
+test("twenty-four unique first-party four-shot free compilations use verified stock masters, not paid AI",()=>{
+  const src=read("components/mandala-free-video-studio.tsx");
+  const money=read("lib/mandala/real-money-film-library.ts");
+  const themed=read("lib/mandala/film-collection-v2.ts");
+  const start=src.indexOf("const FREE_FILM_PRESETS:");
+  assert.ok(start>0,"catalog belongs in the existing approved video editor");
+  const arrayStart=src.indexOf("= [",start)+2;
+  const arrayEnd=src.indexOf("] as const;",arrayStart)+1;
+  const catalogue=JSON.parse(src.slice(arrayStart,arrayEnd));
+  assert.equal(catalogue.length,24);
+  const groups=new Map();
+  const ids=new Set();
+  const originalClips=new Set();
+  for(const film of catalogue){
+    assert.ok(!ids.has(film.id),"every free montage has a distinct id");
+    ids.add(film.id);
+    assert.equal(film.clips.length,4);
+    assert.equal(new Set(film.clips).size,4,"four different MP4 masters per film");
+    for(const locale of ["ru","en","es"])assert.ok(film.label[locale]?.trim());
+    groups.set(film.theme,(groups.get(film.theme)||0)+1);
+    for(const clip of film.clips){
+      assert.match(money+themed,new RegExp(clip+"\\\\.mp4|film\\\\(\\\""+clip+"\\\"\\\\)"),
+        "every storyboard clip is pre-encoded and first-party: "+clip);
+      originalClips.add(clip);
+    }
+  }
+  for(const category of ["money","energy","life","health","relationships","goals"])
+    assert.equal(groups.get(category),4,category);
+  assert.ok(originalClips.size>=24,"montages must vary across many actual videos");
+  assert.match(src,/data-free-film-compilation-catalog/);
+  assert.match(src,/data-free-film-original-masters/);
+  assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
+  assert.match(src,/if\(storyboard\?\.version===FREE_FILM_PLAN_VERSION\)/);
+  assert.match(src,/selected\.theme,selected\.sceneId as LocalSceneId,speed,brightness,stockShotVideo\)/);
+  assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
+  assert.match(src,/durationSeconds===10\?20:durationSeconds/);
+  assert.match(src,/startSeconds:start,durationSeconds:shotLength/);
+  assert.match(src,/providerPrompt:""/);
+  assert.match(src,/new MediaRecorder\(stream/);
+  assert.doesNotMatch(src.slice(start,src.indexOf("const effects:",start)),
+    /https?:\/\/|\bfetch\s*\(|\baxios\b|\bcheckout\b|\bapiKey\b/i,
+    "catalogue must not load external stock, spend credits or upload client inputs");
+});
