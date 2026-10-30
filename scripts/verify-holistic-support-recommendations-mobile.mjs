@@ -47,7 +47,9 @@ for (const engine of [chromium, webkit]) {
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
+          // The approved compact mobile screen moved its sole recommendation CTA
+          // beside the user's portrait; the four scales remain in assessment.
+          const launch = root.locator("[data-support-recommendations]");
           assert.equal(await launch.count(), 1, label + " one left-side picker");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
