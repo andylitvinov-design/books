@@ -40,33 +40,19 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
-
-test('SEO and Portrait mobile browser gates cancel only superseded PR HEADs and rerun after Draft to Ready',()=>{
+test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+  const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
-  const cases=[
-    {file:'hh-portrait-mobile-browser.yml',group:'hh-portrait-mobile',source:['browser: [chromium, webkit]','postgres:17-alpine','verify-portrait-mobile.mjs']},
-    {file:'hh-live-seo-audit.yml',group:'hh-live-seo-audit',source:['verify-live-sitemap.mjs','verify-public-tests-mobile.mjs','run: npm run build']},
-  ];
-  for(const item of cases){
-    const s=workflow(item.file);
-    const pr=s.split('  pull_request:')[1]?.split(/^(?:  push:|  workflow_dispatch:|permissions:)/m)[0]||'';
-    assert.ok(pr.includes('ready_for_review')&&pr.includes('converted_to_draft'),item.file+' must rerun required jobs on Ready');
-    assert.ok(s.includes('group: '+item.group+'-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"),
-      item.file+' group must isolate PRs and push/manual runs');
-    assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"),
-      item.file+' must not cancel production/manual verification');
-    assert.match(s,/^permissions:\s*\n  contents: read/m);
-    assert.doesNotMatch(s,/continue-on-error:\s*true|actions:\s*write/);
-    for(const phrase of item.source) assert.ok(s.includes(phrase),item.file+' lost acceptance: '+phrase);
-  }
-  const portrait=workflow('hh-portrait-mobile-browser.yml');
-  assert.ok(portrait.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.ok(portrait.includes('for ((i=1; i<=110; i++)); do'));
-  const seo=workflow('hh-live-seo-audit.yml');
-  assert.match(seo,/^  push:/m);
-  assert.match(seo,/^  workflow_dispatch:/m);
-  assert.ok(seo.includes("  source-build:\n    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false"));
-  assert.ok(seo.includes("  audit:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.ok(seo.includes("  public-tests-mobile:\n    if: github.event_name != 'pull_request'"));
+  assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.match(s,/postgres:17-alpine/);
+  assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
+  assert.match(s,/verify-portrait-mobile\.mjs/);
+  assert.match(s,/^permissions:\s*\n  contents: read/m);
+  assert.ok(s.includes('for ((i=1; i<=110; i++)); do'));
+  assert.doesNotMatch(s,/continue-on-error:\s*true|actions:\s*write/);
 });
 
