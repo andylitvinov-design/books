@@ -145,11 +145,11 @@ try {
       assert.equal((await call('export',a)).body.records.length,0)
       const saveResponse=page.waitForResponse(response=>response.url().endsWith('/api/app/intelligence/feedback/save')&&response.request().method()==='POST')
       const confirmButton=card.getByRole('button',{name:'Confirm save',exact:true})
-      await confirmButton.evaluate(button=>{window.__hhSyntheticClicks=0;button.addEventListener('click',()=>{window.__hhSyntheticClicks++},{once:true})})
+      await confirmButton.evaluate(button=>{window.__hhSyntheticClicks=0;window.__hhConfirmNode=button;window.__hhClickTarget='none';button.addEventListener('click',()=>{window.__hhSyntheticClicks++},{once:true});document.addEventListener('click',event=>{window.__hhClickTarget=event.target?.closest('button')?.textContent==='Confirm save'?'confirm':'other'},{capture:true,once:true})})
       await confirmButton.click()
       let savedResponse
       try {savedResponse=await saveResponse} catch(error) {
-        console.log(JSON.stringify({browser:browserName,saveRequests,saveFailure,pageErrors,clickEvents:await page.evaluate(()=>window.__hhSyntheticClicks).catch(()=>null),confirmEnabled:await confirmButton.isEnabled().catch(()=>false),alertVisible:await card.getByRole('alert').isVisible().catch(()=>false),prepareVisible:await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).isVisible().catch(()=>false),confirmVisible:await confirmButton.isVisible().catch(()=>false)}))
+        console.log(JSON.stringify({browser:browserName,saveRequests,saveFailure,pageErrors,clickEvents:await page.evaluate(()=>window.__hhSyntheticClicks).catch(()=>null),clickTarget:await page.evaluate(()=>window.__hhClickTarget).catch(()=>null),sameNode:await confirmButton.evaluate(button=>button===window.__hhConfirmNode).catch(()=>false),confirmEnabled:await confirmButton.isEnabled().catch(()=>false),alertVisible:await card.getByRole('alert').isVisible().catch(()=>false),prepareVisible:await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).isVisible().catch(()=>false),confirmVisible:await confirmButton.isVisible().catch(()=>false)}))
         throw error
       }
       const savedBody=await savedResponse.json()
