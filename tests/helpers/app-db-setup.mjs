@@ -18,6 +18,32 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019172000_hh_practitioner_article_folders.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017122000_hh_practitioner_service_funnel_daily.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017183000_hh_test_catalog_social_proof.sql',import.meta.url),'utf8'))
+
+ // Mirror the existing production RLS tables needed by real guest/Cabinet
+ // assessment browser journeys. Isolated, empty loopback DB only (assertIsolated).
+ // Reuse exact migration files; never synthesize grants, accounts or client data.
+ for (const migration of [
+   '20261017181000_hh_academy_energywork_progress.sql',
+   '20261019152000_hh_public_service_enquiries_secure.sql',
+   '20261025173000_hh_practitioner_express_reports.sql',
+   '20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',
+   '20261026164817_hh_free_express_owner_account_reply_20261026.sql',
+ ]) {
+   await db.query(await readFile(new URL('../../supabase/migrations/' + migration, import.meta.url),'utf8'))
+ }
+ // Test-only consistency check: the missing protected tables are created
+ // before the browser reads its synthetic signed-in bootstrap.
+ for (const [schema, table] of [
+   ['app_private','academy_course_progress'],
+   ['app','public_service_enquiries'],
+   ['app','practitioner_express_reports'],
+   ['app_private','free_express_account_links'],
+ ]) {
+   const result = await db.query(`select c.relrowsecurity as rls, c.relforcerowsecurity as force_rls from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname=$1 and c.relname=$2 and c.relkind='r'`,[schema,table])
+   if (result.rowCount !== 1 || !result.rows[0].rls || !result.rows[0].force_rls)
+     throw new Error('Synthetic test DB missing protected table: ' + schema + '.' + table)
+ }
+
  // Isolated-fixture parity with the existing production schema observed 2026-10-17 17:13 UTC.
  // No corresponding photos migration exists in the repository at source 2a059799.
  // This stays inside setup()'s loopback/isolated/empty-database guard, never production DDL.
