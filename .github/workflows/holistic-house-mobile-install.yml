@@ -105,8 +105,8 @@ jobs:
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
           trap 'kill "$child" 2>/dev/null || true' EXIT
-          for n in $(seq 1 55); do
-            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+          for attempt in $(seq 1 55); do
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then echo "Install page ready on attempt $attempt"; break; fi
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
