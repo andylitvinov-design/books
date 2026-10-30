@@ -233,3 +233,30 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });
+
+
+const PR_NUMBER_CANCELLATION_BROWSER_PILOT = [["hh-public-journey-wave1.yml","hh-public-wave1"],["hh-public-journey-toronto-wave2.yml","hh-toronto-wave2"],["hh-reiki-all-slides-browser.yml","hh-reiki-all-slides"]];
+test('public journey and Reiki browser suites cancel superseded PR heads, not manual or push',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const cancel="${{ github.event_name == 'pull_request' }}";
+  const required={
+    'hh-public-journey-wave1.yml':['verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs'],
+    'hh-public-journey-toronto-wave2.yml':['verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs'],
+    'hh-reiki-all-slides-browser.yml':['browser: [chromium, webkit]','verify-reiki-all-slides-browser.mjs','verify-reiki-referral-browser.mjs','tests/helpers/app-db-setup.mjs'],
+  };
+  for(const [filename,group] of PR_NUMBER_CANCELLATION_BROWSER_PILOT){
+    const source=read(filename);
+    assert.match(source,/^  pull_request:/m,'PR coverage missing: '+filename);
+    assert.match(source,/^    paths:/m,'Path coverage missing: '+filename);
+    assert.equal((source.match(/^concurrency:/gm)||[]).length,1,filename+' must have exactly one concurrency block');
+    assert.ok(source.includes('group: '+group+'-'+suffix),filename+' must group by immutable PR number');
+    assert.ok(source.includes('cancel-in-progress: '+cancel),filename+' must not cancel production or manual');
+    assert.match(source,/^jobs:/m);
+    for(const contract of required[filename])assert.ok(source.includes(contract),filename+' lost '+contract);
+    assert.ok(!source.includes('continue-on-error: true'),filename+' cannot hide real failures');
+  }
+  const reiki=read('hh-reiki-all-slides-browser.yml');
+  assert.match(reiki,/^  workflow_dispatch:/m);
+  assert.match(reiki,/fail-fast: false/);
+  assert.match(reiki,/postgres:17-alpine/);
+});

@@ -14,6 +14,11 @@ on:
       - '.github/workflows/hh-public-journey-wave1.yml'
 permissions:
   contents: read
+concurrency:
+  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
+  group: hh-public-wave1-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   public-wave1:
     runs-on: ubuntu-latest

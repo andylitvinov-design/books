@@ -272,3 +272,47 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
+
+
+## CI PR THROUGHPUT PROGRAM V3 / daily waiting scenarios / 30 Oct 2026
+
+This is the quantified execution update of the existing issue #1419 V2 program, not a second master issue. Production is codex/public-book-library; verify Vercel READY, exact SHA, canonical alias after each merge. No additional merger automation: the existing Repair (:05), Work Merge (:35) and Triage (:45) retain one owner/lease per PR.
+
+### Measured baseline and meaning
+
+As audited on 30 Oct: **391 open PR** (268 Draft, 123 non-Draft, 39 stacked); **132 created / rolling 24h**, **56 merged / 24h** (50 production), 90 workflow YAML. Snapshot queued runners=0, 2 in progress: do not describe GitHub runner queue as main bottleneck. In 400 recent workflow runs: 212 success, 79 failure, 29 cancelled, 76 skipped, 4 active. PR #2641 generated 86 workflow runs over 12 HEADs, demonstrating unnecessary checks of partial work. Seven actual completed merges showed median green-to-merge ~0.7 minute. Source: dated observations and run IDs in issue #1419.
+
+Observed examples: Mandala 14.2–14.9m (8.9m browser, 3.8m build); Support Mobile 8.9–9.3m (7.5m browser); Ideas/Coaching 7.7–8.2m; Library 6.2–7.5m; Alchemy Mobile 5.8–7.3m. A single core CI-only job measured 281s before narrow build reuse and 37s afterward. These are individual jobs or samples, not universal per-PR guarantees.
+
+**PR-minutes/day** = number of affected PR per day times shortened critical-path time per PR; this is NOT calendar time when PRs run in parallel. **Runner-minutes/day** = eliminated job execution time; zero runner queue means runner-minute savings may NOT shorten PR approval waits. All ranges below are scenario estimates (NOT realized results); overlapping categories MUST NOT be added into a headline total.
+
+### Priority, ownership and estimated saving per day
+
+| Priority and intervention | Existing ownership/status | Assumption: impacted PR or obsolete runs / day | Potential PR waiting saved / day | Potential Actions runner-min/day |
+| --- | --- | ---: | ---: | ---: |
+| P0 root-fix shared RED CI source (course/business/auth), fingerprint test+BASE, fix once | Work Repair; #2607 / #2637, no duplicate | 8–20 PR | 24–240 PR-min | 30–240 |
+| P0 batch work by lease before pushing, reduce 5–12 commits/head churn | existing Repair/Triage; behavioral | 8–20 active PR | 16–120 PR-min | 50–350 |
+| P0 Draft skips expensive real App/OPORA/public E2E; Ready retains ALL | **SHIPPED #2645**, monitor | 15–40 draft updates | 0–120 PR-min if author waited for Draft CI; Ready shortcut **0** | 90–480 |
+| P0 CI-only narrow full-build reuse, auth/payment/RLS excluded | **SHIPPED**, monitor | 10–25 CI-only PR | 20–100 PR-min if core gate critical | 41–103 at observed 4.1min saved/job |
+| P0 production Ruleset, required release-ready, safe native auto-merge | **ADMIN BLOCKED**, protected=false | not extrapolated | 0–25 PR-min; mainly SAFETY | 0 |
+| P1 OPORA relevant-path/double-unit checks | **#2648 active**, original E2E required | 5–15 PR | 5–75 PR-min | 20–150 |
+| P1 parallel independent Mandala/Support viewport tests 2-at-a-time | **#2647 active**, all 18+10 scenarios required | 4–10 Ready PR | 8–50 PR-min | 0 or negative (wall-time goal) |
+| P1 cancel superseded SHA for wave1/Toronto/Reiki browser (3 workflows) | **THIS PILOT**; exact-head CI before release | 5–15 obsolete runs | 0–25 PR-min (little current runner queue) | 25–150 if each started run has 5–10m left |
+| P1 cancel superseded SHA for Live SEO/Public Perf/Owner Telegram (3 more) | **after pilot**, no duplicate with other PR lease | 4–12 obsolete runs | 0–20 PR-min | 15–100 |
+| P1 Growth/Course reuse global TS/Next without deleting tests | **#2630 Draft/RED**, real source baseline repair first | 4–12 Ready PR | 0–36 PR-min (shared core may remain critical) | 12–48 |
+| P1 one real browser owner for identical Ideas/Library, Alchemy/Public Services scripts | path/test/artifact proof required; NOT started | 5–12 Ready PR | 0–48 PR-min | 20–100 |
+| P2 safe isolated npm/Playwright cache and exact-config build artifacts | research and negative tests first | 8–25 Ready PR | 0–38 PR-min | 8–65 |
+| P2 stacked parent→production then child rebase (39 currently stacked) | existing merge/triage lane | 3–10 dependent PR | 0–60 PR-min, low confidence | variable |
+| P2 further YAML merge only with immutable BASE, original matrix & real E2E | no file-count target | only evidence-supported | 0 until measured | 0 until measured |
+
+### Sequential implementation checkpoints
+
+1. SHIPPED: 95 -> 90 YAML (approved replacement); fail-closed protection of ALL YAML deletions #2635; narrow CI-only build reuse; #2645 Draft/Ready; #2642 Library/About PR-only cancellation; #2627 scoped Intelligence.
+2. CURRENT: install PR-number superseded-run cancellation for public journey wave1, Toronto wave2 and isolated Reiki Chromium/WebKit. Preserve all source paths, browser/DB tests, artifacts and independent workflow_dispatch. Check actionlint, PR Sweep Guard and exact-head release-ready; merge once green, then confirm Vercel SHA/alias.
+3. NEXT: stage same guard for Live SEO, Public Performance and Owner Telegram without canceling production PUSH or manual dispatch (they use distinct run_id). One separately reviewed PR after prior merge.
+4. CURRENT FOREIGN OWNERS: #2647 browser parallelization; #2648 OPORA scope; #2637/#2607 repeated baseline repairs; #2622 protected Video Browser OAuth/DB; #2630 Draft Growth/Courses. Do not change their branches or weaken tests.
+5. AFTER: consolidate identical browser scripts only after path coverage proof, same exact SHA environment, real EN/RU/ES Chromium/WebKit and no lost privacy/auth/payment/RLS tests; stage successor first before removing an old job.
+6. OWNER: GitHub Ruleset at https://github.com/andylitvinov-design/books/settings/rules for refs/heads/codex/public-book-library ONLY. Require release-ready, PR review/risk gates, resolved conversations; forbid force push, deletion/bypass. Read back protected=true. Allow_auto_merge=true alone is NOT branch protection.
+7. DAILY for 7 days: record distinct created/merged/live-verified PR, Draft/Ready/blocked/stacked, HEAD pushes/PR, workflow runs & actual job runner minutes with pagination/censoring, P50/P90 first-fix/Ready-to-green/green-to-merge/merge-to-Vercel READY, duplicate error signatures, canceled superseded SHA. Compare affected PR cohorts before/after; never infer daily cost from a single job sample.
+
+Stop and roll back if a relevant specialist is skipped/missing or false-green, native manual or production PUSH accidentally cancels, auth/payment/RLS/privacy real E2E is bypassed, or live SHA / Vercel READY do not match. No paid API or personal-client data in CI.

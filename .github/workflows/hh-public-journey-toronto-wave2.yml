@@ -11,6 +11,11 @@ on:
       - '.github/workflows/hh-public-journey-toronto-wave2.yml'
 permissions:
   contents: read
+concurrency:
+  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
+  group: hh-toronto-wave2-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   toronto-wave2:
     runs-on: ubuntu-latest

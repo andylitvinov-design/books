@@ -25,6 +25,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
+  group: hh-reiki-all-slides-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   course-and-save-gate:
     name: Full course / save checkpoint — ${{ matrix.browser }}
