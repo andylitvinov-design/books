@@ -56,3 +56,28 @@ test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels sup
   assert.doesNotMatch(s,/continue-on-error:\s*true|actions:\s*write/);
 });
 
+test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
+  const suffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const cancel = "${{ github.event_name == 'pull_request' }}";
+  const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for (const [file, prefix, job] of [
+    ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
+    ['hh-free-review-live-mobile.yml', 'hh-free-review-mobile', 'read-only-mobile'],
+  ]) {
+    const source = workflow(file);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'), file + ' must test Ready transitions');
+    assert.ok(source.includes('  ' + job + ':\n' + ready + '\n'), file + ' must run full QA for Ready');
+    assert.ok(source.includes('group: ' + prefix + '-' + suffix), file + ' must group by PR number and independent manual run');
+    assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ' must not cancel production or manual runs');
+    assert.match(source, /^  workflow_dispatch:/m, file + ' must preserve manual verification');
+    assert.match(source, /playwright install --with-deps chromium webkit/, file + ' must retain actual browser QA');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+  const youtube = workflow('youtube-phone-uploader.yml');
+  const free = workflow('hh-free-review-live-mobile.yml');
+  assert.match(youtube, /npm run build/, 'YouTube local real video UI build must remain');
+  assert.match(youtube, /verify-youtube-phone-mobile\.mjs/, 'YouTube mobile acceptance must remain');
+  assert.match(free, /^  push:/m, 'post-merge production verification cannot be cancelled');
+  assert.match(free, /Verify PR's local production build, not old live alias/, 'PR acceptance must test exact source');
+  assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
+});
