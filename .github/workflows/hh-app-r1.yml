@@ -3,6 +3,7 @@ on:
   push:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/verify-eight-v2-registry-proposal.mjs'
@@ -61,6 +62,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   unit-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -96,6 +98,7 @@ jobs:
         run: npx --no-install tsc --noEmit
       - run: npm run pwa:check && npm run native:check
   course-banner-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
@@ -125,6 +128,7 @@ jobs:
           path: artifacts/course-banner/
           retention-days: 7
   database:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:

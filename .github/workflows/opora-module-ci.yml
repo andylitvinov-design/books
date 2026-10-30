@@ -4,6 +4,7 @@ on:
     branches:
       - codex/opora-module-router-20261014
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches:
       - codex/public-book-library
     paths:
@@ -33,6 +34,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   module-routing:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -76,6 +78,7 @@ jobs:
         run: node --test tests/opora-calm-day-one-mobile.test.mjs
 
   as56-mobile-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

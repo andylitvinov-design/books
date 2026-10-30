@@ -53,7 +53,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /HH_BASE_SHA/);
   assert.match(source, /actions: read/);
   assert.match(source, /pull-requests: read/);
-  assert.match(source, /timeout-minutes: 20/);
+  assert.match(source, /timeout-minutes: 45/);
   assert.match(source, /\[\[ "\$SCOPE_RESULT" == success \]\]/);
   assert.match(source, /\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -354,4 +354,34 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
     const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
     assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
+});
+
+
+const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
+  for (const [file,prefix,job] of [
+    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ['library-public-feed.yml','hh-library-feed','isolated-build'],
+  ]) {
+    const src=workflow(file);
+    assert.match(src,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+    assert.match(src,new RegExp('^  '+job+':\\n    if:','m'));
+    assert.ok(src.includes("github.event_name != 'pull_request' || github.event.pull_request.draft == false"));
+    assert.equal((src.match(/^concurrency:/gm)||[]).length,1);
+    assert.ok(src.includes('group: '+prefix+'-'+prGroupSuffix));
+    assert.ok(src.includes('cancel-in-progress: '+prOnlyCancel));
+    assert.ok(src.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"));
+    assert.match(src,/node (?:--conditions=react-server )?--test/);
+    assert.match(src,/eslint/);
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+  const lib=workflow('library-public-feed.yml');
+  assert.match(lib,/^  workflow_dispatch:/m);
+  assert.match(lib,/run: npm run build/);
+  assert.match(lib,/playwright install --with-deps chromium webkit/);
+  assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
+  const about=workflow('holistic-about-video-check.yml');
+  assert.match(about,/npx tsc --noEmit/);
+  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
