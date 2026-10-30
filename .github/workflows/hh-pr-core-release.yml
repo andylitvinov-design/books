@@ -95,6 +95,11 @@ jobs:
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
     steps:
       - name: Fail closed on missing, cancelled or failing required core jobs
         shell: bash
@@ -110,4 +115,40 @@ jobs:
           else
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
-          echo 'Core release gate passed. Check applicable specialist CI, reviews, and production impact separately.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Core checks passed; exact-head specialist aggregation still required on PR events.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed on all applicable exact-head specialist workflows
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # A fork may not execute candidate scripts with even a read-scoped GitHub token.
+          [[ "$HH_HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'Refusing a fork-head specialist gate; manual owner review required.' >&2
+            exit 1
+          }
+          # On the bootstrap PR only, the baseline has no aggregator yet.
+          # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
+          if git cat-file -e "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
+            git show "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+          else
+            # First rollout is safe only with native auto-merge disabled and
+            # a reviewed same-repository source PR.
+            node scripts/ci-specialist-aggregate.mjs
+          fi
+

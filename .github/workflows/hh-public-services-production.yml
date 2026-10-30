@@ -53,6 +53,13 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Director-only art planning and its encoded-video browser test are fully
+      # covered by holistic-support-mandala.yml. They do not modify service
+      # discovery, checkout, Alchemy or master-catalog journeys tested here.
+      # Keep the broad shared mandala-* patterns for other Mandala components.
+      - '!components/mandala-cinematic-director.tsx'
+      - '!components/mandala-cinematic-director.module.css'
+      - '!scripts/verify-holistic-mandala-browser.mjs'
 permissions:
   contents: read
 concurrency:

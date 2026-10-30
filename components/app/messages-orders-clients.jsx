@@ -153,9 +153,18 @@ export default function MessagesOrdersClients({locale='en',children}){
     <header className={styles.head}>
       <div><h1>{t.title}</h1><p>{section==='clients'&&ordersData?.hasPractice?
         (locale==='ru'?'Клиенты и входящие':locale==='es'?'Clientes y mensajes':'Clients and messages'):t.subtitle}</p></div>
-      <button type="button" onClick={reload} className={styles.refresh} aria-label={t.retry} title={t.retry}>
-        <RefreshCw size={19} aria-hidden="true"/>
-      </button>
+      <span className={styles.headerActions}>
+        <Link prefetch={false} className={styles.notificationSettings}
+          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
+          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
+          <Bell size={17} aria-hidden="true"/>
+        </Link>
+        <button type="button" onClick={reload} className={styles.refresh}
+          aria-label={t.retry} title={t.retry}>
+          <RefreshCw size={19} aria-hidden="true"/>
+        </button>
+      </span>
     </header>
     {!detailMode&&!(section==='orders'&&!loading&&!error&&ordersData?.orders?.length===0)&&<div className={styles.introCard}>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>

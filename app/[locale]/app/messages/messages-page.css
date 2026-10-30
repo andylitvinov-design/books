@@ -54,7 +54,7 @@
 /* Approved Messenger-style conversation UI is the entry view, not the older
    Orders/Clients shell. Orders remain an explicit separate view. */
 .hh-app.hh-messages-page .hh-messages-context-nav{
- display:flex;justify-content:flex-end;align-items:center;min-width:0;margin:0 0 8px;
+ display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;margin:0 0 8px;
 }
 .hh-app.hh-messages-page .hh-messages-context-link{
  display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;
