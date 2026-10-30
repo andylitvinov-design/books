@@ -8,7 +8,7 @@ import {getAppConfig} from '../lib/app/config.js'
 import {createRequestAuth} from '../lib/app/session.js'
 import {createAppRepository} from '../lib/app/repository.js'
 import {closeDatabase} from '../lib/app/database.js'
-import {B,SB,actor} from '../tests/helpers/app-db-setup.mjs'
+import {A,B,SB,actor,rawAs} from '../tests/helpers/app-db-setup.mjs'
 
 const origin='http://127.0.0.1:3187', config=getAppConfig(), db=new URL(config.databaseUrl)
 if(!config.test || !config.intelligenceMemoryEnabled || config.supabaseUrl!=='http://127.0.0.1:54329' ||
@@ -21,6 +21,8 @@ const ids={a:['10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-00
 const repo=createAppRepository(config), bActor=actor(B,SB)
 await repo.ensureAccount(bActor)
 await repo.onboarding(bActor,{adult:true,necessary:true,marketing:false,displayName:'Synthetic',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+// The database regression created an owner-A course and left it paused.
+await rawAs(actor(),'hh_app_backend',db=>db.query("update app_private.growth_courses set status='active' where account_id=$1",[A]))
 const challenges=new Map()
 const user=kind=>({id:ids[kind][0],aud:'authenticated',email:'synthetic@example.invalid',user_metadata:{}})
 const token=kind=>{const [sub,session_id]=ids[kind];return 'synthetic.'+Buffer.from(JSON.stringify({sub,session_id,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.signature'}
@@ -82,6 +84,15 @@ try {
     assert.equal(response.status,200);return response.json()
   }
   const offered=result=>[result.primary,...result.alternatives].filter(Boolean).map(row=>row.id)
+  const continueBody={requestId:randomUUID(),surface:'cabinet',intent:{language:'en',selectedTopics:['energy'],formats:['course']},courseSelection:'active_course',preflight:{immediateDanger:'no',selfHarmThoughts:'no'}}
+  for (const [cookies,headers,status] of [['',{},401],[a,{'x-hh-account-id':ids.b[0]},409]]) {
+    const denied=await fetch(`${origin}/api/app/intelligence/plan`,{method:'POST',headers:{origin,'content-type':'application/json',cookie:cookies,...headers},body:JSON.stringify(continueBody)})
+    assert.equal(denied.status,status)
+  }
+  const ownCourse=await plan(a,continueBody), otherCourse=await plan(b,continueBody)
+  assert.equal(ownCourse.primary?.href,'/en/app/course?view=courses')
+  assert.equal(otherCourse.status,'no_match')
+  assert.doesNotMatch(JSON.stringify(ownCourse),/accountId|courseId|concerns|results/)
   const unfiltered=await plan(a,planBody)
   assert.equal(offered(unfiltered).includes(input.itemId),true)
   const filtered=await plan(a,{...planBody,feedbackHistory:'avoid_not_useful'})
@@ -116,6 +127,31 @@ try {
     try {
       await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
       await context.route('https://www.youtube.com/**',route=>route.abort())
+      for (const [locale,width,topic,next,continueCourse,no,skip,start] of [
+        ['en',390,'energy','Continue','Continue my active course','No','Skip','Start'],
+        ['ru',320,'energy','Продолжить','Продолжить мой активный курс','Нет','Пропустить','Начать'],
+      ]) {
+        const coursePage=await context.newPage()
+        await coursePage.setViewportSize({width,height:844})
+        await coursePage.goto(`${origin}/${locale}/app/portfolio`,{waitUntil:'networkidle',timeout:60000})
+        await coursePage.locator('#hh-portrait-tab-recommendations').click()
+        const courseCard=coursePage.locator('[data-holistic-intelligence]')
+        await courseCard.locator('select').selectOption(topic)
+        await courseCard.getByRole('button',{name:next,exact:true}).click()
+        await courseCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
+        await courseCard.getByRole('button',{name:next,exact:true}).click()
+        await courseCard.getByRole('button',{name:continueCourse,exact:true}).click()
+        await courseCard.getByRole('button',{name:no,exact:true}).click()
+        await courseCard.getByRole('button',{name:no,exact:true}).click()
+        await courseCard.getByRole('button',{name:skip,exact:true}).click()
+        const link=courseCard.getByRole('link',{name:start,exact:true})
+        await link.waitFor({state:'visible'})
+        assert.equal(await link.getAttribute('href'),`/${locale}/app/course?view=courses`)
+        assert.equal(await coursePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+        const opened=coursePage.waitForEvent('popup');await link.click();const courses=await opened
+        await courses.waitForURL(`**/${locale}/app/course?view=courses`)
+        await courses.close();await coursePage.close()
+      }
       const page=await context.newPage()
       let saveRequests=0, saveFailure=null, pageErrors=0
       page.on('request',request=>{if(request.url().endsWith('/api/app/intelligence/feedback/save'))saveRequests++})
