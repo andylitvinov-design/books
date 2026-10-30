@@ -2286,12 +2286,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               key={track.id} data-audio-id={track.id} data-audio-kind={track.kind}>
               <button type="button" className={videoStyles.audioTrackSelect}
                 data-video-music={track.id} aria-pressed={!uploadedAudio&&music===track.id}
-                // WebKit touch scrolling can cancel the later synthesized click
-                // when its tile reflows. Pointer-up selects the preset; click
-                // remains the mouse/keyboard fallback. Selecting the same ID
-                // twice is idempotent and never auto-attaches to an export.
-                onPointerUp={event=>{
-                  if(event.pointerType==="touch"){setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}
+                // iPhone/WebKit can discard the synthetic click (and even
+                // pointer-up) when a focused search field loses focus and the
+                // tile scrolls/reflows. Commit the chosen ID at pointer-down;
+                // click remains the keyboard/assistive-tech fallback.
+                // This is idempotent and never attaches audio to an export.
+                onPointerDown={event=>{
+                  if(event.button!==0)return;
+                  setAudioAuto(false);chooseMusic(track.id as AmbientMusic);
                 }}
                 onClick={()=>{setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
                 <span className={videoStyles.audioTileGlyph} aria-hidden="true"/>
