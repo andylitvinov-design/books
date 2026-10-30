@@ -49,8 +49,16 @@
 .nativeLink:hover{background:#124439}
 .nativeLink:focus-visible{outline:3px solid #b99262;outline-offset:3px}
 .nativeTrust{margin:14px 0 0;font-size:12px;color:#775d46}
-.webSection{margin-top:24px}
+.webSection{margin-top:18px;padding:clamp(18px,4vw,28px);border:2px solid #a8d5c0;border-radius:24px;background:linear-gradient(145deg,#edf9f2,#fff);box-shadow:0 10px 28px #183e3210}
+.available{display:inline-flex;align-items:center;border-radius:999px;padding:5px 12px;margin:0 0 12px;color:#175a47;background:#d3efdf;font-size:12px;font-weight:800;letter-spacing:.01em}
 .webSection>p{margin:0 0 12px;color:#456457;font-size:14px;line-height:1.5}
 .webSection :global([data-hh-free-install]){margin-top:12px!important}
 @media(max-width:560px){.nativeGrid{grid-template-columns:1fr}.nativeSection{padding:18px 14px;border-radius:18px}.nativeCard{padding:17px 15px}.nativeLink{width:100%}}
 @media(max-width:350px){.nativeSection{padding:14px 10px}.nativeCard{padding:14px 12px}.nativeCard h3{font-size:18px}}
+
+/* Phone-first install: never bury the actual Safari instructions beneath unreleased native packages. */
+.wrap :global([data-hh-ios-quicksteps]){background:#f0f8f4;border:1px solid #badcc9;border-radius:15px;padding:13px 16px;margin:12px 0}
+.wrap :global([data-hh-ios-quicksteps] strong){display:block;font-size:15px;color:#173e38}
+.wrap :global([data-hh-ios-quicksteps] ol){margin:9px 0 0;padding-left:21px;display:grid;gap:8px;color:#284d40;font-size:14px;line-height:1.45}
+.wrap :global([data-hh-ios-quicksteps] li){padding-left:2px}
+@media(max-width:560px){.webSection{padding:18px 12px;border-radius:19px}.wrap :global([data-hh-ios-quicksteps]){padding:12px 12px}.webSection :global([data-hh-free-install]){margin-top:9px!important}}
