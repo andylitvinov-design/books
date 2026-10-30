@@ -6,7 +6,29 @@ import { reasonAcrossMeditations } from '../lib/holistic-support/client-reasonin
 const videos = JSON.parse(readFileSync(new URL('../data/academy/meditation-catalog-candidates-20261028.json', import.meta.url), 'utf8')).videos;
 // This ID is also in the existing English-guided-meditations source manifest.
 const sourceId = 'HqfixazXqRY';
-const base = { intent: { language: 'en', selectedTopics: ['energy'] }, safety: { status: 'clear' }, videos, publishedSourceIds: [sourceId] };
+const base = { intent: { language: 'en', selectedTopics: ['energy'] }, safety: { status: 'clear' }, videos, publishedSourceIds: [sourceId], includeSymbolic:true };
+
+test('symbolic practices need explicit interest and unknown approach fails closed', () => {
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false}).status,'no_match');
+  const original=videos.find(video=>video.youtube_id===sourceId);
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'unknown',techniques:[]}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:true,videos:[{...original,spiritual_style:'unknown',techniques:[]}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'open',techniques:['energy_symbolic']}]}).status,'no_match');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:false,videos:[{...original,spiritual_style:'secular',techniques:['breath']}]}).status,'recommend');
+  assert.equal(reasonAcrossMeditations({...base,includeSymbolic:true}).status,'recommend');
+});
+
+test('agent excludes unapproved external discovery candidates even when they are link-only', () => {
+  const original=videos.find(video=>video.youtube_id===sourceId);
+  const candidate={...original,source_kind:'external',metadata_confidence:'public_listing',
+    discovery_status:'link_only',editorial_status:'candidate',embed_status:'unverified',
+    rights_status:'pending_embed_check',metadata_checked_at:'2026-10-29',
+    youtube_oembed_checked_at:'2026-10-29',claims_risk:'low',content_type:'guided'};
+  assert.equal(reasonAcrossMeditations({...base,videos:[candidate],publishedSourceIds:[]}).status,'no_match');
+  const approved={...candidate,editorial_status:'approved',embed_status:'confirmed',
+    rights_status:'embed_approved',content_checked_at:'2026-10-29'};
+  assert.equal(reasonAcrossMeditations({...base,videos:[approved],publishedSourceIds:[]}).status,'recommend');
+});
 
 test('uses the actual meditation ranker and a published original as a real action', () => {
   const result = reasonAcrossMeditations(base);

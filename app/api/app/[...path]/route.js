@@ -588,7 +588,7 @@ async function handle(request, { params }) {
           loadTests: async locale => (await import('@/lib/holistic-support/intelligence-test-catalog')).buildIntelligenceTestCatalog(locale),
           loadServices: async locale => (await import('@/data/core-service-offers')).coreServiceOffers(locale),
           loadVideoHistory: async ids => (await import('@/lib/app/video-progress')).matchingMarkedVideoIds(config, actor, ids),
-          loadTestHistory: async () => (await import('@/lib/holistic-support/intelligence-result-history')).projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(actor),accountId:actor.id}),
+          loadTestHistory: async keys => (await import('@/lib/holistic-support/intelligence-result-history')).projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(actor,keys),accountId:actor.id}),
         }))
       } catch (error) {
         if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
