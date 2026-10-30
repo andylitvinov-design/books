@@ -1,5 +1,7 @@
 # Holistic House · Video Studio — ЕДИНАЯ программа и техническое задание v4.0
 
+**Google Docs — удобная копия для чтения:** https://docs.google.com/document/d/1890GgLvnVy0SC1eTdhLjQc2fU1G6izhwavM34wGJkKk/edit
+
 **Дата:** 30 октября 2026 · **Статус:** единая инженерная спецификация, проверенный аудит и последовательная программа выполнения для Codex. **Код из этого документа ещё не внедрён автоматически.**
 **Репозиторий:** andylitvinov-design/books · **Production:** codex/public-book-library (GitHub default codex/bootstrap-books — НЕ production) · **Сайт:** https://holistichouse.vercel.app · **Маршрут студии:** /{ru,en,es}/holistic-support/mandala.
 **Canonical tracking:** https://github.com/andylitvinov-design/books/issues/2397.
