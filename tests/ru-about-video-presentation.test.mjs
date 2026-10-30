@@ -60,3 +60,28 @@ test('RU About browser oracle preserves internal-only links and real keyboard/cl
   assert.ok(browser.includes("toHaveAttribute('src', `https://app.heygen.com/embeds/${videoId}`)"));
 });
 
+
+test('EN About browser oracle retains exact archived testimonials and the original intro', () => {
+  const browser = readFileSync(new URL('../scripts/verify-ru-about-video.mjs', import.meta.url), 'utf8');
+  const testimonials = readFileSync(new URL('../components/personal-testimonials.tsx', import.meta.url), 'utf8');
+  const archived = testimonials.match(/locallyArchivedVideoPosterIds = new Set\(\[([\s\S]*?)\]\)/);
+  const expected = browser.match(/const aboutTestimonialIds = \[([\s\S]*?)\];/);
+  assert.ok(archived, 'Actual About archived poster inventory must exist');
+  assert.ok(expected, 'Browser oracle must enumerate reviewed testimonial identities');
+  const ids = text => [...text.matchAll(/["']([A-Za-z0-9_-]{11})["']/g)].map(match => match[1]).sort();
+  assert.deepEqual(ids(expected[1]), ids(archived[1]));
+  assert.ok(ids(expected[1]).length > 0);
+  assert.match(page, /<PersonalTestimonials locale=\{typedLocale\} variant="about"/);
+  assert.match(testimonials, /presentedVideos\.filter\(\(item\) => locallyArchivedVideoPosterIds\.has\(item\.id\)\)/);
+  assert.match(testimonials, /minimal=\{isAbout\}/);
+  assert.ok(browser.includes("const englishIntro = page.locator('#psychic-alchemy-video')"));
+  assert.ok(browser.includes("await expect(englishIntro).toBeVisible()"));
+  assert.ok(browser.includes("await englishIntro.locator('.site-video-player--minimal').count(), 0"));
+  assert.ok(browser.includes('page.locator(\'[data-personal-testimonials="about"]\')'));
+  assert.ok(browser.includes("node.getAttribute('data-testimonial-video-id')"));
+  assert.ok(browser.includes("[...aboutTestimonialIds].sort()"));
+  assert.ok(browser.includes("await expect(card.locator('.site-video-player--minimal')).toHaveCount(1)"));
+  assert.ok(browser.includes("await expect(card.locator('.site-video-watch-link')).toHaveCount(0)"));
+  assert.doesNotMatch(browser, /\.about-video-grid/);
+});
+

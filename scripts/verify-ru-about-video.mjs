@@ -9,6 +9,12 @@ const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3200';
 const evidence = '/tmp/site-video-evidence';
 const videoId = 'd4e55c984e54b40fbeb8a21f81d27694';
+// Exact public About inventory: matching local archived posters, not the old 3-card grid.
+const aboutTestimonialIds = [
+  'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
+  '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
+  'VABgpmn4ZYA', 'muOnIHllI7E',
+];
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 mkdirSync(evidence, { recursive: true });
@@ -83,9 +89,22 @@ try {
       const page = await browser.newPage();
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
-      await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
-      assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+      const englishIntro = page.locator('#psychic-alchemy-video');
+      await expect(englishIntro).toBeVisible();
+      assert.equal(await englishIntro.locator('.site-video-player--minimal').count(), 0);
+      assert.equal(await page.locator('iframe').count(), 0, 'EN About remains click-gated');
+      const testimonials = page.locator('[data-personal-testimonials="about"]');
+      await expect(testimonials).toHaveCount(1);
+      const cards = testimonials.locator('[data-testimonial-video-id]');
+      await expect(cards).toHaveCount(aboutTestimonialIds.length);
+      assert.deepEqual((await cards.evaluateAll(nodes =>
+        nodes.map(node => node.getAttribute('data-testimonial-video-id')))).sort(),
+        [...aboutTestimonialIds].sort(), 'EN About retains the exact archived testimonial identities');
+      for (const id of aboutTestimonialIds) {
+        const card = testimonials.locator(`[data-testimonial-video-id="${id}"]`);
+        await expect(card.locator('.site-video-player--minimal')).toHaveCount(1);
+        await expect(card.locator('.site-video-watch-link')).toHaveCount(0);
+      }
       await page.close();
     } finally { await browser.close(); }
   }
@@ -93,4 +112,5 @@ try {
 } finally {
   if (app) app.kill('SIGTERM');
 }
+
 
