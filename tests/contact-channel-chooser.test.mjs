@@ -96,3 +96,21 @@ test("primary capture components render channel chooser after service selection 
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
 });
+
+test("Tantra Reiki one-chooser release covers five intents, private consent and blocked mobile messenger popups", () => {
+  const browser = read("scripts/verify-contact-channel-chooser-browser.mjs");
+  const choice = read("components/tantra-initiation-choice.tsx");
+  assert.match(browser, /async function verifyCompactTantra/);
+  assert.match(browser, /\["free", "personal", "session", "answers", "feedback"\]/);
+  assert.match(browser, /simulateBlockedPopup=false/);
+  assert.match(browser, /intent==="feedback"/);
+  assert.match(browser, /window\.open = \(\) => null/);
+  assert.match(browser, /request\.contactConsent, true/);
+  assert.match(browser, /request\.contact\.phone, "\+14165550123"/);
+  assert.match(browser, /assert\.equal\(await consent\.isChecked\(\), false/);
+  assert.match(browser, /submissions\.length, before \+ 1/);
+  assert.match(browser, /request\.sourcePath, "\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/);
+  assert.match(browser, /waDraft, tgDraft/);
+  assert.doesNotMatch(browser, /tantra-reiki\/free-initiation[^,\n]+min:5/);
+  assert.match(choice, /key=\{intent\}/);
+});

@@ -85,7 +85,7 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.ok(!request.website);
 }
 
-async function verifyCompactTantra(page, chooser, locale, name, submissions, selectedLabel) {
+async function verifyCompactTantra(page, chooser, locale, name, submissions, selectedLabel, simulateBlockedPopup=false) {
   const form = chooser.locator('form');
   await form.waitFor({state:"visible"});
   const phone = form.locator('input[type="tel"]');
@@ -100,10 +100,17 @@ async function verifyCompactTantra(page, chooser, locale, name, submissions, sel
   assert.equal(submissions.length, before, name + ": phone cannot bypass consent");
   await form.locator('[role="alert"]').waitFor({state:"visible"});
   await consent.check();
-  const [popup] = await Promise.all([
-    page.waitForEvent("popup", {timeout:10000}),
-    submit.click(),
-  ]);
+  // Safari may refuse popup creation; keep the same verified private CRM receipt.
+  let popup=null;
+  if (simulateBlockedPopup) {
+    await page.evaluate(() => { window.open = () => null; });
+    await submit.click();
+  } else {
+    [popup] = await Promise.all([
+      page.waitForEvent("popup", {timeout:10000}),
+      submit.click(),
+    ]);
+  }
   try {
     const wa = chooser.locator('a[data-contact-channel="whatsapp"]');
     const tg = chooser.locator('a[data-contact-channel="telegram"]');
@@ -115,7 +122,8 @@ async function verifyCompactTantra(page, chooser, locale, name, submissions, sel
     assert.equal(request.contact.phone, "+14165550123");
     assert.equal(request.contact.email, "");
     assert.match(request.operationId, /^[a-f0-9-]{36}$/i);
-    assert.ok(request.sourcePath.startsWith("/" + locale + "/"));
+    assert.equal(request.sourcePath, "/" + locale + "/academy/reiki/tantra-reiki/free-initiation",
+      name + ": compact consent request stays on the exact verified Reiki entry");
     assert.ok(request.serviceTitle && !request.website);
     assert.ok(request.description.includes(selectedLabel), name + ": selected request reaches the synthetic enquiry");
     const waDraft = draft(await wa.getAttribute("href"), "wa.me", "/14376066502");
@@ -132,7 +140,7 @@ async function verifyCompactTantra(page, chooser, locale, name, submissions, sel
     }
     results.push({name, locale, viewportWidth:page.viewportSize().width,
       channels:["WhatsApp","Telegram"], matchingDrafts:true, contactSubmitted:true, nonNavigating:true});
-  } finally { await popup.close().catch(() => {}); }
+  } finally { if (popup) await popup.close().catch(() => {}); }
 }
 
 async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
@@ -254,7 +262,8 @@ async function runEngine(name, engine) {
                 assert.equal(await select.inputValue(), intent, "Selected Tantra request is active");
                 const selectedLabel = await select.locator('option:checked').innerText();
                 await verifyCompactTantra(page,items.first(),locale,
-                  [name,locale,width,slug(item.path),intent].join("-"),submissions,selectedLabel);
+                  [name,locale,width,slug(item.path),intent].join("-"),submissions,selectedLabel,
+                  intent==="feedback");
               }
             } else {
               const indexes = count > 2 ? [0,count-1] : [0];
