@@ -82,6 +82,14 @@ on:
       # Real service/UI/auth/payment paths above still trigger the full suite.
       - '!scripts/verify-holistic-support-mock-fidelity.mjs'
       - '!tests/holistic-support-mobile-mock-parity.test.mjs'
+      # Video Studio creative/editor changes are independently covered by
+      # holistic-support-mandala.yml: exact-head Node/lint/tsc/Next build,
+      # RU/EN/ES Chromium+WebKit, real MediaRecorder output and audio rights.
+      # Do not duplicate unrelated Alchemy/checkout/browser test matrices for
+      # a change isolated to the Video Studio. Other public routes and support
+      # components still run the full Public Services suite.
+      - '!components/mandala-free-video-studio.tsx'
+      - '!components/mandala-video-mobile.module.css'
 permissions:
   contents: read
 concurrency:
@@ -113,7 +121,7 @@ jobs:
           node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
           npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
-          npx tsc --noEmit
+          # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       - name: Install Chromium and WebKit for isolated public acceptance

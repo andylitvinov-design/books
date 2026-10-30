@@ -146,7 +146,7 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
   }
 });
 
-test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+test('Video Studio-only changes run Mandala real-media QA, not unrelated Public Services E2E',()=>{
   const fromWorkflow=name=>{
     const source=workflow(name);
     const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
@@ -169,12 +169,13 @@ test('Director-only changes run Mandala media QA, not unrelated public services 
     'components/mandala-cinematic-director.tsx',
     'components/mandala-cinematic-director.module.css',
     'scripts/verify-holistic-mandala-browser.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
   for(const file of [
-    'components/mandala-free-video-studio.tsx',
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
     'scripts/verify-holistic-master-browser.mjs',
@@ -504,4 +505,38 @@ test('Reports Development Programme keeps its focused verification and separate 
   assert.match(reports, /node --conditions=react-server --test/);
   assert.match(reports, /npx --no-install eslint/);
   assert.doesNotMatch(reports,/continue-on-error:\s*true/);
+});
+
+ 
+test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()=>{
+  const guarded="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [file,step,contract] of [
+    ['dao-iching-library.yml','Build exact app (without Vercel paid preview)','tests/dao-hexagrams.test.mjs'],
+    ['admin-seo-dashboard.yml','Production build','tests/admin-seo-dashboard.test.mjs'],
+    ['compact-lead-capture-ci.yml','TypeScript and production build with unchanged payment gates','tests/compact-lead-channel-handoff.test.mjs'],
+  ]){
+    const source=workflow(file);
+    assert.ok(source.includes('- name: '+step+'\n        '+guarded+'\n'),file+' global build must be delegated to protected Core');
+    assert.ok(source.includes(contract),file+' original specialist contracts still mandatory');
+  }
+  const crm=workflow('hh-crm-source-check.yml');
+  assert.match(crm,/^  crm:\s*$/m);
+  assert.doesNotMatch(crm,/^  build:\s*$/m);
+  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
+  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
+  const app=workflow('hh-app-browser.yml');
+  assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
+  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
+  const voice=workflow('andrey-voice-free-contract.yml');
+  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
+  assert.match(voice,/^  redis-atomic:\s*$/m);
+  assert.ok(voice.includes('test_andrey_voice_local_engine.py'));
+  assert.ok(voice.includes('Independent Next.js production build'));
+  const perf=workflow('hh-public-performance-audit.yml');
+  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
+  assert.match(perf,/^  push:\s*$/m);
+  const services=workflow('hh-public-services-production.yml');
+  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  assert.ok(!services.includes('npx tsc --noEmit'));
 });

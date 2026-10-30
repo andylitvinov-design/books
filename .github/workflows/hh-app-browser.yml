@@ -136,11 +136,9 @@ jobs:
           path: artifacts/app-r1/
           retention-days: 7
   browser-journey-complete:
-    name: browser (${{ matrix.browser }})
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, webkit]
+    name: browser-journey-complete
+    # The matrix dependency aggregates all four Chromium/WebKit x core/extended jobs.
+    # A single fail-closed summary avoids two redundant runner allocations.
     needs: browser
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
