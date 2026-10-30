@@ -215,9 +215,19 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // The current About page intentionally shows ten approved locally
+  // archived reviews, not the old three-card subset. Keep exact positive
+  // evidence for the whole approved collection and zero eager embeds.
+  const aboutReviews=page.locator('[data-personal-testimonials="about"]')
+  await expect(aboutReviews).toBeVisible()
+  assert.equal(await aboutReviews.locator('[data-testimonial-video-id]').count(),10,
+    'About must retain all ten reviewed original video testimonials')
+  assert.equal(await aboutReviews.locator('.site-video-player').count(),10,
+    'all ten About testimonials expose the real lazy Play control')
+  assert.equal(await aboutReviews.locator('iframe').count(),0,
+    'About testimonial video embeds are lazy before click')
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
