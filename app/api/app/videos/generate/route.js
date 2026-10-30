@@ -4,7 +4,7 @@ import {createRequestAuth} from "@/lib/app/session";
 import {consumeRate} from "@/lib/app/database";
 import {PRIVATE_HEADERS,readBody,safeError} from "@/lib/app/http";
 import {AppError,onlyKeys} from "@/lib/assessments/contracts";
-import {videoAiEnabled,submitVideoAiJob,readVideoAiJob} from "@/lib/mandala/video-ai-openrouter.mjs";
+import {videoAiEnabled,submitVideoAiJob,readVideoAiJob} from "@/lib/mandala/video-ai-heygen.mjs";
 import {claimVideoCode,getVideoJob,markVideoJobSubmitted,markVideoJobUnknown,syncVideoJob}
   from "@/lib/mandala/video-ai-repository";
 
@@ -41,7 +41,8 @@ export async function POST(request){
       {headers:PRIVATE_HEADERS}));
     try{
       const provider=await submitVideoAiJob(body,{
-        key:process.env.HH_VIDEO_OPENROUTER_API_KEY,
+        key:process.env.HH_VIDEO_HEYGEN_API_KEY,
+        jobKey:claimed.jobId,
       });
       const updated=await markVideoJobSubmitted(config,actor,claimed.jobId,provider);
       return auth.apply(NextResponse.json(publicJob(updated),{headers:PRIVATE_HEADERS}));
@@ -71,7 +72,7 @@ export async function GET(request){
     let job=await getVideoJob(config,actor,id);
     if(["pending","in_progress"].includes(job.status)&&job.external_id){
       const provider=await readVideoAiJob(job.external_id,{
-        key:process.env.HH_VIDEO_OPENROUTER_API_KEY,
+        key:process.env.HH_VIDEO_HEYGEN_API_KEY,
       });
       if(provider.status!==job.status){
         job=await syncVideoJob(config,actor,job.id,provider.status);
