@@ -119,7 +119,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-pressed"),"true");
         assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true,
           "only free on-device video creation can start");
+        assert.match(await quick.locator("[data-video-price-summary]").innerText(),
+          /Free|Бесплатно|Gratis/,"free selected video has no fabricated credit cost");
         await quick.locator('[data-video-practice-pick="meditation"]').click();
+        assert.match(await quick.locator("[data-video-price-summary]").innerText(),/\$4\.90/,
+          "the user can inspect an uncharged draft price for meditation");
         assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true,
           "planned meditation pricing must not enable paid checkout");
         await quick.locator('[data-video-practice-pick="course"]').click();
