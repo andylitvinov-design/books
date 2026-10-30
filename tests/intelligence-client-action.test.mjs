@@ -50,3 +50,30 @@ test('an explicit suggestion request still uses the consented context', async ()
   assert.equal(reads,1)
   assert.equal(response.status,'recommend')
 })
+
+test('stop decisions do not read any private history or public catalog', async () => {
+  for (const clientAction of ['decline','change_goal']) {
+    const calls=[]
+    const loader=name=>async()=>{calls.push(name);throw new Error('unexpected read')}
+    const response=await planIntelligenceRequest({
+      requestId:body.requestId,surface:'cabinet',clientAction,
+      intent:{language:'en',formats:['video']},
+      profileFocus:'confirmed_coaching_topic',videoHistory:'avoid_marked',
+      feedbackHistory:'avoid_not_useful',preflight:body.preflight,
+    },{loadCoaching:loader('coaching'),loadCatalog:loader('catalog'),
+      loadVideoHistory:loader('videoHistory'),loadFeedback:loader('feedback')})
+    assert.deepEqual(calls,[])
+    assert.equal(response.status,clientAction==='decline'?'no_match':'clarify')
+    assert.equal(response.primary,undefined)
+  }
+})
+
+test('missing preflight remains fail closed before stop decisions', async () => {
+  for(const clientAction of ['decline','change_goal']) {
+    let reads=0
+    const response=await planIntelligenceRequest({...body,clientAction,preflight:undefined},
+      {loadDevelopmentPlan:async()=>{reads++;return {courseId:'stress'}}})
+    assert.equal(response.status,'unavailable')
+    assert.equal(reads,0)
+  }
+})
