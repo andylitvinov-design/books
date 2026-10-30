@@ -268,3 +268,25 @@ test('approved removed YAML still requires unchanged successful successor covera
     expected:expectedWorkflows({base:withUnexpected,current,changed:[old,unexpected]})}),/UNAPPROVED_WORKFLOW_DELETION/);
 });
 
+test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
+  const services='.github/workflows/hh-public-services-production.yml';
+  const mandala='.github/workflows/holistic-support-mandala.yml';
+  const publicTrigger=parsePrTrigger(readFileSync(services,'utf8'),services);
+  const mandalaTrigger=parsePrTrigger(readFileSync(mandala,'utf8'),mandala);
+  const videoOnly=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-cinematic-director.tsx',
+    'components/mandala-cinematic-director.module.css',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+  ];
+  assert.equal(matchesTrigger(publicTrigger,videoOnly),false,
+    'Public Services must not spend 20 minutes on pure Video Studio changes');
+  assert.equal(matchesTrigger(mandalaTrigger,videoOnly),true,
+    'Real media browser acceptance is required for video changes');
+  assert.equal(matchesTrigger(publicTrigger,['components/holistic-support-mobile.tsx']),true,
+    'actual support/service features still require Public Services');
+  assert.equal(matchesTrigger(publicTrigger,['components/mandala-free-video-studio.tsx','components/holistic-support-mobile.tsx']),true,
+    'mixed public-service changes never evade the service gate');
+});

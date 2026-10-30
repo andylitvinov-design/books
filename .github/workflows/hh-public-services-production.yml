@@ -82,6 +82,14 @@ on:
       # Real service/UI/auth/payment paths above still trigger the full suite.
       - '!scripts/verify-holistic-support-mock-fidelity.mjs'
       - '!tests/holistic-support-mobile-mock-parity.test.mjs'
+      # Video Studio creative/editor changes are independently covered by
+      # holistic-support-mandala.yml: exact-head Node/lint/tsc/Next build,
+      # RU/EN/ES Chromium+WebKit, real MediaRecorder output and audio rights.
+      # Do not duplicate unrelated Alchemy/checkout/browser test matrices for
+      # a change isolated to the Video Studio. Other public routes and support
+      # components still run the full Public Services suite.
+      - '!components/mandala-free-video-studio.tsx'
+      - '!components/mandala-video-mobile.module.css'
 permissions:
   contents: read
 concurrency:

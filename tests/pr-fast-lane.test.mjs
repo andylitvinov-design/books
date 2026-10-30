@@ -146,7 +146,7 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
   }
 });
 
-test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+test('Video Studio-only changes run Mandala real-media QA, not unrelated Public Services E2E',()=>{
   const fromWorkflow=name=>{
     const source=workflow(name);
     const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
@@ -169,12 +169,13 @@ test('Director-only changes run Mandala media QA, not unrelated public services 
     'components/mandala-cinematic-director.tsx',
     'components/mandala-cinematic-director.module.css',
     'scripts/verify-holistic-mandala-browser.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
   for(const file of [
-    'components/mandala-free-video-studio.tsx',
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
     'scripts/verify-holistic-master-browser.mjs',
