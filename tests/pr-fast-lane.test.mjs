@@ -268,6 +268,40 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
 
+// Exact single-purpose exclusions are safe only with positive installer coverage.
+// Test the same ordered Node glob semantics as the trusted release aggregator.
+test('public installer changes use their dedicated real mobile gate, not unrelated public-services E2E',()=>{
+  const patterns=name=>{
+    const s=workflow(name);
+    const pr=s.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
+    return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(x=>x[1]);
+  };
+  const covered=(pats,file)=>{
+    let matched=false;
+    for(const pattern of pats){
+      const neg=pattern.startsWith('!');
+      if(requireGlob(file,neg?pattern.slice(1):pattern))matched=!neg;
+    }
+    return matched;
+  };
+  const services=patterns('hh-public-services-production.yml');
+  const installer=patterns('holistic-house-mobile-install.yml');
+  for(const file of ['tests/holistic-house-free-install.test.mjs','tests/holistic-house-native-public-downloads.test.mjs']){
+    assert.equal(covered(services,file),false,file+' must not launch the unrelated 20-minute Alchemy/Reiki suite');
+    assert.equal(covered(installer,file),true,file+' MUST retain real PWA/browser/manifest checks');
+  }
+  for(const file of [
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'tests/holistic-support-meditations.test.mjs',
+    'tests/holistic-talisman-mobile-categories.test.mjs',
+    'components/holistic-support-mobile.tsx',
+    'app/ru/services/alchemy-of-soul/page.tsx',
+    'app/es/business/consultation/page.tsx',
+    'scripts/verify-holistic-master-browser.mjs',
+    'tests/practitioner-remote-energy-support.test.mjs'
+  ])assert.equal(covered(services,file),true,file+' must still run public services acceptance');
+});
+
 test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const core = workflow('hh-pr-core-release.yml');
