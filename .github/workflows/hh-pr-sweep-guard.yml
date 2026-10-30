@@ -4,8 +4,17 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/ci/pr-sweep-guard.mjs'
+      - 'lib/ci/specialist-aggregate.mjs'
+      - 'scripts/ci-specialist-aggregate.mjs'
+      - 'tests/ci-specialist-aggregate.test.mjs'
+      - '.github/workflows/hh-pr-core-release.yml'
       - 'scripts/pr-sweep-guard.mjs'
       - 'tests/pr-sweep-guard.test.mjs'
+      - 'tests/ci-heavy-draft-policy.test.mjs'
+      - '.github/workflows/assessment-range-mobile-browser.yml'
+      - '.github/workflows/hh-benchmark-public-browser.yml'
+      - '.github/workflows/hh-home-conversation.yml'
+      - '.github/workflows/site-video-browser.yml'
       - '.github/workflows/hh-pr-sweep-guard.yml'
   workflow_dispatch:
 permissions:
@@ -24,4 +33,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/pr-sweep-guard.test.mjs
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs
