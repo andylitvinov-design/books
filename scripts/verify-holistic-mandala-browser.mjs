@@ -80,6 +80,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await appHeader.waitFor({state:"visible"});
         const promo=page.locator("[data-video-diagnostic-banner]");
         assert.equal(await promo.isVisible(),false,"native mobile editor has no intrusive promo banner");
+        assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
+          "the sitewide marketing ribbon must not occupy the native Video Studio viewport");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
         const headerTop=await appHeader.boundingBox();
