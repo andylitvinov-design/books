@@ -111,6 +111,14 @@ export function buildHolisticIntelligencePlan(input?: IntelligenceInput): Intell
 export { consultPsychologistMind, buildPsychologyProgram, buildPsychologyDialogueTurn,
   PSYCHOLOGIST_MIND_VERSION, PSYCHOLOGIST_APPROACHES, PSYCHOLOGIST_METHODS,
   PSYCHOLOGIST_FOCI } from "./psychologist-mind.mjs";
+export { PSYCHOLOGY_VIDEO_COURSES, PSYCHOLOGY_VIDEO_SKILLS,
+  COURSE_EVIDENCE_REFERENCES, listPsychologyVideoCourseOptions,
+  selectPsychologyVideoCourse } from "./psychologist-video-curricula.mjs";
+export { KIP_MOTIFS, KIP_SYMBOLS, KIP_REFERENCE_SOURCES,
+  listKipMotifs, exploreKipSymbol } from "./kip-symbol-registry.mjs";
+export { PERSONAL_MEDITATION_VERSION } from
+  "./psychologist-meditation-composer.mjs";
 export type { PsychologistLocale, PsychologistFocus, PsychologyInput,
   PsychologyProgram, PsychologyDialogueInput, PsychologyDialogueTurn,
-  PsychologistStatus } from "./psychologist-mind.mjs";
+  PsychologistStatus, PsychologyVideoCourseDraft, PsychologyVideoLesson,
+  PsychologyMeditationDraft, PsychologyMeditationSegment } from "./psychologist-mind.mjs";

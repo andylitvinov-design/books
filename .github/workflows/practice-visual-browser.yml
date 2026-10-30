@@ -1,6 +1,7 @@
 name: Practice reference design — Chromium and WebKit screenshots
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.agents/skills/visual-to-code-pro/**'
@@ -36,10 +37,15 @@ on:
       - 'scripts/verify-practice-visual-browser.mjs'
       - 'scripts/compare-ui-screenshots.mjs'
       - '.github/workflows/practice-visual-browser.yml'
+concurrency:
+  group: hh-practice-visual-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 jobs:
   practice-visual-parity:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 24
     env:
@@ -74,7 +80,7 @@ jobs:
           npx next dev --hostname 127.0.0.1 --port 3119 > /tmp/hh-practice-visual-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 120); do
+          for ((i=1; i<=120; i++)); do
             if curl --silent --fail http://127.0.0.1:3119/ru/practice > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-practice-visual-next.log; exit 1; fi
             sleep 2

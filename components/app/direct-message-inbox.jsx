@@ -7,6 +7,7 @@ import {directMediaSpec,directMediaMime,DIRECT_MEDIA_PROXY_MAX_BYTES} from '@/li
 import styles from './direct-message-inbox.module.css'
 import PrivateChatPhoto from './private-chat-photo'
 import DirectVoiceRecorder from './direct-voice-recorder'
+import MessengerSignIn from './messenger-sign-in'
 import {ClientExpressReportNotices} from './practice-express-reports'
 
 const COPY={
@@ -26,7 +27,7 @@ const COPY={
     localeLabel:'Audio language',rights:'I confirm I have the right to publish this recording.',
     apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',error:'Could not complete the action.',
     noPublish:'Audio is private unless its sender explicitly authorizes publication.',
-    older:'Load earlier messages',olderBusy:'Loading earlier messages…',retry:'Try again',
+    older:'Load earlier messages',olderBusy:'Loading earlier messages…',retry:'Try again',findMaster:'Find a practitioner',
   },
   ru:{
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
@@ -44,7 +45,7 @@ const COPY={
     localeLabel:'Язык аудио',rights:'Подтверждаю право публичного размещения этой записи.',
     apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',error:'Не удалось выполнить действие.',
     noPublish:'Аудио остаётся приватным без отдельного разрешения отправителя.',
-    older:'Показать более ранние сообщения',olderBusy:'Загружаем историю…',retry:'Повторить',
+    older:'Показать более ранние сообщения',olderBusy:'Загружаем историю…',retry:'Повторить',findMaster:'Найти мастера',
   },
   es:{
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
@@ -62,7 +63,7 @@ const COPY={
     localeLabel:'Idioma del audio',rights:'Confirmo que tengo derecho a publicar la grabación.',
     apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',error:'No se pudo completar la acción.',
     noPublish:'El audio es privado sin autorización expresa del remitente.',
-    older:'Cargar mensajes anteriores',olderBusy:'Cargando mensajes…',retry:'Reintentar',
+    older:'Cargar mensajes anteriores',olderBusy:'Cargando mensajes…',retry:'Reintentar',findMaster:'Buscar profesional',
   }
 }
 const URL='/api/app/direct-messages'
@@ -106,7 +107,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
     [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
-  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const shellRef=useRef(null),uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
   const [showNotices,setShowNotices]=useState(false)
   const [olderBusy,setOlderBusy]=useState(false)
   const [audioPreview,setAudioPreview]=useState('')
@@ -162,6 +163,38 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     }
   }
   openThreadRef.current=openThread
+  // A phone app must recover fresh replies when reopened from the Home Screen.
+  // Refresh only while visible/online, at a bounded interval. Never store
+  // conversations in offline caches, or poll in a backgrounded PWA.
+  useEffect(()=>{
+    if(!accountId||signedOut)return
+    let disposed=false,inFlight=false,last=0
+    const refresh=async()=>{
+      if(disposed||inFlight||shellRef.current?.closest('[hidden]')||document.visibilityState!=='visible'||
+        navigator.onLine===false||busy||recording||Date.now()-last<15000)return
+      last=Date.now();inFlight=true
+      try{
+        const next=await getThreads()
+        if(!disposed&&next.accountId===accountId&&activeId)
+          await openThreadRef.current?.(activeId)
+      }catch(e){
+        if(!disposed&&e?.message==='ACCOUNT_CHANGED')setError('ACCOUNT_CHANGED')
+      }finally{inFlight=false}
+    }
+    const focus=()=>{void refresh()}
+    const visible=()=>{if(document.visibilityState==='visible')focus()}
+    window.addEventListener('focus',focus)
+    window.addEventListener('online',focus)
+    document.addEventListener('visibilitychange',visible)
+    const timer=window.setInterval(focus,45000)
+    return()=>{
+      disposed=true
+      window.clearInterval(timer)
+      window.removeEventListener('focus',focus)
+      window.removeEventListener('online',focus)
+      document.removeEventListener('visibilitychange',visible)
+    }
+  },[accountId,activeId,busy,recording,signedOut,getThreads])
   useEffect(()=>{
     if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
       void openThreadRef.current?.(initialThreadId)
@@ -277,7 +310,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(directMediaMime(file))
-  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
+  return <section ref={shellRef} className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
     data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
     {!simpleDetail&&<header className={styles.head}>
       {!compact&&<div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>}
@@ -292,7 +325,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
         }}><RefreshCw size={17} aria-hidden="true"/>{!compact&&t.load}</button>
       </div>
     </header>}
-    {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
+    {signedOut?<p role="alert" className={styles.notice}>
+      {embedded?t.signIn:<MessengerSignIn locale={locale} recipientSlug={destination} label={t.signIn}/>}
+    </p>:null}
     {!simpleDetail&&accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
       <ClientExpressReportNotices locale={locale} accountId={accountId}/>
     </div>}
@@ -302,7 +337,10 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
       <button type="button" disabled={busy||!accountId} onClick={start}>{t.newWith}: {destination}</button>
     </div>}
     {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
-    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{ownerCrmAvailable?t.ownerEmpty:t.empty}</p>}
+    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>
+      {ownerCrmAvailable?t.ownerEmpty:t.empty}{' '}
+      <a href={'/'+locale+'/masters'}>{t.findMaster} →</a>
+    </p>}
     {accountId&&(threads.length>0||destination)&&<div className={styles.layout} data-chat-open={Boolean(current)}>
       {!simpleDetail&&<aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>

@@ -174,5 +174,10 @@ test("client integration is opt-in, local only, responsive, and reused from comp
  assert.match(myTests,/<PersonalAxisMatches measurements=\{axisModel\?\.measurements \|\| \[\]\}/);
  assert.match(portrait,/<PersonalAxisMatches measurements=\{model\.measurements\}/);
  assert.match(read("lib/profile/portrait-recommendations.js"),/definitionVersion: value.definitionVersion/);
- assert.ok(!ui.includes("localStorage") && !ui.includes("fetch(") && !ui.includes("analytics"));
+ // One fixed public GET fetch checks only released Reiki audio slots. It must
+ // not send profile values, private test scores, or client IDs.
+ assert.ok(!ui.includes("localStorage") && !ui.includes("analytics"));
+ assert.match(ui,/fetch\("\/api\/reiki-intro-audio\?lesson="/);
+ assert.match(ui,/credentials:"omit"/);
+ assert.doesNotMatch(ui,/fetch\([^\n]*measurements|fetch\([^\n]*rawValue|fetch\([^\n]*goalRatings/);
 });

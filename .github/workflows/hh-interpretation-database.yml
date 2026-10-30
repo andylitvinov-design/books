@@ -2,6 +2,25 @@ name: Holistic House interpretation registry database verification
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'tests/helpers/interpretation-db-isolation.mjs'
+      - 'tests/helpers/trauma-context-fixtures.mjs'
+      - 'tests/helpers/legacy-source-fingerprint.mjs'
+      - 'tests/helpers/historical-interpretation-coverage.mjs'
+      - 'scripts/compact-interpretation-sql.mjs'
+      - 'docs/assessments/interpretation-registry-readback.sql'
+      - 'app/api/app/**'
+      - 'app/api/assessments/**'
+      - 'lib/assessments/**'
+      - 'lib/app/**'
+      - 'lib/interpretation/**'
+      - 'data/assessments/**'
+      - 'tests/interpretation-*.mjs'
+      - 'tests/assessment-interpretation*.mjs'
+      - 'scripts/verify-interpretation*.mjs'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 concurrency:
