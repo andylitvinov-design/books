@@ -910,7 +910,7 @@ const formatPracticeCopy = {
       course:["8 разных практик","Упражнения и прогресс"],
     },
     quality:{basic:"Базовое",smart:"Smart",pro:"Pro"},
-    free:"Бесплатно",noQuote:"По расчёту",draft:"План",sample:"Посмотреть пример видеоряда",
+    free:"Бесплатно",noQuote:"По расчёту",draft:"План",total:"Итоговая стоимость",noCredits:"Без списания кредитов",sample:"Посмотреть пример видеоряда",
     note:"Стоимость платных форматов предварительная. Оплата и платная генерация пока не подключены.",
     pending:"Пока недоступно",
   },
@@ -924,7 +924,7 @@ const formatPracticeCopy = {
       course:["8 different practices","Exercises and progress"],
     },
     quality:{basic:"Basic",smart:"Smart",pro:"Pro"},
-    free:"Free",noQuote:"Quote needed",draft:"Planned",sample:"Watch visual sample",
+    free:"Free",noQuote:"Quote needed",draft:"Planned",total:"Estimated total",noCredits:"No credits charged",sample:"Watch visual sample",
     note:"Paid prices are proposals only. Paid checkout and AI rendering are not enabled yet.",
     pending:"Not available yet",
   },
@@ -938,7 +938,7 @@ const formatPracticeCopy = {
       course:["8 prácticas distintas","Ejercicios y progreso"],
     },
     quality:{basic:"Básico",smart:"Smart",pro:"Pro"},
-    free:"Gratis",noQuote:"Por calcular",draft:"Previsto",sample:"Ver ejemplo visual",
+    free:"Gratis",noQuote:"Por calcular",draft:"Previsto",total:"Total estimado",noCredits:"Sin gastar créditos",sample:"Ver ejemplo visual",
     note:"Los precios de pago son propuestas. El cobro y la generación IA no están activos.",
     pending:"Aún no disponible",
   },
@@ -998,6 +998,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   });
   const [playingPracticeExample,setPlayingPracticeExample] = useState<FormatPractice|null>(null);
   const freeVideoSelected = practiceType==="video" && practiceLevels.video==="basic";
+  const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -1992,11 +1993,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
-        <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-          disabled={recording||preparing||!freeVideoSelected} onClick={createQuickVideo}>
-          {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-          {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
-        </button>
+        <div className={videoStyles.quickOrderBar} data-video-order-bar>
+          <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
+            <small>{practiceCopy.total}</small>
+            <strong>{selectedDraftPrice===null?practiceCopy.noQuote:
+              selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
+            <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
+              {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
+          </div>
+          <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
+            disabled={recording||preparing||!freeVideoSelected} onClick={createQuickVideo}>
+            {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
+            {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
+          </button>
+        </div>
         {recording?<div className={videoStyles.quickProgress} role="progressbar"
           aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <span style={{width:progress+"%"}}/></div>:null}
