@@ -24,7 +24,7 @@ const copy={
    intro:"Опишите цель — предложим готовый сюжет без десятков фильтров.",
    placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
    suggest:"Предложить сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
-   duration:"Длительность",variants:"Другой сюжет",edit:"Изменить детали (необязательно)",
+   duration:"Длительность",variants:"Другой сюжет",topic:"Направление",edit:"Изменить детали (необязательно)",
    stages:["Начало","Погружение","Развитие","Завершение"],
    source:"4 настоящих MP4 · 16:9 · бесплатный монтаж",
    accept:"Подтвердить этот сценарий",applied:"Сценарий выбран — нажмите «Создать видео».",
@@ -38,7 +38,7 @@ const copy={
    intro:"Describe your goal — get a ready-to-assemble film, not dozens of filters.",
    placeholder:"For example: I want less anxiety and more calm",
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
-   duration:"Duration",variants:"Different story",edit:"Adjust details (optional)",
+   duration:"Duration",variants:"Different story",topic:"Topic",edit:"Adjust details (optional)",
    stages:["Opening","Arriving","Exploring","Closing"],
    source:"4 genuine MP4 clips · 16:9 · free compilation",
    accept:"Confirm this story",applied:"Story selected — choose Create video.",
@@ -52,7 +52,7 @@ const copy={
    intro:"Describe tu objetivo: proponemos un montaje listo, sin decenas de filtros.",
    placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
-   duration:"Duración",variants:"Otra historia",edit:"Ajustar detalles (opcional)",
+   duration:"Duración",variants:"Otra historia",topic:"Tema",edit:"Ajustar detalles (opcional)",
    stages:["Inicio","Llegada","Desarrollo","Cierre"],
    source:"4 clips MP4 reales · 16:9 · montaje gratuito",
    accept:"Confirmar esta historia",applied:"Historia elegida; pulsa Crear vídeo.",
@@ -63,6 +63,12 @@ const copy={
  }
 } as const;
 const allowedDurations=[10,20,30,60] as const;
+const allThemes=["energy","money","relationships","goals","life","health"] as const;
+const themeLabels={
+ ru:{energy:"Энергия",money:"Работа и деньги",relationships:"Отношения",goals:"Уверенность",life:"Развитие",health:"Спокойствие"},
+ en:{energy:"Energy",money:"Work and money",relationships:"Relationships",goals:"Confidence",life:"Growth",health:"Calm"},
+ es:{energy:"Energía",money:"Trabajo y dinero",relationships:"Relaciones",goals:"Confianza",life:"Desarrollo",health:"Calma"},
+} as const;
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,presets,disabled,activePresetId,clipLabel,onGoalChange,onApply
@@ -71,10 +77,12 @@ export function MandalaAutoVideoDirector({
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|20|30|60|null>(null);
+ const [correctedTheme,setCorrectedTheme]=useState<VideoTheme|null>(null);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const length=seconds||proposal?.durationSeconds||30;
  const choose=()=>{
-   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets}));
+   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,
+     preferredTheme:correctedTheme}));
    setOverrideId(null);setSeconds(null);
  };
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
@@ -87,7 +95,7 @@ export function MandalaAutoVideoDirector({
          maxLength={160} disabled={disabled} placeholder={t.placeholder}
          onChange={event=>{
            onGoalChange(event.currentTarget.value);
-           setProposal(null);setOverrideId(null);setSeconds(null);
+           setProposal(null);setOverrideId(null);setSeconds(null);setCorrectedTheme(null);
          }}/>
      </label>
      <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
@@ -97,7 +105,7 @@ export function MandalaAutoVideoDirector({
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
        <p className={css.meta}>{length} s · {t.source}</p>
-       {proposal.confidence==="low"?<p className={css.warning}>{t.uncertain}</p>:null}
+       {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
        <ol className={css.shots} data-auto-video-storyboard>
          {chosen.clips.map((clip,index)=><li key={clip}>
@@ -106,6 +114,15 @@ export function MandalaAutoVideoDirector({
        </ol>
        <details className={css.details} data-auto-video-adjust>
          <summary>{t.edit}</summary>
+         <div className={css.adjust}><span>{t.topic}:</span>
+           {allThemes.map(value=><button type="button" key={value} disabled={disabled}
+             aria-pressed={proposal.theme===value}
+             onClick={()=>{
+               setCorrectedTheme(value);setOverrideId(null);
+               setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,
+                 preferredTheme:value}));
+             }}>{themeLabels[locale][value]}</button>)}
+         </div>
          <div className={css.adjust}><span>{t.duration}:</span>
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
              aria-pressed={length===n} onClick={()=>setSeconds(n)}>{n} s</button>)}
