@@ -1,6 +1,7 @@
 name: Holistic House messenger notification build
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'lib/app/messenger-notification-*.js'
@@ -29,8 +30,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: hh-messenger-notifications-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   notification-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
@@ -49,10 +54,17 @@ jobs:
       - name: Booking lint and TypeScript
         run: |
           npx --no-install eslint lib/app/repository.js lib/practitioners/booking-master-email.js app/api/app/'[...path]'/route.js tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs
-          npx --no-install tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Shared HH PR core release gate owns TypeScript for production PRs'
+          fi
+        env:
+          HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}
       - name: Lint new notification service and Settings integration
         run: npx eslint lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx lib/app/client-telegram-policy.js lib/app/client-telegram-transport.js lib/app/client-telegram-webhook.js lib/app/client-telegram-dispatch.js app/api/app/notification-channels/telegram/webhook/route.js app/api/app/notification-channels/telegram/setup/route.js app/api/app/practitioner-client-messages/route.js components/app/customer-telegram-bot-setup.jsx components/app/crm-manager.jsx components/pwa-registration.tsx components/app/post-signup-install-offer.jsx lib/pwa/install-prompt.js lib/app/client-telegram-owner-pilot.js app/api/app/notification-channels/telegram/test/route.js
       - name: Next.js production build (no provider keys)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'

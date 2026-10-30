@@ -13,7 +13,11 @@ import css from "./mandala-guided-course.module.css";
 type Evidence = {axis:string;sourceTitle:string;measuredAt:string;definitionKey:string;percent:number};
 type Session = {id:string;number:number;theme:VideoTheme;videoTheme:VideoTheme;videoScene:string;title:string;motif:string;scenes:string[];script:string;videoDurationSeconds:number};
 type Status = "idle"|"loading"|"ready"|"empty"|"signin"|"error";
+export type GuidedMeditationFocus = {
+  difficulty:string;goal:string;goals:VideoTheme[];details:string[];
+};
 type Props = {
+  onContextChange?: (focus:GuidedMeditationFocus)=>void;
   locale:PublicLocale; theme:VideoTheme; selfRatings:Partial<Record<VideoTheme,number>>;
   disabled:boolean; onApplyFreeVideo:(session:Session)=>void;
 };
@@ -104,7 +108,7 @@ const copy = {
   }
 } as const;
 
-export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo}:Props) {
+export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange}:Props) {
   const t = copy[locale];
   const [goals,setGoals] = useState<VideoTheme[]>([]);
   const [goalsOpen,setGoalsOpen] = useState(false);
@@ -119,6 +123,12 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
   const actualGoals = goals.length ? goals : [theme];
+  // Only the visitor's explicit, on-device focus is shared with the
+  // meditation composer. Never forward private test scores or raw answers.
+  useEffect(()=>{
+    onContextChange?.({difficulty:keyDifficulty,goal:keyGoal,goals,
+      details:detailGoals.flatMap(id=>affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label))});
+  },[onContextChange,keyDifficulty,keyGoal,goals,detailGoals,locale]);
   const plan = useMemo(()=>buildPersonalImageryCourse({
     locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal,
     detailGoals:detailGoals.flatMap(id=>affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label))
