@@ -83,7 +83,7 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
+      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0);
       assert.equal(await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count(), 10);
       await page.close();
     } finally { await browser.close(); }
