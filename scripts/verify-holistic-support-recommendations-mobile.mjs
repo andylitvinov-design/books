@@ -180,7 +180,12 @@ for (const engine of [chromium, webkit]) {
 
           await root.locator('[data-support-tool="masters"]').click();
           const masterViewer = root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]');
-          await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          try { await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000}); }
+          catch (error) {
+            console.error(JSON.stringify({phase:"synthetic-master-directory",locale,width,
+              text:(await masterViewer.innerText()).slice(0,500),errors}));
+            throw error;
+          }
           assert.equal(await masterViewer.locator('[data-support-master-thumb]').count(),2,
             label + " published fixture masters selectable under large profile");
           await masterViewer.locator('[data-support-master-thumb="qa-energy-two"]').click();

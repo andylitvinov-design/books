@@ -193,7 +193,7 @@ async function runEngine(name, engine) {
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
             if (item.path.endsWith("/tantra-reiki/free-initiation")) {
               assert.equal(count, 1, "One chooser serves all Tantra request types");
-              const select = page.locator('[data-tantra-whatsapp-capture] select');
+              const select = page.locator('[data-tantra-whatsapp-capture] #tantra-request-' + locale);
               const intents = await select.locator('option').evaluateAll(nodes => nodes.map(node => node.value));
               assert.deepEqual(intents, ["free", "personal", "session", "answers", "feedback"],
                 "All original request types remain available through one chooser");
