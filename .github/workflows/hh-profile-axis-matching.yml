@@ -18,6 +18,7 @@ on:
       - 'components/app/my-tests-dashboard.jsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'tests/axis-offer-matcher.test.mjs'
+      - 'tests/account-picker-disclosure-verifier.test.mjs'
       - 'docs/myspace/PROFILE_AXIS_OFFER_MATCHING_V1_20261028.md'
       - 'lib/holistic-support/client-reasoning-core.mjs'
       - 'lib/holistic-support/client-reasoning-bridge.mjs'
@@ -75,6 +76,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
         run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/axis-offer-ranker.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs
+      - name: Real private account picker disclosure, original draft retention and negative controls
+        run: node --test tests/account-picker-disclosure-verifier.test.mjs
       - name: Portrait four-sector, missing-value, responsive and privacy contracts
         run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
