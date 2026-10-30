@@ -78,6 +78,7 @@ test("public guide remains discoverable from three homepages without forcing a s
     assert.ok(more.includes(text), "Missing visible guide link in home locale: " + text);
   assert.match(more, /href=\{"\/" \+ locale \+ "\/tests"\}/);
   assert.match(more, /data-home-test-guide/);
-  assert.match(carousel, /path: "\/client\/tests"/);
+  // Current published carousel uses href, not the retired path field.
+  assert.match(carousel, /\{ key: "tests", href: "\/client\/tests"/);
   assert.doesNotMatch(more, /onClick=\{.*signIn|auth\/start/);
 });
