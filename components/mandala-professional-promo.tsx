@@ -12,7 +12,7 @@ import css from "./mandala-professional-promo.module.css";
 
 type ChoiceKey = "format" | "role" | "topic" | "action" | "displayName";
 type FormState = Record<ChoiceKey, string>;
-type PromoDraft = ReturnType<typeof buildProfessionalPromo>;
+type PromoDraft = { headline: string; voiceScript: string; presetId: string; beats: {label: string; script: string}[] };
 type Props = {
   locale: PublicLocale;
   disabled: boolean;
@@ -73,7 +73,10 @@ const COPY = {
 
 export function MandalaProfessionalPromo({ locale, disabled, onApply, onOpenAudio }: Props) {
   const t = COPY[locale];
-  const options = professionalPromoLabels(locale);
+  const options = professionalPromoLabels(locale) as {
+    formats: Record<string,string>; roles: Record<string,string>;
+    topics: Record<string,string>; actions: Record<string,string>;
+  };
   const [form, setForm] = useState<FormState>({
     format: "introduction", role: "psychologist", topic: "reflection",
     action: "details", displayName: "",
