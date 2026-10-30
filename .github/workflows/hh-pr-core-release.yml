@@ -1,0 +1,186 @@
+name: HH PR core release gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: ['codex/public-book-library']
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  scope:
+    name: classify-change
+    # Draft PRs avoid full checkout; original full code is required after ready_for_review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+      ci_only: ${{ steps.diff.outputs.ci_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify strictly documentation-only PRs
+        id: diff
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          docs_only=false
+          ci_only=false
+          if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+            git diff --no-renames --name-only -z "$BASE_SHA" HEAD > /tmp/hh-pr-changed-files.z
+            docs_only=true
+            ci_only=true
+            count=0
+            while IFS= read -r -d '' f; do
+              [[ -z "$f" ]] && continue
+              count=$((count + 1))
+              case "$f" in
+                docs/*.md|README.md) ;;
+                *) docs_only=false ;;
+              esac
+              # CI-only allowlist is exact, never includes application, SQL,
+              # dependency manifests, auth, billing, RLS or provider code.
+              case "$f" in
+                  .github/workflows/*.yml|\
+                  .github/workflows/*.yaml|\
+                  docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/specialist-aggregate.mjs|\
+                  lib/ci/pr-sweep-guard.mjs|\
+                  scripts/ci-specialist-aggregate.mjs|\
+                  scripts/pr-sweep-guard.mjs|\
+                  tests/pr-fast-lane.test.mjs|\
+                  tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-workflow-globs.test.mjs|\
+                  tests/pr-sweep-guard.test.mjs|\
+                  tests/ci-heavy-draft-policy.test.mjs) ;;
+                *) ci_only=false ;;
+              esac
+            done < /tmp/hh-pr-changed-files.z
+            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+  code:
+    name: core-lint-types-build
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Assert fast-lane workflow contracts
+        run: node --test tests/pr-fast-lane.test.mjs
+      - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" != pull_request || -z "$BASE_SHA" ]]; then
+            npm run lint
+            exit 0
+          fi
+          files=()
+          while IFS= read -r -d '' f; do
+            if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
+          done < <(git diff --name-only -z "$BASE_SHA" HEAD)
+          if (( ${#files[@]} > 0 )); then
+            npx --no-install eslint "${files[@]}"
+          else
+            echo 'No changed JS/TS files to lint'
+          fi
+      - name: Full TypeScript check
+        if: needs.scope.outputs.ci_only != 'true'
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Exact proposed release production build
+        if: needs.scope.outputs.ci_only != 'true'
+        run: npm run build
+  release-ready:
+    name: release-ready
+    needs: [scope, code]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Fail closed on missing, cancelled or failing required core jobs
+        shell: bash
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CODE_RESULT: ${{ needs.code.result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            exit 1
+          fi
+          [[ "$SCOPE_RESULT" == success ]] || exit 1
+          if [[ "$DOCS_ONLY" == true ]]; then
+            [[ "$CODE_RESULT" == skipped ]] || exit 1
+          else
+            [[ "$CODE_RESULT" == success ]] || exit 1
+          fi
+          echo 'Core checks passed; exact-head specialist aggregation still required on PR events.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed on all applicable exact-head specialist workflows
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # A fork may not execute candidate scripts with even a read-scoped GitHub token.
+          [[ "$HH_HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'Refusing a fork-head specialist gate; manual owner review required.' >&2
+            exit 1
+          }
+          # On the bootstrap PR only, the baseline has no aggregator yet.
+          # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
+          if git cat-file -e "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
+            git show "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+          else
+            # First rollout is safe only with native auto-merge disabled and
+            # a reviewed same-repository source PR.
+            node scripts/ci-specialist-aggregate.mjs
+          fi
+

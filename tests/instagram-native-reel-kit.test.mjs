@@ -72,3 +72,12 @@ test("owner-only UI uses device share and no Meta/Metricool publishing client",(
  assert.match(admin,/<InstagramNativeReelKit/);
  assert.match(css,/@media \(max-width: 430px\)/);
 });
+
+
+test("per-video caption is blank until written, separate per language and cleared on new video",()=>{
+ const ui=readFileSync(new URL("../components/instagram-native-reel-kit.tsx",import.meta.url),"utf8");
+ assert.ok(ui.includes('useState<Record<Lang, string>>({ ru: "", en: "", es: "" })'));
+ assert.ok(ui.includes('setCaptions({ ru: "", en: "", es: "" })'));
+ assert.ok(ui.includes('setCaptions(previous => ({...previous,[lang]:next}))'));
+ assert.doesNotMatch(ui,/setCaption\(TAO_REEL_CAPTIONS/);
+});

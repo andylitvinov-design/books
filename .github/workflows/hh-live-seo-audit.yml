@@ -34,6 +34,11 @@ on:
       - 'app/not-found.tsx'
 permissions:
   contents: read
+concurrency:
+  # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
+  group: hh-live-seo-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   source-build:
     if: github.event_name == 'pull_request'
@@ -110,8 +115,9 @@ jobs:
   # Public routes only. The browser never signs in or opens private results.
   # Run on release/dispatch, not PRs: public hostname still serves the old code
   # until a PR is merged and deployed by Vercel.
+  # Runs on PR using an isolated local server, and on push/dispatch against deployed production.
+  # Required specialist job must actually execute before trusted release-ready can pass.
   public-tests-mobile:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -123,13 +129,38 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Install Chromium for real public-page QA
-        run: npx --no-install playwright install --with-deps chromium
+      - name: Install isolated pinned Chromium for real public-page QA
+        run: |
+          npm install --prefix /tmp/hh-seo-browser-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-seo-browser-tools/node_modules/.bin/playwright install --with-deps chromium
       - name: Allow the Git-triggered production deployment to settle
         if: github.event_name == 'push'
         run: sleep 160
       - name: Validate EN/RU/ES public tests at 320/390/430px
-        run: node scripts/verify-public-tests-mobile.mjs
+        env:
+          HH_SEO_PLAYWRIGHT_PACKAGE: /tmp/hh-seo-browser-tools/node_modules/playwright
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            npx next dev --hostname 127.0.0.1 --port 3182 > /tmp/hh-public-tests-next.log 2>&1 &
+            APP_PID=$!
+            trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+            for ((attempt=1; attempt<=90; attempt++)); do
+              if curl --silent --fail http://127.0.0.1:3182/en/tests > /dev/null; then break; fi
+              if ! kill -0 "$APP_PID" 2>/dev/null; then
+                tail -80 /tmp/hh-public-tests-next.log
+                exit 1
+              fi
+              if (( attempt == 90 )); then
+                echo 'Isolated PR public tests server was not ready' >&2
+                tail -80 /tmp/hh-public-tests-next.log
+                exit 1
+              fi
+              sleep 2
+            done
+            HH_SEO_AUDIT_ORIGIN=http://127.0.0.1:3182 node scripts/verify-public-tests-mobile.mjs
+          else
+            node scripts/verify-public-tests-mobile.mjs
+          fi
       - name: Save production browser QA report and screenshots
         if: always()
         uses: actions/upload-artifact@v4

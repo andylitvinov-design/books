@@ -1,0 +1,92 @@
+name: HH workflow syntax — actionlint
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/**'
+      - 'tests/ci-workflow-globs.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-workflow-lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate-workflows:
+    name: actionlint-changed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install checksum-verified actionlint v1.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz' \
+            --output "$archive"
+          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          printf '%s\n' "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Validate all registered workflows (including unchanged baseline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=()
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+          if (( ${#files[@]} == 0 )); then
+            echo 'No workflow YAML files found; refusing empty validation' >&2
+            exit 1
+          fi
+          printf 'Full workflow validation: %s definitions\n' "${#files[@]}" >> "$GITHUB_STEP_SUMMARY"
+          # Full baseline syntax/expression audit: historical shell warnings are
+          # inventoried separately; changed workflows still get strict shellcheck.
+          actionlint -shellcheck= -color "${files[@]}"
+      - name: Regression checks for dynamic route filters and CI event scope
+        run: node --test tests/ci-workflow-globs.test.mjs
+      - name: Validate all exact changed workflow definitions
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          files=()
+          if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+            while IFS= read -r -d '' file; do
+              [[ -f "$file" ]] && files+=("$file")
+            done < <(git diff --name-only -z "$BASE_SHA" HEAD -- '.github/workflows/')
+          else
+            while IFS= read -r -d '' file; do
+              files+=("$file")
+            done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+          fi
+          if (( ${#files[@]} == 0 )); then
+            # A verified deletion-only migration has no current YAML to shellcheck.
+            # The previous step validated ALL remaining workflow definitions;
+            # BASE-trusted release-ready requires an explicit mapped replacement.
+            deleted_only=false
+            if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+              saw_deletion=false
+              deleted_only=true
+              while IFS= read -r -d '' status && IFS= read -r -d '' filename; do
+                saw_deletion=true
+                [[ -n "$filename" && "$status" == D ]] || deleted_only=false
+              done < <(git diff --no-renames --name-status -z "$BASE_SHA" HEAD -- '.github/workflows/')
+              [[ "$saw_deletion" == true ]] || deleted_only=false
+            fi
+            if [[ "$deleted_only" == true ]]; then
+              echo 'Deletion-only YAML changes: all current definitions passed actionlint; BASE-trusted exact-head replacement validation remains mandatory.' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo 'Workflow filter triggered but no changed YAML is available; refusing unverified changes.' >&2
+            exit 1
+          fi
+          printf '%s\n' "${files[@]}" >> "$GITHUB_STEP_SUMMARY"
+          actionlint -color "${files[@]}"
