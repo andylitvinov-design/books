@@ -51,6 +51,16 @@ test('personalization reveals form then animal identity before planning a vague 
   assert.ok(questionsForDraft({intentText: 'A beautiful story', answers: animal}).some(question => question.id === 'PERSONAL_07'));
 });
 
+test('a confirmed animal identity resumes the missing action question', () => {
+  const answers = {
+    PERSONAL_05: {selectedOptionId: 'other', customText: null, confirmed: true},
+    PERSONAL_06: {selectedOptionId: 'animal', customText: null, confirmed: true},
+    PERSONAL_07: {selectedOptionId: 'eagle', customText: null, confirmed: true},
+  };
+  assert.ok(questionsForDraft({intentText: 'A beautiful story', answers})
+    .some(question => question.id === 'PERSONAL_12'));
+});
+
 test('Pro and Extra questions remain unavailable until their actual editing context exists', () => {
   assert.deepEqual(questionsForGroup({group: 'pro'}), []);
   assert.ok(questionsForGroup({group: 'pro', sceneSelected: true}).length > 0);
