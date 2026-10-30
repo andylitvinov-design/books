@@ -27,6 +27,9 @@ test('owner browser E2E uses real protected v2 session bridge and isolated provi
   assert.match(source,/await ru.click\(\)/)
   assert.match(source,/await en.click\(\)/)
   assert.match(source,/await save\('publish'\)/)
+  assert.match(source,/pageErrors\.push\('public: '/)
+  assert.match(source,/pageErrors\.push\('owner editor: '/)
+  assert.match(source,/assert\.deepEqual\(pageErrors,\[\],/)
   assert.match(source,/await save\('hide'/)
   assert.match(source,/await save\('draft'\)/)
   assert.match(source,/Concurrent edit rejected/)
@@ -38,7 +41,7 @@ test('owner browser E2E uses real protected v2 session bridge and isolated provi
 test('video editor reconciles locale after independently hydrated header and manager',()=>{
   const s=readFileSync('components/site-video-manager.tsx','utf8')
   const h=readFileSync('components/prescription-admin-header.jsx','utf8')
-  assert.match(s,/setUiLocale\(readUiLocale\(document\.cookie\)\)/)
+  assert.match(s,/setUiLocale\(readUiLocale\(document\.cookie\) === "ru" \? "ru" : "en"\)/)
   assert.match(s,/window\.addEventListener\("holistic-house-ui-locale", onLocale\)/)
   assert.match(h,/saveUiLocale\(nextLocale\)/)
   assert.match(source,/await expect\(target\.locator\('\.site-video-manager'\)\)\.toHaveAttribute\('lang', 'ru'\)/)

@@ -134,7 +134,9 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
     window.addEventListener("holistic-house-ui-locale", onLocale);
     // The header and editor hydrate separately. Reconcile the cookie after
     // subscribing so a language click before this effect cannot be lost.
-    setUiLocale(readUiLocale(document.cookie));
+    // readUiLocale comes from JS and TypeScript cannot infer its union type.
+    // Validate the value before committing it to the typed editor state.
+    setUiLocale(readUiLocale(document.cookie) === "ru" ? "ru" : "en");
     return () => window.removeEventListener("holistic-house-ui-locale", onLocale);
   }, []);
 

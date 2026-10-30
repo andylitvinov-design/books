@@ -168,11 +168,11 @@ try{
   browser=await chromium.launch({headless:true})
   const publicContext=await browser.newContext({viewport:{width:1365,height:1000},serviceWorkers:'block'})
   page=await publicContext.newPage()
-  page.on('pageerror',error=>pageErrors.push(error.message))
+  page.on('pageerror',error=>pageErrors.push('public: '+String(error.stack || error.message).slice(0,1600)))
     const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
     await authenticateOwner(adminContext)
     const editor = await adminContext.newPage()
-    editor.on('pageerror', error => pageErrors.push(error.message))
+    editor.on('pageerror', error => pageErrors.push('owner editor: '+String(error.stack || error.message).slice(0,1600)))
     async function openEditor(target = editor) {
       await target.goto(`${origin}/admin/videos`)
       // Prove that the editor has hydrated before exercising the separately
