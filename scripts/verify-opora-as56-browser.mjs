@@ -3,7 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaAs60VariedDay, OPORA_VARIETY_REVISION } from '../lib/inner-growth/opora-as60-varied-content.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -39,8 +40,12 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale)
-    const support = oporaExperienceSupport(5,locale)
+    // Synthetic new lessons use the current versioned AS-6.0 copy. Historic
+    // sessions retain the legacy AS-5.6 copy and are tested separately.
+    const dayCopy = oporaAs60VariedDay(5,locale)
+    assert.ok(dayCopy?.purpose && dayCopy?.purposeTitle && dayCopy?.practice && dayCopy?.result)
+    const t = words[locale], brief = dayCopy.practice
+    const support = { body: dayCopy.purpose, title: dayCopy.purposeTitle }
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
@@ -98,6 +103,7 @@ try {
       await page.goto(origin + oporaFixturePath(locale))
       await expect(page.locator('[data-opora-experience-first="as-5.6"]')).toBeVisible()
       await expect(page.locator('[data-course-visual-theme]')).toHaveAttribute('data-course-visual-theme', OPORA_EXPERIENCE_DESIGN_VERSION)
+      await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-content-revision',OPORA_VARIETY_REVISION)
       await click(t.next)
       await expect(page.locator('[data-opora-daily-support="5"]')).toContainText(support.body)
       await expect(page.getByRole('heading', { name: support.title })).toBeVisible()
@@ -115,7 +121,7 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(dayCopy.result)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
       await click(t.next)
