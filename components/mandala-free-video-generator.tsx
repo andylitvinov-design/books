@@ -15,7 +15,7 @@ type Family="auto"|"mandala"|"light"|"lotus";
 type Palette="auto"|"gold"|"ocean"|"violet";
 type Motion="auto"|"calm"|"flow"|"dynamic";
 type Props={
-  locale:PublicLocale;theme:VideoTheme;aspect:Aspect;
+  locale:PublicLocale;theme:VideoTheme;aspect:Aspect;duration:10|20|30|60;
   disabled:boolean;localPortrait?:HTMLImageElement|null;
   onPlanChange:(plan:FreeVideoPlan)=>void;
 };
@@ -65,7 +65,7 @@ const copy={
 } as const;
 
 export function MandalaFreeVideoGenerator({
-  locale,theme,aspect,disabled,localPortrait,onPlanChange,
+  locale,theme,aspect,duration,disabled,localPortrait,onPlanChange,
 }:Props){
   const t=copy[locale];
   const [description,setDescription]=useState<string>(FREE_VIDEO_EXAMPLES[locale]);
@@ -76,8 +76,8 @@ export function MandalaFreeVideoGenerator({
   const [playing,setPlaying]=useState(false);
   const previewRef=useRef<HTMLCanvasElement|null>(null);
   const plan=useMemo(()=>buildFreeVideoPlan({
-    description,theme,locale,family,palette,motion,variation,
-  }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation]);
+    description,theme,locale,family,palette,motion,variation,durationSeconds:duration,
+  }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation,duration]);
   useEffect(()=>{onPlanChange(plan);},[onPlanChange,plan]);
   const size=aspect==="portrait"?[252,448]:aspect==="square"?[352,352]:[480,270];
   useEffect(()=>{
