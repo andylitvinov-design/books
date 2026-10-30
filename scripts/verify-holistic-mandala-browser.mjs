@@ -61,8 +61,10 @@ let passes = 0;
 // context per engine (two total); preserve all six viewports per engine.
 const engines = [["webkit", webkit], ["chromium", chromium]];
 const runEngine = async ([engine, browserType]) => {
-  const browser = await browserType.launch({ headless: true });
-  try {
+    // Keep genuine Chromium + WebKit checks and all locale/viewport cases.
+    // A fresh browser process per case prevents WebKit's decoded H264 state
+    // leaking between closed contexts across repeated iPhone dimensions.
+    // This is isolation, not a skipped assertion or retry of a failed case.
     // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
     // native 13-track audio checks, reducing simultaneous encoding pressure.
     const orderedViewports = engine === "chromium"
@@ -71,6 +73,7 @@ const runEngine = async ([engine, browserType]) => {
       : viewports;
     for (const { locale, width } of orderedViewports) {
       const caseStartedAt = performance.now();
+      const browser = await browserType.launch({ headless: true });
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -186,10 +189,28 @@ const runEngine = async ([engine, browserType]) => {
         assert.ok(firstMaster?.startsWith("/videos/holistic-house/"),
           "same-origin published first-party film master");
         const tapPlay=livePreview.locator("button");
-        await tapPlay.click();
+        const clickMini=async phase=>{
+          try {
+            await tapPlay.click({timeout:15000});
+          }catch(error){
+            const state=await page.evaluate(()=>({
+              path:location.pathname,
+              quick:!!document.querySelector("[data-video-quick-builder]"),
+              stage:!!document.querySelector("[data-video-live-stage]"),
+              mini:!!document.querySelector("[data-video-quick-live-preview]"),
+              miniButton:!!document.querySelector("[data-video-quick-live-preview] button"),
+              videoReady:document.querySelector("[data-video-quick-live-preview] video")?.readyState,
+              videoError:document.querySelector("[data-video-quick-live-preview] video")?.error?.code??null,
+              body:document.body?.innerText.slice(0,180)
+            })).catch(()=>null);
+            throw new Error(engine+" "+locale+" "+width+"px "+phase+
+              " mini MP4 tap failed: "+JSON.stringify({state,errors})+"; "+String(error));
+          }
+        };
+        await clickMini("play");
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"true",
           "preview play activates actual native video");
-        await tapPlay.click();
+        await clickMini("pause");
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"false");
         const coverOptions=quick.locator("[data-video-cover-options]");
         assert.equal(await coverOptions.locator("[data-video-quick-scene]").count(),6,
@@ -1306,11 +1327,9 @@ const runEngine = async ([engine, browserType]) => {
           "elapsed", ((performance.now() - caseStartedAt) / 1000).toFixed(1) + "s");
       } finally {
         await context.close();
+        await browser.close();
       }
     }
-  } finally {
-    await browser.close();
-  }
 };
 // Both engines finish before result handling; never waive a failed browser.
 const engineResults = await Promise.allSettled(engines.map(runEngine));
