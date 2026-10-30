@@ -288,3 +288,35 @@ test('PR-number cancellation browser suites use shellchecked bounded readiness l
       file+' must not reintroduce shellcheck SC2034');
   }
 });
+
+
+
+test('Ideas & Coaching Ready validates original browsers without Draft churn or duplicate TypeScript', () => {
+  const source=read('hh-ideas-coaching-public.yml');
+  const core=read('hh-pr-core-release.yml');
+  assert.match(source,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(source,/^    branches: \[codex\/public-book-library\]/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.match(source,/^concurrency:\s*\n  group: hh-ideas-coaching-/m);
+  const dollar=String.fromCharCode(36);
+  assert.ok(source.includes('group: hh-ideas-coaching-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(source.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  const jobGate='    if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(source.includes('  public-coaching-release:\n'+jobGate+'\n'),
+    'Only a Ready PR or manual dispatch may run expensive browser acceptance');
+  const tsGate='        if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes('      - name: TypeScript noEmit\n'+tsGate+'\n        run: npx --no-install tsc --noEmit'),
+    'Manual/other branch typecheck stays, production PR relies on core');
+  for(const preserved of [
+    'node --test tests/public-coaching-discovery.test.mjs',
+    '- name: Next.js production build\n        run: npm run build',
+    'playwright install --with-deps chromium webkit',
+    'node scripts/verify-coaching-lounge-mobile.mjs',
+    'node scripts/verify-holistic-support-browser.mjs',
+    'node scripts/verify-ideas-mobile-browser.mjs'
+  ]) assert.ok(source.includes(preserved),'Missing original browser acceptance: '+preserved);
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

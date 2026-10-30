@@ -279,3 +279,34 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+test('Practitioner presentations retain all real contracts on production PRs and full TS/build on feature push', () => {
+  const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('practitioner-presentations.yml');
+  const core = read('hh-pr-core-release.yml');
+  const rule = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  push:/m);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
+  for (const [step, command] of [
+    ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
+    ['Full Next build (Core owns production PR)', 'npm run build'],
+  ]) {
+    assert.ok(source.includes('- name: '+step+'\n        '+rule+'\n        run: '+command),
+      step+' must retain independent feature push and reuse only Core on production PR');
+  }
+  for (const item of [
+    'tests/practitioner-presentation-video.test.mjs',
+    'tests/practitioner-video-materials.test.mjs',
+    'tests/practitioner-articles-v4.test.mjs',
+    'tests/practitioner-articles-folders.test.mjs',
+    'tests/master-network-r2.test.mjs',
+    'tests/practice-public-alias.test.mjs',
+  ]) assert.ok(source.includes(item), 'Missing actual practitioner contract: '+item);
+  assert.ok(source.includes("github.event.pull_request.draft == false"));
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
