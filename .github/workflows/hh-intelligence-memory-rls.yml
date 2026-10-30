@@ -7,6 +7,8 @@ on:
       - 'tests/intelligence-memory-rls.integration.mjs'
       - 'scripts/verify-intelligence-memory-http.mjs'
       - 'lib/app/intelligence-feedback.js'
+      - 'lib/app/intelligence-course.js'
+      - 'tests/intelligence-course-continuation.test.mjs'
       - 'lib/app/config.js'
       - 'app/api/app/**/route.js'
       - '.github/workflows/hh-intelligence-memory-rls.yml'
@@ -45,7 +47,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
-      - run: npx --no-install eslint lib/app/intelligence-feedback.js tests/intelligence-memory-rls.integration.mjs scripts/verify-intelligence-memory-http.mjs
+      - run: npx --no-install eslint lib/app/intelligence-feedback.js lib/app/intelligence-course.js tests/intelligence-course-continuation.test.mjs tests/intelligence-memory-rls.integration.mjs scripts/verify-intelligence-memory-http.mjs
+      - run: node --conditions=react-server --test tests/intelligence-course-continuation.test.mjs
       - run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-memory-rls.integration.mjs
       - name: Install isolated Chromium and WebKit
         run: |
