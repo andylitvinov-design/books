@@ -9,7 +9,7 @@ import {verifyYoutubeEnOwner} from '../lib/practitioners/owner-telegram-video-yo
 const ID='8d998c778af3b563aa63233aa4fb4a06'
 const CHANNEL='UC'+ 'a'.repeat(22)
 const VIDEO='AbCdeF123_-' // 11-character YouTube fixture
-const URL='https://files2.heygen.ai/movio/video/'+ID+'/a1/caption.mp4?Expires=123&Signature=secret'
+const MEDIA_URL='https://files2.heygen.ai/movio/video/'+ID+'/a1/caption.mp4?Expires=123&Signature=secret'
 const TOKEN='token'.repeat(10)
 const mp4=Buffer.alloc(2048)
 mp4.writeUInt32BE(24,0)
@@ -18,11 +18,11 @@ function okJson(data,status=200,headers={}){
  return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json',...headers}})
 }
 test('accept only signed captioned HeyGen media for the exact video, never arbitrary hosts',()=>{
- assert.equal(validHeygenMediaUrl(URL,ID),true)
- assert.equal(validHeygenMediaUrl(URL, 'f'.repeat(32)),false)
- assert.equal(validHeygenMediaUrl(URL.replace('https:','http:'),ID),false)
- assert.equal(validHeygenMediaUrl(URL.replace('files2.heygen.ai','evil.tld'),ID),false)
- assert.equal(validHeygenMediaUrl(URL.replace('caption.mp4','script.json'),ID),false)
+ assert.equal(validHeygenMediaUrl(MEDIA_URL,ID),true)
+ assert.equal(validHeygenMediaUrl(MEDIA_URL, 'f'.repeat(32)),false)
+ assert.equal(validHeygenMediaUrl(MEDIA_URL.replace('https:','http:'),ID),false)
+ assert.equal(validHeygenMediaUrl(MEDIA_URL.replace('files2.heygen.ai','evil.tld'),ID),false)
+ assert.equal(validHeygenMediaUrl(MEDIA_URL.replace('caption.mp4','script.json'),ID),false)
  assert.equal(validatedYoutubeUploadLocation(
    'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=one'),
    'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=one')
@@ -36,18 +36,18 @@ test('strict owner approval and YouTube metadata validation',()=>{
  assert.throws(()=>cleanHeygenPublication({videoId:ID,title:'A'.repeat(101),
    rightsConfirmed:true,privacyConfirmed:true}),/HEYGEN_INVALID_TITLE/)
  assert.deepEqual(cleanHeygenPublication({videoId:ID,title:'  Personal video  ',
-   description:'EN film',rightsConfirmed:true,privacyConfirmed:true,mediaUrl:URL}),
-   {videoId:ID,title:'Personal video',description:'EN film',mediaUrl:URL})
+   description:'EN film',rightsConfirmed:true,privacyConfirmed:true,mediaUrl:MEDIA_URL}),
+   {videoId:ID,title:'Personal video',description:'EN film',mediaUrl:MEDIA_URL})
 })
 test('completed HeyGen status must supply an actual captioned MP4; never substitute raw',async()=>{
- const fetcher=async()=>okJson({data:{status:'completed',video_url:URL}})
+ const fetcher=async()=>okJson({data:{status:'completed',video_url:MEDIA_URL}})
  await assert.rejects(resolveHeygenCaptionedUrl(ID,{apiKey:'test-api-key-12345',fetcher}),
    /HEYGEN_CAPTIONED_MEDIA_UNAVAILABLE/)
  const url=await resolveHeygenCaptionedUrl(ID,{
    apiKey:'test-api-key-12345',fetcher:async()=>okJson({
-     data:{status:'completed',captioned_video_url:URL}})})
- assert.equal(url,URL)
- assert.equal(await resolveHeygenCaptionedUrl(ID,{mediaUrl:URL}),URL)
+     data:{status:'completed',captioned_video_url:MEDIA_URL}})})
+ assert.equal(url,MEDIA_URL)
+ assert.equal(await resolveHeygenCaptionedUrl(ID,{mediaUrl:MEDIA_URL}),MEDIA_URL)
 })
 test('English channel verifies both OAuth mine=true and current @aatapro handle',async()=>{
  let count=0
@@ -67,9 +67,9 @@ test('direct HeyGen captioned MP4 -> EN YouTube saves one ID, Unlisted only, no 
  const calls=[],providerId=VIDEO
  const fetcher=async(url,options={})=>{
    calls.push({url,method:options.method||'GET',headers:options.headers})
-   if(url===URL&&options.method==='HEAD')return new Response(null,{
+   if(url===MEDIA_URL&&options.method==='HEAD')return new Response(null,{
      headers:{'content-length':String(mp4.length),'content-type':'video/mp4'}})
-   if(url===URL&&options.method==='GET')
+   if(url===MEDIA_URL&&options.method==='GET')
      return new Response(mp4,{status:206,headers:{
        'content-length':String(mp4.length),
        'content-range':'bytes 0-'+(mp4.length-1)+'/'+mp4.length}})
@@ -93,7 +93,7 @@ test('direct HeyGen captioned MP4 -> EN YouTube saves one ID, Unlisted only, no 
  let begin=0,videoId=null
  const result=await transferHeygenToEnglishYoutube({
    videoId:ID,title:'Holistic House - EN',description:'Narration by Tori',
-   token:TOKEN,channelId:CHANNEL,mediaUrl:URL,fetcher,
+   token:TOKEN,channelId:CHANNEL,mediaUrl:MEDIA_URL,fetcher,
    onUploadStart:async()=>{begin++},onVideoId:async id=>{videoId=id}})
  assert.equal(begin,1)
  assert.equal(videoId,VIDEO)
