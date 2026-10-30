@@ -47,7 +47,7 @@ const copy = {
     booking30: "30 min · €50",
     booking60: "60 min · €100",
     booking30Title: "Express consultation · 30 min · €50",
-    booking60Title: "Personal session · 60 min · €100"
+    booking60Title: "Personal session · 60 min · €100",
     slides: {
       personal: { eyebrow: "PERSONAL SUPPORT", title: "Personal growth & emotional clarity", lead: "Guided imagery, meaningful questions and space to explore your next step." },
       relationships: { eyebrow: "RELATIONSHIPS", title: "Relationships & constellations", lead: "Explore repeated patterns, boundaries and connections in a personal session." },
@@ -84,7 +84,7 @@ const copy = {
     booking30: "30 мин · €50",
     booking60: "60 мин · €100",
     booking30Title: "Экспресс-консультация · 30 мин · €50",
-    booking60Title: "Личная сессия · 60 мин · €100"
+    booking60Title: "Личная сессия · 60 мин · €100",
     slides: {
       personal: { eyebrow: "ЛИЧНАЯ РАБОТА", title: "Личное развитие и внутренняя опора", lead: "Образная работа, важные вопросы и бережное исследование своей ситуации." },
       relationships: { eyebrow: "ОТНОШЕНИЯ", title: "Отношения и расстановки", lead: "Исследуйте повторяющиеся сценарии, границы и связь с другими людьми." },
@@ -121,7 +121,7 @@ const copy = {
     booking30: "30 min · €50",
     booking60: "60 min · €100",
     booking30Title: "Consulta exprés · 30 min · €50",
-    booking60Title: "Sesión personal · 60 min · €100"
+    booking60Title: "Sesión personal · 60 min · €100",
     slides: {
       personal: { eyebrow: "ACOMPAÑAMIENTO PERSONAL", title: "Crecimiento personal y claridad", lead: "Imágenes guiadas, preguntas importantes y espacio para tu próximo paso." },
       relationships: { eyebrow: "RELACIONES", title: "Relaciones y constelaciones", lead: "Explora patrones, límites y conexiones en una sesión personal." },
