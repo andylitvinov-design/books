@@ -12,6 +12,7 @@ import * as guideModule from '../lib/assessments/scale-guides.js'
 import * as overviewModule from '../lib/assessments/result-overview.js'
 import * as evidenceModule from '../lib/assessments/assessment-evidence-status.js'
 import * as changeModule from '../lib/assessments/score-change-reading.js'
+import * as motivatorModule from '../lib/assessments/motivator-mind.mjs'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-types-original-2026.js'
@@ -53,6 +54,7 @@ const modules = {
   '@/lib/assessments/result-overview': overviewModule,
   '@/lib/assessments/assessment-evidence-status': evidenceModule,
   '@/lib/assessments/score-change-reading': changeModule,
+  '@/lib/assessments/motivator-mind.mjs': motivatorModule,
   './free-course-banner': { FreeCourseBanner: () => null },
 }
 function compile(name) {
@@ -69,6 +71,7 @@ function compile(name) {
   return compiledModule.exports
 }
 compile('assessment-gauge')
+compile('motivator-mind')
 const { GuestScaleInterpretation } = compile('guest-scale-interpretation')
 const { CompactAssessmentReport } = compile('compact-assessment-report')
 const { TestFinishActions } = compile('test-finish-actions')
