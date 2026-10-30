@@ -127,7 +127,13 @@ jobs:
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
           node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
-          npx tsc --noEmit
+          # Core release-ready validates whole-project TypeScript for Ready production PRs.
+          # Standalone push/manual/non-production verification remains unchanged.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          else
+            echo 'Whole-project TypeScript delegated to mandatory Core release gate'
+          fi
       - name: Original About video and default-stream contracts
         run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
       - name: Original About video source lint

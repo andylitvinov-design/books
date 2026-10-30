@@ -278,6 +278,8 @@ test('wave 3 reviewed About video successor preserves all original PR paths and 
     assert.ok(trigger,'Missing PR trigger '+entry.into);
     for(const pattern of entry.patterns) assert.ok(s.includes('      - '+pattern),entry.into+' missing original path '+pattern);
     for(const contract of entry.contracts) assert.ok(s.includes(contract),entry.into+' missing original contract '+contract);
+    assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'),
+      'Production video PR reuses Core TypeScript; push/manual retains standalone typecheck');
     assert.ok(!s.includes('continue-on-error: true'),entry.into+' must fail closed');
   }
 });
@@ -312,6 +314,14 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   const base=new Map(sources), current=new Map(sources);
   const selected=expectedWorkflows({base,current,changed,packageImpact:impact});
   assert.deepEqual(selected,[owner], 'unrelated package-triggered suites are not REQUIRED by safe script-only update');
+  const ownerMissed = new Map(sources);
+  ownerMissed.set(owner,workflow(['lib/billing/**']));
+  assert.throws(()=>expectedWorkflows({base,current:ownerMissed,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Candidate path filters cannot silently drop the mandatory Billing specialist');
+  assert.throws(()=>expectedWorkflows({base:ownerMissed,current,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Immutable baseline must also trigger the approved scoped owner');
   assert.deepEqual(expectedWorkflows({base,current,changed}),[owner,ocean,opora],
     'until trusted classifier is deployed, the original full trigger scope remains intact');
   const dependencies=structuredClone(after);
