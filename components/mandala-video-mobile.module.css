@@ -1336,3 +1336,13 @@
 .quickPanelBody .quickPhotoSwitch { max-width: 100%; }
 .quickPanelBody :is(.audioSection,.hypnosisSection,.templates,.extraControls) { max-width: 100%; }
 .quickPanelBody :is(.audioSection,.hypnosisSection) { scroll-margin-top: 70px; }
+
+/* The dock is fixed to the iPhone bottom. Keep interactive photo consent and
+   other opened controls comfortably above it when browser scrolls to focus. */
+.quickSectionHeading { cursor: pointer; }
+.quickPanelBody .quickPhotoSwitch,
+.quickPanelBody .quickPhotoSwitch input,
+.quickPanelBody :is(button,input,select,textarea) { scroll-margin-bottom: calc(112px + env(safe-area-inset-bottom)); }
+@media (max-width: 640px) {
+  .quickSection[data-expanded="true"] .quickPanelBody { padding-bottom: 26px; }
+}

@@ -240,6 +240,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     for(let n=1;n<=6;n++)assert.equal(await page.locator("#video-step-"+n+"-panel").isVisible(),false,
       "collapsed by default: "+n);
 
+    // Both the whole card title and its explicit control must expand the card.
+    const firstCardTitle=page.locator('[data-video-quick-section="1"] h3');
+    await firstCardTitle.click();
+    assert.equal(await page.locator("#video-step-1-panel").isVisible(),true,
+      "tapping the card title opens settings");
+    await firstCardTitle.click();
+    assert.equal(await page.locator("#video-step-1-panel").isVisible(),false,
+      "tapping the title again closes settings");
     await openStep(page,1);
     assert.equal(await page.locator("[data-video-quick-theme]").count(),6);
     await page.locator('[data-video-quick-theme="money"]').click();
@@ -264,7 +272,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     const consent=page.locator("[data-video-photo-consent]");
     await consent.waitFor({state:"visible",timeout:10000});
     assert.equal(await consent.isChecked(),false,"own photo needs explicit rights");
+    await page.waitForFunction(()=>{
+      const input=document.querySelector("[data-video-photo-consent]");
+      const nav=document.querySelector("[data-mandala-support-bottom-nav]");
+      return input && nav && input.getBoundingClientRect().bottom < nav.getBoundingClientRect().top-8;
+    },undefined,{timeout:12000});
     await consent.check();
+    assert.equal(await consent.isChecked(),true,"photo rights must really persist");
     if(engine==="chromium"&&locale==="ru"&&width===390)
       await verifyPngExport(page);
 

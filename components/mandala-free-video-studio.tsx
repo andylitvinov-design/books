@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -863,6 +863,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const quick = quickVideoCopy[locale];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [expandedStep,setExpandedStep] = useState<number | null>(null);
+  // Tapping the card's heading has the same result as tapping "Expand".
+  // Ignore nested links and buttons to prevent a double accordion toggle.
+  function toggleFromHeading(event:MouseEvent<HTMLDivElement>,step:number){
+    const target=event.target;
+    if(target instanceof Element && target.closest("button,a,input,select,textarea,label"))return;
+    setExpandedStep(current=>current===step?null:step);
+  }
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -1060,7 +1067,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return ()=>document.removeEventListener("visibilitychange",stopHiddenPreview);
   },[]);
   // A new visitor's photo must never inherit another person's consent.
-  useEffect(() => { setPhotoConsent(false); }, [photoUrl]);
+  useLayoutEffect(() => { setPhotoConsent(false); }, [photoUrl]);
+  // A fixed five-tab iPhone dock must never sit on the photo-consent hit target.
+  // After a new photo is decoded, reveal consent inside the visible safe region.
+  useEffect(()=>{
+    if(expandedStep!==2 || !photoUrl || backgroundOnly)return;
+    const consent=document.querySelector("[data-video-photo-consent]") as HTMLElement|null;
+    const dock=document.querySelector("[data-mandala-support-bottom-nav]") as HTMLElement|null;
+    if(!consent||!dock)return;
+    if(consent.getBoundingClientRect().bottom > dock.getBoundingClientRect().top-16)
+      consent.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"center"});
+  },[expandedStep,photoUrl,backgroundOnly]);
   // Native Photos/Files uploads also activate the photo overlay if the file
   // picker was used directly (not only through the compact photo toggle).
   // Unchecking the toggle later does not delete the local photo.
@@ -1701,7 +1718,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="1" data-expanded={expandedStep===1?"true":"false"}
           aria-labelledby="quick-theme-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,1)}>
             <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{quick.theme}</h3>
             <button type="button" className={videoStyles.quickEdit}
               aria-expanded={expandedStep===1} aria-controls="video-step-1-panel"
@@ -1816,7 +1833,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="2" data-expanded={expandedStep===2?"true":"false"}
           aria-labelledby="quick-image-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,2)}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{quick.image}</h3>
               <p>{quick.imageHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
@@ -1879,7 +1896,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="3" data-expanded={expandedStep===3?"true":"false"}
           aria-labelledby="quick-hypno-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,3)}>
             <div><h3 id="quick-hypno-title"><Sparkles size={21} aria-hidden="true"/>{quick.hypno}</h3>
               <p>{quick.hypnoHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
@@ -1952,7 +1969,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="4" data-expanded={expandedStep===4?"true":"false"}
           aria-labelledby="quick-visual-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,4)}>
             <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{quick.visual}</h3>
               <p>{quick.visualHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
@@ -2116,7 +2133,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="5" data-expanded={expandedStep===5?"true":"false"}
           aria-labelledby="quick-audio-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,5)}>
             <div><h3 id="quick-audio-title"><Music2 size={21} aria-hidden="true"/>{quick.audio}</h3>
               <p>{quick.audioHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
@@ -2407,7 +2424,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         <section className={videoStyles.quickSection} data-video-quick-section="6" data-expanded={expandedStep===6?"true":"false"}
           aria-labelledby="quick-format-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} onClick={event=>toggleFromHeading(event,6)}>
             <div><h3 id="quick-format-title"><SlidersHorizontal size={21} aria-hidden="true"/>{quick.montage}</h3>
               <p>{quick.montageHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
