@@ -901,6 +901,20 @@ const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
 };
 const quickThemeOrder: VideoTheme[] = ["energy","money","relationships","goals","life","health"];
 
+/** These Canvas-only animated scenes have NO standalone H.264 master.
+ * Curated first-party JPGs in the gallery are illustrative, not fake MP4s. */
+const quickCanvasScenePoster: Partial<Record<LocalSceneId,string>> = {
+  "heart-light":"wildflower-dance", "warm-connection":"meadow-morning",
+  "blossom-garden":"fern-awakening", "two-circles":"coastal-freedom",
+  "light-path":"mountain-air", "open-door":"desert-light",
+  "guiding-stars":"solar-surge", "meaning-tree":"lone-tree",
+  "sun-flight":"solar-surge", "green-vortex":"river-power",
+  "light-waterfall":"gentle-falls", "gentle-shield":"morning-dew",
+};
+const quickCanvasPoster=(scene:LocalSceneId)=>
+  "/videos/holistic-house/film-collection-v2/"+(quickCanvasScenePoster[scene]||"mountain-air")+".jpg";
+
+
 export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
   onPickPhoto: () => void; photoError?: string;
@@ -1711,7 +1725,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
                 :getThemedRealFilm(value,quickStyleSceneIds[value][0] as LocalSceneId)?.poster
-                  ||"/videos/holistic-house/film-collection-v2/mountain-air.jpg";
+                  ||quickCanvasPoster(quickStyleSceneIds[value][0] as LocalSceneId);
               return <button key={value} type="button" data-video-quick-theme={value}
                 data-tone={value} aria-pressed={theme===value} disabled={recording||preparing}
                 onClick={()=>{setQuickStyleIndex(0);selectCategory(value);
@@ -1785,10 +1799,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             /> : <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={theme==="money"?getRealMoneyFilm(moneyScene||"golden-rain").poster:
-                getThemedRealFilm(theme,otherScene)?.poster||
-                "/videos/holistic-house/film-collection-v2/mountain-air.jpg"} alt=""/>
+                getThemedRealFilm(theme,otherScene)?.poster||quickCanvasPoster(otherScene)} alt=""/>
             </>}
-            <span className={videoStyles.quickPreviewTag}><Film size={15} aria-hidden="true"/>{approved.previewBadge}</span>
+            <span className={videoStyles.quickPreviewTag}><Film size={15} aria-hidden="true"/>{activeFilm?approved.previewBadge:approved.previewFallback}</span>
             <button type="button" className={videoStyles.quickPreviewPlay}
               aria-label={previewPlaying?approved.previewPause:activeFilm?approved.previewPlay:approved.previewFallback}
               aria-pressed={previewPlaying} disabled={recording||preparing}
@@ -1819,8 +1832,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {activeTemplates.slice(0,6).map(scene=>{
               const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
               const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
-                getThemedRealFilm(theme,scene.id as LocalSceneId)?.poster||
-                "/videos/holistic-house/film-collection-v2/mountain-air.jpg";
+                getThemedRealFilm(theme,scene.id as LocalSceneId)?.poster||quickCanvasPoster(scene.id as LocalSceneId);
               return <button key={scene.id} type="button" className={videoStyles.quickImageTile}
                 data-video-quick-scene={scene.id} aria-pressed={current} disabled={recording||preparing}
                 aria-label={quick.scene+": "+(theme==="money"?
