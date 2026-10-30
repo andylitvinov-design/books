@@ -11,7 +11,8 @@ test('a course starts with its author-entered title and first editable screen',(
  assert.match(builder,/data-course-quick-start/)
  assert.match(builder,/const title=newTitle\.trim\(\)/)
  assert.match(builder,/if\(!title\)\{setError\(t\.enterTitle\);return\}/)
- assert.match(builder,/course=\{title,description:'',locale:newLocale,slides:\[makeSlide\(\)\]\}/)
+ // The shared private builder now supports both standard courses and typed meditations.
+ assert.match(builder,/course=\{title,description:'',locale:newLocale,contentType:isMeditation\?meditationType\+'_meditation':'course',slides:\[isMeditation\?\{\.\.\.makeSlide\(\),kind:meditationType\}:makeSlide\(\)\]\}/)
  assert.doesNotMatch(builder,/title:t\.new,description:'',locale:/)
  assert.match(builder,/onSubmit=\{event=>void create\(event\)\}/)
  assert.match(builder,/setCreating\(!list\.length\)/)

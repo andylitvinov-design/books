@@ -441,7 +441,11 @@ async function verifyPublicServiceConversionJourneys(){
     await servicePage.setViewportSize({width,height:844})
     const serviceResponse=await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded'})
      assert.equal(serviceResponse?.status(),200,locale+'/'+slug+'/'+width+': service route HTTP 200')
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    // The canonical free Wu Xing entry now uses FreeEntryLanding rather than CoreServiceDetail.
+    // Check the actual page, never a historical DOM selector or synthetic placeholder.
+    const heading=kind==='dao'?'main[data-free-entry-landing="dao"] h1#free-entry-title':
+     'main[data-core-service-detail="'+kind+'"] h1'
+    await expect(servicePage.locator(heading)).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -495,6 +499,27 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
      await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else if(kind==='dao'){
+     const landing=servicePage.locator('main[data-free-entry-landing="dao"]')
+     const capture=landing.locator('#request-free-wu-xing[data-service-lead-capture]')
+     await expect(capture).toBeVisible({timeout:30000})
+     await expect(landing.locator('a[href="#request-free-wu-xing"]').first()).toBeVisible()
+     const form=capture.locator('form[data-compact-lead-form]')
+     await expect(form.locator('input[name="contact"]')).toBeVisible()
+     const consent=form.locator('input[type="checkbox"][required]')
+     await expect(consent).toHaveCount(1)
+     assert.equal(await consent.isChecked(),false,'Free profile consent must start unchecked')
+     for(const channel of ['whatsapp','telegram'])
+      await expect(form.locator('button[data-compact-channel="'+channel+'"]')).toBeVisible()
+     let unconsentedPosts=0
+     servicePage.on('request',request=>{
+      if(request.method()==='POST'&&new URL(request.url()).pathname==='/api/service-enquiries')
+       unconsentedPosts++
+     })
+     await form.locator('button[data-compact-channel="whatsapp"]').click()
+     await expect(form.locator('input[name="contact"]')).toHaveAttribute('aria-invalid','true')
+     await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)
+     assert.equal(unconsentedPosts,0,'Free profile must not submit a lead without contact and consent')
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
