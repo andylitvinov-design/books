@@ -206,4 +206,4 @@ test('Library Feed cancels superseded PR runs while retaining manual acceptance 
   assert.ok(source.includes('run: npm run build'));
   assert.ok(source.includes('node scripts/verify-ideas-mobile-browser.mjs'));
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
-}
+});

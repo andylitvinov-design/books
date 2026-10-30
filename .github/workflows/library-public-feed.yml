@@ -84,6 +84,7 @@ jobs:
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 65); do
             if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then break; fi
+            echo "Waiting for isolated Library QA server, attempt ${i}/65" >&2
             sleep 2
           done
           node scripts/verify-ideas-mobile-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
