@@ -1,6 +1,7 @@
 name: Library public feed focused verification
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/library-feed.tsx'
@@ -39,8 +40,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Superseded PR heads must not spend 35 minutes on redundant browser jobs.
+# workflow_dispatch runs remain independent.
+concurrency:
+  group: hh-library-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   isolated-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -62,6 +69,7 @@ jobs:
       - name: Production-mode Next build (no Vercel Preview created)
         run: npm run build
       - name: TypeScript type verification
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Install isolated browser engines (no service data or production network)
         run: |
