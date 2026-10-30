@@ -62,6 +62,10 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded','false');
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  // The SSR button is visible before React attaches its handler. Verify one
+  // genuine click after hydration; do not retry a failed user interaction.
+  await expect.poll(() => trigger.evaluate(node =>
+    Object.keys(node).some(key => key.startsWith('__reactProps$'))), {timeout:30000}).toBe(true);
   const submissions = [];
   await page.route('**/api/service-enquiries', async route => {
     if (route.request().method() !== 'POST') return route.continue();
