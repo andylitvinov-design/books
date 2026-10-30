@@ -3,7 +3,7 @@ import {getAppConfig,requestOrigin} from "@/lib/app/config";
 import {createRequestAuth} from "@/lib/app/session";
 import {PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {AppError} from "@/lib/assessments/contracts";
-import {videoAiEnabled,fetchVideoAiContent} from "@/lib/mandala/video-ai-openrouter.mjs";
+import {videoAiEnabled,fetchVideoAiContent} from "@/lib/mandala/video-ai-heygen.mjs";
 import {getVideoJob} from "@/lib/mandala/video-ai-repository";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -23,7 +23,7 @@ export async function GET(request){
     if(job.status!=="completed"||!job.external_id)
       throw new AppError("VIDEO_NOT_READY",409);
     const provider=await fetchVideoAiContent(job.external_id,{
-      key:process.env.HH_VIDEO_OPENROUTER_API_KEY,
+      key:process.env.HH_VIDEO_HEYGEN_API_KEY,
     });
     const disposition='attachment; filename="holistic-house-ai-clip.mp4"';
     const headers={...PRIVATE_HEADERS,
