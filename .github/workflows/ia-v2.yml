@@ -2,6 +2,33 @@ name: Holistic House IA v2 checks
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/verify-ia-v2.mjs'
+      - 'scripts/ia-v2-loopback-proxy.mjs'
+      - 'scripts/ia-public-navigation-diagnostics.mjs'
+      - 'lib/clients/**'
+      - 'lib/prescriptions/**'
+      - 'lib/site-navigation-model.js'
+      - 'app/api/app/**'
+      - 'app/api/auth/**'
+      - 'app/**/app/**'
+      - 'app/**/client/**'
+      - 'components/app/**'
+      - 'components/site-navigation*'
+      - 'components/csp-navigation*'
+      - 'lib/app/**'
+      - 'lib/security/**'
+      - 'lib/ia/**'
+      - 'lib/encryption/**'
+      - 'lib/practitioners/**'
+      - 'tests/ia-*.mjs'
+      - 'tests/app-auth-*.mjs'
+      - 'tests/app-migration-*.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 permissions:
   contents: read

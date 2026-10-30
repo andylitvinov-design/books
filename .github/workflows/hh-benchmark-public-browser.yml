@@ -1,6 +1,7 @@
 name: Holistic House benchmark public mobile browser smoke
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-benchmark-public-browser.yml'
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   anonymous-smoke:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Anonymous Chromium/WebKit · 320–430 · EN/RU/ES
     runs-on: ubuntu-24.04
     timeout-minutes: 16
