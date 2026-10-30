@@ -3,6 +3,7 @@
  * Offline browser rendering, no server processing, external media or upload.
  */
 import { presetAudioUrl } from "@/lib/mandala/local-video-music";
+import { mixPcmWavs } from "@/lib/mandala/wav-pcm-mixer.mjs";
 import type { AmbientMusic } from "@/lib/mandala/local-video-music";
 export type NatureBed = Exclude<AmbientMusic,"none">;
 
@@ -46,22 +47,40 @@ export async function mixVoiceWithNature(
   if(preset!=="none" && !VOICE_BED_PRESETS.includes(preset))
     throw new Error("INVALID_BACKGROUND");
   if(typeof window==="undefined")throw new Error("BROWSER_AUDIO_REQUIRED");
+  // The canonical Gemini and first-party WAVs are PCM16 mono: mix them
+  // directly without an AudioContext unlock. This is reliable on iOS Safari.
+  const [voiceBytes,natureBytes]=await Promise.all([
+    voice.arrayBuffer(),
+    preset==="none"?Promise.resolve(null):fetch(presetAudioUrl(preset),{cache:"force-cache"}).then(async response=>{
+      if(!response.ok)throw new Error("BACKGROUND_UNAVAILABLE");
+      return response.arrayBuffer();
+    }),
+  ]);
+  const header=new Uint8Array(voiceBytes,0,Math.min(4,voiceBytes.byteLength));
+  const riff=header.length===4&&header[0]===82&&header[1]===73&&header[2]===70&&header[3]===70;
+  if(riff){
+    try{
+      const pcm=mixPcmWavs(voiceBytes,natureBytes,minimumSeconds,{
+        voiceLevel:levels.voiceLevel??90,musicLevel:levels.musicLevel??12,
+      });
+      return new Blob([pcm],{type:"audio/wav"});
+    }catch(error){
+      // Float or stereo WAV can still use the browser codec. Invalid RIFF,
+      // truncated or malformed files fail closed, not disguised as silence.
+      if(!(error instanceof Error)||!["UNSUPPORTED_WAV_PCM","INVALID_WAV"].includes(error.message))
+        throw error;
+    }
+  }
+  // User-uploaded MP3/M4A/AAC/WebM and non-PCM WAVs need local Web Audio
+  // decoding; they are never uploaded to Gemini or a third-party service.
   const AudioCtor=window.AudioContext ||
     (window as typeof window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
   if(!AudioCtor||typeof OfflineAudioContext==="undefined")throw new Error("OFFLINE_AUDIO_UNSUPPORTED");
-  // Personal speech stays in the browser. Music comes only from the first-party library.
   const decoder=new AudioCtor();
   let speech:AudioBuffer, background:AudioBuffer|null=null;
   try {
-    const [voiceBytes,natureBytes]=await Promise.all([
-      voice.arrayBuffer(),
-      preset==="none"?Promise.resolve(null):fetch(presetAudioUrl(preset),{cache:"force-cache"}).then(async response=>{
-        if(!response.ok)throw new Error("BACKGROUND_UNAVAILABLE");
-        return response.arrayBuffer();
-      }),
-    ]);
-    speech=await decoder.decodeAudioData(voiceBytes);
-    if(natureBytes)background=await decoder.decodeAudioData(natureBytes);
+    speech=await decoder.decodeAudioData(voiceBytes.slice(0));
+    if(natureBytes)background=await decoder.decodeAudioData(natureBytes.slice(0));
   } finally {
     await decoder.close().catch(()=>{});
   }
