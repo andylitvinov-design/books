@@ -2452,6 +2452,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </section>
 
+      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
+      <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
+        disabled={recording||preparing}
+        onPointerUp={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}
+        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
+        <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
+      </button>
+      <MandalaGuidedCourse locale={locale} theme={theme}
+        onContextChange={updateMeditationFocus}
+        selfRatings={touchedScores} disabled={recording||preparing}
+        onApplyFreeVideo={session=>{
+          // This is preparation, NOT a render or a claimed downloadable video.
+          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
+          // First video: scenic meadow-morning master, not a generic money/energy clip.
+          selectCategory(session.videoTheme);
+          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
+          // Keep the visitor's photo choice: free course setup must not turn it off.
+          if(!photoUrl)setBackgroundOnly(true);
+          setDuration(60);
+          setSpeed("slow");
+          setCaptionMode("custom");
+          setCustomCaption(session.title);
+          // Preserve the chosen personal goal on the meadow visuals with
+          // original, user-readable supportive phrases from that goal's theme.
+          setAffirmations(current=>({...defaultAffirmations,enabled:current.enabled,selected:[],
+            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
+            visibility:["large"]}));
+          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
+            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
+            "Session 1 scene is ready. Create and download the video in the editor below.");
+          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
+        }}/>
+      </div> : null}
+
         {/* ONE shared library: the original real full-HD look gallery and 24
             licensed four-MP4 films. Both update the same main video stage. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.sceneLibrary].join(" ")}
@@ -3056,42 +3090,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}>{supportUi.allScenes}<ArrowRight size={16} aria-hidden="true"/></button> :
            <span className={videoStyles.courseIndicator}>01 — 08</span>}
         </header>
-
-
-
-      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
-      <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
-        disabled={recording||preparing}
-        onPointerUp={()=>{setStudioMode("pump");setTherapyJumpRequested(false);setNotice("");}}
-        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
-        <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
-      </button>
-      <MandalaGuidedCourse locale={locale} theme={theme}
-        onContextChange={updateMeditationFocus}
-        selfRatings={touchedScores} disabled={recording||preparing}
-        onApplyFreeVideo={session=>{
-          // This is preparation, NOT a render or a claimed downloadable video.
-          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
-          // First video: scenic meadow-morning master, not a generic money/energy clip.
-          selectCategory(session.videoTheme);
-          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
-          // Keep the visitor's photo choice: free course setup must not turn it off.
-          if(!photoUrl)setBackgroundOnly(true);
-          setDuration(60);
-          setSpeed("slow");
-          setCaptionMode("custom");
-          setCustomCaption(session.title);
-          // Preserve the chosen personal goal on the meadow visuals with
-          // original, user-readable supportive phrases from that goal's theme.
-          setAffirmations(current=>({...defaultAffirmations,enabled:current.enabled,selected:[],
-            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
-            visibility:["large"]}));
-          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
-            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
-            "Session 1 scene is ready. Create and download the video in the editor below.");
-          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
-      </div> : null}
 
 
 
