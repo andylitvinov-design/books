@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -32,11 +32,19 @@ export function HomeTestimonialMore({
   locale, remainingVideos, otherLanguageVideos, title, sameLanguageTitle, otherLanguageTitle,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const disclosureRef = useRef<HTMLDetailsElement>(null);
+  // A visitor may open the native disclosure before React hydrates. Adopt that
+  // state on mount so the original videos appear without requiring a second tap.
+  useEffect(() => {
+    if (disclosureRef.current?.open) setExpanded(true);
+  }, []);
   const count = remainingVideos.length + otherLanguageVideos.length;
   const renderCards = (items: ReadonlyArray<ExtraTestimonialVideo>, showLanguage = false) => (
     items.map((item) => (
       <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
-        {showLanguage ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
+        {showLanguage ? <p className={styles.videoLanguageTag}>{item.language === "ru"
+          ? locale === "ru" ? "Русский · RU" : locale === "es" ? "Ruso · RU" : "Russian · RU"
+          : locale === "ru" ? "Английский · EN" : locale === "es" ? "Inglés · EN" : "English · EN"}</p> : null}
         <SiteVideoPlayer
           video={{ youtubeId: item.id, language: item.language, title: item.title }}
           locale={locale}
@@ -49,6 +57,7 @@ export function HomeTestimonialMore({
 
   return (
     <details
+      ref={disclosureRef}
       className={styles.moreVideoDisclosure}
       data-home-testimonial-disclosure="true"
       onToggle={(event) => setExpanded(event.currentTarget.open)}

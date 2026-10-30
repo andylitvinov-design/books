@@ -17,11 +17,12 @@ const otherLanguageVideos = [
   "m9RfDgK76PU", "MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E", "5oj0BIbLT4w",
 ].map(id => ({ id, title: "Original Russian video " + id, language: "ru" }));
 
-function render(expanded, locale = "en") {
-  let toggled;
+function render(expanded, locale = "en", earlyOpen = false) {
+  let toggled, mountEffect;
+  const disclosureRef = { current: { open: earlyOpen } };
   const modules = {
     "react/jsx-runtime": { jsx, jsxs: jsx },
-    "react": { useState: () => [expanded, next => { toggled = next; }] },
+    "react": { useState: () => [expanded, next => { toggled = next; }], useRef: () => disclosureRef, useEffect: effect => { mountEffect = effect; } },
     "next/link": { default: props => jsx("a", props) },
     "@/components/site-video-player": { SiteVideoPlayer: props => jsx("video-fixture", props) },
     "./personal-testimonials.module.css": { default: new Proxy({}, { get: (_, name) => String(name) }) },
@@ -34,7 +35,7 @@ function render(expanded, locale = "en") {
     locale, remainingVideos, otherLanguageVideos,
     title: "Watch more testimonials", sameLanguageTitle: "More in English", otherLanguageTitle: "Russian originals",
   });
-  return { tree, toggled: () => toggled };
+  return { tree, toggled: () => toggled, runMountEffect: () => mountEffect?.() };
 }
 
 for (const locale of ["en", "ru", "es"]) {
@@ -72,4 +73,11 @@ test("homepage never eagerly renders its eight extra players", () => {
   assert.doesNotMatch(parent, /renderVideoCards\(remainingHomeVideos\)/);
   assert.doesNotMatch(parent, /renderVideoCards\(otherLanguageVideos/);
   assert.match(source, /onToggle=\{\(event\) => setExpanded\(event.currentTarget.open\)\}/);
+});
+
+
+test("an archive opened before hydration remains open and loads its players", () => {
+  const instance = render(false, "en", true);
+  instance.runMountEffect();
+  assert.equal(instance.toggled(), true, "Mount must adopt the existing native disclosure state");
 });

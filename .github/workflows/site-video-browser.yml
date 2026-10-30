@@ -35,6 +35,7 @@ on:
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-page-video-release.mjs'
+      - 'scripts/verify-home-testimonial-hydration.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
@@ -73,6 +74,7 @@ on:
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-page-video-release.mjs'
+      - 'scripts/verify-home-testimonial-hydration.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
@@ -175,6 +177,10 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check complete Spanish About page in Chromium and WebKit
         run: node scripts/verify-es-about.mjs
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Preserve an early-open testimonial disclosure across hydration
+        run: node scripts/verify-home-testimonial-hydration.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check all Spanish public destinations and remedy routes

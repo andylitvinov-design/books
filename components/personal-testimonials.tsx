@@ -68,6 +68,10 @@ const russianVideoTitles: Record<"en" | "es", Record<string, string>> = {
   },
 };
 
+function localizedVideoTitle(item: { id: string; title: string; language: "en" | "ru" }, locale: PublicLocale) {
+  return item.language === "ru" && locale !== "ru" ? (russianVideoTitles[locale][item.id] ?? item.title) : item.title;
+}
+
 const copy = {
   ru: {
     eyebrow: "Реальные истории",
@@ -161,8 +165,7 @@ export function PersonalTestimonials({
         </p>
       ) : null}
       <SiteVideoPlayer
-        video={{ youtubeId: item.id, language: item.language,
-          title: item.language === "ru" && locale !== "ru" ? (russianVideoTitles[locale][item.id] ?? item.title) : item.title }}
+        video={{ youtubeId: item.id, language: item.language, title: localizedVideoTitle(item, locale) }}
         locale={locale}
         compact
         minimal={isAbout}
@@ -231,6 +234,7 @@ export function PersonalTestimonials({
           }))}
           otherLanguageVideos={otherLanguageVideos.map((item) => ({
             ...item,
+            title: localizedVideoTitle(item, locale),
             fallbackPoster: locallyArchivedVideoPosterIds.has(item.id)
               ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
               : undefined,
