@@ -69,6 +69,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import {directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
   readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
   takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
@@ -653,6 +654,18 @@ export default function AppWorkspace({ locale, path = [] }) {
           // unfinished onboarding, or a stale/different account.
           const fresh=await load()
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            // First-time phone Messenger entry: return to the selected master
+            // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
+              try{
+                const chatLocale=searchParams.get('chatLocale')
+                const destination=directMessengerReturnPath(
+                  ['en','ru','es'].includes(chatLocale)?chatLocale:locale,
+                  searchParams.get('to')||null)
+                router.replace(destination)
+                return
+              }catch{/* Malformed continuation does not skip onboarding. */}
+            }
             if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
             else setInstallOfferAccountId(fresh.account.id)
           }
