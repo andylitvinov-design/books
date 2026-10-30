@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { MandalaCreditWallet } from "@/components/mandala-credit-wallet";
 import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
@@ -66,6 +67,7 @@ export default async function MandalaMeditationPage({ params }: Props) {
           {promo.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
       </aside>
+      <MandalaCreditWallet locale={locale} />
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
       <HolisticSupportMandalaDock locale={locale} />
     </main>
