@@ -35,7 +35,7 @@ test("the approved native video editor uses one real local renderer and stable o
   assert.ok(supportCss.includes("@media(min-width:641px){.mandalaAppHeader{display:none}}"),
     "the app header must not duplicate the desktop header on tablets");
   assert.match(dock,/<Leaf size=\{24\}/);
-  assert.match(css,/\.quickGenerate\{position:sticky/);
+  assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(source,/data-mandala-master-mp4=\{activeFilm\.src\}/);
   assert.match(source,/data-video-quick-scene=\{scene\.id\}/);
@@ -54,6 +54,8 @@ test("three compact practice cards preserve 16:9 live video and disabled paid ch
   assert.match(tier,/data-video-quality-option=\{format\+"-"\+level\}/);
   assert.match(tier,/data-video-quick-live-preview/);
   assert.match(tier,/draftFormatPrices\[format\]\[practiceLevels\[format\]\]/);
+  assert.match(source,/data-video-price-summary aria-live="polite"/);
+  assert.match(source,/selectedDraftPrice=draftFormatPrices\[practiceType\]\[practiceLevels\[practiceType\]\]/);
   assert.match(source,/video:\{basic:0,smart:2,pro:9\.90\}/);
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
