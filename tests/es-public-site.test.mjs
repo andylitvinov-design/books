@@ -51,3 +51,66 @@ test('Language counterparts load on selection rather than speculative client-ent
   assert.match(navigation, /<Link prefetch=\{false\}[^>]*href=\{counterpart\(next\)\}/);
   assert.match(navigation, /onClick=\{\(\) => selectLocale\(next\)\}/);
 });
+
+test('Spanish browser oracle matches the current seven-journey menu and global My Space contract', async () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const navigation = source('components/site-navigation.tsx');
+  const model = await import('../lib/site-navigation-model.js');
+  const expected = ['/es/services/free-situation-review',
+    ...model.getCompactNavigation('es').map(item => item.href),
+    '/es/shop', '/es/cart', '/es/install',
+    ...model.getSiteNavigation('es').filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href),
+    '/es/temple-insights', '/es/services', '/es/about'];
+  const listed = browser.match(/const destinations = \[([\s\S]*?)\];/);
+  assert.ok(listed);
+  assert.deepEqual([...listed[1].matchAll(/'([^']+)'/g)].map(match => match[1]), expected);
+  assert.match(navigation, /const mainMenuItems = getCompactNavigation\(activeLocale\)/);
+  assert.match(source('app/layout.tsx'), /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/);
+  assert.doesNotMatch(browser, /if \(path !== '\/es'\) first\.push/);
+  assert.ok(browser.includes("toHaveAttribute('aria-controls','home-personal-space-dialog')"));
+  assert.ok(browser.includes("await trigger.press('Enter')"));
+  assert.ok(browser.includes("await trigger.press('Tab')"));
+  assert.ok(browser.includes("await page.keyboard.press('Escape')"));
+  assert.ok(browser.includes("document.documentElement.scrollWidth <= innerWidth + 2"));
+});
+test('Spanish course browser oracle requires the one genuine active Courses tab', async () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const model = await import('../lib/site-navigation-model.js');
+  assert.equal(model.activeCompactNavigationId('/es/academy/free-ai-courses'), 'courses');
+  const course = model.getCompactNavigation('es').find(item => item.id === 'courses');
+  assert.equal(course.href, '/es/academy');
+  assert.ok(browser.includes("await expect(activeCourseTab).toHaveCount(1)"));
+  assert.ok(browser.includes("toHaveAttribute('data-nav-item', 'courses')"));
+  assert.ok(browser.includes("toHaveAttribute('href', '/es/academy')"));
+  assert.ok(browser.includes("toHaveAccessibleName('Cursos')"));
+});
+test('Spanish home browser oracle follows the actual six-link carousel rather than a removed card grid', () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const carousel = source('components/home-section-carousel.tsx');
+  assert.match(source('app/es/page.tsx'), /<HomeSectionCarousel locale="es" \/>/);
+  const keys = carousel.match(/const navKeys = \[([^\]]+)\]/);
+  assert.ok(keys);
+  assert.deepEqual([...keys[1].matchAll(/"([^"]+)"/g)].map(match => match[1]),
+    ['services','academy','business','tests','ideas','cabinet']);
+  assert.doesNotMatch(browser, /\.service-home-card-grid/);
+  assert.ok(browser.includes("page.locator('[data-home-section-carousel]')"));
+  assert.ok(browser.includes("node.getAttribute('data-home-nav-section')"));
+  assert.ok(browser.includes("toHaveAttribute('data-home-nav-section', activeSlide)"));
+  assert.ok(browser.includes('data-home-slide-action='));
+});
+test('Spanish account browser journey uses a consented guest dialog action without initiating OAuth', () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const space = source('components/home-personal-space.tsx');
+  assert.match(space, /data-space-link="profile"/);
+  assert.match(space, /href=\{root \+ "\/portrait"\}/);
+  assert.ok(browser.includes("await click(accountTrigger)"));
+  assert.ok(browser.includes("await expect(spaceDialog).toBeVisible()"));
+  assert.ok(browser.includes("['/en/app/portrait', '/en/app'].includes"));
+  assert.ok(browser.includes("await click(accountLink)"));
+  assert.ok(browser.includes("toHaveURL(origin+'/en/app/portrait')"));
+  assert.doesNotMatch(browser, /startGoogleSignIn\(/);
+  assert.ok(browser.includes('No untranslated public labels: '));
+  assert.ok(browser.includes('No eager video'));
+  assert.ok(browser.includes('assertUnsupportedSpanishPrivateLocale(denialPage,response,target,expect)'));
+});
+
