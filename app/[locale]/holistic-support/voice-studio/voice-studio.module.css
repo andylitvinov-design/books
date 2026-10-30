@@ -1,0 +1,5 @@
+.page{min-height:100vh;background:linear-gradient(165deg,#f7f8f1,#e8f3ec);color:#224f3d}
+.content{box-sizing:border-box;max-width:920px;margin:0 auto;padding:clamp(14px,4vw,32px) clamp(12px,4vw,24px) 95px}
+.back{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin-bottom:12px;color:#217252;font-size:13px;font-weight:850;text-decoration:none}
+.content h1{margin:0;color:#164d38;font-size:clamp(26px,5vw,42px);line-height:1.1}
+.lead{font-size:14px;color:#526e5c;line-height:1.6;margin:10px 0 15px;max-width:700px}
