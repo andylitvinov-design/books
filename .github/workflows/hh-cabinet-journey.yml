@@ -17,6 +17,10 @@ on:
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261023154000_hh_journey_free_intro_availability.sql'
       - '.github/workflows/hh-cabinet-journey.yml'
+      - 'components/app/cabinet-today.*'
+      - 'lib/app/cabinet-today.mjs'
+      - 'tests/cabinet-today.test.mjs'
+      - '.github/workflows/cabinet-today-ci.yml'
 permissions:
   contents: read
 concurrency:
@@ -37,7 +41,9 @@ jobs:
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Verified participation and permissions regressions
         run: node --test tests/cabinet-learning-journey.test.mjs tests/workflow-next-route-filters.test.mjs tests/my-progress.test.mjs
+      - name: Cabinet Today role, locale, and account-scoped regressions
+        run: node --test tests/cabinet-today.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint components/app/cabinet-journey.jsx components/app/profile-domains.jsx components/app/app-workspace.jsx lib/app/learning-journey.mjs lib/app/learning-journey-repository.js app/api/app/'[...path]'/route.js tests/cabinet-learning-journey.test.mjs components/app/my-progress.jsx components/app/academy-video-progress.jsx lib/app/my-progress.mjs lib/app/video-progress.js app/api/app/video-progress/route.js tests/my-progress.test.mjs
+        run: npx --no-install eslint components/app/cabinet-today.jsx components/app/cabinet-journey.jsx components/app/profile-domains.jsx components/app/app-workspace.jsx lib/app/learning-journey.mjs lib/app/learning-journey-repository.js app/api/app/'[...path]'/route.js tests/cabinet-learning-journey.test.mjs components/app/my-progress.jsx components/app/academy-video-progress.jsx lib/app/my-progress.mjs lib/app/video-progress.js app/api/app/video-progress/route.js tests/my-progress.test.mjs
       - name: TypeScript
         run: npx --no-install tsc --noEmit
