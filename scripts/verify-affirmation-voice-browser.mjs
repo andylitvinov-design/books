@@ -57,7 +57,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       const attached=await page.locator("[data-video-audio-attached]").innerText();
       assert.match(attached,/holistic-house-affirmations/);
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
-      await page.locator("[data-hypno-overview-enable]").uncheck();
+      await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
