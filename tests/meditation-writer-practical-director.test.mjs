@@ -137,6 +137,21 @@ test("writer template mode preserves practical action without claiming LLM or me
   assert.equal(draft.audioAssetId,null);
   assert.equal(draft.published,false);
 });
+test("generated literary text keeps the same reviewed practical goal and next action",async()=>{
+  const prepared=plan("relationships","boundaries");
+  const prose="Есть простое спокойное место, где ничто не требует быстрого решения. "+
+    "Можно немного осмотреться, если это вам подходит, и заметить один знакомый предмет. "+
+    "Вы сами выбираете, продолжать ли этот образ или просто слушать слова. "+
+    "Иногда небольшая пауза перед ответом помогает заметить собственные предпочтения. "+
+    "В этом упражнении нет правильного результата и нет необходимости кому-то что-то доказывать.";
+  const result=await writeMeditationDraft(prepared,{writeBeat:async()=>prose});
+  assert.equal(result.status,"draft_review_required");
+  assert.equal(result.practiceCard.methodId,"boundary_rehearsal");
+  assert.equal(result.practiceCard.transferAction,
+    prepared.brief.practice.transferAction);
+  assert.equal(result.audioAssetId,null);
+  assert.equal(result.published,false);
+});
 test("external Gemini sees only a curated anonymous practice, not client text",()=>{
   const secret="PRIVATE_CLIENT_HISTORY_8919";
   const p=plan("relationships","boundaries","ru",
