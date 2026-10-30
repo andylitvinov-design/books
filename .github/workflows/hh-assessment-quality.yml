@@ -16,6 +16,8 @@ on:
       - 'components/app/test-explorer.*'
       - 'components/app/test-result-discussion.*'
       - 'tests/test-result-discussion.test.mjs'
+      - 'tests/guest-scale-verifier.test.mjs'
+      - 'scripts/helpers/guest-scale-verifier.mjs'
       - 'scripts/audit-hh-author-items-2026.mjs'
       - 'scripts/audit-psychometric-quality-2026.mjs'
       - 'tests/*assessment*.test.mjs'
@@ -56,6 +58,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Private result conversation — original measures, crisis gating, EN/RU/ES routes
         run: node --conditions=react-server --test tests/test-result-discussion.test.mjs
+      - name: Verify source-bound guest ranges and account explanations without client data
+        run: node --conditions=react-server --test tests/guest-scale-verifier.test.mjs
       - name: Exact source evidence, 73 authored families, 150 groups and safe reports
         run: >-
           node --conditions=react-server --test

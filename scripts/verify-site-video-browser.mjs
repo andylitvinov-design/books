@@ -14,6 +14,9 @@ import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 const approvedRuHypnotherapyId = readFileSync(new URL('../data/service-video-library.ts', import.meta.url),'utf8')
   .match(/const hypnotherapyRu:\s*ServiceVideoMedia\s*=\s*\{\s*video:\s*\{\s*youtubeId:\s*"([A-Za-z0-9_-]{11})",\s*language:\s*"ru"/)?.[1]
 assert.ok(approvedRuHypnotherapyId,'RU hypnotherapy page must use an approved localized public video')
+const approvedConstellationCaseId = readFileSync(new URL('../data/service-video-library.ts', import.meta.url),'utf8')
+  .match(/const constellationCase:\s*ServiceVideoMedia\s*=\s*\{\s*video:\s*\{\s*youtubeId:\s*"([A-Za-z0-9_-]{11})"/)?.[1]
+assert.ok(approvedConstellationCaseId,'Systemic Constellations page must use the approved published public recording')
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -173,7 +176,7 @@ try {
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/' + approvedConstellationCaseId + '?'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {

@@ -420,3 +420,62 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(about,/npx tsc --noEmit/);
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
+
+test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
+  const prPaths = name => {
+    const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
+    return [...trigger.matchAll(/^      - '([^']+)'$/gm)].map(item=>item[1]);
+  };
+  const covers = (patterns, file) => {
+    let included = false;
+    for (const pattern of patterns) {
+      const negative = pattern.startsWith('!');
+      if (requireGlob(file, negative ? pattern.slice(1) : pattern)) included = !negative;
+    }
+    return included;
+  };
+  const publicServices = prPaths('hh-public-services-production.yml');
+  const ideas = prPaths('hh-ideas-coaching-public.yml');
+  const mock = prPaths('hh-support-mobile-mock-browser.yml');
+  for (const file of [
+    'scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+  ]) {
+    assert.equal(covers(mock,file),true,file+' must still run real Chromium/WebKit mock QA');
+    assert.equal(covers(publicServices,file),false,file+' must not trigger unrelated services acceptance');
+  }
+  assert.equal(covers(ideas,'tests/holistic-support-mobile-mock-parity.test.mjs'),false);
+  for (const file of [
+    'components/holistic-support-mobile.tsx',
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'scripts/verify-holistic-master-browser.mjs',
+    'app/ru/holistic-support/page.tsx',
+    'app/api/payments/some-service/route.ts',
+    'tests/temple-support-hub.test.mjs',
+  ]) assert.equal(covers(publicServices,file),true,file+' must still enforce full services acceptance');
+  for (const file of [
+    'components/ideas-discovery.tsx',
+    'tests/holistic-support-first-screen.test.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+  ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
+  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+});
+
+test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const reports = workflow('hh-reports-development-program.yml');
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.match(reports, /^  pull_request:/m);
+  assert.match(reports, /^  push:/m);
+  assert.ok(reports.includes('.github/workflows/hh-reports-development-program.yml'));
+  assert.ok(reports.includes('- name: Verify production Next.js build without preview deployment\n        '+gate+'\n        run: npm run build'));
+  assert.ok(reports.includes('tests/reports-development-program.test.mjs'));
+  assert.ok(reports.includes('tests/goal-profile-journey.test.mjs'));
+  assert.match(reports, /node --conditions=react-server --test/);
+  assert.match(reports, /npx --no-install eslint/);
+  assert.doesNotMatch(reports,/continue-on-error:\s*true/);
+});
