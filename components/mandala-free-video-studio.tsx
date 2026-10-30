@@ -2763,7 +2763,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         pace={speed} brightness={brightness}
         affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
         focus={meditationFocus} disabled={recording||preparing}
-         onNarrationReady={attachMeditationNarration}/> : null}
+         onNarrationReady={attachMeditationNarration}
+         onNarrationInvalidated={()=>setAttachedAudio(current=>
+           current?.kind==="file"&&current.nonLoop?null:current)}/> : null}
 
 
 
