@@ -589,12 +589,31 @@ async function handle(request, { params }) {
           loadServices: async locale => (await import('@/data/core-service-offers')).coreServiceOffers(locale),
           loadVideoHistory: async ids => (await import('@/lib/app/video-progress')).matchingMarkedVideoIds(config, actor, ids),
           loadTestHistory: async keys => (await import('@/lib/holistic-support/intelligence-result-history')).projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(actor,keys),accountId:actor.id}),
+          loadActiveCourse: async () => (await import('@/lib/app/intelligence-course')).hasActiveIntelligenceCourse(config,actor),
+          loadDevelopmentPlan: async () => {
+            const snapshot = await readDevelopmentGoals(config, actor)
+            if (snapshot.revision === 0) return { courseId: null }
+            const { PORTRAIT_SOURCE_RULES } = await import('@/lib/assessments/portrait-constructs')
+            const keys = [...new Set(PORTRAIT_SOURCE_RULES.filter(rule => rule.mode === 'directional' && rule.goalEligible).map(rule => rule.testKey))]
+            const results = await repo.intelligenceResults(actor, keys)
+            return (await import('@/lib/holistic-support/intelligence-development-plan')).projectDevelopmentCourse({ results, accountId:actor.id, snapshot })
+          },
+          loadFeedback: async ids => (await import('@/lib/app/intelligence-feedback')).matchingUnhelpfulFeedback(config,actor,ids),
         }))
       } catch (error) {
         if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
           throw new AppError('INVALID_INTELLIGENCE_REQUEST', 400)
         throw error
       }
+    }
+    if (method === 'POST' && ['intelligence/feedback/status','intelligence/feedback/save','intelligence/feedback/edit','intelligence/feedback/export','intelligence/feedback/delete'].includes(joined)) {
+      const body=await readBody(request,2048)
+      const memory=await import('@/lib/app/intelligence-feedback')
+      if(joined==='intelligence/feedback/status'){onlyKeys(body,[]);return json(await memory.intelligenceFeedbackStatus(config,actor))}
+      if(joined==='intelligence/feedback/save')return json(await memory.saveIntelligenceFeedback(config,actor,body))
+      if(joined==='intelligence/feedback/edit')return json(await memory.editIntelligenceFeedback(config,actor,body))
+      if(joined==='intelligence/feedback/export'){onlyKeys(body,[]);return json(await memory.exportIntelligenceFeedback(config,actor))}
+      return json(await memory.deleteIntelligenceFeedback(config,actor,body))
     }
     if (
       path[0] === 'save-intents' &&

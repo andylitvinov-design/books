@@ -16,6 +16,25 @@ const copy = {
   ru:{next:'Продолжить',no:'Нет',yes:'Да',symbolic:'Включить символические практики',symbolicResult:'Символическая духовная практика · не медицинское лечение',skip:'Пропустить',other:'Другой вариант',help:'Если вам угрожает опасность'},
   es:{next:'Continuar',no:'No',yes:'Sí',symbolic:'Incluir prácticas simbólicas',symbolicResult:'Práctica espiritual simbólica · no es tratamiento médico',skip:'Omitir',other:'Otra opción',help:'Si puedes estar en peligro'},
 }
+// Mobile scroll may still move beneath fixed navigation after Playwright
+// reports the control visible. Require a stable real hit target and one
+// ordinary click; never force or silently retry a missed interaction.
+async function stableAdvance(page, button) {
+  await button.evaluate(node=>{
+    window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false
+    node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
+    node.addEventListener('click',()=>{window.__hhAdvanceReceived=true},{capture:true,once:true})
+  })
+  await page.waitForFunction(node=>{
+    const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2
+    const hit=document.elementFromPoint(x,y),last=window.__hhAdvanceStable
+    const same=last&&Math.abs(last.x-x)<0.5&&Math.abs(last.y-y)<0.5
+    window.__hhAdvanceStable={x,y,count:same?last.count+1:0}
+    return y>60&&y<innerHeight-60&&hit&&(hit===node||node.contains(hit))&&window.__hhAdvanceStable.count>=6
+  },await button.elementHandle())
+  await button.click()
+  assert.equal(await page.evaluate(()=>window.__hhAdvanceReceived),true,'format advance click must reach its button')
+}
 for (let i=0;i<60;i++) {
   try { if ((await fetch(`${base}/en/holistic-support`)).ok) break } catch { /* server starting */ }
   if (i===59) throw new Error('LOCAL_SITE_UNAVAILABLE')
@@ -86,9 +105,9 @@ try {
     await checkinPage.locator('[data-meditation-finder-toggle]').click()
     const card=checkinPage.locator('[data-holistic-intelligence]')
     await card.locator('select').selectOption('energy')
-    await card.getByRole('button',{name:'Continue',exact:true}).click()
+    await stableAdvance(checkinPage,card.getByRole('button',{name:'Continue',exact:true}))
     await card.locator('#hh-intelligence-format-meditation').selectOption('video')
-    await card.getByRole('button',{name:'Continue',exact:true}).click()
+    await stableAdvance(checkinPage,card.getByRole('button',{name:'Continue',exact:true}))
     await card.getByRole('button',{name:copy.en.symbolic,exact:true}).click()
     await card.getByRole('button',{name:'No',exact:true}).click()
     await card.getByRole('button',{name:'No',exact:true}).click()

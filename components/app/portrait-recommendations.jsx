@@ -88,7 +88,7 @@ export function PortraitRecommendations({results = [],locale = 'en',accountId}) 
             </div>
           </section>
         </div>}
-    <HolisticIntelligenceCard locale={locale} accountId={accountId} />
+    <HolisticIntelligenceCard key={accountId} locale={locale} accountId={accountId} />
     <PersonalAxisMatches measurements={model.measurements} locale={locale} showMeasurements={false} />
     <div className={styles.footer}>
       <p>{t.nextCopy}</p>
