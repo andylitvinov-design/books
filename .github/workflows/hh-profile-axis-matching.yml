@@ -1,5 +1,7 @@
 name: Holistic House axis-to-offer matching
 on:
+  push:
+    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
@@ -26,6 +28,11 @@ on:
       - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'lib/holistic-support/intelligence-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
+      - 'lib/holistic-support/intelligence-plan.mjs'
+      - 'tests/intelligence-plan.test.mjs'
+      - 'tests/app-auth-pkce.integration.mjs'
+      - 'lib/holistic-support/meditation-discovery-server.ts'
+      - 'app/api/app/**/route.js'
       - 'lib/home-conversation.mjs'
       - 'lib/ideas-guidance.mjs'
       - 'data/ideas-aphorisms.json'
@@ -55,7 +62,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: profile-axis-${{ github.event.pull_request.number }}
+  group: profile-axis-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
@@ -74,11 +81,13 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/axis-offer-ranker.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs
+        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs
       - name: Portrait four-sector, missing-value, responsive and privacy contracts
         run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs
+        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+      - name: Authenticated intelligence route and OAuth regression
+        run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: TypeScript check
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false

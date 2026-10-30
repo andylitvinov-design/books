@@ -577,6 +577,18 @@ async function handle(request, { params }) {
       joined === 'export' ? 3 : 180,
       joined === 'export' ? 3600 : 60,
     )
+    if (joined === 'intelligence/plan' && method === 'POST') {
+      const body = await readBody(request, 16384)
+      const { planIntelligenceRequest } = await import('@/lib/holistic-support/intelligence-plan.mjs')
+      const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')
+      try {
+        return json(await planIntelligenceRequest(body, { loadCatalog: loadMeditationDiscovery }))
+      } catch (error) {
+        if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
+          throw new AppError('INVALID_INTELLIGENCE_REQUEST', 400)
+        throw error
+      }
+    }
     if (
       path[0] === 'save-intents' &&
       path.length === 3 &&
