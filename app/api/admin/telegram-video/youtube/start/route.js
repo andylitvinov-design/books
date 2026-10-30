@@ -12,7 +12,7 @@ const CALLBACK='https://holistichouse.vercel.app/api/admin/telegram-video/youtub
 const CONTEXT={accountId:PRACTITIONER_ID,recordId:PRACTITIONER_ID,field:'telegram_video_oauth_state'}
 const HEADERS={'cache-control':'no-store','referrer-policy':'no-referrer'}
 export async function GET(request){
- const selected=new URL(request.url).searchParams.get('target')
+ const selected=request?.url?new URL(request.url).searchParams.get('target'):null
  if(selected!==null&&selected!=='ru'&&selected!=='en')
    return new Response('Invalid YouTube destination',{status:400,headers:HEADERS})
  const target=selected==='en'?'en':'ru'
