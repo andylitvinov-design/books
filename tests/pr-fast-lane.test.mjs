@@ -570,7 +570,7 @@ test('CI wave 5 consolidates speech and Telegram into real specialist jobs, no s
   assert.doesNotMatch(voice,/^  production-build:\s*$/m);
   assert.match(voice,/^  protocol:\s*$/m);
   assert.match(voice,/^  redis-atomic:\s*$/m);
-  for(const contract of ['tests/local-narration-queue.test.mjs','tests/report-narration.test.mjs','tests/local-narration-redis-runtime.test.mjs','tests/test_andrey_voice_local_engine.py'])
+  for(const contract of ['tests/local-narration-queue.test.mjs','tests/report-narration.test.mjs','tests/local-narration-redis-runtime.test.mjs','test_andrey_voice_local_engine.py'])
     assert.ok(voice.includes(contract),'speech privacy/Redis/worker verification removed: '+contract);
   assert.ok(voice.includes('- name: Independent Next.js production build\n        '+guard+'\n'));
   const digest=workflow('hh-practice-telegram-digest.yml');
