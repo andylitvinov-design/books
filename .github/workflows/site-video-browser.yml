@@ -90,6 +90,7 @@ on:
       - '.github/workflows/site-video-browser.yml'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: site-video-browser-${{ github.ref }}
   cancel-in-progress: true
@@ -111,6 +112,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -200,6 +206,7 @@ jobs:
     timeout-minutes: 32
     permissions:
       contents: read
+      pull-requests: read
     services:
       postgres:
         image: postgres:17-alpine
@@ -232,6 +239,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
