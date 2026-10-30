@@ -147,6 +147,10 @@ async function verify(engine, locale, width) {
     await nextScreen.waitFor({state:"visible", timeout:30000});
     const handoff = nextScreen.locator("#remote-intention");
     await handoff.waitFor({state:"visible"});
+    // The server-rendered textarea can be visible before the one-use in-memory
+    // handoff is consumed by the mounted client effect. Wait for the exact value.
+    await page.waitForFunction(expected => document.querySelector('#remote-intention')?.value === expected,
+      copy[locale].intention, {timeout: 10000});
     assert.equal(await handoff.inputValue(), copy[locale].intention,
       label + ": private same-tab goal preserved for the user's review");
     assert.equal(await nextScreen.locator("[data-lead-saved]").count(), 0,
@@ -178,6 +182,17 @@ async function verify(engine, locale, width) {
       label + ": only published practitioners or an honest empty state appear");
     await page.reload({waitUntil:"domcontentloaded"});
     await nextScreen.waitFor({state:"visible"});
+    // Prove the reloaded client is hydrated before checking the one-use value.
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-remote-focus-chip]');
+      return Boolean(button && Object.keys(button).some(key => key.startsWith('__reactProps$')));
+    }, null, {timeout: 30000});
+    const selectedBeforeReloadCheck = await focusChoices.first().getAttribute('aria-pressed');
+    await focusChoices.first().tap();
+    await page.waitForFunction(previous => {
+      const button = document.querySelector('[data-remote-focus-chip]');
+      return button?.getAttribute('aria-pressed') === (previous === 'true' ? 'false' : 'true');
+    }, selectedBeforeReloadCheck, {timeout: 10000});
     assert.equal(await handoff.inputValue(), "",
       label + ": one-use free-text goal not restored from cookie or storage");
 
