@@ -1,7 +1,7 @@
 name: Holistic House axis-to-offer matching
 on:
   push:
-    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029', 'codex/hh-intelligence-client-card-20261029', 'codex/hh-intelligence-coaching-context-20261029', 'codex/hh-intelligence-session-checkins-20261029', 'codex/hh-intelligence-coaching-rls-20261029', 'codex/hh-intelligence-test-actions-20261029', 'codex/hh-intelligence-service-actions-20261029', 'codex/hh-intelligence-video-history-20261029']
+    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029', 'codex/hh-intelligence-client-card-20261029', 'codex/hh-intelligence-coaching-context-20261029', 'codex/hh-intelligence-session-checkins-20261029', 'codex/hh-intelligence-coaching-rls-20261029', 'codex/hh-intelligence-test-actions-20261029', 'codex/hh-intelligence-service-actions-20261029', 'codex/hh-intelligence-video-history-20261029', 'codex/hh-intelligence-test-history-20261029', 'codex/hh-intelligence-course-preview-20261029', 'codex/hh-intelligence-guest-consent-20261029', 'codex/hh-intelligence-owner-journey-20261029', 'codex/hh-intelligence-video-history-complete-20261029']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library', 'codex/hh-intelligence-*']
@@ -30,6 +30,9 @@ on:
       - 'tests/intelligence-risk.test.mjs'
       - 'lib/holistic-support/intelligence-plan.mjs'
       - 'lib/holistic-support/intelligence-test-catalog.js'
+      - 'lib/holistic-support/intelligence-result-history.js'
+      - 'tests/intelligence-result-history.test.mjs'
+      - 'lib/assessments/verified-history.js'
       - 'lib/assessments/support-guide-tests.js'
       - 'lib/assessments/test-recommendations.js'
       - 'data/core-service-offers.ts'
@@ -42,6 +45,7 @@ on:
       - 'supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
       - 'lib/app/video-progress.js'
+      - 'lib/app/repository.js'
       - 'lib/app/personal-coaching.js'
       - 'lib/app/database.js'
       - 'lib/app/config.js'
@@ -50,6 +54,8 @@ on:
       - 'components/holistic-intelligence-card.jsx'
       - 'components/holistic-intelligence-card.module.css'
       - 'scripts/verify-intelligence-browser.mjs'
+      - 'scripts/verify-intelligence-guest-journey.mjs'
+      - 'scripts/verify-intelligence-owner-route.mjs'
       - 'components/app/app-workspace.jsx'
       - 'lib/holistic-support/meditation-discovery-server.ts'
       - 'app/api/app/**/route.js'
@@ -103,11 +109,11 @@ jobs:
       - name: Rank accuracy and no health/goal score invention
         run: |
           node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/holistic-intelligence-card.test.mjs
-          node --conditions=react-server --test tests/intelligence-plan.test.mjs
+          node --conditions=react-server --test tests/intelligence-plan.test.mjs tests/intelligence-result-history.test.mjs
       - name: Portrait four-sector, missing-value, responsive and privacy contracts
         run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/intelligence-test-catalog.js lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/holistic-intelligence-card.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-intelligence-card.jsx components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/intelligence-result-history.js tests/intelligence-result-history.test.mjs lib/holistic-support/intelligence-test-catalog.js lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/holistic-intelligence-card.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-intelligence-card.jsx components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: Authenticated intelligence route and OAuth regression
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: TypeScript check
@@ -142,7 +148,7 @@ jobs:
           if-no-files-found: ignore
   coaching-owner-rls:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:17-alpine
@@ -166,12 +172,27 @@ jobs:
       HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
       HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
       HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
+      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100,http://127.0.0.1:3187
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
-      - name: Verify two-owner coaching isolation
+      - name: Verify two-owner coaching and history isolation
         run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-coaching-rls.integration.mjs
+      - name: Install browser for isolated guest journey
+        run: |
+          npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Complete a synthetic guest test journey with PostgreSQL
+        env:
+          HH_INTELLIGENCE_BROWSER_TOOLS: /tmp/hh-intelligence-browser
+          NODE_ENV: development
+        run: |
+          node node_modules/next/dist/bin/next dev --port 3187 > /tmp/hh-intelligence-guest-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          HH_TEST_BROWSER=chromium node scripts/verify-intelligence-guest-journey.mjs
+          node --conditions=react-server scripts/verify-intelligence-owner-route.mjs
+          HH_TEST_BROWSER=webkit node scripts/verify-intelligence-guest-journey.mjs

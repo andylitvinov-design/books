@@ -126,6 +126,8 @@ try {
     await card.getByRole('button',{name:copy.es.no,exact:true}).click()
     await card.getByRole('button',{name:copy.es.no,exact:true}).click()
     await card.getByRole('button',{name:copy.es.skip,exact:true}).click()
+    assert.equal(await card.getByRole('link').count(),0,'test must not start before explicit consent')
+    await card.locator('#hh-intelligence-test-consent-meditation').check()
     const link=card.getByRole('link').first()
     await link.waitFor({state:'visible',timeout:15000})
     assert.match(await link.getAttribute('href'),/^\/en\/client\?startTests=[a-z0-9-]+$/)
@@ -158,5 +160,38 @@ try {
     await card.getByRole('button',{name:copy.en.other,exact:true}).click()
     assert.equal(await card.getByRole('link').first().getAttribute('href'),'/en/services/free-situation-review')
   } finally { await servicePage.close() }
-  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',testRecommendation:'passed',serviceOptIn:'passed'}))
+  // Keep the synthetic guest response ahead of the app service worker.
+  // PWA caching remains a separate verification scope.
+  const coursePage=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'})
+  try {
+    // The CI site has no client database. Simulate only the existing guest
+    // authentication response; the course learner itself remains real.
+    await coursePage.context().route('**/api/app/academy-energywork',route=>route.fulfill({status:401,json:{error:'UNAUTHORIZED'}}))
+    await coursePage.goto(`${base}/es/holistic-support`,{waitUntil:'networkidle'})
+    await coursePage.locator('[data-meditation-finder-toggle]').click()
+    const card=coursePage.locator('[data-holistic-intelligence]')
+    await card.locator('select').selectOption('energy')
+    await card.getByRole('button',{name:copy.es.next,exact:true}).click()
+    await card.locator('select').selectOption('course')
+    await card.getByRole('button',{name:copy.es.next,exact:true}).click()
+    assert.equal(await card.getByText('práctica espiritual simbólica',{exact:false}).isVisible(),true)
+    await card.getByRole('button',{name:'Elegir vista previa de Reiki',exact:true}).click()
+    await card.getByRole('button',{name:copy.es.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.es.no,exact:true}).click()
+    await card.getByRole('button',{name:copy.es.skip,exact:true}).click()
+    const link=card.getByRole('link').first();await link.waitFor({state:'visible',timeout:15000})
+    assert.equal(await link.getAttribute('href'),'/en/academy/principles-of-energywork/learn')
+    assert.equal(await card.getByText('Idioma de la lección: English',{exact:false}).isVisible(),true)
+    const opened=coursePage.waitForEvent('popup');await link.click();const learner=await opened
+    await learner.locator('[data-energywork-ai-learner]').waitFor({state:'visible',timeout:60000})
+    assert.equal(new URL(learner.url()).pathname,'/en/academy/principles-of-energywork/learn')
+    await learner.waitForLoadState('networkidle')
+    await learner.getByRole('button',{name:'Start free program',exact:true}).click()
+    await learner.getByText("I'm new to Reiki",{exact:true}).click()
+    await learner.getByRole('button',{name:'Continue',exact:true}).click()
+    await learner.getByRole('button',{name:'Continue',exact:true}).click()
+    assert.equal(await learner.locator('[data-energywork-slide-id]').getAttribute('data-energywork-slide-id'),'flight-01')
+    await learner.close()
+  } finally { await coursePage.close() }
+  console.log(JSON.stringify({browser:name,localeViewportCases:checked,crisisAndKeyboard:'passed',voluntaryCheckin:'passed',testRecommendation:'passed',serviceOptIn:'passed',coursePreview:'passed'}))
 } finally { await browser.close() }

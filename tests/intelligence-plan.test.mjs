@@ -155,16 +155,56 @@ test('service adapter rejects forged routes and never suggests symbolic or unrev
 });
 test('video history is read only after a cabinet owner explicitly opts in and marked videos are excluded', async () => {
   let reads=0
-  const loadVideoHistory=async()=>{reads++;return {records:[{videoId:sourceId,status:'watched',title:'private title'}]}}
+  const loadVideoHistory=async ids=>{reads++;assert(ids.includes(sourceId));return {videoIds:[sourceId]}}
   const request={...body,intent:{language:'en',selectedTopics:['energy'],formats:['video']}}
   assert.equal((await planIntelligenceRequest(request,{loadCatalog:loader,loadVideoHistory})).status,'recommend')
   assert.equal(reads,0)
   const avoided=await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory})
   assert.equal(avoided.status,'no_match')
   assert.equal(reads,1)
-  assert.equal(JSON.stringify(avoided).includes('private title'),false)
+  assert.equal(JSON.stringify(avoided).includes(sourceId),false)
   await planIntelligenceRequest({...request,videoHistory:'avoid_marked',preflight:undefined},{loadCatalog:loader,loadVideoHistory})
   assert.equal(reads,1)
   await assert.rejects(planIntelligenceRequest({...request,surface:'meditation',videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory}),/INVALID_INTELLIGENCE_REQUEST/)
   assert.equal((await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory:()=>{throw Error('private error')}})).status,'unavailable')
+  assert.equal((await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:loader,loadVideoHistory:()=>({videoIds:['unrelated00']})})).status,'unavailable')
+  const tooMany=Array.from({length:201},(_,index)=>({youtube_id:String(index).padStart(11,'0')}))
+  assert.equal((await planIntelligenceRequest({...request,videoHistory:'avoid_marked'},{loadCatalog:async()=>({videos:tooMany}),loadVideoHistory:()=>{throw Error('must not read')}})).status,'unavailable')
+});
+test('completed tests are used only with explicit per-request consent and are not returned', async () => {
+  const {buildIntelligenceTestCatalog}=await import('../lib/holistic-support/intelligence-test-catalog.js')
+  const request={...body,intent:{language:'en',selectedTopics:['energy'],formats:['test']}}
+  let reads=0
+  const loadTestHistory=async()=>{reads++;return {completedKeys:['hh-resource-pulse']}}
+  assert.equal((await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory})).primary.id,'test:hh-resource-pulse')
+  assert.equal(reads,0)
+  const next=await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory})
+  assert.equal(next.primary.id,'test:hh-current-state')
+  assert.equal(reads,1)
+  assert.equal(JSON.stringify(next).includes('hh-resource-pulse'),false)
+  await planIntelligenceRequest({...request,testHistory:'avoid_completed',preflight:undefined},{loadTests:buildIntelligenceTestCatalog,loadTestHistory})
+  assert.equal(reads,1)
+  await assert.rejects(planIntelligenceRequest({...request,surface:'meditation',testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory}),/INVALID_INTELLIGENCE_REQUEST/)
+  assert.equal((await planIntelligenceRequest({...request,testHistory:'avoid_completed'},{loadTests:buildIntelligenceTestCatalog,loadTestHistory:()=>{throw Error('private')}})).status,'unavailable')
+});
+test('a symbolic course preview requires its own explicit choice and points to the existing learner', async () => {
+  const request={...body,intent:{language:'es',selectedTopics:['energy'],formats:['course']}}
+  const absent=await planIntelligenceRequest(request,{})
+  assert.equal(absent.status,'no_match')
+  const result=await planIntelligenceRequest({...request,courseSelection:'reiki_preview'},{})
+  assert.equal(result.status,'recommend')
+  assert.equal(result.primary.href,'/en/academy/principles-of-energywork/learn')
+  assert.equal(result.primary.kind,'course')
+  assert.equal(result.primary.lessonLanguage,'en')
+  assert.equal(result.primary.requiresUserConfirmation,true)
+  assert.match(result.explanation,/Reiki/)
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',preflight:undefined},{})).status,'unavailable')
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',session:{dismissedIds:['course:reiki-preview']}},{})).status,'no_match')
+  assert.equal((await planIntelligenceRequest({...request,courseSelection:'reiki_preview',intent:{...request.intent,maxDurationMinutes:5}},{})).status,'no_match')
+  await assert.rejects(planIntelligenceRequest({...request,courseSelection:'other'},{}),/INVALID_INTELLIGENCE_REQUEST/)
+  for (const [locale, lessonLanguage] of [['en','en'],['ru','ru'],['es','en']]) {
+    const local=await planIntelligenceRequest({...request,courseSelection:'reiki_preview',intent:{...request.intent,language:locale}},{})
+    assert.equal(local.primary.lessonLanguage,lessonLanguage)
+    assert.equal(local.primary.href,`/${lessonLanguage}/academy/principles-of-energywork/learn`)
+  }
 });

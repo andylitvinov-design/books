@@ -6,6 +6,8 @@ import { readFile } from 'node:fs/promises'
 import { NextRequest, NextResponse } from 'next/server.js'
 import { createRequestAuth } from '../lib/app/session.js'
 import { getAppConfig } from '../lib/app/config.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 const origin = 'https://app.example.invalid'
 const config = { supabaseUrl: 'https://provider.example.invalid', publishableKey: 'synthetic-key', test: false }
@@ -90,21 +92,24 @@ test('missing or wrong verifier fails closed without a session', async t => {
 // Execute the actual route, substituting only external DB/rate boundaries.
 // Auth and cookie implementations remain the pinned production SDK and adapter.
 const meditationFixture = JSON.parse(await readFile(new URL('../data/academy/meditation-catalog-candidates-20261028.json', import.meta.url), 'utf8')).videos
+const testDefinition=getAssessmentDefinition('hh-resource-pulse','v1','en')
+const resultFixture={...scoreAssessment(testDefinition,Object.fromEntries(testDefinition.questions.map(q=>[q.id,q.min??testDefinition.answerScale.min]))),id:'synthetic-result',accountId:user.id,measurementAt:'2026-01-01T00:00:00Z'}
 let routeSource = await readFile(new URL('../app/api/app/[...path]/route.js', import.meta.url), 'utf8')
-routeSource = 'export const videoReads=[];\n' + routeSource
+routeSource = 'export const videoReads=[]; export const testReads=[];\n' + routeSource
 routeSource = routeSource
   .replace("from 'next/server'", "from 'next/server.js'")
   .replace(/import \{ getAppConfig, requireSameOrigin, requestOrigin \} from '@\/lib\/app\/config'/,
     `import { requireSameOrigin, requestOrigin } from '${new URL('../lib/app/config.js', import.meta.url)}'; const getAppConfig = () => (${JSON.stringify({...config, origins:[origin]})})`)
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
-    'export const accountWrites = []; export let syntheticOnboardingState = "active"; export const setSyntheticOnboardingState = value => { syntheticOnboardingState = value }; const createAppRepository = () => ({ensureAccount: async actor => { accountWrites.push(actor.id); return { onboardingState: syntheticOnboardingState } }})')
+    `export const accountWrites = []; export let syntheticOnboardingState = "active"; export const setSyntheticOnboardingState = value => { syntheticOnboardingState = value }; const createAppRepository = () => ({ensureAccount: async actor => { accountWrites.push(actor.id); return { onboardingState: syntheticOnboardingState } }, intelligenceResults:async actor=>{testReads.push(actor.id);return actor.id==='${user.id}'?[${JSON.stringify(resultFixture)}]:[]}})`)
   .replace(/import \{ readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries \} from '@\/lib\/app\/personal-coaching'/,
     `import { savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '${new URL('../lib/app/personal-coaching.js', import.meta.url)}'; export const coachingReads=[]; const readPersonalCoaching=async (_,actor)=>{ coachingReads.push(actor.id); return {course:{current:{status:'completed',clientTopic:'money',actionPlan:{goal:'private test goal',approvedAt:'2026-01-01T00:00:00Z'}}}} }`)
   .replace(/import \{ consumeRate \} from '@\/lib\/app\/database'/, 'const consumeRate = async () => {}')
   .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
   .replace("await import('@/lib/holistic-support/intelligence-test-catalog')", `await import('${new URL('../lib/holistic-support/intelligence-test-catalog.js', import.meta.url)}')`)
   .replace("await import('@/data/core-service-offers')", `await import('${new URL('../data/core-service-offers.ts', import.meta.url)}')`)
-  .replace("await import('@/lib/app/video-progress')", "({listVideoProgress:async (_,actor)=>{videoReads.push(actor.id);return {records:actor.id==='10000000-0000-4000-8000-000000000001'?[{videoId:'HqfixazXqRY',status:'watched'}]:[]}}})")
+  .replace("await import('@/lib/app/video-progress')", "({matchingMarkedVideoIds:async (_,actor,ids)=>{videoReads.push(actor.id);return {videoIds:actor.id==='10000000-0000-4000-8000-000000000001'&&ids.includes('HqfixazXqRY')?['HqfixazXqRY']:[]}}})")
+  .replace("await import('@/lib/holistic-support/intelligence-result-history')", `await import('${new URL('../lib/holistic-support/intelligence-result-history.js', import.meta.url)}')`)
   .replace("const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')", `const loadMeditationDiscovery = async () => ({ videos: ${JSON.stringify(meditationFixture)}, publishedSourceIds: ['HqfixazXqRY'] })`)
   .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + (/\.[cm]?js$/.test(name) ? '' : '.js'), import.meta.url)}'`)
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
@@ -138,6 +143,12 @@ test('intelligence route enforces origin and verified session before planning', 
   assert.equal(testResult.status,200)
   assert.equal(testPlan.primary.kind,'test')
   assert.match(testPlan.primary.href,/^\/en\/client\?startTests=/)
+  const historyTestBody={...body,intent:{language:'en',selectedTopics:['energy'],formats:['test']},testHistory:'avoid_completed'}
+  const historyTest=await route.POST(request(historyTestBody,headers),params)
+  const historyTestPlan=await historyTest.json()
+  assert.equal(historyTestPlan.primary.id,'test:hh-current-state')
+  assert.equal(JSON.stringify(historyTestPlan).includes('synthetic-result'),false)
+  assert.deepEqual(route.testReads,[user.id])
   const serviceBody={...body,intent:{language:'en',selectedTopics:['money'],formats:['service']}}
   const freeService=await route.POST(request(serviceBody,headers),params)
   assert.equal((await freeService.json()).primary.id,'service:situation')
@@ -146,6 +157,11 @@ test('intelligence route enforces origin and verified session before planning', 
   assert.equal(paidPlan.primary.id,'service:business')
   assert.equal(paidPlan.primary.free,false)
   assert.equal(JSON.stringify(paidPlan).includes(user.id),false)
+  const courseBody={...body,intent:{language:'en',selectedTopics:['energy'],formats:['course']},courseSelection:'reiki_preview'}
+  const course=await route.POST(request(courseBody,headers),params)
+  const coursePlan=await course.json()
+  assert.equal(coursePlan.primary.href,'/en/academy/principles-of-energywork/learn')
+  assert.equal(coursePlan.primary.requiresUserConfirmation,true)
   const historyBody={...body,intent:{...body.intent,formats:['video']},videoHistory:'avoid_marked'}
   const history=await route.POST(request(historyBody,headers),params)
   assert.equal((await history.json()).status,'no_match')
@@ -167,6 +183,9 @@ test('intelligence route enforces origin and verified session before planning', 
   const secondHistory=await route.POST(request(historyBody, {origin,cookie:secondCookies}),params)
   assert.equal((await secondHistory.json()).status,'recommend')
   assert.deepEqual(route.videoReads,[user.id,second.id])
+  const secondTestHistory=await route.POST(request(historyTestBody, {origin,cookie:secondCookies}),params)
+  assert.equal((await secondTestHistory.json()).primary.id,'test:hh-resource-pulse')
+  assert.deepEqual(route.testReads,[user.id,second.id])
   const readsBefore = route.coachingReads.length
   const savedBody = {...body, intent:{language:'en'}, profileFocus:'confirmed_coaching_topic'}
   const saved = await route.POST(request(savedBody, {origin, cookie:secondCookies}), params)

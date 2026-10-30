@@ -1,13 +1,17 @@
 // Real restricted-role PostgreSQL test, guarded by the existing isolated setup.
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { getAppConfig } from '../lib/app/config.js'
 import { createAppRepository } from '../lib/app/repository.js'
 import { closeDatabase } from '../lib/app/database.js'
 import { seal } from '../lib/app/crypto.js'
 import { readPersonalCoaching } from '../lib/app/personal-coaching.js'
-import { listVideoProgress, markVideoProgress } from '../lib/app/video-progress.js'
+import { listVideoProgress, matchingMarkedVideoIds, markVideoProgress } from '../lib/app/video-progress.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { projectVerifiedCompletedTestKeys } from '../lib/holistic-support/intelligence-result-history.js'
+import { buildIntelligenceTestCatalog } from '../lib/holistic-support/intelligence-test-catalog.js'
 import { planIntelligenceRequest } from '../lib/holistic-support/intelligence-plan.mjs'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
@@ -63,13 +67,34 @@ test('planning reads only the authenticated owner and never returns private plan
 })
 test('explicit video marks affect only the owner who saved them',async()=>{
   await markVideoProgress(config,a,{videoId:'HqfixazXqRY',title:'Synthetic private title',status:'watched'})
+  const admin=await adminClient()
+  try {
+    await admin.query("insert into app_private.learning_video_progress(account_id,video_id,title,status,marked_at,updated_at) select $1,'A'||lpad(i::text,10,'0'),'Synthetic','watched',now()+interval '1 second',now()+interval '1 second' from generate_series(1,251) i",[A])
+  } finally {await admin.end()}
+  assert.equal((await listVideoProgress(config,a)).records.some(row=>row.videoId==='HqfixazXqRY'),false)
   const visible=await rawAs(b,'hh_app_backend',db=>db.query('select account_id from app_private.learning_video_progress'))
   assert.equal(visible.rowCount,0)
   const request={...body,profileFocus:undefined,videoHistory:'avoid_marked',intent:{language:'en',selectedTopics:['money'],formats:['video']}}
-  const first=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:()=>listVideoProgress(config,a)})
-  const second=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:()=>listVideoProgress(config,b)})
+  const first=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:ids=>matchingMarkedVideoIds(config,a,ids)})
+  const second=await planIntelligenceRequest(request,{loadCatalog,loadVideoHistory:ids=>matchingMarkedVideoIds(config,b,ids)})
   assert.equal(first.status,'no_match')
   assert.equal(second.status,'recommend')
   assert.equal(JSON.stringify(first).includes('Synthetic private title'),false)
   assert.equal(JSON.stringify(second).includes('Synthetic private title'),false)
+})
+test('verified completed test affects only its owner after explicit consent',async()=>{
+  const def=getAssessmentDefinition('hh-resource-pulse','v1','en')
+  const run=await repo.startRun(a,{definitionKey:def.key,definitionVersion:def.version,instrumentLocale:def.instrumentLocale,operationId:randomUUID()})
+  const saved=await repo.saveRun(a,run.id,{answers:Object.fromEntries(def.questions.map(q=>[q.id,q.min??def.answerScale.min])),context:{},progress:def.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+  await repo.submitRun(a,run.id,{expectedRevision:saved.revision})
+  const ownerRows=await repo.intelligenceResults(a), otherRows=await repo.intelligenceResults(b)
+  assert.equal(ownerRows.length,1)
+  assert.equal(otherRows.length,0)
+  const loadFor=who=>async()=>projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(who),accountId:who.id})
+  const request={...body,profileFocus:undefined,testHistory:'avoid_completed',intent:{language:'en',selectedTopics:['energy'],formats:['test']}}
+  const first=await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory:loadFor(a)})
+  const second=await planIntelligenceRequest(request,{loadTests:buildIntelligenceTestCatalog,loadTestHistory:loadFor(b)})
+  assert.equal(first.primary.id,'test:hh-current-state')
+  assert.equal(second.primary.id,'test:hh-resource-pulse')
+  for(const response of [first,second]) assert.equal(JSON.stringify(response).includes(ownerRows[0].id),false)
 })
