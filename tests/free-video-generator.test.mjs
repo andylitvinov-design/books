@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildFreeVideoPlan,cleanVisualDescription,FREE_VIDEO_EXAMPLES,
   FREE_VIDEO_FAMILIES,FREE_VIDEO_PALETTES,FREE_VIDEO_VERSION} from "../lib/mandala/free-video-generator.mjs";
+import * as generator from "../lib/mandala/free-video-generator.mjs";
 
 test("eight original procedural worlds preserve the first three families and palettes",()=>{
   assert.deepEqual(FREE_VIDEO_FAMILIES,["mandala","light","lotus","temple","tree","cosmic","light_tunnel","flowering_garden"]);
@@ -85,6 +86,9 @@ test("reduced-motion preference is preserved in the shared preview and export pl
   assert.equal(reduced.reducedMotion,true);
   assert.equal(reduced.seed,normal.seed,'motion preference must not change the visual identity');
   assert.equal(reduced.motion,'dynamic','the user choice remains available when preference changes');
+  assert.equal(typeof generator.freeVideoMotionTime,'function');
+  assert.ok(generator.freeVideoMotionTime(reduced,10)<generator.freeVideoMotionTime(normal,10));
+  assert.ok(generator.freeVideoMotionTime(reduced,10)>0,'reduced motion remains gently animated');
   assert.throws(()=>buildFreeVideoPlan({...options,reducedMotion:'yes'}),/invalid_free_video_options/);
 });
 test("visual descriptions are bounded and never echoed into exported plan",()=>{

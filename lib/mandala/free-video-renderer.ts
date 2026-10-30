@@ -1,4 +1,5 @@
 import {paintExtendedWorld} from "./free-video-worlds";
+import {freeVideoMotionTime} from "./free-video-generator.mjs";
 
 /**
  * Actual browser-side frame generator: draws NEW shapes, gradients, petals,
@@ -191,8 +192,7 @@ export function paintFreeVideoFrame(
   const w=ctx.canvas.width,h=ctx.canvas.height;
   if(!w||!h)return;
   const p=PALETTES[plan.palette];
-  const multiplier=plan.reducedMotion ? 0.18 : plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
-  const t=Math.max(0,Number.isFinite(time)?time:0)*multiplier;
+  const t=freeVideoMotionTime(plan,time);
   ctx.save();
   background(ctx,w,h,p,t);
   dust(ctx,w,h,plan.seed,t,p);
