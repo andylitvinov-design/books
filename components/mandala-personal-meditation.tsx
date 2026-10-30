@@ -27,6 +27,7 @@ type Props = {
   affirmations:string[];affirmationsEnabled:boolean;
   focus:GuidedMeditationFocus;disabled:boolean;
   onNarrationReady?:(file:File)=>Promise<boolean>;
+  onNarrationInvalidated?:()=>void;
 };
 const copy = {
   en:{
@@ -112,7 +113,7 @@ const themeLabels = {
 } as const;
 
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,onNarrationReady
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,onNarrationReady,onNarrationInvalidated
 }:Props) {
   const t=copy[locale];
   const [selected,setSelected]=useState<Accent[]>([]);
@@ -400,7 +401,7 @@ export function MandalaPersonalMeditation({
           <small className={css.voiceHint}>{t.voiceNote}</small>
         </div>
         <MandalaCloudVoiceStudio locale={locale} sourceText={script} ambientSrc={audioSrc}
-          onAudioReady={onNarrationReady}/>
+          onAudioReady={onNarrationReady} onAudioInvalidated={onNarrationInvalidated}/>
         <div className={css.actions}>
           <button type="button" data-meditation-copy onClick={()=>void copyScript()}>
             <Clipboard size={16} aria-hidden="true"/>{t.copy}
