@@ -95,13 +95,18 @@ jobs:
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         run: npm run build
+      - name: Install Chromium and WebKit for real public iPhone installation QA
+        run: |
+          mkdir -p /tmp/hh-install-browser-tools
+          npm install --prefix /tmp/hh-install-browser-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-install-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Check EN/RU install pages and real PNG icons
         run: |
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
           trap 'kill "$child" 2>/dev/null || true' EXIT
-          for n in $(seq 1 55); do
-            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+          for attempt in $(seq 1 55); do
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then echo "Install page ready on attempt $attempt"; break; fi
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
@@ -128,3 +133,12 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
           node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
           node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
+          HH_PLAYWRIGHT_PACKAGE=/tmp/hh-install-browser-tools/node_modules/playwright node scripts/verify-hh-install-browser.mjs http://127.0.0.1:3098
+      - name: Archive guest-only iPhone/Android install screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-house-install-browser
+          path: artifacts/holistic-house-install/
+          retention-days: 3
+          if-no-files-found: warn
