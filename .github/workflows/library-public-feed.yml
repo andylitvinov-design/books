@@ -1,7 +1,6 @@
 name: Library public feed focused verification
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/library-feed.tsx'
@@ -40,14 +39,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-
-concurrency:
-  group: hh-library-public-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   isolated-build:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -85,7 +78,7 @@ jobs:
         run: |
           npx --no-install next start --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-server.log 2>&1 & APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for ((i=1; i<=65; i++)); do
+          for i in $(seq 1 65); do
             if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then break; fi
             sleep 2
           done
