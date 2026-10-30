@@ -252,3 +252,22 @@ test('Mandala Draft gating preserves complete Ready video and audio acceptance',
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+test('Support Mobile Draft skips costly mock browser; Ready and production push retain full checks', () => {
+  const source=read('hh-support-mobile-mock-browser.yml');
+  const types="    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]";
+  const gate="    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.match(source, /^  push:/m, 'production visual acceptance must remain');
+  assert.ok(source.includes("branches: ['codex/public-book-library']"));
+  assert.ok(source.includes('  pull_request:\n'+types+'\n'));
+  assert.ok(source.includes('  mobile-visual-parity:\n'+gate+'\n'));
+  assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
+  assert.ok(source.includes("group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"),'never cancel production push');
+  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'));
+  assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
+  assert.ok(source.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(source.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(source.includes("      - '.github/workflows/hh-support-mobile-mock-browser.yml'"));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});

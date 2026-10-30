@@ -34,6 +34,7 @@ on:
       - 'tests/holistic-support-mobile-mock-parity.test.mjs'
       - '.github/workflows/hh-support-mobile-mock-browser.yml'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
@@ -71,10 +72,11 @@ permissions:
 concurrency:
   # Keep push and each PR independent: an unrelated PR must not cancel
   # production visual verification for this exact published commit.
-  group: hh-support-mobile-mock-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   mobile-visual-parity:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 22
     env:
