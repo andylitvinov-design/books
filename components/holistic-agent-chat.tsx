@@ -12,7 +12,7 @@ type AgentDecision = { status: string; message?: string; question?: {key:string;
   suggestions?: {id:string;kind:string;title:string;href:string}[] };
 type AgentReply = { status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
-  browserModelAllowed:boolean; usedSavedTestEvidence?:boolean };
+  browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
 const copy = {
   ru:{ title:"Разговор с AI-проводником",disclosure:"Я — AI-проводник Holistic House, не человек и не психотерапевт.",
     intro:"Опишите запрос свободно. По вашему согласию можно учесть проверенные результаты выбранной темы без передачи баллов нейросети.",
@@ -26,6 +26,8 @@ const copy = {
     axis:"Тема профиля (необязательно)",axisNone:"Без дополнительной оси",format:"Предпочитаемый формат",
     allFormats:"Любой подходящий",useTests:"Разрешаю учесть мои сохранённые тесты по выбранной оси только для этого запроса",
     evidenceUsed:"Учтено наличие проверенного результата; баллы не передавались нейросети.",
+    useHistory:"Учесть отмеченные мной просмотренные видео (только в этом запросе)",
+    historyUsed:"Учтены ранее отмеченные просмотренные видео; личная история не раскрыта нейросети.",
     kinds:{video:"Видео",audio:"Аудио",test:"Тест",course:"Курс",service:"Сессия"},
     hide:"Не предлагать снова",tried:"Я попробовал",localFeedback:"Мои отметки действуют только в этом диалоге и не сохраняются в кабинете."},
   en:{ title:"Chat with the AI guide",disclosure:"I am Holistic House's AI guide, not a human or a therapist.",
@@ -40,6 +42,8 @@ const copy = {
     axis:"Profile topic (optional)",axisNone:"No extra axis",format:"Preferred format",
     allFormats:"Any suitable option",useTests:"Allow saved test evidence for this axis and this request only",
     evidenceUsed:"Verified test evidence informed the match; raw scores were not sent to a language model.",
+    useHistory:"Use videos I previously marked watched (this request only)",
+    historyUsed:"Your previously marked videos informed ordering; no private history was sent to a model.",
     kinds:{video:"Video",audio:"Audio",test:"Test",course:"Course",service:"Session"},
     hide:"Don't suggest again",tried:"I tried it",localFeedback:"These choices apply only to this conversation; they are not saved to your account."},
   es:{ title:"Habla con el asistente de IA",disclosure:"Soy el asistente de IA de Holistic House, no una persona ni terapeuta.",
@@ -54,6 +58,8 @@ const copy = {
     axis:"Tema del perfil (opcional)",axisNone:"Sin dimensión adicional",format:"Formato preferido",
     allFormats:"Cualquier opción adecuada",useTests:"Permito usar pruebas guardadas del eje elegido solo para esta consulta",
     evidenceUsed:"Se consideró la existencia de una prueba verificada; no se enviaron puntuaciones al modelo.",
+    useHistory:"Usar vídeos que ya marqué como vistos (solo en esta consulta)",
+    historyUsed:"Se tuvieron en cuenta vídeos marcados previamente; no se compartió historial con el modelo.",
     kinds:{video:"Vídeo",audio:"Audio",test:"Prueba",course:"Curso",service:"Sesión"},
     hide:"No volver a sugerir",tried:"Lo probé",localFeedback:"Estas marcas solo se aplican a esta conversación y no se guardan en tu cuenta."},
 } as const;
@@ -69,6 +75,8 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
   const [axisRef,setAxisRef]=useState("");
   const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
   const [useSavedTests,setUseSavedTests]=useState(false);
+  const [useSavedHistory,setUseSavedHistory]=useState(false);
+  const [historyUsed,setHistoryUsed]=useState(false);
   const [evidenceUsed,setEvidenceUsed]=useState(false);
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
@@ -96,6 +104,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
           chosenAxes:axisRef?[axisRef]:[],
           preferredFormat:format||null,
           usePrivateProfile:useSavedTests&&Boolean(axisRef),
+          usePrivateHistory:useSavedHistory,
           feedback:{dismissedIds,completedIds}}),
       });
       if(!response.ok)throw Error("CHAT_UNAVAILABLE");
@@ -127,6 +136,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       if(abort.signal.aborted)return;
       setChoices(Array.isArray(data.suggestions)?data.suggestions:[]);
       setEvidenceUsed(data.usedSavedTestEvidence===true);
+      setHistoryUsed(data.usedSavedVideoHistory===true);
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
     } catch {
@@ -167,6 +177,11 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
         onChange={e=>setUseSavedTests(e.target.checked)}/>
       {t.useTests}
     </label>
+    <label className={styles.consent}>
+      <input type="checkbox" checked={useSavedHistory}
+        onChange={e=>setUseSavedHistory(e.target.checked)}/>
+      {t.useHistory}
+    </label>
     {mode==="owned"&&<label className={styles.consent}>
       <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
       {t.consent}
@@ -177,6 +192,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
     </div>
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
+    {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
     {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).length>0&&
       <div className={styles.choices}><h2>{t.suggestions}</h2>
         {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).map(x=>
@@ -194,7 +210,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
       <textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
