@@ -69,7 +69,10 @@ export async function changedFilesViaGithub(previous, current, fetcher = fetch) 
 // branch needs a Vercel build. Ignore all Preview builds as a defense-in-depth
 // in case Git branch rules are bypassed by a branch created before this policy.
 export function shouldSkipPreviewBuild(environment = process.env) {
-  return environment.VERCEL_ENV === "preview";
+  // Explicit owner-requested one-off QA branch may build a real preview;
+  // all other previews keep the existing cost-saving skip policy.
+  return environment.VERCEL_ENV === "preview"
+    && environment.VERCEL_GIT_COMMIT_REF !== "qa/hh-free-video-studio-preview-20261030";
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
