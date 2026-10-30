@@ -70,8 +70,8 @@ jobs:
           app_pid=$!
           trap 'kill "$app_pid" 2>/dev/null || true' EXIT
           ready=0
-          for n in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:3099/en/app/messages -o /tmp/hh-messenger-en.html; then ready=1; break; fi
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3099/en/app/messages -o /tmp/hh-messenger-en.html; then echo "Server ready on attempt $attempt"; ready=1; break; fi
             sleep 1
           done
           test "$ready" = 1 || { tail -80 /tmp/hh-messenger-next.log; exit 1; }
@@ -84,5 +84,5 @@ jobs:
             manifest="/holistic-house-app.webmanifest"
             if [ "$locale" != en ]; then manifest="/holistic-house-app-${locale}.webmanifest"; fi
             curl -fsS "http://127.0.0.1:3099${manifest}" -o "/tmp/hh-messenger-${locale}.webmanifest"
-            node -e "let m=require('/tmp/hh-messenger-${locale}.webmanifest');if(m.start_url!=='/${locale}/app/messages'||m.display!=='standalone'||m.id!=='/en/app')process.exit(1)"
+            node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('/tmp/hh-messenger-${locale}.webmanifest','utf8'));if(m.start_url!=='/${locale}/app/messages'||m.display!=='standalone'||m.id!=='/en/app')process.exit(1)"
           done
