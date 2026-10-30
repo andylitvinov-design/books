@@ -2,6 +2,7 @@ name: Holistic House report mobile visual acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/compact-assessment-report.*'
@@ -23,6 +24,7 @@ concurrency:
 
 jobs:
   assessment-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
