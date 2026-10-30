@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
+      ci_only: ${{ steps.diff.outputs.ci_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,9 +31,11 @@ jobs:
         run: |
           set -euo pipefail
           docs_only=false
+          ci_only=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
             git diff --no-renames --name-only -z "$BASE_SHA" HEAD > /tmp/hh-pr-changed-files.z
             docs_only=true
+            ci_only=true
             count=0
             while IFS= read -r -d '' f; do
               [[ -z "$f" ]] && continue
@@ -41,11 +44,29 @@ jobs:
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
               esac
+              # CI-only allowlist is exact, never includes application, SQL,
+              # dependency manifests, auth, billing, RLS or provider code.
+              case "$f" in
+                  .github/workflows/*.yml|\
+                  .github/workflows/*.yaml|\
+                  docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/specialist-aggregate.mjs|\
+                  lib/ci/pr-sweep-guard.mjs|\
+                  scripts/ci-specialist-aggregate.mjs|\
+                  scripts/pr-sweep-guard.mjs|\
+                  tests/pr-fast-lane.test.mjs|\
+                  tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-workflow-globs.test.mjs|\
+                  tests/pr-sweep-guard.test.mjs|\
+                  tests/ci-heavy-draft-policy.test.mjs) ;;
+                *) ci_only=false ;;
+              esac
             done < /tmp/hh-pr-changed-files.z
-            [[ "$count" -gt 0 ]] || docs_only=false
+            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
           fi
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only" >> "$GITHUB_STEP_SUMMARY"
+          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
   code:
     name: core-lint-types-build
     needs: scope
@@ -87,8 +108,10 @@ jobs:
             echo 'No changed JS/TS files to lint'
           fi
       - name: Full TypeScript check
+        if: needs.scope.outputs.ci_only != 'true'
         run: npx --no-install tsc --noEmit --pretty false
       - name: Exact proposed release production build
+        if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
   release-ready:
     name: release-ready

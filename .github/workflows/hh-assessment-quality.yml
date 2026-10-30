@@ -2,9 +2,15 @@ name: Holistic House assessment evidence and authored-content QA
 
 on:
   pull_request:
-    branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-assessment-quality.yml'
+      - 'data/assessments/research-directory-2026/**'
+      - 'lib/assessments/research-directory-2026.js'
+      - 'lib/assessments/psychometric-validity-2026.js'
+      - 'components/app/research-directory.*'
+      - 'components/app/test-explorer.jsx'
+      - 'tests/psychometric-validity-directory.test.mjs'
+      - '.github/workflows/psychometric-research-catalogue.yml'
       - 'data/assessments/**'
       - 'lib/assessments/**'
       - 'components/app/test-explorer.*'
@@ -17,6 +23,16 @@ on:
       - 'tests/hh-author-content-audit.test.mjs'
       - 'tests/psychometric-validity-directory.test.mjs'
       - 'docs/assessments/**'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'data/assessments/research-directory-2026/**'
+      - 'lib/assessments/research-directory-2026.js'
+      - 'lib/assessments/psychometric-validity-2026.js'
+      - 'components/app/research-directory.*'
+      - 'components/app/test-explorer.jsx'
+      - 'tests/psychometric-validity-directory.test.mjs'
+      - '.github/workflows/psychometric-research-catalogue.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +52,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '24'
       - run: npm ci --no-audit --no-fund
       - name: Private result conversation — original measures, crisis gating, EN/RU/ES routes
         run: node --conditions=react-server --test tests/test-result-discussion.test.mjs
@@ -57,6 +73,24 @@ jobs:
           node --conditions=react-server scripts/audit-hh-author-items-2026.mjs > artifacts/assessment-quality/summary.json
           node --conditions=react-server scripts/audit-hh-author-items-2026.mjs --csv > artifacts/assessment-quality/reviewer-items-en-ru.csv
           node --conditions=react-server scripts/audit-psychometric-quality-2026.mjs > artifacts/assessment-quality/evidence-groups.json
+      - name: Verify research-only catalogue, multilingual lookup and permissions
+        run: >-
+          node --conditions=react-server --test
+          tests/psychometric-validity-directory.test.mjs
+          tests/public-test-match-paging.test.mjs
+          tests/assessment-methodology.test.mjs
+          tests/test-kinds-catalog-audit.test.mjs
+      - name: Verify reviewed research-only source totals without client data
+        run: |
+          node --conditions=react-server scripts/audit-psychometric-quality-2026.mjs > /tmp/psychometric-quality.json
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const x=JSON.parse(fs.readFileSync("/tmp/psychometric-quality.json","utf8"));
+            if (x.researchEditionReferences !== 3092) process.exit(1);
+            if (x.nonOverlappingResearchReferences < 2800) process.exit(1);
+            console.log("Research catalogue count",x.researchEditionReferences,
+              "discovery entries",x.nonOverlappingResearchReferences);
+          '
       - uses: actions/upload-artifact@v4
         with:
           name: assessment-evidence-and-author-review
