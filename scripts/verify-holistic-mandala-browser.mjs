@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 
 import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, webkit } from "@playwright/test";
+import { chromium, webkit, expect } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
@@ -168,10 +168,17 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
-        await quick.locator("[data-video-personal-affirmations]").click();
-        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
-        await quick.locator("[data-video-personal-affirmations]").click();
-        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
+        // React/Next concurrent rendering can commit the shared state after
+        // WebKit click() resolves. Await BOTH source button and real checkbox;
+        // retain the exact on/off assertion (never skip on timeout).
+        const affirmationsToggle=quick.locator("[data-video-personal-affirmations]");
+        const actualAffirmations=page.locator("[data-hypno-overview-enable]");
+        await affirmationsToggle.click();
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await expect(actualAffirmations).toBeChecked({timeout:10000});
+        await affirmationsToggle.click();
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await expect(actualAffirmations).not.toBeChecked({timeout:10000});
         const quickOverflow=await page.evaluate(()=>({
           page:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
           cards:[...document.querySelectorAll("[data-video-quick-builder] > [data-video-quick-section], [data-video-quick-builder] > [data-video-quick-tier], [data-video-quick-personal]")].map(el=>({
