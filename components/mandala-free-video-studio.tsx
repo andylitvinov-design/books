@@ -2351,7 +2351,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {/* Separate B2B brief, connected to the SAME browser-local film compiler.
             The approved personal-practice accordion and recorder remain unchanged. */}
-        <MandalaProfessionalPromo locale={locale} disabled={recording||preparing}
+        <MandalaProfessionalPromo locale={locale} disabled={recording||preparing||micRecording}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
           onApply={({presetId,durationSeconds,headline})=>{
             applyAutoFilm(presetId,durationSeconds,"portrait");
@@ -2360,6 +2360,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setCaptionMode("custom");
             setCustomCaption(headline);
             setAffirmations(previous=>({...previous,enabled:false}));
+            // Avoid accidentally reusing private audio from an earlier personal practice.
+            clearUploadedAudio();
+            setMusic("none");setAttachedAudio(null);setAudioAuto(false);setAudioRights(false);
             setBackgroundOnly(true);
             setStudioMode("pump");
             setNotice(locale==="ru"
