@@ -106,11 +106,8 @@ jobs:
           /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit > /tmp/hh-alchemy-browser-install.log 2>&1 &
           PW_PID=$!
           SERVER_PID=
-          cleanup() {
-            if [[ -n "$SERVER_PID" ]]; then kill "$SERVER_PID" 2>/dev/null || true; fi
-            if kill -0 "$PW_PID" 2>/dev/null; then kill "$PW_PID" 2>/dev/null || true; fi
-          }
-          trap cleanup EXIT
+          # Inline exit trap avoids shellcheck SC2317 on a trap-only function.
+          trap 'if [[ -n "$SERVER_PID" ]]; then kill "$SERVER_PID" 2>/dev/null || true; fi; if [[ -n "$PW_PID" ]]; then kill "$PW_PID" 2>/dev/null || true; fi' EXIT
           node scripts/ci-alchemy-build.mjs > artifacts/public-services-production/alchemy-assets.log 2>&1 || {
             tail -n 90 artifacts/public-services-production/alchemy-assets.log
             exit 1
