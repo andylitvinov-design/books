@@ -1074,3 +1074,8 @@
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
 }
+
+/* Native-style top brand, rendered before the Video Studio editor. Desktop keeps the established site header. */
+.mandalaAppHeader>span{display:flex;align-items:center;gap:9px;min-width:0;font-weight:850;letter-spacing:-.025em}
+.mandalaAppHeader>span svg{flex:none;color:#0a8568}
+@media(min-width:641px){.mandalaAppHeader{display:none}}
