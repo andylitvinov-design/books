@@ -37,6 +37,7 @@ on:
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
       - 'package.json'
+      - '.github/workflows/hh-course-presets.yml'
   workflow_dispatch:
 
 permissions:

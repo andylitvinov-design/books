@@ -286,6 +286,7 @@ test('four source-only specialist suites delegate duplicate TypeScript or build 
       assert.ok(s.includes(exact), filename+' must retain global '+name+' outside production-targeted PR only');
     }
     for(const src of domainContracts) assert.ok(s.includes(src),filename+' domain contract removed: '+src);
+    assert.ok(s.includes("      - '.github/workflows/"+filename+"'"),filename+' must trigger its own edited workflow for domain validation');
     assert.ok(!s.includes('continue-on-error: true'),filename+' cannot bypass real test errors');
   }
   for(const filename of ['hh-course-presets.yml','hh-kling-video.yml']) {
