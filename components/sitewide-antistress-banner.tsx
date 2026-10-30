@@ -86,7 +86,8 @@ const reviewCopy = {
 const isDistractionSensitivePage = (pathname: string) =>
   // The alternative Support screen is an immersive mobile application.
   // The focused Support app and personal-video editor both keep the hero free of sitewide promotions.
-  /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/holistic-support\/mandala(?:\/|$)/.test(pathname) ||
   // The standalone practitioner mockup has its own hero and must open at the header.
   /^\/(?:ru|en|es)\/practice\/?$/.test(pathname) ||
   // The private practitioner editor shares the new minimal header and dock.
