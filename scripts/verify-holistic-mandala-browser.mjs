@@ -1114,6 +1114,6 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
     await browser.close();
   }
 }
-assert.equal(passes, 10);
+assert.equal(passes, viewports.length * 2, "all locales and both browser engines must pass");
 console.log("Mandala browser E2E:", passes, "of", passes, "checks passed");
 

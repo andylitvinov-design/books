@@ -266,7 +266,24 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-support-goal-next]').click();
           // WebKit can resolve a click before React commits accepted/next state.
           // Wait for actual acceptance and navigation; never bypass either gate.
-          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          // This has passed in earlier WebKit runs; keep real acceptance
+          // mandatory while accounting for 320px WebKit input-change/paint
+          // deferral. If it fails, log the actual saved/draft UI state.
+          try {
+            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:12000});
+          } catch(error) {
+            const observed=await filter.evaluate(el=>({
+              sectors:[...el.querySelectorAll('[data-goal-sector]')].map(item=>({
+                id:item.getAttribute('data-goal-sector'),
+                pressed:item.getAttribute('aria-pressed'),
+                accepted:!!item.querySelector('[data-goal-accepted]'),
+              })),
+              checkin:el.querySelector('[data-support-goal-checkin-input]')?.value,
+              saved:el.querySelector('[data-support-goal-actions] [role="status"]')?.textContent,
+            }));
+            throw new Error(label+" money Next failed to accept and advance: "+
+              JSON.stringify(observed), {cause:error});
+          }
           await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
