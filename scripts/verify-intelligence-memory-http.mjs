@@ -144,10 +144,12 @@ try {
       await card.getByText('Only the item and your answer will be saved',{exact:false}).waitFor()
       assert.equal((await call('export',a)).body.records.length,0)
       const saveResponse=page.waitForResponse(response=>response.url().endsWith('/api/app/intelligence/feedback/save')&&response.request().method()==='POST')
-      await card.getByRole('button',{name:'Confirm save',exact:true}).click()
+      const confirmButton=card.getByRole('button',{name:'Confirm save',exact:true})
+      await confirmButton.evaluate(button=>{window.__hhSyntheticClicks=0;button.addEventListener('click',()=>{window.__hhSyntheticClicks++},{once:true})})
+      await confirmButton.click()
       let savedResponse
       try {savedResponse=await saveResponse} catch(error) {
-        console.log(JSON.stringify({browser:browserName,saveRequests,saveFailure,pageErrors,alertVisible:await card.getByRole('alert').isVisible().catch(()=>false),prepareVisible:await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).isVisible().catch(()=>false),confirmVisible:await card.getByRole('button',{name:'Confirm save',exact:true}).isVisible().catch(()=>false)}))
+        console.log(JSON.stringify({browser:browserName,saveRequests,saveFailure,pageErrors,clickEvents:await page.evaluate(()=>window.__hhSyntheticClicks).catch(()=>null),confirmEnabled:await confirmButton.isEnabled().catch(()=>false),alertVisible:await card.getByRole('alert').isVisible().catch(()=>false),prepareVisible:await card.getByRole('button',{name:'Prepare to save feedback',exact:true}).isVisible().catch(()=>false),confirmVisible:await confirmButton.isVisible().catch(()=>false)}))
         throw error
       }
       const savedBody=await savedResponse.json()
