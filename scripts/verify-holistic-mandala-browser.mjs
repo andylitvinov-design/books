@@ -811,6 +811,23 @@ const runEngine = async ([engine, browserType]) => {
               "healthy preset must not show direct-open error fallback");
             await page.locator("[data-video-music-preview]").click();
           }
+          // Mock-fidelity regression: five sound filters and all 13 original
+          // WAVs share exactly one real player. A row Play starts native
+          // Safari-compatible media but does NOT silently attach it to video.
+          assert.equal(await page.locator('[data-video-quick-section="5"] audio').count(),0,
+            "the compact summary cannot duplicate the audio player");
+          const directPlay=page.locator('[data-video-audio-play="harmony"]');
+          await directPlay.click();
+          await page.waitForFunction(()=>{
+            const a=document.querySelector("[data-video-audio-player]");
+            return a && a.error===null && !a.paused && a.currentTime>.2;
+          },undefined,{timeout:18000});
+          assert.equal(await directPlay.getAttribute("aria-pressed"),"true",
+            "row playback is a real active button, not a decorative triangle");
+          await directPlay.click();
+          await page.waitForFunction(()=>Boolean(document.querySelector(
+            "[data-video-audio-player]")?.paused),undefined,{timeout:10000});
+          assert.equal(await directPlay.getAttribute("aria-pressed"),"false");
         }
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator("[data-video-extra-settings] > summary").click();
