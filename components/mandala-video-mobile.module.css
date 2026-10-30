@@ -1449,3 +1449,94 @@
 @media (prefers-reduced-motion:reduce){
   .quickBuilder *{scroll-behavior:auto!important;transition:none!important}
 }
+
+
+/* 30 October owner screenshot: three real product formats, each with a true 16:9
+   visual sample, compact quality choices and an honest draft quote.
+   No CSS hides the original recorder, consent or extended editor. */
+.quickFormatGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;gap:8px;min-width:0}
+.quickFormatCard{display:flex;flex-direction:column;gap:6px;min-width:0;
+  padding:7px 7px 8px;border:1px solid #e5ebe4;border-radius:14px;
+  background:linear-gradient(165deg,#fffefb,#f8f9f4);overflow:hidden}
+.quickFormatCard[data-selected="true"]{border:2px solid #0ba37c;padding:6px 6px 7px;
+  background:linear-gradient(150deg,#e9f8ed,#fffefa);
+  box-shadow:0 1px 5px #08654e19}
+.quickFormatDemo{position:relative;display:block;flex:none;width:100%;min-width:0;
+  min-height:0;aspect-ratio:16/9;overflow:hidden;border-radius:9px;
+  background:#174c42}
+.quickFormatDemo :is(video,img){position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover;object-position:center}
+.quickFormatDemo .quickPreviewPlay{position:absolute;left:50%;top:50%;
+  width:37px;height:37px;min-width:37px;min-height:37px;
+  transform:translate(-50%,-50%);padding:5px;border:2px solid #fff;
+  border-radius:50%;background:#123c37b8;color:#fff;box-shadow:0 2px 7px #091e1c50}
+.quickFormatDemo .quickPreviewPlay svg{width:18px;height:18px}
+.quickFormatDemo .quickPreviewMeta{min-height:0;right:4px;bottom:4px;
+  padding:2px 5px;border:0;border-radius:6px;font-size:10px;background:#122e2bc9}
+.quickFormatTitle{display:flex;gap:6px;align-items:center;width:100%;
+  min-width:0;min-height:43px;padding:2px 1px;border:0;
+  background:transparent;color:#1a443a;text-align:left}
+.quickFormatTitle svg{flex:0 0 auto;width:18px;height:18px;color:#067c61}
+.quickFormatTitle>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.quickFormatTitle strong{font:800 clamp(11px,1.4vw,14px)/1.16 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatTitle small{font:550 clamp(10px,1.2vw,12px)/1.18 Arial,Helvetica,sans-serif;
+  color:#6b8177}
+.quickFormatTitle[aria-pressed="true"] strong{color:#075e49}
+.quickFormatQuality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;min-width:0}
+.quickFormatQuality button{display:grid;place-items:center;min-width:0;min-height:40px;
+  padding:4px 1px;border:1px solid #e1e9e2;border-radius:8px;
+  background:#f1f4ef;color:#435c53;
+  font:700 clamp(9px,1.1vw,11.5px)/1.13 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatQuality button[aria-pressed="true"]{border-color:#0c9d76;
+  color:#fff;background:#099873}
+.quickFormatQuality button:disabled{opacity:.47;cursor:not-allowed}
+.quickFormatBenefits{display:flex;flex-direction:column;justify-content:flex-start;gap:3px;
+  min-height:36px;margin:1px 0 0;padding:0;list-style:none}
+.quickFormatBenefits li{position:relative;margin:0;padding-left:12px;
+  font:500 clamp(10px,1.2vw,12px)/1.22 Arial,Helvetica,sans-serif;
+  color:#6a7972;overflow-wrap:anywhere}
+.quickFormatBenefits li::before{position:absolute;left:0;top:0;
+  content:"✓";color:#09946f;font-weight:800}
+.quickFormatPrice{display:flex;align-items:baseline;justify-content:space-between;
+  gap:3px;min-width:0;margin-top:auto;padding-top:6px;
+  border-top:1px solid #e8ece6}
+.quickFormatPrice strong{min-width:0;color:#0e684f;
+  font:850 clamp(14px,1.9vw,21px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing:-.03em;overflow-wrap:anywhere}
+.quickFormatPrice small{flex:none;color:#799083;
+  font:700 10px/1.2 Arial,Helvetica,sans-serif}
+.quickBuilder [data-video-quick-tier]{padding-top:12px;padding-bottom:11px;gap:9px}
+.quickBuilder [data-video-quick-tier] .quickTierNote{padding:0 2px;
+  font-size:11.5px;line-height:1.3;color:#647a70}
+@media(max-width:759px){
+  .quickFormatGrid{gap:6px}
+  .quickFormatCard{padding:6px;gap:5px}
+  .quickFormatCard[data-selected="true"]{padding:5px}
+  .quickFormatBenefits{min-height:34px}
+}
+@media(max-width:369px){
+  /* 44–50px-wide tier touch targets are more important than squeezing three
+     illegible cards into a 320/354px viewport. The third card stays swipeable. */
+  .quickFormatGrid{grid-template-columns:none;grid-auto-flow:column;
+    grid-auto-columns:164px;gap:8px;overflow-x:auto;padding:2px 2px 8px;
+    scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+  .quickFormatCard{scroll-snap-align:start}
+  .quickFormatQuality button{min-height:44px;font-size:10.5px}
+}
+@media(min-width:370px) and (max-width:480px){
+  .quickFormatGrid{gap:5px}
+  .quickFormatCard{gap:5px;padding:5px}
+  .quickFormatCard[data-selected="true"]{padding:4px}
+  .quickFormatTitle{gap:3px;min-height:48px}
+  .quickFormatTitle svg{width:15px;height:15px}
+  .quickFormatTitle strong{font-size:11px}
+  .quickFormatTitle small{font-size:10px}
+  .quickFormatQuality{gap:2px}
+  .quickFormatQuality button{font-size:9.2px;padding:2px 0;min-height:40px}
+  .quickFormatBenefits li{font-size:10px}
+  .quickFormatPrice strong{font-size:16px}
+}
