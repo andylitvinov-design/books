@@ -539,3 +539,28 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
+
+test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+  const yaml = workflow('holistic-support-mandala.yml');
+  const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
+  assert.match(yaml, /focused-unit-types-build:/);
+  assert.match(yaml, /uses: actions\/cache@v4/);
+  assert.match(yaml, /path: \.next\/cache/);
+  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
+    'mandatory Core owns production PR typecheck; standalone TypeScript remains');
+  assert.match(yaml, /run: npm run build/);
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(source, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
+  assert.match(source, /for \(const \{ locale, width \} of orderedViewports\)/);
+  assert.doesNotMatch(source, /viewports\.slice\(from, from \+ 2\)/, 'no extra same-engine contexts');
+  assert.match(source, /Promise\.allSettled\(engines\.map\(runEngine\)\)/);
+  assert.match(source, /if \(rejectedEngines\.length\)/);
+  assert.match(source, /assert\.equal\(passes, viewports\.length \* engines\.length/);
+  for (const contract of [
+    'locale: "ru", width: 320', 'locale: "ru", width: 390', 'locale: "ru", width: 430',
+    'locale: "en", width: 390', 'locale: "es", width: 390',
+    'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
+    'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
+  ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
+});
