@@ -99,7 +99,8 @@ test("existing signed-in My Progress video status is reused only with independen
   assert.match(ui,/usePrivateHistory:useSavedHistory/);
   assert.match(ui,/useState\(false\)/);
   assert.match(progress,/where account_id=\$1 order by updated_at/);
-  const verified={...input(),catalogs:{axisOffers:[video,{...video,id:"video:other"}]}};
+  const verified={...input(),catalogs:{axisOffers:[video,
+    {...video,id:"video:other",axisLinks:[{ref:"recovery::energy",strength:2}]}]}};
   const actor=buildHolisticGuidedTurn({...verified,
     consent:{practiceHistory:true},
     access:{authenticated:true,ownerScoped:true},
