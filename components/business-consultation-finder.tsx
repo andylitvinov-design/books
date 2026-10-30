@@ -94,7 +94,7 @@ const words: Record<Locale, {
   },
 }
 
-export function BusinessConsultationFinder({locale}: {locale: Locale}) {
+export function BusinessConsultationFinder({locale, requestOnServicePage = false}: {locale: Locale; requestOnServicePage?: boolean}) {
   const t = words[locale]
   const [need, setNeed] = useState<Need | null>(null)
   const [preferred, setPreferred] = useState<PaidFormat | null>(null)
@@ -158,10 +158,12 @@ export function BusinessConsultationFinder({locale}: {locale: Locale}) {
           </div>
           <h3>{offerCopy[selected].name}</h3>
           <p className={styles.reason}>{t.reasons[selected]}</p>
-          <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
+          <AcquisitionEventLink href={requestOnServicePage
+            ? '/'+locale+'/services/business-consulting?businessFormat='+selected+'#business-direct-request'
+            : '#business-direct-request'} event="service_request_start"
             prefetch={false} className={styles.primary} attributes={{
               'data-business-direct-option': selected,
-              'data-business-finder-context': context,
+              ...(requestOnServicePage ? {} : { 'data-business-finder-context': context }),
               'data-business-finder-start': 'website-form',
             }}>
             {t.request}<ArrowRight size={17} aria-hidden="true"/>
