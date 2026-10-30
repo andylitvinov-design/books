@@ -100,7 +100,4 @@ jobs:
       - name: Render native composer disclosure with locked React
         run: node --test tests/growth-studio-composer-details-render.test.mjs
       - name: Next.js build
-        # Source-only specialist: Core release-ready already builds this exact
-        # production-targeted PR SHA; keep independent manual/other-base builds.
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
