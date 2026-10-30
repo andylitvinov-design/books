@@ -34,7 +34,7 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   const s = workflow('hh-actionlint.yml');
   assert.match(s, /git diff --no-renames --name-status -z/);
   assert.match(s, /saw_deletion=true/);
-  assert.match(s, /\[\[ "\$status" == D \]\] \|\| deleted_only=false/);
+  assert.ok(s.includes('[[ -n "$filename" && "$status" == D ]] || deleted_only=false'));
   assert.match(s, /\[\[ "\$deleted_only" == true \]\]/);
   assert.match(s, /Workflow filter triggered but no changed YAML is available; refusing unverified changes/);
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
