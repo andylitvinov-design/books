@@ -307,6 +307,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
           await reveal.click();
+          // Wait for React to commit the one real tap; do not retry the action.
+          await page.waitForFunction(() => document.querySelector('[data-express-reveal]')?.getAttribute('aria-expanded') === 'false', null, {timeout: 10000});
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");
