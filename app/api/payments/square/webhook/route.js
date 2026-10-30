@@ -7,6 +7,9 @@ import {
   squareWebhookValid, paymentIdFromSquareEvent,
 } from '@/lib/commerce/square-gateway'
 import { squareCartService } from '@/lib/commerce/square-cart-service'
+import { squareApiRequest } from '@/lib/commerce/square-gateway'
+import { walletSettings } from '@/lib/wallet/model'
+import { createWalletService } from '@/lib/wallet/service'
 
 export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
@@ -46,8 +49,15 @@ export async function POST(request) {
     catch { throw new AppError('SQUARE_WEBHOOK_INVALID', 400) }
     const paymentId = paymentIdFromSquareEvent(event, square)
     if (!paymentId) return NextResponse.json({ received: true, handled: false }, { headers: PRIVATE_HEADERS })
-    const result = await squareCartService(getAppConfig(), square).verifiedWebhookEvent(event, paymentId)
-    return NextResponse.json({ received: true, handled: result.handled }, { headers: PRIVATE_HEADERS })
+    const config = getAppConfig()
+    const result = await squareCartService(config, square).verifiedWebhookEvent(event, paymentId)
+    if (result.handled) return NextResponse.json({ received: true, handled: true }, { headers: PRIVATE_HEADERS })
+    const wallet = walletSettings()
+    if (!wallet.enabled || !wallet.squareEnabled)
+      return NextResponse.json({ received: true, handled: false }, { headers: PRIVATE_HEADERS })
+    const payment = await squareApiRequest(square, 'GET', '/v2/payments/' + paymentId)
+    const walletResult = await createWalletService(config).verifiedSquarePayment(payment?.payment, square)
+    return NextResponse.json({ received: true, handled: walletResult.handled }, { headers: PRIVATE_HEADERS })
   } catch (error) {
     const safe = safeError(error)
     return NextResponse.json({ error: safe.code }, { status: safe.status, headers: PRIVATE_HEADERS })
