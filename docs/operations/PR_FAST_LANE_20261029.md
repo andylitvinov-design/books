@@ -273,6 +273,19 @@ skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
 
+
+## Ideas & Coaching Draft/Ready CI acceleration (30 October 2026)
+The existing `hh-ideas-coaching-public.yml` retains the actual Next.js
+production build, original EN/RU/ES Chromium/WebKit journey and all consent,
+source and lead tests. It skips costly Draft PR commits and re-runs on
+`ready_for_review` and subsequent Ready commits; manual dispatch is unchanged.
+Superseded PR runs are cancelled per PR number; manual runs cannot be cancelled
+by newer PR heads. Only the duplicate global TypeScript step is skipped for
+production-targeted PRs, where core `release-ready` already requires full
+`tsc --noEmit`. Draft-skipped never counts as merge success and the base-trusted
+specialist aggregate still requires every applicable executed job to succeed.
+No assertions, RLS, checkout, browser checks or paid APIs are disabled.
+
 ## Wave 4b: Growth Journey and My Courses Presets source-only build reuse (30 October 2026)
 
 Two source-only suites retain all original domain tests, EN/RU/ES, consent and scoped lint but defer duplicate whole-project checks to the mandatory `HH PR core release gate` for PRs targeting production `codex/public-book-library`. `hh-growth-journey.yml` skips only its separate TS and Next build on these production PRs; `hh-course-presets.yml` skips only its separate Next build, runs its exact tests on its own workflow YAML changes, and cancels obsolete **PR** runs, never manual/branch-push validation. Feature branch pushes, workflow dispatch and PRs targeting other bases keep the prior global validations. `release-ready` and exact-head specialist runs still fail closed on missing/failed/skipped jobs. This is a cost/concurrency optimization, not removing test files or site features.
