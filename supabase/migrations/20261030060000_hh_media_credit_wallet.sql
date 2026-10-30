@@ -6,6 +6,7 @@ create table app_private.media_credit_wallets (
   account_id uuid primary key references app.accounts(id) on delete cascade,
   bonus_minor integer not null default 200 check (bonus_minor between 0 and 10000000),
   paid_minor integer not null default 0 check (paid_minor between 0 and 10000000),
+  debt_minor integer not null default 0 check (debt_minor between 0 and 10000000),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -16,8 +17,9 @@ create table app_private.media_credit_ledger (
   kind text not null check (kind in ('welcome','topup','spend','restore','chargeback')),
   bonus_delta integer not null default 0,
   paid_delta integer not null default 0,
+  debt_delta integer not null default 0,
   created_at timestamptz not null default now(),
-  check (bonus_delta <> 0 or paid_delta <> 0)
+  check (bonus_delta <> 0 or paid_delta <> 0 or debt_delta <> 0)
 );
 create index media_credit_ledger_account_idx
   on app_private.media_credit_ledger(account_id,created_at desc,id);
