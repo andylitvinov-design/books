@@ -24,6 +24,7 @@ export async function GET() {
     model:VOICE_STUDIO_MODEL,
     mode:'free-tier-only',
     customRequiresSignIn:true,
+    publicAffirmationsEnabled:true,
   },{headers:PRIVATE_HEADERS})
 }
 async function limitedJson(response) {
@@ -63,11 +64,16 @@ export async function POST(request) {
       const actor = await auth.verified()
       await consumeRate(config,{op:'voice-studio-custom',actor:actor.id},8,3600)
     } else {
-      // Preview samples contain only server-selected first-party text, never PII.
-      // Count by both coarse IP and a global durable budget bucket.
       const ip = (request.headers.get('x-vercel-forwarded-for') ||
         request.headers.get('x-real-ip') || 'shared').split(',')[0].trim().slice(0,64)
-      await consumeRate(config,{op:'voice-studio-sample',ip},12,3600)
+      if(validated.mode==='affirmations') {
+        // Limited guest text generation; explicit opt-in and exact-text TTS.
+        await consumeRate(config,{op:'voice-studio-affirmations',ip},3,3600)
+        await consumeRate(config,{op:'voice-studio-affirmations-daily'},60,86400)
+      } else {
+        // Public sample text is entirely server-owned, never a client profile.
+        await consumeRate(config,{op:'voice-studio-sample',ip},12,3600)
+      }
     }
     await consumeRate(config,{op:'voice-studio-free-global'},120,3600)
     const signal = AbortSignal.timeout(45000)

@@ -25,7 +25,7 @@ function encodeWav(buffer: AudioBuffer): Blob {
   return new Blob([data],{type:"audio/wav"});
 }
 
-export async function mixVoiceWithNature(voice:Blob,preset:NatureBed):Promise<Blob> {
+export async function mixVoiceWithNature(voice:Blob,preset:NatureBed,minimumSeconds?:number):Promise<Blob> {
   if(!["ocean","rain","breeze"].includes(preset))throw new Error("INVALID_NATURE");
   if(typeof window==="undefined")throw new Error("BROWSER_AUDIO_REQUIRED");
   const AudioCtor=window.AudioContext ||
@@ -45,7 +45,11 @@ export async function mixVoiceWithNature(voice:Blob,preset:NatureBed):Promise<Bl
   if(speech.duration<=0 || speech.duration>180 ||
     background.duration<1 || speech.sampleRate<8000 || speech.length*2>12*1024*1024)
     throw new Error("AUDIO_OUT_OF_RANGE");
-  const output=new OfflineAudioContext(1,speech.length,speech.sampleRate);
+  // Let the first-party nature bed continue to the end of the video after speech stops.
+  const totalSeconds=minimumSeconds===undefined?speech.duration:
+    Math.max(speech.duration,Math.min(65,Math.max(1,minimumSeconds)));
+  const totalFrames=Math.ceil(totalSeconds*speech.sampleRate);
+  const output=new OfflineAudioContext(1,totalFrames,speech.sampleRate);
   const voiceSource=output.createBufferSource();
   voiceSource.buffer=speech;
   const voiceGain=output.createGain();
@@ -56,9 +60,9 @@ export async function mixVoiceWithNature(voice:Blob,preset:NatureBed):Promise<Bl
   bedSource.loop=true;
   const bedGain=output.createGain();
   bedGain.gain.setValueAtTime(0.0,0);
-  bedGain.gain.linearRampToValueAtTime(0.11,Math.min(0.65,speech.duration/4));
-  bedGain.gain.setValueAtTime(0.11,Math.max(.65,speech.duration-1.2));
-  bedGain.gain.linearRampToValueAtTime(0,Math.max(.66,speech.duration));
+  bedGain.gain.linearRampToValueAtTime(0.11,Math.min(0.65,totalSeconds/4));
+  bedGain.gain.setValueAtTime(0.11,Math.max(.65,totalSeconds-1.2));
+  bedGain.gain.linearRampToValueAtTime(0,Math.max(.66,totalSeconds));
   bedSource.connect(bedGain).connect(output.destination);
   voiceSource.start(0);bedSource.start(0);
   const mixed=await output.startRendering();
