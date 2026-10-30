@@ -23,6 +23,8 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
+          // Keep synthetic directory routes independent of the app service worker.
+          serviceWorkers: "block",
         });
         const errors = [];
         page.on("pageerror", err => errors.push(err.message));
