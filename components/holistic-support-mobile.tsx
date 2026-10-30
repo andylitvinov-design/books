@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import AcademyVideoProgress from "@/components/app/academy-video-progress";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
@@ -468,10 +469,6 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
-  const [savedVideos, setSavedVideos] = useState<string[]>([]);
-  const [videoSaveBusy, setVideoSaveBusy] = useState(false);
-  const [videoSaveError, setVideoSaveError] = useState("");
-  const [videoNeedsLogin, setVideoNeedsLogin] = useState(false);
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -630,28 +627,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
-    setVideoSaveError(""); setVideoNeedsLogin(false);
     // Local "opened" is only a current-visit UI counter, never an account mark.
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
-  };
-  const markCurrentVideoWatched = async () => {
-    // Viewing is a user-confirmed action; never infer it from opening the iframe.
-    if (!selected || !playing || videoSaveBusy || savedVideos.includes(selected.id)) return;
-    const videoId = selected.id;
-    setVideoSaveBusy(true); setVideoSaveError(""); setVideoNeedsLogin(false);
-    try {
-      const response = await fetch("/api/app/video-progress", {
-        method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId, title: selected.title, status: "watched" }),
-      });
-      if (response.status === 401) { setVideoNeedsLogin(true); return; }
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload || payload.videoId !== videoId ||
-          !["watched", "mastered"].includes(payload.status)) throw new Error("NOT_SAVED");
-      setSavedVideos(current => current.includes(videoId) ? current : [...current, videoId]);
-    } catch { setVideoSaveError(t.videoSaveError); }
-    finally { setVideoSaveBusy(false); }
   };
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
@@ -980,13 +957,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
                 {playing && selected ? <div className={styles.videoAccountProgress} data-support-account-video-mark>
-                  <button type="button" onClick={() => void markCurrentVideoWatched()}
-                    disabled={videoSaveBusy || savedVideos.includes(selected.id)}>
-                    <ShieldCheck size={17} aria-hidden="true"/>
-                    {savedVideos.includes(selected.id) ? t.savedWatched : videoSaveBusy ? t.videoSaving : t.saveWatched}
-                  </button>
-                  {videoNeedsLogin ? <Link href={accountProgressHref} prefetch={false}>{t.videoLogin}</Link> : null}
-                  {videoSaveError ? <p role="alert">{videoSaveError}</p> : null}
+                  <AcademyVideoProgress key={selected.id} videoId={selected.id} title={selected.title} locale={locale} />
                 </div> : null}
               </div>
               {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
