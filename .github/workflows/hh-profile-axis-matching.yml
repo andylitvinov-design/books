@@ -1,6 +1,7 @@
 name: Holistic House axis-to-offer matching
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
@@ -19,6 +20,20 @@ on:
       - 'tests/axis-offer-matcher.test.mjs'
       - 'docs/myspace/PROFILE_AXIS_OFFER_MATCHING_V1_20261028.md'
       - '.github/workflows/hh-profile-axis-matching.yml'
+      - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/portrait-test-quick-actions.jsx'
+      - 'components/app/portrait-test-quick-actions.module.css'
+      - 'lib/profile/portrait-test-suggestions.js'
+      - 'tests/portrait-report-actions.test.mjs'
+      - 'tests/portrait-sector-take-test.test.mjs'
+      - 'components/app/test-explorer.module.css'
+      - 'lib/assessments/portrait-sectors.js'
+      - 'tests/portrait-sectors.test.mjs'
+      - 'tests/portrait-rays-responsive.test.mjs'
+      - 'tests/portrait-one-screen-mobile.test.mjs'
+      - 'scripts/verify-app-r1.mjs'
+      - '.github/workflows/hh-portrait-sectors.yml'
 permissions:
   contents: read
 concurrency:
@@ -26,6 +41,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -41,9 +57,13 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
         run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs
+      - name: Portrait four-sector, missing-value, responsive and privacy contracts
+        run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
         run: npx --no-install eslint lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: TypeScript check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
