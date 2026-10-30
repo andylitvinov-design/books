@@ -1663,9 +1663,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const createQuickVideo = () => {
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
-      document.querySelector("[data-video-quick-attach]")?.scrollIntoView({
-        behavior:"smooth",block:"center",
-      });
+      // Audio controls are inside the collapsed advanced editor.
+      // Reveal the real attach action instead of scrolling to hidden content.
+      openQuickDetailed("video-audio");
       return;
     }
     if(uploadedAudio&&!audioRights){
@@ -1806,7 +1806,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               aria-label={previewPlaying?approved.previewPause:activeFilm?approved.previewPlay:approved.previewFallback}
               aria-pressed={previewPlaying} disabled={recording||preparing}
               onClick={()=>{
-                if(!activeFilm){openQuickDetailed("video-hero");return;}
+                if(!activeFilm){
+                  // Canvas-backed themes have genuine motion in the full editor.
+                  // One tap opens that renderer and begins preview; a second pauses.
+                  setPreviewPlaying(current=>!current);
+                  if(!previewPlaying)openQuickDetailed("video-hero");
+                  return;
+                }
                 if(!previewPlaying){
                   const video=premiumVideoRef.current;
                   if(video){video.muted=true;void video.play().catch(()=>setNotice(ui.videoUnavailable));}

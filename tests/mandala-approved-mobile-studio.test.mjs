@@ -65,6 +65,10 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/enabled:!current\.enabled/);
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
+    "selected sound must reveal real attachment controls after mobile collapse");
+  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?setPreviewPlaying\(current=>!current\);\s*if\(!previewPlaying\)openQuickDetailed\("video-hero"\)/,
+    "Canvas-only topics must start the true animated preview on the first tap");
   assert.match(s,/data-video-photo-consent/);
   assert.match(s,/Краткие кадры и гипноаффирмации — экспериментальные/);
   assert.match(s,/25th frame|25th|Brief frames and hypnoaffirmations/);
