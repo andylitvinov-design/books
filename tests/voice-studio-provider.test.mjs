@@ -35,3 +35,10 @@ test('quota, network, malformed response and unsupported WAV fail closed',async(
   await assert.rejects(run(async()=>response(Buffer.alloc(60).toString('base64'))),code('TTS_PROVIDER_INVALID_RESPONSE'));
   await assert.rejects(run(async()=>new Response('x'.repeat(1025))),code('TTS_RESPONSE_TOO_LARGE'));
 });
+test('missing key and unexpected model never reach the provider',async()=>{
+  let calls=0;
+  const fetchImpl=async()=>{calls++;return response(wav().toString('base64'));};
+  await assert.rejects(provider.requestStudioAudio({key:'',payload:request,fetchImpl}),code('VOICE_STUDIO_NOT_CONFIGURED'));
+  await assert.rejects(provider.requestStudioAudio({key:'synthetic-key',payload:{...request,model:'unknown'},fetchImpl}),code('TTS_PROVIDER_INVALID_MODEL'));
+  assert.equal(calls,0);
+});
