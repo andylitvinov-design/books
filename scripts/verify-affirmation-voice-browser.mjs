@@ -20,11 +20,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
   const browser=await browserType.launch({headless:true});
   try {
     const locale=engine==="webkit"?"ru":"en";
-    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true});
+    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
     try{
       const page=await context.newPage();
       const payloads=[];
       const errors=[];
+      const requests=[];
+      page.on("request",req=>{if(req.url().includes("/api/holistic-support/voice"))requests.push({method:req.method(),url:req.url()});});
+      page.on("requestfailed",req=>{if(req.url().includes("/api/holistic-support/voice"))errors.push("network:"+req.method()+":"+req.failure()?.errorText);});
       page.on("pageerror",e=>errors.push(e.message));
       await page.route("**/api/holistic-support/voice",async route=>{
         const req=route.request();
@@ -53,7 +56,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
         throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
-          providerRequests:payloads.length,jsErrors:errors}),{cause:error});
+          providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
       assert.equal(payloads.length,1);
       assert.equal(payloads[0].mode,"affirmations");
