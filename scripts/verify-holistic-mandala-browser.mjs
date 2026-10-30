@@ -32,9 +32,9 @@ function syntheticWav(){
 }
 
 const expectedTitle={
-  ru:"Личная видео-подкачка или видеотерапия",
-  en:"Personal video boost or video therapy",
-  es:"Vídeo de impulso personal o videoterapia",
+  ru:"Создать видео",
+  en:"Create video",
+  es:"Crear vídeo",
 };
 async function openStep(page,n){
   const button=page.locator('[data-video-summary-step="'+n+'"]');

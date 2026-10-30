@@ -273,7 +273,7 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
 test("approved compact mode, goal and opt-ins precede a single video preview and six summary rows", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const labels=["Личная видео-подкачка или видеотерапия","Personal video boost or video therapy","Vídeo de impulso personal o videoterapia"];
+  const labels=["Создать видео","Create video","Crear vídeo"];
   for(const label of labels)assert.ok(studio.includes(label),label);
   const landmarks=["data-video-editor-lead","data-video-mandala-hero",
     "data-video-editor-tabs","data-video-compact-summary","data-video-quick-builder"];

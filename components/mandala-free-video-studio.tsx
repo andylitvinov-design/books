@@ -752,7 +752,7 @@ function stopJob(job: Job, cancelled: boolean) {
 const quickVideoCopy = {
   ru: {
     quickThemes:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Здоровье"},
-    title:"Личная видео-подкачка или видеотерапия",sub:"Раскройте нужный блок, настройте свой ролик и сохраните на телефон",
+    title:"Создать видео",sub:"Персональное видео с нужной атмосферой, образами и музыкой",
     smart:"Умный подбор",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
     wish:"Что я хочу получить или изменить?",image:"2. Моё изображение",
     imageHelp:"Добавьте своё фото или выберите готовый сюжет (по желанию)",
@@ -781,7 +781,7 @@ const quickVideoCopy = {
   },
   en: {
     quickThemes:{energy:"Energy",money:"Money",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Wellbeing"},
-    title:"Personal video boost or video therapy",sub:"Open a section to customize your video, then save it on your device",
+    title:"Create video",sub:"Personal video with the right atmosphere, imagery and music",
     smart:"Smart match",theme:"1. Theme & goal",myGoals:"Choose from my goals",
     wish:"What would I like to gain or change?",image:"2. My imagery",
     imageHelp:"Add your photo or pick a ready-made scene (optional)",
@@ -810,7 +810,7 @@ const quickVideoCopy = {
   },
   es: {
     quickThemes:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Objetivos",life:"Sentido",health:"Bienestar"},
-    title:"Vídeo de impulso personal o videoterapia",sub:"Abre cada sección para personalizar tu vídeo y guardarlo",
+    title:"Crear vídeo",sub:"Vídeo personal con imágenes, ambiente y música adecuados",
     smart:"Selección inteligente",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
     wish:"¿Qué me gustaría conseguir o cambiar?",image:"2. Mis imágenes",
     imageHelp:"Añade tu foto o elige una escena (opcional)",
