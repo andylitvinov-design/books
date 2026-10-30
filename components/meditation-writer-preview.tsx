@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import styles from "./meditation-writer-preview.module.css";
+import { MeditationWriterDeviceVoice } from "./meditation-writer-device-voice";
 
 type Locale = "ru" | "en" | "es";
 type Focus = "stress" | "relationships" | "self_worth" | "meaning";
@@ -115,6 +116,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         {s.optionalSilenceSeconds>0&&<small>{t.pause}: {s.optionalSilenceSeconds} s</small>}
       </div>)}
       <p className={styles.caption}>{t.durationNote}</p>
+      <MeditationWriterDeviceVoice locale={l} segments={preview.segments} />
     </article>}
   </section>;
 }
