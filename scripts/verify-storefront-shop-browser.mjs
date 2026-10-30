@@ -48,10 +48,132 @@ try {
     })
     const location = origin + '/' + locale + '/shop'
     try {
-      const response = await page.goto(location, { waitUntil: 'networkidle', timeout: 30000 })
+      const response = await page.goto(location, { waitUntil: 'domcontentloaded', timeout: 30000 })
       assert.equal(response?.status(), 200, locale + ': shop route HTTP')
       const shop = page.locator('[data-service-storefront]')
-      await shop.waitFor({ state: 'visible' })
+      await shop.waitFor({ state: 'visible', timeout: 15000 })
+      // Production HTML may be visible before React binds filter interactions.
+      // Wait on the exact filter element, not on unrelated network activity.
+      await page.waitForFunction(() => {
+        const filter = document.querySelector('[data-shop-filter="program"]');
+        return !!filter && Object.keys(filter).some(key => key.startsWith('__reactProps
+      assert.equal(await page.locator('[data-shop-filter]').count(), 4)
+      assert.equal(await page.locator('[data-shop-add]').count(), 2)
+      assert.equal(await page.locator('[data-shop-checkout]').count(), 2)
+      const reportOverflow = async () => page.evaluate(() => ({
+        viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+      }))
+      const originalSize = await reportOverflow()
+      assert.ok(originalSize.scrollWidth <= originalSize.viewport + 1,
+        locale + '/' + width + ': horizontal overflow ' + JSON.stringify(originalSize))
+
+      await page.locator('[data-shop-filter="program"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 3)
+      assert.equal(await page.locator('[data-shop-product]').count(), 3)
+      assert.equal(await page.locator('[data-shop-add]').count(), 0,
+        'Unpriced programmes must never enter the paid cart')
+      await page.locator('[data-shop-search]').fill('zzzz-unmatched-shop-phrase')
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 0)
+      assert.equal(await page.locator('[data-shop-product]').count(), 0)
+      await page.locator('[data-shop-search]').fill('')
+      await page.locator('[data-shop-filter="free"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 2)
+      assert.equal(await page.locator('[data-shop-product]').count(), 2)
+      assert.equal(await page.locator('[data-shop-add]').count(), 0,
+        'Free resources must never charge money')
+      await page.locator('[data-shop-filter="session"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 2)
+      assert.equal(await page.locator('[data-shop-product]').count(), 2)
+
+      const add = page.locator('[data-shop-add="express-consultation-30"]')
+      const bounds = await add.boundingBox()
+      assert.ok(bounds && bounds.height >= 40, 'Add button touch target too small')
+      await add.click()
+      await page.waitForFunction(() => {
+        const node = document.querySelector('[data-shop-cart-summary]')
+        return node && node.textContent && /50/.test(node.textContent) &&
+          node.textContent.includes('1')
+      })
+      assert.equal(await page.evaluate(() =>
+        JSON.parse(sessionStorage.getItem('hh-service-cart-v1') || '[]').join(',')),
+        'express-consultation-30')
+      const href = await page.locator('[data-shop-checkout="express-consultation-30"]').getAttribute('href')
+      assert.ok(href && href.startsWith('/' + locale + '/cart?items='))
+      await page.locator('[data-shop-checkout="express-consultation-30"]').click()
+      await page.waitForURL('**/' + locale + '/cart?items=*')
+      const cart = page.locator('[data-personal-service-cart]')
+      await cart.waitFor({ state: 'visible' })
+      await page.waitForFunction(() => {
+        const element = document.querySelector('[data-personal-service-cart]')
+        return element && /50/.test(element.textContent || '')
+      })
+      // The cart is now a two-step flow: no payment controls before a saved,
+      // reply-consented CRM order. Inspect only; never submit a synthetic lead.
+      assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
+      await cart.locator('[data-cart-start-order]').click()
+      const contactForm = cart.locator('[data-cart-contact-form]')
+      await contactForm.waitFor({ state: 'visible' })
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Order must require a contact and explicit reply-only opt-in')
+      assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
+        'The visitor must consent before the first-party CRM save')
+      assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
+        'No payment step before the CRM confirms an order')
+      await contactForm.locator('input[type="tel"]').fill('416 555 1234')
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Phone without reply-only opt-in is insufficient')
+      await contactForm.locator('input[type="checkbox"][required]').check()
+      await contactForm.locator('button[type="submit"]').click()
+      await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
+      await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
+      assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
+      assert.equal(syntheticEnquiries[0].contactConsent, true)
+      assert.equal(syntheticEnquiries[0].contact.phone, '+14165551234')
+      assert.equal(syntheticEnquiries[0].sourcePath, '/' + locale + '/cart')
+      assert.equal(syntheticEnquiries[0].serviceTitle.includes('30'), true)
+      assert.equal(await cart.locator('[data-cart-order-saved]').count(), 1)
+      assert.equal(await cart.locator('fieldset input[type="radio"]').count() > 0, true,
+        'Payment choices only after saved CRM reference')
+      // No provider navigation: inspect only that the canonical payee/price are retained.
+      const manual = page.locator('[data-cart-paypal-personal]')
+      if (await manual.count()) {
+        assert.equal(await manual.getAttribute('href'), 'https://paypal.me/psitrends/50EUR')
+      }
+      assert.equal(await page.locator('[data-cart-square-payment-link]').count(), 0,
+        'Unapproved Square link must stay hidden')
+      assert.equal(await page.locator('[data-cart-paypal-hosted]').count(), 0,
+        'Unapproved PayPal hosted link must stay hidden')
+      assert.equal(await page.locator('[data-cart-verified-paypal-checkout]').count(), 0,
+        'Merchant Orders v2 must stay disabled without financial ledger')
+      const cartSize = await reportOverflow()
+      assert.ok(cartSize.scrollWidth <= cartSize.viewport + 1,
+        locale + '/' + width + ': cart horizontal overflow ' + JSON.stringify(cartSize))
+      assert.deepEqual(failures, [], 'Client JavaScript errors')
+      if (width === 390 || width === 320) {
+        await page.screenshot({ path: folder + '/cart-' + locale + '-' + width + '.png',
+          fullPage: true, timeout: 12000 })
+      }
+      checks.push({ locale, width, engine, shop: 200, sessionCount: 2,
+        programmeCount: 3, freeCount: 2, cart: 'EUR50', overflow: false })
+    } catch (error) {
+      await page.screenshot({ path: folder + '/failed-' + locale + '-' + width + '.png',
+        fullPage: true, timeout: 6000 }).catch(() => {})
+      scripts.push({ locale, width, engine, message: error.message, failures })
+      throw error
+    } finally {
+      await context.close()
+    }
+  }
+} finally {
+  for (const browser of running.values()) await browser.close()
+  await writeFile(folder + '/summary.json', JSON.stringify({ checks, errors: scripts }, null, 2) + '\n')
+}
+console.log('[storefront-shop] ' + checks.length + ' smoke scenarios passed')
+));
+      }, null, {timeout:15000})
       assert.equal(await page.locator('[data-shop-product]').count(), 7)
       assert.equal(await page.locator('[data-shop-filter]').count(), 4)
       assert.equal(await page.locator('[data-shop-add]').count(), 2)

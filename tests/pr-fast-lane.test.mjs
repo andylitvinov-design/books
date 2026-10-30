@@ -572,3 +572,18 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
   ]) assert.ok(publicQa.includes('node scripts/' + browser + '.mjs'), browser + ': no browser suite deleted');
   assert.match(publicQa, /timings\.csv/, 'runner costs measured per browser suite');
 });
+
+
+test('all 14 Public Services browser suites use semantic readiness rather than networkidle', () => {
+  const source = workflow('hh-public-services-production.yml');
+  const scripts = [...source.matchAll(/node (scripts\/verify-[\w-]+\.mjs)/g)].map(match => match[1]);
+  const unique = [...new Set(scripts)];
+  assert.equal(unique.length, 14, 'existing full browser acceptance list must be retained');
+  for (const script of unique) {
+    const file = readFileSync(join(root, script), 'utf8');
+    assert.doesNotMatch(file, /waitUntil\s*:\s*['"]networkidle['"]/,
+      script + ': navigation must use semantic DOM readiness');
+    assert.doesNotMatch(file, /waitForLoadState\(\s*['"]networkidle['"]/,
+      script + ': do not suppress networkidle timeouts');
+  }
+});
