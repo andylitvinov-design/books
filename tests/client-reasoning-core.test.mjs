@@ -70,6 +70,30 @@ test('a newly selected topic does not silently retain an old profile facet or ar
   assert.deepEqual(context.selectedTopics, ['focus']);
   assert.deepEqual(context.selectedFacets, []);
   assert.deepEqual(context.lifeAreas, []);
+  const blank = prepareReasoningContext({
+    intent: { goalText: '  ' },
+    profile: { authenticated: true, ownerScoped: true, confirmedTopics: ['money'] },
+    consent: { profilePersonalization: true },
+  });
+  assert.deepEqual(blank.selectedTopics, ['money']);
+});
+test('a new free-text goal does not silently reuse a previous confirmed focus', () => {
+  const context = prepareReasoningContext({
+    intent: { goalText: 'I want to explore a new direction' },
+    profile: { authenticated: true, ownerScoped: true, confirmedTopics: ['money'], confirmedFacets: ['emotions::stress'], confirmedLifeAreas: ['business'] },
+    consent: { profilePersonalization: true },
+  });
+  assert.deepEqual(context.selectedTopics, []);
+  assert.deepEqual(context.selectedFacets, []);
+  assert.deepEqual(context.lifeAreas, []);
+  const decision = planClientNextStep({
+    intent: { goalText: 'I want to explore a new direction' },
+    profile: { authenticated: true, ownerScoped: true, confirmedTopics: ['money'] },
+    consent: { profilePersonalization: true }, safety: { status: 'clear' },
+    rankOffers: () => { throw new Error('must not rank an old focus'); },
+  });
+  assert.equal(decision.status, 'clarify');
+  assert.equal(decision.question.key, 'choose_goal');
 });
 test('no ranker returns unavailable rather than unreviewed fallback', () => {
   assert.equal(planClientNextStep({ ...base, rankOffers: undefined }).status, 'unavailable');
