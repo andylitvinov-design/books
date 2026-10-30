@@ -19,6 +19,8 @@ import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
+import { stageSupportGoalProfile, normalizeSavedGoalProfile } from "@/lib/holistic-support/saved-goal-profile.mjs";
+import { appFetch } from "@/lib/app/client-fetch";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -176,7 +178,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
+    private: "Private until saved", privateInfo: "Only your chosen goals and ratings are stored if you select Save to Cabinet. Photos and viewing history stay on this device.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
@@ -276,7 +278,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
+    private: "Приватно до сохранения", privateInfo: "Цели и оценки сохраняются только по кнопке «Сохранить в кабинете». Фото и история просмотра остаются на устройстве.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
@@ -376,7 +378,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
+    private: "Privado hasta guardar", privateInfo: "Solo tus metas y valoraciones se guardan al elegir Guardar en mi cuenta. Fotos e historial quedan en este dispositivo.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
@@ -582,6 +584,26 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
+  // Explicit, transient handoff through the existing Google/PKCE + Cabinet consent.
+  // No health data in the OAuth URL, marketing pixels or CRM.
+  const saveGoalProfileToCabinet = async (input: {
+    scores: Record<"energy" | "money" | "relationships" | "meaning", number>;
+    savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+    activeSector: GoalSector;
+  }) => {
+    const profile = normalizeSavedGoalProfile({ version: 1, ...input });
+    if (!profile) throw new Error("INVALID_SUPPORT_GOAL_PROFILE");
+    stageSupportGoalProfile(profile);
+    try {
+      await appFetch("auth/contact-profile", undefined, "GET");
+      window.location.assign("/" + locale + "/app/portrait");
+    } catch (error: unknown) {
+      if (!(error instanceof Error) || !("status" in error) || error.status !== 401) throw error;
+      const started = await appFetch("auth/start", { locale, continueTo: "cabinet" }, "POST");
+      if (!started?.redirectUrl || typeof started.redirectUrl !== "string") throw new Error("SIGN_IN_UNAVAILABLE");
+      window.location.assign(started.redirectUrl);
+    }
+  };
   const saveGoalSector = (sector: GoalSector, value: GoalSectorSnapshot) => {
     setGoalSavedSectors(previous => ({ ...previous, [sector]: value }));
   };
@@ -786,7 +808,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
             onCheckinChange={(sector, value) => onCheckinChange(goalSectorCheckinKey[sector], value)}
-            selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
+            onSaveToCabinet={saveGoalProfileToCabinet}
             onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat && choice !== "pump" && choice !== "tests" ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
               <p data-support-goal-empty={activeGoalFormats.length === 0 ? "true" : undefined}>
