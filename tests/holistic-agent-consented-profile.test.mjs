@@ -86,3 +86,29 @@ test("server enforces owner auth and explicit request consent, without client-fo
  assert.match(ui,/chosenAxes:axisRef\?\[axisRef\]:\[\]/);
  assert.match(ui,/usePrivateProfile:useSavedTests&&Boolean\(axisRef\)/);
 });
+
+test("existing signed-in My Progress video status is reused only with independent opt-in",()=>{
+  const api=read("app/api/holistic-agent/turn/route.js");
+  const ui=read("components/holistic-agent-chat.tsx");
+  const progress=read("lib/app/video-progress.js");
+  assert.match(api,/body\.usePrivateHistory===true && safety\.status==="clear"/);
+  assert.match(api,/listVideoProgress\(config,actor\)/);
+  assert.match(api,/history:\{completedIds\}/);
+  assert.match(api,/practiceHistory:useHistory/);
+  assert.match(api,/filter\(row=>[\s\S]*?\["watched","mastered"\]/);
+  assert.match(ui,/usePrivateHistory:useSavedHistory/);
+  assert.match(ui,/useState\(false\)/);
+  assert.match(progress,/where account_id=\$1 order by updated_at/);
+  const verified={...input(),catalogs:{axisOffers:[video,
+    {...video,id:"video:other",axisLinks:[{ref:"recovery::energy",strength:2}]}]}};
+  const actor=buildHolisticGuidedTurn({...verified,
+    consent:{practiceHistory:true},
+    access:{authenticated:true,ownerScoped:true},
+    history:{completedIds:["youtube:HqfixazXqRY"]}});
+  assert.equal(actor.status,"recommend");
+  assert.equal(actor.primary.id,"video:other");
+  const withoutConsent=buildHolisticGuidedTurn({...verified,
+    access:{authenticated:true,ownerScoped:true},
+    history:{completedIds:["youtube:HqfixazXqRY"]}});
+  assert.equal(withoutConsent.primary.id,"youtube:HqfixazXqRY");
+});

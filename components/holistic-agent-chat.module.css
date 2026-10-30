@@ -33,3 +33,19 @@
 .feedbackActions button{min-height:44px;padding:9px 11px;border:1px solid #c7b398;
   border-radius:9px;background:#fff9f0;color:#593f26;font:600 12px/1.3 system-ui;cursor:pointer}
 .feedbackActions button:focus-visible{outline:3px solid #8c6c43;outline-offset:2px}
+
+/* Eight-session EDUCATIONAL outline: no implied media/player or auto-treatment. */
+.programPanel{margin-top:18px;padding:14px;border:1px solid #d9c9b4;border-radius:14px;background:#faf5ed}
+.programPanel summary{font:700 15px/1.4 system-ui;cursor:pointer;color:#4d3b29}
+.programPanel .form{margin-top:10px}
+.programPanel .mode{margin:4px 0}
+.programPanel .form>button{min-height:44px;align-self:start;background:#225d50;color:white;border:0;
+  border-radius:10px;padding:10px 14px;font:700 13px/1.4 system-ui;cursor:pointer}
+.programPanel .form>button:disabled{opacity:.5;cursor:not-allowed}
+.programPanel .form>button:focus-visible,.programPanel summary:focus-visible{outline:3px solid #8a6e41;outline-offset:3px}
+.outline{margin-top:14px;border-top:1px solid #e7d8c5;padding-top:12px}
+.outline h2{font:700 18px/1.3 system-ui;color:#403126}
+.outline>ol{margin:12px 0 0;padding-left:22px;display:grid;gap:13px}
+.outline>ol>li{padding:10px;background:white;border-radius:9px;line-height:1.5}
+.outline ul{margin:7px 0;padding-left:18px;font-size:13px}
+.outline small{display:block;margin-top:6px;color:#76695a;font-size:12px}
