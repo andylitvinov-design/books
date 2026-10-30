@@ -741,7 +741,36 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           // MediaRecorder session, not just the legacy Generate control.
           await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
-          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          // Chrome can need more than 25s to finish a genuine 10s 720p
+          // MediaRecorder plus decoded WAV on a shared CI runner. Keep the
+          // real downloaded audio/video/ffprobe assertions below: waiting
+          // longer must never turn a missing or silent movie into success.
+          try {
+            await videoLink.waitFor({ state: "visible", timeout: 55000 });
+          } catch (error) {
+            const diagnostic=await page.evaluate(()=>{
+              const q=(selector)=>document.querySelector(selector);
+              const video=q('[data-mandala-master-mp4]');
+              const output=q('[data-video-result]');
+              return {
+                notices:[...document.querySelectorAll('[role="status"],[role="alert"]')]
+                  .map(element=>element.textContent?.trim()).filter(Boolean).slice(-10),
+                outputHidden:output?.hasAttribute('hidden'),
+                resultLinkMounted:Boolean(q('[data-mandala-video-download]')),
+                creating:document.querySelector('[role="progressbar"]')?.textContent?.trim(),
+                cancelButton:[...document.querySelectorAll('button')].find(element=>
+                  element.textContent?.includes('Отмена'))?.textContent?.trim(),
+                video:{readyState:video?.readyState,paused:video?.paused,
+                  networkState:video?.networkState,error:video?.error?.code||null,
+                  source:video?.currentSrc},
+                sourceCanvas:!!q('[data-mandala-cinematic-canvas]'),
+                freeCreateDisabled:q('[data-video-quick-generate]')?.disabled,
+                hypnoCreateDisabled:q('[data-hypno-create-video]')?.disabled,
+              };
+            });
+            throw new Error('The real audio+video MediaRecorder export was not delivered: '+
+              JSON.stringify(diagnostic)+' / '+String(error));
+          }
           const filename = await videoLink.getAttribute("download");
           assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
           const encoded=page.locator("[data-mandala-video-preview]");
