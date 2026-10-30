@@ -48,6 +48,28 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
+test('core Draft skips heavy checkout but cannot pass release-ready, and Ready restores full checks', () => {
+  const core = read('hh-pr-core-release.yml');
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
+  assert.ok(core.includes("  merge_group:"));
+  assert.ok(core.includes("  workflow_dispatch:"));
+  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  assert.ok(scope);
+  assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
+  assert.ok(core.includes("run: npm run build"));
+  assert.ok(core.includes("run: npx --no-install tsc --noEmit --pretty false"));
+  const gate = core.split('  release-ready:')[1];
+  assert.ok(gate);
+  assert.ok(gate.includes("    if: always()"));
+  assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
+  assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("[[ \"$CODE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("ci-specialist-aggregate.mjs"));
+  assert.doesNotMatch(core, /continue-on-error:\s*true/);
+});
+
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' }}";
 const supersededRunWorkflows = [
@@ -124,7 +146,7 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/^  pull_request:\s*\n\s+branches: \['codex\/public-book-library'\]/m);
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
   assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  release-ready:/m);
@@ -194,4 +216,42 @@ test('wave 2: My Progress production post-merge checks keep full independent com
   assert.match(source,/^  push:/m);
   assert.match(source,/run: npm run build/);
   assert.ok(source.includes("github.event_name != 'pull_request'"));
+});
+
+
+// Heavy workflows must execute on Ready-for-review and later commits, while
+// non-mergeable Draft PRs avoid expensive full matrices on intermediate pushes.
+const highCostDraftSuites = [
+  ['hh-app-r1.yml', ['unit-build', 'course-banner-browser', 'database'], true],
+  ['hh-app-browser.yml', ['browser'], true],
+  ['opora-module-ci.yml', ['module-routing', 'as56-mobile-browser'], true],
+  ['hh-public-services-production.yml', ['public-services'], false],
+];
+test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acceptance', () => {
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.match(core,/run: npm run build/);
+  const trigger='    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const gate='    if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for (const [name, jobNames, pushAudit] of highCostDraftSuites) {
+    const source=read(name);
+    assert.ok(source.includes('  pull_request:\n'+trigger+'\n'),name+' must rerun when Draft becomes Ready');
+    assert.ok(source.includes("branches: ['codex/public-book-library']") ||
+      /^    branches:\s*\n\s+- codex\/public-book-library/m.test(source),
+      name+' must target production explicitly');
+    if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
+    assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
+    assert.match(source,/^  cancel-in-progress: true/m);
+    assert.doesNotMatch(source,/continue-on-error:\s*true/);
+    const jobs=source.split(/^jobs:\s*$/m)[1];
+    assert.ok(jobs,name+' has no jobs');
+    for(const job of jobNames) assert.ok(jobs.includes('  '+job+':\n'+gate+'\n'),
+      name+'/'+job+' must run when ready and retain non-PR events');
+  }
+  const browser=read('hh-app-browser.yml');
+  const summaryGate='    if: $'+"{{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}";
+  assert.ok(browser.includes('  browser-journey-complete:\n'));
+  assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
+  assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });

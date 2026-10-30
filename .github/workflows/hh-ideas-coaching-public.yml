@@ -43,6 +43,9 @@ on:
       - 'scripts/verify-coaching-lounge-mobile.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
       - 'tests/public-coaching-discovery.test.mjs'
+      # The separately owned mobile-mock screenshot QA does not exercise Ideas
+      # discovery or Coaching; all public Ideas source changes still run here.
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -94,6 +97,7 @@ jobs:
           ready=0
           for i in $(seq 1 60); do
             if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then ready=1; break; fi
+            echo "Waiting for isolated Ideas QA server, attempt ${i}/60" >&2
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
