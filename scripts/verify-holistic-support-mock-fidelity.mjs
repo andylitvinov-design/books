@@ -967,7 +967,17 @@ for (const browserType of [chromium, webkit]) {
               {waitUntil:"domcontentloaded",timeout:75000});
             await page.locator('[data-support-start-tests]').click();
             await page.waitForURL(origin+"/ru/client/tests",{timeout:45000});
-            await page.locator('#hh-test-list').waitFor({state:"visible",timeout:45000});
+            // The guest catalogue is a real client-side explorer. Its result
+            // list can be below the fold/hidden while filters initialize;
+            // require the guest entry and a genuine mounted catalogue instead
+            // of misclassifying an off-screen list as a broken route.
+            await page.locator('[data-guest-start-notice]').waitFor({state:"visible",timeout:90000})
+              .catch(async error => {
+                const snapshot = (await page.locator('main').first().innerText().catch(() => 'NO_MAIN')).slice(0,700);
+                throw new Error(label+" Test Explorer entry did not mount: "+snapshot+" | "+error.message);
+              });
+            assert.equal(await page.locator('#hh-test-list').count(),1,
+              label+" real test catalogue exists behind the guest entry");
           }
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
