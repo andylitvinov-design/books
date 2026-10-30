@@ -165,3 +165,72 @@ test("detailed wording leaves verified resource ids unchanged",()=>{
   assert.deepEqual(detailed.suggestions,short.suggestions);
   assert.ok(detailed.text.length>short.text.length);
 });
+
+
+test("RU correction picks the current career focus, not old relationships",()=>{
+  const first=go("Меня беспокоили отношения. Хочу видео");
+  const corrected=go("Раньше были отношения, а сейчас работа и деньги. Нужен тест",first.state);
+  assert.equal(first.state.topic,"love");
+  assert.equal(corrected.state.topic,"money");
+  assert.equal(corrected.state.format,"test");
+  assert.match(corrected.text,/теперь|новой теме/i);
+});
+test("EN correction prioritizes the last goal after but now",()=>{
+  const first=go("I am stressed and need a video",createLanguageSession({locale:"en"}));
+  const corrected=go("I was worried about relationships, but now my work and salary matter. A short test please.",first.state);
+  assert.equal(corrected.state.locale,"en");
+  assert.equal(corrected.state.topic,"money");
+  assert.equal(corrected.state.format,"test");
+  assert.match(corrected.text,/new topic/i);
+});
+test("ES correction prioritizes new work request over old love",()=>{
+  const first=go("Quiero un video sobre relaciones",createLanguageSession({locale:"es"}));
+  const corrected=go("Antes amor, pero ahora trabajo y dinero. Quiero una prueba.",first.state);
+  assert.equal(corrected.state.locale,"es");
+  assert.equal(corrected.state.topic,"money");
+  assert.equal(corrected.state.format,"test");
+  assert.match(corrected.text,/nuevo tema/i);
+});
+test("15-turn dialogue keeps constraints, changes topic, and never invents resources",()=>{
+  const turns=[
+    "Я устал, хочу видео",
+    "Без видео, нужен тест",
+    "Можно тест до 5 минут",
+    "Без тестов, хочу аудио",
+    "Теперь можно видео, снова энергия",
+    "Раньше были отношения, а сейчас работа и деньги. Нужен тест",
+    "Без тестов, давай консультацию",
+    "Не хочу консультацию, лучше видео",
+    "Сейчас отношения, хочу видео",
+    "Теперь можно тест, отношения",
+    "Коротко, на ты",
+    "Сейчас про энергию. Хочу видео",
+    "Покажи аудио вместо видео",
+    "Нужен просто короткий ответ",
+    "стоп",
+  ];
+  let state=createLanguageSession({locale:"ru"});
+  const results=[];
+  for(const utterance of turns) {
+    const result=go(utterance,state);
+    results.push(result);
+    state=result.state;
+    assert.ok(!JSON.stringify(state).includes(utterance),"raw client message persisted in state");
+    for(const item of result.suggestions){
+      assert.ok(["youtube:abcDEF12345","test:stress-test"].includes(item.id),
+        "Only approved fixture resources can be offered");
+    }
+  }
+  assert.equal(results.length,15);
+  assert.equal(results[0].state.topic,"energy");
+  assert.equal(results[1].state.format,"test");
+  assert.ok(results[1].state.excluded.includes("video"));
+  assert.ok(results[3].state.excluded.includes("test"));
+  assert.equal(results[4].state.excluded.includes("video"),false);
+  assert.equal(results[5].state.topic,"money","Explicit current focus overrides earlier topic");
+  assert.equal(results[8].state.topic,"love");
+  assert.equal(results[11].state.topic,"energy");
+  assert.equal(results[11].state.brevity,"short");
+  assert.equal(results[14].status,"stopped");
+  assert.deepEqual(results[14].suggestions,[]);
+});
