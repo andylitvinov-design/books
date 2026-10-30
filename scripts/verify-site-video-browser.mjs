@@ -210,9 +210,20 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // The current approved About archive contains 6 English plus 4 Russian
+  // testimony cards with provenance-matched local posters. The old assertion
+  // of three players was from the former compact layout; do not reject the
+  // full archive or weaken the no-eager-iframe and player identity checks.
+  const testimonialCards = page.locator('[data-testimonial-video-id]')
+  await expect(testimonialCards).toHaveCount(10)
+  const testimonialIds = await testimonialCards.evaluateAll(nodes =>
+    nodes.map(node => node.getAttribute('data-testimonial-video-id')))
+  assert.equal(new Set(testimonialIds).size, testimonialIds.length,
+    'About testimonial videos must have unique source IDs')
+  assert.equal(await page.locator('.site-video-player').count(), testimonialIds.length,
+    'Every archived testimonial must have exactly one approved video player')
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, full ten-video testimonial archive, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
