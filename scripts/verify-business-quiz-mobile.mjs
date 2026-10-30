@@ -120,8 +120,16 @@ async function verify(browserType,locale,width){
     const after=await measure()
     assert.ok(after.content<=after.viewport+1,label+': after interactions no horizontal overflow')
     // Follow the real free link (no lead submission), not a simulated client-side redirect.
-    await page.locator('[data-business-need="clarity"]').click()
-    await page.locator('[data-business-finder-start="free-review"]').click()
+    // A browser back navigation can expose server markup just before the
+    // client handler is attached. Retry a real click only if no result appeared.
+    const clarity=page.locator('[data-business-need="clarity"]')
+    const freeResult=page.locator('[data-business-finder-start="free-review"]')
+    for(let attempt=0;attempt<3;attempt++){
+      await clarity.click()
+      if(await freeResult.waitFor({state:'visible',timeout:1500}).then(()=>true,()=>false))break
+      await page.waitForTimeout(500)
+    }
+    await freeResult.click()
     await page.waitForURL('**/'+locale+'/services/free-situation-review?topic=business',{timeout:30000})
     assert.equal(new URL(page.url()).pathname,'/'+locale+'/services/free-situation-review')
     assert.deepEqual(submissions,[],label+': no enquiry without explicit consent')

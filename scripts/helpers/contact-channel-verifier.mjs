@@ -75,6 +75,7 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
+  await form.locator('details:has(input[autocomplete="name"]) > summary').click();
   await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();

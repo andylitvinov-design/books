@@ -159,7 +159,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await search.fill(query)
     await search.press('Enter')
     const sleepCollection = collections.find(item=>item.id==='sleep')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: sleepCollection.focus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
+    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: initialPreferences.kinds || [], maxMinutes: initialPreferences.maxMinutes || 0 }).filter(entry=>entry.selectable), { ...initialPreferences, depth: initialPreferences.depth || 'balanced', focus: [...new Set([...(initialPreferences.focus || []), ...sleepCollection.focus])], collectionId:'sleep', collectionFocus:sleepCollection.focus })
     const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)

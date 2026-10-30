@@ -14,7 +14,13 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
   const path = '/' + locale + '/app/tests'
-  const link = page.locator('nav a[href="' + path + '"]:visible').first()
+  let link = page.locator('nav a[href="' + path + '"]:visible').first()
+  if (await link.count() === 0) {
+    const menu = page.locator('details.hh-account-menu')
+    await expect(menu).toBeVisible()
+    if (!await menu.evaluate(node => node.open)) await menu.locator(':scope > summary').click()
+    link = menu.locator('a[href="' + path + '"]')
+  }
   await expect(link).toBeVisible()
   await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
   await expect(link).toHaveAttribute('href', path)
@@ -27,13 +33,26 @@ export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'e
   const nav = page.locator('nav.hh-nav:visible, nav.hh-mobile-app-nav:visible')
   await expect(nav).toHaveCount(1)
   await expect(nav).toBeVisible()
-  const labels = locale === 'ru' ? ['Профиль', 'Тесты', 'Отчёты', 'Курсы', 'Практика'] : ['Profile', 'Tests', 'Reports', 'Courses', 'Practice']
-  const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
   const links = nav.locator(':scope > a')
   const mobile = (await nav.getAttribute('class')).split(/\s+/).includes('hh-mobile-app-nav')
-  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
-  if (mobile) expected.push({ href: locale === 'ru' ? '/ru' : '/', label: locale === 'ru' ? 'Главная' : 'Home', current: null, ariaLabel: locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage' })
-  await expect(links).toHaveCount(mobile ? 6 : 5)
+  const ru = locale === 'ru'
+  const entries = mobile ? [
+    {id:'home',href:ru?'/ru':'/',label:ru?'Главная':'Home',ariaLabel:ru?'На главную страницу Holistic House':'Go to Holistic House homepage'},
+    {id:'practice',href:'/'+locale+'/practice',label:ru?'Мои практики':'My practices'},
+    {id:'messages',href:'/'+locale+'/app/messages',label:ru?'Сообщения':'Messages'},
+    {id:'progress',href:'/'+locale+'/app/progress',label:ru?'Мой прогресс':'My progress'},
+    {id:'settings',href:'/'+locale+'/app/settings',label:ru?'Настройки':'Settings'},
+  ] : [
+    {id:'portrait',href:'/'+locale+'/app/portrait',label:ru?'Профиль':'Profile'},
+    {id:'tests',href:'/'+locale+'/app/tests',label:ru?'Тесты':'Tests'},
+    {id:'portfolio',href:'/'+locale+'/app/portfolio',label:ru?'Отчёты':'Reports'},
+    {id:'progress',href:'/'+locale+'/app/progress',label:ru?'Мой прогресс':'My Progress'},
+    {id:'course',href:'/'+locale+'/app/course?view=courses',label:ru?'Курсы':'Courses'},
+    {id:'practice',href:'/'+locale+'/practice',label:ru?'Практика':'Practice'},
+    {id:'messages',href:'/'+locale+'/app/messages',label:ru?'Сообщения':'Messages'},
+  ]
+  const expected=entries.map(({id,href,label,ariaLabel})=>({href,label,current:id===current?'page':null,ariaLabel:ariaLabel||null}))
+  await expect(links).toHaveCount(expected.length)
   assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label') }))), expected)
 }
 
