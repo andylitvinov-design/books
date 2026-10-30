@@ -2,7 +2,7 @@ name: Holistic House axis-to-offer matching
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    branches: ['codex/public-book-library', 'feat/holistic-intelligence-core-20261029', 'feat/meditation-writer-preview-v1-20261030']
+    branches: ['codex/public-book-library', 'feat/holistic-intelligence-core-20261029', 'codex/holistic-intelligence-core-20261029']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
@@ -100,7 +100,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   writer-practical-focused:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'feat/meditation-writer-preview-v1-20261030' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -113,7 +113,7 @@ jobs:
       - name: Practical director and prior writer regressions
         run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs
   axis-unit-types-build:
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'feat/meditation-writer-preview-v1-20261030') }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
