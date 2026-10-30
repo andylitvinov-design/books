@@ -70,7 +70,7 @@ for(const browserType of [chromium,webkit]){
     await root.waitFor({state:'visible',timeout:40000})
     const orderTab=root.getByRole('tab',{name:new RegExp(labels[locale].orders)})
     await orderTab.waitFor({state:'visible',timeout:30000})
-    await root.locator('button[class*="order"]').filter({hasText:labels[locale].name})
+    await root.locator('#hh-orders-panel > button').filter({hasText:labels[locale].name})
       .first().waitFor({state:'visible',timeout:35000})
     assert.equal(await orderTab.getAttribute('aria-selected'),'true',key+' order default')
     const metrics=await page.evaluate(()=>{
@@ -82,7 +82,7 @@ for(const browserType of [chromium,webkit]){
         heading:box(root.querySelector('header')),intro:box(root.querySelector('[class*="introCard"]')),
         tabs:box(root.querySelector('[role="tablist"]')),
         search:box(root.querySelector('input[type="search"]')),
-        card:box(root.querySelector('button[class*="order"]'))}
+        card:box(root.querySelector('#hh-orders-panel > button'))}
     })
     assert.ok(metrics.scrollWidth<=metrics.clientWidth+3,key+' horizontal overflow '+JSON.stringify(metrics))
     assert.ok(metrics.heading.bottom<=metrics.intro.top+4&&
@@ -105,7 +105,7 @@ for(const browserType of [chromium,webkit]){
     await customer.getByRole('button',{name:/Synthetic Client/}).click()
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
-    const orderButton=root.locator('button[class*="order"]').filter({hasText:labels[locale].name}).first()
+    const orderButton=root.locator('#hh-orders-panel > button').filter({hasText:labels[locale].name}).first()
     await orderButton.click()
     const orderChat=root.locator('[class*="conversation"]').first()
     await orderChat.waitFor({state:'visible',timeout:25000})
