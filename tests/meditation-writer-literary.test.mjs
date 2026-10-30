@@ -59,7 +59,7 @@ test("explicit exclusions and model-proposed authorizations never override brief
  assert.equal(check.ok,false);
  assert.ok(check.issues.includes("EXPLICIT_AVOIDANCE_BROKEN"));
  const x=await writeMeditationDraft(p,{writeBeat:async()=>ruText});
- assert.equal(x.motifId,"gentle_nature");
+ assert.equal(x.motifId,p.brief.selectedMotifId);
  assert.equal(x.styleId,"gentle_simple");
  assert.equal(x.goal,p.brief.goal);
 });
