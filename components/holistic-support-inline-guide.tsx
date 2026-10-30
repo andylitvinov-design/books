@@ -810,7 +810,7 @@ export function HolisticSupportInlineGuide({
         <button type="button" className={styles.textLink} onClick={()=>say(talk.returnToChat,journey.practiceInvite,"practice-invite")}>{talk.returnToChat}</button>
       </section>:null}
       <p className={styles.privacy}>{t.private} {journey.noPersonalData}</p>
-      </>}
+      </> : null}
     </section>
   );
 }
