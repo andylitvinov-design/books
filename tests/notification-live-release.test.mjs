@@ -25,6 +25,17 @@ test('private push dispatch remains manual, cron paths are unique and housekeepi
   assert.match(cron.path,/^\/api\/internal\/[a-z0-9-]+$/)
   const fields=cron.schedule.trim().split(/\s+/)
   assert.equal(fields.length,5,'invalid cron expression')
-  assert.notEqual(fields[1],'*','hourly Vercel Cron is not allowed')
+  const hours=new Set()
+  for(const term of fields[1].split(',')){
+   const match=/^(\*|\d{1,2}(?:-\d{1,2})?)(?:\/(\d{1,2}))?$/.exec(term)
+   assert.ok(match,'invalid cron hour expression')
+   const step=match[2]===undefined?1:Number(match[2])
+   assert.ok(step>=1&&step<=23,'invalid cron hour step')
+   const range=match[1]==='*'?[0,23]:match[1].split('-').map(Number)
+   const start=range[0],end=range.length===2?range[1]:match[2]===undefined?start:23
+   assert.ok(start>=0&&start<=end&&end<=23,'invalid cron hour range')
+   for(let hour=start;hour<=end;hour+=step)hours.add(hour)
+  }
+  assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
  }
 })
