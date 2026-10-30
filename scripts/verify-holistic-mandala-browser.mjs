@@ -186,6 +186,27 @@ async function checkExport(page,engine){
   await page.locator('[data-video-quick-duration="10"]').click();
   await page.locator('[data-video-quick-aspect="portrait"]').click();
   const output=page.locator("[data-mandala-video-download]");
+  // Linux Playwright WebKit may omit Canvas capture or MediaRecorder even
+  // when current iOS Safari implements both. This is a capability limit of
+  // the running engine, not a pretend successful export. Require a truthful
+  // user-facing unsupported message + no fake video when the APIs are absent;
+  // all supported engines still MUST pass actual ffprobe and audible PCM.
+  const capabilities=await page.evaluate(()=>({
+    canvasCapture:typeof HTMLCanvasElement.prototype.captureStream==="function",
+    mediaRecorder:typeof window.MediaRecorder==="function",
+  }));
+  if(!capabilities.canvasCapture || !capabilities.mediaRecorder){
+    await create.click();
+    await page.waitForFunction(()=>[...document.querySelectorAll(
+      "[data-video-quick-builder] [role=status]"
+    )].some(node=>(node.textContent||"").includes("не умеет записывать видео с холста")),
+      undefined,{timeout:15000});
+    assert.equal(await output.count(),0,
+      "unsupported browser must never offer a fake video download");
+    console.log("EXPECTED_UNSUPPORTED_RECORDER",engine,JSON.stringify(capabilities),
+      "photo/PNG and first-party WAV were independently verified");
+    return;
+  }
   for(let attempt=0;attempt<2;attempt++){
     if(await output.isVisible())break;
     assert.equal(await create.isEnabled(),true,
@@ -350,7 +371,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     },undefined,{timeout:5000});
     await consent.check();
     assert.equal(await consent.isChecked(),true,"photo rights must really persist");
-    if(engine==="chromium"&&locale==="ru"&&width===390)
+    if(locale==="ru"&&width===390)
       await verifyPngExport(page);
 
     await openStep(page,3);
