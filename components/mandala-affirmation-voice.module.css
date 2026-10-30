@@ -23,3 +23,9 @@
 .hint{display:block;font-size:11px;color:#658070;line-height:1.5;margin:9px 0}
 .panel :is(button,select,input):focus-visible,.result a:focus-visible{outline:3px solid #3eae85;outline-offset:3px}
 @media(max-width:390px){.panel{padding:10px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.controls label:first-child{grid-column:1/-1}.controls select{font-size:12px}}
+
+.levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:9px 10px;border:1px solid #d7e7d9;border-radius:10px;background:#fffef9}
+.levels label{display:flex;flex-direction:column;gap:6px;min-width:0;font:800 11px/1.4 system-ui,-apple-system,sans-serif;color:#376e52}
+.levels input{width:100%;min-height:34px;accent-color:#087e5e}
+.levels input:disabled{opacity:.4}
+@media(max-width:370px){.levels{grid-template-columns:1fr;gap:4px}}
