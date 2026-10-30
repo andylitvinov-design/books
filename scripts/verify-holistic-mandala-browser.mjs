@@ -173,9 +173,32 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // retain the exact on/off assertion (never skip on timeout).
         const affirmationsToggle=quick.locator("[data-video-personal-affirmations]");
         const actualAffirmations=page.locator("[data-hypno-overview-enable]");
+        // The fixed iPhone dock can intersect WebKit's automatic target
+        // scrolling after visual-style reflow. Place the REAL visible button
+        // in the safe centre viewport before each user click. Both source and
+        // deep checkbox must still update: no synthetic .evaluate(click),
+        // disabled fallback or weakened release assertion.
+        const placeAffirmationButton=async()=>{
+          await affirmationsToggle.evaluate(element=>{
+            element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+          });
+          await page.waitForFunction(()=>{
+            const el=document.querySelector("[data-video-personal-affirmations]");
+            if(!el)return false;
+            const r=el.getBoundingClientRect();
+            const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+            const d=dock?.getBoundingClientRect();
+            const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+            return r.top>=4 && r.bottom<=innerHeight-4 &&
+              (!d||r.bottom<=d.top-8) && (hit===el || el.contains(hit));
+          },undefined,{timeout:10000});
+        };
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await placeAffirmationButton();
         await affirmationsToggle.click();
         await expect(affirmationsToggle).toHaveAttribute("aria-pressed","true",{timeout:10000});
         await expect(actualAffirmations).toBeChecked({timeout:10000});
+        await placeAffirmationButton();
         await affirmationsToggle.click();
         await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
         await expect(actualAffirmations).not.toBeChecked({timeout:10000});
