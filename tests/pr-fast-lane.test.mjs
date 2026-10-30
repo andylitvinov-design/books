@@ -355,3 +355,32 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
     assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
 });
+
+
+test('Growth Journey and My Courses keep specialist tests while reusing core production PR build',()=>{
+  const skip="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/tsc --noEmit/);
+  assert.match(core,/ci_only:/);
+  const cases=[
+    {workflow:'hh-growth-journey.yml',guarded:[['TypeScript compatibility','npx --no-install tsc --noEmit'],['Production build','npm run build']],
+      contracts:['tests/growth-journey-public.test.mjs','tests/business-consultation-finder.test.mjs','tests/topic-journey-account-scope.test.mjs','tests/business-journey-consultation-banner.test.mjs']},
+    {workflow:'hh-course-presets.yml',guarded:[['Next production compile','npm run build']],
+      contracts:['tests/course-presets.test.mjs','tests/my-course.test.mjs','tests/course-concurrency-ui.test.mjs','tests/course-dashboard-integration.test.mjs','tests/course-free-slot-restart.test.mjs']}
+  ];
+  for(const item of cases) {
+    const s=workflow(item.workflow);
+    for(const [name,cmd] of item.guarded) assert.ok(
+      s.includes('- name: '+name+'\n        '+skip+'\n        run: '+cmd),
+      item.workflow+' must retain '+name+' outside production PRs');
+    for(const path of item.contracts)assert.ok(s.includes(path),item.workflow+' lost '+path);
+    assert.ok(!s.includes('continue-on-error: true'),item.workflow+' must fail closed');
+  }
+  const course=workflow('hh-course-presets.yml');
+  assert.ok(course.includes("      - '.github/workflows/hh-course-presets.yml'"),'Course CI must self-test workflow changes');
+  assert.match(course,/^concurrency:/m);
+  assert.ok(course.includes("cancel-in-progress: $"+"{{ github.event_name == 'pull_request' }}"),'Do not cancel push or dispatch');
+  assert.match(course,/workflow_dispatch:/);
+  assert.match(course,/^  push:/m);
+});
