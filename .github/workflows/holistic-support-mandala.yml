@@ -12,6 +12,16 @@ on:
       - 'components/mandala-guided-course*'
       - 'components/mandala-personal-meditation*'
       - 'components/mandala-cinematic-director*'
+      - 'components/mandala-free-video-generator*'
+      - 'components/mandala-video-code-*'
+      - 'components/mandala-my-ai-videos.tsx'
+      - 'app/[locale]/app/videos/**'
+      - 'app/admin/videos/**'
+      - 'app/api/app/videos/generate/**'
+      - 'app/api/admin/videos/codes/**'
+      - 'app/api/holistic-support/video/**'
+      - 'supabase/migrations/*hh_video_one_time_codes*'
+      - 'supabase/migrations/*hh_heygen_direct_video_private_archive*'
       - 'components/mandala-video-mobile.module.css'
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
@@ -40,6 +50,10 @@ on:
       - 'tests/meditation-narration.test.mjs'
       - 'tests/personal-meditation-script.test.mjs'
       - 'tests/cinematic-studio.test.mjs'
+      - 'tests/free-video-generator.test.mjs'
+      - 'tests/video-tiers.test.mjs'
+      - 'tests/video-ai-codes-and-api.test.mjs'
+      - 'tests/video-ai-prompt-and-delivery.test.mjs'
       - 'scripts/cinematic-video-assemble.mjs'
       - 'scripts/video-ai-gpu-readiness.mjs'
       - 'tests/video-ai-gpu-readiness.test.mjs'
@@ -68,11 +82,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Check browser acceptance script syntax before slow production build
-        run: node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
+        run: node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check lib/mandala/video-ai-heygen.mjs && node --check lib/mandala/video-ai-prompt.mjs && node --check lib/mandala/video-redemption.mjs && node --check lib/mandala/video-ai-repository.js && node --check lib/mandala/video-ai-archive.js && node --check tests/video-ai-codes-and-api.test.mjs && node --check tests/video-ai-prompt-and-delivery.test.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-ai-gpu-readiness.test.mjs
+        run: node --test tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/free-video-generator.test.mjs tests/video-tiers.test.mjs tests/video-ai-codes-and-api.test.mjs tests/video-ai-prompt-and-delivery.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-ai-gpu-readiness.test.mjs
       - name: Targeted lint
-        run: npx --no-install eslint lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx components/mandala-free-video-generator.tsx components/mandala-video-code-redeem.tsx components/mandala-video-code-admin.tsx app/admin/videos/page.tsx app/api/app/videos/generate/route.js app/api/app/videos/generate/content/route.js app/api/app/videos/generate/identity/route.js app/api/admin/videos/codes/route.js app/api/holistic-support/video/availability/route.js lib/mandala/video-ai-heygen.mjs lib/mandala/video-ai-prompt.mjs lib/mandala/video-ai-archive.js components/mandala-my-ai-videos.tsx 'app/[locale]/app/videos/page.tsx' app/api/app/videos/generate/archive/route.js lib/mandala/video-redemption.mjs lib/mandala/video-ai-repository.js lib/mandala/free-video-generator.mjs lib/mandala/free-video-renderer.ts lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
       - name: Typecheck
         run: npx --no-install tsc --noEmit
       - name: Build

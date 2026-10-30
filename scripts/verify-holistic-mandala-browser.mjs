@@ -97,6 +97,20 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           engine+" "+locale+" "+width+"px half-height diagnostic strip: "+JSON.stringify(promoRect));
 
         // Owner-approved first mock: six linked controls, not a static picture.
+        // Price tiers are visible immediately, but an unverified paid job is
+        // NEVER submitted by merely selecting Smart or Pro.
+        const tierPicker=page.locator("[data-video-tier-selector]");
+        await tierPicker.waitFor({state:"visible",timeout:15000});
+        assert.equal(await tierPicker.locator("[data-video-tier]").count(),3);
+        assert.equal(await tierPicker.locator('[data-video-tier="basic"]').getAttribute("aria-pressed"),"true");
+        await tierPicker.locator('[data-video-tier="smart"]').click();
+        assert.equal(await tierPicker.locator('[data-video-tier="smart"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await tierPicker.locator('[data-video-tier-gate="smart"]').count(),1);
+        assert.equal(await tierPicker.locator("[data-video-tier-storyboard]").isEnabled(),true);
+        await tierPicker.locator('[data-video-tier="pro"]').click();
+        assert.equal(await tierPicker.locator('[data-video-tier-gate="pro"]').count(),1);
+        await tierPicker.locator('[data-video-tier="basic"]').click();
+        assert.equal(await tierPicker.locator("[data-video-tier-gate]").count(),0);
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
         assert.equal(await quick.locator("[data-video-quick-section]").count(),6);
@@ -1057,6 +1071,99 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           engine+" one settings button");
         assert.equal(await page.locator('nav[aria-current="page"]').count(),0,
           engine+" no duplicate legacy editor dock");
+
+        // A separate, REAL free-generation flow. It must synthesize new
+        // pixel art without a selected source MP4, remain private and encode
+        // a playable moving video via the production MediaRecorder pipeline.
+        if(locale==="ru"&&width===390){
+          const freePage=await context.newPage();
+          const providerCalls=[],freeErrors=[];
+          freePage.on("pageerror",error=>freeErrors.push(error.message));
+          freePage.on("request",request=>{
+            if(/(?:kling|runway|higgsfield|heygen|\/api\/.*(?:generate|render))/i.test(request.url()))
+              providerCalls.push(request.url());
+          });
+          try{
+            const freeResponse=await freePage.goto(BASE+"/ru/holistic-support/mandala",
+              {waitUntil:"domcontentloaded",timeout:90000});
+            assert.equal(freeResponse?.status(),200,"standalone free generator public route");
+            const freeSelector=freePage.locator("[data-free-video-source-selector]");
+            await freeSelector.waitFor({state:"visible",timeout:12000});
+            assert.equal(await freeSelector.locator("[data-free-video-source]").count(),2);
+            assert.equal(await freePage.locator("[data-video-quick-section]").count(),6);
+            await freeSelector.locator('[data-free-video-source="generated"]').click();
+            const free=freePage.locator("[data-free-video-generator]");
+            await free.waitFor({state:"visible",timeout:12000});
+            await free.locator("[data-free-video-prompt]").fill(
+              "Золотой лотос раскрывается над водой, мягкий свет и плавное движение");
+            const canvas=free.locator("[data-free-video-canvas]");
+            const hash=()=>canvas.evaluate(el=>{
+              const data=el.getContext("2d").getImageData(0,0,el.width,el.height).data;
+              let result=2166136261;
+              for(let i=0;i<data.length;i+=43)result=Math.imul(result^data[i],16777619);
+              return result>>>0;
+            });
+            await freePage.waitForFunction(()=>{
+              const canvas=document.querySelector("[data-free-video-canvas]");
+              if(!canvas)return false;
+              const v=canvas.getContext("2d").getImageData(10,10,1,1).data;
+              return v[3]===255 && (v[0]+v[1]+v[2])>0;
+            },undefined,{timeout:15000});
+            const firstHash=await hash();
+            await free.locator("[data-free-video-variant]").click();
+            await freePage.waitForFunction(previous=>{
+              const canvas=document.querySelector("[data-free-video-canvas]");
+              if(!canvas)return false;
+              const data=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data;
+              let result=2166136261;
+              for(let i=0;i<data.length;i+=43)result=Math.imul(result^data[i],16777619);
+              return (result>>>0)!==previous;
+            },firstHash,{timeout:12000});
+            assert.match(await free.locator("[data-free-video-variation]").innerText(),/2/);
+            const secondHash=await hash();
+            assert.notEqual(firstHash,secondHash,"variation changes original visual pixels");
+            await free.locator("[data-free-video-play]").click();
+            await freePage.waitForTimeout(950);
+            const movingHash=await hash();
+            assert.notEqual(secondHash,movingHash,"actual new procedural frames move over time");
+            await free.locator("[data-free-video-play]").click();
+            assert.equal(await freePage.locator("[data-mandala-master-mp4]").count(),0,
+              "procedural creation must not secretly use a stock HD video");
+            assert.equal((await freePage.locator("[data-video-quick-section]").count()),6);
+            if(engine==="chromium"){
+              await freePage.locator('[data-video-quick-duration="10"]').click();
+              await freePage.waitForFunction(()=>
+                document.querySelector("[data-video-quick-generate]")?.disabled===false,
+                undefined,{timeout:15000});
+              await freePage.locator("[data-video-quick-generate]").click();
+              const video=freePage.locator("[data-mandala-video-download]");
+              await video.waitFor({state:"visible",timeout:55000});
+              const [download]=await Promise.all([
+                freePage.waitForEvent("download",{timeout:20000}),video.click(),
+              ]);
+              const bytes=await bufferFromStream(await download.createReadStream());
+              assert.ok(bytes.length>12000,"generated clip must be real media bytes");
+              const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+                "-of","json","-"],{input:bytes,encoding:"utf8"});
+              assert.equal(probe.status,0,"new procedural film container must decode");
+              assert.ok(JSON.parse(probe.stdout).streams.some(stream=>stream.codec_type==="video"));
+              const still=at=>spawnSync("ffmpeg",["-v","error","-i","pipe:0","-ss",String(at),
+                "-frames:v","1","-vf","scale=48:48","-pix_fmt","rgb24","-f","rawvideo","pipe:1"],
+                {input:bytes,maxBuffer:1024*1024});
+              const first=still(1),last=still(7);
+              assert.equal(first.status,0);
+              assert.equal(last.status,0);
+              assert.equal(first.stdout.length,6912);
+              assert.equal(last.stdout.length,6912);
+              const difference=first.stdout.reduce((sum,c,i)=>sum+Math.abs(c-last.stdout[i]),0);
+              assert.ok(difference>120,"recorded new film should contain actually moving pixels: "+difference);
+            }
+            assert.deepEqual(providerCalls,[],"free animation never calls a video AI provider");
+            assert.deepEqual(freeErrors,[],engine+" no browser exceptions for original animation");
+            console.log("PASS",engine,"ru 390px","new generated frames, seeded variations, local preview"+
+              (engine==="chromium"?", real recorded download":""));
+          }finally{await freePage.close();}
+        }
 
         const overflow = await page.evaluate(() => {
           const viewport = window.innerWidth;

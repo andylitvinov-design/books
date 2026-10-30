@@ -7,6 +7,11 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
+import { MandalaVideoCodeRedeemer } from "./mandala-video-code-redeem";
+import {compileVideoVisualPrompt} from "@/lib/mandala/video-ai-prompt.mjs";
+import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
+import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -687,7 +692,12 @@ function paintCinematicFrame(
   effect: Effect,time:number,aspect:Aspect,moneyScene:MoneySceneId|null,caption:string,
   theme:VideoTheme,otherScene:LocalSceneId,speed:Speed,brightness:Brightness,
   realVideo:HTMLVideoElement|null,storyboard:CinematicStoryboard|null,
+  freePlan:FreeVideoPlan|null=null,permittedPortrait=false,
 ) {
+  if(freePlan){
+    paintFreeVideoFrame(ctx,freePlan,time,permittedPortrait?image:null);
+    return;
+  }
   const filmSecond=storyboard?cinematicPreviewSeconds(storyboard,time):time;
   const shot=storyboard?.shots.find(s=>filmSecond>=s.startSeconds &&
     filmSecond<s.startSeconds+s.durationSeconds) || storyboard?.shots.at(-1);
@@ -752,7 +762,7 @@ const quickVideoCopy = {
   ru: {
     quickThemes:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Здоровье"},
     title:"Создать видео",sub:"Персональное видео с нужной атмосферой, образами и звуком",
-    smart:"Умный подбор",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
+    smart:"Подобрать готовое видео",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
     wish:"Что я хочу получить или изменить?",image:"2. Моё изображение",
     imageHelp:"Добавьте своё фото или выберите готовый сюжет (по желанию)",
     pick:"Загрузить фото",scene:"Выбрать образ",photoOn:"Вставить моё фото в видео",
@@ -781,7 +791,7 @@ const quickVideoCopy = {
   en: {
     quickThemes:{energy:"Energy",money:"Money",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Wellbeing"},
     title:"Create video",sub:"Personal video with the right atmosphere, imagery and sound",
-    smart:"Smart match",theme:"1. Theme & goal",myGoals:"Choose from my goals",
+    smart:"Find existing footage",theme:"1. Theme & goal",myGoals:"Choose from my goals",
     wish:"What would I like to gain or change?",image:"2. My imagery",
     imageHelp:"Add your photo or pick a ready-made scene (optional)",
     pick:"Upload photo",scene:"Choose imagery",photoOn:"Include my photo in video",
@@ -810,7 +820,7 @@ const quickVideoCopy = {
   es: {
     quickThemes:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Objetivos",life:"Sentido",health:"Bienestar"},
     title:"Crear vídeo",sub:"Vídeo personal con imágenes, ambiente y sonido adecuados",
-    smart:"Selección inteligente",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
+    smart:"Elegir vídeos existentes",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
     wish:"¿Qué me gustaría conseguir o cambiar?",image:"2. Mis imágenes",
     imageHelp:"Añade tu foto o elige una escena (opcional)",
     pick:"Subir foto",scene:"Elegir imagen",photoOn:"Incluir mi foto en el vídeo",
@@ -837,6 +847,72 @@ const quickVideoCopy = {
     sceneHint:"Las portadas ilustran el tema; el vídeo utiliza el motor real elegido.",
   },
 } as const;
+const videoTierCopy = {
+  ru:{
+    heading:"Выберите формат видео",
+    sub:"Один редактор — три уровня качества и стоимости. Выберите тариф, затем настройте своё видео.",
+    basicTitle:"Basic",basicPrice:"$0",basicShort:"Бесплатно",
+    basicDesc:"Новые символические анимации или монтаж готовых MP4, музыка, фото и текст.",
+    smartTitle:"Smart",smartPrice:"$2",smartShort:"30 секунд · гибрид",
+    smartDesc:"Один уникальный AI-фрагмент 5–10 секунд, остальные кадры из нашего бесплатного движка.",
+    proTitle:"Pro",proPrice:"$9.90",proShort:"30 секунд · Cinema",
+    proDesc:"Больше AI-сцен, цельная киноистория, расширенный режиссёр и монтаж.",
+    planned:"Планируемая цена, USD",freeIntro:"Первый Smart бесплатно",
+    freeExpl:"После запуска и подтверждения аккаунта · только один пробный заказ · лимит на генерацию.",
+    blocked:"AI-рендер и автоматическая оплата ещё не подключены. Вы пока можете подготовить раскадровку и создать бесплатный черновик; деньги не списываются.",
+    prep:"Подготовить AI-раскадровку",
+    draft:"Создать бесплатный черновик",
+    full:"Без подписки · локальный рендер · без оплаты AI"
+  },
+  en:{
+    heading:"Choose a video plan",sub:"One editor, three quality and price options. Select a plan, then customize your video.",
+    basicTitle:"Basic",basicPrice:"$0",basicShort:"Free",
+    basicDesc:"Original symbolic animation or existing film montage with sound, portraits and captions.",
+    smartTitle:"Smart",smartPrice:"$2",smartShort:"30 seconds · Hybrid",
+    smartDesc:"One new 5–10 second AI shot; the remaining film uses our no-cost local engine.",
+    proTitle:"Pro",proPrice:"$9.90",proShort:"30 seconds · Cinema",
+    proDesc:"More new AI shots, cohesive cinematic narrative and advanced editing.",
+    planned:"Proposed price, USD",freeIntro:"First Smart video free",
+    freeExpl:"After launch, for an eligible verified account · once only · capped generation budget.",
+    blocked:"AI renders and payments are not connected yet. You can prepare a storyboard and make a free local draft. No charges will be made.",
+    prep:"Prepare AI storyboard",draft:"Create a free draft",
+    full:"No subscription · rendered on device · no AI charge"
+  },
+  es:{
+    heading:"Elige un plan de vídeo",sub:"Un editor, tres niveles de calidad y precio. Elige y personaliza tu vídeo.",
+    basicTitle:"Basic",basicPrice:"$0",basicShort:"Gratis",
+    basicDesc:"Animación simbólica original o montaje de vídeos existentes, música, foto y texto.",
+    smartTitle:"Smart",smartPrice:"$2",smartShort:"30 segundos · Híbrido",
+    smartDesc:"Una escena nueva de IA de 5 a 10 segundos; el resto se monta gratis.",
+    proTitle:"Pro",proPrice:"$9.90",proShort:"30 segundos · Cine",
+    proDesc:"Más escenas nuevas de IA, narrativa cinematográfica y edición avanzada.",
+    planned:"Precio propuesto, USD",freeIntro:"Primer vídeo Smart gratis",
+    freeExpl:"Después del lanzamiento, con cuenta verificada elegible · una vez · gasto limitado.",
+    blocked:"La generación IA y los pagos aún no están conectados. Puedes preparar el storyboard y crear un borrador gratis. No se cobrará nada.",
+    prep:"Preparar storyboard IA",draft:"Crear borrador gratis",
+    full:"Sin suscripción · creación en dispositivo · sin coste IA"
+  }
+} as const;
+const freeModeCopy = {
+  ru:{title:"Как создать видео?",generated:"Создать новую анимацию",
+    generatedHint:"Новые движущиеся образы по вашему описанию. Без готовых MP4 и платного ИИ.",
+    catalog:"Собрать из готовых видео",catalogHint:"Реальные снятые видеокадры, музыка и текст.",
+    photoHint:"При желании добавьте своё фото к новой анимации.",
+    styleHint:"Цвет, движение и новый визуальный сюжет настраиваются в генераторе выше.",
+    galleryHint:"Эти варианты используют только существующие видеосюжеты."},
+  en:{title:"How would you like to create?",generated:"Generate new animation",
+    generatedHint:"Original motion and shapes from your description. No stock MP4 or paid AI.",
+    catalog:"Edit existing footage",catalogHint:"Real previously shot clips, soundtrack and captions.",
+    photoHint:"Optionally add your own photo over your original animation.",
+    styleHint:"Adjust color, motion and original artwork in the generator above.",
+    galleryHint:"These choices use the existing footage catalog."},
+  es:{title:"¿Cómo deseas crear?",generated:"Generar animación nueva",
+    generatedHint:"Movimiento y formas originales a partir de tu texto, sin clips ni IA de pago.",
+    catalog:"Montar clips existentes",catalogHint:"Vídeos grabados, música y texto.",
+    photoHint:"Puedes añadir tu foto sobre la nueva animación.",
+    styleHint:"Ajusta el color, movimiento y arte nuevo en el generador superior.",
+    galleryHint:"Estas opciones utilizan la biblioteca de clips."},
+} as const;
 const quickStylePosters = [
   "mountain-air","golden-harvest","desert-light","morning-dew","gentle-falls","solar-surge",
 ] as const;
@@ -860,6 +936,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const supportUi = supportDesignCopy[locale];
   const layout = layoutCopy[locale];
   const quick = quickVideoCopy[locale];
+  const freeMode=freeModeCopy[locale];
+  const tier=videoTierCopy[locale];
+  const [tierMode,setTierMode] = useState<"basic"|"smart"|"pro">("basic");
+  const [videoAiReady,setVideoAiReady] = useState(false);
+  const [creationMode,setCreationMode] = useState<"catalog"|"generated">("catalog");
+  const [freeVideoPlan,setFreeVideoPlan] = useState<FreeVideoPlan|null>(null);
+  const [visualDescription,setVisualDescription]=useState("");
+  const updateFreeVideoPlan=useCallback((next:FreeVideoPlan)=>setFreeVideoPlan(next),[]);
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -927,7 +1011,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
   const activeThemedFilm = theme!=="money" ? getThemedRealFilm(theme, otherScene) : null;
+  // Pay-as-you-go prompt uses ONLY chosen VISUAL motifs, not the separate
+  // psychological wish, test results, or notes from the client's profile.
+  const suggestedAiPrompt=compileVideoVisualPrompt({
+    theme,locale,
+    scene:creationMode==="generated"?(freeVideoPlan?.family||"light"):
+      theme==="money"?(moneyScene||"golden-rain"):otherScene,
+    color:creationMode==="generated"?(freeVideoPlan?.palette||"gold"):
+      theme==="relationships"?"violet":theme==="energy"?"ocean":"gold",
+    motion:speed==="dynamic"?"dynamic":"calm",
+    visualDescription:creationMode==="generated"?visualDescription:"",
+  });
   const activeFilm = cinematicPlan ? null : activeMoneyFilm || activeThemedFilm;
+  const effectiveFilm=creationMode==="generated"?null:activeFilm;
+  const proceduralScene=creationMode==="generated"?freeVideoPlan:null;
   // These are the SAME original, source-backed scenes as the full gallery.
   // The compact Hypno video-design rail is a shortcut, not a second editor.
   const hypnoScenes = theme === "money"
@@ -951,9 +1048,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
-  const sourceRef = useRef(signature);
-  sourceRef.current = signature;
-  const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
+  const exportSignature=signature+":"+JSON.stringify([creationMode,proceduralScene?.seed,proceduralScene?.family,proceduralScene?.palette,proceduralScene?.motion]);
+  const sourceRef = useRef(exportSignature);
+  sourceRef.current = exportSignature;
+  const canGenerate = Boolean(source) && ((!activeFilm || premiumReady) || creationMode==="generated") &&
+    (creationMode!=="generated" || Boolean(proceduralScene)) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
     !audioDurationInvalid && !micRecording && !preparing && !recording;
@@ -1102,7 +1201,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       master.videoWidth>0 && master.videoHeight>0);
     setPremiumReady(decoded);
     if(activeFilm && master && !decoded)master.load();
-  },[activeFilm?.src]);
+  },[activeFilm?.src,creationMode]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
     if(!video)return;
@@ -1113,7 +1212,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     video.muted=true;
     video.loop=true;
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
-  },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
+  },[activeFilm?.src,creationMode,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
   // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
   // tapped: selection itself is the explicit playback gesture.
@@ -1122,7 +1221,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
-  }, [signature]);
+  }, [exportSignature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
 
   // No autoplay: paint a still scene, and animate only while a visitor
@@ -1141,7 +1240,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.width=width;canvas.height=height;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
-      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
+      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,proceduralScene,Boolean(photoUrl&&!backgroundOnly&&photoConsent));
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -1153,7 +1252,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / previewFps && !document.hidden) {
           const elapsed=(now-startedAt)/1000;
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
-          paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
+          paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,proceduralScene,Boolean(photoUrl&&!backgroundOnly&&photoConsent));
           paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -1168,7 +1267,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
     stopSoundPreview();
     const snapshot=source;
-    const snapshotKey=signature;
+    const snapshotKey=exportSignature;
     preparingRef.current=true;
     setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
     setResult(null);setPreviewPlaying(false);
@@ -1185,7 +1284,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
-      if(activeFilm) {
+      if(effectiveFilm) {
         const master=premiumVideoRef.current;
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
         await master.play();
@@ -1201,7 +1300,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       canvas.height = outputHeight;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
-      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
+      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,proceduralScene,Boolean(photoUrl&&!backgroundOnly&&photoConsent));
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
@@ -1285,7 +1384,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
-          paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan);
+          paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,proceduralScene,Boolean(photoUrl&&!backgroundOnly&&photoConsent));
           paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -1439,7 +1538,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const recommended = suggestPersonalVideoScene({
       theme,wish,locale,availableScenes:options,
     });
-    setPreviewPlaying(false);setCinematicPlan(null);
+    setPreviewPlaying(false);setCinematicPlan(null);setCreationMode("catalog");
     if (recommended.theme === "money") setMoneyScene(recommended.sceneId as MoneySceneId);
     else setOtherScene(recommended.sceneId as LocalSceneId);
     const matchLabel = recommended.theme === "money"
@@ -1548,6 +1647,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const quickPickStyle = (index:number) => {
     if(recording||preparing)return;
+    setCreationMode("catalog");
     setCinematicPlan(null);
     setQuickStyleIndex(index);
     setBrightness(index===1||index===5?"bright":"soft");
@@ -1587,6 +1687,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
+  const prepareAiStoryboard = () => {
+    // This is a real first-party local four-scene storyboard, not a paid render.
+    setQuickDetailedOpen(true);
+    window.setTimeout(()=>{
+      document.getElementById("cinematic-director")?.scrollIntoView({
+        behavior:"auto",block:"start",
+      });
+    },180);
+  };
   const createQuickVideo = () => {
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
@@ -1600,7 +1709,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       openQuickDetailed("video-audio");
       return;
     }
-    if(activeFilm&&!premiumReady){
+    if(effectiveFilm&&!premiumReady){
       primeNativeMasterFromUserGesture();
       setNotice(quick.loading);
       return;
@@ -1611,7 +1720,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
-      {activeFilm ? <video
+      {activeFilm && creationMode!=="generated" ? <video
         key={activeFilm.src} ref={premiumVideoRef}
         src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
@@ -1628,16 +1737,72 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
+      <section className={videoStyles.videoTierPicker} data-video-tier-selector
+        aria-label={tier.heading}>
+        <div className={videoStyles.videoTierHeading}>
+          <h2>{tier.heading}</h2><p>{tier.sub}</p>
+        </div>
+        <div className={videoStyles.videoTierCards} role="group" aria-label={tier.heading}>
+          {(["basic","smart","pro"] as const).map(id=><button
+            key={id} type="button" data-video-tier={id} disabled={recording||preparing}
+            aria-pressed={tierMode===id} onClick={()=>setTierMode(id)}>
+            <span className={videoStyles.videoTierName}>{tier[id+"Title" as "basicTitle"|"smartTitle"|"proTitle"]}</span>
+            <strong>{tier[id+"Price" as "basicPrice"|"smartPrice"|"proPrice"]}</strong>
+            <span className={videoStyles.videoTierShort}>{tier[id+"Short" as "basicShort"|"smartShort"|"proShort"]}</span>
+            <small>{tier[id+"Desc" as "basicDesc"|"smartDesc"|"proDesc"]}</small>
+          </button>)}
+        </div>
+        {tierMode==="basic"?<p className={videoStyles.videoTierBasicHint}>
+          <Check size={16} aria-hidden="true"/>{tier.full}
+        </p>:<div className={videoStyles.videoTierUnavailable} role="status"
+          data-video-tier-gate={tierMode}>
+          {tierMode==="smart"?<strong>{tier.freeIntro}</strong>:null}
+          {tierMode==="smart"?<p>{tier.freeExpl}</p>:null}
+          {!videoAiReady?<p>{tier.blocked}</p>:null}
+          <MandalaVideoCodeRedeemer key={tierMode} locale={locale}
+            tier={tierMode==="smart"?"smart":"pro"} onAvailability={setVideoAiReady}
+            suggestedPrompt={suggestedAiPrompt}/>
+          <button type="button" disabled={recording||preparing}
+            data-video-tier-storyboard onClick={prepareAiStoryboard}>
+            <Film size={17} aria-hidden="true"/>{tier.prep}<ArrowRight size={15} aria-hidden="true"/>
+          </button>
+        </div>}
+        <small className={videoStyles.videoTierCurrency}>{tier.planned}</small>
+      </section>
+
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
         <header className={videoStyles.quickHeader}>
           <div><h2 id="video-quick-heading">{quick.title}</h2><p>{quick.sub}</p></div>
           <button type="button" data-video-quick-smart disabled={recording||preparing}
-            onClick={()=>{if(!uploadedAudio){setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);}
+            onClick={()=>{setCreationMode("catalog");if(!uploadedAudio){setAudioAuto(true);if(recommendedAudioId)chooseMusic(recommendedAudioId);}
               if(wish.trim())suggestScene();}}>
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
+        <section className={videoStyles.freeSourcePicker} data-free-video-source-selector
+          aria-label={freeMode.title}>
+          <h3>{freeMode.title}</h3>
+          <div className={videoStyles.freeSourceChoices} role="group" aria-label={freeMode.title}>
+            <button type="button" data-free-video-source="generated"
+              aria-pressed={creationMode==="generated"} disabled={recording||preparing}
+              onClick={()=>{setCreationMode("generated");setCinematicPlan(null);setPreviewPlaying(false);}}>
+              <Sparkles size={22} aria-hidden="true"/><strong>{freeMode.generated}</strong>
+              <small>{freeMode.generatedHint}</small></button>
+            <button type="button" data-free-video-source="catalog"
+              aria-pressed={creationMode==="catalog"} disabled={recording||preparing}
+              onClick={()=>{setCreationMode("catalog");setCinematicPlan(null);setPreviewPlaying(false);}}>
+              <Film size={22} aria-hidden="true"/><strong>{freeMode.catalog}</strong>
+              <small>{freeMode.catalogHint}</small></button>
+          </div>
+        </section>
+        <div hidden={creationMode!=="generated"}>
+          <MandalaFreeVideoGenerator key={locale} locale={locale}
+            theme={theme} aspect={aspect} duration={duration} disabled={creationMode!=="generated"||recording||preparing}
+            localPortrait={!backgroundOnly&&photoConsent?sharedThumbnailPhoto:null}
+            onPlanChange={updateFreeVideoPlan}
+            onVisualDescriptionChange={setVisualDescription}/>
+        </div>
 
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
@@ -1672,7 +1837,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-labelledby="quick-image-title">
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{quick.image}</h3>
-              <p>{quick.imageHelp}</p></div>
+              <p>{creationMode==="generated"?freeMode.photoHint:quick.imageHelp}</p></div>
             <button type="button" onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}
               disabled={recording||preparing} className={videoStyles.quickEdit}>
               <Camera size={15} aria-hidden="true"/>{quick.pick}
@@ -1687,7 +1852,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <img src={photoUrl} alt="" draggable={false}/>
               </> : <><Camera size={24} aria-hidden="true"/><span>{quick.pick}</span></>}
             </button>
-            {activeTemplates.slice(0,6).map(scene=>{
+            {creationMode==="catalog"&&activeTemplates.slice(0,6).map(scene=>{
               const current=theme==="money"?moneyScene===scene.id:otherScene===scene.id;
               const poster=theme==="money"?getRealMoneyFilm(scene.id as MoneySceneId).poster:
                 getThemedRealFilm(theme,scene.id as LocalSceneId)?.poster||
@@ -1759,7 +1924,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <button type="button" className={videoStyles.quickEdit}
               onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
           </div>
-          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
+          {creationMode==="catalog"?<div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
             {quickStylePosters.map((poster,index)=><button type="button" key={poster}
               data-video-quick-style={index} aria-pressed={quickStyleIndex===index}
               disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
@@ -1769,8 +1934,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 loading="lazy" alt=""/>
               <span>{quick.styles[index]}</span>
             </button>)}
-          </div>
-          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
+          </div>:<p className={videoStyles.quickHint}>{freeMode.styleHint}</p>}
+          <small className={videoStyles.quickHint}>{creationMode==="generated"?freeMode.generatedHint:quick.sceneHint}</small>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-section="5"
@@ -1863,7 +2028,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
           disabled={recording||preparing} onClick={createQuickVideo}>
           {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-          {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
+          {recording||preparing?quick.creating:(tierMode==="basic"?quick.create:tier.draft)}<ArrowRight size={20} aria-hidden="true"/>
         </button>
         {recording?<div className={videoStyles.quickProgress} role="progressbar"
           aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
@@ -2037,13 +2202,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
-        data-hero-promo={!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
+        data-hero-promo={!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording&&creationMode!=="generated"?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         aria-labelledby="video-hero-heading">
         <h2 id="video-hero-heading" className={videoStyles.srOnly}>{studioMode==="therapy"?layout.therapyHeading:layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
-          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
+          style={effectiveFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${effectiveFilm.poster}")`} : undefined}/>
         <div className={videoStyles.heroCanvas} data-video-preview-frame>
           <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
             height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
@@ -2558,6 +2723,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing} onApplyStoryboard={plan=>{
           // The four locally rendered shots are approved source-backed
           // motifs; raw client wishes, profile scores and photos remain here.
+          setCreationMode("catalog");
           setTheme(plan.theme);setVideoCategory(plan.theme);
           if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
             ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");

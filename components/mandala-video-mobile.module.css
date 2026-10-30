@@ -1283,3 +1283,62 @@
   .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
+
+/* Independent first-screen switch: genuine new art vs previously shot MP4 clips.
+   Retains six approved editor panels below instead of making another studio. */
+.freeSourcePicker{display:grid;gap:11px;padding:15px;border:1px solid #dce9d8;border-radius:22px;
+  background:linear-gradient(150deg,#fffef9,#f6fbf3);box-shadow:0 4px 14px #23563f0d}
+.freeSourcePicker h3{margin:0;color:#214b3c;font:850 16px/1.2 Arial,Helvetica,sans-serif}
+.freeSourceChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.freeSourceChoices button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  gap:7px;min-width:0;min-height:128px;padding:13px 11px;border:1px solid #dee8dc;border-radius:17px;
+  background:#fffefa;color:#214b3b;text-align:left;cursor:pointer}
+.freeSourceChoices button[data-free-video-source="generated"]{border-color:#9bd8b8;
+  background:linear-gradient(155deg,#e7f7e7,#f6fcf0)}
+.freeSourceChoices button[aria-pressed="true"]{border:2px solid #0c9b72;
+  padding:12px 10px;box-shadow:0 0 0 2px #d4f0df;background:#e6f7eb}
+.freeSourceChoices button svg{color:#07956d;flex:none}
+.freeSourceChoices button strong{font:850 clamp(12px,2.2vw,15px)/1.2 Arial,Helvetica,sans-serif}
+.freeSourceChoices button small{color:#5c776c;font:500 11px/1.4 Arial,Helvetica,sans-serif}
+.freeSourceChoices button:disabled{opacity:.55;cursor:wait}
+.freeSourceChoices button:focus-visible{outline:3px solid #82cbb0;outline-offset:2px}
+@media(max-width:350px){.freeSourcePicker{padding:11px}.freeSourceChoices{gap:6px}
+  .freeSourceChoices button{min-height:143px;padding:10px 8px}
+  .freeSourceChoices button[aria-pressed="true"]{padding:9px 7px}}
+
+/* Visible pricing and creation mode: no live AI render or billing until wired. */
+.videoTierPicker{display:grid;gap:12px;min-width:0;margin:0 0 14px;padding:15px;
+  border:1px solid #dce9dc;border-radius:22px;background:linear-gradient(145deg,#fffefa,#f4fbf3);
+  color:#153c30;box-shadow:0 5px 18px rgba(25,84,54,.06)}
+.videoTierHeading h2{margin:0;font:850 clamp(21px,3.4vw,28px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.025em}
+.videoTierHeading p{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:#597566}
+.videoTierCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+.videoTierCards button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  min-width:0;min-height:184px;padding:11px 9px;border:1px solid #dee9df;border-radius:15px;
+  background:#fffefa;text-align:left;color:#20463a;cursor:pointer}
+.videoTierCards button[data-video-tier="smart"]{background:#ebf9ef;border-color:#9ddab9}
+.videoTierCards button[aria-pressed="true"]{border:2px solid #0c956e;padding:10px 8px;
+  box-shadow:0 0 0 2px #b7ead2}
+.videoTierCards button:disabled{opacity:.55;cursor:wait}
+.videoTierCards button:focus-visible,.videoTierUnavailable button:focus-visible{
+  outline:3px solid #83d7b0;outline-offset:2px}
+.videoTierName{font:850 clamp(12px,2.1vw,15px)/1 Arial,Helvetica,sans-serif;text-transform:uppercase}
+.videoTierCards strong{font:850 clamp(22px,4.2vw,30px)/1.1 Arial,Helvetica,sans-serif;color:#0b7659}
+.videoTierShort{font:800 11px/1.2 Arial,Helvetica,sans-serif;color:#356a53}
+.videoTierCards small{font:500 11px/1.33 Arial,Helvetica,sans-serif;color:#64796b;overflow-wrap:anywhere}
+.videoTierBasicHint{display:flex;align-items:center;gap:7px;margin:0;color:#0c7857;font-size:12px;font-weight:750}
+.videoTierBasicHint svg{flex:none}
+.videoTierUnavailable{display:grid;gap:7px;padding:12px;border:1px solid #dfd9c5;
+  border-radius:12px;background:#fffaf1;color:#795f39}
+.videoTierUnavailable strong{font-size:14px;color:#1a6e50}
+.videoTierUnavailable p{margin:0;font-size:12px;line-height:1.42}
+.videoTierUnavailable button{display:inline-flex;justify-self:start;align-items:center;justify-content:center;
+  gap:7px;min-height:44px;padding:9px 12px;border:1px solid #a6d3bc;border-radius:12px;
+  background:#e8f6ec;color:#12674e;font-weight:800;font-size:12px;cursor:pointer}
+.videoTierUnavailable button:disabled{opacity:.55}
+.videoTierCurrency{color:#7e9285;font-size:10.5px}
+@media(max-width:380px){.videoTierPicker{padding:11px;gap:10px}.videoTierCards{gap:5px}
+  .videoTierCards button{min-height:218px;padding:9px 7px}
+  .videoTierCards button[aria-pressed="true"]{padding:8px 6px}
+  .videoTierCards small{font-size:10px}
+  .videoTierShort{font-size:10px}}
