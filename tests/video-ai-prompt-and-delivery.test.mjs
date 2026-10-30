@@ -10,7 +10,8 @@ test("visual filters generate distinct HeyGen-ready prompts without a remote cal
    motion:"calm",visualDescription:"Golden lotus above peaceful water"});
  const b=compileVideoVisualPrompt({theme:"goals",scene:"temple",color:"violet",
    motion:"dynamic",visualDescription:""});
- assert.match(a,/lotus above peaceful water/i);
+ assert.match(a,/gently opening luminous lotus blossom/i);
+ assert.match(a,/quiet reflective surface of water/i);
  assert.match(a,/stable camera/);
  assert.match(a,/warm amber/);
  assert.match(b,/architectural portal/);
@@ -26,6 +27,23 @@ test("clinical data and identifiers do not sneak into the filter compiler",()=>{
  assert.ok(!output.includes("personal@"));
  assert.ok(!output.includes("Пациент"));
  assert.throws(()=>compileVideoVisualPrompt({theme:"unknown"}),/invalid_visual_brief/);
+});
+test("only curated scenery tokens reach the suggested external visual prompt",()=>{
+ const attempts=[
+  "My name is Jane Smith and my account number is 902134 but I want a golden lotus",
+  "I have depression and my therapist Mark knows my address 123 Main Street; ocean",
+  "Мой клиент Мария Петрова, диагноз, +1 (416) 555-0153, красивый храм",
+  "Mi nombre es Lucía Fernández, mi prueba privada dice 34782, jardín",
+ ];
+ for(const description of attempts){
+   const actual=compileVideoVisualPrompt({theme:"health",visualDescription:description});
+   assert.doesNotMatch(actual,/Jane|Smith|Mark|María|Maria|Петрова|Lucía|Fernández|902134|34782|416|555|0153|Main Street|depression|therapist|диагноз|проба privada/i);
+   assert.doesNotMatch(actual,/@|\\+1\\s*\\(416\\)/);
+   assert.match(actual,/One independent cinematic visual shot/);
+ }
+ const source=file("lib/mandala/video-ai-prompt.mjs");
+ assert.match(source,/VISUAL_CUES/);
+ assert.doesNotMatch(source,/\+"Requested visible composition: "\+visual/);
 });
 test("HeyGen prompt is visible and copyable even when the paid pipeline is paused",()=>{
  const code=file("components/mandala-video-code-redeem.tsx");
