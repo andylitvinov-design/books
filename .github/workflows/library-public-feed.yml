@@ -87,6 +87,7 @@ jobs:
           npx --no-install next start --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-server.log 2>&1 & APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 65); do
+            echo "Library browser readiness attempt ${i}/65"
             if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then break; fi
             sleep 2
           done

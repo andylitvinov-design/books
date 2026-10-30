@@ -372,7 +372,7 @@ test('video About and Library cancel only superseded PR checks, preserving speci
     assert.ok(src.includes('group: '+prefix+'-'+prGroupSuffix));
     assert.ok(src.includes('cancel-in-progress: '+prOnlyCancel));
     assert.ok(src.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"));
-    assert.match(src,/node --test/);
+    assert.match(src,/node (?:--conditions=react-server )?--test/);
     assert.match(src,/eslint/);
     assert.doesNotMatch(src,/continue-on-error:\s*true/);
   }
