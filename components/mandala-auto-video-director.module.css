@@ -4,6 +4,13 @@
 .head svg{flex:none;margin-top:3px;color:#ae8941}
 .head h3{font-size:clamp(1.08rem,2vw,1.32rem);margin:0 0 3px;color:#1e4438}
 .head p{font-size:.92rem;line-height:1.45;margin:0;color:#596b60}
+.goalsTitle{font-size:.9rem;font-weight:700;color:#274637;margin:13px 0 7px}
+.goalChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.goalChoices button{min-width:0;min-height:44px;border:1px solid #c5d5bf;border-radius:12px;background:#fff;color:#24493a;padding:9px;font:inherit;font-weight:600;font-size:.87rem;line-height:1.25;cursor:pointer;text-align:center}
+.goalChoices button:hover{border-color:#b18a45}
+.goalChoices button[aria-pressed="true"]{border-color:#a9823c;background:#fff1cf;box-shadow:0 0 0 1px #ccac68}
+.goalChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.goalChoices button:disabled{opacity:.5;cursor:not-allowed}
 .entry{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:13px}
 .goal{min-width:180px;flex:1;display:block}
 .goal input{width:100%;border-radius:12px;background:#fff;border:1px solid #bbcabc;color:#263e33;padding:12px 14px;font:inherit;min-height:44px}
@@ -25,4 +32,4 @@
 .confirm{width:100%;box-shadow:0 0 0 2px rgba(209,169,85,.2)}
 .notice{font-size:.84rem;line-height:1.4;color:#536658;margin:8px 0 0}
 .warning{font-size:.86rem;color:#875c28;margin:7px 0}
-@media(max-width:570px){.root{padding:12px;margin:10px 0;border-radius:16px}.head p{font-size:.86rem}.entry{display:block}.goal{margin-bottom:9px}.entry button{width:100%}.shots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:570px){.root{padding:12px;margin:10px 0;border-radius:16px}.head p{font-size:.86rem}.entry{display:block}.goal{margin-bottom:9px}.entry button{width:100%}.goalChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.shots{grid-template-columns:repeat(2,minmax(0,1fr))}}

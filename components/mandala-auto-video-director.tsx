@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {Check,Sparkles} from "lucide-react";
-import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -21,7 +21,8 @@ type Props={
 const copy={
  ru:{
    title:"Auto Video Director",
-   intro:"Опишите цель — предложим готовый сюжет без десятков фильтров.",
+   intro:"Выберите цель — мы сразу предложим готовый сюжет. Никаких обязательных фильтров.",
+   goalsTitle:"Что хотелось бы изменить?",
    placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
    suggest:"Предложить сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
    duration:"Длительность",variants:"Другой сюжет",topic:"Направление",edit:"Изменить детали (необязательно)",
@@ -31,11 +32,13 @@ const copy={
    warning:"Новых персонажей и кадров здесь не генерируем: предложен символический монтаж.",
    empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
-   input:"Ваша цель",
+   input:"Или напишите свою цель (необязательно)",
+   selectedGoal:"Выбранная цель",
  },
  en:{
    title:"Auto Video Director",
-   intro:"Describe your goal — get a ready-to-assemble film, not dozens of filters.",
+   intro:"Choose one goal for an instant ready-made film. No required filters.",
+   goalsTitle:"What would you like to change?",
    placeholder:"For example: I want less anxiety and more calm",
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
    duration:"Duration",variants:"Different story",topic:"Topic",edit:"Adjust details (optional)",
@@ -45,11 +48,13 @@ const copy={
    warning:"New characters and footage are not generated here; this is a symbolic montage.",
    empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
-   input:"Your goal",
+   input:"Or write your own goal (optional)",
+   selectedGoal:"Selected goal",
  },
  es:{
    title:"Auto Video Director",
-   intro:"Describe tu objetivo: proponemos un montaje listo, sin decenas de filtros.",
+   intro:"Elige un objetivo y verás un vídeo sugerido, sin filtros obligatorios.",
+   goalsTitle:"¿Qué te gustaría cambiar?",
    placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
    duration:"Duración",variants:"Otra historia",topic:"Tema",edit:"Ajustar detalles (opcional)",
@@ -59,7 +64,8 @@ const copy={
    warning:"No se generan personajes ni escenas nuevas: es un montaje simbólico.",
    empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
-   input:"Tu objetivo",
+   input:"O escribe tu objetivo (opcional)",
+   selectedGoal:"Objetivo elegido",
  }
 } as const;
 const allowedDurations=[10,20,30,60] as const;
@@ -78,16 +84,33 @@ export function MandalaAutoVideoDirector({
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|20|30|60|null>(null);
  const [correctedTheme,setCorrectedTheme]=useState<VideoTheme|null>(null);
+ const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const length=seconds||proposal?.durationSeconds||30;
  const choose=()=>{
-   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,
-     preferredTheme:correctedTheme}));
+   setSelectedGoalId(null);setCorrectedTheme(null);
+   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets}));
    setOverrideId(null);setSeconds(null);
+ };
+ const chooseReadyGoal=(goalId:string)=>{
+   // No test result or private objective is sent outside this component.
+   onGoalChange("");
+   setSelectedGoalId(goalId);setCorrectedTheme(null);
+   setOverrideId(null);setSeconds(null);
+   setProposal(recommendAutoVideo({goalId,locale,fallbackTheme:theme,presets}));
  };
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
      <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
+   </div>
+   <p className={css.goalsTitle}>{t.goalsTitle}</p>
+   <div className={css.goalChoices} role="group" aria-label={t.goalsTitle}>
+     {AUTO_VIDEO_GOALS.map(item=><button key={item.id} type="button"
+       data-auto-video-goal={item.id} aria-pressed={selectedGoalId===item.id}
+       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
+       {item.labels[locale]}
+     </button>)}
    </div>
    <div className={css.entry}>
      <label className={css.goal}><span className={css.notice}>{t.input}</span>
@@ -96,6 +119,7 @@ export function MandalaAutoVideoDirector({
          onChange={event=>{
            onGoalChange(event.currentTarget.value);
            setProposal(null);setOverrideId(null);setSeconds(null);setCorrectedTheme(null);
+           setSelectedGoalId(null);
          }}/>
      </label>
      <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
@@ -104,6 +128,7 @@ export function MandalaAutoVideoDirector({
    {proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
+       {selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
        <p className={css.meta}>{length} s · {t.source}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
@@ -119,7 +144,7 @@ export function MandalaAutoVideoDirector({
              aria-pressed={proposal.theme===value}
              onClick={()=>{
                setCorrectedTheme(value);setOverrideId(null);
-               setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,
+               setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
          </div>

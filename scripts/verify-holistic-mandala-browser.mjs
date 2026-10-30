@@ -99,6 +99,14 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           "the sitewide marketing ribbon must not occupy the native Video Studio viewport");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
+        const autoDirector=quick.locator("[data-auto-video-director]");
+        assert.equal(await autoDirector.locator("[data-auto-video-goal]").count(),6,
+          "a client can select one objective without typing or using filters");
+        await autoDirector.locator('[data-auto-video-goal="calm"]').click();
+        assert.equal(await autoDirector.locator("[data-auto-video-storyboard] li").count(),4,
+          "a chosen objective produces one real four-scene proposal");
+        assert.equal(await autoDirector.locator("[data-auto-video-confirm]").isEnabled(),true,
+          "the proposed story still needs a separate client confirmation");
         const headerTop=await appHeader.boundingBox();
         const builderTop=await quick.boundingBox();
         assert.ok(headerTop && builderTop && headerTop.y < builderTop.y,

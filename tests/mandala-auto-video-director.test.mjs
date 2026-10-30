@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {recommendAutoVideo,AUTO_VIDEO_DIRECTOR_VERSION} from "../lib/mandala/auto-video-director.mjs";
+import {recommendAutoVideo,AUTO_VIDEO_DIRECTOR_VERSION,AUTO_VIDEO_GOALS} from "../lib/mandala/auto-video-director.mjs";
 
 const library=[
   {id:"gentle-rest",theme:"health",clips:["morning-dew","gentle-falls","calm-sea","sea-breeze"]},
@@ -58,4 +58,36 @@ test("defaults to local selected theme when there is no signal, and is stable",(
  assert.deepEqual(recommendAutoVideo(args),recommendAutoVideo(args));
  assert.equal(recommendAutoVideo(args).theme,"money");
  assert.equal(recommendAutoVideo({goal:"",presets:library}).confidence,"low");
+});
+ 
+test("one ready goal directly creates a four-shot proposal without typed text",()=>{
+  assert.equal(AUTO_VIDEO_GOALS.length,6);
+  assert.equal(new Set(AUTO_VIDEO_GOALS.map(item=>item.theme)).size,6);
+  const presets=AUTO_VIDEO_GOALS.map(item=>({
+    id:item.presetId,theme:item.theme,
+    clips:["frame-a","frame-b","frame-c","frame-d"]
+  }));
+  for(const item of AUTO_VIDEO_GOALS){
+    for(const locale of ["ru","en","es"])assert.ok(item.labels[locale]);
+    const recommendation=recommendAutoVideo({goalId:item.id,locale:"ru",presets});
+    assert.equal(recommendation.goalId,item.id);
+    assert.equal(recommendation.theme,item.theme);
+    assert.equal(recommendation.presetId,item.presetId);
+    assert.equal(recommendation.kind,"existing_mp4_compilation");
+    assert.equal(recommendation.sourceClipIds.length,4);
+    assert.equal(recommendation.confidence,"explicit");
+    assert.equal(recommendation.noExternalClientData,true);
+    assert.equal(recommendation.paidRenderApproved,false);
+  }
+});
+test("curated goal respects explicit forbidden imagery and user correction",()=>{
+  const noWater=recommendAutoVideo({goalId:"calm",goal:"без воды",presets:library});
+  assert.equal(noWater.presetId,"natural-stillness");
+  assert.ok(!noWater.sourceClipIds.some(id=>/sea|water|coast|falls/.test(id)));
+  const corrected=recommendAutoVideo({goalId:"calm",preferredTheme:"money",presets:library});
+  assert.equal(corrected.theme,"money");
+  assert.equal(corrected.presetId,"steady-foundation");
+  const unknown=recommendAutoVideo({goalId:"made-up",goal:"confidence",presets:library});
+  assert.equal(unknown.goalId,null);
+  assert.equal(unknown.theme,"goals");
 });

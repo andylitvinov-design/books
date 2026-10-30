@@ -86,9 +86,11 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
 
 test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
+  const director=read("components/mandala-auto-video-director.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(s,/data-video-quick-wish/);
-  assert.match(s,/maxLength=\{160\} value=\{wish\}/);
+  assert.match(director,/data-video-quick-wish/);
+  assert.match(director,/maxLength=\{160\}/);
+  assert.match(s,/data-video-wish/);
   assert.match(s,/data-video-personal-affirmations/);
   assert.match(s,/enabled:!current\.enabled/);
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
