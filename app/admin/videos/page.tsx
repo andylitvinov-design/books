@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { SiteVideoManager } from "@/components/site-video-manager";
 import { KlingSceneStudio } from "@/components/kling-scene-studio";
+import { MandalaVideoCodeAdmin } from "@/components/mandala-video-code-admin";
 import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
@@ -47,6 +48,8 @@ export default async function SiteVideosPage() {
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
       <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} />
+      <MandalaVideoCodeAdmin locale={klingLocale}
+        enabled={process.env.HH_VIDEO_PAID_ENABLED==="true" && Boolean(process.env.HH_VIDEO_OPENROUTER_API_KEY) && Boolean(process.env.HH_VIDEO_CODE_HMAC_KEY)}/>
       <KlingSceneStudio
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
