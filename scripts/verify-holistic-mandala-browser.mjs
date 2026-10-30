@@ -113,8 +113,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
-        assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
+        const sharedDirector=page.locator("[data-cinematic-director]");
+        await sharedDirector.locator('button[aria-controls="cinematic-director-content"]').click();
+        const sharedIdea=sharedDirector.locator('[data-director-visual-idea] textarea');
+        await sharedIdea.fill("I want to feel calmer");
+        assert.equal(await sharedIdea.inputValue(),"I want to feel calmer",
+          "the director owns the one shared video idea field");
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-duration="30"]').click();
@@ -151,7 +155,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit quick silent action detaches the former soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await sharedIdea.fill("");
         // Restore legacy controls before all existing Chromium/WebKit E2E flows.
         await page.locator("[data-video-quick-legacy] > summary").click();
         const picks=page.locator("[data-video-daily-picks]");
@@ -916,7 +920,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
             await advanced.locator(":scope > summary").click();
           await director.waitFor({state:"visible",timeout:12000});
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
-          await openDirector.click();
+          if(await director.getAttribute("data-director-open")!=="true")await openDirector.click();
           assert.equal(await director.getAttribute("data-director-open"),"true");
           assert.equal(await director.locator('[data-director-field="theme"],[data-director-field="difficulty"],[data-director-field="goal"],[data-director-field="profile"]').count(),4,
             "four compact main director fields");
