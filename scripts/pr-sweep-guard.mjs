@@ -4,7 +4,7 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks } from '../lib/ci/pr-sweep-guard.mjs';
 
 const [operation = 'inspect', repo = '', numberStr = '', owner = ''] = process.argv.slice(2);
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
@@ -57,8 +57,18 @@ if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) 
       if (confirmed.head?.sha !== pr.head.sha || confirmed.base?.sha !== pr.base.sha) {
         throw new Error('PR_MOVED_DURING_EVIDENCE_COLLECTION');
       }
+      // A verified 404 on the exact base means core was not yet deployed.
+      // Any other read error is fatal; never silently bypass an installed gate.
+      let baseHasCore = false;
+      try {
+        await api(`/contents/.github/workflows/hh-pr-core-release.yml?ref=${encodeURIComponent(pr.base.sha)}`);
+        baseHasCore = true;
+      } catch (error) {
+        if (!String(error?.message || '').startsWith('GitHub HTTP 404:')) throw error;
+      }
+      const coreRequired = requiredCoreChecks({baseHasCore, paths});
       const statuses = commitStatuses.statuses || [];
-      const status = analyzeCI({pr,checks,statuses,workflowRuns,paths});
+      const status = analyzeCI({pr,checks,statuses,workflowRuns,paths,required:coreRequired});
       const key = evidenceKey({pr,checks,statuses,workflowRuns,paths});
       if (operation === 'record') {
         const next = {...current.state, head_sha:pr.head.sha,base_sha:pr.base.sha,
@@ -69,6 +79,7 @@ if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) 
       }
       console.log(JSON.stringify({repo,pr:prNumber,head_sha:pr.head.sha,base_sha:pr.base.sha,
         evidence_key:key,evidence_unchanged:current?.state.evidence_key === key,checks:status,
+        core_gate_state:coreRequired.length ? 'REQUIRED' : 'NOT_DEPLOYED_MANUAL_REVIEW_ONLY',
         lease:current ? {...current.state,comment_id:current.id} : null,
         merge_authorized:false,reason:'CI result alone never bypasses approval/branch rules/release verification'},null,2));
       if (!status.ci_ready) process.exitCode = 3;
