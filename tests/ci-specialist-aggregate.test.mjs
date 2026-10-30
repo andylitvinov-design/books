@@ -216,3 +216,55 @@ test('approved migration destinations contain the exact retired scope and the or
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
 });
+
+test('all workflow deletions, even push-only and files excluded from original PR trigger, require an approved replacement',()=>{
+  const unrelated='.github/workflows/private-push-only-publisher.yml';
+  const pushOnly='on:\n  push:\n    branches: [codex/public-book-library]\njobs:\n  publish:\n    runs-on: ubuntu-24.04\n';
+  const base=new Map([[unrelated,pushOnly]]);
+  const current=new Map();
+  const changed=[unrelated];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[], 'Push-only workflow is intentionally absent from PR specialist discovery');
+  assert.throws(()=>resolveExpectedSpecialists({base,current,changed,expected}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*private-push-only-publisher/);
+  const old='.github/workflows/unknown-pr-source.yml';
+  const prs="on:\n  pull_request:\n    paths:\n      - 'lib/other/**'\n";
+  const basemap=new Map([[old,prs]]);
+  const changed2=[old];
+  const expected2=expectedWorkflows({base:basemap,current:new Map(),changed:changed2});
+  assert.deepEqual(expected2,[], 'Old PR filter may not watch its own YAML');
+  assert.throws(()=>resolveExpectedSpecialists({base:basemap,current:new Map(),changed:changed2,expected:expected2}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*unknown-pr-source/);
+});
+
+test('manual-only YAML workflow and .yaml extension cannot be removed without BASE-approved migration',()=>{
+  const old='.github/workflows/manual-private-publication.yaml';
+  const source='on:\n  workflow_dispatch:\njobs:\n  private-action:\n    runs-on: ubuntu-24.04\n';
+  const base=new Map([[old,source]]);
+  const proposed=new Map();
+  const changed=[old];
+  const expected=expectedWorkflows({base,current:proposed,changed});
+  assert.deepEqual(expected,[], 'A manual-only workflow never appears in a PR-run inventory');
+  assert.throws(()=>resolveExpectedSpecialists({base,current:proposed,changed,expected}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*manual-private-publication\.yaml/);
+});
+
+test('approved removed YAML still requires unchanged successful successor coverage even when retired PR path filter excludes its own file',()=>{
+  const old='.github/workflows/hh-crm-event-channels.yml';
+  const successor='.github/workflows/hh-event-referral-contract.yml';
+  const oldYaml="on:\n  pull_request:\n    paths:\n      - 'lib/crm/**'\n";
+  const successorYaml="on:\n  pull_request:\n    paths:\n      - '.github/workflows/hh-crm-event-channels.yml'\n      - 'lib/crm/**'\n";
+  const base=new Map([[old,oldYaml],[successor,successorYaml]]);
+  const current=new Map([[successor,successorYaml]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[successor], 'Old PR workflow never triggered, successor does');
+  const reviewed=resolveExpectedSpecialists({base,current,changed,expected});
+  assert.deepEqual(reviewed.expected,[successor]);
+  assert.deepEqual(reviewed.delegated,[{retired:old,replacement:successor}]);
+  const unexpected='.github/workflows/arbitrary-hidden-security.yml';
+  const withUnexpected=new Map([...base,[unexpected,"on: [push]\n"]]);
+  assert.throws(()=>resolveExpectedSpecialists({base:withUnexpected,current,changed:[old,unexpected],
+    expected:expectedWorkflows({base:withUnexpected,current,changed:[old,unexpected]})}),/UNAPPROVED_WORKFLOW_DELETION/);
+});
+
