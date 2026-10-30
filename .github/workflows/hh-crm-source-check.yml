@@ -2,6 +2,7 @@ name: Holistic House CRM source checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'lib/crm/**'
@@ -20,6 +21,7 @@ on:
       - 'app/[locale]/contact/**'
       - 'tests/public-contact-page.test.mjs'
       - 'components/app/crm-business-enquiries.*'
+      - 'components/app/crm-opportunities.*'
       - 'supabase/migrations/*business_consulting*'
       - 'tests/business-website-enquiry.test.mjs'
       - 'app/api/app/crm/**'
@@ -108,11 +110,16 @@ on:
       - '.github/workflows/hh-crm-source-check.yml'
   workflow_dispatch:
 
+concurrency:
+  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
 jobs:
   crm:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -169,6 +176,14 @@ jobs:
         run: npx eslint lib/crm/salesbot-internal-runtime.js lib/crm/salesbot-internal-store.js components/app/crm-salesbot-internal-runs.jsx tests/crm-salesbot-internal-runtime.test.mjs
       - name: Lint SalesBot draft storage, private API and UI
         run: npx eslint lib/crm/salesbot-store.js components/app/crm-salesbot-drafts.jsx app/api/app/crm/salesbot/drafts/route.js tests/crm-salesbot-drafts.integration.mjs
+      - name: Universal opportunities owner scope, signed paging, transitions, idempotency and history
+        run: node --conditions=react-server --test tests/crm-opportunities.test.mjs
+      - name: Lint opportunity lifecycle, store, protected API and mobile page
+        run: npx eslint lib/crm/opportunity-contract.mjs lib/crm/opportunity-pagination.mjs lib/crm/opportunity-store.js components/app/crm-opportunities.jsx app/api/app/crm/opportunities/route.js tests/crm-opportunities.test.mjs
+      - name: Deal booking request schedules one owner-only task without external send
+        run: node --conditions=react-server --test tests/crm-deal-booking-followups.test.mjs
+      - name: Lint deal booking task integration
+        run: npx eslint lib/crm/opportunity-store.js lib/crm/workflow-store.js components/app/crm-workflow.jsx components/app/crm-opportunities.jsx tests/crm-deal-booking-followups.test.mjs
       - name: Business pipeline stage integrity, owner actions and visual contract
         run: node --test tests/crm-business-pipeline.test.mjs
       - name: Lint business pipeline flow and accessible board
@@ -209,6 +224,7 @@ jobs:
   # Run Next production build independently of older application unit suites.
   # This protects a CRM release even when unrelated app tests are red.
   build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
