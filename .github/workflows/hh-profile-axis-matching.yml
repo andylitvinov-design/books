@@ -115,7 +115,7 @@ jobs:
       - name: Install locked dependencies for writer-only lint and types
         run: npm ci --no-audit --no-fund
       - name: Lint writer API, UI and contracts
-        run: npx --no-install eslint 'app/[locale]/holistic-support/mandala/page.tsx' app/api/holistic-support/meditation-writer/brief/route.js components/meditation-writer-preview.tsx components/meditation-writer-device-voice.tsx lib/holistic-support/meditation-writer/*.mjs tests/meditation-writer-*.test.mjs
+        run: npx --no-install eslint --max-warnings 0 'app/[locale]/holistic-support/mandala/page.tsx' app/api/holistic-support/meditation-writer/brief/route.js components/meditation-writer-preview.tsx components/meditation-writer-device-voice.tsx lib/holistic-support/meditation-writer/*.mjs tests/meditation-writer-*.test.mjs
       - name: TypeScript contract check
         run: npx --no-install tsc --noEmit --pretty false
   axis-unit-types-build:
