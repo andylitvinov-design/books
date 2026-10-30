@@ -5,7 +5,7 @@ import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
-import {projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded} from "@/lib/mandala/video-studio-question-registry.mjs";
+import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded} from "@/lib/mandala/video-studio-question-registry.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
@@ -143,6 +143,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const [localVisualIdea,setLocalVisualIdea]=useState("");
   const visualIdea=intentText??localVisualIdea;
   const [questionGroup,setQuestionGroup]=useState<QuestionGroup>("principal");
+  const [revisingQuestion,setRevisingQuestion]=useState<string|null>(null);
   const [questionAnswers,setQuestionAnswers]=useState<Record<string,{selectedOptionId:string|null;customText:string|null;confirmed:boolean}>>({});
   const [selectedShotNumber,setSelectedShotNumber]=useState<number|null>(null);
   const [shotAnswers,setShotAnswers]=useState<Record<number,Record<string,{selectedOptionId:string|null;customText:string|null;confirmed:boolean}>>>({});
@@ -330,6 +331,26 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           {QUESTION_GROUPS.map(group=><button type="button" key={group} data-director-category={group}
             aria-pressed={questionGroup===group} onClick={()=>setQuestionGroup(group)}>{t.categories[group]}</button>)}
         </nav>
+        {[...Object.entries(questionAnswers).map(([id,answer])=>({id,answer,scene:false})),
+          ...(selectedShotNumber===null?[]:Object.entries(activeSceneAnswers).map(([id,answer])=>({id,answer,scene:true})))].filter(({answer})=>answer.confirmed).map(({id,answer,scene})=>{
+          const question=(QUESTION_REGISTRY as readonly StudioQuestion[]).find(item=>item.id===id);
+          if(!question)return null;
+          const revisionKey=scene?`scene-${selectedShotNumber}-${id}`:id;
+          const label=answer.customText||question.options.find(option=>option.id===answer.selectedOptionId)?.labels[locale];
+          if(!label&&revisingQuestion!==revisionKey)return null;
+          return <div key={revisionKey} className={css.contextQuestion} data-director-answer={id} data-director-answer-scope={scene?"scene":"global"}>
+            <span>{question.labels[locale]}: {label}</span>
+            {revisingQuestion===revisionKey?<>
+              <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+                aria-pressed={answer.selectedOptionId===option.id} onClick={()=>{answerStudioQuestion(id,option.id,null,scene);setRevisingQuestion(null);}}>{option.labels[locale]}</button>)}</div>
+              <input value={answer.customText||""} placeholder={t.ownAnswer} disabled={disabled}
+                onChange={event=>{const value=event.target.value;if(scene&&selectedShotNumber!==null)
+                  setShotAnswers(current=>({...current,[selectedShotNumber]:{...current[selectedShotNumber],[id]:{...current[selectedShotNumber][id],customText:value,selectedOptionId:null}}}));
+                  else setQuestionAnswers(current=>({...current,[id]:{...current[id],customText:value,selectedOptionId:null}}));}}/>
+              <button type="button" disabled={disabled} onClick={()=>{answerStudioQuestion(id,null,answer.customText,scene);setRevisingQuestion(null);}}>{t.done}</button>
+            </>:<button type="button" disabled={disabled} onClick={()=>setRevisingQuestion(revisionKey)}>{t.edit}</button>}
+          </div>;
+        })}
         <div className={css.questionList}>
           {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}>
             <legend>{question.labels[locale]}</legend>

@@ -976,6 +976,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
             "revised exclusion invalidates only the contradicted subject, preserving the action");
           assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
           await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
+          const savedAnimal=director.locator('[data-director-answer="PERSONAL_07"][data-director-answer-scope="global"]');
+          assert.match(await savedAnimal.innerText(),/Волк/);
+          await savedAnimal.getByRole('button',{name:'Изменить'}).click();
+          await savedAnimal.getByRole('button',{name:'Волк'}).click();
+          assert.match(await savedAnimal.innerText(),/Волк/,'confirmed answer remains visible after editing');
           await director.locator('[data-director-create-plan]').click();
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
