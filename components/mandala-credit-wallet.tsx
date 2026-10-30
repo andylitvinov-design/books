@@ -77,7 +77,7 @@ const fallbackOffers:Offer[]=[
   {sku:"audio-smart",kind:"audio",minor:50,available:false},
   {sku:"audio-pro",kind:"audio",minor:150,available:false},
 ];
-function offerTier(sku:string) {
+function offerTier(sku:string):"basic"|"smart"|"pro" {
   return sku.endsWith("basic")?"basic":sku.endsWith("pro")?"pro":"smart";
 }
 export function MandalaCreditWallet({locale}:{locale:PublicLocale}) {
@@ -116,8 +116,8 @@ export function MandalaCreditWallet({locale}:{locale:PublicLocale}) {
             body:JSON.stringify({topupId:topup}),
           });
           if(!response.ok)throw new Error("PAYMENT");
-          setAlert(t.success);
           await load();
+          setAlert(t.success);
         }catch{setAlert(t.paymentError);}finally{setBusy(false);}
       })();
     }
