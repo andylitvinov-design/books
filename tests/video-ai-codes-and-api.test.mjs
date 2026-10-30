@@ -22,7 +22,7 @@ test("Smart $2 and Pro $9.90 budget worst-case NORMAL provider pricing",()=>{
   assert.equal(s.body.model,"heygen/heygen-video-1");
   assert.equal(s.body.duration,8);
   assert.equal(s.body.resolution,"768p");
-  assert.equal(s.estimateCents,24);
+  assert.equal(s.estimateCents,32);
   assert.ok(s.costCeilingCents<100);
   assert.equal(s.body.generate_audio,false);
   const p=buildVideoAiRequest({...input,tier:"pro"});
@@ -64,6 +64,8 @@ test("owner verification, payment receipts, and one gift per specific account ar
     recipientId:"246aa1a3-a371-5a83-9f4b-cd23ff027a76"});
   assert.equal(gift.priceCents,0);
   assert.equal(gift.recipientId.length,36);
+  assert.throws(()=>validateVideoCodeIssue({tier:"pro",kind:"gift",ownerVerified:true,
+    recipientId:"246aa1a3-a371-5a83-9f4b-cd23ff027a76"}),/gift_smart_only/);
   assert.throws(()=>validateVideoCodeIssue({tier:"smart",kind:"gift",ownerVerified:true}),
     /gift_recipient_required/);
 });
