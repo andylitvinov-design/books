@@ -40,3 +40,59 @@ The CI inspector requires the production base, non-draft/open PR, exact-head `re
 ## Performance and deployment
 
 Track median queue time, runs/PR, retries on unchanged head, distinct PRs fixed/hour, green-to-merge time, safety violations, and verified production releases for at least seven days. The guard itself is low-cost (API calls, no runner by default), but first rollout requires a GitHub token with suitable permissions or existing connector-equivalent operations. The CLI is intended for Codex/terminal-capable agents; chat-only agents can read/write the identical GitHub comment marker via their connected GitHub tool. Never paste secrets into PR comments.
+
+## Safe staging before core release-gate deployment (29 October addendum)
+
+PR #2526 is not yet merged; therefore the current production baseline does not
+contain `.github/workflows/hh-pr-core-release.yml`. Previously the read-only
+PR guard always required `release-ready`, even for unrelated PRs, making
+agent-driven *independent manual review* impossible to mark as CI-ready.
+
+The guard now reads that exact workflow path at the PR's **base commit**.
+An explicit GitHub 404 is interpreted as `NOT_DEPLOYED_MANUAL_REVIEW_ONLY`;
+all other API errors fail closed. If the PR introduces the core workflow, or
+the base already contains it, `release-ready` remains mandatory. Regardless
+of phase, no pending, cancelled, failed, missing specialist or zero-job
+workflow can be treated as green, and `merge_authorized` always remains
+`false`. This phase does **not** enable GitHub native auto-merge and is not
+permission to merge without independent PR review, required specialist jobs
+or production risk assessment.
+
+Lease parsing also accepts the historical GitHub comment format containing a
+single fenced ```json block after the marker; arbitrary prose and malformed
+blocks are rejected. This restores mutual exclusion with already posted
+Work/Chat/DOT lease comments.
+
+## Minimum positive CI evidence (not complete coverage)
+
+When core is not installed on the exact base, an empty list of failures is not
+CI readiness. NO_POSITIVE_EXACT_HEAD_CI blocks a report with no successful
+exact-head check, relevant workflow run, or explicitly SHA-bound commit status.
+Legacy status objects lacking a SHA do not independently prove exact-head
+execution. Installed or PR-introduced core gates still require release-ready.
+
+This fixes the zero-evidence false-ready case only. The specialist path map is
+NOT a complete workflow inventory: missing suites can still be overlooked when
+an unrelated job succeeds. That separate P1 remains unresolved, including mixed
+known/unknown paths. A positive CI-ready result therefore must not be used as a
+complete specialist aggregate or merge authorization. Preserve independent
+inspection of all applicable exact-head checks/workflow runs and existing
+review/branch rules. No CLI override, receipt input or lease behavior changes.
+
+## CI P1: high-fanout specialist coverage extension (2026-10-29)
+
+`productionSpecialists` now also requires exact-HEAD, completed SUCCESS
+checks for ten additional already-existing **path-scoped** workflow surfaces:
+CRM source (`crm` + `build`), Google return, practitioner
+presentations, private audio, practice visual parity, visual service editor,
+private progress, messenger notifications, Kling video and personal coaching.
+Coverage applies to matching changed application files and workflow YAML edits.
+Regression tests prove a green `release-ready` cannot hide a missing, pending,
+failed or wrong-HEAD specialist check on these surfaces. This is read-only
+policy; no new Actions workflow, runner, rerun, provider call or merge override.
+
+**Not a complete inventory:** other domain-specific workflows remain unmapped.
+Never treat this positive policy report as native auto-merge authorization.
+The Work Merge agent must still inspect all applicable executed CI checks and
+review requirements; do not switch on native auto-merge or branch rules using
+only this policy.
