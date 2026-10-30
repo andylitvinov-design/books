@@ -48,10 +48,12 @@ on:
       - 'lib/holistic-support/meditation-writer/practice-director.mjs'
       - 'lib/holistic-support/meditation-writer/brief.mjs'
       - 'lib/holistic-support/meditation-writer/owned-writer.mjs'
+      - 'lib/holistic-support/meditation-writer/small-model-skill.mjs'
       - 'lib/holistic-support/meditation-writer/writer.mjs'
       - 'lib/holistic-support/meditation-writer/free-gemini.mjs'
       - 'tests/meditation-writer-practical-director.test.mjs'
       - 'tests/meditation-writer-literary.test.mjs'
+      - 'tests/meditation-writer-small-model-skill.test.mjs'
       - 'app/api/holistic-support/meditation-writer/brief/route.js'
       - 'components/meditation-writer-preview.tsx'
       - 'components/meditation-writer-preview.module.css'
@@ -111,7 +113,7 @@ jobs:
         with:
           node-version: '22'
       - name: Practical director and prior writer regressions
-        run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs
+        run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs tests/meditation-writer-small-model-skill.test.mjs
       - name: Install locked dependencies for writer-only lint and types
         run: npm ci --no-audit --no-fund
       - name: Lint writer API, UI and contracts
