@@ -236,3 +236,34 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }
 });
+
+test('App R1 and IA retain specialist tests but avoid duplicate global validation on production PRs', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /tsc --noEmit/);
+  assert.match(core, /eslint/);
+  const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const app = workflow('hh-app-r1.yml');
+  const appUnit = app.split('  unit-build:\n')[1]?.split('  course-banner-browser:\n')[0];
+  assert.ok(appUnit, 'App R1 unit-build job exists');
+  for (const [name, command] of [
+    ['Lint complete repository including literal App Router paths', 'npm run lint'],
+    ['Production-mode build, app flags absent', 'npm run build'],
+    ['Full TypeScript (core release-ready owns production PR typing)', 'npx --no-install tsc --noEmit'],
+  ]) {
+    assert.ok(appUnit.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
+  }
+  assert.match(appUnit, /node --conditions=react-server --test/);
+  assert.match(appUnit, /npm run pwa:check && npm run native:check/);
+  assert.match(app, /run: npm run test:app:db/);
+  const ia = workflow('ia-v2.yml');
+  for (const [name, command] of [
+    ['Full lint outside production PR (core release-ready owns production lint)', 'npm run lint'],
+    ['Full TypeScript outside production PR (core release-ready owns production typing)', 'npx --no-install tsc --noEmit'],
+  ]) {
+    assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
+  }
+  assert.match(ia, /run: npm run test:unit/);
+  assert.match(ia, /run: npm run build/);
+  assert.match(ia, /run: npm run verify:ia-v2/);
+});

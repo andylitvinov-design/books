@@ -4,7 +4,7 @@
 
 ## Observed blockers and correction
 
-- 90 GitHub Actions workflow files; some heavy suites fire for every PR, even when unrelated. All **seven** previously unscoped PR workflows are now **path-scoped conservatively**: App R1, App Browser, Billing Isolated, Interpretation Database, OPORA, IA v2 and Public Services. Their jobs and assertions remain intact on relevant changes. `tests/pr-fast-lane.test.mjs` guards these triggers and the fail-closed core workflow contract.
+- 95 GitHub Actions workflow files as of 29 October (18 on 15 October); some heavy suites fire for every PR, even when unrelated. All **seven** previously unscoped PR workflows are now **path-scoped conservatively**: App R1, App Browser, Billing Isolated, Interpretation Database, OPORA, IA v2 and Public Services. Their jobs and assertions remain intact on relevant changes. `tests/pr-fast-lane.test.mjs` guards these triggers and the fail-closed core workflow contract.
 - Add `.github/workflows/hh-pr-core-release.yml`, which runs on **every** production-targeted PR: explicit one-status `release-ready`, narrow documentation-only shortcut, otherwise changed-file ESLint, whole-project TypeScript and full production build (including prebuild tests).
 - Scope job fails closed on unexpected inputs; merge_group and workflow_dispatch always run code checks. No skip for SQL, workflow, auth or application changes.
 - This core gate is **necessary but not sufficient**: applicable specialist workflow jobs, security/privacy/auth/RLS/payment checks, unresolved reviews and actual E2E requirements still apply. Never consider a red, queued, canceled, unknown, or mismatched-head specialist result green.
@@ -80,3 +80,29 @@ GitHub default codex/bootstrap-books is not production. The currently connected
 GitHub tool has no repository ruleset/auto-merge settings write operation.
 
 Additional source-integrity rule: fork-head PRs fail closed before receiving the gate's read token. The first bootstrap rollout uses the new same-repository candidate script only because the exact baseline does not yet include an aggregator and Native Auto-merge is OFF. On every subsequent PR, release-ready extracts and executes both validator modules strictly from the verified base SHA using git show, and inspects candidate workflow definitions only as data. Missing base module fails closed. The required workflow itself still needs branch-rule protection and review for changes to its source.
+
+## Measured CI-volume audit — 29 October 2026 (production branch only)
+
+Production `codex/public-book-library`: 18 workflow YAML files at
+`cce88922a5d6d1f3800980f732a438c6272f057a` (15 October) versus 95 at
+`06c46a716c3f70ead09a8dd7af4b81ca5b0c3c03` (29 October): +77.
+Created PRs targeting production: 513 during 2–15 October versus 1,837 during
+16–29 October. Daily Actions runs: 10,249 versus **at least 33,978**; the API
+caps numerous recent daily totals at 2,500, so the second is a lower bound.
+
+On production-targeted PRs, the always-running `HH PR core release gate`
+already owns global changed-source ESLint, whole-project TypeScript and the
+Next.js production build. App R1 now skips duplicate global lint, TS and build
+steps in unit-build; IA v2 skips only duplicate global lint and TS. App R1
+retains app/auth/privacy/RLS, course, DB and browser tests. IA retains unit
+tests, remedy validators, native/PWA checks, the Next build needed by browser
+acceptance, and encrypted-store/browser tests. On feature pushes or manual IA
+runs the original global checks still run. Workflow triggers and specialist
+exact-head fail-closed aggregation are unchanged.
+
+Readback: `allow_auto_merge=true`, but production `protected=false` with no
+repository rulesets. Do not merge solely on a core check without review and
+relevant specialist evidence; configure protection before enabling PR-level
+automatic merging. Next improvements: group related scoped specialist workflows,
+share expensive builds where browser tests allow it, and reduce agent-created
+duplicate PRs. Never drop privacy/auth/RLS/payment/E2E gates.
