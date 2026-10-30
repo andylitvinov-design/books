@@ -1,0 +1,28 @@
+/* Compact goal-first recommendation above the manual Video Studio editor. */
+.root{border:1px solid rgba(175,136,65,.42);border-radius:20px;background:linear-gradient(135deg,#fffdf7 0%,#f5f1e5 100%);padding:15px 17px;margin:16px 0;color:#233b31;box-shadow:0 8px 26px rgba(66,76,48,.055)}
+.head{display:flex;align-items:flex-start;gap:10px}
+.head svg{flex:none;margin-top:3px;color:#ae8941}
+.head h3{font-size:clamp(1.08rem,2vw,1.32rem);margin:0 0 3px;color:#1e4438}
+.head p{font-size:.92rem;line-height:1.45;margin:0;color:#596b60}
+.entry{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:13px}
+.goal{min-width:180px;flex:1;display:block}
+.goal input{width:100%;border-radius:12px;background:#fff;border:1px solid #bbcabc;color:#263e33;padding:12px 14px;font:inherit;min-height:44px}
+.entry button,.confirm{border:0;border-radius:12px;background:#23634b;color:#fff;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.entry button:disabled,.confirm:disabled{opacity:.45;cursor:not-allowed}
+.entry button:focus-visible,.confirm:focus-visible,.details button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.result{margin-top:13px;padding-top:13px;border-top:1px solid #d6d6c5}
+.result h4{margin:0 0 4px;font-size:1.04rem;color:#204b3a}
+.meta{font-size:.84rem;color:#657369;margin:0 0 9px}
+.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;list-style:none;padding:0;margin:10px 0 12px}
+.shots li{padding:8px;background:#fff;border:1px solid #e3e5d6;border-radius:10px;min-width:0}
+.shots b{display:block;font-size:.78rem;color:#9c7a3e;margin-bottom:3px}
+.shots span{display:block;font-size:.84rem;line-height:1.3;overflow-wrap:anywhere}
+.details{margin-bottom:11px;color:#345747;font-size:.88rem}
+.details summary{cursor:pointer;font-weight:600}
+.adjust{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.adjust button{border:1px solid #c7d3c6;background:#fff;color:#23483b;border-radius:999px;padding:7px 10px;cursor:pointer;font:inherit}
+.adjust button[aria-pressed="true"]{border-color:#af8a44;background:#fff2ce}
+.confirm{width:100%;box-shadow:0 0 0 2px rgba(209,169,85,.2)}
+.notice{font-size:.84rem;line-height:1.4;color:#536658;margin:8px 0 0}
+.warning{font-size:.86rem;color:#875c28;margin:7px 0}
+@media(max-width:570px){.root{padding:12px;margin:10px 0;border-radius:16px}.head p{font-size:.86rem}.entry{display:block}.goal{margin-bottom:9px}.entry button{width:100%}.shots{grid-template-columns:repeat(2,minmax(0,1fr))}}
