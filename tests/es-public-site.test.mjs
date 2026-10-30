@@ -76,4 +76,7 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.match(browser,/Explora por tema/);
   assert.match(browser,/toHaveCSS\('grid-template-columns'/);
   assert.doesNotMatch(browser,/service-home-card-grid/);
+  assert.doesNotMatch(browser,/first\.push\('/);
+  assert.match(browser,/const cabinet = navigation\.locator/);
+  assert.match(browser,/toHaveAttribute\('href','\/en\/app'\)/);
 });
