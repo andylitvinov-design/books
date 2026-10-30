@@ -4,6 +4,7 @@ name: HH Alchemy independent mobile acceptance
 # the ten-stage landing's own real layout and browser behaviour.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-alchemy-mobile-acceptance.yml'
@@ -23,11 +24,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-alchemy-mobile-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only superseded commits of this PR cancel; manual acceptance is independent.
+  group: hh-alchemy-mobile-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   alchemy-mobile:
+    # Draft updates do not need a 16-viewport real browser run; Ready re-enables it.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 24
     env:
@@ -56,7 +60,11 @@ jobs:
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \
             tests/alchemy-of-soul-method.test.mjs
-          npx tsc --noEmit
+          # Core verifies this same production PR SHA with full TypeScript.
+          # Manual verification remains standalone and runs the full typecheck.
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+            npx --no-install tsc --noEmit
+          fi
           npx eslint \
             components/alchemy-soul-landing.tsx \
             components/alchemy-example-report.tsx \
