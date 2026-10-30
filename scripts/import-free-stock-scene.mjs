@@ -65,6 +65,9 @@ export async function importFreeStockScene(briefName){
  const temp=await mkdtemp(join(destination,".import-"+brief.id+"-"));
  const output=join(destination,brief.id+".mp4"),poster=join(destination,brief.id+".jpg");
  const tmp=join(temp,"composite.mp4"),jpg=join(temp,"poster.jpg");
+ const refuseOverwrite=async path=>{try {await stat(path);throw Error("existing_asset_not_in_registry");}
+   catch(error){if(error.code!=="ENOENT")throw error;}};
+ await Promise.all([refuseOverwrite(output),refuseOverwrite(poster)]);
  try{
   const line=visibleCreditLine(brief)||"Edited licensed footage";
   const creditPath=join(temp,"credits.txt"),brandPath=join(temp,"title.txt");
@@ -100,7 +103,9 @@ export async function importFreeStockScene(briefName){
     sha256:s.sha256,bytes:s.bytes,attributionRequired:STOCK_POLICIES[s.provider].attribution})),
   };
   await rename(tmp,output);await rename(jpg,poster);
-  await writeFile(register,JSON.stringify([...catalog,record],null,2)+"\n","utf8");
+  const registryTemp=join(temp,"registry.json");
+  await writeFile(registryTemp,JSON.stringify([...catalog,record],null,2)+"\n","utf8");
+  await rename(registryTemp,register);
   return {id:record.id,sha256:record.sha256,video:record.video,needsCommit:true};
  }finally{await rm(temp,{recursive:true,force:true});}
 }

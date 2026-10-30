@@ -8,7 +8,8 @@ const clip=(i,p="mixkit")=>({provider:p,file:"video-"+i+".mp4",author:"Owner "+i
  clipTitle:"Landscape "+i,sourcePage:"https://"+STOCK_POLICIES[p].host+"/nature/"+i,
  licenseId:STOCK_POLICIES[p].id,licenseUrl:STOCK_POLICIES[p].license,checkedOn:"2026-10-29",
  licenseEvidence:"Verified on individual stock asset page",
- exactClipLicenseConfirmed:true,commercialUseApproved:true,editingApproved:true,identifiableSubjectsCleared:true});
+ exactClipLicenseConfirmed:true,commercialUseApproved:true,editingApproved:true,identifiableSubjectsCleared:true,
+ noRecognizablePeople:true,noVisibleBrandLogos:true});
 const example=()=>({id:"quiet-meadow-01",theme:"health",symbol:"≋",tags:["calm","nature"],
  label:{ru:"Тихий луг",en:"Quiet meadow",es:"Pradera tranquila"},ownerApproved:true,rawClipsPublished:false,
  sources:[clip(1),clip(2)]});
@@ -21,6 +22,8 @@ test("licence is checked for each stock video, not provider globally",()=>{
  assert.equal(assessStockClip(unsafe,now),"untrusted_source_page");
  const old=clip(1);old.checkedOn="2025-01-01";
  assert.equal(assessStockClip(old,now),"outdated_license_review");
+ const person=clip(1);person.noRecognizablePeople=false;
+ assert.equal(assessStockClip(person,now),"subjects_or_logos_not_clear");
  const noRelease=clip(1);noRelease.identifiableSubjectsCleared=false;
  assert.equal(assessStockClip(noRelease,now),"unverified_rights");
  assert.equal(assessStockClip({...clip(1),provider:"coverr"},now),"unsupported_provider");
