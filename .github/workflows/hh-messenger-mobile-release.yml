@@ -1,0 +1,88 @@
+name: Holistic House Messenger Mobile Release
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/\[locale\]/app/messages/**'
+      - 'app/api/app/\[...path\]/route.js'
+      - 'app/api/app/direct-messages/**'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/direct-message-inbox.jsx'
+      - 'components/app/messages-hub.jsx'
+      - 'components/app/messenger-sign-in.jsx'
+      - 'lib/app/direct-messenger-handoff.*'
+      - 'lib/native/deep-link-policy.js'
+      - 'tests/app-auth-pkce.integration.mjs'
+      - 'tests/holistic-house-mobile-master-chat.test.mjs'
+      - '.github/workflows/hh-messenger-mobile-release.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-messenger-mobile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  messenger-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify mobile PWA, private chat transport, Google OAuth and native deep links
+        run: |
+          node --conditions=react-server --test \
+            tests/holistic-house-mobile-master-chat.test.mjs \
+            tests/practitioner-direct-messages.test.mjs \
+            tests/practitioner-direct-message-synthetic.test.mjs \
+            tests/direct-message-media-transport.test.mjs \
+            tests/messages-approved-entry.test.mjs \
+            tests/native-deep-link.test.mjs
+          node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
+      - name: Lint changed messenger and auth code
+        run: |
+          npx --no-install eslint \
+            'app/[locale]/app/messages/page.tsx' \
+            'app/api/app/[...path]/route.js' \
+            components/app/direct-message-inbox.jsx \
+            components/app/messages-hub.jsx \
+            components/app/messenger-sign-in.jsx \
+            lib/app/direct-messenger-handoff.mjs \
+            lib/native/deep-link-policy.js \
+            tests/app-auth-pkce.integration.mjs \
+            tests/holistic-house-mobile-master-chat.test.mjs
+      - name: Type-check real production application
+        run: npx --no-install tsc --noEmit
+      - name: Build actual Next.js production bundle
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build
+      - name: Verify installed PWA opens the same real localized Messenger
+        run: |
+          PORT=3099 npm run start -- --port 3099 > /tmp/hh-messenger-next.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3099/en/app/messages -o /tmp/hh-messenger-en.html; then echo "Server ready on attempt $attempt"; ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1 || { tail -80 /tmp/hh-messenger-next.log; exit 1; }
+          for locale in en ru es; do
+            curl -fsS "http://127.0.0.1:3099/${locale}/app/messages" -o "/tmp/hh-messenger-${locale}.html"
+            grep -q 'Holistic House' "/tmp/hh-messenger-${locale}.html"
+            if grep -q 'NEXT_HTTP_ERROR_FALLBACK;404' "/tmp/hh-messenger-${locale}.html"; then
+              echo "A 404 was hidden inside the ${locale} Messenger page"; exit 1
+            fi
+            manifest="/holistic-house-app.webmanifest"
+            if [ "$locale" != en ]; then manifest="/holistic-house-app-${locale}.webmanifest"; fi
+            curl -fsS "http://127.0.0.1:3099${manifest}" -o "/tmp/hh-messenger-${locale}.webmanifest"
+            node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('/tmp/hh-messenger-${locale}.webmanifest','utf8'));if(m.start_url!=='/${locale}/app/messages'||m.display!=='standalone'||m.id!=='/en/app')process.exit(1)"
+          done
