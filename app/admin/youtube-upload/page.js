@@ -134,7 +134,13 @@ export default async function YoutubeUploadPage({searchParams}) {
           ?'✅ English YouTube server OAuth connected. HeyGen videos can be uploaded after your per-video approval.'
           :'🔐 English phone pairing and server upload permission are separate. Approve Google server access once to upload HeyGen videos without a phone.'}
       </p>
-      {telegramVideoConfigured&&<Link prefetch={false}
+      {initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
+        Connected phone channel ID: <code>{initialChannels.en.id}</code>
+      </p>}
+      {!initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
+        First pair your English channel using the phone uploader below.
+      </p>}
+      {telegramVideoConfigured&&initialChannels.en&&<Link prefetch={false}
         href="/api/admin/telegram-video/youtube/start?target=en">
         {englishServerConnected?'Reconnect AATA Pro server OAuth':
           'Connect AATA Pro · server-side YouTube upload'}
