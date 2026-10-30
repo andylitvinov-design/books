@@ -10,6 +10,9 @@ import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
+import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
+import type { AffirmationVoiceResult } from "./mandala-affirmation-voice";
+import { affirmationNarrationText } from "@/lib/mandala/affirmation-voice.mjs";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -38,7 +41,7 @@ type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
 // A selected sound is only a preview; attaching it is a separate, explicit step.
-type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string};
+type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -914,6 +917,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMeditationFocus(focus);
   },[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
+  const [voiceGenerating,setVoiceGenerating] = useState(false);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -944,6 +948,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
+  const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
+  const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
+    (attachedAudio.spokenText!==currentAffirmationSpeech || attachedAudio.mixSeconds!==duration ||
+      (attachedAudio.speechSeconds||0)>duration-0.35));
   const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none":"preset:"+music;
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
@@ -956,7 +964,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
-    !audioDurationInvalid && !micRecording && !preparing && !recording;
+    !audioDurationInvalid && !micRecording && !preparing && !recording && !voiceGenerating && !narrationInvalid;
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -1176,7 +1184,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let musicSession:AmbientSession|null=null;
     try {
       musicSession = attachedAudio?.kind==="file"
-        ? await startUploadedAudio(attachedAudio.file,soundVolume)
+        ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true})
         : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume) : null;
       if(attachedAudio && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
@@ -1362,6 +1370,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
+    return entry;
+  }
+  function attachGeneratedAffirmationAudio(clip:AffirmationVoiceResult){
+    if(recording||preparing)return;
+    const entry=chooseAudioFile(clip.file);
+    if(!entry)return;
+    // This local File is generated from consented text and actually attached to
+    // the MediaRecorder audio stream; not a silent video or a preview label.
+    setAudioRights(true);
+    setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
+      spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds});
+    if(duration!==clip.mixSeconds){setDuration(clip.mixSeconds as (typeof durations)[number]);setCinematicPlan(null);}
+    setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
+      locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
   }
   function chooseMusic(choice:AmbientMusic){
     clearUploadedAudio();
@@ -1588,6 +1610,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
   const createQuickVideo = () => {
+    if(narrationInvalid){
+      setNotice(locale==="ru"?"Аффирмации или длительность изменились. Создайте голос заново.":
+        locale==="es"?"Las afirmaciones cambiaron. Vuelve a generar la voz.":
+        "Your affirmations or duration changed. Regenerate the voice track.");
+      document.getElementById("video-affirmation-voice")?.scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       document.querySelector("[data-video-quick-attach]")?.scrollIntoView({
@@ -1749,6 +1778,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <SlidersHorizontal size={23} aria-hidden="true"/><strong>{quick.ownPhrases}</strong><small>{quick.write}</small>
             </button>
           </div>
+          <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
+            enabled={affirmations.enabled} durationSeconds={duration}
+            disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
+            onGenerating={setVoiceGenerating}/>
+          {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
+            {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
+              locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
+              "Phrases or duration changed — regenerate the voice before exporting."}
+          </p>:null}
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-section="4"
@@ -1861,7 +1899,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
         <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-          disabled={recording||preparing} onClick={createQuickVideo}>
+          disabled={recording||preparing||voiceGenerating||narrationInvalid} onClick={createQuickVideo}>
           {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
           {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
         </button>
