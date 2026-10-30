@@ -8,6 +8,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { buildPersonalMeditationScript } from "@/lib/mandala/personal-meditation-script.mjs";
 import { findLocalMeditationVoices, meditationNarrationEstimate, playMeditationNarration } from "@/lib/mandala/meditation-narration.mjs";
 import css from "./mandala-personal-meditation.module.css";
+import { MandalaCloudVoiceStudio } from "./mandala-cloud-voice-studio";
 
 const accents = ["calm","confidence","clarity","boundaries","acceptance","motivation","rest","gratitude"] as const;
 type Accent = (typeof accents)[number];
@@ -29,7 +30,7 @@ type Props = {
 const copy = {
   en:{
     title:"Personal meditation",eyebrow:"FINAL STEP · YOUR SCRIPT",
-    intro:"A personal script from this editor's theme, your own request, chosen goals, imagery, sound and affirmations. No paid AI or upload.",
+    intro:"A personal script from this editor's theme, your own request, chosen goals, imagery, sound and affirmations. The script is authored locally; optional cloud narration requires separate consent.",
     filters:"Taken into account",theme:"Theme",scene:"Scene",sound:"Sound",phrases:"Affirmations",quiet:"Quiet",
     customize:"Additional meditation accents",selected:"Select up to 3 (optional)",extra:"One more personal emphasis · optional",
     placeholder:"For example: more inner steadiness before an important conversation",
@@ -50,11 +51,11 @@ const copy = {
     copy:"Copy text",copied:"Copied",copyError:"Copy is unavailable here; select the text and copy manually.",
     download:"Save .txt",changed:"Settings have changed. Update the text to apply them.",
     safety:"A resource-oriented reflective script, not a diagnosis or substitute for treatment. Pause or stop whenever needed. For a clinical plan, ask a qualified practitioner.",
-    privacy:"Private and free: text is composed on this device, without AI calls, CRM or persistent storage."
+    privacy:"Text is composed locally. Optional cloud voice sends a chosen excerpt to Google only on explicit consent; no CRM save."
   },
   ru:{
     title:"Персональная медитация",eyebrow:"ПОСЛЕДНИЙ ШАГ · ВАШ ТЕКСТ",
-    intro:"Сценарий по запросу клиента, теме, выбранным целям, видеосюжету, звуку и аффирмациям. Бесплатно, без отправки данных в ИИ.",
+    intro:"Сценарий по запросу клиента, теме, выбранным целям, видеосюжету, звуку и аффирмациям. Текст создаётся локально; отправка для облачной озвучки возможна только по отдельному согласию.",
     filters:"Учитываем",theme:"Тема",scene:"Сюжет",sound:"Звук",phrases:"Аффирмации",quiet:"Без звука",
     customize:"Дополнительные акценты медитации",selected:"Выберите до 3 (необязательно)",extra:"Ещё один личный акцент · необязательно",
     placeholder:"Например: больше внутренней опоры перед важным разговором",
@@ -79,7 +80,7 @@ const copy = {
   },
   es:{
     title:"Meditación personal",eyebrow:"ÚLTIMO PASO · TU GUION",
-    intro:"Guion a partir de tu petición, metas elegidas, escena, sonido y afirmaciones. Gratis y sin enviar datos a IA externa.",
+    intro:"Guion a partir de tu petición, metas elegidas, escena, sonido y afirmaciones. El guion se prepara localmente; la voz en la nube requiere consentimiento aparte.",
     filters:"Se tiene en cuenta",theme:"Tema",scene:"Escena",sound:"Sonido",phrases:"Afirmaciones",quiet:"Silencio",
     customize:"Acentos adicionales",selected:"Elige hasta 3 (opcional)",extra:"Otro matiz personal · opcional",
     placeholder:"Por ejemplo: más tranquilidad antes de una conversación importante",
@@ -100,7 +101,7 @@ const copy = {
     copy:"Copiar texto",copied:"Copiado",copyError:"No se puede copiar automáticamente. Selecciona el texto y cópialo.",
     download:"Guardar .txt",changed:"Has cambiado los filtros. Actualiza el texto para aplicarlos.",
     safety:"Un guion reflexivo, no diagnóstico ni sustituto de tratamiento. Puedes detenerlo cuando quieras. Un profesional debe revisar un plan clínico.",
-    privacy:"Privado y gratuito: el texto se redacta en este dispositivo, sin IA externa, CRM ni almacenamiento."
+    privacy:"Texto creado localmente. La voz en la nube envía solo el fragmento aprobado a Google; no se guarda en CRM."
   }
 } as const;
 const themeLabels = {
@@ -397,6 +398,7 @@ export function MandalaPersonalMeditation({
           {!voices.length?<p className={css.voiceHint} role="note">{t.noVoice}</p>:null}
           <small className={css.voiceHint}>{t.voiceNote}</small>
         </div>
+        <MandalaCloudVoiceStudio locale={locale} sourceText={script} ambientSrc={audioSrc}/>
         <div className={css.actions}>
           <button type="button" data-meditation-copy onClick={()=>void copyScript()}>
             <Clipboard size={16} aria-hidden="true"/>{t.copy}
