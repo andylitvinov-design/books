@@ -208,3 +208,9 @@ test('service cart shows verified Square receipt only for paid status and separa
   assert.match(cart, /не оплачивает консультации в этой корзине/)
   assert.match(admin, /href:'\/admin\/wallet'/)
 })
+
+test('wallet security tests remain in existing monetization glob and isolated Billing CI', () => {
+  const manifest = JSON.parse(file('package.json'));
+  assert.match(manifest.scripts['test:monetization'], /tests\/billing-\*\.test\.mjs/);
+  assert.ok(file('.github/workflows/hh-billing-isolated.yml').includes('tests/billing-wallet-topups.test.mjs'));
+});

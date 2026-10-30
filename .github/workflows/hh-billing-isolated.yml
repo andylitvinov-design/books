@@ -79,7 +79,7 @@ jobs:
           npx tsc --noEmit --pretty false
           npx eslint lib/wallet/model.js lib/wallet/service.js app/api/app/wallet app/admin/api/wallet components/wallet/wallet-panel.jsx components/wallet/wallet-review.jsx lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
-        run: node --test tests/paypal-personal-payments.test.mjs tests/wallet-topups.test.mjs
+        run: node --test tests/paypal-personal-payments.test.mjs tests/billing-wallet-topups.test.mjs
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Talisman fixed-price provider checkout gate and Google account return
