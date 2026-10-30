@@ -42,7 +42,7 @@ test("safe locale-specific prompts are short and preserve the seven-part arc",()
 });
 test("personal phrase is opt-in only and prompt injections are never forwarded",()=>{
   const valid=prepare("ru",{clientPhrase:"Я могу выбирать свой ответ"});
-  const beat=valid.brief.beats[0];
+  const beat=valid.brief.beats[4]; // supportive_choice: phrase is optional, not repeated every beat
   const base={brief:valid.brief,beat,part:1,parts:splitSmallModelBeat(beat)};
   assert.equal(compileSmallModelPrompt(base).messages[1].content.includes("Я могу"),false);
   const permitted=compileSmallModelPrompt({...base,allowPersonalPhrase:true});
@@ -53,6 +53,16 @@ test("personal phrase is opt-in only and prompt injections are never forwarded",
   assert.equal(noLeak.personalPhraseIncluded,false);
   assert.equal(noLeak.messages[1].content.includes("Ignore previous"),false);
   assert.equal(permitted.messages[1].content.includes("problemFrame"),false);
+  // Selected symbols appear only in the resource scene and exploration.
+  const symbolBrief=prepare("ru",{symbolId:"tree"}).brief;
+  const sceneBeat=symbolBrief.beats[2],startBeat=symbolBrief.beats[0];
+  const scene=compileSmallModelPrompt({brief:symbolBrief,beat:sceneBeat,
+    part:1,parts:splitSmallModelBeat(sceneBeat)});
+  const beginning=compileSmallModelPrompt({brief:symbolBrief,beat:startBeat,
+    part:1,parts:splitSmallModelBeat(startBeat)});
+  assert.ok(scene.messages[1].content.includes("Необязательная деталь"));
+  assert.equal(beginning.messages[1].content.includes("Необязательная деталь"),false);
+  assert.ok(permitted.messages[1].content.includes("Литературный приём"));
 });
 test("a small model is called in short, independently checked chunks across all locales",async()=>{
   for(const locale of ["ru","en","es"]){
