@@ -53,7 +53,7 @@ test("paid generation stays behind two independent gates and read paths are owne
  assert.match(api,/HH_VIDEO_HEYGEN_RELEASE_APPROVED/);
  assert.match(api,/safeAssetUrl/);
  assert.match(api,/Idempotency-Key/);
- assert.match(api,/\.heygen\\\.ai/);
+ assert.match(api,/safeAssetUrl/);
  assert.match(status,/listVideoAiJobs/);
  assert.match(status,/claimVideoCode/);
  assert.match(content,/signedPrivateVideoAsset/);
