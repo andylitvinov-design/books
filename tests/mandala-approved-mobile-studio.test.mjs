@@ -114,3 +114,32 @@ test("selected money MP4 is requested and retried after Safari decoding without 
   assert.match(src,/onCanPlay=\{event=>\{/);
   assert.match(src,/data-real-mp4=\{film\.src\}/);
 });
+
+
+test("post-generation human handoff is optional, privacy-safe and uses existing service journeys",()=>{
+  const source=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const resultStart=source.indexOf('data-video-result hidden={!result}');
+  const resultEnd=source.indexOf('):<p>{ui.myVideosInfo}</p>}',resultStart);
+  assert.ok(resultStart>0&&resultEnd>resultStart,"offers must live within real video result");
+  const result=source.slice(resultStart,resultEnd);
+  const save=result.indexOf('data-mandala-video-download');
+  const share=result.indexOf('data-video-share');
+  const offer=result.indexOf('data-video-post-generation-offers');
+  assert.ok(save>0&&share>save&&offer>share,
+    "Save and Share must precede any post-generation offer");
+  assert.equal((result.match(/data-video-upsell-action=/g)||[]).length,2);
+  assert.match(result,/href=\{"\/"\+locale\+"\/services#consultation"\}/);
+  assert.match(result,/href=\{"\/"\+locale\+"\/services\/remote-energy-support"\}/);
+  assert.equal((result.match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
+    "open optional orders separately so unsaved local video is not lost");
+  for(const locale of ["ru","en","es"]){
+    assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?consultationAction:"));
+  }
+  assert.match(source,/30 минут · €50 или 60 минут · €100/);
+  assert.match(source,/Заявка — не бронь и не оплата/);
+  assert.doesNotMatch(result,/\b(?:wish|photoUrl|meditationFocus|scores|affirmations)\b/,
+    "private video inputs must never be sent in a service link");
+  assert.match(css,/\.postVideoSupportGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.postVideoSupportGrid\{grid-template-columns:minmax\(0,1fr\)/);
+});
