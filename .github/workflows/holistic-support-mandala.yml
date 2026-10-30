@@ -59,67 +59,9 @@ permissions:
   contents: read
 concurrency:
   group: holistic-support-mandala-${{ github.event.pull_request.number }}
-  cancel-in-progress: ${{ github.event.pull_request.number != 2643 }}
+  cancel-in-progress: true
 jobs:
   # No expensive E2E on non-mergeable Draft; all 10 cases run again when Ready.
-  # TEMPORARY one-time internal-repository media import; remove after assets land.
-  approved-ccby-media-import:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.repository == 'andylitvinov-design/books' &&
-      github.event.pull_request.number == 2643 &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'feat/mandala-mobile-video-studio-approved-20261030'
-    name: Source-licensed MP4 import (one-time)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Check source and importer syntax before downloading
-        run: |
-          set -euo pipefail
-          node --check scripts/import-dareful-verified-batch.mjs
-          node --check scripts/import-free-stock-scene.mjs
-          node --check lib/mandala/free-stock-sources.mjs
-          node --test tests/mandala-free-stock-sources.test.mjs
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends ffmpeg
-          fi
-      - name: Download approved CC-BY nature clips and render real MP4
-        run: |
-          set -euo pipefail
-          if test -f public/videos/holistic-house/film-collection-v3/lake-mist-dawn.mp4; then
-            echo "Previously imported: no new downloads."
-            exit 0
-          fi
-          node scripts/import-dareful-verified-batch.mjs
-      - name: Safely push MP4 JPG SHA256 and author credits to the existing PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/video-catalog/free-stock-scenes.json public/videos/holistic-house/film-collection-v3/
-          if git diff --cached --quiet; then
-            echo "No new media to commit."
-            exit 0
-          fi
-          git commit -m "assets(video): 12 Dareful CC-BY real MP4 scenes with attribution"
-          git fetch origin "$PR_BRANCH"
-          git rebase "origin/$PR_BRANCH"
-          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin "HEAD:refs/heads/$PR_BRANCH"
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
