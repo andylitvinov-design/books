@@ -34,7 +34,7 @@ function background(ctx:CanvasRenderingContext2D,w:number,h:number,p:Palette,pha
   halo.addColorStop(1,"rgba("+p.glow+",0)");
   ctx.fillStyle=halo;ctx.fillRect(0,0,w,h);
 }
-function dust(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p:Palette,intensity=1){
+function dust(ctx:CanvasRenderingContext2D,w:number,h:number,seed:number,time:number,p:Palette,intensity=1){
   ctx.save();ctx.globalCompositeOperation="screen";
   const count=Math.max(28,Math.min(72,Math.round(w/17)));
   for(let i=0;i<count;i++){
@@ -187,7 +187,7 @@ export function paintFreeVideoFrame(
   const w=ctx.canvas.width,h=ctx.canvas.height;
   if(!w||!h)return;
   const p=PALETTES[plan.palette];
-  const multiplier=plan.motion==="calm"?.48:plan.motion==="dynamic"?1.55:1;
+  const multiplier=plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
   const t=Math.max(0,Number.isFinite(time)?time:0)*multiplier;
   ctx.save();
   background(ctx,w,h,p,t);
