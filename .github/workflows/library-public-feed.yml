@@ -1,6 +1,7 @@
 name: Library public feed focused verification
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/library-feed.tsx'
@@ -39,8 +40,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
+concurrency:
+  group: hh-library-public-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   isolated-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:

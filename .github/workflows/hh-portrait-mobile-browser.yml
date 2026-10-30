@@ -1,6 +1,7 @@
 name: Reports portrait mobile browser QA
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/test-explorer-visual.jsx'
@@ -21,8 +22,14 @@ on:
       - '.github/workflows/hh-portrait-mobile-browser.yml'
 permissions:
   contents: read
+
+concurrency:
+  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   synthetic-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
