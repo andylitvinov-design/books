@@ -7,7 +7,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { assertIsolated, A, B } from '../tests/helpers/app-db-setup.mjs'
 import { MHC_SF_DEFINITIONS as defs } from '../data/assessments/mhc-sf-adult-dec2011.js'
 assertIsolated()
 const origin=process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
@@ -100,6 +100,16 @@ try{
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
  await assertCabinetPortrait(page, expect, { origin })
+ // The real private journey route requires the active account header and the
+ // real migrated RLS tables; a switched-account header must fail closed.
+ const journey = await account.request.get(origin+'/api/app/journey',{headers:{'x-hh-account-id':A}})
+ assert.equal(journey.status(),200,'authenticated journey must use the migrated fixture')
+ const journeyData=await journey.json()
+ assert.equal(journeyData.version,1)
+ assert.ok(Array.isArray(journeyData.steps) && journeyData.steps.length>0)
+ const mismatchedJourney=await account.request.get(origin+'/api/app/journey',{headers:{'x-hh-account-id':B}})
+ assert.equal(mismatchedJourney.status(),409,'another account header must fail closed')
+ passed('private journey loads for the signed-in account and rejects another account header')
  await openCabinetMyTests(page, expect, { origin })
  for(const [i,d] of [defs[0],defs[0]].entries()){
   const locale=i?'ru':'en',mode=i?'guided':'quick'
