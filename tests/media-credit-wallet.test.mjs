@@ -47,9 +47,9 @@ test("paid operations stay inaccessible until verified provider + merchant appro
 test("private SQL wallet enforces RLS, exact prices and payment proof",()=>{
   const sql=read("supabase/migrations/20261030060000_hh_media_credit_wallet.sql");
   for(const table of ["media_credit_wallets","media_credit_ledger","media_credit_jobs","media_credit_topups"]){
-    assert.match(sql,new RegExp("create table app_private\\\\."+table));
-    assert.match(sql,new RegExp("alter table app_private\\\\."+table+" enable row level security"));
-    assert.match(sql,new RegExp("alter table app_private\\\\."+table+" force row level security"));
+    assert.match(sql,new RegExp("create table app_private[.]"+table));
+    assert.match(sql,new RegExp("alter table app_private[.]"+table+" enable row level security"));
+    assert.match(sql,new RegExp("alter table app_private[.]"+table+" force row level security"));
   }
   assert.match(sql,/revoke all on app_private\.media_credit_wallets.*authenticated,hh_app_inbox/s);
   assert.match(sql,/hh\.media_payment_verified/);
