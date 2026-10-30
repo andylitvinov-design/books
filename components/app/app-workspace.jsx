@@ -586,14 +586,13 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'wallet', label: locale === 'ru' ? 'Пополнить баланс' : 'Top up', href: root + '/wallet', icon: Wallet },
   ]
-  // Five prominent mobile destinations mirror the Orders / Clients design.
-  // The complete six-section Cabinet remains available in its account menu.
+  // Keep four compact mobile destinations plus Home, matching the fixed
+  // five-column safe-area dock. Wallet remains in desktop + Account navigation.
   const mobileNav = [
     { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
-    { id: 'wallet', label: locale === 'ru' ? 'Баланс' : locale === 'es' ? 'Saldo' : 'Balance', href: root + '/wallet', icon: Wallet },
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||

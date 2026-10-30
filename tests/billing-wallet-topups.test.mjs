@@ -209,6 +209,17 @@ test('service cart shows verified Square receipt only for paid status and separa
   assert.match(admin, /href:'\/admin\/wallet'/)
 })
 
+test('wallet entry remains in Account and desktop navigation without exceeding five mobile slots', () => {
+  const workspace = file('components/app/app-workspace.jsx');
+  const nav = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const mobileNav = ['));
+  const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['), workspace.indexOf('const navIsActive'));
+  assert.match(nav, /id: 'wallet'/);
+  assert.match(nav, /href: root \+ '\/wallet'/);
+  assert.match(workspace, /\{nav\.map\(\(\{ id, label, href \}\)/, 'Account drop-down lists wallet');
+  assert.doesNotMatch(mobile, /id: 'wallet'/, 'five-column mobile dock has only four links plus Home');
+  assert.equal((mobile.match(/id: '/g) || []).length, 4);
+});
+
 test('wallet security tests remain in existing monetization glob and isolated Billing CI', () => {
   const manifest = JSON.parse(file('package.json'));
   assert.match(manifest.scripts['test:monetization'], /tests\/billing-\*\.test\.mjs/);
