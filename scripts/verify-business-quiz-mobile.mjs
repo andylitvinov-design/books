@@ -114,9 +114,9 @@ async function verify(engine, locale, width) {
       label+": €50 express offer");
     assert.equal(await page.locator('[data-business-offer="full"]').count(),1,
       label+": €100 full offer");
-    assert.match(await page.locator('[data-business-offer="express"]').innerText(),/50\s*€/u,
+    assert.match(await page.locator('[data-business-offer="express"]').innerText(),/(?:€\s*50|50\s*€)/u,
       label+": displayed €50 express price");
-    assert.match(await page.locator('[data-business-offer="full"]').innerText(),/100\s*€/u,
+    assert.match(await page.locator('[data-business-offer="full"]').innerText(),/(?:€\s*100|100\s*€)/u,
       label+": displayed €100 full price");
 
     // Real first-party request form exists, but no POST is made. Consent must
