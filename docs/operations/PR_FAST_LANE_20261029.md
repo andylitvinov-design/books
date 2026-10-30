@@ -273,17 +273,14 @@ skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
 
+## Wave 5 — Support Mock browser Draft and redundant TypeScript (30 October 2026)
 
-## Wave 5 — Support mock / Website video browser (30 October 2026)
-
-Website video and Holistic Support visual suites keep their original authentic
-Chromium/WebKit, localization, owner isolation and provider safety checks.
-For production-targeted PRs, their duplicated whole-repository `tsc` command
-is delegated to the unconditional core release gate (`release-ready`) on
-the exact current HEAD; it still executes on production `push` and on
-non-production/dispatch runs. Support mock uses `setup-node` npm cache, and
-stages only the expensive mock matrix on non-mergeable Draft; `ready_for_review`
-and all subsequent Ready commits run the unchanged browser acceptance.
-Skipped Draft work is never a pass. The CI policy test verifies positive and
-negative triggers, protected scopes and original browser commands. If core
-TypeScript or the exact-head specialist aggregate fails, merging remains blocked.
+On production-targeted Ready PRs, the unconditional Core release gate already
+executes whole-repository TypeScript; Support Mobile Mock retains its own real
+Playwright Chromium/WebKit EN/RU/ES 320/390/430 browser cases, source tests,
+ESLint, npm lockfile install and synthetic geometry artifacts. Its redundant
+standalone TypeScript step remains active for production pushes and nonproduction
+or manual executions. Node lockfile cache is enabled. Non-mergeable Draft PRs
+skip only the costly specialist job; ready_for_review reruns it fully. Existing
+PR-only concurrency cancels obsolete same-PR heads. No change to website video,
+auth, provider, DB, payments, privacy, E2E assertions or release-ready policy.

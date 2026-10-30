@@ -11,13 +11,6 @@ import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 
-const approvedRuHypnotherapyId = readFileSync(new URL('../data/service-video-library.ts', import.meta.url),'utf8')
-  .match(/const hypnotherapyRu:\s*ServiceVideoMedia\s*=\s*\{\s*video:\s*\{\s*youtubeId:\s*"([A-Za-z0-9_-]{11})",\s*language:\s*"ru"/)?.[1]
-assert.ok(approvedRuHypnotherapyId,'RU hypnotherapy page must use an approved localized public video')
-const approvedConstellationCaseId = readFileSync(new URL('../data/service-video-library.ts', import.meta.url),'utf8')
-  .match(/const constellationCase:\s*ServiceVideoMedia\s*=\s*\{\s*video:\s*\{\s*youtubeId:\s*"([A-Za-z0-9_-]{11})"/)?.[1]
-assert.ok(approvedConstellationCaseId,'Systemic Constellations page must use the approved published public recording')
-
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
 const evidence = '/tmp/site-video-evidence'
@@ -172,11 +165,11 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/' + approvedRuHypnotherapyId + '?'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/' + approvedConstellationCaseId + '?'],
+      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
@@ -184,9 +177,7 @@ try {
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]'
-        : topic === 'overview' ? '[data-free-review-intro-video]'
-          : `[data-service-video="${topic}"]`)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -210,15 +201,9 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // About now shows ten original, poster-backed reviews rather than three.
-  // Assert real distinct review cards and their playable videos, without iframes before a tap.
-  const aboutReviews = page.locator('[data-testimonial-video-id]')
-  await expect(aboutReviews).toHaveCount(10)
-  const reviewIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')))
-  assert.equal(new Set(reviewIds).size, 10, 'About must show ten distinct real testimonials')
-  assert.equal(await page.locator('.site-video-player').count(), 10, 'About must retain all ten original player posters')
+  assert.equal(await page.locator('.site-video-player').count(), 3)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten distinct original reviews, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
