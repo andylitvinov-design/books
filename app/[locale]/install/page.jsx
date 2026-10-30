@@ -9,8 +9,8 @@ import styles from './install.module.css'
 const COPY={
   en:{
     title:'Install Holistic House for free',
-    intro:'Holistic House is available today as a free Home Screen web app (PWA) on iPhone and Android. Your messages, reports, tests and courses stay in one account. Native App Store and APK editions are not yet released.',
-    cost:'Ready to install now · free PWA · Messenger included',available:'Available to install now',
+    intro:'Install our free Home Screen app (PWA) today. Your Messenger and Cabinet are inside. Native App Store and APK editions are not yet released.',
+    cost:'Ready now · free PWA · Messenger included',available:'Available to install now',
     open:'Open my Cabinet',messages:'Open my messages',settings:'Notification settings',
     stepsTitle:'Three steps to get started',
     steps:[
@@ -23,8 +23,8 @@ const COPY={
   },
   ru:{
     title:'Установить Holistic House бесплатно',
-    intro:'Holistic House уже можно установить на главный экран iPhone и Android как бесплатное веб-приложение (PWA). Внутри — мессенджер, кабинет, тесты и курсы. Нативные версии App Store и APK пока не выпущены.',
-    cost:'Доступно для установки сейчас · бесплатно · мессенджер внутри',available:'Можно установить сейчас',
+    intro:'Бесплатное приложение на экран iPhone или Android — уже доступно. Внутри мессенджер и кабинет. Нативные версии App Store и APK пока не выпущены.',
+    cost:'Установка сейчас · бесплатно · с мессенджером',available:'Можно установить сейчас',
     open:'Открыть кабинет',messages:'Мои сообщения',settings:'Настройки уведомлений',
     stepsTitle:'Три шага для установки',
     steps:[
@@ -37,8 +37,8 @@ const COPY={
   },
   es:{
     title:'Instala Holistic House gratis',
-    intro:'Ya puedes instalar Holistic House en la pantalla de inicio de iPhone o Android como aplicación web gratuita (PWA), con mensajería, informes, pruebas y cursos. Las versiones nativas aún no se publican.',
-    cost:'Instalable ahora · PWA gratis · mensajería incluida',available:'Disponible para instalar ahora',
+    intro:'Instala gratis la PWA en la pantalla de inicio del móvil. Incluye mensajería y tu espacio privado; las versiones nativas aún no se publican.',
+    cost:'Disponible ahora · gratis · con mensajería',available:'Disponible para instalar ahora',
     open:'Abrir mi espacio',messages:'Abrir mis mensajes',settings:'Configurar notificaciones',
     stepsTitle:'Tres pasos para instalar',
     steps:[
@@ -120,8 +120,8 @@ export default async function InstallPage({params}){
     <section className={styles.webSection} aria-label={native.webTitle} data-hh-pwa-alternative>
       <span className={styles.available} data-hh-install-ready>{c.available}</span>
       <h2>{native.webTitle}</h2>
-      <p>{native.webIntro}</p>
       <InstallHolisticHouse locale={locale} showGuideLink={false} landing/>
+      <p>{native.webIntro}</p>
     </section>
     <div className={styles.actions}>
       <Link className={styles.primary} href={`/${locale}/app/messages`}>{c.messages}</Link>

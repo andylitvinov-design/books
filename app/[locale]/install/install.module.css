@@ -62,3 +62,19 @@
 .wrap :global([data-hh-ios-quicksteps] ol){margin:9px 0 0;padding-left:21px;display:grid;gap:8px;color:#284d40;font-size:14px;line-height:1.45}
 .wrap :global([data-hh-ios-quicksteps] li){padding-left:2px}
 @media(max-width:560px){.webSection{padding:18px 12px;border-radius:19px}.wrap :global([data-hh-ios-quicksteps]){padding:12px 12px}.webSection :global([data-hh-free-install]){margin-top:9px!important}}
+
+/* The real install action must fit on the first 320px iPhone screen, before the unreleased native cards. */
+@media(max-width:560px){
+  .mark{width:62px;height:62px;border-radius:16px}
+  .hero{gap:10px;padding:16px 13px}
+  .hero h1{font-size:24px;line-height:1.13;margin:0 0 8px}
+  .hero p{font-size:14px;line-height:1.38}
+  .eyebrow{font-size:10px!important;margin-bottom:5px}
+  .free{margin-top:7px!important;font-size:11px}
+  .webSection{margin-top:12px;padding:13px 12px}
+  .webSection h2{font-size:22px}
+  .webSection :global([data-hh-install]){padding:12px!important;margin-top:6px!important}
+  .webSection :global([data-hh-install] p){font-size:13px;line-height:1.4}
+  .webSection>p{margin:12px 0 0;font-size:12px}
+  .webSection :global([data-hh-install-action]){min-height:52px}
+}

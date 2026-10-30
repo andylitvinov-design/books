@@ -62,10 +62,10 @@ for(const engineName of ['webkit','chromium']){
           }
         })
         assert.ok(measurements.pwa.top<measurements.native.top,'Available PWA must appear before future native packages')
-        assert.ok(measurements.action.top<844,'A genuine install instruction action must appear on the first phone screen')
+        assert.ok(measurements.action.top<844,'A genuine install instruction action must appear on the first phone screen; top='+Math.round(measurements.action.top)+'px, width='+item.width)
         assert.ok(measurements.action.height>=44,'Installation action must be thumb-sized')
         assert.ok(measurements.action.left>=0&&measurements.action.right<=item.width+1,'Installation action is clipped')
-        assert.ok(measurements.contentWidth<=item.width+1,'Unexpected horizontal overflow on iPhone')
+        assert.ok(measurements.contentWidth<=item.width+1,'Unexpected horizontal overflow on iPhone; page='+measurements.contentWidth+'px, width='+item.width)
         assert.ok(measurements.nativeIosPending&&measurements.nativeAndroidPending,'Unsigned native packages must remain unpublished')
         if(item.platform==='iphone'){
           assert.equal(measurements.installedGuide,1,'Safari installation steps must be immediately visible')

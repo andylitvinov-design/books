@@ -96,7 +96,7 @@ export default function InstallHolisticHouse({locale='en',showGuideLink=true,lan
   }
   if(standalone===null||standalone===true&&!landing)return null
   return <section className="hh-panel hh-section" aria-label={c.title} data-hh-install data-hh-free-install>
-    <h2>{landing?c.guide:c.title}</h2><p>{c.subtitle}</p>
+    {!landing&&<h2>{c.title}</h2>}<p>{c.subtitle}</p>
     {standalone===true?
       <><p role="status">{c.installed}</p><a className="hh-primary" href={'/'+locale+'/app/messages'}>{c.open}</a></>:
       <>
