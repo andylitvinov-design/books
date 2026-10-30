@@ -5,16 +5,19 @@ import {buildPersonalImageryCourse} from "../lib/mandala/personal-guided-course.
 
 const read = file => readFileSync(new URL("../"+file,import.meta.url),"utf8");
 
-test("therapy mode is a dedicated programme directly under the central moving video",()=>{
+test("therapy mode is a dedicated programme immediately after the real video player, ahead of one editor",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const guided=read("components/mandala-guided-course.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const indices=["data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
-    "data-video-category-rail","data-video-preview-choices",
-    'id="video-hero"','id="guided-video-series"',"data-video-editor-nav"].map(key=>studio.indexOf(key));
-  assert.ok(indices.every(index=>index>=0),"all required visible Support and therapy landmarks exist");
-  assert.doesNotMatch(studio,/data-video-mode-switch/);
-  assert.ok(indices.slice(1).every((index,i)=>index>indices[i]),"therapy programme follows the preview, before extra editors");
+  const indices=['id="video-hero"','id="guided-video-series"','data-video-quick-builder',
+    'data-video-quick-section="1"','data-video-quick-section="6"'].map(key=>studio.indexOf(key));
+  assert.ok(indices.every(index=>index>=0),"video, course, one six-card builder all exist");
+  assert.ok(indices.slice(1).every((index,i)=>index>indices[i]),
+    "guided programme must follow the preview and precede the six-card editor");
+  assert.equal((studio.match(/data-video-mandala-hero/g)||[]).length,1,"exactly one moving video");
+  assert.equal((studio.match(/data-video-quick-therapy data-video-therapy-start/g)||[]).length,1);
+  assert.match(studio,/data-video-mode-switch/);
+  assert.doesNotMatch(studio,/data-video-quick-legacy/);
   assert.match(studio,/studioMode==="therapy" \? <div className=\{videoStyles\.therapyCourse\}/);
   assert.match(studio,/data-video-studio-mode=\{studioMode\}/);
   assert.match(studio,/data-video-affirmations-feature checked=\{affirmations\.enabled\}/);

@@ -264,3 +264,19 @@
   .slimDiagnostic>a{gap:3px;padding:6px 7px;font-size:10px}
   .slimDiagnostic>strong{font-size:9.6px}
 }
+
+/* Only the free video-mandala route owns this compact app header. Keep
+   mobile Support page styles untouched and avoid duplicate site headers. */
+@media (max-width: 640px) {
+  .page :global([data-support-app-header]) {
+    position: sticky;
+    top: 0;
+    z-index: 55;
+    min-height: 56px;
+    padding-inline: max(12px, env(safe-area-inset-left));
+    box-shadow: 0 2px 12px rgba(17,57,43,.07);
+  }
+}
+@media (min-width: 641px) {
+  .page :global([data-support-app-header]) { display: none; }
+}

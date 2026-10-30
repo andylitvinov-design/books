@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
@@ -16,15 +14,15 @@ type Props = { params: Promise<{ locale: string }> };
 const meta = {
   en: {
     title: "Free Personal Video Editor",
-    description: "Choose one of four themes, animated video templates, your own photo, format, music and caption. Create and download a real video locally for free.",
+    description: "Choose from six themes, preview your video mandala, then expand your personal photo, imagery, affirmations, audio and format settings. Create and download locally for free.",
   },
   ru: {
     title: "Бесплатный редактор личного видео",
-    description: "Четыре темы, анимированные видеошаблоны, ваше фото, формат, звуковой фон и подпись. Создайте и скачайте настоящее видео бесплатно.",
+    description: "Шесть тем, предпросмотр видео-мандалы и раскрывающиеся настройки: фото, визуальный стиль, гипноаффирмации, звук и формат. Создайте видео на своём устройстве бесплатно.",
   },
   es: {
     title: "Editor de vídeo personal gratis",
-    description: "Cuatro temas, plantillas animadas, tu foto, formatos, audio y subtítulos. Crea y guarda tu vídeo gratis y sin subir la foto.",
+    description: "Seis temas, mandala en vídeo y ajustes desplegables de foto, imágenes, afirmaciones, audio y formato. Crea y guarda el vídeo gratis en tu dispositivo.",
   },
 } as const;
 
@@ -51,23 +49,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MandalaMeditationPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
-  const promo = {
-    en: { label: "PERSONAL DIAGNOSTIC · FREE", action: "Get a review" },
-    ru: { label: "ЛИЧНАЯ ДИАГНОСТИКА · БЕСПЛАТНО", action: "Получить разбор" },
-    es: { label: "DIAGNÓSTICO PERSONAL · GRATIS", action: "Solicitar análisis" },
-  }[locale];
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
-      <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
-        <Sparkles size={17} aria-hidden="true" />
-        <strong>{promo.label}</strong>
-        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}>
-          {promo.action}<ArrowRight size={17} aria-hidden="true" />
-        </Link>
-      </aside>
-      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
       <HolisticSupportMandalaDock locale={locale} />
+      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
     </main>
   );
 }

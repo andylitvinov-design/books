@@ -68,8 +68,11 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        await expect(intro.locator('.site-video-watch-link')).toBeVisible();
-        await expect(intro.locator('.site-video-watch-link')).toHaveAttribute('href', `https://app.heygen.com/share/${videoId}`);
+        // About is deliberately website-only (internalOnly): the transcript
+        // is keyboard-accessible, but no offsite HeyGen watch link leaks.
+        // Keep the exact inline player assertion below as the real playback gate.
+        assert.equal(await intro.locator('.site-video-watch-link').count(), 0,
+          'Website-only RU About keeps external watch links hidden even after transcript expansion');
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
@@ -84,8 +87,20 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
-      assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+      // English hero is the full introduction. The ten testimonial videos
+      // intentionally use the compact, no-autoplay player on About.
+      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0,
+        'English intro must retain its full hero presentation');
+      const compactTestimonials=page.locator('[data-personal-testimonials="about"]');
+      await expect(compactTestimonials.locator('.site-video-player--minimal')).toHaveCount(10);
+      // About now uses the owner-approved 10-video provenance-checked
+      // testimonial archive, not the retired three-item about-video-grid.
+      // Check actual public video components, not a decorative count.
+      const testimonials = page.locator('[data-personal-testimonials="about"]');
+      await expect(testimonials.locator('[data-testimonial-video-id]')).toHaveCount(10);
+      await expect(testimonials.locator('.site-video-player')).toHaveCount(10);
+      assert.equal(await testimonials.locator('iframe').count(), 0,
+        'testimonials must not load third-party media until the user presses Play');
       await page.close();
     } finally { await browser.close(); }
   }

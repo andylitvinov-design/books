@@ -28,7 +28,7 @@ test("video recorder has 10/20/30 seconds, 1:1/9:16 and four local effects mirro
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{createVideo\}/);
+  assert.match(source, /onClick=\{createQuickVideo\}/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
@@ -72,7 +72,7 @@ test("client money-flow studio offers 16 original and licensed looks and starts 
   assert.match(studio, /!document\.hidden/);
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
   assert.match(css, /@media\(max-width:350px\)\{\.moneyFlowSection/);
-  assert.match(browser, /data-mandala-money-option/);
+  assert.match(browser, /data-video-quick-style/);
   assert.doesNotMatch(studio + effects, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
 
   const diagnostic = ts.transpileModule(effects, {
@@ -112,7 +112,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(css, /\.moneyFlowThumb/);
   assert.match(css, /\.freeVideoPreview\{max-height:500px/);
   assert.match(browser, /data-mandala-cinematic-canvas/);
-  assert.match(browser, /money-frame-motion/);
+  assert.match(browser, /data-video-preview-toggle/);
   for (const file of ["components/mandala-free-video-studio.tsx","lib/mandala/cinematic-money-video.ts"]) {
     const diagnostics=ts.transpileModule(read(file),{
       fileName:file,reportDiagnostics:true,
@@ -135,8 +135,8 @@ test("existing 12 money scenes retain tap-triggered animated thumbnails", () => 
   assert.match(studio,/setPreviewPlaying\(true\)/);
   assert.match(studio,/CinematicSceneThumbnail scene=\{money\.id\}/);
   assert.match(studio,/data-real-mp4=\{film\.src\}/);
-  assert.match(browser,/actual H\.264 video must advance in time/);
-  assert.match(browser,/actual H\.264 video must advance in time/);
+  assert.match(browser,/ffprobe real encoded media/);
+  assert.match(browser,/file contains decoded moving video frames/);
 });
 
 test("background-only reusable clip is the default, with an explicit photo checkbox", () => {
@@ -146,14 +146,14 @@ test("background-only reusable clip is the default, with an explicit photo check
   assert.match(studio,/url===BACKGROUND_CLIP\?Promise\.resolve\(null\):loadLocalImage\(url\)/);
   assert.match(studio,/const \[backgroundOnly,setBackgroundOnly\]=useState\(true\)/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP/);
-  assert.match(studio,/data-mandala-output-mode/);
+  assert.match(studio,/data-video-quick-photo-enabled data-video-photo-enabled/);
   assert.match(studio,/data-video-photo-enabled/);
   assert.doesNotMatch(studio,/className=\{videoStyles\.backgroundChoices\}/);
   assert.match(studio,/setBackgroundOnly\(true\)/);
   assert.match(studio,/backgroundOnly\?\(theme==="money"\?"money-background":theme\+"-background"\)/);
   assert.match(studio,/paintCinematicMoneyFrame\(ctx, art, moneyScene, adjustedTime, aspect, title\)/);
   assert.match(studio,/if \(!art\) return/);
-  assert.match(browser,/holistic-house-money-background/);
+  assert.match(browser,/data-video-photo-enabled/);
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
 });
