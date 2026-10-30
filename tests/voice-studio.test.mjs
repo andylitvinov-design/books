@@ -134,6 +134,9 @@ test('personal meditation can attach a complete local mastered WAV to a MOVIE',(
   const meditation=get('components/mandala-personal-meditation.tsx');
   const movie=get('components/mandala-free-video-studio.tsx');
   assert.match(cloud,/data-voice-add-to-video/);
+  assert.match(cloud,/data-voice-upload-local/);
+  assert.match(cloud,/isSupportedLocalAudio\(file\)/);
+  assert.match(cloud,/setWav\(file\)/);
   assert.match(cloud,/onAudioReady\(file\)/);
   assert.match(meditation,/onAudioReady=\{onNarrationReady\}/);
   assert.match(movie,/onNarrationReady=\{attachMeditationNarration\}/);
