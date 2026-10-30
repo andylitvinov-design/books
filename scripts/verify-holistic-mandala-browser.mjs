@@ -272,11 +272,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     const consent=page.locator("[data-video-photo-consent]");
     await consent.waitFor({state:"visible",timeout:10000});
     assert.equal(await consent.isChecked(),false,"own photo needs explicit rights");
+    // A fixed iPhone dock must not cover the real checkbox. Make a genuine
+    // scroll gesture before measuring reachability; waiting for geometry alone
+    // leaves the offscreen checkbox permanently behind the dock on WebKit.
+    await consent.evaluate(input=>{
+      input.closest("label")?.scrollIntoView({block:"center",behavior:"instant"});
+    });
     await page.waitForFunction(()=>{
       const input=document.querySelector("[data-video-photo-consent]");
       const nav=document.querySelector("[data-mandala-support-bottom-nav]");
-      return input && nav && input.getBoundingClientRect().bottom < nav.getBoundingClientRect().top-8;
-    },undefined,{timeout:12000});
+      if(!input||!nav)return false;
+      const checkbox=input.getBoundingClientRect();
+      const dock=nav.getBoundingClientRect();
+      return checkbox.height>0 && checkbox.bottom < dock.top-8 &&
+        checkbox.top>0 && checkbox.left>=0 && checkbox.right<=window.innerWidth;
+    },undefined,{timeout:5000});
     await consent.check();
     assert.equal(await consent.isChecked(),true,"photo rights must really persist");
     if(engine==="chromium"&&locale==="ru"&&width===390)
