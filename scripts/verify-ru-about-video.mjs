@@ -87,7 +87,12 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
+      // English hero is the full introduction. The ten testimonial videos
+      // intentionally use the compact, no-autoplay player on About.
+      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0,
+        'English intro must retain its full hero presentation');
+      const compactTestimonials=page.locator('[data-personal-testimonials="about"]');
+      await expect(compactTestimonials.locator('.site-video-player--minimal')).toHaveCount(10);
       // About now uses the owner-approved 10-video provenance-checked
       // testimonial archive, not the retired three-item about-video-grid.
       // Check actual public video components, not a decorative count.
