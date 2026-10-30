@@ -636,3 +636,23 @@ test('Public Services keeps 14 original browser checks in two bounded fail-close
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+// #2575: ensure the fast independent Alchemy job retains all original browsers,
+// the full production Next build, and a fail-closed Core/asset-prebuild contract.
+test('Alchemy optimized production build preserves all real browser cases',()=>{
+  const s=workflow('hh-alchemy-mobile-acceptance.yml');
+  assert.match(s,/node scripts\/ci-alchemy-build\.mjs/);
+  assert.match(s,/npm_config_ignore_scripts=true npm run build > artifacts\//);
+  assert.match(s,/playwright install --with-deps chromium webkit/);
+  assert.match(s,/HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/);
+  assert.match(s,/node scripts\/verify-alchemy-one-screen\.mjs/);
+  assert.match(s,/\.next\/cache/);
+  assert.match(s,/public\/images\/holistic-house\/coaching-ancient/);
+  assert.match(s,/if ! wait "\$PW_PID"/);
+  assert.match(s,/exit "\$browser_status"/);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  const output=execFileSync(process.execPath,['scripts/ci-alchemy-build.mjs','--verify-only'],{
+    cwd:root,encoding:'utf8',timeout:10000
+  });
+  assert.match(output,/production prebuild and Core coverage contract verified/);
+});

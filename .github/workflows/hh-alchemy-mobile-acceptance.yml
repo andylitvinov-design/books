@@ -17,6 +17,14 @@ on:
       - 'app/[locale]/services/alchemy-of-soul/**'
       - 'app/es/services/alchemy-of-soul/**'
       - 'scripts/verify-alchemy-one-screen.mjs'
+      - 'scripts/ci-alchemy-build.mjs'
+      - 'scripts/cache-ancient-coaching-photos.mjs'
+      - 'scripts/ensure-owner-video-renderer.mjs'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'scripts/build-public-card-artwork.mjs'
+      - 'scripts/build-report-pdf-art.mjs'
+      - 'lib/personal-coaching/tradition-visuals.js'
+      - 'lib/coaching/public-session-art.js'
       - 'tests/alchemy-*.test.mjs'
       - 'tests/service-alchemy-one-screen-story.test.mjs'
   workflow_dispatch:
@@ -76,21 +84,53 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
+      # Per-PR immutable compiler and public-photo cache; never trust another PR's assets.
+      - name: Cache Alchemy compiler and 18 approved public coaching photos
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+            public/images/holistic-house/coaching-ancient
+          key: hh-alchemy-next-${{ runner.os }}-${{ runner.arch }}-node22-${{ hashFiles('package-lock.json', 'scripts/cache-ancient-coaching-photos.mjs', 'lib/personal-coaching/tradition-visuals.js', 'lib/coaching/public-session-art.js', 'next.config.*') }}-pr-${{ github.event.pull_request.number || github.run_id }}-${{ github.sha }}
+          restore-keys: |
+            hh-alchemy-next-${{ runner.os }}-${{ runner.arch }}-node22-${{ hashFiles('package-lock.json', 'scripts/cache-ancient-coaching-photos.mjs', 'lib/personal-coaching/tradition-visuals.js', 'lib/coaching/public-session-art.js', 'next.config.*') }}-pr-${{ github.event.pull_request.number || github.run_id }}-
       - name: Install browser once for real responsive check
-        run: |
-          npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit
+        run: npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
       - name: Build production-mode Next and measure 16 viewports in Chromium and WebKit
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
-          npm run build > artifacts/public-services-production/alchemy-build.log 2>&1 || {
+          started=$(date +%s)
+          # Install real Chromium/WebKit with system dependencies concurrently
+          # with the exact production asset generation and Next compilation.
+          /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit > /tmp/hh-alchemy-browser-install.log 2>&1 &
+          PW_PID=$!
+          SERVER_PID=
+          cleanup() {
+            if [[ -n "$SERVER_PID" ]]; then kill "$SERVER_PID" 2>/dev/null || true; fi
+            if kill -0 "$PW_PID" 2>/dev/null; then kill "$PW_PID" 2>/dev/null || true; fi
+          }
+          trap cleanup EXIT
+          node scripts/ci-alchemy-build.mjs > artifacts/public-services-production/alchemy-assets.log 2>&1 || {
+            tail -n 90 artifacts/public-services-production/alchemy-assets.log
+            exit 1
+          }
+          assets_done=$(date +%s)
+          # Explicit npm run build still runs Next; only redundant *prebuild*
+          # lifecycle is skipped after its guarded production assets were made.
+          npm_config_ignore_scripts=true npm run build > artifacts/public-services-production/alchemy-build.log 2>&1 || {
             tail -n 90 artifacts/public-services-production/alchemy-build.log
             exit 1
           }
+          build_done=$(date +%s)
+          if ! wait "$PW_PID"; then
+            echo "::error::Playwright browsers or apt dependencies failed" >&2
+            tail -n 100 /tmp/hh-alchemy-browser-install.log || true
+            exit 1
+          fi
+          browsers_done=$(date +%s)
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-alchemy-qa-next.log 2>&1 &
           SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
           for ((i=1; i<=30; i++)); do
             if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -106,9 +146,21 @@ jobs:
             tail -n 100 /tmp/hh-alchemy-qa-next.log || true
             exit 1
           fi
+          browser_start=$(date +%s)
           browser_status=0
           node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
           HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          finished=$(date +%s)
+          {
+            echo '### Alchemy CI timing: exact-head production build and real browser QA'
+            echo '| Stage | Seconds |'
+            echo '| --- | ---: |'
+            echo "| Required asset preparation and Alchemy source test | $((assets_done - started)) |"
+            echo "| Full Next.js production compilation | $((build_done - assets_done)) |"
+            echo "| Chromium and WebKit install (overlapped; since start) | $((browsers_done - started)) |"
+            echo "| Real 32 browser/viewport checks | $((finished - browser_start)) |"
+            echo "| Critical path | $((finished - started)) |"
+          } >> "$GITHUB_STEP_SUMMARY"
           exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
