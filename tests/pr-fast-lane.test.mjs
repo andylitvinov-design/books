@@ -458,5 +458,5 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
     'tests/holistic-support-first-screen.test.mjs',
     'scripts/verify-holistic-support-browser.mjs',
   ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
-  assert.match(workflow('hh-support-mobile-mock-browser.yml'), /node scripts\\/verify-holistic-support-mock-fidelity\\.mjs/);
+  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
 });
