@@ -150,7 +150,7 @@ try {
         await button.evaluate(node=>{
           window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false;window.__hhAdvanceDiagnostic=null
           node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
-          document.addEventListener('click',event=>{const rect=node.getBoundingClientRect();window.__hhAdvanceDiagnostic={same:event.target===node||node.contains(event.target),connected:node.isConnected,targetTag:event.target?.tagName,x:Math.round(rect.x),y:Math.round(rect.y),width:Math.round(rect.width),height:Math.round(rect.height),viewportWidth:innerWidth,viewportHeight:innerHeight}},{capture:true,once:true})
+          document.addEventListener('click',event=>{const rect=node.getBoundingClientRect();window.__hhAdvanceDiagnostic={same:event.target===node||node.contains(event.target),connected:node.isConnected,targetTag:event.target?.tagName,targetId:event.target?.id||null,targetClass:typeof event.target?.className==='string'?event.target.className:null,clientX:Math.round(event.clientX),clientY:Math.round(event.clientY),stable:window.__hhAdvanceStable,scrollY:Math.round(scrollY),x:Math.round(rect.x),y:Math.round(rect.y),width:Math.round(rect.width),height:Math.round(rect.height),viewportWidth:innerWidth,viewportHeight:innerHeight}},{capture:true,once:true})
           node.addEventListener('click',()=>{window.__hhAdvanceReceived=true},{capture:true,once:true})
         })
         await page.waitForFunction(node=>{
