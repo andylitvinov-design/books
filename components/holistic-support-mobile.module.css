@@ -1074,3 +1074,46 @@
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
 }
+
+/* Unified, account-safe settings entry shared by mobile Support and Mandala.
+   Only the protected Cabinet reads personal data; this public sheet is links. */
+.settingsPanel {
+  max-height: min(740px, calc(100dvh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.settingsTitleRow { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.settingsTitleRow h2 { font-size:20px; min-width:0; line-height:1.16; }
+.settingsPanel .settingsCloseIcon {
+  width:42px; height:42px; min-width:42px; padding:9px; display:grid; place-items:center;
+  border:1px solid #d6e2d7; background:#f5f8f2; color:#195c48;
+}
+.settingsPanel .settingsIntro { margin:7px 0 12px; color:#587064; font-size:13px; line-height:1.37; }
+.settingsPanel .settingsLocaleLabel { margin:0 0 7px; font-size:13px; font-weight:700; }
+.settingsPanel .localeLinks { gap:7px; }
+.settingsPanel .localeLinks a { min-height:44px; }
+.settingsLinks { display:grid; gap:5px; margin:13px 0 11px; }
+.settingsEntry {
+  display:grid; grid-template-columns:24px minmax(0,1fr) 16px; align-items:center; gap:8px;
+  padding:9px 10px; border:1px solid #e4e7db; border-radius:12px; background:#fffdf8;
+  color:#235447; text-decoration:none; min-height:57px;
+}
+.settingsEntry:hover, .settingsEntry:focus-visible { border-color:#14966c; background:#f2f9f2; }
+.settingsEntry > svg:first-child { color:#058b63; }
+.settingsEntry span { min-width:0; display:grid; gap:2px; }
+.settingsEntry strong { font-size:14px; line-height:1.2; }
+.settingsEntry small { color:#667970; font-size:11px; line-height:1.23; }
+.settingsOpenAll {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:11px; min-height:44px; background:#087b5d; color:#fff; text-align:center;
+  text-decoration:none; border-radius:12px; font-size:14px; font-weight:800;
+}
+.settingsPanel .settingsPrivacy { display:flex; gap:6px; align-items:flex-start; margin:11px 0 4px; font-size:11px; color:#596b61; }
+.settingsPrivacy svg { flex:none; }
+.settingsPanel .settingsLocalPrivacy { margin:5px 0 0; font-size:11px; color:#596b61; }
+@media (max-width:350px) {
+  .settingsPanel { right:6px; width:calc(100vw - 12px); padding:12px; }
+  .settingsTitleRow h2 { font-size:18px; }
+  .settingsEntry { min-height:54px; padding:7px 8px; }
+}

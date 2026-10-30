@@ -8,7 +8,7 @@ import './saved-document-reader.css'
 import Image from 'next/image'
 import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle, Bell, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -284,6 +284,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'settings' ? { continueTo: 'settings' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
@@ -545,14 +546,18 @@ export default function AppWorkspace({ locale, path = [] }) {
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
             ? (locale === 'ru' ? 'ОПОРА — Антистресс: сначала тесты' : 'OPORA Stress Relief: assessments first')
             : page === 'course'
-              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course')
+              : page === 'settings' ? c.settings : c.welcome}</h1>
           <p>{state === 'unavailable' ? c.unavailableText : stressSignup
             ? (locale === 'ru'
               ? 'После входа: основной исходный HH Weekly Pulse (8 вопросов) до урока 1, дополнительные GAD-7 и Resource Pulse — по желанию. Уже пройденный совместимый результат учитывается.'
               : 'After sign-in: complete HH Weekly Pulse (8 questions) before lesson 1. GAD-7 and Resource Pulse are optional; recent compatible results count.')
             : page === 'course'
               ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
-                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
+                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.')
+              : page === 'settings'
+                ? (locale === 'ru' ? 'Войдите через Google, чтобы увидеть свои данные, уведомления, подписку и параметры приватности.' : locale === 'es' ? 'Accede con Google para gestionar tus datos, avisos, suscripción y privacidad.' : 'Sign in with Google to manage your profile, alerts, membership and privacy in one place.')
+                : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
@@ -794,16 +799,44 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
-            <>
+            <div className="hh-settings-hub" data-unified-account-settings>
+              <section className="hh-panel hh-settings-overview" aria-labelledby="hh-settings-title">
+                <p className="hh-kicker">Holistic House · {locale === 'ru' ? 'Личный кабинет' : locale === 'es' ? 'Espacio personal' : 'Personal space'}</p>
+                <h1 id="hh-settings-title">{locale === 'ru' ? 'Профиль и настройки' : locale === 'es' ? 'Perfil y ajustes' : 'Profile & settings'}</h1>
+                <div className="hh-settings-identity">
+                  <span className="hh-settings-monogram" aria-hidden="true"><UserRound size={26} /></span>
+                  <div>
+                    <strong>{data.account.displayName || (locale === 'ru' ? 'Мой аккаунт' : locale === 'es' ? 'Mi cuenta' : 'My account')}</strong>
+                    <span>{data.email || (locale === 'ru' ? 'Google-аккаунт' : 'Google account')}</span>
+                    <small><ShieldCheck size={14} aria-hidden="true" />{locale === 'ru' ? 'Вход через Google · защищённые данные' : locale === 'es' ? 'Acceso con Google · datos privados' : 'Google sign-in · private data'}</small>
+                  </div>
+                </div>
+                <nav className="hh-settings-index" aria-label={locale === 'ru' ? 'Разделы настроек' : locale === 'es' ? 'Secciones de ajustes' : 'Settings sections'}>
+                  {[
+                    ['hh-settings-account', UserRound, locale === 'ru' ? 'Личные данные' : locale === 'es' ? 'Datos personales' : 'Personal details'],
+                    ['hh-settings-notifications', Bell, locale === 'ru' ? 'Уведомления' : locale === 'es' ? 'Notificaciones' : 'Notifications'],
+                    ['hh-settings-phone', MessageCircle, locale === 'ru' ? 'Связь и телефон' : locale === 'es' ? 'Contacto y teléfono' : 'Contact & phone'],
+                    ['hh-settings-subscription', Sparkles, locale === 'ru' ? 'Подписка' : locale === 'es' ? 'Suscripción' : 'Membership'],
+                    ['hh-settings-install', Smartphone, locale === 'ru' ? 'Приложение' : locale === 'es' ? 'Aplicación' : 'App'],
+                    ['hh-settings-privacy', ShieldCheck, locale === 'ru' ? 'Приватность' : locale === 'es' ? 'Privacidad' : 'Privacy'],
+                  ].map(([anchor, Icon, label]) => <a href={'#' + anchor} key={anchor}>
+                    <Icon size={17} aria-hidden="true" /><span>{label}</span>
+                  </a>)}
+                </nav>
+              </section>
               <Preferences data={data} locale={locale} onDone={load} />
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
-              <SubscriptionSettings />
-              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
-              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
-              <InstallHolisticHouse locale={locale} />
-              {nativeApp
-                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
-                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+              <div id="hh-settings-notifications" className="hh-settings-section">
+                {nativeApp
+                  ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                  : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+                <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
+              </div>
+              <div id="hh-settings-phone" className="hh-settings-section">
+                <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
+                <div id="hh-settings-messages"><CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} /></div>
+              </div>
+              <div id="hh-settings-subscription" className="hh-settings-section"><SubscriptionSettings /></div>
+              <div id="hh-settings-install" className="hh-settings-section"><InstallHolisticHouse locale={locale} /></div>
               <Privacy
                 locale={locale}
                 logout={logout}
@@ -812,7 +845,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                   setDeleted(true)
                 }}
               />
-            </>
+            </div>
           )}
         </>
       )}
@@ -1049,6 +1082,7 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
 }
 
 function Preferences({ data, locale, onboarding = false, onDone }) {
+  const router = useRouter()
   const c = COPY[locale],
     [values, setValues] = useState({
       displayName: data.account.displayName,
@@ -1078,7 +1112,9 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
             adult: values.adult,
             necessary: values.necessary,
             marketing: false,
-            uiLocale: locale,
+            displayName: values.displayName,
+            goal: values.goal,
+            uiLocale: values.uiLocale,
             timezone: localZone(),
           }
         : Object.fromEntries(
@@ -1087,6 +1123,7 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
       await appFetch(onboarding ? 'onboarding' : 'preferences', body)
       setSaved(true)
       await onDone()
+      if (values.uiLocale !== locale) router.replace('/' + values.uiLocale + '/app/settings')
     } catch (e) {
       setError(e)
     } finally {
@@ -1094,21 +1131,26 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
     }
   }
   return (
-    <section className="hh-panel">
-      <h1>{onboarding ? c.continue : c.settings}</h1>
+    <section id={onboarding ? undefined : 'hh-settings-account'} className="hh-panel hh-account-details">
+      <h2>{onboarding ? c.continue : locale === 'ru' ? 'Личные данные и регистрация' : locale === 'es' ? 'Datos personales y cuenta' : 'Personal details & account'}</h2>
       <p>{c.privacy}</p>
+      {data.email && <p className="hh-settings-account-email"><ShieldCheck size={17} aria-hidden="true" /><span>
+        <strong>{locale === 'ru' ? 'Google-аккаунт' : locale === 'es' ? 'Cuenta de Google' : 'Google account'}</strong>
+        <span>{data.email}</span><small>{locale === 'ru' ? 'Адрес подтверждён входом; на сайте его изменить нельзя.' : locale === 'es' ? 'Se gestiona desde Google; no se edita aquí.' : 'Managed by Google; this address is not editable here.'}</small>
+      </span></p>}
       <form className="hh-form" onSubmit={submit}>
-        {!onboarding && (
-          <>
+        <>
             <label>
               {c.name}
               <input
-                value={values.displayName}
+                value={values.displayName || ''}
                 maxLength={120}
                 onChange={(e) => change('displayName', e.target.value)}
                 autoComplete="name"
               />
             </label>
+        {!onboarding && (
+          <>
             <label>
               {c.timezone}
               <input
@@ -1123,6 +1165,7 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
               <select value={values.uiLocale} onChange={(e) => change('uiLocale', e.target.value)}>
                 <option value="en">English</option>
                 <option value="ru">Русский</option>
+                <option value="es">Español</option>
               </select>
             </label>
             <label>
@@ -1137,6 +1180,8 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
             </label>
           </>
         )}
+        {onboarding && <p className="hh-fine">{locale === 'ru' ? 'Язык интерфейса и ваши цели можно будет изменить после регистрации.' : locale === 'es' ? 'Puedes cambiar el idioma y los objetivos después de registrarte.' : 'You can change your language and goals after signing up.'}</p>}
+        </>
         {onboarding && (
           <>
             <label className="hh-check">
@@ -4120,8 +4165,8 @@ function Privacy({ locale, logout, onDeleted }) {
     }
   }
   return (
-    <section className="hh-panel hh-section">
-      <h2>{c.settings}</h2>
+    <section id="hh-settings-privacy" className="hh-panel hh-section">
+      <h2>{locale === 'ru' ? 'Приватность и безопасность' : locale === 'es' ? 'Privacidad y seguridad' : 'Privacy & security'}</h2>
       <p>{c.privacy}</p>
       <div className="hh-actions">
         <button disabled={busy} onClick={exportData}>

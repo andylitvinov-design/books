@@ -75,6 +75,35 @@ for (const browserType of [chromium, webkit]) {
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
+          // Owner's Settings tab stays usable before Google sign-in: language
+          // choices remain public, while private profile sections link to one
+          // existing authenticated Cabinet and never expose personal data here.
+          const settingsTab = root.locator('[data-support-mobile-account-settings]');
+          assert.equal(await settingsTab.count(), 1, label + " one account settings entry");
+          await settingsTab.click();
+          const settingsPanel = root.locator('[data-unified-settings-entry]');
+          await settingsPanel.waitFor({ state: "visible", timeout: 8000 });
+          assert.equal(await settingsTab.getAttribute("aria-expanded"), "true", label + " settings opened");
+          for (const language of ["en", "ru", "es"]) {
+            assert.equal(await settingsPanel.locator('a[href="/' + language + '/holistic-support/mobile"]').count(),
+              1, label + " public language switch " + language);
+          }
+          for (const anchor of ["account","notifications","phone","subscription","privacy"]) {
+            assert.equal(await settingsPanel.locator('a[href="/' + locale + '/app/settings#hh-settings-' + anchor + '"]').count(),
+              1, label + " existing private settings section " + anchor);
+          }
+          assert.equal(await settingsPanel.locator('a[href="/' + locale + '/app/settings"]').count(),1,
+            label + " one protected all-settings route");
+          const settingsRect = await settingsPanel.boundingBox();
+          assert.ok(settingsRect && settingsRect.x >= 0 && settingsRect.x + settingsRect.width <= width + 2 &&
+            settingsRect.height <= 844 && settingsRect.y >= -1,
+            label + " settings panel fits iPhone viewport " + JSON.stringify(settingsRect));
+          if (width === 390) await page.screenshot({
+            path:output + "/" + browserType.name() + "-" + locale + "-settings-390.png",
+          });
+          await settingsTab.click();
+          assert.equal(await root.locator('[data-unified-settings-entry]').count(), 0,
+            label + " guest settings close without losing slider state");
           // These two locally bundled original-mock visuals must actually load.
           await page.waitForFunction(() => {
             const images = [...document.querySelectorAll(

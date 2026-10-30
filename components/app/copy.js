@@ -356,6 +356,34 @@ export const COPY = {
     continueLater: 'Возвращайтесь, когда это полезно. Ежедневное прохождение не требуется.',
   },
 }
+
+/* The private Cabinet is localized like the public Support entry.
+   Preserve established English fallback for untouched feature labels. */
+COPY.es = {
+  ...COPY.en,
+  portrait: 'Mi perfil', monitoring: 'Seguimiento', tests: 'Mis tests', history: 'Historial',
+  reports: 'Informes', consultations: 'Consultas', settings: 'Cuenta y privacidad',
+  signout: 'Cerrar sesión', loading: 'Abriendo tu espacio…', retry: 'Reintentar',
+  signin: 'Continuar con Google', welcome: 'Tu espacio personal',
+  intro: 'Consulta tus datos, pruebas y progreso en tu espacio privado.',
+  private: 'Tus datos son privados. Tú decides qué compartir.',
+  name: 'Nombre', timezone: 'Zona horaria', goal: 'Tu interés principal',
+  explore: 'Conocerme mejor', body: 'Cuerpo y emociones', relationships: 'Relaciones',
+  resource: 'Bienestar y recuperación', business: 'Trabajo y negocios',
+  adult: 'Tengo al menos 18 años.',
+  necessary: 'Consiento el tratamiento privado de mis respuestas para esta aplicación.',
+  marketing: 'Acepto recibir novedades opcionales; no es obligatorio.',
+  continue: 'Crear mi espacio personal',
+  privacy: 'Tus respuestas permanecen privadas. Un profesional solo recibe lo que decides compartir.',
+  export: 'Exportar mis datos', deletion: 'Solicitar eliminación',
+  deletionNote: 'Esto desactiva tu cuenta y registra la solicitud. Los documentos antiguos se gestionan aparte.',
+  deletionConfirm: 'Escribe DELETE para solicitar la eliminación.',
+  deletionReceived: 'Solicitud registrada. La eliminación de copias de seguridad no está confirmada.',
+  reauth: 'Vuelve a iniciar sesión y repite esta acción dentro de diez minutos.',
+  allDevices: 'Cerrar sesión en todos los dispositivos',
+  account: 'Cuenta', save: 'Guardar', saving: 'Guardando…', saved: 'Guardado',
+  error: 'No se pudieron guardar los cambios. Inténtalo otra vez.',
+}
 const LABELS = {
   'state.problem_intensity': ['Difficulty', 'Трудность'],
   'state.resource': ['Resource', 'Ресурс'],

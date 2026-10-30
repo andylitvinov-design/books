@@ -27,6 +27,7 @@ export async function generateMetadata({ params, searchParams }) {
         : (locale === 'ru' ? 'Личная коуч-сессия' : 'Personal Coaching Session'),
     labs: locale === 'ru' ? 'Мои лабораторные анализы' : 'My laboratory results',
     videos: locale === 'ru' ? 'Мои видео' : 'My Videos',
+    settings: locale === 'ru' ? 'Профиль и настройки' : locale === 'es' ? 'Perfil y ajustes' : 'Profile & settings',
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
@@ -38,7 +39,18 @@ export async function generateMetadata({ params, searchParams }) {
 }
 export default async function AppPage({ params, searchParams }) {
   const { locale, path = [] } = await params
-  if (!['en', 'ru'].includes(locale)) notFound()
+  // ES account preferences are now localized; other legacy private
+  // assessment screens still use their existing EN/RU contracts. Preserve
+  // working links through an explicit English fallback until ES parity lands.
+  if (locale === 'es' && !(path.length === 1 && path[0] === 'settings')) {
+    if (path.length <= 2 && (path.length === 0 ||
+        ['portrait','monitoring','tests','runs','results','history','consultations','reports',
+          'portfolio','progress','practice','analysis','course','business','coaching','labs',
+          'videos'].includes(path[0])))
+      redirect('/en/app' + (path.length ? '/' + path.map(encodeURIComponent).join('/') : '/portrait'))
+    notFound()
+  }
+  if (!['en', 'ru', 'es'].includes(locale)) notFound()
   // Personal reports are the first stop in the signed-in Cabinet.
   if (path.length === 0) redirect('/' + locale + '/app/portrait')
   // A plain Practice tab/bookmark opens the approved practitioner dashboard,
