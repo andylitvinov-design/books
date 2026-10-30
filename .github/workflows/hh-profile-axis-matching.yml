@@ -62,7 +62,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: profile-axis-${{ github.event.pull_request.number }}
+  group: profile-axis-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
