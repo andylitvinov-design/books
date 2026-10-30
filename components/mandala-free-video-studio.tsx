@@ -1780,7 +1780,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         <div hidden={creationMode!=="generated"}>
           <MandalaFreeVideoGenerator key={locale} locale={locale}
-            theme={theme} aspect={aspect} disabled={creationMode!=="generated"||recording||preparing}
+            theme={theme} aspect={aspect} duration={duration} disabled={creationMode!=="generated"||recording||preparing}
             localPortrait={!backgroundOnly&&photoConsent?sharedThumbnailPhoto:null}
             onPlanChange={updateFreeVideoPlan}/>
         </div>
