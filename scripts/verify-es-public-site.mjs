@@ -238,7 +238,14 @@ try {
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
             await assertSpanishHomeAlternates(page);
-            if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
+            if(width===390) {
+              // The reviewed ES home uses a responsive topic chooser.
+              // Assert both real interactive destinations and two-column geometry.
+              const topics = page.locator('[data-home-topic-filters] nav[aria-label="Explora por tema"]');
+              await expect(topics).toHaveCount(1);
+              await expect(topics.locator('a[data-home-topic-filter]')).toHaveCount(4);
+              await expect(topics).toHaveCSS('grid-template-columns', /^\d+(?:\.\d+)?px \d+(?:\.\d+)?px$/);
+            }
           }
           if(path==='/es/client') {
             // Also exercise desktop hover without clicking a language.

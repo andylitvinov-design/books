@@ -72,4 +72,8 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.match(navigation,/const extraMenuItems = getSiteNavigation\(activeLocale\)/);
   assert.match(model,/compactNavigationIds = \['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple'\]/);
   assert.doesNotMatch(browser,/links\.nth\(2\)\.toHaveAccessibleName\('Energía'\)/);
+  assert.match(browser,/data-home-topic-filters/);
+  assert.match(browser,/Explora por tema/);
+  assert.match(browser,/toHaveCSS\('grid-template-columns'/);
+  assert.doesNotMatch(browser,/service-home-card-grid/);
 });
