@@ -35,6 +35,19 @@ test('missing, dismissed or unavailable active course never becomes a fabricated
   assert.equal((await planIntelligenceRequest({ ...chosen, session: { dismissedIds: ['course:active'] } }, { loadActiveCourse: async () => ({ hasActiveCourse: true }) })).status, 'no_match')
 })
 
+test('saved negative feedback affects an active course only with separate opt-in', async () => {
+  let reads = 0
+  const loadActiveCourse = async () => ({ hasActiveCourse: true })
+  const loadFeedback = async candidates => { reads++; assert.deepEqual(candidates, ['course:active']); return { dismissedIds: ['course:active'] } }
+  const chosen = { ...body, courseSelection: 'active_course' }
+  assert.equal((await planIntelligenceRequest(chosen, { loadActiveCourse, loadFeedback })).status, 'recommend')
+  assert.equal(reads, 0)
+  assert.equal((await planIntelligenceRequest({ ...chosen, feedbackHistory: 'avoid_not_useful' }, { loadActiveCourse, loadFeedback })).status, 'no_match')
+  assert.equal(reads, 1)
+  assert.equal((await planIntelligenceRequest({ ...chosen, feedbackHistory: 'avoid_not_useful' }, { loadActiveCourse: async () => ({ hasActiveCourse: false }), loadFeedback })).status, 'no_match')
+  assert.equal(reads, 1)
+})
+
 test('course availability uses the authenticated account parameter and returns only a boolean', async () => {
   const owners = new Set(['owner-a'])
   const seen = []

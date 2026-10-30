@@ -127,9 +127,9 @@ try {
     try {
       await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
       await context.route('https://www.youtube.com/**',route=>route.abort())
-      for (const [locale,width,topic,next,continueCourse,no,skip,start] of [
-        ['en',390,'energy','Continue','Continue my active course','No','Skip','Start'],
-        ['ru',320,'energy','Продолжить','Продолжить мой активный курс','Нет','Пропустить','Начать'],
+      for (const [locale,width,topic,next,continueCourse,no,skip,start,setup] of [
+        ['en',390,'energy','Continue','Continue my active course','No','Skip','Start','Finish setting up'],
+        ['ru',320,'energy','Продолжить','Продолжить мой активный курс','Нет','Пропустить','Начать','Завершить настройку'],
       ]) {
         const coursePage=await context.newPage()
         await coursePage.setViewportSize({width,height:844})
@@ -150,6 +150,10 @@ try {
         assert.equal(await coursePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
         const opened=coursePage.waitForEvent('popup');await link.click();const courses=await opened
         await courses.waitForURL(`**/${locale}/app/course?view=courses`)
+        await courses.locator('[data-my-courses-dashboard]').waitFor({state:'visible',timeout:60000})
+        await courses.locator('[data-started-course-card]').first().getByRole('button',{name:setup,exact:true}).click()
+        await courses.locator('[data-my-courses-dashboard]').waitFor({state:'hidden',timeout:30000})
+        await courses.locator('[data-my-course]').waitFor({state:'visible'})
         await courses.close();await coursePage.close()
       }
       const page=await context.newPage()

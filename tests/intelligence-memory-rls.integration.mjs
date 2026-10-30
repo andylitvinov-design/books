@@ -130,3 +130,14 @@ test('owner deletion removes only own feedback, and account deletion cascades',a
     assert.equal((await db.query('select 1 from app_private.intelligence_feedback_state where account_id=$1',[B])).rowCount,0)
   } finally {await db.end()}
 })
+
+test('active-course feedback requires consent and can be deleted',async()=>{
+  const on={...config,intelligenceMemoryEnabled:true}
+  const {revision}=await exportIntelligenceFeedback(on,a)
+  const input={operationId:randomUUID(),consent:true,expectedRevision:revision,itemId:'course:active',feedback:'not_useful'}
+  await assert.rejects(saveIntelligenceFeedback(on,a,{...input,consent:false}),/CONSENT_REQUIRED/)
+  await saveIntelligenceFeedback(on,a,input)
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,a,['course:active']),{dismissedIds:['course:active']})
+  await deleteIntelligenceFeedback(on,a,{operationId:input.operationId,expectedRevision:revision})
+  assert.deepEqual(await matchingUnhelpfulFeedback(on,a,['course:active']),{dismissedIds:[]})
+})
