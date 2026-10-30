@@ -1056,7 +1056,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.ok(await director.locator('[data-director-contextual-questions] fieldset').count()>4,
             'later optional creative questions are reachable without answering earlier ones');
           await director.locator('[data-director-category="principal"]').click();
-          const durationQuestion=director.locator('fieldset').filter({has:director.getByText('Какой длины нужен ролик?',{exact:true})});
+          const durationQuestion=director.locator('fieldset').filter({hasText:'Какой длины нужен ролик?'});
           await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();
           assert.equal(await director.getByRole('button',{name:'30 сек',exact:true}).getAttribute('aria-pressed'),'true');
           await director.getByRole('button',{name:'60 сек',exact:true}).click();
