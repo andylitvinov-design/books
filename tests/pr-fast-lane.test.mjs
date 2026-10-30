@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join,matchesGlob as requireGlob } from 'node:path';
 import test from 'node:test';
 
 const root = process.cwd();
@@ -45,6 +45,15 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /eslint/);
   assert.match(source, /tsc --noEmit/);
   assert.match(source, /npm run build/);
+  assert.match(source, /ci-specialist-aggregate\.mjs/);
+  assert.match(source, /git show/);
+  assert.match(source, /HH_HEAD_REPO/);
+  assert.match(source, /HH_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(source, /HH_HEAD_SHA/);
+  assert.match(source, /HH_BASE_SHA/);
+  assert.match(source, /actions: read/);
+  assert.match(source, /pull-requests: read/);
+  assert.match(source, /timeout-minutes: 20/);
   assert.match(source, /\[\[ "\$SCOPE_RESULT" == success \]\]/);
   assert.match(source, /\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -100,6 +109,44 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
       assert.ok(patterns.includes(dependency), `${filename} misses ${dependency}`);
     }
   }
+});
+
+test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+  const fromWorkflow=name=>{
+    const source=workflow(name);
+    const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
+    return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(x=>x[1]);
+  };
+  const covers=(patterns,file)=>{
+    let yes=false;
+    for(const p of patterns){
+      const neg=p.startsWith('!');
+      const m=neg?p.slice(1):p;
+      if(requireGlob(file,m))yes=!neg;
+    }
+    return yes;
+  };
+  // Use the same Node core matcher as the protected specialist aggregator;
+  // don't fake coverage by comparing only literal prefixes.
+  const service=fromWorkflow('hh-public-services-production.yml');
+  const mandala=fromWorkflow('holistic-support-mandala.yml');
+  for(const file of [
+    'components/mandala-cinematic-director.tsx',
+    'components/mandala-cinematic-director.module.css',
+    'scripts/verify-holistic-mandala-browser.mjs',
+  ]){
+    assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
+    assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
+  }
+  for(const file of [
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-meditation-client.tsx',
+    'components/holistic-support-mobile.tsx',
+    'scripts/verify-holistic-master-browser.mjs',
+    'scripts/verify-holistic-support-recommendations-mobile.mjs',
+    'app/en/holistic-support/mandala/page.tsx',
+    'tests/practitioner-remote-energy-support.test.mjs',
+  ])assert.equal(covers(service,file),true,file+' still covered for public service changes');
 });
 
 const classifierCases = [
