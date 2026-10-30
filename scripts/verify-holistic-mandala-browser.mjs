@@ -108,17 +108,25 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // but must be collapsed until the visitor explicitly opens it.
         assert.equal(await quick.locator("[data-video-quick-section]").count(),3);
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
-        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3);
+        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),4);
         assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
-        assert.equal(await quick.locator("[data-video-tier]").count(),3,
-          "three format cards are visible");
-        assert.equal(await quick.locator('[data-video-tier="free"]').getAttribute("aria-pressed"),"true");
-        for(const tier of ["smart","pro"]){
-          assert.equal(await quick.locator('[data-video-tier="'+tier+'"]').getAttribute("aria-disabled"),"true",
-            "paid mode cannot imply unverified balance or activate payment");
-        }
+        assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
+          "three practice products each have a video sample");
+        assert.equal(await quick.locator("[data-video-quality-option]").count(),9,
+          "each product has Basic / Smart / Pro visual quality");
+        assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true,
+          "only free on-device video creation can start");
+        await quick.locator('[data-video-practice-pick="meditation"]').click();
+        assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true,
+          "planned meditation pricing must not enable paid checkout");
+        await quick.locator('[data-video-practice-pick="course"]').click();
+        assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true,
+          "eight sessions cannot be sold before real delivery");
+        await quick.locator('[data-video-practice-pick="video"]').click();
+        assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true);
         const livePreview=quick.locator("[data-video-quick-live-preview]");
         assert.equal(await livePreview.locator("video").count(),1,
           "the preview uses the real local MP4 master, not a fake still");
@@ -157,7 +165,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           engine+" "+locale+" "+width+"px quick UI overflow "+JSON.stringify(quickOverflow));
         assert.ok(quickOverflow.cards.every(rect=>rect.width<=width+1&&rect.x>=-3));
         const touchTargets=await quick.locator(
-          '[data-video-quick-theme], [data-video-tier="free"], [data-video-quick-scene], [data-video-personal-affirmations], [data-video-quick-generate]'
+          '[data-video-quick-theme], [data-video-practice-pick], [data-video-quick-scene], [data-video-personal-affirmations], [data-video-quick-generate]'
         ).evaluateAll(nodes=>nodes.map(el=>({
           width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,
         })));
