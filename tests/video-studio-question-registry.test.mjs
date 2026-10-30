@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {QUESTION_REGISTRY, projectFieldsFromAnswers, questionsForDraft, questionsForGroup, subjectIsExplicitlyExcluded} from '../lib/mandala/video-studio-question-registry.mjs';
+import {QUESTION_REGISTRY, projectFieldsFromAnswers, questionsForDraft, questionsForGroup, subjectIsExplicitlyExcluded, durationFromBrief} from '../lib/mandala/video-studio-question-registry.mjs';
+
+test('extracts supported explicit durations in three languages without treating arbitrary numbers as duration',()=>{
+  for(const text of ['for 30 seconds','на 30 секунд','durante 30 segundos']) assert.equal(durationFromBrief(text),30);
+  for(const text of ['for one minute','на минуту','durante un minuto']) assert.equal(durationFromBrief(text),60);
+  assert.equal(durationFromBrief('30 mountains at sunrise'),null);
+  assert.equal(durationFromBrief('на 90 секунд'),null);
+});
 
 test('registry preserves the approved 49 IDs with three localized options', () => {
   assert.equal(QUESTION_REGISTRY.length, 49);

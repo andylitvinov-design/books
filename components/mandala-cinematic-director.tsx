@@ -5,7 +5,7 @@ import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
-import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded} from "@/lib/mandala/video-studio-question-registry.mjs";
+import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded,durationFromBrief} from "@/lib/mandala/video-studio-question-registry.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
@@ -251,6 +251,11 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const updateVisualIdea=(value:string)=>{
     const clean=graphemeTrim(value,2000);
     if(onIntentTextChange)onIntentTextChange(clean);else setLocalVisualIdea(clean);
+    const requestedDuration=durationFromBrief(clean);
+    if(requestedDuration!==null){
+      setSeconds(requestedDuration as 15|20|30|60);
+      setQuestionAnswers(current=>{const next={...current};delete next.BASIC_05;return next;});
+    }
     // A new explicit exclusion is a manual correction, not an additional
     // suggestion.  Clear only the contradicted animal identity so the
     // remaining answers (for example, the action) survive the revision.

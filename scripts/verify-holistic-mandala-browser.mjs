@@ -1058,6 +1058,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await director.locator('[data-director-create-plan]').click();
           assert.equal(await director.locator('[data-director-shot]').count(),6,
             'the latest duration control overrides an earlier question answer');
+          await newVisualIdea.fill('Белый орёл летит над горами, на 30 секунд');
+          assert.equal(await director.getByRole('button',{name:'30 сек',exact:true}).getAttribute('aria-pressed'),'true',
+            'duration stated in the brief updates the existing duration control');
+          await director.locator('[data-director-create-plan]').click();
+          assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/30 сек/);
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
