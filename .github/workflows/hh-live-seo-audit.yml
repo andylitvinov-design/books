@@ -19,6 +19,7 @@ on:
       - 'app/not-found.tsx'
       - 'lib/seo-descriptions.ts'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
@@ -41,7 +42,7 @@ concurrency:
 
 jobs:
   source-build:
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     steps:
@@ -58,6 +59,7 @@ jobs:
       - name: Verify Next.js production build
         run: npm run build
   audit:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -118,6 +120,7 @@ jobs:
   # Runs on PR using an isolated local server, and on push/dispatch against deployed production.
   # Required specialist job must actually execute before trusted release-ready can pass.
   public-tests-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
