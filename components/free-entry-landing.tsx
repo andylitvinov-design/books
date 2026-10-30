@@ -379,9 +379,36 @@ const freeTestDirectCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "Your question · a fresh perspective · a next step.", reviews: "See the full client video archive · 12 videos" },
-  ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", reviews: "Все видеоотзывы клиентов · 12 видео" },
-  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", reviews: "Todos los testimonios · 12 vídeos" },
+  en: {
+    lead: "Your question · a fresh perspective · a next step.",
+    resultsLabel: "Your free written review in three parts",
+    results: [
+      { title: "Your question", text: "Find the core of what matters." },
+      { title: "Fresh perspective", text: "Consider patterns and resources." },
+      { title: "Written next step", text: "Receive personal reflections." },
+    ],
+    reviews: "See the full client video archive · 12 videos",
+  },
+  ru: {
+    lead: "Ваш вопрос · новый взгляд · следующий шаг.",
+    resultsLabel: "Три результата бесплатного письменного разбора",
+    results: [
+      { title: "Ваш запрос", text: "Выделить главное." },
+      { title: "Новый взгляд", text: "Увидеть связи и ресурсы." },
+      { title: "Письменный ответ", text: "Наметить следующий шаг." },
+    ],
+    reviews: "Все видеоотзывы клиентов · 12 видео",
+  },
+  es: {
+    lead: "Tu pregunta · otra perspectiva · un paso más.",
+    resultsLabel: "Tres partes de tu revisión personal escrita",
+    results: [
+      { title: "Tu pregunta", text: "Identifica lo esencial." },
+      { title: "Otra mirada", text: "Explora patrones y recursos." },
+      { title: "Siguiente paso", text: "Recibe observaciones escritas." },
+    ],
+    reviews: "Todos los testimonios · 12 vídeos",
+  },
 } as const;
 
 const situationVideoStory = {
@@ -500,7 +527,20 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <span className={styles.badge}>{kind === "situation" ? (locale === "ru" ? "ЛИЧНО · БЕСПЛАТНО" : locale === "es" ? "PERSONAL · GRATIS" : "PERSONAL · FREE") : common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
-            {kind === "situation" ? <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p> : null}
+            {kind === "situation" ? (
+              <div className={styles.reviewValueSummary} data-free-review-benefits>
+                <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p>
+                <ol className={styles.reviewValueFlow} aria-label={situationFirstScreen[locale].resultsLabel}>
+                  {situationFirstScreen[locale].results.map((result, index) => (
+                    <li key={result.title}>
+                      <span className={styles.reviewValueNumber} aria-hidden="true">0{index + 1}</span>
+                      <strong>{result.title}</strong>
+                      <span>{result.text}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
             {kind === "situation" ? null : kind === "dao" ?
               <ul className={styles.daoBenefits} aria-label={locale === "ru" ? "Что вы получите" : locale === "es" ? "Qué recibirás" : "What you get"}>
                 {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" /><span>{benefit}</span></li>)}

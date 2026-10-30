@@ -86,6 +86,22 @@ test("all three locales explain real service advantages without health claims or
   assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
+test("free review visibly explains its three-part written result in EN/RU/ES", () => {
+  assert.match(landing, /data-free-review-benefits/);
+  assert.match(landing, /className=\{styles\.reviewValueFlow\}/);
+  assert.match(landing, /situationFirstScreen\[locale\]\.results\.map/);
+  for (const phrase of [
+    "Your question", "Fresh perspective", "Written next step",
+    "Ваш запрос", "Новый взгляд", "Письменный ответ",
+    "Tu pregunta", "Otra mirada", "Siguiente paso",
+  ]) assert.ok(landing.includes(phrase), "Missing localized benefit: " + phrase);
+  assert.ok(landing.indexOf('data-free-review-benefits') < landing.indexOf('data-free-review-intro-video'));
+  assert.match(css, /\.reviewValueFlow\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media\(max-width:360px\)/);
+  assert.doesNotMatch(landing, /data-free-review-constellation-video|youtubeId: "IF0HAhSDwks"/,
+    "No mismatched 23 Oct videos on the free review page");
+});
+
 test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
