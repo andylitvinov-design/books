@@ -268,18 +268,18 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const selectTopic=(next:VideoTheme)=>{setTopic(next);invalidate();};
   const selectStyle=(next:StyleId)=>{setStyle(next);invalidate();};
   const onPlan=()=>{setGeneratedMode(therapyMode);setGenerated(true);setApplied(false);setSelectedShotNumber(null);onInvalidateStoryboard();};
-  const answerStudioQuestion=(questionId:string,selectedOptionId:string|null,customText:string|null=null,sceneScoped=false)=>{
+  const answerStudioQuestion=(questionId:string,selectedOptionId:string|null,customText:string|null=null,sceneScoped=false,confirmed=true)=>{
     if(sceneScoped&&selectedShotNumber!==null){
-      setShotAnswers(current=>({...current,[selectedShotNumber]:{...current[selectedShotNumber],[questionId]:{selectedOptionId,customText,confirmed:true}}}));
+      setShotAnswers(current=>({...current,[selectedShotNumber]:{...current[selectedShotNumber],[questionId]:{selectedOptionId,customText,confirmed}}}));
       setApplied(false);onInvalidateStoryboard();
       return;
     }
-    setQuestionAnswers(current=>({...current,[questionId]:{selectedOptionId,customText,confirmed:true}}));
+    setQuestionAnswers(current=>({...current,[questionId]:{selectedOptionId,customText,confirmed}}));
     if(questionId==="BASIC_09"&&(selectedOptionId==="none"||selectedOptionId==="calm"||selectedOptionId==="energetic"))
       onMusicPreference?.(selectedOptionId);
     if(questionId==="BASIC_10"&&(selectedOptionId==="none"||selectedOptionId==="phrases"||selectedOptionId==="subtitles"))
       onCaptionPreference?.(selectedOptionId);
-    invalidate();
+    if(confirmed)invalidate();
   };
   const answerForQuestion=(question:{id:string;scope:string})=>question.scope==="scene"&&selectedShotNumber!==null?
     shotAnswers[selectedShotNumber]?.[question.id]:questionAnswers[question.id];
@@ -337,7 +337,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
               aria-pressed={questionAnswers[question.id]?.selectedOptionId===option.id}
               onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}</button>)}</div>
             <input value={questionAnswers[question.id]?.customText||""} placeholder={t.ownAnswer}
-              onChange={event=>answerStudioQuestion(question.id,null,event.target.value)} disabled={disabled}/>
+              onChange={event=>answerStudioQuestion(question.id,null,event.target.value,false,false)}
+              onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value);}} disabled={disabled}/>
           </fieldset>)}
           {generated?visibleCategoryQuestions.length?visibleCategoryQuestions.map(question=>{
             const answer=answerForQuestion(question);
@@ -348,7 +349,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
                 aria-pressed={answer?.selectedOptionId===option.id}
                 onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}</button>)}</div>
               <input value={answer?.customText||""} placeholder={t.ownAnswer}
-                onChange={event=>answerStudioQuestion(question.id,null,event.target.value,sceneScoped)} disabled={disabled}/>
+                onChange={event=>answerStudioQuestion(question.id,null,event.target.value,sceneScoped,false)}
+                onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value,sceneScoped);}} disabled={disabled}/>
             </fieldset>;
           }):<small>{questionGroup==="pro"&&selectedShotNumber===null?t.selectShot:t.noQuestions}</small>:null}
         </div>

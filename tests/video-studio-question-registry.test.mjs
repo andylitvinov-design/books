@@ -33,6 +33,13 @@ test('an empty brief asks only the first three visual questions', () => {
     ['PERSONAL_05', 'PERSONAL_12', 'PERSONAL_13']);
 });
 
+test('a custom answer remains editable until confirmed', () => {
+  const draft = {PERSONAL_05: {selectedOptionId: null, customText: 'Мой герой', confirmed: false}};
+  assert.ok(questionsForDraft({intentText: 'История', answers: draft}).some(q => q.id === 'PERSONAL_05'));
+  draft.PERSONAL_05.confirmed = true;
+  assert.ok(!questionsForDraft({intentText: 'История', answers: draft}).some(q => q.id === 'PERSONAL_05'));
+});
+
 test('an explicit subject exclusion reopens the subject clarification in every supported locale', () => {
   const answers = {
     PERSONAL_05: {selectedOptionId: 'other', customText: null, confirmed: true},
