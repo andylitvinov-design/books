@@ -1502,3 +1502,30 @@
 @media(prefers-reduced-motion:reduce){
   .videoModeTabs *, .videoEditorTabs *{transition:none!important}
 }
+
+
+/* Final iPhone touch and optical alignment: no Safari input zoom and no
+   uncomfortably tiny audio hit area; 7 format chips fit on a second row. */
+.videoLead .quickWish input{font-size:16px}
+.videoLead .quickHeader button{min-height:44px}
+.videoSummarySound>button{width:44px;height:44px}
+.videoSummaryRow[data-video-summary-row="format"]{
+  grid-template-columns:33px minmax(0,1fr) auto;
+  grid-template-rows:auto auto;row-gap:4px}
+.videoSummaryRow[data-video-summary-row="format"] .videoSummaryGlyph{grid-column:1;grid-row:1}
+.videoSummaryRow[data-video-summary-row="format"] .videoSummaryText{grid-column:2;grid-row:1}
+.videoSummaryRow[data-video-summary-row="format"] .videoSummaryFormats{
+  grid-column:2;grid-row:2;grid-template-columns:repeat(3,minmax(0,1fr));max-width:290px}
+.videoSummaryRow[data-video-summary-row="format"] .videoSummaryFormats button{min-height:30px;font-size:11px}
+.videoSummaryRow[data-video-summary-row="format"]>button:last-child{
+  grid-column:3;grid-row:1/3;align-self:center}
+@media(max-width:430px){
+  .videoSummaryRow[data-video-summary-row="format"]{
+    grid-template-columns:30px minmax(0,1fr) 57px}
+  .videoSummarySound>button{width:39px;height:39px}
+}
+@media(max-width:350px){
+  .videoSummaryRow[data-video-summary-row="format"]{
+    grid-template-columns:27px minmax(0,1fr) 48px}
+  .videoSummaryRow[data-video-summary-row="format"] .videoSummaryFormats button{font-size:10px}
+}
