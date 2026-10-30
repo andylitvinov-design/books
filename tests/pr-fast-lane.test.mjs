@@ -301,3 +301,29 @@ test('public installer changes use their dedicated real mobile gate, not unrelat
     'tests/practitioner-remote-energy-support.test.mjs'
   ])assert.equal(covered(services,file),true,file+' must still run public services acceptance');
 });
+
+test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
+  const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /tsc --noEmit/);
+  const specs=[
+    ['hh-public-test-collections.yml',[['Verify Next.js production build','npm run build']],['tests/public-test-topic-collections.test.mjs','tests/profile-construct-axes.test.mjs']],
+    ['hh-kling-video.yml',[['TypeScript','npx tsc --noEmit'],['Next.js build','npm run build']],['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
+  ];
+  for(const [filename,guardedSteps,domainContracts] of specs){
+    const s=workflow(filename);
+    for(const [name,command] of guardedSteps){
+      const exact='- name: '+name+'\n        '+skip+'\n        run: '+command;
+      assert.ok(s.includes(exact), filename+' must retain global '+name+' outside production-targeted PR only');
+    }
+    for(const src of domainContracts) assert.ok(s.includes(src),filename+' domain contract removed: '+src);
+    assert.ok(s.includes("      - '.github/workflows/"+filename+"'"),filename+' must trigger its own edited workflow for domain validation');
+    assert.ok(!s.includes('continue-on-error: true'),filename+' cannot bypass real test errors');
+  }
+  for(const filename of ['hh-kling-video.yml']) {
+    const s=workflow(filename);
+    assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
+    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  }
+});
