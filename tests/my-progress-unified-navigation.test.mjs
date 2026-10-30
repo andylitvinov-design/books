@@ -119,6 +119,16 @@ test('practitioner offerings stay behind original private Practice; client order
   assert.doesNotMatch(onPlay, /video-progress|appFetch\(|fetch\(/)
 })
 
+test('account switch never exposes previous owner history or a signed private mandala URL',()=>{
+  const page=source('components/app/my-progress.jsx')
+  assert.match(page,/const sources=loadedSources\.accountId===accountId\?loadedSources:EMPTY_SOURCES/)
+  assert.match(page,/const safeMandalaPlayer=mandalaPlayer\.accountId===accountId\?mandalaPlayer:EMPTY_PLAYER/)
+  assert.match(page,/setSources\(\{\.\.\.EMPTY_SOURCES,accountId\}\)/)
+  assert.match(page,/accountId,growth:values\[0\]/)
+  assert.match(page,/player=\{safeMandalaPlayer\}/)
+  assert.match(page,/if\(!active\) return/)
+})
+
 test('existing labs, saved development and 90-day coaching appear with only neutral source references',()=>{
   const value=buildMyProgress({
     extras:{
