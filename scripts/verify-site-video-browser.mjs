@@ -371,7 +371,11 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    // Spanish has two authentic published destinations: About and the
+    // receipt-gated Thank-you page. Avoid the obsolete single-slot assumption.
+    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(2)
+    await expect(editor.locator('.site-video-placement-list button').first()).toContainText('About')
+    await expect(editor.locator('.site-video-placement-list button').last()).toContainText('Registration')
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')
