@@ -690,3 +690,14 @@ Visual exclusions for water, forest and night are passed as trusted IDs and enfo
 Runway's connected ChatGPT workspace currently exposes no video models. Higgsfield plan credits, including its 10-credit connected account, do not fund the separate prepaid USD API; no confirmed free server integration. LTX 2.5 ComfyUI requires a verified capable GPU/weights/license and private worker, not an iPhone or Vercel request. HeyGen remains for the approved owner's private Digital Twin and separately approved voice, not for arbitrary client photorealistic characters.
 
 This is a staged G3b safe prompt-to-real-adapter connection. The full consumer generation/delivery remains open in books issue #2397.
+
+
+### 21.x · Video editor browser-auth QA repair (2026-10-29)
+
+**Never revive deprecated owner auth for green browser checks.** The website-video Chromium verification historically injected a deterministic v1 HMAC `prescriptions_admin` cookie, while production now intentionally requires a random v2 owner session bound to the verified Supabase user/session, current practitioner authority, persisted token digest and revocation. A synthetic Redis-only test runner cannot issue such a real session. The previous browser-admin publishing scenario was no longer valid; its failures cannot prove Kling handoff is broken.
+
+Release evidence is separated rather than faked:
+- Browser (isolated site): actual EN/RU video route and lazy iframe play, 10 current About testimonial masters, real guest redirect from `/admin/videos`, and rejection of retired v1 HMAC cookie even with local Redis configured.
+- Real-source tests: `prepareVideoChange` and `createMemorySiteVideoStore` draft → publish (human reviewed flag) → hide, CAS conflict with two editors, genuine EN/RU/ES slot limits, rejection of private data; plus `tests/admin-session-lifecycle.test.mjs` for v2 owner sessions, verified Supabase identity/practitioner checks, expiry and revocation.
+- **Not yet verified:** physical browser owner sign-in and authenticated live Redis authoring/publishing E2E, requiring a correctly configured isolated test owner or approved real owner session. Synthetic credentials must not bypass production authorization.
+- Client-facing Kling handoff remains a strict allowlisted art-only draft. Charged provider submission is only possible by the authenticated owner with separate paid consent and existing server flag/key. No paid render executed by this change; real provider task/media receipt and private delivery remain future gates.
