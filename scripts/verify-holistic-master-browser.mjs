@@ -44,6 +44,10 @@ async function verify(engine, locale, width) {
     assert.equal(await root.locator('#holistic-journey-title').innerText(),
       copy[locale].title, label + ": localized heading");
     const daoChoice = root.locator('[data-holistic-choose="dao"]');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-holistic-choose="dao"]');
+      return Boolean(button && Object.keys(button).some(key => key.startsWith("__reactProps$")));
+    }, null, {timeout: 30000});
     await daoChoice.tap();
     assert.equal(await daoChoice.getAttribute('aria-expanded'), 'true', label + ": Dao choice opens the panel");
     const panel = page.locator('[data-holistic-dao-screen]');
