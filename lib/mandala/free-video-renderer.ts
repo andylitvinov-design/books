@@ -9,6 +9,7 @@ export type FreeVideoPlan={
   palette:"gold"|"ocean"|"violet";
   motion:"calm"|"flow"|"dynamic";
   seed:number;variation:number;
+  hasRecognizedMotif:boolean;
 };
 type Palette={back:string;deep:string;glow:string;light:string;stroke:string};
 const PALETTES:Record<FreeVideoPlan["palette"],Palette>={
@@ -64,7 +65,7 @@ function petal(ctx:CanvasRenderingContext2D,cx:number,cy:number,r:number,width:n
   ctx.strokeStyle="rgba("+p.light+",.38)";ctx.lineWidth=Math.max(.8,r*.012);
   ctx.stroke();ctx.restore();
 }
-function mandala(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p:Palette){
+function mandala(ctx:CanvasRenderingContext2D,w:number,h:number,seed:number,time:number,p:Palette){
   const scale=Math.min(w,h),cx=w*.5,cy=h*.49;
   const layers=4;
   ctx.save();ctx.globalCompositeOperation="screen";
@@ -98,7 +99,7 @@ function mandala(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number
   ctx.fillStyle=core;ctx.fillRect(cx-scale*.1,cy-scale*.1,scale*.2,scale*.2);
   ctx.restore();
 }
-function light(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p:Palette){
+function light(ctx:CanvasRenderingContext2D,w:number,h:number,seed:number,time:number,p:Palette){
   const s=Math.min(w,h),cx=w*.5,cy=h*.47;
   ctx.save();ctx.globalCompositeOperation="screen";
   // Never a pre-existing MP4: every ribbon follows a parameterized path.
@@ -132,7 +133,7 @@ function light(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p
   ctx.fillStyle=halo;ctx.fillRect(cx-s*.24,cy-s*.24,s*.48,s*.48);
   ctx.restore();
 }
-function lotus(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p:Palette){
+function lotus(ctx:CanvasRenderingContext2D,w:number,h:number,seed:number,time:number,p:Palette){
   const s=Math.min(w,h),cx=w*.5,cy=h*.59;
   ctx.save();
   const water=ctx.createLinearGradient(0,h*.55,0,h);
@@ -166,7 +167,7 @@ function lotus(ctx:CanvasRenderingContext2D,w:number,h,seed:number,time:number,p
   ctx.fillStyle=center;ctx.fillRect(cx-s*.11,cy-s*.15,s*.22,s*.22);
   ctx.restore();
 }
-function portrait(ctx:CanvasRenderingContext2D,w:number,h,image:HTMLImageElement,p:Palette){
+function portrait(ctx:CanvasRenderingContext2D,w:number,h:number,image:HTMLImageElement,p:Palette){
   if(!image.naturalWidth||!image.naturalHeight)return;
   const s=Math.min(w,h)*.29,cx=w*.5,cy=h*.47;
   const ratio=Math.max(s/image.naturalWidth,s/image.naturalHeight);
