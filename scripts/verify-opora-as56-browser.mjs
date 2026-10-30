@@ -218,8 +218,10 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
+              const takeaway = recapPage.locator('[data-opora-current-screen] [data-opora-recap-takeaway="true"]')
+              assert.equal(await takeaway.count(),1,
                 'Each takeaway has exactly one visible idea')
+              await expect(takeaway).toBeVisible()
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
             } else {
@@ -252,3 +254,4 @@ try {
   await writeFile(`${output}/summary.json`, JSON.stringify(evidence, null, 2) + '\n')
   await browser.close()
 }
+
