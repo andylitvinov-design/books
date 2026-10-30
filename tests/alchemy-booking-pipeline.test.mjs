@@ -23,7 +23,7 @@ test('signed booking proof carries no PII and resists forging and expiry', () =>
   for (const secret of ['+14165550101','person@example.com','health']) assert.ok(!token.includes(secret))
 })
 
-test('only fixed public Alchemy tariffs, correct source and consent can be booked', () => {
+test('only fixed public Alchemy or Services tariffs, correct source and consent can be requested', () => {
   assert.deepEqual(BOOKABLE_SKUS, {'express-consultation-30':30,'personal-session-60':60})
   const base = {
     operationId:op, serviceTitle:'Alchemy of the Soul', locale:'en',
@@ -31,6 +31,15 @@ test('only fixed public Alchemy tariffs, correct source and consent can be booke
     contact:{displayName:'Demo Test',email:'example@example.com'}, bookingSku:'personal-session-60',
   }
   assert.equal(normalizePublicServiceEnquiry(base).bookingSku,'personal-session-60')
+  for (const locale of ['en','ru','es']) {
+    for (const bookingSku of Object.keys(BOOKABLE_SKUS)) {
+      const validServiceRequest = normalizePublicServiceEnquiry({
+        ...base, locale, sourcePath:'/' + locale + '/services', bookingSku,
+      })
+      assert.equal(validServiceRequest.bookingSku,bookingSku)
+      assert.equal(validServiceRequest.sourcePath,'/' + locale + '/services')
+    }
+  }
   for (const mutation of [
     {bookingSku:'personal-session-60?amount=1'}, {bookingSku:'month'},
     {sourcePath:'/en/services/personal-support'},{contactConsent:false},

@@ -40,6 +40,14 @@ const copy = {
     reassurance: "Session times and conditions are confirmed before booking or payment.",
     freeCta: "Start free · 3 options",
     paidCta: "Ask about a personal session · from €50",
+    bookingEyebrow: "CHOOSE YOUR FIRST STEP",
+    bookingHeading: "Choose what works for you",
+    bookingDifference: "Free: a written drawing review, not a video call. Paid: a live session after the time is confirmed.",
+    bookingFree: "Free written review",
+    booking30: "30 min · €50",
+    booking60: "60 min · €100",
+    booking30Title: "Express consultation · 30 min · €50",
+    booking60Title: "Personal session · 60 min · €100"
     slides: {
       personal: { eyebrow: "PERSONAL SUPPORT", title: "Personal growth & emotional clarity", lead: "Guided imagery, meaningful questions and space to explore your next step." },
       relationships: { eyebrow: "RELATIONSHIPS", title: "Relationships & constellations", lead: "Explore repeated patterns, boundaries and connections in a personal session." },
@@ -69,6 +77,14 @@ const copy = {
     reassurance: "Время встречи и условия подтверждаются до записи и оплаты.",
     freeCta: "Три бесплатных варианта",
     paidCta: "Запросить личную сессию · от €50",
+    bookingEyebrow: "ВЫБЕРИТЕ ПЕРВЫЙ ШАГ",
+    bookingHeading: "Как вам удобнее начать?",
+    bookingDifference: "Бесплатно — письменный разбор рисунка, не видеозвонок. Платная встреча — после согласования времени.",
+    bookingFree: "Бесплатный письменный разбор",
+    booking30: "30 мин · €50",
+    booking60: "60 мин · €100",
+    booking30Title: "Экспресс-консультация · 30 мин · €50",
+    booking60Title: "Личная сессия · 60 мин · €100"
     slides: {
       personal: { eyebrow: "ЛИЧНАЯ РАБОТА", title: "Личное развитие и внутренняя опора", lead: "Образная работа, важные вопросы и бережное исследование своей ситуации." },
       relationships: { eyebrow: "ОТНОШЕНИЯ", title: "Отношения и расстановки", lead: "Исследуйте повторяющиеся сценарии, границы и связь с другими людьми." },
@@ -98,6 +114,14 @@ const copy = {
     reassurance: "La hora y las condiciones se confirman antes de reservar o pagar.",
     freeCta: "Tres opciones gratuitas",
     paidCta: "Solicitar sesión personal · desde €50",
+    bookingEyebrow: "ELIGE TU PRIMER PASO",
+    bookingHeading: "¿Cómo prefieres empezar?",
+    bookingDifference: "Gratis: revisión escrita de un dibujo, no videollamada. Sesión pagada: solo tras confirmar horario.",
+    bookingFree: "Revisión escrita gratuita",
+    booking30: "30 min · €50",
+    booking60: "60 min · €100",
+    booking30Title: "Consulta exprés · 30 min · €50",
+    booking60Title: "Sesión personal · 60 min · €100"
     slides: {
       personal: { eyebrow: "ACOMPAÑAMIENTO PERSONAL", title: "Crecimiento personal y claridad", lead: "Imágenes guiadas, preguntas importantes y espacio para tu próximo paso." },
       relationships: { eyebrow: "RELACIONES", title: "Relaciones y constelaciones", lead: "Explora patrones, límites y conexiones en una sesión personal." },
@@ -115,6 +139,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
   const [paused, setPaused] = useState(false);
   const [manual, setManual] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [requestSku, setRequestSku] = useState<"express-consultation-30" | "personal-session-60" | null>(null);
   const slide = slides[index];
   const words = t.slides[slide.kind];
   const count = matchingServicesCount(mode, topic);
@@ -164,6 +189,30 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
 
   return (
     <section className={styles.hero} aria-label={t.heading} data-services-showcase-hero>
+      {/* This choice is outside the rotating carousel: all three offers stay visible. */}
+      <div className={styles.quickBooking} data-services-stable-offers>
+        <div className={styles.quickBookingCopy}>
+          <p>{t.bookingEyebrow}</p>
+          <strong>{t.bookingHeading}</strong>
+          <small>{t.bookingDifference}</small>
+        </div>
+        <div className={styles.quickBookingActions} role="group" aria-label={t.bookingEyebrow}>
+          <Link href={`/${locale}/services/free-situation-review`} prefetch={false}
+            className={styles.quickBookingFree} data-services-stable-offer="free">
+            {t.bookingFree}<ArrowRight size={15} aria-hidden="true" />
+          </Link>
+          <button type="button" className={styles.quickBookingPaid} data-services-stable-offer="30"
+            aria-expanded={requestOpen && requestSku === "express-consultation-30"}
+            onClick={() => { setManual(true); setRequestSku("express-consultation-30"); setRequestOpen(true); }}>
+            {t.booking30}<ArrowRight size={15} aria-hidden="true" />
+          </button>
+          <button type="button" className={styles.quickBookingPaid} data-services-stable-offer="60"
+            aria-expanded={requestOpen && requestSku === "personal-session-60"}
+            onClick={() => { setManual(true); setRequestSku("personal-session-60"); setRequestOpen(true); }}>
+            {t.booking60}<ArrowRight size={15} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
       <div className={styles.slider} data-request-open={requestOpen} role="region" aria-roledescription="carousel" aria-label={t.eyebrow}
         onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
@@ -178,9 +227,12 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
           )}
         </div>
         <div className={styles.gradient} aria-hidden="true" />
-        {requestOpen && slide.kind !== "free" ? (
-          <ServicesHeroQuickRequest key={slide.kind} locale={locale} service={words.title}
-            mode={slide.kind === "reiki" ? "online" : mode} onClose={() => setRequestOpen(false)} />
+        {requestOpen && (slide.kind !== "free" || requestSku) ? (
+          <ServicesHeroQuickRequest key={requestSku ?? slide.kind} locale={locale}
+            service={requestSku === "personal-session-60" ? t.booking60Title : requestSku === "express-consultation-30" ? t.booking30Title : words.title}
+            bookingSku={requestSku ?? undefined} fromStableChoice={Boolean(requestSku)}
+            mode={slide.kind === "reiki" ? "online" : mode}
+            onClose={() => { setRequestOpen(false); setRequestSku(null); }} />
         ) : (
           <div className={styles.slideCopy} data-services-slide={slide.kind}>
             <p className={styles.eyebrow}>{words.eyebrow}</p>
@@ -189,7 +241,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
             <div className={styles.slideActions}>
               {slide.kind !== "free" ? (
                 <button type="button" className={styles.requestButton} data-services-slide-request={slide.kind}
-                  onClick={() => { setManual(true); setRequestOpen(true); }}>
+                  onClick={() => { setManual(true); setRequestSku(null); setRequestOpen(true); }}>
                   {t.quickRequest}<ArrowRight size={18} aria-hidden="true" />
                 </button>
               ) : null}
