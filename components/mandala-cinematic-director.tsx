@@ -25,7 +25,9 @@ type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
 const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
 type QuestionGroup=typeof QUESTION_GROUPS[number];
-type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;intentText?:string;onIntentTextChange?:(value:string)=>void;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
+type BriefMusicPreference="none"|"calm"|"energetic";
+type BriefCaptionPreference="none"|"phrases"|"subtitles";
+type Props={locale:PublicLocale;theme:VideoTheme;therapyMode:boolean;disabled:boolean;intentText?:string;onIntentTextChange?:(value:string)=>void;onMusicPreference?:(choice:BriefMusicPreference)=>void;onCaptionPreference?:(choice:BriefCaptionPreference)=>void;onApplyStoryboard:(plan:CinematicStoryboard)=>void;onInvalidateStoryboard:()=>void};
 const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
@@ -129,7 +131,7 @@ function sceneDisplayName(theme:VideoTheme,sceneId:string,locale:PublicLocale):s
   return otherVideoScenes[theme].find(item=>item.id===sceneId)?.label[locale]||sceneId;
 }
 const FIELDS:Field[]=["theme","difficulty","goal","profile"];
-export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,intentText,onIntentTextChange,onApplyStoryboard,onInvalidateStoryboard}:Props){
+export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,intentText,onIntentTextChange,onMusicPreference,onCaptionPreference,onApplyStoryboard,onInvalidateStoryboard}:Props){
   const t=copy[locale]||copy.en;
   const [expanded,setExpanded]=useState(false);
   const [editing,setEditing]=useState<Field|null>(null);
@@ -263,6 +265,10 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
       return;
     }
     setQuestionAnswers(current=>({...current,[questionId]:{selectedOptionId,customText,confirmed:true}}));
+    if(questionId==="BASIC_09"&&(selectedOptionId==="none"||selectedOptionId==="calm"||selectedOptionId==="energetic"))
+      onMusicPreference?.(selectedOptionId);
+    if(questionId==="BASIC_10"&&(selectedOptionId==="none"||selectedOptionId==="phrases"||selectedOptionId==="subtitles"))
+      onCaptionPreference?.(selectedOptionId);
     invalidate();
   };
   const answerForQuestion=(question:{id:string;scope:string})=>question.scope==="scene"&&selectedShotNumber!==null?

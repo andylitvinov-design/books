@@ -45,6 +45,14 @@ test("a fifteen-second brief keeps its explicitly selected duration",()=>{
   assert.equal(plan.shots.at(-1)?.startSeconds+plan.shots.at(-1)?.durationSeconds,15);
   assert.match(studio,/const durations = \[10, 15, 20, 30, 60\] as const/);
 });
+test("brief audio and caption choices reuse existing local controls without rendering",()=>{
+  assert.match(directorUI,/onMusicPreference/);
+  assert.match(directorUI,/onCaptionPreference/);
+  assert.match(studio,/onMusicPreference=\{choice=>/);
+  assert.match(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
+  assert.match(studio,/onCaptionPreference=\{choice=>setCaptionMode\(choice==="none"\?"none":"theme"\)\}/);
+  assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|sendBeacon/);
+});
 test("long-running cinematic preview loops actual scene times and synchronized affirmations",()=>{
   const film=buildCinematicStoryboard({theme:"money",durationSeconds:20,locale:"ru"});
   assert.equal(cinematicPreviewSeconds(film,0),0);

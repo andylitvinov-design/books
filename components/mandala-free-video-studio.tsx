@@ -2072,6 +2072,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
         onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
+        onMusicPreference={choice=>{
+          if(uploadedAudio)return;
+          setAudioAuto(false);setMusic(choice==="calm"?"meditation":choice==="energetic"?"energy":"none");
+          setMusicWarning("");
+        }}
+        onCaptionPreference={choice=>setCaptionMode(choice==="none"?"none":"theme")}
         therapyMode={studioMode==="therapy"} onInvalidateStoryboard={()=>setCinematicPlan(null)}
         disabled={recording||preparing} onApplyStoryboard={applyCinematicStoryboard}/>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
