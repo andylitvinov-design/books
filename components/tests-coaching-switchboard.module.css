@@ -261,7 +261,7 @@
 .supportSmallDescription { display: block; margin-top: 5px; color: #75695b; font: 12px/1.43 Arial,Helvetica,sans-serif; }
 @media (max-width: 600px) { .supportSmallDescription { font-size: 11px; line-height: 1.34; } }
 
-/* Keep Temple preview rows readable on the narrowest supported screens. */
-@media (max-width: 360px) {
-  .detail[data-selected-path="temple"] { padding-inline: 9px; }
+/* Keep Temple preview rows readable on the supported mobile screens. */
+@media (max-width: 430px) {
+  .detail[data-selected-path="temple"] { padding-inline: 7px; }
 }
