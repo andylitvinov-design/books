@@ -344,10 +344,18 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // while leaving the video thumbnail outside the visible viewport.
         await energyClip.scrollIntoViewIfNeeded();
         await energyClip.waitFor({state:"visible",timeout:12000});
-        await page.waitForFunction(() => {
+        try { await page.waitForFunction(() => {
           const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
           return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
-        },undefined,{timeout:30000});
+        },undefined,{timeout:30000}); } catch(error) {
+          console.error('MANDALA_ENERGY_PREVIEW_DIAGNOSTIC', JSON.stringify(await energyClip.evaluate(video=>({
+            readyState:video.readyState, networkState:video.networkState, width:video.videoWidth,
+            currentTime:video.currentTime, paused:video.paused, error:video.error?.code ?? null,
+            selected:video.getAttribute('data-scene-playing'),
+            rect:{x:Math.round(video.getBoundingClientRect().x),y:Math.round(video.getBoundingClientRect().y),width:Math.round(video.getBoundingClientRect().width),height:Math.round(video.getBoundingClientRect().height)}
+          }))));
+          throw error;
+        }
         await page.locator('[data-video-category="life"]').click();
         assert.equal(await page.locator('[data-video-style]').inputValue(),"wildflower-dance");
         await page.locator('[data-video-category="energy"]').click();

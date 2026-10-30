@@ -15,13 +15,22 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
   await enquiry.locator('[data-express-focus="' + focus + '"]').click();
-  await page.waitForFunction((target) => {
+  try { await page.waitForFunction((target) => {
     const root = document.querySelector('[data-personal-express-enquiry]');
     const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
     const card = root?.querySelector('[data-express-focus="' + target + '"]');
     return radio instanceof HTMLInputElement && radio.checked
       && card?.getAttribute("data-selected") === "true";
-  }, focus, { timeout: 3000 });
+  }, focus, { timeout: 3000 }); } catch (error) {
+    const state = await enquiry.locator('[data-express-focus]').evaluateAll(cards => cards.map(card => ({
+      focus:card.getAttribute('data-express-focus'), selected:card.getAttribute('data-selected'),
+      checked:card.querySelector('input[type="radio"]')?.checked,
+      disabled:card.querySelector('input[type="radio"]')?.disabled,
+      rect:{x:Math.round(card.getBoundingClientRect().x),y:Math.round(card.getBoundingClientRect().y),width:Math.round(card.getBoundingClientRect().width),height:Math.round(card.getBoundingClientRect().height)}
+    })));
+    console.error('FREE_REVIEW_FOCUS_DIAGNOSTIC', JSON.stringify({target:focus,state}));
+    throw error;
+  }
 }
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
