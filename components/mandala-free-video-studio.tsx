@@ -1430,9 +1430,9 @@ const quickCanvasPoster=(scene:LocalSceneId)=>
   "/videos/holistic-house/film-collection-v2/"+(quickCanvasScenePoster[scene]||"mountain-air")+".jpg";
 
 
-export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
+export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError, photoPending=false }: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
-  onPickPhoto: () => void; photoError?: string;
+  onPickPhoto: () => void; photoError?: string; photoPending?: boolean;
 }) {
   const t = translations[locale];
   const ui = studioCopy[locale];
@@ -1562,7 +1562,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (!usingFreeFilmCompilation || (freeFilmShots.length===4 && freeFilmReady)) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
-    !audioDurationInvalid && !micRecording && !preparing && !recording;
+    !audioDurationInvalid && !micRecording && !photoPending && !preparing && !recording;
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -2152,7 +2152,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   const startFromHero=()=>{
-    if(recording||preparing)return;
+    if(recording||preparing||photoPending)return;
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
@@ -2248,6 +2248,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
   const createQuickVideo = () => {
+    if(photoPending){
+      setNotice(locale==="ru"?"Фото ещё обрабатывается на устройстве.":locale==="es"?
+        "La foto todavía se está preparando en el dispositivo.":"The photo is still being prepared on your device.");
+      return;
+    }
     if(usingFreeFilmCompilation&&!freeFilmReady){
       setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
         locale==="es"?"Aún se están cargando los cuatro vídeos.":
@@ -2525,7 +2530,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-            disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmReady)} onClick={createQuickVideo}>
+            disabled={recording||preparing||photoPending||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmReady)} onClick={createQuickVideo}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
             {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>
@@ -2657,7 +2662,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 if(approved)primeNativeMasterFromUserGesture();
               }}/><span>{ui.consent}</span>
           </label>:null}
-          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
+          {photoError?<p role="alert" className={videoStyles.warning}>{photoError}</p>:null}
         </section>
 
 
@@ -2835,7 +2840,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onClick={()=>selectCategory(lowestTheme)}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
           </button>
-          {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
+          {photoError?<p role="alert" className={videoStyles.warning}>{photoError}</p>:null}
         </section>
 
         <section className={videoStyles.supportTools} aria-labelledby="video-tools-heading">
