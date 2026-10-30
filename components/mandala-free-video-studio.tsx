@@ -8,6 +8,7 @@ import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
+import { MandalaVideoCodeRedeemer } from "./mandala-video-code-redeem";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
 import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -937,6 +938,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeMode=freeModeCopy[locale];
   const tier=videoTierCopy[locale];
   const [tierMode,setTierMode] = useState<"basic"|"smart"|"pro">("basic");
+  const [videoAiReady,setVideoAiReady] = useState(false);
   const [creationMode,setCreationMode] = useState<"catalog"|"generated">("catalog");
   const [freeVideoPlan,setFreeVideoPlan] = useState<FreeVideoPlan|null>(null);
   const updateFreeVideoPlan=useCallback((next:FreeVideoPlan)=>setFreeVideoPlan(next),[]);
@@ -1743,7 +1745,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-tier-gate={tierMode}>
           {tierMode==="smart"?<strong>{tier.freeIntro}</strong>:null}
           {tierMode==="smart"?<p>{tier.freeExpl}</p>:null}
-          <p>{tier.blocked}</p>
+          {!videoAiReady?<p>{tier.blocked}</p>:null}
+          <MandalaVideoCodeRedeemer locale={locale}
+            tier={tierMode==="smart"?"smart":"pro"} onAvailability={setVideoAiReady}/>
           <button type="button" disabled={recording||preparing}
             data-video-tier-storyboard onClick={prepareAiStoryboard}>
             <Film size={17} aria-hidden="true"/>{tier.prep}<ArrowRight size={15} aria-hidden="true"/>
