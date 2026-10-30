@@ -14,6 +14,13 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // Playwright's label click completes. Verify the actual native radio AND its
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
+  const card = enquiry.locator('[data-express-focus="' + focus + '"]');
+  // A card may be in the viewport but underneath the fixed mobile dock.
+  // Simulate scrolling it into the usable area before the single real tap.
+  await card.evaluate(element => element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  const box = await card.boundingBox();
+  assert.ok(box && box.y >= 0 && box.y + box.height <= page.viewportSize().height - 80,
+    "focus card must be above the fixed navigation before tapping");
   await enquiry.locator('[data-express-focus="' + focus + '"]').click();
   try { await page.waitForFunction((target) => {
     const root = document.querySelector('[data-personal-express-enquiry]');
