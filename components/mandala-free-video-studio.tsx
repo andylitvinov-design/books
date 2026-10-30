@@ -1623,20 +1623,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
-      {activeFilm ? <video
-        key={activeFilm.src} ref={premiumVideoRef}
-        src={activeFilm.src} poster={activeFilm.poster}
-        muted playsInline loop preload="auto"
-        data-mandala-master-mp4={activeFilm.src}
-        onLoadedData={event=>{
-          if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
-            setPremiumReady(true);
-        }}
-        onCanPlay={()=>setPremiumReady(true)}
-        onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
-        aria-hidden="true"
-        style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
-      /> : null}
+
 
 
 
@@ -1678,6 +1665,98 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing} placeholder={quick.wish}
               onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
           </label>
+        </section>
+
+
+        <section className={videoStyles.quickOfferSection} data-video-quick-tier
+          aria-labelledby="quick-practice-title">
+          <h3 id="quick-practice-title">{offer.title}</h3>
+          <div className={videoStyles.quickOfferGrid}>
+            <div className={videoStyles.quickOfferDemo} data-video-quick-live-preview>
+              {activeFilm?<video
+                key={activeFilm.src} ref={premiumVideoRef}
+                src={activeFilm.src} poster={activeFilm.poster}
+                muted playsInline loop preload="auto" data-mandala-master-mp4={activeFilm.src}
+                onLoadedData={event=>{
+                  if(event.currentTarget.readyState>=2&&event.currentTarget.videoWidth>0)
+                    setPremiumReady(true);
+                }}
+                onCanPlay={()=>setPremiumReady(true)}
+                onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
+                aria-hidden="true"
+              />:<>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" src={theme==="money"?
+                  getRealMoneyFilm(moneyScene||"golden-rain").poster:
+                  getThemedRealFilm(theme,otherScene)?.poster||
+                  "/videos/holistic-house/film-collection-v2/mountain-air.jpg"}/>
+              </>}
+              <button type="button" className={videoStyles.quickOfferPlay}
+                aria-label={previewPlaying?offer.pause:offer.player} aria-pressed={previewPlaying}
+                disabled={recording||preparing}
+                onClick={()=>{
+                  if(!activeFilm){
+                    setPreviewPlaying(current=>!current);
+                    if(!previewPlaying)openQuickDetailed("video-hero");
+                    return;
+                  }
+                  if(previewPlaying)premiumVideoRef.current?.pause();
+                  else void premiumVideoRef.current?.play().catch(()=>setNotice(ui.videoUnavailable));
+                  setPreviewPlaying(current=>!current);
+                }}>{previewPlaying?<Pause size={22} aria-hidden="true"/>:
+                  <Play size={22} fill="currentColor" aria-hidden="true"/>}</button>
+              <small>16:9</small>
+            </div>
+            <div className={videoStyles.quickOfferStack} data-video-practice-accordion>
+              {practiceOrder.map(type=>{
+                const selected=practiceType===type;
+                const Icon=type==="video"?Film:type==="meditation"?AudioLines:BarChart3;
+                const price=practicePrices[type][practiceLevels[type]];
+                return <article key={type} className={videoStyles.quickOfferCard}
+                  data-video-practice-card={type} data-selected={selected}>
+                  <button type="button" className={videoStyles.quickOfferHeading}
+                    data-video-practice-pick={type} aria-expanded={selected}
+                    aria-controls={"practice-offer-details-"+type}
+                    disabled={recording||preparing}
+                    onClick={()=>{
+                      if(selected)return;
+                      premiumVideoRef.current?.pause();
+                      setPreviewPlaying(false);
+                      setPracticeType(type);
+                    }}>
+                    <Icon size={17} aria-hidden="true"/>
+                    <strong>{offer.names[type]}</strong>
+                    {!selected?<small>{price===null?offer.unavailable:
+                      price===0?"$0":"$"+price.toFixed(2)}</small>:null}
+                    <ChevronDown size={15} aria-hidden="true"/>
+                  </button>
+                  <div id={"practice-offer-details-"+type}
+                    data-video-practice-details={type} className={videoStyles.quickOfferDetails}
+                    hidden={!selected}>
+                    <small>{offer.length[type]}</small>
+                    <ul>{offer.benefits[type].map(benefit=><li key={benefit}>{benefit}</li>)}</ul>
+                    <div className={videoStyles.quickOfferOptions}>
+                      <div role="group" aria-label={offer.names[type]} className={videoStyles.quickOfferTiers}>
+                        {practiceTierOrder.map(tier=><button type="button" key={tier}
+                          data-video-quality-option={type+"-"+tier}
+                          aria-pressed={practiceLevels[type]===tier}
+                          disabled={recording||preparing||practicePrices[type][tier]===null}
+                          onClick={()=>{
+                            setPracticeLevels(previous=>({...previous,[type]:tier}));
+                            setPracticeType(type);
+                          }}>{offer.tier[tier]}</button>)}
+                      </div>
+                      <div className={videoStyles.quickOfferPrice} data-video-practice-price={type} aria-live="polite">
+                        <strong>{price===null?offer.unavailable:price===0?"$0":"$"+price.toFixed(2)}</strong>
+                        <small>{price===0?offer.free:offer.draft}</small>
+                      </div>
+                    </div>
+                  </div>
+                </article>;
+              })}
+            </div>
+          </div>
+          <p className={videoStyles.quickOfferNote}>{offer.note}</p>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-section="2"
