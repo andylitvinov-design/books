@@ -32,7 +32,12 @@ for (const browserType of [chromium, webkit]) {
           directoryEvents.push("FAILED " + (req.failure()?.errorText ?? "unknown") + " " + req.url()); });
         page.on("response", res => { if (watched(res.url()))
           directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
-        await page.route("**/youtube-nocookie.com/**", route => route.abort());
+        // A deterministic local response keeps this synthetic check offline.
+        // Aborting the iframe can produce a WebKit access-control pageerror
+        // after navigation, even though the application itself did not throw.
+        await page.route("**/youtube-nocookie.com/**", route => route.fulfill({
+          status: 200, contentType: "text/html", body: "<!doctype html><title>Offline video fixture</title>"
+        }));
         await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
           directoryEvents.push("MOCK " + (kind || "masters"));

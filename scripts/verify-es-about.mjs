@@ -49,7 +49,10 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        const reviews = page.locator('[data-personal-testimonials="about"]');
+        await expect(reviews.locator('[data-testimonial-video-id]')).toHaveCount(10);
+        await expect(reviews.locator('.site-video-player')).toHaveCount(10);
+        assert.equal(await reviews.locator('iframe').count(), 0, 'Testimonials must remain poster-first until Play');
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
         const intro = page.locator('[data-video-locale="es"]');
@@ -59,7 +62,7 @@ try {
         await expect(intro.locator('.site-video-duration')).toHaveText('0:31');
         await expect(intro.locator('img.site-video-poster')).toHaveAttribute('src', /psychic-alchemy-es-v1/);
         await expect(intro.locator('.site-video-player')).toHaveAttribute('lang', 'es');
-        await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         const summary = intro.locator('summary');
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
