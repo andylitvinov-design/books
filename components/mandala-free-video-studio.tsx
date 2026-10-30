@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
@@ -748,6 +748,13 @@ function stopJob(job: Job, cancelled: boolean) {
 
 /** Six concise, first-party controls for the owner's approved cream/emerald
  * mobile mock. Same state, films, native audio and MediaRecorder as below. */
+type PracticeType="video"|"meditation"|"course";
+type PracticeTier="light"|"smart"|"pro";
+const practiceOrder:PracticeType[]=["video","meditation","course"];
+const practiceTierOrder:PracticeTier[]=["light","smart","pro"];
+const practicePrices:Record<PracticeType,Record<PracticeTier,number|null>>={video:{light:0,smart:2,pro:9.90},meditation:{light:2.90,smart:4.90,pro:null},course:{light:19.90,smart:null,pro:39}};
+const practiceOffers={"ru":{"title":"2. Формат, качество и стоимость","names":{"video":"Видео","meditation":"Видео + личная медитация","course":"Видеотерапия · 8 сессий"},"length":{"video":"30–60 секунд","meditation":"3–5 минут","course":"8 персональных занятий"},"benefits":{"video":["Короткое видео 30–60 секунд","Красивые сцены и ваш текст","Аффирмации и звуковой фон"],"meditation":["Личная медитация 3–5 минут","Голос, музыка и паузы","Персональный текст практики"],"course":["8 последовательных видеосессий","Упражнения и личные задания","Отслеживание прогресса"]},"tier":{"light":"Лёгкий","smart":"Smart","pro":"Pro"},"free":"Бесплатно","draft":"план","unavailable":"По расчёту","pending":"Пока недоступно","note":"Стоимость платных форматов предварительная. Платная генерация и оплата не подключены.","player":"Посмотреть настоящее видео","pause":"Остановить видео"},"en":{"title":"2. Format, quality and price","names":{"video":"Video","meditation":"Video + personal meditation","course":"Video therapy · 8 sessions"},"length":{"video":"30–60 seconds","meditation":"3–5 minutes","course":"8 personal sessions"},"benefits":{"video":["Short 30–60-second video","Moving scenes and your words","Affirmations and soundscape"],"meditation":["Personal 3–5-minute meditation","Voice, music and pauses","Personal practice script"],"course":["8 guided video sessions","Exercises and private tasks","Progress check-ins"]},"tier":{"light":"Light","smart":"Smart","pro":"Pro"},"free":"Free","draft":"planned","unavailable":"Quote needed","pending":"Not available yet","note":"Paid prices are estimates. Paid creation and checkout are not enabled.","player":"Play real video","pause":"Pause video"},"es":{"title":"2. Formato, calidad y precio","names":{"video":"Vídeo","meditation":"Vídeo + meditación personal","course":"Videoterapia · 8 sesiones"},"length":{"video":"30–60 segundos","meditation":"3–5 minutos","course":"8 sesiones personales"},"benefits":{"video":["Vídeo breve de 30–60 segundos","Escenas animadas y tus frases","Afirmaciones y sonido"],"meditation":["Meditación personal de 3–5 minutos","Voz, música y pausas","Guion personalizado"],"course":["8 sesiones de vídeo guiadas","Ejercicios y tareas personales","Seguimiento del progreso"]},"tier":{"light":"Ligero","smart":"Smart","pro":"Pro"},"free":"Gratis","draft":"previsto","unavailable":"Por calcular","pending":"Aún no disponible","note":"Los precios son estimaciones. La generación de pago no está activa.","player":"Reproducir vídeo real","pause":"Pausar vídeo"}} as const;
+
 const quickVideoCopy = {
   ru: {
     quickThemes:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Здоровье"},
@@ -860,6 +867,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const supportUi = supportDesignCopy[locale];
   const layout = layoutCopy[locale];
   const quick = quickVideoCopy[locale];
+  const [practiceType,setPracticeType]=useState<PracticeType>("video");
+  const [practiceLevels,setPracticeLevels]=useState<Record<PracticeType,PracticeTier>>({video:"light",meditation:"smart",course:"pro"});
+  const freeVideoSelected=practiceType==="video"&&practiceLevels.video==="light";
+  const offer=practiceOffers[locale];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -1588,6 +1599,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
   const createQuickVideo = () => {
+    if(!freeVideoSelected){setNotice(offer.pending);return;}
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       document.querySelector("[data-video-quick-attach]")?.scrollIntoView({
@@ -1607,6 +1619,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     startFromHero();
   };
+
   const applyCinematicStoryboard=(plan:CinematicStoryboard)=>{
     // The locally rendered shots are approved source-backed motifs; raw
     // client wishes, profile scores and photos remain on this device.
@@ -1628,20 +1641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
-      {activeFilm ? <video
-        key={activeFilm.src} ref={premiumVideoRef}
-        src={activeFilm.src} poster={activeFilm.poster}
-        muted playsInline loop preload="auto"
-        data-mandala-master-mp4={activeFilm.src}
-        onLoadedData={event=>{
-          if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
-            setPremiumReady(true);
-        }}
-        onCanPlay={()=>setPremiumReady(true)}
-        onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
-        aria-hidden="true"
-        style={{position:"absolute",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
-      /> : null}
+
 
 
 
@@ -1676,6 +1676,105 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>;
             })}
           </div>
+          <label className={videoStyles.quickWish}>
+            <span className={videoStyles.srOnly}>{quick.wish}</span>
+            <Target size={18} aria-hidden="true"/>
+            <input data-video-quick-wish type="text" maxLength={160} value={wish}
+              disabled={recording||preparing} placeholder={quick.wish}
+              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
+          </label>
+        </section>
+
+
+        <section className={videoStyles.quickOfferSection} data-video-quick-tier
+          aria-labelledby="quick-practice-title">
+          <h3 id="quick-practice-title">{offer.title}</h3>
+          <div className={videoStyles.quickOfferGrid}>
+            <div className={videoStyles.quickOfferDemo} data-video-quick-live-preview>
+              {activeFilm?<video
+                key={activeFilm.src} ref={premiumVideoRef}
+                src={activeFilm.src} poster={activeFilm.poster}
+                muted playsInline loop preload="auto" data-mandala-master-mp4={activeFilm.src}
+                onLoadedData={event=>{
+                  if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
+                    setPremiumReady(true);
+                }}
+                onCanPlay={()=>setPremiumReady(true)}
+                onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
+                aria-hidden="true"
+              />:<>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" src={theme==="money"?
+                  getRealMoneyFilm(moneyScene||"golden-rain").poster:
+                  getThemedRealFilm(theme,otherScene)?.poster||
+                  "/videos/holistic-house/film-collection-v2/mountain-air.jpg"}/>
+              </>}
+              <button type="button" className={videoStyles.quickOfferPlay}
+                aria-label={previewPlaying?offer.pause:offer.player} aria-pressed={previewPlaying}
+                disabled={recording||preparing}
+                onClick={()=>{
+                  if(!activeFilm){
+                    setPreviewPlaying(current=>!current);
+                    if(!previewPlaying)openQuickDetailed("video-hero");
+                    return;
+                  }
+                  if(previewPlaying)premiumVideoRef.current?.pause();
+                  else void premiumVideoRef.current?.play().catch(()=>setNotice(ui.videoUnavailable));
+                  setPreviewPlaying(current=>!current);
+                }}>{previewPlaying?<Pause size={22} aria-hidden="true"/>:
+                  <Play size={22} fill="currentColor" aria-hidden="true"/>}</button>
+              <small>16:9</small>
+            </div>
+            <div className={videoStyles.quickOfferStack} data-video-practice-accordion>
+              {practiceOrder.map(type=>{
+                const selected=practiceType===type;
+                const Icon=type==="video"?Film:type==="meditation"?AudioLines:BarChart3;
+                const price=practicePrices[type][practiceLevels[type]];
+                return <article key={type} className={videoStyles.quickOfferCard}
+                  data-video-practice-card={type} data-selected={selected}>
+                  <button type="button" className={videoStyles.quickOfferHeading}
+                    data-video-practice-pick={type} aria-expanded={selected}
+                    aria-controls={"practice-offer-details-"+type}
+                    disabled={recording||preparing}
+                    onClick={()=>{
+                      if(selected)return;
+                      premiumVideoRef.current?.pause();
+                      setPreviewPlaying(false);
+                      setPracticeType(type);
+                    }}>
+                    <Icon size={17} aria-hidden="true"/>
+                    <strong>{offer.names[type]}</strong>
+                    {!selected?<small>{price===null?offer.unavailable:
+                      price===0?"$0":"$"+price.toFixed(2)}</small>:null}
+                    <ChevronDown size={15} aria-hidden="true"/>
+                  </button>
+                  <div id={"practice-offer-details-"+type}
+                    data-video-practice-details={type} className={videoStyles.quickOfferDetails}
+                    hidden={!selected}>
+                    <small>{offer.length[type]}</small>
+                    <ul>{offer.benefits[type].map(benefit=><li key={benefit}>{benefit}</li>)}</ul>
+                    <div className={videoStyles.quickOfferOptions}>
+                      <div role="group" aria-label={offer.names[type]} className={videoStyles.quickOfferTiers}>
+                        {practiceTierOrder.map(tier=><button type="button" key={tier}
+                          data-video-quality-option={type+"-"+tier}
+                          aria-pressed={practiceLevels[type]===tier}
+                          disabled={recording||preparing||practicePrices[type][tier]===null}
+                          onClick={()=>{
+                            setPracticeLevels(previous=>({...previous,[type]:tier}));
+                            setPracticeType(type);
+                          }}>{offer.tier[tier]}</button>)}
+                      </div>
+                      <div className={videoStyles.quickOfferPrice} data-video-practice-price={type} aria-live="polite">
+                        <strong>{price===null?offer.unavailable:price===0?"$0":"$"+price.toFixed(2)}</strong>
+                        <small>{price===0?offer.free:offer.draft}</small>
+                      </div>
+                    </div>
+                  </div>
+                </article>;
+              })}
+            </div>
+          </div>
+          <p className={videoStyles.quickOfferNote}>{offer.note}</p>
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-section="2"
@@ -1871,9 +1970,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
         <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-          disabled={recording||preparing} onClick={createQuickVideo}>
+          disabled={recording||preparing||!freeVideoSelected} onClick={createQuickVideo}>
           {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-          {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
+          {recording||preparing?quick.creating:freeVideoSelected?quick.create:offer.pending}<ArrowRight size={20} aria-hidden="true"/>
         </button>
         {recording?<div className={videoStyles.quickProgress} role="progressbar"
           aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
@@ -2557,7 +2656,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
         <p id="video-wish-heading">{ui.wishHelp}</p>
-        <p>{ui.wishHelp}</p>
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
             <Target size={17} aria-hidden="true"/>{ui.wishAction}

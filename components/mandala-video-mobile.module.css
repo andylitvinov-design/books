@@ -1283,3 +1283,80 @@
   .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
+
+/* Owner-approved 30 Oct 2026: source-backed 16:9 video and compact exclusive
+   gold accordion; plain preview prices are NOT payment or credit entitlements. */
+.quickOfferSection{display:grid;gap:9px;min-width:0;padding:12px 11px;
+  border:1px solid #e4e9df;border-radius:20px;background:#fffdf8;
+  box-shadow:0 4px 14px #184b3510}
+.quickOfferSection>h3{margin:0;color:#173e36;font:800 clamp(16px,3.4vw,21px)/1.25 Arial,Helvetica,sans-serif}
+.quickOfferGrid{display:grid;grid-template-columns:minmax(0,39fr) minmax(0,61fr);
+  align-items:start;gap:8px;min-width:0}
+.quickOfferDemo{position:relative;display:block;width:100%;aspect-ratio:16/9;
+  min-width:0;overflow:hidden;border-radius:12px;background:#184d42}
+.quickOfferDemo :is(video,img){position:absolute;inset:0;width:100%;height:100%;
+  display:block;object-fit:cover;object-position:center}
+.quickOfferPlay{position:absolute;left:50%;top:50%;display:grid;place-items:center;
+  transform:translate(-50%,-50%);width:45px;height:45px;min-height:44px;
+  border:2px solid white;border-radius:50%;background:#164538c9;color:#fff;cursor:pointer}
+.quickOfferDemo>small{position:absolute;bottom:4px;right:5px;color:white;
+  background:#143c37d2;border-radius:7px;padding:2px 5px;font-size:10px}
+.quickOfferStack{display:grid;gap:5px;min-width:0}
+.quickOfferCard{min-width:0;border:1px solid #dfe9dd;border-radius:11px;
+  background:#fffefa;box-shadow:0 2px 4px #1744320c}
+.quickOfferCard[data-selected="true"]{border-color:#e8b65b;
+  background:linear-gradient(125deg,#fffdf1,#fffffa);
+  box-shadow:0 0 0 1px #f6d58a,0 0 16px #dba94170,0 3px 8px #b2823925}
+.quickOfferHeading{display:flex;align-items:center;width:100%;gap:5px;min-width:0;
+  min-height:44px;padding:6px;border:0;border-radius:10px;background:transparent;
+  text-align:left;color:#164636;cursor:pointer}
+.quickOfferHeading>svg:first-child{flex:none;width:16px;height:16px;color:#168365}
+.quickOfferHeading>svg:last-child{flex:none;width:14px;height:14px;color:#708c7c;transition:transform .15s}
+.quickOfferHeading[aria-expanded="true"]>svg:last-child{transform:rotate(180deg);color:#b27c20}
+.quickOfferHeading strong{flex:1;min-width:0;color:#183f35;
+  font:800 clamp(10px,1.7vw,14px)/1.15 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.quickOfferHeading>small{flex:none;color:#7f8a7f;font:650 9px/1.1 Arial,Helvetica,sans-serif}
+.quickOfferDetails{display:grid;gap:6px;padding:0 8px 9px;min-width:0}
+.quickOfferDetails[hidden]{display:none}
+.quickOfferDetails>small{color:#61786c;font:650 10px/1.2 Arial,Helvetica,sans-serif}
+.quickOfferDetails ul{display:grid;gap:3px;margin:0;padding:0;list-style:none}
+.quickOfferDetails li{position:relative;padding-left:12px;color:#61786c;
+  font:500 clamp(9.5px,1.25vw,11.5px)/1.25 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.quickOfferDetails li::before{content:"✓";position:absolute;left:0;top:0;color:#099675;font-weight:800}
+.quickOfferOptions{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:5px;min-width:0}
+.quickOfferTiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;min-width:0}
+.quickOfferTiers button{display:grid;place-items:center;min-width:0;min-height:40px;
+  padding:4px 1px;border:1px solid #e4ebdf;border-radius:7px;background:#eff3ed;
+  color:#48675a;font:700 clamp(9px,1.1vw,11px)/1.12 Arial,Helvetica,sans-serif;
+  cursor:pointer;overflow-wrap:anywhere}
+.quickOfferTiers button[aria-pressed="true"]{background:#078d6e;color:white;border-color:#078d6e}
+.quickOfferTiers button:disabled{opacity:.43;cursor:not-allowed}
+.quickOfferPrice{display:flex;flex-direction:column;justify-content:center;gap:2px;
+  min-width:43px;padding-left:5px;border-left:1px solid #e2e9dc}
+.quickOfferPrice strong{color:#0a755b;white-space:nowrap;
+  font:850 clamp(14px,1.9vw,19px)/1.05 Arial,Helvetica,sans-serif;letter-spacing:-.025em}
+.quickOfferPrice small{color:#6f8478;font:700 9px/1.1 Arial,Helvetica,sans-serif}
+.quickOfferNote{margin:0;color:#6d8073;font:500 10px/1.35 Arial,Helvetica,sans-serif}
+.quickOfferHeading:focus-visible,.quickOfferTiers button:focus-visible,.quickOfferPlay:focus-visible{
+  outline:3px solid #d4a443;outline-offset:2px}
+@media(max-width:480px){
+  .quickOfferSection{padding:10px 7px;gap:7px}
+  .quickOfferGrid{grid-template-columns:minmax(0,36fr) minmax(0,64fr);gap:5px}
+  .quickOfferDetails{padding:0 5px 6px;gap:4px}
+  .quickOfferDetails li{font-size:9.4px}
+  .quickOfferHeading{padding:5px 4px;gap:4px}
+  .quickOfferHeading strong{font-size:10.5px}
+  .quickOfferTiers button{font-size:9px}
+  .quickOfferPrice strong{font-size:14px}
+}
+@media(max-width:355px){
+  .quickOfferGrid{grid-template-columns:minmax(0,32fr) minmax(0,68fr)}
+  .quickOfferHeading>svg:first-child{width:13px;height:13px}
+  .quickOfferHeading strong{font-size:10px}
+  .quickOfferDetails li{font-size:9px}
+  .quickOfferTiers button{font-size:8.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickOfferHeading>svg:last-child{transition:none}
+}

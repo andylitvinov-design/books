@@ -100,6 +100,29 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
         assert.equal(await quick.locator("[data-video-quick-section]").count(),6);
+
+        // Owner-approved offer accordion: one genuine MP4, three mutually exclusive
+        // formats, honest dynamic prices and no paid rendering without billing.
+        const offerGrid=quick.locator("[data-video-quick-tier]");
+        assert.equal(await offerGrid.locator("[data-video-practice-card]").count(),3);
+        assert.equal(await offerGrid.locator("[data-video-quick-live-preview] video").count(),1,
+          "the first-party MP4 is mounted exactly once");
+        assert.equal(await offerGrid.locator('[data-video-practice-pick="video"]').getAttribute("aria-expanded"),"true");
+        assert.equal(await offerGrid.locator('[data-video-practice-details="meditation"]').isVisible(),false);
+        assert.equal(await offerGrid.locator('[data-video-practice-card][data-selected="true"]').count(),1);
+        await offerGrid.locator('[data-video-practice-pick="meditation"]').click();
+        assert.equal(await offerGrid.locator('[data-video-practice-details="meditation"]').isVisible(),true);
+        assert.equal(await offerGrid.locator('[data-video-practice-details="video"]').isVisible(),false);
+        assert.match(await offerGrid.locator('[data-video-practice-price="meditation"]').innerText(),/\$4\.90/);
+        assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true);
+        await offerGrid.locator('[data-video-quality-option="meditation-light"]').click();
+        assert.match(await offerGrid.locator('[data-video-practice-price="meditation"]').innerText(),/\$2\.90/);
+        await offerGrid.locator('[data-video-practice-pick="course"]').click();
+        assert.equal(await offerGrid.locator('[data-video-practice-details="course"]').isVisible(),true);
+        assert.equal(await offerGrid.locator('[data-video-practice-details="meditation"]').isVisible(),false);
+        await offerGrid.locator('[data-video-practice-pick="video"]').click();
+        assert.equal(await offerGrid.locator('[data-video-practice-details="course"]').isVisible(),false);
+        assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true);
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
         assert.equal(await quick.locator('[data-video-quick-theme="life"] span').innerText(),
           {ru:"Смыслы",en:"Meaning",es:"Sentido"}[locale],
