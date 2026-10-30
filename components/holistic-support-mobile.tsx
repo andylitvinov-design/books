@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
-  Leaf, Menu, Search,
+  Menu, Search,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
