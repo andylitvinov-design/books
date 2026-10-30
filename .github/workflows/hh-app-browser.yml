@@ -4,6 +4,37 @@ on:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/helpers/isolated-browser-diagnostics.mjs'
+      - 'scripts/verify-account-status-filters.mjs'
+      - 'scripts/verify-asrs6-pdf.mjs'
+      - 'scripts/verify-asrs6.mjs'
+      - 'scripts/verify-bach-personal-report-browser.mjs'
+      - 'scripts/verify-mhc-sf.mjs'
+      - 'scripts/verify-personality-types.mjs'
+      - 'app/**/app/**'
+      - 'app/**/client/**'
+      - 'app/api/app/**'
+      - 'app/api/client/**'
+      - 'components/app/**'
+      - 'components/academy-video-library-client*'
+      - 'lib/app/**'
+      - 'lib/assessments/**'
+      - 'lib/profile/**'
+      - 'lib/security/**'
+      - 'tests/app-*.mjs'
+      - 'tests/assessment-*.mjs'
+      - 'tests/client-report*.mjs'
+      - 'tests/course-*.mjs'
+      - 'scripts/verify-app-*.mjs'
+      - 'scripts/verify-*assessment*.mjs'
+      - 'scripts/verify-document-hydration*'
+      - 'tests/helpers/app*'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 concurrency:
@@ -73,6 +104,7 @@ jobs:
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-app-next.log 2>&1 & APP_PID=$!
           trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 100); do
+            echo "App browser readiness attempt ${i}/100"
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
             sleep 2
           done
