@@ -69,7 +69,23 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(landing, /guest\/runs/)
   assert.match(landing, /guest\/results/)
   assert.match(landing, /save-intents/)
-  assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
+  // The discussion-after-save flow stores only the server-issued save-intent ID
+  // as a one-time navigation pointer; guest answers/results must never be stored.
+  const discussionPointerWrite = 'window.sessionStorage.setItem(TEST_DISCUSSION_INTENT_KEY, intent.id)'
+  assert.equal(landing.split(discussionPointerWrite).length - 1, 1)
+  assert.match(landing,/const intent = await guestFetch\('save-intents', \{/)
+  assert.match(landing,/if \(discussAfterSave\) \{\s*try \{ window\.sessionStorage\.setItem\(TEST_DISCUSSION_INTENT_KEY, intent\.id\)/)
+  const assertNoGuestAnswerStorage = source => {
+    assert.doesNotMatch(source,/GUEST_RESULT_STORAGE_KEY/)
+    assert.doesNotMatch(source.replaceAll(discussionPointerWrite,'').replace(/^\s*\/\/[^\n]*$/gm,''),
+      /sessionStorage|localStorage/)
+  }
+  assertNoGuestAnswerStorage(landing)
+  for (const forbidden of [
+    "window.sessionStorage.setItem('guest-result', JSON.stringify(guestResult))",
+    "window.localStorage.setItem('assessment-answers', JSON.stringify(run.answers))",
+    "window.sessionStorage.setItem(TEST_DISCUSSION_INTENT_KEY, resultToSave.id)",
+  ]) assert.throws(() => assertNoGuestAnswerStorage(landing + '\n' + forbidden))
   // Only reviewed session-local navigation pointers may use browser storage:
   // two report-save targets and the separate Remote Energy Support booking
   // draft (two reads and one explicit delete). None stores assessment answers.
