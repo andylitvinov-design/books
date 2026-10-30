@@ -29,3 +29,17 @@ test('rejects invalid types, unbounded input and unknown values', () => {
   assert.throws(() => validateIntelligenceRequest({ ...valid(), requestId: 'not-a-uuid' }), /INVALID_INTELLIGENCE_REQUEST/);
   assert.throws(() => validateIntelligenceRequest({ ...valid(), surface: 'admin' }), /INVALID_INTELLIGENCE_REQUEST/);
 });
+
+test('accepts only voluntary client actions; never accepts client-asserted publication or private authority', () => {
+  const base = valid();
+  for (const clientAction of ['request_suggestion', 'change_goal', 'decline', 'continue']) {
+    const request = { ...base, clientAction };
+    assert.equal(validateIntelligenceRequest(request), request);
+  }
+  for (const clientAction of ['publish', 'approve', 'unlock_private', 'bypass_safety', '', null, 1, {}]) {
+    assert.throws(() => validateIntelligenceRequest({ ...base, clientAction }), /INVALID_INTELLIGENCE_REQUEST/);
+  }
+  for (const privileged of ['accountId', 'trustedOwner', 'authorized', 'consentGranted', 'publicProfile']) {
+    assert.throws(() => validateIntelligenceRequest({ ...base, [privileged]: true }), /INVALID_INTELLIGENCE_REQUEST/);
+  }
+});
