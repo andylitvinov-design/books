@@ -6,6 +6,26 @@ on:
   pull_request:
     branches:
       - codex/public-book-library
+    paths:
+      - 'app/**/courses/**'
+      - 'app/**/academy/**'
+      - 'app/**/my-course/**'
+      - 'components/opora-*'
+      - 'components/antistress-*'
+      - 'components/anti-stress-*'
+      - 'components/my-course*'
+      - 'lib/opora/**'
+      - 'lib/antistress/**'
+      - 'lib/course/**'
+      - 'data/academy/*antistress*'
+      - 'tests/opora-*.mjs'
+      - 'tests/antistress-*.mjs'
+      - 'tests/my-course*.mjs'
+      - 'tests/course-*.mjs'
+      - 'scripts/verify-opora-*.mjs'
+      - 'middleware.ts'
+      - 'package.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 concurrency:
