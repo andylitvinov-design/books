@@ -81,8 +81,16 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  // Additional safe preparation jobs now precede artwork generation. Both npm
+  // lifecycle hooks must still execute the pinned generator exactly once.
+  const artworkCommand = "node scripts/build-public-card-artwork.mjs";
+  for (const hook of ["prebuild", "predev"]) {
+    const commands = String(config.scripts[hook] || "").split(/\s*&&\s*/).map(command => command.trim());
+    assert.ok(commands.every(Boolean), hook + " contains an empty build step");
+    assert.equal(commands.filter(command => command === artworkCommand).length, 1,
+      hook + " must generate immutable art exactly once");
+    assert.doesNotMatch(config.scripts[hook], /\|\|\s*true/, hook + " cannot mask a failed art build");
+  }
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 
