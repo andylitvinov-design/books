@@ -106,3 +106,32 @@ relevant specialist evidence; configure protection before enabling PR-level
 automatic merging. Next improvements: group related scoped specialist workflows,
 share expensive builds where browser tests allow it, and reduce agent-created
 duplicate PRs. Never drop privacy/auth/RLS/payment/E2E gates.
+
+## Workflow consolidation wave 1: reviewed migration before deleting jobs (30 October 2026)
+
+Two strictly reviewed one-to-one replacements are staged in existing domain workflows:
+
+- `hh-crm-event-channels.yml` → `hh-event-referral-contract.yml`: union of PR/push paths; preserves event-source, CRM marketing, organic referral, GBP and TypeScript contracts, with one Node 24 install/typecheck and PR-number concurrency. Original still runs until later removal PR.
+- `psychometric-research-catalogue.yml` → `hh-assessment-quality.yml`: union of paths; preserves research catalogue's four tests and two reference-count thresholds, in addition to all author-quality/evidence/privacy checks and report artifact. The replacement supports original PR branch scope, production push and manual dispatch. Original still runs until later removal PR.
+
+The `specialist-aggregate.mjs` base-trusted allowlist *only* accepts deletion of the two explicitly named workflows when their already present replacement is byte-identical to the BASE version, the replacement is actually scoped to the changed PR files, and its exact-head associated run has completed successfully with real jobs. Unmapped YAML deletion, weakening of a replacement in the same PR, jobless/skipped/failed/queued/mismatched-head run, or unrelated failed current-HEAD workflow remains blocking. Core `hh-pr-core-release.yml` continues extracting its verifier from immutable BASE SHA. The `hh-actionlint.yml` deletion-only branch checks statuses, validates all remaining YAMLs and still relies on the exact-head specialist gate to allow any removal.
+
+**Two-PR protocol:** first merge this additive / trusted-allowlist PR with exact-head actionlint, sweep-guard and both specialist jobs green, then create a separate *deletion-only* PR. Do not remove legacy workflows before approved replacements and policy are in BASE. Do not treat lower YAML count as evidence of cost or E2E gains; compare runner-minutes and actual status parity. GitHub branch ruleset for production remains a separate owner-admin step.
+
+## Wave 1 obsolete workflow removal (30 October 2026)
+
+After additive #2617 passed actionlint, all original/combined specialist checks, PR Sweep Guard, TypeScript and Next production build, the separately audited deletion PR removes exactly `hh-crm-event-channels.yml` and `psychometric-research-catalogue.yml`, retaining their complete tests in unchanged `hh-event-referral-contract.yml` and `hh-assessment-quality.yml`. The BASE-trusted aggregate requires both replacement workflows to succeed for this exact PR HEAD; an absent job, changed replacement or unmapped deletion fails closed. Workflow count goes 95 -> 93, enforced by an explicit reviewable `<=93` regression budget (while preserving >=90 sanity floor). Do not treat reduced YAML count as measured runner-minute savings; check CI run counts and green-to-merge latency separately.
+
+## Wave 2: three domain-suite consolidations — staged review
+
+The BASE-reviewed allowlist extends the same exact-head and byte-identical successor rule to three narrowly mapped workflows (do not delete old YAMLs in this additive PR):
+
+- `hh-benchmark-free-test-pilot.yml` → `hh-benchmark-program.yml`: original guest-first EN/RU/ES and free-review tests, exact PR/push paths, existing matrix and offline plan; new PR-number supersession cancellation but no production cancellation.
+- `hh-portrait-sectors.yml` → `hh-profile-axis-matching.yml`: all original sector/responsive/gauge tests plus existing axis relevance/privacy tests; a separate Next build is already guaranteed by unconditional `release-ready` on production PRs; the target's existing build/typecheck remain for nonproduction runs.
+- `cabinet-today-ci.yml` → `hh-cabinet-journey.yml`: role/locale/access test, scoped lint, original journey and progress regressions; Next production build remains in core gate; isolated old workflow stays until later verified removal.
+
+Use the same two-PR staged protocol as wave 1: additive trusted replacement PR, all applicable checks green, squash merge to production, then deletion-only PR with exact-head successor proof and updated workflow budget. Do not weaken App R1, billing, private data, RLS or browser checks, and do not assume YAML count equals runtime savings.
+
+## Wave 2 retired legacy YAMLs (30 October 2026)
+
+When reviewed additive #2620 is merged in production, remove exactly `hh-benchmark-free-test-pilot.yml`, `hh-portrait-sectors.yml`, `cabinet-today-ci.yml`. Their original guest-first test, profile score/responsiveness tests and Cabinet Today role/locale contracts execute in unchanged, trusted successors: `hh-benchmark-program.yml`, `hh-profile-axis-matching.yml`, and `hh-cabinet-journey.yml`. The BASE-trusted exact-head reader demands all three replacement runs with real successful jobs. Original production builds for portrait and Cabinet Today are not lost: the unconditional core release build/typecheck covers every production PR. Change workflow count budget 93 -> 90, replace artificial >=90 floor with a >=25 nonempty safeguard plus an explicit must-retain list for auth, RLS, billing, CI guard and native checks. Further changes to the protected list require explicit review and exact-head verification. No product runtime changes; validate Vercel READY SHA and alias separately.
