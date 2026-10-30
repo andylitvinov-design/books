@@ -21,7 +21,8 @@ on:
       - 'data/academy/*antistress*'
       - 'tests/opora-*.mjs'
       - 'tests/antistress-*.mjs'
-      - 'tests/my-course*.mjs'
+      - 'tests/my-course-moment-trends.test.mjs'
+      - 'tests/my-course-programs.test.mjs'
       - 'tests/course-*.mjs'
       - 'scripts/verify-opora-*.mjs'
       - 'middleware.ts'
@@ -57,7 +58,7 @@ jobs:
       - name: Verify AS2 day-one state-first practice and lesson receipt
         run: node --test tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-antistress-outcomes-v3.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs
       - name: Verify all remaining OPORA state-to-support screens and receipts
-        run: node --test tests/opora-all-days-state-journey.test.mjs tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs
+        run: node --test tests/opora-all-days-state-journey.test.mjs
       - name: Verify Anti-Stress AS5 curriculum, seven compact screens and public blueprints
         run: node --test tests/opora-seven-skills-v5.test.mjs tests/opora-course-blueprint-methods.test.mjs tests/opora-antistress-course-landing.test.mjs tests/opora-antistress-complete-course.test.mjs tests/opora-15-stage1.test.mjs
       - name: Verify first-week course preview and explicit enrolment before OAuth or server start
@@ -71,7 +72,7 @@ jobs:
       - name: Verify AS-5.5 keyboard focus trap, process honesty, no-plan and individual exercise cases
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
       - name: Verify experience-first AS-5.6 practices, real bilingual feedback and safe V7-only save
-        run: node --test tests/opora-gentle-immersion.test.mjs tests/opora-as56-authenticated-pipeline.test.mjs tests/opora-ocean-outro.test.mjs tests/opora-as56-experience-first.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-post-save-course-program.test.mjs tests/opora-owl-guidance-across-slides.test.mjs
+        run: node --test tests/opora-gentle-immersion.test.mjs tests/opora-as56-authenticated-pipeline.test.mjs tests/opora-ocean-outro.test.mjs tests/opora-as56-experience-first.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-post-save-course-program.test.mjs tests/opora-owl-guidance-across-slides.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
         run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
       - name: Verify photo-first calm Day 1, optional check-ins and compact iPhone UI

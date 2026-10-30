@@ -32,6 +32,41 @@ test('seven formerly unconditional PR workflows run only on relevant paths', () 
   }
 });
 
+test('OPORA My Courses test-only routing is exact; App R1 still verifies the full app suite', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const pathsOf = src => {
+    const block = src.match(/^  pull_request:\s*\n([\s\S]*?)(?=^permissions:|^concurrency:|^jobs:)/m);
+    assert.ok(block, 'production-targeted PR trigger required');
+    return [...block[1].matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
+  };
+  const oporaPaths = pathsOf(opora), appPaths = pathsOf(app);
+  const covers = (paths, filename) => paths.some(pattern => requireGlob(filename, pattern));
+  for (const filename of ['tests/my-course-moment-trends.test.mjs', 'tests/my-course-programs.test.mjs']) {
+    assert.ok(oporaPaths.includes(filename), 'OPORA must run its directly invoked test ' + filename);
+    assert.equal(covers(oporaPaths, filename), true);
+  }
+  assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
+  assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
+  assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
+  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
+  }
+  const moduleTests = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(moduleTests, 'OPORA unit suite must be retained');
+  const executed = [...moduleTests.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
+  assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
+  assert.ok(executed.length >= 47, 'retain all 47 proven OPORA cases as the suite grows');
+  for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
+    assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
+  }
+  assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.match(opora, /browser: \[chromium, webkit\]/);
+  assert.match(opora, /cancel-in-progress: true/);
+  assert.doesNotMatch(opora, /continue-on-error:\s*true/);
+});
+
 test('one unconditional fail-closed release-ready gate protects core code validation', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
@@ -384,4 +419,44 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   const about=workflow('holistic-about-video-check.yml');
   assert.match(about,/npx tsc --noEmit/);
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+});
+
+test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
+  const prPaths = name => {
+    const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
+    return [...trigger.matchAll(/^      - '([^']+)'$/gm)].map(item=>item[1]);
+  };
+  const covers = (patterns, file) => {
+    let included = false;
+    for (const pattern of patterns) {
+      const negative = pattern.startsWith('!');
+      if (requireGlob(file, negative ? pattern.slice(1) : pattern)) included = !negative;
+    }
+    return included;
+  };
+  const publicServices = prPaths('hh-public-services-production.yml');
+  const ideas = prPaths('hh-ideas-coaching-public.yml');
+  const mock = prPaths('hh-support-mobile-mock-browser.yml');
+  for (const file of [
+    'scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+  ]) {
+    assert.equal(covers(mock,file),true,file+' must still run real Chromium/WebKit mock QA');
+    assert.equal(covers(publicServices,file),false,file+' must not trigger unrelated services acceptance');
+  }
+  assert.equal(covers(ideas,'tests/holistic-support-mobile-mock-parity.test.mjs'),false);
+  for (const file of [
+    'components/holistic-support-mobile.tsx',
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'scripts/verify-holistic-master-browser.mjs',
+    'app/ru/holistic-support/page.tsx',
+    'app/api/payments/some-service/route.ts',
+    'tests/temple-support-hub.test.mjs',
+  ]) assert.equal(covers(publicServices,file),true,file+' must still enforce full services acceptance');
+  for (const file of [
+    'components/ideas-discovery.tsx',
+    'tests/holistic-support-first-screen.test.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+  ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
+  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
 });

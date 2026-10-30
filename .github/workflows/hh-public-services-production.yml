@@ -76,6 +76,12 @@ on:
       # Keep all public service path tests and broad holistic-* coverage intact.
       - '!tests/holistic-house-free-install.test.mjs'
       - '!tests/holistic-house-native-public-downloads.test.mjs'
+      # The dedicated Support Mobile Mock workflow checks these exact synthetic
+      # screenshot/QAs in 18 Chromium/WebKit EN/RU/ES viewport combinations.
+      # They do not change real public services, booking, checkout or navigation.
+      # Real service/UI/auth/payment paths above still trigger the full suite.
+      - '!scripts/verify-holistic-support-mock-fidelity.mjs'
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
 permissions:
   contents: read
 concurrency:
