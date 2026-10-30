@@ -191,7 +191,6 @@ export function paintFreeVideoFrame(
   const p=PALETTES[plan.palette];
   const multiplier=plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
   const elapsed=Math.max(0,Number.isFinite(time)?time:0);
-  const t=elapsed*multiplier;
   // Four coherent original artworks, rather than one repeating wallpaper.
   const total=plan.durationSeconds||30,section=total/4;
   // Segment boundaries follow REAL video seconds, not the artistic speed.
