@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
-import {Check,Copy,LockKeyhole} from "lucide-react";
+import {Copy,LockKeyhole} from "lucide-react";
 type Props={locale:"en"|"ru"|"es";enabled:boolean};
 const wording={
  ru:{heading:"Коды Smart / Pro",off:"API выключен — выдача кодов заблокирована",
@@ -50,7 +50,7 @@ export function MandalaVideoCodeAdmin({locale,enabled}:Props){
   if(!enabled||!verified||!actor||working)return;
   setCode("");setMessage("");setWorking(true);
   try{
-   const result=await fetch("/api/admin/videos/codes/route",{method:"POST",cache:"no-store",
+   const result=await fetch("/api/admin/videos/codes",{method:"POST",cache:"no-store",
     credentials:"same-origin",
     headers:{"Content-Type":"application/json","x-hh-account-id":actor},
     body:JSON.stringify({tier,kind,ownerVerified:true,...(kind==="gift"?{recipientId}:{
