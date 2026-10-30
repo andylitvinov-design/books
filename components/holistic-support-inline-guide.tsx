@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Clock3, HandHeart, Play, Sparkles, X } from "lucide-react";
 import { goalSectorFocus, summarizeGoalSelection, type GoalSelection, type GoalSector } from "@/components/holistic-support-goal-filter";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { HolisticLanguageConversation } from "@/components/holistic-language-conversation";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-inline-guide.module.css";
 
@@ -484,6 +485,7 @@ export function HolisticSupportInlineGuide({
   const [phase,setPhase] = useState<Phase>(initial.phase);
   const [topic,setTopic] = useState<GoalSector>(initial.topic);
   const [draft,setDraft] = useState("");
+  const [freeMode,setFreeMode] = useState(false);
   const [need,setNeed] = useState("");
   const [minutes,setMinutes] = useState<number | null>(null);
   const [format,setFormat] = useState<Format>("meditation");
@@ -662,6 +664,9 @@ export function HolisticSupportInlineGuide({
       <span>{kind==="healing"?talk.supportAction:talk.sessionAction}</span><ArrowRight size={17} aria-hidden="true"/>
     </button>;
   }
+  const languageFormats = goalSelection
+    ? [...new Set(allowed.map(row => ({meditation:"video",tests:"test",courses:"course",consultation:"service",healing:"service",mandala:""} as Record<Format,string>)[row.id]).filter(Boolean))]
+    : ["video","audio","test","course","service"];
   const alternatives=allowed.filter(row=>row.id!==format).slice(0,2);
   const stageSummary=t.areas[topic]+(need?" · "+need:"")+(selectedTest?" · "+selectedTest.title:"")+
     (primaryVideo&&selectedVideoId?" · "+primaryVideo.title:"");
@@ -669,9 +674,21 @@ export function HolisticSupportInlineGuide({
     <section id="support-goal-results" className={styles.card} data-support-inline-guide aria-labelledby="support-guide-heading">
       <header className={styles.header}>
         <span className={styles.title} id="support-guide-heading"><Sparkles size={18} aria-hidden="true"/>{t.title}</span>
-        <span className={styles.progress}>{t.step} {stageStep}/4</span>
+        <button type="button" className={styles.modeToggle} data-support-guide-mode-toggle
+          aria-pressed={freeMode} onClick={()=>setFreeMode(previous=>!previous)}>
+          {freeMode ? (locale==="ru"?"Пошагово":locale==="es"?"Por pasos":"Guided steps")
+            : (locale==="ru"?"Свободный диалог":locale==="es"?"Conversación libre":"Free conversation")}
+        </button>
+        {!freeMode ? <span className={styles.progress}>{t.step} {stageStep}/4</span> : null}
         <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
+      <div hidden={!freeMode} aria-hidden={!freeMode}>
+        <HolisticLanguageConversation locale={locale}
+          seedTopic={goalSelection?.sector ?? (editedCheckins.length > 0 ? topic : null)}
+          videos={videos} tests={guideTests} enabledFormats={languageFormats}
+          onVideo={onVideo} active={freeMode}/>
+      </div>
+      {!freeMode ? <>
       <div className={styles.dialogue}>
         <div className={styles.portrait} data-support-guide-fixed-portrait>
           <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={128} height={160}
@@ -793,6 +810,7 @@ export function HolisticSupportInlineGuide({
         <button type="button" className={styles.textLink} onClick={()=>say(talk.returnToChat,journey.practiceInvite,"practice-invite")}>{talk.returnToChat}</button>
       </section>:null}
       <p className={styles.privacy}>{t.private} {journey.noPersonalData}</p>
+      </> : null}
     </section>
   );
 }
