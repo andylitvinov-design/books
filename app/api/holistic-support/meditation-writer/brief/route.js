@@ -88,6 +88,20 @@ export async function POST(request) {
       title:template.title,locale:normalized.locale,
       plannedDurationSeconds:template.plannedDurationSeconds,
       motifId:template.motifId,styleId:outcome.brief.styleId,
+      // Concrete, curated action is shared by both template and LLM drafts.
+      // Self-reported check-ins remain optional and are never persisted here.
+      goalCode:outcome.brief.goal,
+      practice:outcome.brief.practice?{
+        methodId:outcome.brief.practice.methodId,
+        title:outcome.brief.practice.title,
+        steps:[...outcome.brief.practice.steps],
+        transferAction:outcome.brief.practice.transferAction,
+        reflectionQuestion:outcome.brief.practice.reflectionQuestion,
+        beforeCheckinPrompt:outcome.brief.practice.beforeCheckinPrompt,
+        afterCheckinPrompt:outcome.brief.practice.afterCheckinPrompt,
+        optional:true,needsExplicitStart:true,
+        clinicalProtocol:false,efficacyClaim:false,
+      }:null,
       segments:template.segments.map(s=>({
         id:s.id,text:s.text,optionalSilenceSeconds:s.optionalSilenceSeconds,
         maySkip:true,
