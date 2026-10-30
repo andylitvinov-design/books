@@ -182,9 +182,9 @@ change. No check, RLS, consent, payment or E2E assertions were removed.
 ## Next optimization programme and daily waiting-time forecast — 30 October 2026
 
 **Decision:** optimize duplicate work and shared failure causes first. Do not relax
-the immutable-base \`release-ready\` aggregator, owner/consent/RLS/payment
+the immutable-base `release-ready` aggregator, owner/consent/RLS/payment
 checks or true provider E2E. GitHub production is
-\`codex/public-book-library\`, not repository default \`codex/bootstrap-books\`.
+`codex/public-book-library`, not repository default `codex/bootstrap-books`.
 
 ### Evidence and units (snapshot at approximately 11:50 UTC)
 
@@ -206,9 +206,9 @@ checks or true provider E2E. GitHub production is
   ~435 min. This measures the *core* gate, not all specialist completions.
   Thus native Auto-merge helps outliers more than typical already-fast merges.
 
-**Definitions:** \`PR-wait min/day\` is **the sum of waiting time across
+**Definitions:** `PR-wait min/day` is **the sum of waiting time across
 affected PRs**, not elapsed hours on the wall clock or a promise to a
-single customer. \`CI-job min/day\` is a **rough range of avoidable runner-job
+single customer. `CI-job min/day` is a **rough range of avoidable runner-job
 time**; exact metered/billable minutes are not yet exported. Forecasts
 below use explicit daily change-volume scenarios, not the 268-Draft
 stock count as 268 daily runs. The ranges overlap substantially and
@@ -219,22 +219,22 @@ measure savings against a seven-day baseline.
 
 | Tier | Recommendation / current implementation | Scenario used for forecast | PR-wait saved, min/day | CI-job time avoided, min/day | Next action / proof |
 | --- | --- | --- | ---: | ---: | --- |
-| P0 DONE / MEASURE | **Draft-heavy gating**: #2645 merged. Four App/OPORA/Public Services suites skip expensive Draft jobs; their full relevant original checks run again on \`ready_for_review\` and later non-Draft \`synchronize\`. | ~10–25 relevant Draft updates/day, ~5–10 costly minutes each | **0–40** indirect | **50–250** | Compare GitHub jobs before/after: Draft skipped, Ready not skipped, production push intact; no release-ready false green |
+| P0 DONE / MEASURE | **Draft-heavy gating**: #2645 merged. Four App/OPORA/Public Services suites skip expensive Draft jobs; their full relevant original checks run again on `ready_for_review` and later non-Draft `synchronize`. | ~10–25 relevant Draft updates/day, ~5–10 costly minutes each | **0–40** indirect | **50–250** | Compare GitHub jobs before/after: Draft skipped, Ready not skipped, production push intact; no release-ready false green |
 | P0 DONE / MEASURE | **Pure source-path scoping**: #2627 merged. Excludes only audited, pure Intelligence parser paths from unrelated public storefront acceptance. | ~6–18 otherwise irrelevant heavy triggers/day | **10–70** | **40–160** | Negative/positive path-matcher tests; must not exclude public routes, APIs, billing, auth or shared security files |
-| P0 NEXT | **Repair baseline once, not in 10 PR branches**: group by \`workflow/job/test signature + production SHA\`; fix the root in one owned source PR; integrate/rebase its green result before rerunning downstream. Prioritize #2607/#2535 dependency and top repeated App/OPORA/DAO failures. | 4–8 blocked PR/day × 15–30 minutes of repeated diagnosis/CI | **60–240** | **20–100** | Work Repair: one exact-head test/commit and failed→green run, then Work Merge. Do not adjust assertions to mask real defects |
-| P0 NEXT | **Batch agent commits and coalesce superseded checks**: repair one coherent root per PR per cycle, only push after focused local tests. Existing \`cancel-in-progress\`/trusted stale-run prune stay on; never cancel current HEAD or production runs. | ~10–25 avoidable superseded workflows/day × 3–8 minutes | **15–70** | **30–200** | Triage reports superseded *after started* vs queued; unique PR+SHA ownership and one active lease |
+| P0 NEXT | **Repair baseline once, not in 10 PR branches**: group by `workflow/job/test signature + production SHA`; fix the root in one owned source PR; integrate/rebase its green result before rerunning downstream. Prioritize #2607/#2535 dependency and top repeated App/OPORA/DAO failures. | 4–8 blocked PR/day × 15–30 minutes of repeated diagnosis/CI | **60–240** | **20–100** | Work Repair: one exact-head test/commit and failed→green run, then Work Merge. Do not adjust assertions to mask real defects |
+| P0 NEXT | **Batch agent commits and coalesce superseded checks**: repair one coherent root per PR per cycle, only push after focused local tests. Existing `cancel-in-progress`/trusted stale-run prune stay on; never cancel current HEAD or production runs. | ~10–25 avoidable superseded workflows/day × 3–8 minutes | **15–70** | **30–200** | Triage reports superseded *after started* vs queued; unique PR+SHA ownership and one active lease |
 | P1 NEXT | **Narrow remaining oversized workflow path triggers with positive/negative coverage**. Especially source-only policy vs all-page public-service/browser matrices and unrelated code-owned domains. No broad exclusions for shared app/API/middleware/provider/DB files. | ~8–20 proven unrelated heavy runs/day × 6–10 minutes | **20–100** | **50–200** | CI owner selects first 2 workflows by wasted started-run minutes; actionlint + scope-regression tests + exact-HEAD specialist aggregate |
-| P1 BLOCKED / #2630 | **Reuse Core build/TypeScript only where truly duplicate**: existing Draft #2630 covers Growth Journey and My Courses; solve its exact-head domain failures first, then Ready review. Preserve domain tests, scoped ESLint, manual/push independent builds. | ~8–20 repeated build/TS jobs/day × 4–8 minutes | **10–70** | **30–160** | No unconditional skipping of \`npm run build\`; trusted core compile must actually run and pass on production-targeted PRs |
+| P1 BLOCKED / #2630 | **Reuse Core build/TypeScript only where truly duplicate**: existing Draft #2630 covers Growth Journey and My Courses; solve its exact-head domain failures first, then Ready review. Preserve domain tests, scoped ESLint, manual/push independent builds. | ~8–20 repeated build/TS jobs/day × 4–8 minutes | **10–70** | **30–160** | No unconditional skipping of `npm run build`; trusted core compile must actually run and pass on production-targeted PRs |
 | P1 NEXT | **Unstack dependency chains, oldest-ready fairness**: map all 39 non-production-base PRs; merge reviewed parent into production first, retarget child only after conflict/authorization review and fresh CI. Reserve one aged eligible PR per 4–5 regular deliveries. | ~2–6 blocked stacked PR/day × 20–50 minutes avoided | **40–300** | **10–80** | Delivery agent reports parent/child SHAs; no direct merge of child feature branch counted as live |
 | P1 PILOT | **Reproducible npm/Next/Playwright caching**: share lockfile-keyed download caches and isolated browser binaries; validate cache hit/miss and exclude private DB/session artifacts. Do not reuse compiled outputs across unverified branches. | ~10–25 applicable jobs/day × 2–4 minutes | **10–50** | **20–100** | Pilot in one slow non-sensitive workflow; compare cold vs warm, disable cache on stale artifacts |
-| P2 OWNER HOLD | **Native Auto-merge after real protected production ruleset**. Only with required exact-head core + applicable specialist checks, review and resolved threads; never bypass. Repository \`allow_auto_merge\` alone is insufficient. | ~3–8 already-green eligible PR/day, typical core→merge gap 0.4–10 min (occasional multi-hour outlier) | **5–60 typical**; greater only for rare outliers | **0** | Owner rules: https://github.com/andylitvinov-design/books/settings/rules; validate positive/negative scenarios and \`protected=true\` readback before opt-in |
+| P2 OWNER HOLD | **Native Auto-merge after real protected production ruleset**. Only with required exact-head core + applicable specialist checks, review and resolved threads; never bypass. Repository `allow_auto_merge` alone is insufficient. | ~3–8 already-green eligible PR/day, typical core→merge gap 0.4–10 min (occasional multi-hour outlier) | **5–60 typical**; greater only for rare outliers | **0** | Owner rules: https://github.com/andylitvinov-design/books/settings/rules; validate positive/negative scenarios and `protected=true` readback before opt-in |
 | P2 DESIGN | **Reduce specialist-aggregate polling without false green**: optional trusted completion-driven status/check instead of idle 35-minute wait, only if it watches complete applicable *exact-head* jobs and fails closed on absent/cancelled/skipped/changed-base results. | 4–10 genuine slow-ready checks/day × 5–10 minutes | **20–100** | **30–150** | Prototype isolated integration tests before any change to production gate; rollback if missing jobs could pass |
 | P2 STAGED | **Retire only proven duplicated YAML workflows**, never weaken workflow inventory simply to lower the YAML count. Existing successor jobs and BASE-trusted deletion proof must remain green. | ~4–12 redundant executed jobs/day × 3–8 minutes | **10–40** | **20–100** | Two-PR additive→verified retirement protocol, with exact matching successor and rollback guard |
 
 ### Execution schedule for active agents
 
 1. **Now / next 24 hours (P0):** freeze repeated baseline diagnosis by
-   \`signature + prod-SHA\`; Work Repair fixes one unowned reproducible source
+   `signature + prod-SHA`; Work Repair fixes one unowned reproducible source
    defect per cycle, tests locally, pushes once and hands off exact HEAD.
    Chat/Triage prioritizes the largest actual *started-and-cancelled*
    and *irrelevant-heavy* workflow signatures; no empty re-runs.
@@ -250,7 +250,7 @@ measure savings against a seven-day baseline.
 
 Every daily GH ledger entry records: UTC time, production HEAD, open PR
 count by Draft/Ready/stacked, new PRs, newly merged PRs, exact-head
-\`ready->green\`, \`green->merge\`, \`merge->READY alias\`,
+`ready->green`, `green->merge`, `merge->READY alias`,
 completed/cancelled/queued workflow runs, *started* cancelled job-minutes,
 distinct failed signature count and CI job minutes by workflow. Compute
 median and P90, not only averages. Reconcile owner-reported commits against
@@ -268,7 +268,7 @@ critical path.
 **Immediate rollback:** any Ready PR skips an applicable test, one
 auth/RLS/consent/payment/clinical privacy regression escapes, an
 exact-head specialist result is stale or absent but treated green,
-production push checks disappear, or \`release-ready\` accepts a cancelled/
+production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
