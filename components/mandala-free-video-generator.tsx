@@ -18,6 +18,7 @@ type Props={
   locale:PublicLocale;theme:VideoTheme;aspect:Aspect;duration:10|20|30|60;
   disabled:boolean;localPortrait?:HTMLImageElement|null;
   onPlanChange:(plan:FreeVideoPlan)=>void;
+  onVisualDescriptionChange?:(text:string)=>void;
 };
 const copy={
   ru:{
@@ -65,7 +66,7 @@ const copy={
 } as const;
 
 export function MandalaFreeVideoGenerator({
-  locale,theme,aspect,duration,disabled,localPortrait,onPlanChange,
+  locale,theme,aspect,duration,disabled,localPortrait,onPlanChange,onVisualDescriptionChange,
 }:Props){
   const t=copy[locale];
   const [description,setDescription]=useState<string>(FREE_VIDEO_EXAMPLES[locale]);
@@ -79,6 +80,7 @@ export function MandalaFreeVideoGenerator({
     description,theme,locale,family,palette,motion,variation,durationSeconds:duration,
   }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation,duration]);
   useEffect(()=>{onPlanChange(plan);},[onPlanChange,plan]);
+  useEffect(()=>{onVisualDescriptionChange?.(description);},[onVisualDescriptionChange,description]);
   const size=aspect==="portrait"?[252,448]:aspect==="square"?[352,352]:[480,270];
   useEffect(()=>{
     const canvas=previewRef.current;
