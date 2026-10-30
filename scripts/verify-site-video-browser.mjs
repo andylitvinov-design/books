@@ -170,7 +170,7 @@ try {
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      // Free written review has its own introductory story, not a generic Services showcase.
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       console.info('Approved service-video E2E:',route,topic,expectedUrl);
@@ -195,13 +195,20 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
+    // This is a real *written review* entry, with its own non-generic introduction.
+    // The old video-oracle expected a Services showcase that this page does not own.
+    await navigate('/en/services/free-situation-review')
+    await expect(page.locator('main[data-free-entry-landing="situation"]')).toHaveCount(1)
+    await expect(page.locator('[data-free-review-intro-video]')).toHaveCount(1)
+    await expect(page.locator('[data-service-video="overview"]')).toHaveCount(0)
+    await expect(page.locator('a[href="#request-free-review"]').first()).toBeVisible()
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
     await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
     assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
       'The separate Dao free start must not imply a video consultation')
-    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
+    pass('Eight original service video routes, written review, and separate Dao free entry preserve exact approved formats')
   }
 
   await navigate('/en/about')
