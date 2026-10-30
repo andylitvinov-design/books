@@ -1531,6 +1531,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     if(!source){onPickPhoto();return;}
+    // The click that explicitly requests a recording must unlock the muted
+    // inline scene BEFORE awaiting local audio decoding. Otherwise WebKit
+    // loses the user activation and may reject master.play() after the await,
+    // leaving no downloadable file even though all settings are valid.
+    if(activeFilm && premiumVideoRef.current){
+      const master=premiumVideoRef.current;
+      master.muted=true;
+      void master.play().catch(()=>{
+        if(aliveRef.current)setNotice(ui.videoUnavailable);
+      });
+    }
     void createVideo();
   };
 

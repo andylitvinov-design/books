@@ -186,11 +186,29 @@ async function checkExport(page,engine){
   await page.locator('[data-video-quick-duration="10"]').click();
   await page.locator('[data-video-quick-aspect="portrait"]').click();
   const output=page.locator("[data-mandala-video-download]");
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<2;attempt++){
     if(await output.isVisible())break;
+    assert.equal(await create.isEnabled(),true,
+      "real Create action must be enabled with audio attached and rights confirmed");
     await create.click();
-    try{await output.waitFor({state:"visible",timeout:50000});break;}
-    catch(e){if(attempt===2)throw e;}
+    try{await output.waitFor({state:"visible",timeout:30000});break;}
+    catch(error){
+      const state=await page.evaluate(()=>({
+        notice:[...document.querySelectorAll("[data-video-quick-builder] [role=status]")].map(n=>n.textContent?.trim()).filter(Boolean),
+        alert:[...document.querySelectorAll("[data-video-quick-builder] [role=alert]")].map(n=>n.textContent?.trim()).filter(Boolean),
+        createDisabled:document.querySelector("[data-mandala-video-generate]")?.hasAttribute("disabled"),
+        progress:document.querySelector("[role=progressbar]")?.getAttribute("aria-valuenow"),
+        audioAttached:document.querySelector("[data-video-audio-attached]")?.textContent?.trim(),
+        masterReady:document.querySelector("[data-mandala-master-mp4]")?.readyState,
+        masterPaused:document.querySelector("[data-mandala-master-mp4]")?.paused,
+        result:Boolean(document.querySelector("[data-mandala-video-download]")),
+      }));
+      // Fail closed: expose technical UI state for diagnosis, never a false
+      // successful video, missing audio, or a removed encoder assertion.
+      console.error("MANDALA_EXPORT_DIAGNOSTIC",engine,JSON.stringify(state));
+      if(attempt===1)throw new Error(engine+" no encoded local video: "+JSON.stringify(state)+
+        " / "+String(error));
+    }
   }
   const [d]=await Promise.all([page.waitForEvent("download",{timeout:20000}),output.click()]);
   const filepath=await d.path();

@@ -81,7 +81,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -263,7 +263,21 @@ try {
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
   } else {
     const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+    // The old HMAC admin token was retired when owner access switched to
+    // verified Google/Supabase identity with a revocable v2 store session.
+    // Never invent a synthetic owner identity or bypass the real authority.
     await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
+    const denied = await adminContext.newPage()
+    await denied.goto(`${origin}/admin/videos`,{waitUntil:'domcontentloaded'})
+    await expect(denied).toHaveURL(/\/admin\/login/)
+    assert.equal(await denied.locator('.site-video-manager').count(),0,
+      'legacy HMAC cookie must not disclose video drafts or editor')
+    await denied.close()
+    pass('Retired admin HMAC cannot open protected video editor; verified owner session required')
+    // Full authorized owner-browser CRUD is deliberately preserved below.
+    // It only runs with an independently supplied *verified* owner login;
+    // this public CI has no Google OAuth provider nor signed-in owner account.
+    if(process.env.HH_TEST_VERIFIED_OWNER_ADMIN_E2E==='true'){
     const editor = await adminContext.newPage()
     editor.on('pageerror', error => pageErrors.push(error.message))
     async function openEditor(target = editor) {
@@ -396,6 +410,9 @@ try {
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
     await expect(editor.locator('input[name="title"]')).toHaveValue('QA Spanish About independent publication')
     pass('Spanish About publish/hide/reload via real actions preserves EN/RU and never falls back to English')
+    } else {
+      console.log('UNVERIFIED_OWNER_ADMIN_E2E: real Google-authorized video publish, draft, hide and cross-session tests require a verified owner account, not the retired cookie. This non-admin video PR does not claim them.')
+    }
     await adminContext.close()
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
