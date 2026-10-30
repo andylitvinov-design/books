@@ -59,6 +59,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       const attached=await page.locator("[data-video-audio-attached]").innerText();
       assert.match(attached,/holistic-house-affirmations/);
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
+      const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
+      assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
+        "the first-party library offers none and thirteen backgrounds");
+      await page.locator("[data-video-voice-volume]").focus();
+      await page.keyboard.press("ArrowLeft");
+      await page.locator("[data-video-bed-volume]").focus();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForFunction(previous=>{
+        const audio=document.querySelector("[data-video-affimations-audio-ready] audio");
+        return audio?.getAttribute("src") && audio.getAttribute("src")!==previous;
+      },firstAudio,{timeout:25000});
+      assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
+      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+        "newly remixed WAV must automatically attach to local movie");
       if(engine==="chromium") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
