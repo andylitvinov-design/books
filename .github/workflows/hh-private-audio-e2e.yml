@@ -1,6 +1,7 @@
 name: Holistic House private audio synthetic end-to-end
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/session-audio-recorder.jsx'
@@ -84,10 +85,15 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
+concurrency:
+  group: hh-private-audio-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 jobs:
   private-audio:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -121,11 +127,16 @@ jobs:
 
       - name: ESM fixture boundaries and private media provider regressions
         run: node --test tests/fixture-module-body.test.mjs tests/session-media-sdk.test.mjs tests/client-session-external-video.test.mjs
-      - name: Fixture lint and TypeScript
-        run: |
-          npx --no-install eslint tests/helpers/fixture-module-body.mjs tests/fixture-module-body.test.mjs tests/session-delivery-security.test.mjs tests/client-session-external-video.test.mjs tests/client-session-owner-photo-upload.test.mjs tests/session-media-sdk.test.mjs tests/client-session-owner-audio-upload.test.mjs
-          npx --no-install tsc --noEmit --incremental false
+      - name: Fixture lint and private media tests
+        run: npx --no-install eslint tests/helpers/fixture-module-body.mjs tests/fixture-module-body.test.mjs tests/session-delivery-security.test.mjs tests/client-session-external-video.test.mjs tests/client-session-owner-photo-upload.test.mjs tests/session-media-sdk.test.mjs tests/client-session-owner-audio-upload.test.mjs
+      # The unconditional Core release-ready checks these exact global validations
+      # on production-targeted PRs. Retain them for real production pushes and
+      # non-PR runs; never skip owner/guest media tests or privacy assertions.
+      - name: Full TypeScript (core owns production PR typing)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit --incremental false
       - name: Production build with app flags absent
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'

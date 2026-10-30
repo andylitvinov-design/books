@@ -1,7 +1,87 @@
 name: Holistic House public services production acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
+    paths:
+      - 'components/academy-course-video-playlist.tsx'
+      - 'lib/practitioners/taoist-talisman-cart.js'
+      - 'scripts/fixtures/holistic-support-directory.mjs'
+      - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'scripts/verify-alchemy-one-screen.mjs'
+      - 'scripts/verify-business-quiz-mobile.mjs'
+      - 'scripts/verify-contact-channel-chooser-browser.mjs'
+      - 'scripts/verify-direction-focus-mobile.mjs'
+      - 'scripts/verify-home-consultation-first-screen.mjs'
+      - 'scripts/verify-ideas-mobile-browser.mjs'
+      - 'scripts/verify-reiki-mobile-order-browser.mjs'
+      - 'scripts/verify-service-cart-browser.mjs'
+      - 'scripts/verify-storefront-shop-browser.mjs'
+      - 'scripts/verify-talisman-google-checkout-browser.mjs'
+      - 'tests/goal-support-offers.test.mjs'
+      - 'tests/practitioner-homeopathy-canonical-route.test.mjs'
+      - 'tests/practitioner-remote-energy-support.test.mjs'
+      - 'tests/service-alchemy-one-screen-story.test.mjs'
+      - 'tests/talisman-google-checkout.test.mjs'
+      - 'tests/temple-insights-compact-cta.test.mjs'
+      - 'tests/temple-support-hub.test.mjs'
+      - 'app/**/holistic-support/**'
+      - 'app/**/services/**'
+      - 'app/**/toronto/**'
+      - 'app/**/alchemy/**'
+      - 'app/**/business/**'
+      - 'app/api/public/**'
+      - 'app/api/payments/**'
+      - 'app/api/app/**'
+      - 'components/holistic-*'
+      - 'components/mandala-*'
+      - 'components/remote-energy-*'
+      - 'components/taoist-*'
+      - 'components/*service*'
+      - 'components/practice-showcase*'
+      - 'lib/holistic-support/**'
+      # Pure, side-effect-free Intelligence Core policy/bridge input parsers
+      # have their own focused axis-to-offer unit, type and production-build gate.
+      # No public services routes, client UI, checkout or publication logic are
+      # edited by these files, so do NOT launch unrelated 20-minute storefront
+      # mobile browser matrix for a policy-only PR. All real service/UI changes
+      # still match the surrounding positive globs and run full acceptance.
+      - '!lib/holistic-support/client-reasoning-*.mjs'
+      - '!lib/holistic-support/intelligence-request.mjs'
+      - 'lib/practitioners/public-*'
+      - 'lib/commerce/**'
+      - 'lib/checkout/**'
+      - 'tests/holistic-*.mjs'
+      - 'tests/alchemy-*.mjs'
+      - 'tests/remote-*.mjs'
+      - 'tests/direction-*.mjs'
+      - 'tests/public-service*.mjs'
+      - 'scripts/verify-holistic-*.mjs'
+      - 'scripts/verify-public-services*.mjs'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      # Director-only art planning and its encoded-video browser test are fully
+      # covered by holistic-support-mandala.yml. They do not modify service
+      # discovery, checkout, Alchemy or master-catalog journeys tested here.
+      # Keep the broad shared mandala-* patterns for other Mandala components.
+      - '!components/mandala-cinematic-director.tsx'
+      - '!components/mandala-cinematic-director.module.css'
+      - '!scripts/verify-holistic-mandala-browser.mjs'
+      # Only the public /install PWA and signed-native-release registry use
+      # these two tests; holistic-house-mobile-install.yml runs both exact files,
+      # full production build and 320-430px Chromium/WebKit acceptance.
+      # They never touch Alchemy, Reiki, business, checkout or public services.
+      # Keep all public service path tests and broad holistic-* coverage intact.
+      - '!tests/holistic-house-free-install.test.mjs'
+      - '!tests/holistic-house-native-public-downloads.test.mjs'
+      # The dedicated Support Mobile Mock workflow checks these exact synthetic
+      # screenshot/QAs in 18 Chromium/WebKit EN/RU/ES viewport combinations.
+      # They do not change real public services, booking, checkout or navigation.
+      # Real service/UI/auth/payment paths above still trigger the full suite.
+      - '!scripts/verify-holistic-support-mock-fidelity.mjs'
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
 permissions:
   contents: read
 concurrency:
@@ -9,6 +89,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   public-services:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -49,6 +130,7 @@ jobs:
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 90); do
+            echo "Public services readiness attempt ${i}/90"
             if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
             sleep 2
           done
