@@ -89,3 +89,15 @@ test('opening edit options does not weaken existing readiness, storage verificat
   assert.doesNotMatch(writable,/\sdisabled=""/)
 })
 
+test('Growth Studio delegates only duplicate production PR Next build to fail-closed core', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/hh-growth-studio.yml', import.meta.url), 'utf8')
+  const core = readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml', import.meta.url), 'utf8')
+  assert.match(core, /^  release-ready:/m)
+  assert.match(core, /run: npm run build/)
+  assert.ok(workflow.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"))
+  assert.match(workflow, /- name: Next\.js build[\s\S]*?run: npm run build/)
+  assert.match(workflow, /node --test tests\/growth-studio-composer-details-render\.test\.mjs/)
+  assert.match(workflow, /Check editorial transitions, URL and Redis guards/)
+  assert.match(workflow, /^  workflow_dispatch:/m)
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/)
+})
