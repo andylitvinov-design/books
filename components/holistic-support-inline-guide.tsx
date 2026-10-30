@@ -680,7 +680,7 @@ export function HolisticSupportInlineGuide({
             : (locale==="ru"?"Свободный диалог":locale==="es"?"Conversación libre":"Free conversation")}
         </button>
         {!freeMode ? <span className={styles.progress}>{t.step} {stageStep}/4</span> : null}
-        <button className={styles.close} type="button" onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
+        <button className={styles.close} type="button" data-support-guide-close onClick={onClose} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
       </header>
       <div hidden={!freeMode} aria-hidden={!freeMode}>
         <HolisticLanguageConversation locale={locale}
