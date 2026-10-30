@@ -53,7 +53,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /HH_BASE_SHA/);
   assert.match(source, /actions: read/);
   assert.match(source, /pull-requests: read/);
-  assert.match(source, /timeout-minutes: 20/);
+  assert.match(source, /timeout-minutes: 45/);
   assert.match(source, /\[\[ "\$SCOPE_RESULT" == success \]\]/);
   assert.match(source, /\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
