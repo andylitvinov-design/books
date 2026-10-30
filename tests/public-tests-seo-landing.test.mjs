@@ -56,7 +56,8 @@ test("SEO benefits and accessible FAQs are translated and non-diagnostic", () =>
     "Questions before you begin", "Вопросы перед началом", "Preguntas frecuentes",
     "without signing in", "без входа", "sin iniciar sesión",
   ]) assert.ok(landing.includes(snippet) || pageSource.includes(snippet), "Missing translation: " + snippet);
-  assert.match(landing, /<details key=\{question\}><summary>\{question\}<\/summary>/);
+  assert.match(landing, /data-public-tests-faq/);
+  assert.match(landing, /t\.faq\.map\(\(\[question, answer\]\) => <details key=\{question\}><summary>\{question\}<\/summary>/);
   assert.match(landing, /<Link className=\{styles\.primary\} href=\{testsHref\}/);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.doesNotMatch(pageSource + landing, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
@@ -65,11 +66,18 @@ test("SEO benefits and accessible FAQs are translated and non-diagnostic", () =>
 test("public guide remains discoverable from three homepages without forcing a signup", () => {
   const sharedHome = read("components/holistic-house-home.tsx");
   const spanishHome = read("app/es/page.tsx");
-  const explore = read("components/home-explore-sections.tsx");
-  assert.match(sharedHome, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(spanishHome, /<HomeExploreSections locale="es" \/>/);
-  for (const text of ["How free self-checks work", "Как работают бесплатные тесты", "Cómo funcionan las pruebas"]) assert.ok(explore.includes(text));
-  assert.match(explore, /href=\{"\/" \+ locale \+ "\/tests"\}/);
-  assert.match(explore, /path: "\/client\/tests"/);
-  assert.match(explore, /href=\{"\/" \+ locale \+ "\/library"\}/);
+  // Current EN/RU/ES homepages render a compact carousel and a visible
+  // catalogue link rather than the retired multi-section homepage grid.
+  const carousel = read("components/home-section-carousel.tsx");
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(sharedHome, /<HomeSectionCarousel locale=\{locale\} \/>/);
+  assert.match(spanishHome, /<HomeSectionCarousel locale="es" \/>/);
+  assert.match(sharedHome, /<HomeMoreDisclosure locale=\{locale\} \/>/);
+  assert.match(spanishHome, /<HomeMoreDisclosure locale="es" \/>/);
+  for (const text of ["How free self-checks work", "Как работают бесплатные тесты", "Cómo funcionan las pruebas"])
+    assert.ok(more.includes(text), "Missing visible guide link in home locale: " + text);
+  assert.match(more, /href=\{"\/" \+ locale \+ "\/tests"\}/);
+  assert.match(more, /data-home-test-guide/);
+  assert.match(carousel, /path: "\/client\/tests"/);
+  assert.doesNotMatch(more, /onClick=\{.*signIn|auth\/start/);
 });
