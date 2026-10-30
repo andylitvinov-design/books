@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { readFile } from 'node:fs/promises'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { TEST_OWNER_EMAIL } from './helpers/app-owner-fixture.mjs'
 
 if (!process.execArgv.includes('--conditions=react-server')) {
   test('server-only admin lifecycle regressions', () => {
@@ -19,7 +20,7 @@ const { issueTrustedAdminSession, authorizeAdminSession, revokeAdminSessions, ad
 const { createMemoryPrescriptionStore, createPrescriptionStore } = await import('../lib/prescriptions/store.js')
 
 const environment = { PRESCRIPTIONS_ADMIN_TOKEN: 'synthetic-admin-credential' }
-const owner = { id: '00000000-0000-4000-8000-000000000001', email: 'andy.litvinov@gmail.com', claims: { session_id: '00000000-0000-4000-8000-000000000002', exp: Math.floor(Date.now() / 1000) + 3600 } }
+const owner = { id: '00000000-0000-4000-8000-000000000001', email: TEST_OWNER_EMAIL, claims: { session_id: '00000000-0000-4000-8000-000000000002', exp: Math.floor(Date.now() / 1000) + 3600 } }
 function fixture() {
   const store = createMemoryPrescriptionStore()
   const written = new Map()

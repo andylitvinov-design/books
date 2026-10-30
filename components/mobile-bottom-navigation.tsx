@@ -40,6 +40,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     // attached. Correct only a real gap, keeping the native safe-area padding.
     const viewport = window.visualViewport;
     let frame: number | null = null;
+    let restorePointerTimer: number | null = null;
     let correction = 0;
     const measureHeight = () => {
       document.body.style.setProperty('--ia222-bottom-height', `${element.getBoundingClientRect().height}px`);
@@ -66,6 +67,20 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       });
     };
     const onLayoutChange = () => { measureHeight(); dockToViewport(); };
+    const onFocusOut = (event: FocusEvent) => {
+      // An iOS tap blurs an editor before dispatching click. The returning dock
+      // must not intercept the final click at the same screen coordinates.
+      const target = event.target;
+      if (target instanceof Element && target.matches('textarea, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]), [contenteditable="true"]')) {
+        element.style.pointerEvents = 'none';
+        if (restorePointerTimer !== null) window.clearTimeout(restorePointerTimer);
+        restorePointerTimer = window.setTimeout(() => {
+          element.style.removeProperty('pointer-events');
+          restorePointerTimer = null;
+        }, 350);
+      }
+      onLayoutChange();
+    };
     onLayoutChange();
     const observer = new ResizeObserver(onLayoutChange);
     observer.observe(element);
@@ -75,17 +90,19 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     viewport?.addEventListener('resize', onLayoutChange, { passive: true });
     window.addEventListener('pageshow', onLayoutChange);
     document.addEventListener('focusin', dockToViewport);
-    document.addEventListener('focusout', onLayoutChange);
+    document.addEventListener('focusout', onFocusOut);
     return () => {
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
+      if (restorePointerTimer !== null) window.clearTimeout(restorePointerTimer);
+      element.style.removeProperty('pointer-events');
       window.removeEventListener('scroll', dockToViewport);
       window.removeEventListener('resize', onLayoutChange);
       viewport?.removeEventListener('scroll', dockToViewport);
       viewport?.removeEventListener('resize', onLayoutChange);
       window.removeEventListener('pageshow', onLayoutChange);
       document.removeEventListener('focusin', dockToViewport);
-      document.removeEventListener('focusout', onLayoutChange);
+      document.removeEventListener('focusout', onFocusOut);
       element.style.removeProperty('transform');
       document.body.style.removeProperty('--ia222-bottom-height');
     };

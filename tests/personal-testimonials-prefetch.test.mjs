@@ -71,3 +71,46 @@ test('free review shows all twelve genuine videos vertically with original-langu
   assert.match(source, /\{isAbout && <p className=\{styles\.swipeHint\}>/);
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.section\[data-personal-testimonials="all"\] \.videoItem/);
 });
+
+test('English and Spanish pages localize Russian testimonial titles while retaining original audio', () => {
+  for (const locale of ['en', 'es']) for (const [variant, count] of [['about', 4], ['all', 6]]) {
+    const rendered = nodes(render(locale, variant))
+    const players = rendered.filter(node => node.type === 'video-fixture' && node.props.video.language === 'ru')
+    assert.equal(players.length, count, variant + ' retains the source-backed Russian-language videos')
+    for (const player of players) assert.doesNotMatch(player.props.video.title, /[\u0400-\u04ff]/)
+    assert.ok(players.every(player => player.props.video.language === 'ru'))
+  }
+})
+
+test('home disclosure receives localized titles for all Russian-audio testimonials', () => {
+  for (const locale of ['en', 'es']) {
+    const more = nodes(render(locale, 'home')).find(node => node.type === 'lazy-testimonials-fixture')
+    assert.ok(more)
+    assert.equal(more.props.otherLanguageVideos.length, 6)
+    for (const video of more.props.otherLanguageVideos) {
+      assert.equal(video.language, 'ru')
+      assert.doesNotMatch(video.title, /[\u0400-\u04ff]/)
+    }
+  }
+})
+
+test('expanded home disclosure names each original audio language in the page language', () => {
+  const input = readFileSync(new URL('../components/home-testimonial-more.tsx', import.meta.url), 'utf8')
+  const modules = {
+    react: { useState: () => [true, () => {}], useRef: () => ({ current: null }), useEffect: () => {} },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/link': { default: props => jsx('a', props) },
+    '@/components/site-video-player': { SiteVideoPlayer: props => jsx('video-fixture', props) },
+    './personal-testimonials.module.css': { default: { videoLanguageTag: 'audio-language' } },
+  }
+  const compiled = ts.transpileModule(input, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
+  const exports = {}
+  runInNewContext(compiled, { exports, require(name) { assert.ok(Object.hasOwn(modules, name), name); return modules[name] } })
+  for (const [locale, expected] of [['en', ['Russian · RU', 'English · EN']], ['ru', ['Русский · RU', 'Английский · EN']], ['es', ['Ruso · RU', 'Inglés · EN']]]) {
+    const tree = exports.HomeTestimonialMore({ locale, remainingVideos: [], otherLanguageVideos: [
+      { id: 'russian', title: 'Russian source', language: 'ru' }, { id: 'english', title: 'English source', language: 'en' },
+    ], title: 'More', sameLanguageTitle: 'Same', otherLanguageTitle: 'Other' })
+    const tags = nodes(tree).filter(node => node.type === 'p' && node.props.className === 'audio-language')
+    assert.deepEqual(tags.map(node => node.props.children), expected)
+  }
+})

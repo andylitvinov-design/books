@@ -24,6 +24,23 @@ export async function setup(){const db=await adminClient();try{
  await db.query(`alter table app.service_offerings add column photos jsonb not null default '[]'::jsonb
    constraint service_offerings_photos_check check (jsonb_typeof(photos)='array' and jsonb_array_length(photos)<=5)`)
 
+ // Minimal local Storage metadata for the course migration; no object API,
+ // upload service, public grants, or external provider is created by this stub.
+ await db.query(`create schema storage; create table storage.buckets (
+  id text primary key, name text not null, public boolean not null default false,
+  file_size_limit bigint, allowed_mime_types text[]
+ )`)
+ // These production migrations support authenticated Cabinet reads in the
+ // synthetic browser journey. Keep the real RLS policies; do not stub data.
+ for (const migration of [
+  '20261017013000_hh_assessment_interpretation_registry.sql',
+  '20261017181000_hh_academy_energywork_progress.sql',
+  '20261019152000_hh_public_service_enquiries_secure.sql',
+  '20261021162000_hh_practitioner_course_builder.sql',
+  '20261025173000_hh_practitioner_express_reports.sql',
+  '20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',
+  '20261026164817_hh_free_express_owner_account_reply_20261026.sql',
+ ]) await db.query(await readFile(new URL('../../supabase/migrations/'+migration,import.meta.url),'utf8'))
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")

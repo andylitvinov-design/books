@@ -1,5 +1,5 @@
-// Spanish About acceptance. Production mode is read-only; the local form test
-// intercepts window.open and never contacts WhatsApp or creates a client record.
+// Spanish About acceptance. The local selection test verifies the first-party
+// link without opening a messenger or creating a client record.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, createWriteStream } from 'node:fs';
@@ -49,7 +49,7 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        assert.equal(await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count(), 10);
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
         const intro = page.locator('[data-video-locale="es"]');
@@ -100,7 +100,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish topic changed locally, no request sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }

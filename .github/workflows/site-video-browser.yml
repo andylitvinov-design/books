@@ -35,6 +35,7 @@ on:
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-page-video-release.mjs'
+      - 'scripts/verify-home-testimonial-hydration.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
@@ -73,6 +74,7 @@ on:
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
       - 'scripts/verify-page-video-release.mjs'
+      - 'scripts/verify-home-testimonial-hydration.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
       - 'scripts/verify-es-*.mjs'
@@ -91,6 +93,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
       redis:
         image: redis:7-alpine
         ports: ['6379:6379']
@@ -111,6 +122,7 @@ jobs:
       - name: Check Spanish translation and affected components
         run: |
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
+          node --test tests/site-video-owner-bridge.test.mjs tests/admin-session-lifecycle.test.mjs
           node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
           npx tsc --noEmit
@@ -131,11 +143,30 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
-      - name: Exercise editor against isolated Redis
+      - name: Initialize isolated authentication database
+        run: node --conditions=react-server tests/helpers/app-db-setup.mjs
+        env:
+          CI: 'true'
+          NODE_ENV: test
+          HH_APP_TEST_RUNTIME: isolated
+          HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      - name: Exercise editor with isolated verified-owner bridge and Redis
         run: |
           sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
           node scripts/verify-site-video-browser.mjs
         env:
+          CI: 'true'
+          NODE_ENV: test
+          HH_APP_TEST_RUNTIME: isolated
+          HH_APP_ENABLED: 'true'
+          HH_APP_SIGNUPS_ENABLED: 'true'
+          HH_APP_SUPABASE_URL: http://127.0.0.1:54329
+          HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+          HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+          HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+          HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
+          HH_TEST_APP_ORIGIN: http://127.0.0.1:3100
           NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check minimal RU introduction in Chromium and WebKit
@@ -146,6 +177,10 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check complete Spanish About page in Chromium and WebKit
         run: node scripts/verify-es-about.mjs
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Preserve an early-open testimonial disclosure across hydration
+        run: node scripts/verify-home-testimonial-hydration.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check all Spanish public destinations and remedy routes

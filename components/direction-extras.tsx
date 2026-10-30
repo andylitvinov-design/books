@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import type { PublicLocale } from '@/lib/public-locales'
+import { BusinessConsultationFinder } from '@/components/business-consultation-finder'
+import { BusinessServiceBrowser } from '@/components/business-service-browser'
 import styles from './direction-offers.module.css'
 
 type Direction = 'energy' | 'love' | 'business'
@@ -64,7 +66,8 @@ const extras: Record<PublicLocale, { label: string; choices: Record<Direction, [
 
 export function DirectionExtras({ locale, direction }: { locale: PublicLocale; direction: Direction }) {
   const { label, choices } = extras[locale]
-  return <details className={styles.disclosure} data-direction-more data-direction-extra-for={direction}>
+  return <details className={styles.disclosure} data-direction-more data-direction-extra-for={direction}
+    data-business-existing-finder={direction === 'business' ? '' : undefined}>
     <summary>{label}<ChevronDown size={16} aria-hidden="true" /></summary>
     <div className={styles.extraGrid}>
       {choices[direction].map(item =>
@@ -75,5 +78,9 @@ export function DirectionExtras({ locale, direction }: { locale: PublicLocale; d
         </Link>
       )}
     </div>
+    {direction === 'business' && <>
+      <BusinessConsultationFinder locale={locale} requestOnServicePage />
+      <BusinessServiceBrowser locale={locale} requestOnServicePage />
+    </>}
   </details>
 }

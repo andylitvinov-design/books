@@ -14,7 +14,23 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // Playwright's label click completes. Verify the actual native radio AND its
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
-  await enquiry.locator('[data-express-focus="' + focus + '"]').click();
+  const card = enquiry.locator('[data-express-focus="' + focus + '"]');
+  await card.scrollIntoViewIfNeeded();
+  // Wait for the actual card to stop moving and remain the hit target after
+  // the hero anchor's smooth scroll. Still perform exactly one ordinary tap.
+  const handle = await card.elementHandle();
+  await page.waitForFunction((element) => {
+    if (!element?.isConnected) return false;
+    const r = element.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const target = document.elementFromPoint(x, y);
+    const previous = window.__hhFocusTapGeometry;
+    const stable = previous?.element === element && Math.abs(previous.x - x) < 0.5 && Math.abs(previous.y - y) < 0.5;
+    window.__hhFocusTapGeometry = { element, x, y, frames: stable ? previous.frames + 1 : 0 };
+    return x > 0 && x < innerWidth && y > 0 && y < innerHeight &&
+      Boolean(target && (target === element || element.contains(target))) && window.__hhFocusTapGeometry.frames >= 6;
+  }, handle, { timeout: 10000 });
+  await card.click();
   await page.waitForFunction((target) => {
     const root = document.querySelector('[data-personal-express-enquiry]');
     const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
@@ -291,6 +307,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
           await reveal.click();
+          // Wait for React to commit the one real tap; do not retry the action.
+          await page.waitForFunction(() => document.querySelector('[data-express-reveal]')?.getAttribute('aria-expanded') === 'false', null, {timeout: 10000});
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");

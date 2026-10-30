@@ -1,7 +1,6 @@
 // Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
-import { createHmac } from 'node:crypto'
 import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:https'
@@ -18,7 +17,7 @@ mkdirSync(evidence, { recursive: true })
 const results = []
 function pass(label) { results.push(label); console.log(`PASS: ${label}`) }
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
-let server, app, browser
+let server, app, provider, browser
 const exec = promisify(execFile)
 const testToken = 'synthetic-video-browser-test-only'
 const namespace = 'holistic-house:site-videos:v1'
@@ -26,7 +25,24 @@ const namespace = 'holistic-house:site-videos:v1'
 try {
   if (!live) {
     assert.equal(process.env.CI, 'true', 'Isolated tests must run in CI')
-    server = createServer({ key: readFileSync('/tmp/video-test-key.pem'), cert: readFileSync('/tmp/video-test-cert.pem') }, async (request, response) => {
+    assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+    assert.ok(!process.env.VERCEL, 'Never run the protocol double on Vercel')
+    const database = new URL(process.env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid')
+    assert.ok(['127.0.0.1', 'localhost'].includes(database.hostname) && database.pathname === '/hh_app_test',
+      'An isolated loopback test database is required')
+    assert.equal(process.env.HH_TEST_APP_ORIGIN, origin)
+    assert.equal(process.env.HH_APP_SUPABASE_URL, 'http://127.0.0.1:54329')
+    provider = spawn(process.execPath, ['tests/helpers/app-auth-double.mjs'], {
+      env: {...process.env, HH_TEST_OWNER_FIXTURE:'true'}, stdio:['ignore','pipe','pipe'],
+    })
+    const providerLog = createWriteStream(`${evidence}/local-provider.log`)
+    provider.stdout.pipe(providerLog); provider.stderr.pipe(providerLog)
+    for (let i = 0; ; i++) {
+      try { if ((await fetch('http://127.0.0.1:54329/health')).ok) break } catch { /* starting */ }
+      if (i > 40 || provider.exitCode !== null) throw new Error('Local auth protocol double did not start')
+      await pause(250)
+    }
+    server = createServer({ key: readFileSync(process.env.HH_TEST_TLS_KEY || '/tmp/video-test-key.pem'), cert: readFileSync(process.env.HH_TEST_TLS_CERT || '/tmp/video-test-cert.pem') }, async (request, response) => {
       try {
         assert.equal(request.method, 'POST')
         assert.equal(request.headers.authorization, `Bearer ${testToken}`)
@@ -34,9 +50,14 @@ try {
         for await (const part of request) { raw += part; assert.ok(raw.length < 400000) }
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
-        assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
-        assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
-        const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
+        const videoCommand = ['HGET', 'HGETALL', 'EVAL'].includes(command[0]) &&
+          command[command[0] === 'EVAL' ? 3 : 1] === namespace
+        const sessionCommand = ['GET', 'SET', 'DEL'].includes(command[0]) &&
+          /^prescription:session:[a-f0-9]{64}$/.test(command[1] || '') &&
+          ((command[0] === 'GET' || command[0] === 'DEL') ? command.length === 2 :
+            command.length === 5 && command[3] === 'EX' && Number(command[4]) > 0 && Number(command[4]) <= 43200)
+        assert.ok(videoCommand || sessionCommand, 'Command is outside the isolated video and session namespaces')
+        const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', process.env.HH_TEST_REDIS_PORT || '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
         response.end(JSON.stringify({ result: JSON.parse(stdout) }))
       } catch (error) {
@@ -50,7 +71,7 @@ try {
     await once(server, 'listening')
     const log = createWriteStream(`${evidence}/local-app.log`)
     app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100', '-H', '127.0.0.1'], {
-      env: { ...process.env, PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
+      env: { ...process.env, NODE_ENV:'test', PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken, PRESCRIPTIONS_DATA_ENCRYPTION_KEY:'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     app.stdout.pipe(log); app.stderr.pipe(log)
@@ -62,6 +83,7 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  if (!live) await context.route(/^https:\/\/(?:app\.heygen\.com|www\.youtube-nocookie\.com)\//, route => route.abort())
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
@@ -81,7 +103,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -165,11 +187,11 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
@@ -177,7 +199,9 @@ try {
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]'
+        : route.endsWith('/free-situation-review') ? '[data-free-review-intro-video]'
+        : `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -201,9 +225,13 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
+  assert.equal(await aboutReviews.count(), 10, 'All ten approved About reviews are rendered')
+  const aboutReviewIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')))
+  assert.equal(new Set(aboutReviewIds).size, 10, 'About review identities are unique')
+  assert.equal(await page.locator('[data-personal-testimonials="about"] .site-video-player').count(), 10)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
@@ -238,9 +266,31 @@ try {
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
   } else {
-    const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
-    await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
-    const editor = await adminContext.newPage()
+    async function verifiedBridge(isNonOwner) {
+      const actorContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+      if (isNonOwner) await actorContext.addCookies([{ name:'hh_test_actor', value:'b', url:origin }])
+      const actorPage = await actorContext.newPage()
+      const start = await actorPage.request.post(origin + '/api/app/auth/start', { headers:{Origin:origin}, data:{locale:'en'} })
+      assert.equal(start.status(), 200, 'Local PKCE start')
+      const login = await start.json()
+      assert.equal(new URL(login.redirectUrl).origin, process.env.HH_APP_SUPABASE_URL, 'Loopback protocol double only')
+      await actorPage.goto(login.redirectUrl, {waitUntil:'domcontentloaded'})
+      const bridge = await actorPage.request.post(origin + '/api/app/practitioner/open', {
+        headers:{Origin:origin}, data:{destination:'videos'},
+      })
+      if (isNonOwner) {
+        assert.equal(bridge.status(),404,'A verified non-owner must not obtain an admin session')
+        await actorContext.close()
+        return null
+      }
+      assert.equal(bridge.status(),200,'The verified owner receives the existing admin bridge')
+      assert.equal((await bridge.json()).redirectUrl,'/admin/videos')
+      return {context:actorContext,page:actorPage}
+    }
+    await verifiedBridge(true)
+    const owner = await verifiedBridge(false)
+    const adminContext = owner.context
+    const editor = owner.page
     editor.on('pageerror', error => pageErrors.push(error.message))
     async function openEditor(target = editor) {
       await target.goto(`${origin}/admin/videos`)
@@ -306,7 +356,9 @@ try {
           }, RECEIPT_SESSION_KEY)
           await page.reload({ waitUntil: 'domcontentloaded' })
         }
-        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+        // The owner withdrew the homepage introduction, even if an editor publishes it.
+        // Other approved placements must still render their published snapshot.
+        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(slot.id === 'home-intro' ? 0 : 1)
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
     }
@@ -355,7 +407,9 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(2)
+    await expect(editor.locator('.site-video-placement-list button').filter({ hasText: 'About Andy' })).toHaveCount(1)
+    await expect(editor.locator('.site-video-placement-list button').filter({ hasText: 'Registration — thank you' })).toHaveCount(1)
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')
@@ -372,6 +426,20 @@ try {
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
     await expect(editor.locator('input[name="title"]')).toHaveValue('QA Spanish About independent publication')
     pass('Spanish About publish/hide/reload via real actions preserves EN/RU and never falls back to English')
+    await editor.locator('.site-video-placement-list button').filter({ hasText: 'Registration — thank you' }).click()
+    await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/thank-you')
+    await fill('QA Spanish thank-you gated publication')
+    await save('publish')
+    await page.evaluate(key => window.sessionStorage.removeItem(key), RECEIPT_SESSION_KEY)
+    await navigate('/es/thank-you')
+    await expect(page.getByText('QA Spanish thank-you gated publication', { exact: true })).toHaveCount(0)
+    await page.evaluate(key => window.sessionStorage.setItem(key, JSON.stringify({
+      referenceCode: 'HH-0123456789AB', createdAt: Date.now(),
+    })), RECEIPT_SESSION_KEY)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByText('QA Spanish thank-you gated publication', { exact: true })).toHaveCount(1)
+    await save('hide')
+    pass('Spanish thank-you publication requires an isolated tab-local receipt')
     await adminContext.close()
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
@@ -384,5 +452,6 @@ try {
 } finally {
   if (browser) await browser.close()
   if (app) app.kill('SIGTERM')
+  if (provider) provider.kill('SIGTERM')
   if (server) server.close()
 }

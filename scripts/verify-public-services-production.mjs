@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -67,7 +67,8 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      const response = await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "domcontentloaded" });
+      assert.equal(response?.status(), 200, "Spanish Alchemy route must return HTTP 200");
       const main = page.locator('main[data-core-service-detail="alchemy"]');
       await visible(main.locator("h1"));
       await expect(main).toHaveAttribute("lang", "es");
@@ -140,14 +141,14 @@ try {
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
           "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
+          "#method-videos", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
       await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
         { timeout: 15000 });
       // Method posters are visible, while third-party players stay opt-in.
@@ -345,7 +346,8 @@ try {
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
-    await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-mode="online"]').click();
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
@@ -380,7 +382,7 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]:visible').first();
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
@@ -462,7 +464,8 @@ try {
     for (const [slug, kind] of coreServices) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
-        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
+        const response = await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "domcontentloaded", timeout: 60000 });
+        assert.equal(response?.status(), 200, locale + "/" + slug + ": public service response");
         const main = page.locator('main[data-core-service-detail="' + kind + '"]');
         await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
@@ -605,38 +608,24 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
-          const featured = main.locator("[data-featured-constellations-video]");
+          const featured = main.locator("[data-free-review-intro-video]");
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
-            "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
-
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
-
+            "Approved introduction never autoplays before opt-in");
+          const enquiry = main.locator("[data-personal-express-enquiry]");
+          await visible(enquiry);
+          await visible(enquiry.locator("[data-express-review-messenger-choice]"));
+          const reveal = enquiry.locator("[data-express-reveal]");
+          await expect(reveal).toHaveAttribute("aria-expanded", "false");
+          await expect(enquiry.locator("[data-express-inline-disclosure]")).toBeHidden();
+          await reveal.click();
+          const secureForm = enquiry.locator("[data-express-inline-disclosure]");
+          await visible(secureForm);
+          assert.equal(await secureForm.locator('input[type="checkbox"][required]').isChecked(), false,
+            "The website request requires explicit consent");
+          assert.equal(await secureForm.locator('a[data-contact-channel]').count(), 0,
+            "No contact channel is prepared before a consented request");
+          await reveal.click();
           const writtenIntake = main.locator("[data-optional-written-review]");
           assert.equal(await writtenIntake.evaluate(el => el.open), false);
           if (width === 390) {

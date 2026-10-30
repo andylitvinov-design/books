@@ -23,6 +23,8 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
+          // Keep synthetic directory routes independent of the app service worker.
+          serviceWorkers: "block",
         });
         const errors = [];
         page.on("pageerror", err => errors.push(err.message));
@@ -47,14 +49,14 @@ for (const engine of [chromium, webkit]) {
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
-          assert.equal(await launch.count(), 1, label + " one left-side picker");
+          const launch = root.locator("[data-support-recommendations]");
+          assert.equal(await launch.count(), 1, label + " one recommendation action");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four editable self-scores");
-          assert.equal(await root.locator(".focusSelector").count(), 0,
-            label + " no old focus control");
+          assert.equal(await root.locator("[data-support-active-focus]").count(), 1,
+            label + " one current focus indicator");
           assert.equal(await root.locator('[data-support-detailed-analysis]').count(), 0,
             label + " old left Tests CTA replaced");
           assert.equal(await gallery.locator("[data-support-video]").count(), 4,
@@ -180,7 +182,12 @@ for (const engine of [chromium, webkit]) {
 
           await root.locator('[data-support-tool="masters"]').click();
           const masterViewer = root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]');
-          await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          try { await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000}); }
+          catch (error) {
+            console.error(JSON.stringify({phase:"synthetic-master-directory",locale,width,
+              text:(await masterViewer.innerText()).slice(0,500),errors}));
+            throw error;
+          }
           assert.equal(await masterViewer.locator('[data-support-master-thumb]').count(),2,
             label + " published fixture masters selectable under large profile");
           await masterViewer.locator('[data-support-master-thumb="qa-energy-two"]').click();

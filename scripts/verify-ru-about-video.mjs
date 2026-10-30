@@ -54,7 +54,7 @@ try {
         assert.equal(await intro.locator('.site-video-title, .site-video-description, .site-video-duration-text, .site-video-play-label').count(), 0);
         await expect(intro.locator('.site-video-duration')).toHaveCount(1);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('ИИ-аватар');
-        await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         const frameBox = await intro.locator('.site-video-frame').boundingBox();
         const figureBox = await intro.locator('figure').boundingBox();
         assert.ok(figureBox.height < frameBox.height + 64, 'Excessive caption height');
@@ -68,8 +68,7 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        await expect(intro.locator('.site-video-watch-link')).toBeVisible();
-        await expect(intro.locator('.site-video-watch-link')).toHaveAttribute('href', `https://app.heygen.com/share/${videoId}`);
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0); // Internal-only video: no external share link.
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
@@ -84,8 +83,8 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
-      assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0);
+      assert.equal(await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count(), 10);
       await page.close();
     } finally { await browser.close(); }
   }

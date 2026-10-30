@@ -127,7 +127,7 @@ function businessOffers(locale: Locale): Offer[] {
   ]
 }
 
-export function BusinessServiceBrowser({locale}: {locale: Locale}) {
+export function BusinessServiceBrowser({locale, requestOnServicePage = false}: {locale: Locale; requestOnServicePage?: boolean}) {
   const t = copy[locale]
   const [topic,setTopic] = useState<Topic>('all')
   const [mode,setMode] = useState<Mode>('all')
@@ -191,7 +191,9 @@ export function BusinessServiceBrowser({locale}: {locale: Locale}) {
               <div className={styles.cardFooter}>
                 <strong className={styles.price}>{item.price}</strong>
                 {item.format ?
-                  <AcquisitionEventLink href="#business-direct-request" event="service_request_start"
+                  <AcquisitionEventLink href={requestOnServicePage
+                    ? '/'+locale+'/services/business-consulting?businessFormat='+item.format+'#business-direct-request'
+                    : '#business-direct-request'} event="service_request_start"
                     prefetch={false} className={styles.action} attributes={{
                       'data-business-direct-option': item.format,
                       'data-business-service-request': item.id,

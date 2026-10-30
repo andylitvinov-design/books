@@ -14,6 +14,8 @@ const nodes = tree => !tree || typeof tree !== 'object' ? []
 const modules = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { __esModule: true, default: 'Link' },
+  '@/components/business-consultation-finder': { BusinessConsultationFinder: 'BusinessConsultationFinder' },
+  '@/components/business-service-browser': { BusinessServiceBrowser: 'BusinessServiceBrowser' },
   'lucide-react': new Proxy({}, { get: (_, name) => String(name) }),
   './direction-offers.module.css': { __esModule: true, default: new Proxy({}, { get: (_, name) => String(name) }) },
 }
@@ -33,6 +35,14 @@ test('Energy, Love, Business disclose exactly two unique useful actions in each 
       const disclosures = nodes(tree).filter(node => node.type === 'details' && node.props['data-direction-more'])
       assert.equal(disclosures.length, 1)
       assert.equal(disclosures[0].props['data-direction-extra-for'], direction)
+      const finder = nodes(tree).filter(node => node.type === 'BusinessConsultationFinder')
+      const browser = nodes(tree).filter(node => node.type === 'BusinessServiceBrowser')
+      assert.equal(finder.length, direction === 'business' ? 1 : 0)
+      assert.equal(browser.length, direction === 'business' ? 1 : 0)
+      if (direction === 'business') {
+        assert.equal(finder[0].props.requestOnServicePage, true)
+        assert.equal(browser[0].props.requestOnServicePage, true)
+      }
       const summaries = nodes(tree).filter(node => node.type === 'summary')
       assert.equal(summaries.length, 1)
       assert.ok(typeof summaries[0].props.children[0] === 'string')

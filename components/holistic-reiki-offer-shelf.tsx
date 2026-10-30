@@ -145,7 +145,7 @@ export function HolisticReikiOfferShelf({
                   {master.reikiOffer && master.serviceHref ?
                     <Link className={styles.action} href={master.serviceHref} prefetch={false}>
                       {t.details}<ArrowRight size={16}/></Link> :
-                    <button type="button" className={styles.action} onClick={() => onRequestMaster(master.serviceId)}>
+                    <button type="button" className={styles.action} data-support-master-request onClick={() => onRequestMaster(master.serviceId)}>
                       {t.enquiry}<ArrowRight size={16}/></button>}
                 </div>
               </div>

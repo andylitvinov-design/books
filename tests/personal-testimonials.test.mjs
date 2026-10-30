@@ -69,7 +69,9 @@ test("homepage previews four sourced videos and preserves all 12 originals behin
   assert.doesNotMatch(component, /renderVideoCards\(remainingHomeVideos\)/);
   assert.match(component,/storyQuote/);
   assert.match(component,/current\.storyQuote/);
-  assert.match(component, /video=\{\{ youtubeId: item\.id, language: item\.language, title: item\.title \}\}/);
+  assert.match(component, /video=\{\{ youtubeId: item\.id, language: item\.language,/);
+  assert.match(component, /item\.language === "ru" && locale !== "ru"/);
+  assert.match(component, /russianVideoTitles\[locale\]\[item\.id\] \?\? item\.title/);
 });
 
 test("the personal story is permissioned, anonymized, attributed, and translated transparently", () => {

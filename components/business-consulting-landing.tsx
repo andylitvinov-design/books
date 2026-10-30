@@ -136,7 +136,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                         {offer.cta}<ArrowRight size={17} aria-hidden="true" />
                       </AcquisitionEventLink>
                     ) : (
-                      <ContactChannelChooser locale={locale} whatsappUrl={contactUrl(offer.kind)} label={offer.cta}
+                      <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={contactUrl(offer.kind)} label={offer.cta}
                         event="service_request_start" className={styles.contactButton}
                         attributes={{ "data-business-format": offer.kind }} />
                     )}
@@ -201,7 +201,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <h2 id="business-mentoring-title">{t.mentorTitle}</h2>
             <p>{t.mentorText}</p>
           </div>
-          <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("mentoring")}
+          <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={contactUrl("mentoring")}
             label={t.mentorCta} className={styles.mentorButton} event="service_request_start"
             attributes={{ "data-business-format": "mentoring" }} />
         </section>
@@ -215,13 +215,13 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <a className={styles.requestDirect} href="#business-direct-request">{locale === "ru" ? "Сохранить заявку напрямую на сайте" : locale === "es" ? "Guardar solicitud directamente en la web" : "Save your request directly on the website"}<ArrowRight size={17} aria-hidden="true"/></a>
           </div>
           <div className={styles.requestChoices}>
-            <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("express")}
+            <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={contactUrl("express")}
               label={t.formatCtas[0]} event="service_request_start" className={styles.requestButton}
               attributes={{ "data-business-format": "express-bottom" }} />
-            <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("full")}
+            <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={contactUrl("full")}
               label={t.formatCtas[1]} event="service_request_start" className={styles.requestButton}
               attributes={{ "data-business-format": "full-bottom" }} />
-            <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("mentoring")}
+            <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={contactUrl("mentoring")}
               label={t.formatCtas[2]} event="service_request_start" className={styles.requestButtonAlt}
               attributes={{ "data-business-format": "mentoring-bottom" }} />
           </div>
