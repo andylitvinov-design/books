@@ -126,10 +126,37 @@ async function checkExport(page,engine){
   assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
   const attachButton=page.locator("[data-video-audio-attach]");
   const player=page.locator("[data-video-audio-player]");
-  assert.equal(await player.getAttribute("src"),"/audio/mandala/rain.wav");
   const media=await page.request.get(BASE+"/audio/mandala/rain.wav",{headers:{Range:"bytes=0-63"}});
   assert.ok([200,206].includes(media.status()));
   assert.equal(Buffer.from(await media.body()).subarray(0,4).toString("ascii"),"RIFF");
+  // Native WebKit may report an aborted media request during rapid source
+  // switching. Exercise the *real* in-app retry rather than asserting a player
+  // that was correctly replaced by a recovery action. Do not skip playback.
+  const mediaState=()=>page.evaluate(()=>({
+    selected:document.querySelector('[data-video-music="rain"]')?.getAttribute("aria-pressed"),
+    player:document.querySelector("[data-video-audio-player]")?.getAttribute("src"),
+    retry:Boolean(document.querySelector("[data-video-audio-retry]")),
+    disabled:document.querySelector("[data-video-music-preview]")?.hasAttribute("disabled"),
+  }));
+  await page.waitForFunction(()=>Boolean(
+    document.querySelector("[data-video-audio-player]") ||
+    document.querySelector("[data-video-audio-retry]")
+  ),undefined,{timeout:5000});
+  if(await page.locator("[data-video-audio-retry]").count()){
+    assert.equal((await mediaState()).selected,"true",
+      "WebKit recovery must not clear the visitor's selected track");
+    await page.locator("[data-video-audio-retry]").click();
+  }
+  try{
+    await page.waitForFunction(()=>{
+      const a=document.querySelector("[data-video-audio-player]");
+      return a?.getAttribute("src")==="/audio/mandala/rain.wav";
+    },undefined,{timeout:5000});
+  }catch(error){
+    throw new Error(engine+" native audio player did not recover "+
+      JSON.stringify(await mediaState())+" / "+String(error));
+  }
+  assert.equal(await player.getAttribute("src"),"/audio/mandala/rain.wav");
   await page.locator("[data-video-music-preview]").click();
   await page.waitForFunction(()=>{
     const a=document.querySelector("[data-video-audio-player]");
