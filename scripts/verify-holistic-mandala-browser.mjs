@@ -960,6 +960,11 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
           assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),2,
             "only two contextual clarifications when subject and action are unclear");
+          const customSubject=director.locator('[data-director-contextual-questions] fieldset').first().locator('input');
+          await customSubject.pressSequentially('Свой герой');
+          assert.equal(await customSubject.inputValue(),'Свой герой',
+            'custom answer stays mounted and editable across successive keystrokes');
+          await customSubject.fill('');
           await director.locator('[data-director-contextual-questions] button:has-text("Другой герой")').click();
           await director.locator('[data-director-contextual-questions] button:has-text("Животное или птица")').click();
           assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
