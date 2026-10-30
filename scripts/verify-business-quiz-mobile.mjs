@@ -91,6 +91,7 @@ async function verify(browserType,locale,width){
     await page.locator('[data-business-need="income"]').click()
     await page.locator('[data-business-finder-result] summary').click()
     await page.locator('[data-business-format-choice="full"]').click()
+    await page.waitForFunction(() => document.querySelector('[data-business-finder-start="website-form"]')?.getAttribute('data-business-direct-option') === 'full')
     assert.equal(await cta.getAttribute('data-business-direct-option'),'full')
     assert.equal(await freeCta.getAttribute('href'),'/'+locale+'/services/free-situation-review?topic=business')
     await cta.click()

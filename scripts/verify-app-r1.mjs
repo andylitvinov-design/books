@@ -431,9 +431,9 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind] of services){
-   const servicePage=await publicContext.newPage()
-   servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
+    const servicePage=await publicContext.newPage()
+    servicePage.on('pageerror',error=>publicErrors.push(error.message))
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded',timeout:60000})
     const mainSelector=kind==='dao'?'main[data-free-entry-landing="dao"]':'main[data-core-service-detail="'+kind+'"]'
@@ -464,7 +464,7 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
-    if(width!==390)continue
+    if(width!==390){await servicePage.close();continue}
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
@@ -513,8 +513,8 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(form.locator('input[type="checkbox"][required]')).not.toBeChecked()
      await expect(form.locator('button[data-compact-channel="whatsapp"]')).toBeVisible()
     }
+    await servicePage.close()
    }
-   await servicePage.close()
   }
  }
  for(const locale of ['en','ru']){
@@ -534,6 +534,10 @@ async function verifyPublicServiceConversionJourneys(){
   }
   await publicPage.setViewportSize({width:390,height:844})
   const enquiry=publicPage.locator('[data-personal-express-enquiry]')
+  await publicPage.waitForFunction(() => {
+   const button=document.querySelector('[data-personal-express-enquiry] [data-express-reveal]')
+   return Boolean(button && Object.keys(button).some(key=>key.startsWith('__reactProps$')))
+  },null,{timeout:30000})
   await enquiry.locator('[data-express-reveal]').click()
   const disclosure=enquiry.locator('[data-express-inline-disclosure]')
   await expect(disclosure).toBeVisible()
