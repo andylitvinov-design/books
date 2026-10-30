@@ -1746,7 +1746,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {tierMode==="smart"?<strong>{tier.freeIntro}</strong>:null}
           {tierMode==="smart"?<p>{tier.freeExpl}</p>:null}
           {!videoAiReady?<p>{tier.blocked}</p>:null}
-          <MandalaVideoCodeRedeemer locale={locale}
+          <MandalaVideoCodeRedeemer key={tierMode} locale={locale}
             tier={tierMode==="smart"?"smart":"pro"} onAvailability={setVideoAiReady}/>
           <button type="button" disabled={recording||preparing}
             data-video-tier-storyboard onClick={prepareAiStoryboard}>
