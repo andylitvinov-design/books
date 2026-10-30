@@ -5,7 +5,7 @@ import {consumeRate} from "@/lib/app/database";
 import {PRIVATE_HEADERS,readBody,safeError} from "@/lib/app/http";
 import {AppError,onlyKeys} from "@/lib/assessments/contracts";
 import {videoAiEnabled,submitVideoAiJob,readVideoAiJob} from "@/lib/mandala/video-ai-heygen.mjs";
-import {claimVideoCode,getVideoJob,markVideoJobSubmitted,markVideoJobUnknown,syncVideoJob}
+import {claimVideoCode,getVideoJob,listVideoAiJobs,markVideoJobSubmitted,markVideoJobUnknown,syncVideoJob}
   from "@/lib/mandala/video-ai-repository";
 
 export const runtime="nodejs";
@@ -66,11 +66,16 @@ export async function GET(request){
     const config=getAppConfig();
     const state=await actorFor(request,config);
     auth=state.auth;const actor=state.actor;
-    if(!videoAiEnabled())throw new AppError("VIDEO_AI_NOT_ENABLED",503);
     const id=new URL(request.url).searchParams.get("id");
     await consumeRate(config,"video:status:"+actor.id,60,600);
+    // Read-only My House library remains available even when new paid
+    // generation is switched OFF. This must never submit a paid job.
+    if(!id){
+      const own=await listVideoAiJobs(config,actor);
+      return auth.apply(NextResponse.json({jobs:own},{headers:PRIVATE_HEADERS}));
+    }
     let job=await getVideoJob(config,actor,id);
-    if(["pending","in_progress"].includes(job.status)&&job.external_id){
+    if(videoAiEnabled()&&["pending","in_progress"].includes(job.status)&&job.external_id){
       const provider=await readVideoAiJob(job.external_id,{
         key:process.env.HH_VIDEO_HEYGEN_API_KEY,
       });
@@ -78,7 +83,10 @@ export async function GET(request){
         job=await syncVideoJob(config,actor,job.id,provider.status);
       }
     }
-    return auth.apply(NextResponse.json(publicJob(job),{headers:PRIVATE_HEADERS}));
+    return auth.apply(NextResponse.json({
+      ...publicJob(job),
+      archived:job.storage_state==="ready",
+    },{headers:PRIVATE_HEADERS}));
   }catch(error){
     const safe=safeError(error);
     const response=NextResponse.json({error:safe.code},
