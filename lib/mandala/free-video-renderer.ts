@@ -190,10 +190,14 @@ export function paintFreeVideoFrame(
   if(!w||!h)return;
   const p=PALETTES[plan.palette];
   const multiplier=plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
-  const t=Math.max(0,Number.isFinite(time)?time:0)*multiplier;
+  const elapsed=Math.max(0,Number.isFinite(time)?time:0);
+  const t=elapsed*multiplier;
   // Four coherent original artworks, rather than one repeating wallpaper.
   const total=plan.durationSeconds||30,section=total/4;
-  const slot=Math.min(3,Math.floor(t/section)),local=Math.max(0,t-slot*section);
+  // Segment boundaries follow REAL video seconds, not the artistic speed.
+  const slot=Math.min(3,Math.floor(elapsed/section));
+  const localTime=Math.max(0,elapsed-slot*section);
+  const local=localTime*multiplier;
   const familyFor=(i:number)=>i===1?(plan.family==="light"?"mandala":"light"):
     i===3?(plan.family==="mandala"?"light":"mandala"):plan.family;
   const draw=(i:number,seconds:number)=>{
@@ -208,9 +212,9 @@ export function paintFreeVideoFrame(
   ctx.save();
   draw(slot,local);
   const dissolve=.7;
-  if(slot<3&&local>section-dissolve){
+  if(slot<3&&localTime>section-dissolve){
     ctx.save();
-    ctx.globalAlpha=Math.min(1,Math.max(0,(local-(section-dissolve))/dissolve));
+    ctx.globalAlpha=Math.min(1,Math.max(0,(localTime-(section-dissolve))/dissolve));
     draw(slot+1,0);
     ctx.restore();
   }
