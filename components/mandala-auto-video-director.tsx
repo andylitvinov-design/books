@@ -114,7 +114,7 @@ export function MandalaAutoVideoDirector({
    </div>
    <div className={css.entry}>
      <label className={css.goal}><span className={css.notice}>{t.input}</span>
-       <input type="text" data-auto-video-input data-video-quick-wish value={goal}
+       <input type="text" data-auto-video-input value={goal}
          maxLength={160} disabled={disabled} placeholder={t.placeholder}
          onChange={event=>{
            onGoalChange(event.currentTarget.value);
