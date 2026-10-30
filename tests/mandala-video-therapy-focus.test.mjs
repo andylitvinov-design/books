@@ -9,12 +9,17 @@ test("therapy mode is a dedicated programme directly under the central moving vi
   const studio=read("components/mandala-free-video-studio.tsx");
   const guided=read("components/mandala-guided-course.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const indices=["data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
-    "data-video-category-rail","data-video-preview-choices",
-    'id="video-hero"','id="guided-video-series"',"data-video-editor-nav"].map(key=>studio.indexOf(key));
-  assert.ok(indices.every(index=>index>=0),"all required visible Support and therapy landmarks exist");
+  const top=["data-video-quick-builder",'data-video-quick-section="1"',
+    "data-video-live-stage",'id="video-hero"','id="guided-video-series"',
+    "data-video-scene-library","data-video-quick-tier"].map(key=>studio.indexOf(key));
+  const support=["data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
+    "data-video-category-rail","data-video-preview-choices","data-video-editor-nav"].map(key=>studio.indexOf(key));
+  for(const [name,indices] of [["top course and video stage",top],["existing Support controls",support]]){
+    assert.ok(indices.every(index=>index>=0),name+" landmarks remain");
+    assert.ok(indices.slice(1).every((index,i)=>index>indices[i]),
+      name+" remains ordered: source must show the therapy programme immediately after the top preview");
+  }
   assert.doesNotMatch(studio,/data-video-mode-switch/);
-  assert.ok(indices.slice(1).every((index,i)=>index>indices[i]),"therapy programme follows the preview, before extra editors");
   assert.match(studio,/studioMode==="therapy" \? <div className=\{videoStyles\.therapyCourse\}/);
   assert.match(studio,/data-video-studio-mode=\{studioMode\}/);
   assert.match(studio,/data-video-affirmations-feature checked=\{affirmations\.enabled\}/);
