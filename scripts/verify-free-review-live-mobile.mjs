@@ -15,28 +15,42 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
   const card = enquiry.locator('[data-express-focus="' + focus + '"]');
-  // A card may be in the viewport but underneath the fixed mobile dock.
-  // Simulate scrolling it into the usable area before the single real tap.
-  await card.evaluate(element => element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
-  const box = await card.boundingBox();
-  assert.ok(box && box.y >= 0 && box.y + box.height <= page.viewportSize().height - 80,
-    "focus card must be above the fixed navigation before tapping");
-  await enquiry.locator('[data-express-focus="' + focus + '"]').click();
-  try { await page.waitForFunction((target) => {
-    const root = document.querySelector('[data-personal-express-enquiry]');
-    const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
-    const card = root?.querySelector('[data-express-focus="' + target + '"]');
-    return radio instanceof HTMLInputElement && radio.checked
-      && card?.getAttribute("data-selected") === "true";
-  }, focus, { timeout: 3000 }); } catch (error) {
-    const state = await enquiry.locator('[data-express-focus]').evaluateAll(cards => cards.map(card => ({
-      focus:card.getAttribute('data-express-focus'), selected:card.getAttribute('data-selected'),
-      checked:card.querySelector('input[type="radio"]')?.checked,
-      disabled:card.querySelector('input[type="radio"]')?.disabled,
-      rect:{x:Math.round(card.getBoundingClientRect().x),y:Math.round(card.getBoundingClientRect().y),width:Math.round(card.getBoundingClientRect().width),height:Math.round(card.getBoundingClientRect().height)}
-    })));
-    console.error('FREE_REVIEW_FOCUS_DIAGNOSTIC', JSON.stringify({target:focus,state}));
-    throw error;
+  // The mobile bottom nav is fixed. When expanded content changes height,
+  // WebKit may leave the large label behind that toolbar. A user would scroll
+  // the card into a visible touch position first: do the same, and ASSERT the
+  // real card receives a hit before making exactly ONE native touch tap.
+  await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  const targetHit = await card.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+    const top = document.elementFromPoint(x,y);
+    return {
+      hittable: !!top && (top === node || node.contains(top)),
+      rect: {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+      obstruction: top?.closest("nav")?.getAttribute("aria-label") || top?.tagName || null,
+    };
+  });
+  assert.ok(targetHit.hittable, "One-tap focus card remains behind navigation after scroll: " + JSON.stringify(targetHit));
+  await card.tap();
+  // WebKit can briefly delay React's selected-card paint while the mobile
+  // anchor settles. Still require BOTH native radio.checked and the real
+  // rendered selected card after a SINGLE user tap (never retry a lost tap).
+  try {
+    await page.waitForFunction((target) => {
+      const root = document.querySelector('[data-personal-express-enquiry]');
+      const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
+      const card = root?.querySelector('[data-express-focus="' + target + '"]');
+      return radio instanceof HTMLInputElement && radio.checked
+        && card?.getAttribute("data-selected") === "true";
+    }, focus, { timeout: 8000 });
+  } catch (error) {
+    const actual = await enquiry.evaluate((root, target) => ({
+      expanded: root.getAttribute("data-expanded"),
+      nativeChecked: root.querySelector('input[name="express-review-focus"][value="' + target + '"]')?.checked ?? null,
+      selectedCard: root.querySelector('[data-express-focus="' + target + '"]')?.getAttribute("data-selected") ?? null,
+      selectedRadio: root.querySelector('input[name="express-review-focus"]:checked')?.value ?? null,
+    }), focus);
+    throw new Error("Single-tap focus was not committed: " + JSON.stringify({focus, actual, reason:String(error)}));
   }
 }
 // One personal express review, with two focus categories in a single form.

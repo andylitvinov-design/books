@@ -56,6 +56,61 @@ test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels sup
   assert.doesNotMatch(s,/continue-on-error:\s*true|actions:\s*write/);
 });
 
+test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
+  const suffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const cancel = "${{ github.event_name == 'pull_request' }}";
+  const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for (const [file, prefix, job] of [
+    ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
+    ['hh-free-review-live-mobile.yml', 'hh-free-review-mobile', 'read-only-mobile'],
+  ]) {
+    const source = workflow(file);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'), file + ' must test Ready transitions');
+    assert.ok(source.includes('  ' + job + ':\n' + ready + '\n'), file + ' must run full QA for Ready');
+    assert.ok(source.includes('group: ' + prefix + '-' + suffix), file + ' must group by PR number and independent manual run');
+    assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ' must not cancel production or manual runs');
+    assert.match(source, /^  workflow_dispatch:/m, file + ' must preserve manual verification');
+    assert.match(source, /playwright install --with-deps chromium webkit/, file + ' must retain actual browser QA');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+  const youtube = workflow('youtube-phone-uploader.yml');
+  const free = workflow('hh-free-review-live-mobile.yml');
+  assert.match(youtube, /npm run build/, 'YouTube local real video UI build must remain');
+  assert.match(youtube, /verify-youtube-phone-mobile\.mjs/, 'YouTube mobile acceptance must remain');
+  assert.match(free, /^  push:/m, 'post-merge production verification cannot be cancelled');
+  assert.match(free, /Verify PR's local production build, not old live alias/, 'PR acceptance must test exact source');
+  assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
+});
+
+test('isolated YouTube mobile QA shares a true same-origin loopback host with browser navigation', () => {
+  const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+  const guard = read('lib/youtube/mobile-qa-guard.mjs');
+  const qa = read('app/qa/youtube-phone/page.js');
+  const verifier = read('scripts/verify-youtube-phone-mobile.mjs');
+  assert.match(verifier, /const origin = 'http:\/\/localhost:3157'/);
+  assert.match(verifier, /'start','-p','3157','-H','localhost'/);
+  assert.match(guard, /host==='localhost:3157'/);
+  assert.match(guard, /host==='127\.0\.0\.1:3157'/);
+  for(const field of ["CI==='true'","HH_APP_TEST_RUNTIME==='isolated'","!env.VERCEL"])
+    assert.ok(guard.includes(field), 'never open QA in production: ' + field);
+  assert.match(qa, /phoneYoutubeQaAllowed/, 'QA owner gate must remain isolated');
+  assert.match(verifier, /assert\.deepEqual\(errors,\[\]/, 'WebKit page JS errors must still fail');
+  assert.match(verifier, /webkit/, 'real Chromium/WebKit acceptance retained');
+  assert.match(verifier, /origin\+'\/admin\/youtube-upload'/, 'unauthenticated admin still explicitly denied');
+});
+test('express review accepts one real mobile tap only after radio and React card agree', () => {
+  const source = readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs', import.meta.url), 'utf8');
+  assert.match(source, /timeout: 8000/);
+  assert.ok(source.includes('scrollIntoView({block:"center"'), 'real user-like scroll must make full card visible');
+  assert.ok(source.includes('document.elementFromPoint(x,y)'), 'fixed toolbar must not intercept tap');
+  assert.ok(source.includes('assert.ok(targetHit.hittable'), 'do not silently click blocked card');
+  assert.ok(source.includes('await card.tap()'), 'one native touch tap on the full card, no retry');
+  assert.match(source, /radio instanceof HTMLInputElement && radio.checked/);
+  assert.match(source, /getAttribute\("data-selected"\) === "true"/);
+  assert.match(source, /Single-tap focus was not committed/);
+  assert.match(source, /input\[type="checkbox"\]/);
+  assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
+});
 
 test("public service browser acceptance retains every scenario in two bounded fail-closed lanes",()=>{
   const s=workflow('hh-public-services-production.yml');
