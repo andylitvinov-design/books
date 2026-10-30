@@ -53,9 +53,9 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
     assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
   }
-  const module = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
-  assert.ok(module, 'OPORA unit suite must be retained');
-  const executed = [...module.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
+  const moduleTests = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(moduleTests, 'OPORA unit suite must be retained');
+  const executed = [...moduleTests.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
   assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
   assert.ok(executed.length >= 47, 'retain all 47 proven OPORA cases as the suite grows');
   for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
