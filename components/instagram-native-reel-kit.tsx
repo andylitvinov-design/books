@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Copy, ExternalLink, Instagram, Share2, Upload } from "lucide-react";
 import {
   inspectNativeReel, normalizeNativeReelCaption, normalizeReelReadbackLink,
-  REEL_MAX_CAPTION_CHARACTERS, TAO_INSTAGRAM_PROFILE, TAO_PUBLIC_LANDING, TAO_REEL_CAPTIONS,
+  REEL_MAX_CAPTION_CHARACTERS, TAO_INSTAGRAM_PROFILE, TAO_PUBLIC_LANDING,
 } from "@/lib/instagram/native-reel-kit.mjs";
 import styles from "./instagram-native-reel-kit.module.css";
 
@@ -15,7 +15,7 @@ const translations = {
   ru: {
     title: "Instagram @tao.ideas · бесплатно", subtitle: "Без Metricool и подписок. Готовим Reel на этом устройстве, затем завершаем публикацию в Instagram.",
     fileLabel: "1. Выберите готовый Reel из «Файлы»", fileHint: "MP4 или MOV, вертикально 9:16, со звуком и субтитрами. Kling Studio выше создаёт только немые 5–10-секундные сцены — для Reel сначала соберите полный ролик.",
-    caption: "2. Подпись к ролику", copy: "Копировать подпись", copied: "Подпись скопирована. Вставьте её при создании Reel.", copyError: "Не удалось скопировать. Выделите текст подписи вручную.",
+    caption: "2. Подпись к ролику", captionHint: "Введите текст именно к выбранному ролику. Чужая подпись автоматически не подставляется.", captionPlaceholder: "Авторская притча о… · Dao Wisdom · #ДаосскаяМудрость", copy: "Копировать подпись", copied: "Подпись скопирована. Вставьте её при создании Reel.", copyError: "Не удалось скопировать. Выделите текст подписи вручную.",
     qa: "3. Я проверил(а) видео, звук, субтитры, авторские права и отсутствие личных материалов клиентов.",
     share: "Передать MP4 через меню iPhone", shareError: "Файлы нельзя передать через меню этого браузера. Сохраните MP4 в «Фото» или «Файлы», затем откройте Instagram и создайте Reel.",
     shareClosed: "Меню передачи закрыто. Это НЕ подтверждает публикацию — завершите её в приложении Instagram.",
@@ -32,7 +32,7 @@ const translations = {
   en: {
     title: "Instagram @tao.ideas · free", subtitle: "No Metricool or subscription. Prepare the Reel on this device and finish posting in Instagram.",
     fileLabel: "1. Choose a finished Reel from Files", fileHint: "MP4 or MOV, vertical 9:16, with audio and captions. Kling Scene Studio above produces silent 5–10s clips; assemble the finished Reel first.",
-    caption: "2. Reel caption", copy: "Copy caption", copied: "Caption copied. Paste it when creating the Reel.", copyError: "Copy failed; select and copy the caption manually.",
+    caption: "2. Reel caption", captionHint: "Write a caption for this specific Reel. No unrelated episode text is prefilled.", captionPlaceholder: "Original parable about… · Dao Wisdom · #DaoWisdom", copy: "Copy caption", copied: "Caption copied. Paste it when creating the Reel.", copyError: "Copy failed; select and copy the caption manually.",
     qa: "3. I have checked the video, audio, captions, rights, and that it contains no private client material.",
     share: "Share MP4 via device", shareError: "File sharing is unavailable here. Save the MP4 to Photos/Files, then create the Reel in Instagram.",
     shareClosed: "The share dialog closed. This is NOT proof of publication; complete it in the Instagram app.", cancelled: "Sharing cancelled. Nothing was published.",
@@ -47,7 +47,7 @@ const translations = {
   es: {
     title: "Instagram @tao.ideas · gratis", subtitle: "Sin Metricool ni suscripción. Prepara el Reel aquí y termina la publicación en Instagram.",
     fileLabel: "1. Elige el Reel terminado de Archivos", fileHint: "MP4 o MOV vertical 9:16, con sonido y subtítulos. Kling Studio solo hace escenas mudas de 5–10 s: monta primero el Reel completo.",
-    caption: "2. Texto del Reel", copy: "Copiar texto", copied: "Texto copiado. Pégalo al publicar el Reel.", copyError: "No se pudo copiar. Selecciona el texto manualmente.",
+    caption: "2. Texto del Reel", captionHint: "Escribe el texto para este Reel concreto. No se inserta contenido de otros vídeos.", captionPlaceholder: "Parábola original sobre… · Dao Wisdom · #SabiduriaTaoista", copy: "Copiar texto", copied: "Texto copiado. Pégalo al publicar el Reel.", copyError: "No se pudo copiar. Selecciona el texto manualmente.",
     qa: "3. He revisado vídeo, audio, subtítulos, derechos y que no incluya materiales privados de clientes.",
     share: "Compartir MP4 con el dispositivo", shareError: "No se pueden compartir archivos aquí. Guarda el MP4 en Fotos/Archivos y crea el Reel en Instagram.",
     shareClosed: "Se cerró el menú para compartir. NO confirma que se haya publicado en Instagram.", cancelled: "Compartir cancelado. No se publicó nada.",
@@ -66,11 +66,12 @@ export function InstagramNativeReelKit({ initialLocale }: { initialLocale: Lang 
   const [file, setFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
-  const [caption, setCaption] = useState<string>(TAO_REEL_CAPTIONS[initialLocale]);
+  const [captions, setCaptions] = useState<Record<Lang, string>>({ ru: "", en: "", es: "" });
   const [rightsApproved, setRightsApproved] = useState(false);
   const [message, setMessage] = useState("");
   const [receiptInput, setReceiptInput] = useState("");
   const t = translations[lang];
+  const caption = captions[lang];
   const inspection = useMemo(() => inspectNativeReel(file, metadata) as Inspection, [file, metadata]);
   const validCaption = normalizeNativeReelCaption(caption);
   const readbackLink = normalizeReelReadbackLink(receiptInput);
@@ -84,7 +85,6 @@ export function InstagramNativeReelKit({ initialLocale }: { initialLocale: Lang 
 
   function changeLanguage(value: Lang) {
     setLang(value);
-    setCaption(TAO_REEL_CAPTIONS[value]);
     setMessage("");
   }
 
@@ -129,6 +129,7 @@ export function InstagramNativeReelKit({ initialLocale }: { initialLocale: Lang 
         <input id="native-reel-file" className={styles.file} type="file" accept=".mp4,.mov,video/mp4,video/quicktime" onChange={e => {
           setFile(e.currentTarget.files?.[0] ?? null);
           setMetadata(null); setRightsApproved(false); setMessage(""); setReceiptInput("");
+          setCaptions({ ru: "", en: "", es: "" }); // Never reuse an unrelated video caption.
         }} />
         <p className={styles.help}>{t.fileHint}</p>
         {videoUrl && <video key={videoUrl} className={styles.preview} controls preload="metadata" playsInline src={videoUrl}
@@ -142,7 +143,8 @@ export function InstagramNativeReelKit({ initialLocale }: { initialLocale: Lang 
       </div>
       <div className={styles.panel}>
         <label className={styles.label} htmlFor="native-reel-caption">{t.caption}</label>
-        <textarea id="native-reel-caption" className={styles.caption} rows={9} maxLength={REEL_MAX_CAPTION_CHARACTERS} value={caption} onChange={e => {setCaption(e.currentTarget.value);setMessage("");}} />
+        <p className={styles.help}>{t.captionHint}</p>
+        <textarea id="native-reel-caption" className={styles.caption} rows={9} placeholder={t.captionPlaceholder} maxLength={REEL_MAX_CAPTION_CHARACTERS} value={caption} onChange={e => { const next=e.currentTarget.value; setCaptions(previous => ({...previous,[lang]:next})); setMessage(""); }} />
         <div className={styles.meta}><span>{[...caption].length}/{REEL_MAX_CAPTION_CHARACTERS}</span></div>
         <div className={styles.actions}>
           <button type="button" disabled={!validCaption} onClick={() => void copyText(caption,t.copied)}><Copy size={16} aria-hidden="true" />{t.copy}</button>
