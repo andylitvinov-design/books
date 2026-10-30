@@ -272,3 +272,18 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
+
+
+## Wave 5 — Support mock / Website video browser (30 October 2026)
+
+Website video and Holistic Support visual suites keep their original authentic
+Chromium/WebKit, localization, owner isolation and provider safety checks.
+For production-targeted PRs, their duplicated whole-repository `tsc` command
+is delegated to the unconditional core release gate (`release-ready`) on
+the exact current HEAD; it still executes on production `push` and on
+non-production/dispatch runs. Support mock uses `setup-node` npm cache, and
+stages only the expensive mock matrix on non-mergeable Draft; `ready_for_review`
+and all subsequent Ready commits run the unchanged browser acceptance.
+Skipped Draft work is never a pass. The CI policy test verifies positive and
+negative triggers, protected scopes and original browser commands. If core
+TypeScript or the exact-head specialist aggregate fails, merging remains blocked.

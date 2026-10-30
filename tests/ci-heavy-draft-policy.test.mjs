@@ -255,3 +255,38 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });
+
+
+// Standalone browser workflows retain the specialist suite, Playwright and
+// production push verification; the unconditional core gate already performs
+// the same full TypeScript check once per production-targeted Ready PR.
+test('wave 5: video and Support mock save duplicate TS while preserving real browser acceptance', () => {
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/^  release-ready:/m);
+  const tsGuard='        if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [name,runCmd] of [
+    ['site-video-browser.yml','npx --no-install tsc --noEmit'],
+    ['hh-support-mobile-mock-browser.yml','npx --no-install tsc --noEmit --pretty false'],
+  ]){
+    const s=read(name);
+    assert.ok(s.includes('      - name: Full TypeScript on non-production PR or production push\n'+tsGuard+'\n        run: '+runCmd),
+      name+' must retain TypeScript for non-production and push');
+    assert.match(s,/^  push:/m);
+    assert.match(s,/^  pull_request:/m);
+    assert.match(s,/playwright install --with-deps chromium webkit/);
+    assert.match(s,/npm ci --no-audit --no-fund/);
+    assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+  const mock=read('hh-support-mobile-mock-browser.yml');
+  assert.match(mock,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.match(mock,/node-version: '22'\s*\n          cache: npm/);
+  assert.ok(mock.includes('scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(mock.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
+  const video=read('site-video-browser.yml');
+  assert.match(video,/^  browser:\s*\n    if: \$\{\{ github.event_name != 'pull_request' \|\| github.event.pull_request.draft == false \}\}/m);
+  assert.match(video,/tests\/es-about\.test\.mjs/);
+  assert.match(video,/tests\/personal-testimonials\.test\.mjs/);
+});
