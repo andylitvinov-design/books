@@ -55,3 +55,17 @@ test("partial model output is not accepted; final text-only validation only",()=
  assert.equal(acceptLocalConversationReply("<think>secret reasoning</think>",{request:req,locale:"ru"}),null);
  assert.equal(acceptLocalConversationReply("X",{request:req,locale:"ru"}),null);
 });
+
+
+test("recent urgent message blocks browser model even when new turn seems harmless",()=>{
+  const history=[
+    {role:"visitor",text:"Хочу покончить с собой."},
+    {role:"agent",text:"Обратитесь за живой поддержкой."},
+    {role:"visitor",text:"Сейчас просто хочу видео."},
+  ];
+  assert.equal(prep({history}),null,"model must never ingest crisis in recent history");
+});
+test("recent clinical request blocks browser model without blocking gentle support",()=>{
+  assert.equal(prep({history:[{role:"visitor",text:"Поставь мне диагноз."}]}),null);
+  assert.equal(prep({history:[{role:"visitor",text:"Мне нужна поддержка в работе."}]}).request.topic,"energy");
+});
