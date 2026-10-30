@@ -76,7 +76,7 @@ for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplic
 const workspace = read('components/app/app-workspace.jsx')
 const model = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const documentReader', workspace.indexOf('const nav = [')))
 const start = workspace.indexOf('<nav className="hh-mobile-app-nav"'), end = workspace.indexOf('</nav>', start) + '</nav>'.length
-const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users, House } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
+const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { Activity, UserRound, ClipboardList, BarChart3, BookOpen, Users, House } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
 const { PrivateNav } = compile(privateSource, { './copy': { COPY } })
 const desktopStart = workspace.indexOf('<nav className="hh-nav"')
 const desktopEnd = workspace.indexOf('</nav>', desktopStart) + '</nav>'.length

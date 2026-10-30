@@ -59,7 +59,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       }
       if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
-      await click(player,t.next)
+      // New AS-6.0 editorial scenes may appear before Feel: visit them all.
+      // Preserve true recorded effort, choices, consent and the saved visit keys.
+      await advanceOporaTo(player,'feel',t.next)
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
