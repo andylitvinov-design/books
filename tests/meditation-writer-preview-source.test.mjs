@@ -11,11 +11,17 @@ test("writer preview API is private, session-verified, per-request opt-in and di
     "audioAssetId:null","published:false"])
     assert.ok(route.includes(x),x);
   assert.ok(!route.includes("generateOwnedOllama"));
+  assert.ok(route.includes("createAnonymousGeminiSegmentProvider"));
+  assert.ok(route.includes("freeGeminiWriterReady"));
+  assert.ok(route.includes('externalModelOptIn!==true'));
+  assert.ok(route.includes("AI_FREE_NOT_CONFIGURED"));
 });
 test("preview is hidden without server flag and accurately labelled template-only",()=>{
   assert.ok(page.includes("HH_MEDITATION_WRITER_BRIEF_ENABLED"));
   assert.ok(page.includes("HH_MEDITATION_WRITER_PRODUCTION_APPROVED"));
-  assert.ok(component.includes("data.generationMode!==\"template\""));
+  assert.ok(component.includes('["template","llm"].includes(data.generationMode)'));
+  assert.ok(component.includes('setExternalOptIn(false)'));
+  assert.ok(component.includes("aiConsent"));
   assert.ok(component.includes("role=\"alert\""));
   assert.ok(component.includes("resourceImageryOptIn:true"));
 });

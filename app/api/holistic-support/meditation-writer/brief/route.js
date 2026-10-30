@@ -1,7 +1,8 @@
 /**
- * Consent-gated, authenticated source-only meditation preview (NOT a
- * generative LLM endpoint). Does not save a personal profile or audio.
- * Default disabled; explicit production approval required.
+ * Consent-gated, authenticated meditation preview.
+ * An optional Gemini-free path sees only anonymous, server-owned enums.
+ * All personal input stays in the original private preflight; model output
+ * remains a review-required draft, never auto-published or billed.
  */
 import { NextResponse } from "next/server";
 import { AppError, onlyKeys } from "@/lib/assessments/contracts";
@@ -13,14 +14,17 @@ import { interpretSupportUtterance } from "@/lib/holistic-support/guide-dialogue
 import { buildPsychologyProgram } from "@/lib/holistic-support/psychologist-mind.mjs";
 import { normalizeWriterRequest } from "@/lib/holistic-support/meditation-writer/contract.mjs";
 import { prepareMeditationCreativeBrief } from "@/lib/holistic-support/meditation-writer/brief.mjs";
+import { writeMeditationDraft } from "@/lib/holistic-support/meditation-writer/writer.mjs";
+import { createAnonymousGeminiSegmentProvider, freeGeminiWriterReady } from "@/lib/holistic-support/meditation-writer/free-gemini.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const revalidate=0;
-export const maxDuration=20;
+export const maxDuration=25;
 const FIELDS=["locale","focus","mode","durationMinutes","intentionCode","motifId",
   "symbolId","styleId","channel","avoidElements","noImagery","clientPhrase",
-  "desiredExperience","problemFrame","resourceImageryOptIn"];
+  "desiredExperience","problemFrame","resourceImageryOptIn",
+  "generationMode","externalModelOptIn"];
 const stopped = /\b(?:stop|please stop|i feel worse|getting worse|me siento peor|no quiero continuar)\b|(?:мне стало хуже|становится хуже|хочу остановиться|хочу умереть|самоповреждение)/iu;
 const preflight = (texts,locale)=>{
   for(const text of texts){
@@ -44,7 +48,13 @@ export async function POST(request) {
     const actor=await auth.verified();
     const body=await readBody(request,4000);
     onlyKeys(body,FIELDS);
-    const {resourceImageryOptIn,...requested}=body;
+    const {resourceImageryOptIn,generationMode="template",
+      externalModelOptIn=false,...requested}=body;
+    if(!["template","llm"].includes(generationMode) ||
+       typeof externalModelOptIn!=="boolean")
+      throw new AppError("WRITER_INVALID_MODE",400);
+    if(generationMode==="llm" && externalModelOptIn!==true)
+      throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
     const normalized=normalizeWriterRequest(requested);
     if(normalized.status!=="valid")
       throw new AppError(normalized.code,400);
@@ -55,8 +65,6 @@ export async function POST(request) {
       normalized.desiredExperience];
     if(!preflight(userText,normalized.locale))
       throw new AppError("HUMAN_REVIEW_REQUIRED",422);
-    // Only this one user's explicit per-request consent is used. No saved
-    // profile, medical data or model inference is read or sent anywhere.
     const program=buildPsychologyProgram({
       locale:normalized.locale,
       intent:{focus:normalized.focus,rawUtterance:userText.filter(Boolean).join(". ")},
@@ -74,7 +82,7 @@ export async function POST(request) {
       throw e;
     }
     const template=outcome.template;
-    const reply=NextResponse.json({
+    let payload={
       status:"template_ready",generationMode:"template",modelUsed:false,
       disclaimer:"resource_self_guided_preview_not_clinical_treatment",
       title:template.title,locale:normalized.locale,
@@ -86,7 +94,36 @@ export async function POST(request) {
       })),
       audioAssetId:null,rendered:false,published:false,
       canPauseOrSkip:true,requiresEditorialReview:true,
-    },{headers:PRIVATE_HEADERS});
+    };
+    if(generationMode==="llm"){
+      if(freeGeminiWriterReady(process.env)){
+        await consumeRate(config,{op:"meditation-writer-free-hour",actorId:actor.id},3,3600);
+        await consumeRate(config,{op:"meditation-writer-free-global-day"},35,86400);
+        const draft=await writeMeditationDraft(outcome,{
+          writeSegments:createAnonymousGeminiSegmentProvider({
+            key:process.env.HH_COUNCIL_GEMINI_API_KEY,
+          }),signal:AbortSignal.timeout(17000),
+        });
+        if(draft.status==="draft_review_required"){
+          payload={...payload,
+            status:draft.status,generationMode:"llm",modelUsed:true,
+            segments:draft.segments.map(s=>({
+              id:s.beatId,text:s.text,
+              optionalSilenceSeconds:Math.round(s.pauseAfterMs/1000),maySkip:true,
+            })),
+            estimatedDurationSeconds:draft.estimatedDurationSeconds,
+            requiresEditorialReview:true,published:false,
+          };
+        } else {
+          // A failure must never be mislabeled as AI text or clinical approval.
+          payload={...payload,fallbackReason:draft.status==="rejected"?
+            "AI_DRAFT_REJECTED":"AI_FREE_UNAVAILABLE"};
+        }
+      } else {
+        payload={...payload,fallbackReason:"AI_FREE_NOT_CONFIGURED"};
+      }
+    }
+    const reply=NextResponse.json(payload,{headers:PRIVATE_HEADERS});
     return auth.apply(reply);
   } catch(error) {
     const e=safeError(error);

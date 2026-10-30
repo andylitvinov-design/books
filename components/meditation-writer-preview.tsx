@@ -10,10 +10,15 @@ type Style = "gentle_simple" | "grounded_practical" | "poetic_contained" | "cont
 type Motif = "gentle_nature" | "supportive_object" | "comfortable_corner" | "small_light";
 type Segment = { id:string; text:string; optionalSilenceSeconds:number };
 type Preview = {status:string;title:string;segments:Segment[];
-  plannedDurationSeconds:number;generationMode:string;modelUsed:boolean;};
+  plannedDurationSeconds:number;estimatedDurationSeconds?:number;
+  generationMode:"template"|"llm";modelUsed:boolean;fallbackReason?:string;};
 const lang={
-  ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика. Сейчас доступен текстовый шаблон. Художественные стили заработают после подключения AI-писателя.",
+  ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика: шаблон или бесплатный AI-черновик при доступной модели.",
     focus:"Тема",style:"Стиль текста",duration:"Длительность",motif:"Образ",
+    mode:"Как создать текст",templateMode:"Без внешнего AI",aiMode:"Бесплатный AI · черновик",
+    aiConsent:"Согласен на отправку Google только обезличенных настроек темы, образа и стиля. Google может использовать запросы бесплатного API для улучшения моделей. Мои личные фразы и данные кабинета не передаются.",
+    aiDraft:"Черновик Gemini · требует редакторской проверки",
+    aiFallback:"AI сейчас недоступен или текст не прошёл проверку: показан шаблон.",
     phrase:"Необязательная личная фраза",phraseHelp:"Можно оставить пустым",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
     create:"Подготовить текст",loading:"Формируется предпросмотр…",
@@ -23,8 +28,12 @@ const lang={
     pause:"Необязательная тишина",optionsFocus:["Повседневный стресс","Отношения и границы","Самооценка","Ценности и смысл"],
     optionsStyle:["Мягкий","Практичный","Поэтичный","Созерцательный"],
     optionsMotif:["Спокойная природа","Предмет опоры","Уютное место","Мягкий свет"]},
-  en:{title:"Personal meditation — text preview",subtitle:"A gentle optional practice. This is a template preview; literary styles will apply when the AI writer is connected.",
+  en:{title:"Personal meditation — text preview",subtitle:"A gentle optional practice: a template or an AI draft if the free model is available.",
     focus:"Focus",style:"Writing style",duration:"Duration",motif:"Image",
+    mode:"Text generation",templateMode:"No external AI",aiMode:"Free AI · draft",
+    aiConsent:"I agree to send Google only anonymous topic, image and style settings. Google may use free-tier prompts to improve its models. My personal phrases and account data are not sent.",
+    aiDraft:"Gemini draft · editorial review required",
+    aiFallback:"AI is unavailable or the draft failed review; showing the template instead.",
     phrase:"Optional personal phrase",phraseHelp:"You can leave this empty",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
     create:"Prepare text",loading:"Preparing preview…",
@@ -34,8 +43,12 @@ const lang={
     pause:"Optional silence",optionsFocus:["Daily stress","Relationships and boundaries","Self-worth","Values and meaning"],
     optionsStyle:["Gentle","Practical","Poetic","Contemplative"],
     optionsMotif:["Gentle nature","Supportive object","Comfortable corner","Soft light"]},
-  es:{title:"Meditación personal — vista previa",subtitle:"Una práctica opcional y suave. Esta es una plantilla; los estilos literarios se aplicarán cuando se conecte el escritor de IA.",
+  es:{title:"Meditación personal — vista previa",subtitle:"Una práctica suave: plantilla o borrador de IA si el modelo gratuito está disponible.",
     focus:"Tema",style:"Estilo",duration:"Duración",motif:"Imagen",
+    mode:"Creación del texto",templateMode:"Sin IA externa",aiMode:"IA gratuita · borrador",
+    aiConsent:"Acepto enviar a Google solo ajustes anónimos de tema, imagen y estilo. Google puede usar solicitudes gratuitas para mejorar sus modelos. No se envían frases personales ni datos de mi cuenta.",
+    aiDraft:"Borrador Gemini · requiere revisión editorial",
+    aiFallback:"La IA no está disponible o el borrador no pasó la revisión; se muestra la plantilla.",
     phrase:"Frase personal opcional",phraseHelp:"Puedes dejarla vacía",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
     create:"Preparar texto",loading:"Preparando vista previa…",
@@ -57,25 +70,29 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [motif,setMotif]=useState<Motif>("gentle_nature");
   const [duration,setDuration]=useState<5|10|15>(10);
   const [clientPhrase,setClientPhrase]=useState("");
+  const [mode,setMode]=useState<"template"|"llm">("template");
+  const [externalOptIn,setExternalOptIn]=useState(false);
   const [consented,setConsented]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [preview,setPreview]=useState<Preview|null>(null);
   async function submit(){
-    if(!consented||loading)return;
+    if(!consented||loading||(mode==="llm"&&!externalOptIn))return;
     setLoading(true);setError("");setPreview(null);
     try{
       const response=await fetch("/api/holistic-support/meditation-writer/brief",{
         method:"POST",cache:"no-store",credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:l,focus,styleId:style,motifId:motif,
-          durationMinutes:duration,clientPhrase,resourceImageryOptIn:true}),
+          durationMinutes:duration,clientPhrase,resourceImageryOptIn:true,
+          generationMode:mode,externalModelOptIn:mode==="llm"&&externalOptIn}),
       });
       const data=await response.json() as Preview & {error?:string};
       if(!response.ok){
         setError(response.status===401?t.signin:t.unavailable);return;
       }
-      if(data.status!=="template_ready"||data.generationMode!=="template"){
+      if(!["template_ready","draft_review_required"].includes(data.status)||
+        !["template","llm"].includes(data.generationMode)){
         setError(t.unavailable);return;
       }
       setPreview(data);
@@ -100,17 +117,33 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         {[5,10,15].map(n=><option key={n} value={n}>{n} min</option>)}
       </select></label>
     </div>
+    <label className={styles.mode}>{t.mode}
+      <select value={mode} onChange={e=>{
+        setMode(e.target.value as "template"|"llm");
+        setExternalOptIn(false);setPreview(null);
+      }}>
+        <option value="template">{t.templateMode}</option>
+        <option value="llm">{t.aiMode}</option>
+      </select>
+    </label>
+    {mode==="llm"&&<label className={styles.consent}>
+      <input type="checkbox" checked={externalOptIn}
+        onChange={e=>setExternalOptIn(e.target.checked)}/>
+      <span>{t.aiConsent}</span>
+    </label>}
     <label className={styles.phrase}>{t.phrase}
       <input maxLength={160} value={clientPhrase} placeholder={t.phraseHelp}
         onChange={e=>setClientPhrase(e.target.value)}/>
     </label>
     <label className={styles.consent}><input type="checkbox" checked={consented}
       onChange={e=>setConsented(e.target.checked)}/><span>{t.consent}</span></label>
-    <button className={styles.submit} type="button" disabled={!consented||loading}
+    <button className={styles.submit} type="button" disabled={!consented||loading||(mode==="llm"&&!externalOptIn)}
       onClick={submit}>{loading?t.loading:t.create}</button>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {preview&&<article className={styles.preview} aria-live="polite">
-      <h3>{preview.title}</h3><p className={styles.caption}>{t.template}</p>
+      <h3>{preview.title}</h3>
+      <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft:t.template}</p>
+      {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}
       {preview.segments.map(s=><div key={s.id} className={styles.segment}>
         <p>{s.text}</p>
         {s.optionalSilenceSeconds>0&&<small>{t.pause}: {s.optionalSilenceSeconds} s</small>}
