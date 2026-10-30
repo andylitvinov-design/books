@@ -54,7 +54,10 @@ test('public showcase OAuth returns to reviewed dashboard without automatic priv
   assert.match(server,/continueTo === 'practice-preview'\s*\n[\s\S]{0,300}\? `\$\{origin\}\/\$\{locale\}\/practice`/)
   assert.match(server,/const failedPracticeDestination = continueTo === 'practice-preview'\s*\? `\$\{origin\}\/\$\{locale\}\/practice`/)
   assert.doesNotMatch(server,/continueTo === 'practice-preview'\s*\n[\s\S]{0,300}\$\{PRACTICE_PREVIEW_ACTIONS\[profi\]\}/)
- assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview', profi:key \}\)/)
+  // Browser OAuth returns to the reviewed dashboard, not an auto-open editor.
+  // After login, the user explicitly reselects a protected action.
+  assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview' \}\)/)
+  assert.doesNotMatch(showcase,/continueTo:'practice-preview'\s*,\s*profi:/)
  assert.match(showcase,/router\.push\(destination\(locale, key\)\)/)
  assert.match(server,/reiki:'\/app\/practice\?panel=services&create=1&starter=reiki'/)
  assert.match(server,/diagnostic:'\/app\/practice\?panel=services&create=1&starter=diagnostic'/)

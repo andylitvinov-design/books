@@ -348,3 +348,29 @@ test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retai
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+
+test('Pro master workflow delegates duplicate global TS/Next to unconditional exact-head Core', () => {
+  const pro = readFileSync(new URL('../.github/workflows/pro-reiki-master-paths.yml', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml', import.meta.url), 'utf8');
+  const reuse = 'if: '+String.fromCharCode(36)+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(pro.includes('name: Pro Reiki master learning paths'));
+  assert.ok(pro.includes("    branches: ['codex/public-book-library']"));
+  assert.ok(pro.includes("- 'tests/profi-hub.test.mjs'"));
+  assert.ok(pro.includes("- 'tests/pro-master-search-placement.test.mjs'"));
+  assert.ok(pro.includes("- '.github/workflows/pro-reiki-master-paths.yml'"));
+  assert.ok(pro.includes('node --test tests/profi-hub.test.mjs tests/pro-master-search-placement.test.mjs tests/temple-support-hub.test.mjs'));
+  assert.ok(pro.includes('npx --no-install eslint'));
+  assert.ok(pro.includes('components/profi-hub.tsx'));
+  assert.ok(pro.includes('components/master-network-explorer.tsx'));
+  for (const [step,command] of [
+    ['Type-check the application','npx --no-install tsc --noEmit'],
+    ['Validate the Next.js production build','npm run build'],
+  ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
+    'Pro '+step+' must be owned by immutable-base Core on production PRs');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.ok(core.includes('ci-specialist-aggregate.mjs'));
+  assert.doesNotMatch(pro,/continue-on-error:\s*true/);
+});
