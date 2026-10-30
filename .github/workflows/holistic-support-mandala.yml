@@ -1,7 +1,7 @@
 name: Holistic Support mandala release checks
 on:
   pull_request:
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/voice-studio-free-gemini-20261030']
     paths:
       - 'app/[locale]/holistic-support/**'
       - 'components/mandala-meditation*'
