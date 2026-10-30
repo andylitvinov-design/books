@@ -11,6 +11,9 @@ on:
       - 'app/admin/videos/**'
       - 'app/site-video*.css'
       - 'tests/site-video*.mjs'
+      - 'tests/video-owner-review-feed.test.mjs'
+      - 'components/video-review-queue*'
+      - 'supabase/migrations/*video_owner_review*'
       - 'middleware.ts'
       - '.github/workflows/holistic-about-video-check.yml'
 permissions:
@@ -27,6 +30,7 @@ jobs:
         with:
           node-version: 22
       - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
+      - run: node --test tests/video-owner-review-feed.test.mjs
       - run: npm ci --no-audit --no-fund
-      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
+      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx components/video-review-queue.jsx lib/site-videos/review-store.js app/admin/videos/review-actions.js
       - run: npx tsc --noEmit
