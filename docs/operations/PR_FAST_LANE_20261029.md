@@ -78,3 +78,5 @@ with required review, resolved conversations, no force push/delete and required
 release-ready from GitHub Actions, and settings are verified by readback.
 GitHub default codex/bootstrap-books is not production. The currently connected
 GitHub tool has no repository ruleset/auto-merge settings write operation.
+
+Additional source-integrity rule: fork-head PRs fail closed before receiving the gate's read token. The first bootstrap rollout uses the new same-repository candidate script only because the exact baseline does not yet include an aggregator and Native Auto-merge is OFF. On every subsequent PR, release-ready extracts and executes both validator modules strictly from the verified base SHA using git show, and inspects candidate workflow definitions only as data. Missing base module fails closed. The required workflow itself still needs branch-rule protection and review for changes to its source.

@@ -125,10 +125,30 @@ jobs:
           node-version: '22'
       - name: Fail closed on all applicable exact-head specialist workflows
         if: github.event_name == 'pull_request'
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HH_PR_NUMBER: ${{ github.event.pull_request.number }}
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/ci-specialist-aggregate.mjs
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          # A fork may not execute candidate scripts with even a read-scoped GitHub token.
+          [[ "$HH_HEAD_REPO" == "$GITHUB_REPOSITORY" ]] || {
+            echo 'Refusing a fork-head specialist gate; manual owner review required.' >&2
+            exit 1
+          }
+          # On the bootstrap PR only, the baseline has no aggregator yet.
+          # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
+          if git cat-file -e "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
+            git show "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+          else
+            # First rollout is safe only with native auto-merge disabled and
+            # a reviewed same-repository source PR.
+            node scripts/ci-specialist-aggregate.mjs
+          fi
 

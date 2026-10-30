@@ -46,6 +46,9 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /tsc --noEmit/);
   assert.match(source, /npm run build/);
   assert.match(source, /ci-specialist-aggregate\.mjs/);
+  assert.match(source, /git show/);
+  assert.match(source, /HH_HEAD_REPO/);
+  assert.match(source, /HH_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(source, /HH_HEAD_SHA/);
   assert.match(source, /HH_BASE_SHA/);
   assert.match(source, /actions: read/);
