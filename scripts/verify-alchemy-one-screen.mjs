@@ -32,7 +32,8 @@ try {
     try {
       let response;
       try {
-        response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"networkidle",timeout:45000});
+        // Polling booking-status is expected: wait for the document, then assert real rendered chapters and booking controls.
+        response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"domcontentloaded",timeout:45000});
       } catch (error) {
         console.error('ALCHEMY_PENDING_REQUESTS ' + key + ' ' + JSON.stringify([...pending.values()]));
         throw error;

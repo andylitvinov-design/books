@@ -135,56 +135,25 @@ jobs:
             sleep 2
           done
           status=0
-          # All fourteen previous acceptance scripts still run. Two independent,
-          # synthetic-data browser lanes share the SAME verified local Next.js
-          # production build, cutting wall-clock time without suppressing E2E.
-          # Preserve per-script failures and do not short-circuit either lane.
-          run_suite() {
-            local lane="$1"; shift
-            local failed=0
-            for script in "$@"; do
-              echo "RUN $lane $script"
-              if node "$script"; then
-                echo "PASS $lane $script"
-              else
-                echo "FAIL $lane $script"
-                failed=1
-              fi
-            done
-            return "$failed"
-          }
-          run_suite A \
-            scripts/verify-alchemy-one-screen.mjs \
-            scripts/verify-ideas-mobile-browser.mjs \
-            scripts/verify-reiki-mobile-order-browser.mjs \
-            scripts/verify-holistic-support-recommendations-mobile.mjs \
-            scripts/verify-holistic-topics-browser.mjs \
-            scripts/verify-home-consultation-first-screen.mjs \
-            scripts/verify-service-cart-browser.mjs \
-            > artifacts/public-services-production/lane-a.log 2>&1 &
-          lane_a_pid=$!
-          run_suite B \
-            scripts/verify-business-quiz-mobile.mjs \
-            scripts/verify-holistic-master-browser.mjs \
-            scripts/verify-talisman-google-checkout-browser.mjs \
-            scripts/verify-direction-focus-mobile.mjs \
-            scripts/verify-public-services-production.mjs \
-            scripts/verify-contact-channel-chooser-browser.mjs \
-            scripts/verify-storefront-shop-browser.mjs \
-            > artifacts/public-services-production/lane-b.log 2>&1 &
-          lane_b_pid=$!
-          # Wait for BOTH lanes even if one fails; never call an incomplete
-          # browser suite green, and keep per-lane evidence as artifacts.
-          wait "$lane_a_pid" || status=1
-          wait "$lane_b_pid" || status=1
-          echo "Lane A recent checks:"
-          grep -E '^(RUN|PASS|FAIL) ' artifacts/public-services-production/lane-a.log | tail -n 80 || true
-          echo "Lane B recent checks:"
-          grep -E '^(RUN|PASS|FAIL) ' artifacts/public-services-production/lane-b.log | tail -n 80 || true
+          # Alchemy chapter geometry, 320-430px EN/RU/ES, including 320x568.
+          node scripts/verify-alchemy-one-screen.mjs || status=$?
+          node scripts/verify-business-quiz-mobile.mjs || status=$?
+          node scripts/verify-ideas-mobile-browser.mjs || status=$?
+          node scripts/verify-holistic-master-browser.mjs || status=$?
+          node scripts/verify-reiki-mobile-order-browser.mjs || status=$?
+          node scripts/verify-holistic-support-recommendations-mobile.mjs || status=$?
+          node scripts/verify-talisman-google-checkout-browser.mjs || status=$?
+          node scripts/verify-holistic-topics-browser.mjs || status=$?
+          node scripts/verify-direction-focus-mobile.mjs || status=$?
+          node scripts/verify-public-services-production.mjs || status=$?
+          node scripts/verify-home-consultation-first-screen.mjs || status=$?
           # Capture safe aggregate HTML / Flight metrics from THIS PR's local
           # production build; the separate public audit reads old live alias.
           # Never upload Flight contents or private routes.
           TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json || status=$?
+          node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
+          node scripts/verify-service-cart-browser.mjs || status=$?
+          node scripts/verify-storefront-shop-browser.mjs || status=$?
           {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
             grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true

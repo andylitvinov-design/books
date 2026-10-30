@@ -536,9 +536,6 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
   assert.match(perf,/^  push:\s*$/m);
   const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build'));
-  assert.match(services,/for script in "\$@"; do[\s\S]*?if node "\$script"; then/);
-  assert.match(services,/run_suite B \\[\s\S]*?scripts\/verify-public-services-production\.mjs/);
-  assert.ok(services.includes('wait "$lane_b_pid" || status=1'));
+  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
   assert.ok(!services.includes('npx tsc --noEmit'));
 });

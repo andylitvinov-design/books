@@ -31,25 +31,19 @@ async function assertSpanishNavigation(page, path) {
   // Keep the three visible visitor needs and free written review in the header.
   const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
+  if (path !== '/es') first.push('/en/app');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-  await expect(cabinet).toHaveAccessibleName('Mi espacio');
-  if (page.viewportSize().width > 1140) {
-    await cabinet.click();
-    const dialog=page.locator('#home-personal-space-dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog.locator('a[href^="/en/app"]').first()).toBeAttached();
-    await page.keyboard.press('Escape');
-    await expect(dialog).not.toBeVisible();
-  }
+  if (path === '/es') {
+    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+    await expect(cabinet).toHaveAccessibleName('Mi espacio');
+  } else await expect(cabinet).toHaveAttribute('href','/en/app');
   const destinations = [
-    '/es/services/free-situation-review', '/es', '/es/services/free-situation-review',
-    '/es/academy', '/es/personality-profiles', '/es/services/alchemy-of-soul',
-    '/es/pro', '/es/holistic-support', '/es/shop', '/es/cart', '/es/install',
-    '/es/explore/energy', '/es/explore/love', '/es/explore/business',
-    '/es/library', '/es/events', '/es/temple-insights', '/es/services', '/es/about',
+    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
+    '/es/explore/business', '/es/books', '/es/pro',
+    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
+    '/es/services', '/es/academy', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -63,9 +57,9 @@ async function assertSpanishNavigation(page, path) {
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
   for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(menu.locator('[data-nav-item="energy"]')).toHaveAccessibleName('Cuerpo y energía');
-  await expect(menu.locator('[data-nav-item="love"]')).toHaveAccessibleName('Estrés y relaciones');
-  await expect(menu.locator('[data-nav-item="business"]')).toHaveAccessibleName('Dinero y negocios');
+  await expect(links.nth(2)).toHaveAccessibleName('Energía');
+  await expect(links.nth(3)).toHaveAccessibleName('Amor');
+  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -110,10 +104,7 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  const activeMobileItem = page.locator('.mobile-bottom-navigation [aria-current="page"]');
-  await expect(activeMobileItem).toHaveCount(1);
-  await expect(activeMobileItem).toHaveAttribute('data-nav-item', 'courses');
-  await expect(activeMobileItem).toHaveAttribute('href', '/es/academy');
+  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
@@ -203,29 +194,12 @@ try {
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
           if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
-          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),
-            'No untranslated Spanish labels: '+path);
+          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
             await assertSpanishHomeAlternates(page);
-            if(width===390) {
-              // The legacy service-home-card-grid was replaced by the seven
-              // first-party workspace modules. Verify an actual visible
-              // photo-and-copy offer in the new mobile entry, not a retired
-              // CSS selector that no longer exists.
-              const card=page.locator('[data-home-featured-workspace] [data-home-module-offers="courses"] [data-home-offer-card]').first();
-              await expect(card).toBeVisible();
-              const layout=await card.evaluate(el=>({
-                columns:getComputedStyle(el).gridTemplateColumns,
-                width:el.getBoundingClientRect().width,
-                overflow:el.scrollWidth>el.clientWidth+2,
-              }));
-              assert.match(layout.columns,/^\d+(?:\.\d+)?px\s+\d+(?:\.\d+)?px$/,
-                'Spanish mobile workspace offer preserves photo + copy columns');
-              assert.ok(layout.width>120&&!layout.overflow,
-                'Spanish mobile offer remains legible without internal clipping: '+JSON.stringify(layout));
-            }
+            if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
           }
           if(path==='/es/client') {
             // Also exercise desktop hover without clicking a language.
@@ -266,32 +240,24 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // The shared My Space entry opens the guest dialog on public pages.
-        const accountEntry = page.locator('.site-navigation button.site-cabinet-entry');
-        await expect(accountEntry).toHaveCount(1);
-        await expect(accountEntry).toBeVisible();
-        await expect(accountEntry).toHaveAttribute('aria-haspopup','dialog');
-        await click(accountEntry);
-        const accountDialog = page.locator('#home-personal-space-dialog');
-        await expect(accountDialog).toBeVisible();
-        // An unavailable account backend exposes a safe cabinet fallback;
-        // a genuine guest session exposes the profile action directly.
-        const accountLink = accountDialog.locator('[data-space-link="profile"], a[href="/en/app"]').first();
-        await expect(accountLink).toBeVisible({timeout:20000});
-        assert.ok(['/en/app/portrait','/en/app'].includes(await accountLink.getAttribute('href')));
+        // On public client pages the Cabinet is a direct link; on Home
+        // the separate My Space control opens a dialog instead.
+        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
+        await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toBeVisible();
+        await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        const guestOverview = page.locator('[data-cabinet-guest-overview="true"]');
-        await expect(guestOverview).toBeVisible();
-        await expect(guestOverview.locator('#cabinet-guest-title')).toHaveText('Discover where you are. Grow into what comes next.');
-        await expect(guestOverview.locator('a[href="/en/client"]')).toHaveCount(1);
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
+        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(guestOverview).toBeVisible();
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();

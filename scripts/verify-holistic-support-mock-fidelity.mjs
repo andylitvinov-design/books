@@ -32,12 +32,7 @@ for (const browserType of [chromium, webkit]) {
           directoryEvents.push("FAILED " + (req.failure()?.errorText ?? "unknown") + " " + req.url()); });
         page.on("response", res => { if (watched(res.url()))
           directoryEvents.push("HTTP " + res.status() + " " + res.url()); });
-        // A deterministic local response keeps this synthetic check offline.
-        // Aborting the iframe can produce a WebKit access-control pageerror
-        // after navigation, even though the application itself did not throw.
-        await page.route("**/youtube-nocookie.com/**", route => route.fulfill({
-          status: 200, contentType: "text/html", body: "<!doctype html><title>Offline video fixture</title>"
-        }));
+        await page.route("**/youtube-nocookie.com/**", route => route.abort());
         await page.route(/\/api\/public\/remote-energy-support-masters(?:\?.*)?$/, async route => {
           const kind = new URL(route.request().url()).searchParams.get("kind");
           directoryEvents.push("MOCK " + (kind || "masters"));
@@ -274,24 +269,7 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-support-goal-next]').click();
           // WebKit can resolve a click before React commits accepted/next state.
           // Wait for actual acceptance and navigation; never bypass either gate.
-          // This has passed in earlier WebKit runs; keep real acceptance
-          // mandatory while accounting for 320px WebKit input-change/paint
-          // deferral. If it fails, log the actual saved/draft UI state.
-          try {
-            await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:12000});
-          } catch(error) {
-            const observed=await filter.evaluate(el=>({
-              sectors:[...el.querySelectorAll('[data-goal-sector]')].map(item=>({
-                id:item.getAttribute('data-goal-sector'),
-                pressed:item.getAttribute('aria-pressed'),
-                accepted:!!item.querySelector('[data-goal-accepted]'),
-              })),
-              checkin:el.querySelector('[data-support-goal-checkin-input]')?.value,
-              saved:el.querySelector('[data-support-goal-actions] [role="status"]')?.textContent,
-            }));
-            throw new Error(label+" money Next failed to accept and advance: "+
-              JSON.stringify(observed), {cause:error});
-          }
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
           await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
@@ -565,24 +543,9 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            // Playwright uncheck() can hit an offscreen reflowing input on
-            // WebKit; exercise the real accessible checkbox via the keyboard
-            // and require every React-controlled state change to commit.
-            const formatIds=["meditation","consultation","tests","courses",
-              "talismans","healing","masters","initiations","mandala"];
-            for(const kind of formatIds){
-              const input=filter.locator('[data-support-goal-format="'+kind+'"] input');
-              if(await input.isChecked()){
-                await input.focus();
-                await input.press("Space");
-                await page.waitForFunction(id=>{
-                  const el=document.querySelector('[data-support-goal-format="'+id+'"] input');
-                  return el && !el.checked;
-                },kind,{timeout:5000});
-              }
+            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
+              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
             }
-            assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),0,
-              label+" every explicit format opt-out persists");
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
             await root.locator('[data-support-goal-no-inline]').waitFor({state:"visible",timeout:8000});

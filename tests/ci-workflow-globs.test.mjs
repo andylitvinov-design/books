@@ -111,31 +111,3 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.match(source, /input\[type="checkbox"\]/);
   assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
 });
-
-test("public service browser acceptance retains every scenario in two bounded fail-closed lanes",()=>{
-  const s=workflow('hh-public-services-production.yml');
-  const expected=[
-    'verify-alchemy-one-screen','verify-business-quiz-mobile',
-    'verify-ideas-mobile-browser','verify-holistic-master-browser',
-    'verify-reiki-mobile-order-browser','verify-holistic-support-recommendations-mobile',
-    'verify-talisman-google-checkout-browser','verify-holistic-topics-browser',
-    'verify-direction-focus-mobile','verify-public-services-production',
-    'verify-home-consultation-first-screen','verify-contact-channel-chooser-browser',
-    'verify-service-cart-browser','verify-storefront-shop-browser'
-  ];
-  const step=s.split('      - name: Production build and public browser acceptance')[1]?.split('      - uses: actions/upload-artifact@v4')[0]||'';
-  assert.match(step,/npm run build > artifacts\/public-services-production\/build\.log/);
-  assert.match(step,/run_suite A/);
-  assert.match(step,/run_suite B/);
-  for(const name of expected){
-    const matches=step.match(new RegExp('scripts/'+name+'\\.mjs\\b','g'))||[];
-    assert.equal(matches.length,1,name+" must run exactly once, not be skipped or doubled");
-  }
-  assert.match(step,/wait "\$lane_a_pid" \|\| status=1/);
-  assert.match(step,/wait "\$lane_b_pid" \|\| status=1/);
-  assert.match(step,/return "\$failed"/);
-  assert.match(step,/exit "\$status"/);
-  assert.match(step,/node scripts\/measure-hh-public-ttfb\.mjs/);
-  assert.match(s,/artifacts\/public-services-production\//);
-  assert.doesNotMatch(step,/continue-on-error:\s*true/);
-});

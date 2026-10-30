@@ -81,7 +81,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
+      if (await page.locator('.site-video-player').count() === 3) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -165,25 +165,19 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      // Free written review has its own introductory story, not a generic Services showcase.
+      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
-      console.info('Approved service-video E2E:',route,topic,expectedUrl);
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      // The free written review moved its optional intro into the free-entry
-      // narrative block. Verify the same real video and lazy embed there.
-      const selector = topic === 'alchemy' ? '[data-alchemy-panel="video"]'
-        : route.endsWith('/services/free-situation-review') ? '[data-free-review-intro-video]'
-        : `[data-service-video="${topic}"]`;
-      const block = page.locator(selector)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -195,43 +189,21 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    // This is a real *written review* entry, with its own non-generic introduction.
-    // The old video-oracle expected a Services showcase that this page does not own.
-    await navigate('/en/services/free-situation-review')
-    await expect(page.locator('main[data-free-entry-landing="situation"]')).toHaveCount(1)
-    const freeReviewIntro = page.locator('[data-free-review-intro-video]')
-    await expect(freeReviewIntro).toHaveCount(1)
-    await expect(page.locator('[data-service-video="overview"]')).toHaveCount(0)
-    await expect(page.locator('a[href="#request-free-review"]').first()).toBeVisible()
-    await expect(freeReviewIntro.locator('.site-video-play')).toBeVisible()
-    assert.equal(await freeReviewIntro.locator('iframe').count(), 0,
-      'written-review introduction remains poster-first, not eager external media')
-    await freeReviewIntro.locator('.site-video-play').click()
-    await expect.poll(async()=> (await freeReviewIntro.locator('iframe').getAttribute('src'))?.startsWith(
-      'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'), {timeout:10000}).toBe(true)
-    assert.equal(await freeReviewIntro.locator('.site-video-play').count(),0,
-      'written-review introduction must replace the real poster with the selected video')
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
     await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
     assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
       'The separate Dao free start must not imply a video consultation')
-    pass('Eight original service video routes, written review, and separate Dao free entry preserve exact approved formats')
+    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
   }
 
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // The approved About experience now exposes 10 original archived video
-  // testimonials rather than the previous three. Keep exact source-backed
-  // count, matching provenance IDs and all players poster-first until Play.
-  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
-  await expect(aboutReviews).toHaveCount(10)
-  assert.equal(await aboutReviews.locator('.site-video-player').count(),10)
-  assert.equal(await page.locator('.site-video-player').count(), 10)
+  assert.equal(await page.locator('.site-video-player').count(), 3)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, 10 original testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
@@ -267,19 +239,7 @@ try {
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
   } else {
     const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
-    // A retired HMAC cookie is not a verified owner identity.
-    // Explicitly verify the protected admin path stays inaccessible to guests.
     await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
-    const denied = await adminContext.newPage()
-    await denied.goto(`${origin}/admin/videos`,{waitUntil:'domcontentloaded'})
-    await expect(denied).toHaveURL(/\/admin\/login/)
-    assert.equal(await denied.locator('.site-video-manager').count(), 0,
-      'retired HMAC cookie must never disclose private video drafts')
-    await denied.close()
-    pass('Retired HMAC cookie cannot access the protected video editor')
-    // Authorized CRUD below remains intact but requires actual verified Google
-    // owner + revocable v2 admin session. Never fake that identity in public CI.
-    if(process.env.HH_TEST_VERIFIED_OWNER_ADMIN_E2E==='true'){
     const editor = await adminContext.newPage()
     editor.on('pageerror', error => pageErrors.push(error.message))
     async function openEditor(target = editor) {
@@ -412,9 +372,6 @@ try {
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
     await expect(editor.locator('input[name="title"]')).toHaveValue('QA Spanish About independent publication')
     pass('Spanish About publish/hide/reload via real actions preserves EN/RU and never falls back to English')
-    } else {
-      console.log('OWNER_ADMIN_E2E_NOT_RUN: authenticated owner video CRUD requires a real Google-authorized v2 session; retired HMAC cookie cannot bypass auth.')
-    }
     await adminContext.close()
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')

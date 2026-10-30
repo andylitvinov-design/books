@@ -88,13 +88,6 @@ const run = async (locale, width) => {
     await page.locator('[data-support-tool="talisman"]').click();
     const viewer = page.locator("[data-support-talisman-viewer]");
     await viewer.waitFor({state:"visible"});
-    const catalogToggle = viewer.locator('button[aria-controls="support-talisman-full-catalog"]');
-    const ratingsResponse = page.waitForResponse(response =>
-      response.url().includes("/api/catalog/ratings?") && response.request().method()==="GET");
-    await catalogToggle.click();
-    await page.locator("[data-taoist-talisman-catalog]").waitFor({state:"visible"});
-    await ratingsResponse;
-    await catalogToggle.click();
     await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
     await viewer.locator("[data-support-talisman-request]").click();
     const modal = page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]');

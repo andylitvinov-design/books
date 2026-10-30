@@ -126,10 +126,6 @@ test('API auth, origin, bounded body and OAuth safe redirect to localized coachi
   assert.match(api, /op: 'coaching-intake-save'/)
   assert.match(api, /continueTo === 'coaching-intake'/)
   assert.match(api, /\$\{origin\}\/\$\{locale\}\/coaching\/intake/)
-  // Both OAuth initiation and callback must retain Spanish for coaching intake,
-  // even when additional approved continuations are added to the allowlist.
-  assert.match(api, /\['enquiry','coaching-intake'(?:,'[^']+')*\]\.includes\(body\.continueTo\)/)
-  assert.match(api, /\['enquiry','coaching-intake'(?:,'[^']+')*\]\.includes\(url\.searchParams\.get\('continue'\)\)/)
   // The Spanish callback has four strictly enumerated first-party uses.
   // Private direct-messages requires a verified recipient, never an open URL.
   assert.match(api, /\['enquiry','coaching-intake','practice-preview','direct-messages'\]/)

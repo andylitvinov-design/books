@@ -265,10 +265,8 @@ export function ContactChannelChooser({
   useEffect(() => {
     if (!bookingSku) return;
     let active = true;
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8000);
     fetch("/api/service-enquiries/booking-status", {
-      credentials: "same-origin", cache: "no-store", signal: controller.signal,
+      credentials: "same-origin", cache: "no-store",
     }).then(response => response.ok ? response.json() : null)
       .then(status => {
         if (!active || !status || status.bookingSku !== bookingSku ||
@@ -276,9 +274,8 @@ export function ContactChannelChooser({
         setSaved({ saved: true, referenceCode: status.referenceCode });
         setBookingConfirmed(status.booked === true);
         setBookingStartsAt(status.booked === true && typeof status.startsAt === "string" ? status.startsAt : null);
-      }).catch(() => { /* No signed proof, timeout or offline: never unlock payment. */ })
-      .finally(() => window.clearTimeout(timeout));
-    return () => { active = false; window.clearTimeout(timeout); controller.abort(); };
+      }).catch(() => { /* No signed proof or offline: never unlock payment. */ });
+    return () => { active = false; };
   }, [bookingSku, enquiryResetKey]);
 
   async function checkBookingStatus() {

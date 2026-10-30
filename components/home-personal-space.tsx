@@ -139,12 +139,6 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
-    let timedOut = false;
-    const timeout = window.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-      if (epoch === epochRef.current) { setSummary(null); setPhase("error"); }
-    }, 10000);
     setPhase("loading");
     try {
       // Existing verified session, existing account RLS, no public account lookup.
@@ -169,11 +163,9 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
       setSummary(homeSpaceSummary(bootstrap, courseResponse));
       setPhase("ready");
     } catch (error: unknown) {
-      if (epoch !== epochRef.current || (controller.signal.aborted && !timedOut)) return;
+      if (epoch !== epochRef.current || controller.signal.aborted) return;
       setSummary(null);
       setPhase((error as { status?: number }).status === 401 ? "guest" : "error");
-    } finally {
-      window.clearTimeout(timeout);
     }
   }, [setPhase]);
 
