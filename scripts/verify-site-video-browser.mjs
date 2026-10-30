@@ -1,7 +1,6 @@
 // Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
-import { createHmac } from 'node:crypto'
 import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:https'
@@ -18,7 +17,7 @@ mkdirSync(evidence, { recursive: true })
 const results = []
 function pass(label) { results.push(label); console.log(`PASS: ${label}`) }
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
-let server, app, browser
+let server, app, provider, browser
 const exec = promisify(execFile)
 const testToken = 'synthetic-video-browser-test-only'
 const namespace = 'holistic-house:site-videos:v1'
@@ -26,7 +25,24 @@ const namespace = 'holistic-house:site-videos:v1'
 try {
   if (!live) {
     assert.equal(process.env.CI, 'true', 'Isolated tests must run in CI')
-    server = createServer({ key: readFileSync('/tmp/video-test-key.pem'), cert: readFileSync('/tmp/video-test-cert.pem') }, async (request, response) => {
+    assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+    assert.ok(!process.env.VERCEL, 'Never run the protocol double on Vercel')
+    const database = new URL(process.env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid')
+    assert.ok(['127.0.0.1', 'localhost'].includes(database.hostname) && database.pathname === '/hh_app_test',
+      'An isolated loopback test database is required')
+    assert.equal(process.env.HH_TEST_APP_ORIGIN, origin)
+    assert.equal(process.env.HH_APP_SUPABASE_URL, 'http://127.0.0.1:54329')
+    provider = spawn(process.execPath, ['tests/helpers/app-auth-double.mjs'], {
+      env: {...process.env, HH_TEST_OWNER_FIXTURE:'true'}, stdio:['ignore','pipe','pipe'],
+    })
+    const providerLog = createWriteStream(`${evidence}/local-provider.log`)
+    provider.stdout.pipe(providerLog); provider.stderr.pipe(providerLog)
+    for (let i = 0; ; i++) {
+      try { if ((await fetch('http://127.0.0.1:54329/health')).ok) break } catch { /* starting */ }
+      if (i > 40 || provider.exitCode !== null) throw new Error('Local auth protocol double did not start')
+      await pause(250)
+    }
+    server = createServer({ key: readFileSync(process.env.HH_TEST_TLS_KEY || '/tmp/video-test-key.pem'), cert: readFileSync(process.env.HH_TEST_TLS_CERT || '/tmp/video-test-cert.pem') }, async (request, response) => {
       try {
         assert.equal(request.method, 'POST')
         assert.equal(request.headers.authorization, `Bearer ${testToken}`)
@@ -34,9 +50,14 @@ try {
         for await (const part of request) { raw += part; assert.ok(raw.length < 400000) }
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
-        assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
-        assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
-        const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
+        const videoCommand = ['HGET', 'HGETALL', 'EVAL'].includes(command[0]) &&
+          command[command[0] === 'EVAL' ? 3 : 1] === namespace
+        const sessionCommand = ['GET', 'SET', 'DEL'].includes(command[0]) &&
+          /^prescription:session:[a-f0-9]{64}$/.test(command[1] || '') &&
+          ((command[0] === 'GET' || command[0] === 'DEL') ? command.length === 2 :
+            command.length === 5 && command[3] === 'EX' && Number(command[4]) > 0 && Number(command[4]) <= 43200)
+        assert.ok(videoCommand || sessionCommand, 'Command is outside the isolated video and session namespaces')
+        const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', process.env.HH_TEST_REDIS_PORT || '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
         response.end(JSON.stringify({ result: JSON.parse(stdout) }))
       } catch (error) {
@@ -50,7 +71,7 @@ try {
     await once(server, 'listening')
     const log = createWriteStream(`${evidence}/local-app.log`)
     app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100', '-H', '127.0.0.1'], {
-      env: { ...process.env, PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
+      env: { ...process.env, NODE_ENV:'test', PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken, PRESCRIPTIONS_DATA_ENCRYPTION_KEY:'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     app.stdout.pipe(log); app.stderr.pipe(log)
@@ -62,6 +83,7 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  if (!live) await context.route(/^https:\/\/(?:app\.heygen\.com|www\.youtube-nocookie\.com)\//, route => route.abort())
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
@@ -244,9 +266,31 @@ try {
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
   } else {
-    const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
-    await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
-    const editor = await adminContext.newPage()
+    async function verifiedBridge(isNonOwner) {
+      const actorContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+      if (isNonOwner) await actorContext.addCookies([{ name:'hh_test_actor', value:'b', url:origin }])
+      const actorPage = await actorContext.newPage()
+      const start = await actorPage.request.post(origin + '/api/app/auth/start', { headers:{Origin:origin}, data:{locale:'en'} })
+      assert.equal(start.status(), 200, 'Local PKCE start')
+      const login = await start.json()
+      assert.equal(new URL(login.redirectUrl).origin, process.env.HH_APP_SUPABASE_URL, 'Loopback protocol double only')
+      await actorPage.goto(login.redirectUrl, {waitUntil:'domcontentloaded'})
+      const bridge = await actorPage.request.post(origin + '/api/app/practitioner/open', {
+        headers:{Origin:origin}, data:{destination:'videos'},
+      })
+      if (isNonOwner) {
+        assert.equal(bridge.status(),404,'A verified non-owner must not obtain an admin session')
+        await actorContext.close()
+        return null
+      }
+      assert.equal(bridge.status(),200,'The verified owner receives the existing admin bridge')
+      assert.equal((await bridge.json()).redirectUrl,'/admin/videos')
+      return {context:actorContext,page:actorPage}
+    }
+    await verifiedBridge(true)
+    const owner = await verifiedBridge(false)
+    const adminContext = owner.context
+    const editor = owner.page
     editor.on('pageerror', error => pageErrors.push(error.message))
     async function openEditor(target = editor) {
       await target.goto(`${origin}/admin/videos`)
@@ -390,5 +434,6 @@ try {
 } finally {
   if (browser) await browser.close()
   if (app) app.kill('SIGTERM')
+  if (provider) provider.kill('SIGTERM')
   if (server) server.close()
 }
