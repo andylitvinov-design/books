@@ -148,7 +148,9 @@ try {
       // ordinary click; never force or silently retry a missed interaction.
       async function stableAdvance(page, button) {
         await button.evaluate(node=>{
-          window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false;window.__hhAdvanceDiagnostic=null
+          window.__hhTraceController?.abort();window.__hhTraceController=new AbortController()
+          window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false;window.__hhAdvanceDiagnostic=null;window.__hhAdvanceTrace=[]
+          for (const type of ['scroll','focusin','pointermove','mousedown']) document.addEventListener(type,event=>{const r=node.getBoundingClientRect();window.__hhAdvanceTrace.push({type,at:Math.round(performance.now()),scrollY:Math.round(scrollY),y:Math.round(r.y),target:event.target?.tagName});window.__hhAdvanceTrace=window.__hhAdvanceTrace.slice(-40)},{capture:true,passive:true,signal:window.__hhTraceController.signal})
           node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
           document.addEventListener('click',event=>{const rect=node.getBoundingClientRect();window.__hhAdvanceDiagnostic={same:event.target===node||node.contains(event.target),connected:node.isConnected,targetTag:event.target?.tagName,targetId:event.target?.id||null,targetClass:typeof event.target?.className==='string'?event.target.className:null,clientX:Math.round(event.clientX),clientY:Math.round(event.clientY),stable:window.__hhAdvanceStable,scrollY:Math.round(scrollY),x:Math.round(rect.x),y:Math.round(rect.y),width:Math.round(rect.width),height:Math.round(rect.height),viewportWidth:innerWidth,viewportHeight:innerHeight}},{capture:true,once:true})
           node.addEventListener('click',()=>{window.__hhAdvanceReceived=true},{capture:true,once:true})
@@ -157,7 +159,7 @@ try {
           const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2
           const hit=document.elementFromPoint(x,y),last=window.__hhAdvanceStable
           const same=last&&Math.abs(last.x-x)<0.5&&Math.abs(last.y-y)<0.5
-          window.__hhAdvanceStable={x,y,count:same?last.count+1:0}
+          window.__hhAdvanceStable={x,y,scrollY:Math.round(scrollY),at:Math.round(performance.now()),count:same?last.count+1:0}
           return y>60&&y<innerHeight-60&&hit&&(hit===node||node.contains(hit))&&window.__hhAdvanceStable.count>=6
         },await button.elementHandle())
         // Use the verified viewport point directly: locator.click() may trigger
@@ -166,7 +168,7 @@ try {
         assert.ok(box && box.width>0 && box.height>0,'advance button must have a visible box')
         await page.mouse.click(box.x+box.width/2,box.y+box.height/2)
         const reached=await page.evaluate(()=>window.__hhAdvanceReceived)
-        if (!reached) console.log(JSON.stringify({phase:'advance-click-diagnostic',diagnostic:await page.evaluate(()=>window.__hhAdvanceDiagnostic)}))
+        if (!reached) console.log(JSON.stringify({phase:'advance-click-diagnostic',diagnostic:await page.evaluate(()=>window.__hhAdvanceDiagnostic),trace:await page.evaluate(()=>window.__hhAdvanceTrace)}))
         assert.equal(reached,true,'format advance click must reach its button')
       }
       for (const [locale,width,topic,next,continueCourse,no,skip,start,setup] of [
