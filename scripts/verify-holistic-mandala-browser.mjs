@@ -1050,6 +1050,14 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(await director.locator('[data-director-shot]').count(),6,
             'a 60-second storyboard contains six scenes');
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
+          await director.locator('[data-director-category="principal"]').click();
+          const durationQuestion=director.locator('fieldset').filter({has:director.getByText('Какой длины нужен ролик?',{exact:true})});
+          await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();
+          assert.equal(await director.getByRole('button',{name:'30 сек',exact:true}).getAttribute('aria-pressed'),'true');
+          await director.getByRole('button',{name:'60 сек',exact:true}).click();
+          await director.locator('[data-director-create-plan]').click();
+          assert.equal(await director.locator('[data-director-shot]').count(),6,
+            'the latest duration control overrides an earlier question answer');
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");

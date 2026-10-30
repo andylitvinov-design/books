@@ -1608,7 +1608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     startFromHero();
   };
   const applyCinematicStoryboard=(plan:CinematicStoryboard)=>{
-    // The four locally rendered shots are approved source-backed motifs; raw
+    // The locally rendered shots are approved source-backed motifs; raw
     // client wishes, profile scores and photos remain on this device.
     setTheme(plan.theme);setVideoCategory(plan.theme);
     if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
@@ -1619,9 +1619,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setDuration(plan.durationSeconds as (typeof durations)[number]);
     setCinematicPlan(plan);
     setPreviewPlaying(false);
-    setNotice(locale==="ru"?"Четыре сцены подготовлены. Нажмите «Создать видео».":
-      locale==="es"?"Cuatro escenas listas. Pulsa Crear vídeo.":
-      "Four shots are ready. Select Create video to render them.");
+    setNotice(locale==="ru"?`Сцен подготовлено: ${plan.shots.length}. Нажмите «Создать видео».`:
+      locale==="es"?`Escenas listas: ${plan.shots.length}. Pulsa Crear vídeo.`:
+      `Shots ready: ${plan.shots.length}. Select Create video to render them.`);
     document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
   };
 
