@@ -290,3 +290,13 @@ test('wave 5: video and Support mock save duplicate TS while preserving real bro
   assert.match(video,/tests\/es-about\.test\.mjs/);
   assert.match(video,/tests\/personal-testimonials\.test\.mjs/);
 });
+
+
+test('wave 5b: Support mock readiness loop is ShellCheck-clean and fails closed on timeout',()=>{
+ const mock=read('hh-support-mobile-mock-browser.yml');
+ assert.match(mock,/for \(\(attempt=1; attempt<=120; attempt\+\+\)\); do/);
+ assert.match(mock,/if \(\( attempt == 120 \)\); then/);
+ assert.match(mock,/tail -80 \/tmp\/hh-support-mock-next\.log/);
+ assert.match(mock,/exit 1/);
+ assert.doesNotMatch(mock,/for i in \$\(seq 1 120\)/);
+});

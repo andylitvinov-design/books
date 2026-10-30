@@ -111,9 +111,14 @@ jobs:
           npx next dev --hostname 127.0.0.1 --port 3118 > /tmp/hh-support-mock-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 120); do
+          for ((attempt=1; attempt<=120; attempt++)); do
             if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            if (( attempt == 120 )); then
+              echo 'Support mock server did not become ready after 120 attempts' >&2
+              tail -80 /tmp/hh-support-mock-next.log
+              exit 1
+            fi
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs
