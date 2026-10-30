@@ -178,7 +178,12 @@ try {
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      // The free written review moved its optional intro into the free-entry
+      // narrative block. Verify the same real video and lazy embed there.
+      const selector = topic === 'alchemy' ? '[data-alchemy-panel="video"]'
+        : route.endsWith('/services/free-situation-review') ? '[data-free-review-intro-video]'
+        : `[data-service-video="${topic}"]`;
+      const block = page.locator(selector)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
