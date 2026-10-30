@@ -11,7 +11,7 @@ import type {FreeVideoPlan} from "@/lib/mandala/free-video-renderer";
 import css from "./mandala-free-video-generator.module.css";
 
 type Aspect="portrait"|"landscape"|"square";
-type Family="auto"|"mandala"|"light"|"lotus";
+type Family="auto"|FreeVideoPlan["family"];
 type Palette="auto"|"gold"|"ocean"|"violet";
 type Motion="auto"|"calm"|"flow"|"dynamic";
 type Props={
@@ -24,42 +24,42 @@ const copy={
     title:"Создайте новые движущиеся образы",tag:"НОВОЕ · БЕСПЛАТНО",
     intro:"Опишите картину — мы создадим новую анимацию из света, форм и движения прямо на вашем устройстве.",
     description:"Что должно происходить в кадре?",types:"Что рисовать?",
-    families:{auto:"Определить по описанию",mandala:"Мандала",light:"Свет и энергия",lotus:"Лотос и вода"},
+    families:{auto:"Определить по описанию",mandala:"Мандала",light:"Свет и энергия",lotus:"Лотос и вода",temple:"Светлый храм",tree:"Дерево жизни",cosmic:"Космос",light_tunnel:"Световой тоннель",flowering_garden:"Цветущий сад"},
     palettes:{auto:"По описанию",gold:"Золото",ocean:"Океан",violet:"Сиреневый"},
     motions:{auto:"По описанию",calm:"Очень плавно",flow:"Плавное течение",dynamic:"Динамично"},
     options:"Цвета и движение",palette:"Палитра",motion:"Скорость",
     play:"Посмотреть движение",pause:"Остановить",variant:"Другой вариант",
     seed:"Вариант",local:"Новые кадры · не из каталога MP4 · без оплаты",
     limit:"Генерируются символические анимации, не реалистичные люди и съёмки.",
-    fallback:"Этот образ пока нельзя нарисовать буквально. Показываем доступную символическую композицию. Выберите мандалу, свет или лотос.",
+    fallback:"Этот образ пока нельзя нарисовать буквально. Показываем доступную символическую композицию. Выберите доступный символический мир ниже.",
     photo:"Фото добавляется только после отдельного разрешения в настройках ниже.",
   },
   en:{
     title:"Create original moving artwork",tag:"NEW · FREE",
     intro:"Describe a visual scene. Generate original light, shape and motion locally on your device.",
     description:"What should happen on screen?",types:"What to draw?",
-    families:{auto:"Detect from description",mandala:"Mandala",light:"Light & energy",lotus:"Lotus & water"},
+    families:{auto:"Detect from description",mandala:"Mandala",light:"Light & energy",lotus:"Lotus & water",temple:"Luminous temple",tree:"Tree of life",cosmic:"Cosmos",light_tunnel:"Light tunnel",flowering_garden:"Flower garden"},
     palettes:{auto:"From description",gold:"Gold",ocean:"Ocean",violet:"Violet"},
     motions:{auto:"From description",calm:"Very gentle",flow:"Slow flowing",dynamic:"Dynamic"},
     options:"Colors & motion",palette:"Palette",motion:"Motion",
     play:"Preview motion",pause:"Pause",variant:"Another variation",
     seed:"Variation",local:"Original frames · no stock MP4 · no fees",
     limit:"Symbolic animation, not realistic people or filmed scenes.",
-    fallback:"That exact motif is not supported yet. Showing available symbolic art. Try mandala, light or lotus.",
+    fallback:"That exact motif is not supported yet. Showing available symbolic art. Choose one of the available symbolic worlds below.",
     photo:"A personal photo appears only with the separate permission below.",
   },
   es:{
     title:"Crea imágenes animadas originales",tag:"NUEVO · GRATIS",
     intro:"Describe una escena. Generamos luz, formas y movimiento originales en tu dispositivo.",
     description:"¿Qué debería suceder en el vídeo?",types:"¿Qué dibujar?",
-    families:{auto:"Detectar descripción",mandala:"Mandala",light:"Luz y energía",lotus:"Loto y agua"},
+    families:{auto:"Detectar descripción",mandala:"Mandala",light:"Luz y energía",lotus:"Loto y agua",temple:"Templo de luz",tree:"Árbol de la vida",cosmic:"Cosmos",light_tunnel:"Túnel de luz",flowering_garden:"Jardín florido"},
     palettes:{auto:"Según descripción",gold:"Dorado",ocean:"Océano",violet:"Violeta"},
     motions:{auto:"Según descripción",calm:"Muy suave",flow:"Fluido",dynamic:"Dinámico"},
     options:"Colores y movimiento",palette:"Paleta",motion:"Movimiento",
     play:"Ver movimiento",pause:"Pausar",variant:"Otra variación",
     seed:"Variación",local:"Fotogramas nuevos · sin clips MP4 · gratis",
     limit:"Animaciones simbólicas, no personas ni escenas fotorrealistas.",
-    fallback:"Aún no podemos dibujar literalmente ese motivo. Prueba mandala, luz o loto.",
+    fallback:"Aún no podemos dibujar literalmente ese motivo. Elige uno de los mundos simbólicos disponibles.",
     photo:"Tu foto solo se incluye con el consentimiento por separado más abajo.",
   },
 } as const;

@@ -2,10 +2,11 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildFreeVideoPlan,cleanVisualDescription,FREE_VIDEO_EXAMPLES,
-  FREE_VIDEO_FAMILIES,FREE_VIDEO_PALETTES} from "../lib/mandala/free-video-generator.mjs";
+  FREE_VIDEO_FAMILIES,FREE_VIDEO_PALETTES,FREE_VIDEO_VERSION} from "../lib/mandala/free-video-generator.mjs";
 
-test("three real procedural render families and palettes have stable public contracts",()=>{
-  assert.deepEqual(FREE_VIDEO_FAMILIES,["mandala","light","lotus"]);
+test("eight original procedural worlds preserve the first three families and palettes",()=>{
+  assert.deepEqual(FREE_VIDEO_FAMILIES,["mandala","light","lotus","temple","tree","cosmic","light_tunnel","flowering_garden"]);
+  assert.equal(FREE_VIDEO_VERSION,"hh-free-procedural-v2");
   assert.deepEqual(FREE_VIDEO_PALETTES,["gold","ocean","violet"]);
   for(const locale of ["ru","en","es"]){
     const p=buildFreeVideoPlan({description:FREE_VIDEO_EXAMPLES[locale],locale,theme:"energy"});
@@ -28,6 +29,31 @@ test("actual visual intent—not psychological wish—chooses a new motif",()=>{
     assert.equal(p.hasRecognizedMotif,true);
     if(palette)assert.equal(p.palette,palette,description);
     if(motion)assert.equal(p.motion,motion,description);
+  }
+});
+test("RU EN ES visual intents route to five actually distinct new worlds",()=>{
+  const descriptions=[
+    ["ru","Светлый храм с колоннами","temple"],
+    ["en","An old oak tree with drifting leaves","tree"],
+    ["es","Un cosmos con galaxia y nebulosa","cosmic"],
+    ["ru","Световой туннель в перспективе","light_tunnel"],
+    ["es","Un jardín de flores al amanecer","flowering_garden"],
+  ];
+  for(const [locale,description,family] of descriptions){
+    const p=buildFreeVideoPlan({locale,description,theme:"life"});
+    assert.equal(p.family,family,description);
+    assert.equal(p.hasRecognizedMotif,true);
+    assert.equal(p.source,"local_procedural");
+    assert.equal(p.framesFromReadyVideo,false);
+    assert.equal(p.paidProviderRequired,false);
+    assert.equal(p.version,FREE_VIDEO_VERSION);
+    assert.ok(!JSON.stringify(p).includes(description));
+  }
+  for(const family of FREE_VIDEO_FAMILIES){
+    const p=buildFreeVideoPlan({family,locale:"en",theme:"energy",variation:17});
+    const q=buildFreeVideoPlan({family,locale:"en",theme:"energy",variation:17});
+    assert.deepEqual(p,q);
+    assert.equal(p.family,family);
   }
 });
 test("unsupported human-film prompts fail honestly to a labeled symbolic fallback",()=>{
@@ -83,6 +109,14 @@ test("new generator feeds the SAME working Canvas/MediaRecorder as existing edit
   assert.match(renderer,/function light\(/);
   assert.match(renderer,/function lotus\(/);
   assert.match(renderer,/function random\(/);
+  assert.match(renderer,/paintExtendedWorld\(/);
+  const worlds=readFileSync(new URL("../lib/mandala/free-video-worlds.ts",import.meta.url),"utf8");
+  for(const world of ["temple","tree","cosmic","lightTunnel","floweringGarden"]){
+    assert.match(worlds,new RegExp("function "+world+"\\("));
+  }
+  assert.match(worlds,/createRadialGradient/);
+  assert.match(worlds,/bezierCurveTo/);
+  assert.doesNotMatch(worlds,/fetch\(|XMLHttpRequest|WebSocket|FormData|sendBeacon|localStorage|sessionStorage/);
   assert.match(renderer,/drawImage\(image,/);
   assert.doesNotMatch(renderer,/fetch\(|XMLHttpRequest|WebSocket|FormData|sendBeacon|localStorage|sessionStorage/);
 });

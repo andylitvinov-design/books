@@ -1,3 +1,5 @@
+import {paintExtendedWorld} from "./free-video-worlds";
+
 /**
  * Actual browser-side frame generator: draws NEW shapes, gradients, petals,
  * rings, light ribbons and seeded particles. Not a stock video selector.
@@ -5,7 +7,7 @@
  */
 export type FreeVideoPlan={
   version:string;source:string;
-  family:"mandala"|"light"|"lotus";
+  family:"mandala"|"light"|"lotus"|"temple"|"tree"|"cosmic"|"light_tunnel"|"flowering_garden";
   palette:"gold"|"ocean"|"violet";
   motion:"calm"|"flow"|"dynamic";
   seed:number;variation:number;
@@ -184,7 +186,7 @@ export function paintFreeVideoFrame(
   permittedLocalPortrait:HTMLImageElement|null=null,
 ):void{
   if(!plan||!Number.isInteger(plan.seed)||!PALETTES[plan.palette]||
-    !["mandala","light","lotus"].includes(plan.family))return;
+    !["mandala","light","lotus","temple","tree","cosmic","light_tunnel","flowering_garden"].includes(plan.family))return;
   const w=ctx.canvas.width,h=ctx.canvas.height;
   if(!w||!h)return;
   const p=PALETTES[plan.palette];
@@ -195,7 +197,8 @@ export function paintFreeVideoFrame(
   dust(ctx,w,h,plan.seed,t,p);
   if(plan.family==="mandala")mandala(ctx,w,h,plan.seed,t,p);
   else if(plan.family==="lotus")lotus(ctx,w,h,plan.seed,t,p);
-  else light(ctx,w,h,plan.seed,t,p);
+  else if(plan.family==="light")light(ctx,w,h,plan.seed,t,p);
+  else paintExtendedWorld(ctx,w,h,plan.seed,t,p,plan.family);
   if(permittedLocalPortrait)portrait(ctx,w,h,permittedLocalPortrait,p);
   ctx.restore();
 }
