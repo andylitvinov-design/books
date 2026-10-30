@@ -43,6 +43,7 @@ const copy={
     referenceHint:"These are text descriptions of suggested keyframes, not generated pictures.",
     newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
     supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
+    localMatchUnknown:"The free montage uses existing scenes. We cannot verify that they depict your description; review each scene before exporting.",
     understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",categories:{personalization:"Personalization",principal:"Principal",advanced:"Advanced",pro:"Pro Cinematic",extra:"Extra"},refine:"Refine this plan",noQuestions:"No additional questions are needed here.",selectShot:"Choose a scene card to direct this shot.",ownAnswer:"Your answer",
     theme:"Topic",difficulty:"Main challenge",goal:"Desired change",profile:"My profile",style:"Visual style",avoid:"Avoid these images",
     profileEmpty:"Not connected",profileReady:"Verified test suggestions available",
@@ -74,6 +75,7 @@ const copy={
     referenceHint:"Это текстовые описания начальных и конечных кадров, а не созданные AI-картинки.",
     newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
     supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
+    localMatchUnknown:"Бесплатный монтаж использует готовые сцены. Их соответствие вашему описанию не проверено — просмотрите каждую сцену перед экспортом.",
     understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",categories:{personalization:"Персонализация",principal:"Основное",advanced:"Расширенное",pro:"Про-режиссура",extra:"Дополнительно"},refine:"Уточнить этот план",noQuestions:"В этом разделе дополнительных вопросов не нужно.",selectShot:"Выберите карточку сцены для покадровой режиссуры.",ownAnswer:"Свой ответ",
     theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",profile:"Мой профиль",style:"Визуальный стиль",avoid:"Нежелательные образы",
     profileEmpty:"Не подключён",profileReady:"Есть рекомендации по проверенным тестам",
@@ -105,6 +107,7 @@ const copy={
     referenceHint:"Son descripciones de fotogramas iniciales y finales, no imágenes creadas por IA.",
     newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
     supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
+    localMatchUnknown:"El montaje gratuito usa escenas existentes. No se ha comprobado que coincidan con tu descripción; revisa cada escena antes de exportar.",
     understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",categories:{personalization:"Personalización",principal:"Principal",advanced:"Avanzado",pro:"Pro cinematográfico",extra:"Extra"},refine:"Mejorar este plan",noQuestions:"No se necesitan más preguntas aquí.",selectShot:"Elige una tarjeta de escena para dirigir este plano.",ownAnswer:"Tu respuesta",
     theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",profile:"Mi perfil",style:"Estilo visual",avoid:"Evitar estas imágenes",
     profileEmpty:"Sin conectar",profileReady:"Hay sugerencias de tests verificados",
@@ -445,7 +448,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
             {t.understood}: {referencePack.creativeSummary}</p>:null}
           {referencePack.contextualQuestions.length?<p>{t.needsMore}</p>:null}
           <p data-director-new-ai-status>
-            {referencePack.requestedNovelVideo&&!referencePack.newAiVideoAvailable?t.newAiRequired:t.supportedLocal}</p>
+            {referencePack.requestedNovelVideo&&!referencePack.newAiVideoAvailable?t.newAiRequired:
+              !referencePack.localMatchVerified?t.localMatchUnknown:t.supportedLocal}</p>
           <details><summary>{t.referenceHint}</summary>
             <ol>{referencePack.shots.map((shot:{shotId:string;reference:{start:string;end:string}})=><li key={shot.shotId}>
               <span>{shot.reference.start}</span>

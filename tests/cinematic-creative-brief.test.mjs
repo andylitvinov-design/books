@@ -103,6 +103,14 @@ test('a revised brief exclusion overrides a previously confirmed subject without
     }
   }
 });
+test('unrecognized descriptions are never presented as a verified local match',()=>{
+  for(const idea of ['A silver dragon in a floating library','Серебряный дракон в парящей библиотеке','Un dragón plateado en una biblioteca flotante']){
+    const p=compileCinematicReferencePack({plan:project(),visualIdea:idea});
+    assert.equal(p.localMatchVerified,false);
+    assert.equal(p.outputStatus,'local_match_unverified');
+    assert.equal(p.newAiVideoAvailable,false);
+  }
+});
 test('new fictional eagle metamorphosis produces safe text-only keyframes but no fake AI frames',()=>{
   for(const [locale,idea] of [
     ['ru','Моя тайна 74829: Белый орёл летит над горами и превращается в созвездие'],
