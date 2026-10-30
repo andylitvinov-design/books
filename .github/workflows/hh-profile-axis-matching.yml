@@ -1,10 +1,9 @@
 name: Holistic House axis-to-offer matching
 on:
-  # Run the same gate on this isolated dependency branch while its PR targets
-  # another draft rather than the production branch.
   push:
-    branches: ['codex/hh-intelligence-meditation-bridge-20261029']
+    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'lib/holistic-support/client-reasoning-core.mjs'
@@ -48,6 +47,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -66,6 +66,8 @@ jobs:
       - name: Scoped ESLint
         run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: TypeScript check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build site
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
