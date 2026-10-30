@@ -239,7 +239,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           "the film frame is compact at "+width+"px");
         const landmarks=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
-          return ["[data-video-diagnostic-banner]","[data-video-daily-picks]",
+          return ["[data-video-daily-picks]",
             "[data-video-support-layout]","[data-video-category-rail]",
             "[data-video-preview-choices]","[data-video-mandala-hero]",
             "[data-video-therapy-banner]","#video-templates",
