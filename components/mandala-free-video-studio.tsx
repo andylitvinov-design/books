@@ -12,7 +12,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
 import type { AffirmationVoiceResult } from "./mandala-affirmation-voice";
-import { affirmationNarrationText } from "@/lib/mandala/affirmation-voice.mjs";
+import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
@@ -41,7 +41,7 @@ type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
 // A selected sound is only a preview; attaching it is a separate, explicit step.
-type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number};
+type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -1184,7 +1184,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let musicSession:AmbientSession|null=null;
     try {
       musicSession = attachedAudio?.kind==="file"
-        ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true})
+        ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true})
         : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume) : null;
       if(attachedAudio && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
@@ -1387,6 +1387,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(duration!==clip.mixSeconds){setDuration(clip.mixSeconds as (typeof durations)[number]);setCinematicPlan(null);}
     setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
+  }
+  async function attachMeditationNarration(file:File):Promise<boolean>{
+    if(recording||preparing||!isSupportedLocalAudio(file))return false;
+    // A free short TTS excerpt must fit inside one existing local movie.
+    // Never silently truncate the spoken text or loop it after the last word.
+    const seconds=wavDurationFromHeader(await file.slice(0,256).arrayBuffer());
+    const target=seconds?durations.find(value=>value>=seconds+0.35):undefined;
+    if(!target){
+      setNotice(locale==="ru"?"Для бесплатного видео нужна озвучка до 59 секунд. Сократите отрывок медитации.":
+        locale==="es"?"La narración debe durar menos de 59 segundos. Reduce el texto.":
+        "This local video supports up to 59 seconds of speech. Please shorten the narration excerpt.");
+      return false;
+    }
+    const entry=chooseAudioFile(file);
+    if(!entry)return false;
+    setAudioRights(true);
+    setSoundVolume(100);
+    setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+    if(duration!==target){setDuration(target);setCinematicPlan(null);}
+    setNotice(locale==="ru"?"Голос медитации и музыкальный фон добавлены в видеоролик.":
+      locale==="es"?"La narración y la música se han adjuntado al vídeo.":
+      "Meditation narration and background are now attached to the video.");
+    return true;
   }
   function chooseMusic(choice:AmbientMusic){
     clearUploadedAudio();
@@ -2739,7 +2762,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           attachedAudio?.kind==="preset" ? presetAudioUrl(attachedAudio.id) : null}
         pace={speed} brightness={brightness}
         affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-        focus={meditationFocus} disabled={recording||preparing}/> : null}
+        focus={meditationFocus} disabled={recording||preparing}
+         onNarrationReady={attachMeditationNarration}/> : null}
 
 
 
