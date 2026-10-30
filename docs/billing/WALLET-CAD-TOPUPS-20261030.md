@@ -36,3 +36,22 @@ No PayPal Business API exists in Vercel production currently. PayPal.Me is not a
 - Database must be checked with read-only introspection and controlled transaction tests.
 - Browser should test signed-in client creation, manual report, admin claim approval and balance refresh WITHOUT fabricating actual financial receipt. Provider settlement needs a real authorised small payment/refund.
 - To keep production safe, do not activate wallet/card flags before the back-end and migration are deployed and verified.
+
+## 2026-10-30 unified checkout implementation and launch gates
+- All signed-in customers use one catalogue at /ru/app/wallet or /en/app/wallet. The wallet is reachable from the account menu and the mobile bottom navigation.
+- The same amount selection (CA$40, CA$50, or arbitrary CA$1–CA$1,000 with cents) goes to the available method. Both Square card and PayPal are shown; unavailable methods are explicitly disabled rather than pretending to accept payment.
+- The server returns per-account pending orders, verified credit history, provider-specific payment links and current balance. Leaving for PayPal or Square does not erase a pending order: the customer can return and reopen the original link.
+- Card checkout is a Square Quick Pay link for the exact server-validated CAD amount, a **single-use wallet order** with provider-side idempotency. It does not depend on the existing EUR/CAD **consultation** price catalogue and does not use the old standalone CA$40/50 session payment links.
+- Verified payment is server-side only: signed Square webhook with live payment readback or authenticated reconciliation, never query parameters or raw webhooks. A refund is still reconciled even after the original card credit. Duplicate settlement cannot credit the wallet twice.
+- Personal PayPal.Me is separate and manual: buyer reports transaction ID; seller independently checks the real provider activity and re-enters the exact **CAD amount and transaction ID** at /admin/wallet; buyer claims do not grant credit. A future PayPal Business Orders v2 wallet adapter would allow automatic capture, but is **not** present or merchant-configured.
+- **Important legal/provider condition**: Canada's PayPal Acceptable Use Policy identifies sale of stored-value cards as a category requiring prior approval. Square's Canadian Payment Terms prohibit prepaid cards and certain other industries. Merchant-specific written approval for non-transferable *service credits* is required before sale. Do not enable any funding rail for unapproved stored value. These are not redeemable cash or user-to-user transfers.
+  - https://www.paypal.com/ca/legalhub/paypal/acceptableuse-full
+  - https://squareup.com/ca/en/legal/general/payment
+  - https://developer.squareup.com/reference/square/checkout/create-payment-link
+- **Environment activation** (all production secrets server-only, approvals only after verification):
+  - Existing: HH_APP_ENABLED=true, HH_APP_PRODUCTION_APPROVED=true, HH_APP_* database and session config.
+  - Ledger: HH_WALLET_SCHEMA_APPROVED=true (after exact migration checks), HH_WALLET_ENABLED=true.
+  - PayPal.Me: HH_WALLET_PAYPAL_ENABLED=true **and** HH_WALLET_PAYPAL_TERMS_APPROVED=true; reject if HH_PAYPAL_PERSONAL_DISABLED=true.
+  - Square card: HH_WALLET_SQUARE_ENABLED=true, HH_WALLET_SQUARE_TERMS_APPROVED=true, HH_SQUARE_API_ENABLED=true, HH_SQUARE_API_MODE=production, HH_SQUARE_API_PRODUCTION_APPROVED=true, HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED=true, HH_SQUARE_TAX_REVIEW_APPROVED=true, HH_SQUARE_REFUND_TERMS_APPROVED=true, plus genuine HH_SQUARE_API_TOKEN / HH_SQUARE_MERCHANT_ID / HH_SQUARE_LOCATION_ID / HH_SQUARE_WEBHOOK_SIGNATURE_KEY. The same signed webhook path is reused. **No** HH_SQUARE_CAD_50_MINOR/100/150 mapping or HH_SQUARE_API_SCHEMA_APPROVED flag is needed just for wallet, and enabling wallet never enables those one-time service prices.
+- Do not infer live payment support solely from a provider page opening, a READY deployment, or a synthetic SQL test. Actual funds capture and refunds need owner-authorized sandbox and controlled real-money verification.
+- 2026-10-30 database migrations 20261030045723 and 20261030050812 were applied to existing Holistic House Supabase and checked for FORCE RLS and no browser table privileges. Production payments remain DISABLED until provider acceptance and full E2E.
