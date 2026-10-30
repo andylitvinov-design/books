@@ -97,6 +97,8 @@ test("card delivery bypasses runtime transforms without disabling book reader op
       hook + " must generate immutable art exactly once");
     assert.doesNotMatch(config.scripts[hook], /\|\|\s*true/, hook + " cannot mask a failed art build");
   }
+  assert.equal(config.scripts["build:static-artwork"], artworkCommand,
+    "fast image acceptance must use the same pinned, full WebP generator as Next prebuild");
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 
@@ -114,4 +116,22 @@ test("every pinned WebP source has a complete declared RIFF body before build-ti
     assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP", item.source);
     assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, "Incomplete WebP source: " + item.source);
   }
+});
+
+test("image-only QA generates and decodes all 85 pinned WebP while Core owns production PR Next build", () => {
+  const workflow = read(".github/workflows/hh-static-image-cost-guard.yml");
+  const core = read(".github/workflows/hh-pr-core-release.yml");
+  const fast = "if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}";
+  const outside = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(workflow.includes('- name: Regenerate all content-pinned WebP on production PR\n        '+fast+'\n        run: npm run build:static-artwork'));
+  assert.ok(workflow.includes('- name: Build real Next.js app with prebuilt static WebP\n        '+outside+'\n        run: npm run build'));
+  assert.ok(workflow.includes('- name: Typecheck\n        '+outside+'\n        run: npx --no-install tsc --noEmit'));
+  assert.match(workflow, /^  push:/m);
+  assert.match(workflow, /^  workflow_dispatch:/m);
+  assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
+  assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });

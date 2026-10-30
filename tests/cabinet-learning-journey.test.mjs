@@ -189,3 +189,18 @@ test('new mobile fold-down actions fit viewport intent, preserve reduced-motion 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/)
   assert.match(css, /\.stepChevron \{ transition: none; \}/)
 })
+
+test('Cabinet journey delegates only redundant global TS; privacy and journey tests remain mandatory', () => {
+  const workflow = source('.github/workflows/hh-cabinet-journey.yml')
+  const core = source('.github/workflows/hh-pr-core-release.yml')
+  assert.match(core, /^  release-ready:/m)
+  assert.match(core, /tsc --noEmit/)
+  assert.ok(workflow.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"))
+  assert.match(workflow, /- name: TypeScript[\s\S]*?run: npx --no-install tsc --noEmit/)
+  for (const suite of ['tests/cabinet-learning-journey.test.mjs', 'tests/workflow-next-route-filters.test.mjs', 'tests/my-progress.test.mjs', 'tests/cabinet-today.test.mjs']) {
+    assert.ok(workflow.includes(suite), suite + ' required');
+  }
+  assert.match(workflow, /name: Scoped ESLint/)
+  assert.match(workflow, /branches: \['codex\/public-book-library'\]/)
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/)
+})

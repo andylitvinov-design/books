@@ -11,6 +11,11 @@ on:
       - '.github/workflows/hh-public-journey-toronto-wave2.yml'
 permissions:
   contents: read
+concurrency:
+  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
+  group: hh-toronto-wave2-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   toronto-wave2:
     runs-on: ubuntu-latest
@@ -45,7 +50,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
-          for i in $(seq 1 75); do
+          for ((i=1; i<=75; i++)); do
             if curl --silent --fail http://127.0.0.1:3104/en/toronto >/dev/null; then ready=1; break; fi
             sleep 2
           done

@@ -1,6 +1,7 @@
 name: Holistic House public services production acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/academy-course-video-playlist.tsx'
@@ -39,6 +40,14 @@ on:
       - 'components/*service*'
       - 'components/practice-showcase*'
       - 'lib/holistic-support/**'
+      # Pure, side-effect-free Intelligence Core policy/bridge input parsers
+      # have their own focused axis-to-offer unit, type and production-build gate.
+      # No public services routes, client UI, checkout or publication logic are
+      # edited by these files, so do NOT launch unrelated 20-minute storefront
+      # mobile browser matrix for a policy-only PR. All real service/UI changes
+      # still match the surrounding positive globs and run full acceptance.
+      - '!lib/holistic-support/client-reasoning-*.mjs'
+      - '!lib/holistic-support/intelligence-request.mjs'
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
@@ -53,6 +62,26 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Director-only art planning and its encoded-video browser test are fully
+      # covered by holistic-support-mandala.yml. They do not modify service
+      # discovery, checkout, Alchemy or master-catalog journeys tested here.
+      # Keep the broad shared mandala-* patterns for other Mandala components.
+      - '!components/mandala-cinematic-director.tsx'
+      - '!components/mandala-cinematic-director.module.css'
+      - '!scripts/verify-holistic-mandala-browser.mjs'
+      # Only the public /install PWA and signed-native-release registry use
+      # these two tests; holistic-house-mobile-install.yml runs both exact files,
+      # full production build and 320-430px Chromium/WebKit acceptance.
+      # They never touch Alchemy, Reiki, business, checkout or public services.
+      # Keep all public service path tests and broad holistic-* coverage intact.
+      - '!tests/holistic-house-free-install.test.mjs'
+      - '!tests/holistic-house-native-public-downloads.test.mjs'
+      # The dedicated Support Mobile Mock workflow checks these exact synthetic
+      # screenshot/QAs in 18 Chromium/WebKit EN/RU/ES viewport combinations.
+      # They do not change real public services, booking, checkout or navigation.
+      # Real service/UI/auth/payment paths above still trigger the full suite.
+      - '!scripts/verify-holistic-support-mock-fidelity.mjs'
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
 permissions:
   contents: read
 concurrency:
@@ -60,6 +89,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   public-services:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

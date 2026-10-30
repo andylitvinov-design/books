@@ -36,6 +36,19 @@ function syntheticAudioWav(seconds=3) {
     Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
   return bytes;
 }
+// Capture the entire synthetic guest page. Moving video/canvas content no
+// longer causes Playwright to wait for locator stability or offscreen clip.
+// Independent real media, accessibility and layout assertions remain mandatory.
+async function captureSyntheticOverview(page, locator, path) {
+  const bounds = await locator.evaluate(element => {
+    element.scrollIntoView({block:"start",behavior:"instant"});
+    const rect=element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height};
+  });
+  assert.ok(bounds.width>0 && bounds.height>0,'Synthetic Mandala overview must have visible bounds');
+  await page.screenshot({path,fullPage:true,animations:"disabled",timeout:30000});
+}
+
 const bufferFromStream = async stream => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
@@ -44,10 +57,12 @@ const bufferFromStream = async stream => {
 
 let passes = 0;
 // WebKit runs first so iPhone-specific release blockers fail fast.
+// Two isolated contexts overlap I/O, audio and rendering without dropping any case.
 for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]) {
   const browser = await browserType.launch({ headless: true });
   try {
-    for (const { locale, width } of viewports) {
+    for (let from = 0; from < viewports.length; from += 2) {
+      const results = await Promise.allSettled(viewports.slice(from, from + 2).map(async ({ locale, width }) => {
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -172,10 +187,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // the default ENERGY topic, before browser QA switches to MONEY.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await page.locator("[data-hypno-overview]").screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, page.locator("[data-hypno-overview]"),
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
@@ -277,6 +290,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
         assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
+        // Real users scroll the gallery into view; IntersectionObserver starts
+        // muted playback only when this MP4 itself is visible on the iPhone.
+        // A concurrent browser context may have scrolled the button into view
+        // while leaving the video thumbnail outside the visible viewport.
+        await energyClip.scrollIntoViewIfNeeded();
+        await energyClip.waitFor({state:"visible",timeout:12000});
         await page.waitForFunction(() => {
           const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
           return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
@@ -411,10 +430,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // private media is captured in CI artifacts.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await compactHypno.screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, compactHypno,
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png");
         }
         const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
         assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
@@ -911,7 +928,41 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await director.locator('[data-director-field="goal"]').click();
           await page.locator('[role="dialog"] textarea').fill("PRIVATE_SCRIPT_BROKEN_IF_SENT к ясному горизонту");
           await page.locator('[role="dialog"] button:has-text("Готово")').click();
+          const newVisualIdea=director.locator('[data-director-visual-idea] textarea');
+          await newVisualIdea.fill("UNSENT_TOKEN_8257: белый орёл летит над горами и превращается в созвездие");
+          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0,
+            "subject and action already provided: no unnecessary 96-question form");
           await director.locator('[data-director-create-plan]').click();
+          const reference=director.locator('[data-director-reference-pack]');
+          assert.match(await reference.locator('[data-director-recognized-visuals]').innerText(),/ор[её]л/i);
+          assert.match(await reference.locator('[data-director-new-ai-status]').innerText(),/пока недоступна/i,
+            "novel eagle video must not be reported as generated by the local montage");
+          assert.equal(await reference.locator('li').count(),4);
+          assert.ok(!(await reference.innerText()).includes("UNSENT_TOKEN_8257"));
+          const [packetDownload]=await Promise.all([
+            page.waitForEvent("download",{timeout:12000}),
+            director.locator('[data-director-download-packet]').click(),
+          ]);
+          const packet=JSON.parse((await bufferFromStream(await packetDownload.createReadStream())).toString("utf8"));
+          assert.equal(packet.creativeReferencePack.recognized.subject,"eagle");
+          assert.equal(packet.creativeReferencePack.recognized.action,"metamorphosis");
+          assert.equal(packet.creativeReferencePack.newAiVideoAvailable,false);
+          assert.equal(packet.creativeReferencePack.externalTransferApproved,false);
+          assert.ok(!JSON.stringify(packet).includes("UNSENT_TOKEN_8257"));
+          await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
+          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),2,
+            "only two contextual clarifications when subject and action are unclear");
+          await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
+          await director.locator('[data-director-contextual-questions] button:has-text("Летит")').click();
+          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          await newVisualIdea.fill("Без орла, нет другого героя");
+          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),1,
+            "revised exclusion invalidates only the contradicted subject, preserving the action");
+          assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
+          await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
+          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          await director.locator('[data-director-create-plan]').click();
+          assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
             "four connected first-party local video shots");
           assert.match(await director.locator('[data-director-shot="1"] > div > p').innerText(),
@@ -1027,6 +1078,10 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
       } finally {
         await context.close();
       }
+      }));
+      // An error must not close the browser while a sibling is still running.
+      const rejected = results.find(result => result.status === "rejected");
+      if (rejected) throw rejected.reason;
     }
   } finally {
     await browser.close();
@@ -1034,3 +1089,4 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
 }
 assert.equal(passes, 10);
 console.log("Mandala browser E2E:", passes, "of", passes, "checks passed");
+
