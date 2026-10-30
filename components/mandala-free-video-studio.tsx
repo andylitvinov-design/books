@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Camera, Check, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
@@ -850,7 +850,7 @@ const quickVideoCopy = {
  * only on-device Free is enabled; no unverified wallet or paid entitlement. */
 const approvedMobileCopy = {
   ru: {
-    introTitle:"Персональный видеоролик",
+    introTitle:"Создать персональное видео",
     intro:"Образы и аффирмации для поддержки энергии, мотивации и уверенности. Вы выбираете цель, видео и звук.",
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
@@ -861,11 +861,11 @@ const approvedMobileCopy = {
     unavailable:"Не подключён",creditsNote:"Smart и Pro откроются после проверенной оплаты и учёта кредитов. Сейчас доступен реальный бесплатный экспорт.",
     preview:"3. Видеопревью и заставка",previewPlay:"Воспроизвести видеофон",previewPause:"Приостановить видеофон",
     previewBadge:"Видео с оригинальным движением",previewFallback:"Полный предпросмотр",
-    covers:"Выберите видеозаставку",personal:"5. Настройте содержание",
-    affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"Дополнительные настройки",
+    covers:"Выберите видеозаставку",personal:"4. Настройте содержание",
+    affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"5. Дополнительные параметры",
   },
   en: {
-    introTitle:"Your personal video",
+    introTitle:"Create your personal video",
     intro:"Support for energy, motivation and confidence with personal imagery and optional affirmations. Choose your goal, visuals and sound.",
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
@@ -876,11 +876,11 @@ const approvedMobileCopy = {
     unavailable:"Not enabled",creditsNote:"Smart and Pro require verified payments and credit entitlements. Real free export works locally now.",
     preview:"3. Video preview & cover",previewPlay:"Play video background",previewPause:"Pause video background",
     previewBadge:"Genuine moving footage",previewFallback:"Full preview",
-    covers:"Choose a video cover",personal:"5. Customize the content",
-    affirmations:"Affirmations",photo:"My photo",voice:"Voice",music:"Music",extra:"Additional settings",
+    covers:"Choose a video cover",personal:"4. Customize the content",
+    affirmations:"Affirmations",photo:"My photo",voice:"Voice",music:"Music",extra:"5. Additional settings",
   },
   es: {
-    introTitle:"Tu vídeo personal",
+    introTitle:"Crea tu vídeo personal",
     intro:"Imágenes y afirmaciones opcionales para apoyar la energía, la motivación y la confianza. Elige tu objetivo, imagen y sonido.",
     disclosure:"Los fotogramas breves y las hipnoafirmaciones son experimentales; no hay pruebas de que cambien las creencias.",
     benefits:["Según tus objetivos","Intenciones personales","Afirmaciones opcionales","Naturaleza y sonidos"],
@@ -891,10 +891,67 @@ const approvedMobileCopy = {
     unavailable:"No habilitado",creditsNote:"Smart y Pro requieren pagos y créditos verificados. La exportación gratuita local ya funciona.",
     preview:"3. Vista previa y portada",previewPlay:"Reproducir vídeo de fondo",previewPause:"Pausar vídeo de fondo",
     previewBadge:"Vídeo real en movimiento",previewFallback:"Vista previa completa",
-    covers:"Elige una portada",personal:"5. Personaliza el contenido",
-    affirmations:"Afirmaciones",photo:"Mi foto",voice:"Voz",music:"Música",extra:"Ajustes adicionales",
+    covers:"Elige una portada",personal:"4. Personaliza el contenido",
+    affirmations:"Afirmaciones",photo:"Mi foto",voice:"Voz",music:"Música",extra:"5. Ajustes adicionales",
   },
 } as const;
+
+
+/* A service is WHAT the client gets; a video tier is HOW its scenes are made.
+   Prices are draft comparisons only: paid execution remains server-gated/off. */
+const formatPracticeCopy = {
+  ru: {
+    formats:"2. Выберите формат и качество",stylesTitle:"3. Стиль видео",
+    names:{video:"Видео",meditation:"Видео + личная медитация",course:"Видеотерапия · 8 сессий"},
+    durations:{video:"30–60 секунд",meditation:"3–5 минут",course:"8 занятий"},
+    features:{
+      video:["Короткое видео 30–60 секунд","Готовый видеоряд и звуковой фон","Текст и аффирмации"],
+      meditation:["Личная медитация 3–5 минут","Голос, музыка и паузы","Персональный текст практики"],
+      course:["8 последовательных видеосессий","Упражнения и личные задания","Отслеживание прогресса"],
+    },
+    quality:{basic:"Базовое",smart:"Smart",pro:"Pro"},
+    from:"от",free:"Бесплатно",noQuote:"По расчёту",draft:"План",total:"Итоговая стоимость",noCredits:"Без списания кредитов",sample:"Посмотреть пример видеоряда",
+    note:"Стоимость платных форматов предварительная. Оплата и платная генерация пока не подключены.",
+    pending:"Пока недоступно",
+  },
+  en: {
+    formats:"2. Choose format & quality",stylesTitle:"3. Video styles",
+    names:{video:"Video",meditation:"Video + personal meditation",course:"Video support · 8 sessions"},
+    durations:{video:"30–60 seconds",meditation:"3–5 minutes",course:"8 sessions"},
+    features:{
+      video:["Short 30–60-second video","Ready visuals and optional sound","Text and affirmations"],
+      meditation:["Personal 3–5-minute meditation","Voice, music and pauses","Personal practice script"],
+      course:["8 guided video sessions","Practice tasks and exercises","Progress check-ins"],
+    },
+    quality:{basic:"Basic",smart:"Smart",pro:"Pro"},
+    from:"from",free:"Free",noQuote:"Quote needed",draft:"Planned",total:"Estimated total",noCredits:"No credits charged",sample:"Watch visual sample",
+    note:"Paid prices are proposals only. Paid checkout and AI rendering are not enabled yet.",
+    pending:"Not available yet",
+  },
+  es: {
+    formats:"2. Elige formato y calidad",stylesTitle:"3. Estilos de vídeo",
+    names:{video:"Vídeo",meditation:"Vídeo + meditación personal",course:"Videoterapia · 8 sesiones"},
+    durations:{video:"30–60 segundos",meditation:"3–5 minutos",course:"8 sesiones"},
+    features:{
+      video:["Vídeo breve de 30–60 segundos","Escenas y sonido opcional","Texto y afirmaciones"],
+      meditation:["Meditación personal de 3–5 minutos","Voz, música y pausas","Guion personalizado"],
+      course:["8 sesiones de vídeo guiadas","Ejercicios y tareas personales","Seguimiento del progreso"],
+    },
+    quality:{basic:"Básico",smart:"Smart",pro:"Pro"},
+    from:"desde",free:"Gratis",noQuote:"Por calcular",draft:"Previsto",total:"Total estimado",noCredits:"Sin gastar créditos",sample:"Ver ejemplo visual",
+    note:"Los precios de pago son propuestas. El cobro y la generación IA no están activos.",
+    pending:"Aún no disponible",
+  },
+} as const;
+type FormatPractice = "video" | "meditation" | "course";
+type FormatQuality = "basic" | "smart" | "pro";
+const formatPracticeOrder: FormatPractice[] = ["video","meditation","course"];
+const formatQualityOrder: FormatQuality[] = ["basic","smart","pro"];
+const draftFormatPrices: Record<FormatPractice,Record<FormatQuality,number|null>> = {
+  video:{basic:0,smart:2,pro:9.90},
+  meditation:{basic:2.90,smart:4.90,pro:null},
+  course:{basic:19.90,smart:null,pro:39},
+};
 
 const quickStylePosters = [
   "mountain-air","golden-harvest","desert-light","morning-dew","gentle-falls","solar-surge",
@@ -934,6 +991,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const layout = layoutCopy[locale];
   const quick = quickVideoCopy[locale];
   const approved = approvedMobileCopy[locale];
+  const practiceCopy = formatPracticeCopy[locale];
+  const [practiceType,setPracticeType] = useState<FormatPractice>("video");
+  const [practiceLevels,setPracticeLevels] = useState<Record<FormatPractice,FormatQuality>>({
+    video:"basic",meditation:"smart",course:"pro",
+  });
+  const freeVideoSelected = practiceType==="video" && practiceLevels.video==="basic";
+  const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -1580,7 +1644,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
-      document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      // Consent remains in the original advanced photo panel; reveal it first.
+      setQuickDetailedOpen(true);
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return;
     }
     if(audioNeedsAttachment){
@@ -1752,35 +1819,205 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
 
-        <section className={videoStyles.quickSection} data-video-quick-tier aria-labelledby="quick-tier-title">
+
+        <section className={videoStyles.quickSection} data-video-quick-tier data-video-quick-section="2" aria-labelledby="quick-tier-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-tier-title"><Film size={21} aria-hidden="true"/>{approved.formats}</h3>
+            <h3 id="quick-tier-title"><Film size={21} aria-hidden="true"/>{practiceCopy.formats}</h3>
           </div>
-          <div className={videoStyles.quickTiers} role="group" aria-label={approved.formats}>
-            <button type="button" data-video-tier="free" aria-pressed="true"
-              disabled={recording||preparing} onClick={()=>{setCinematicPlan(null);setQuality("hd");}}>
-              <Leaf size={25} aria-hidden="true"/><strong>{approved.free}</strong>
-              <small>{approved.freeDetail}</small><em>{approved.freeCount}</em>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/videos/holistic-house/film-collection-v2/calm-sea.jpg" alt="" loading="lazy"/>
-            </button>
-            <div data-video-tier="smart" aria-disabled="true">
-              <Sparkles size={25} aria-hidden="true"/><strong>{approved.smart}</strong>
-              <small>{approved.smartDetail}</small><em>{approved.unavailable}</em>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/videos/holistic-house/film-collection-v2/mountain-air.jpg" alt="" loading="lazy"/>
+
+          <div className={videoStyles.quickFormatGrid} role="group" aria-label={practiceCopy.formats}>
+            {/* A single real first-party 16:9 master remains mounted when the
+                expanded product changes; paid formats are only previews. */}
+            <div className={videoStyles.quickFormatDemo} data-video-quick-live-preview>
+              {activeFilm ? <video
+                key={activeFilm.src} ref={premiumVideoRef}
+                src={activeFilm.src} poster={activeFilm.poster}
+                muted playsInline loop preload="auto"
+                data-mandala-master-mp4={activeFilm.src}
+                onLoadedData={event=>{
+                  if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
+                    setPremiumReady(true);
+                }}
+                onCanPlay={()=>setPremiumReady(true)}
+                onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
+                aria-hidden="true"
+              /> : <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={theme==="money"?getRealMoneyFilm(moneyScene||"golden-rain").poster:
+                  getThemedRealFilm(theme,otherScene)?.poster||quickCanvasPoster(otherScene)} alt=""/>
+              </>}
+              <button type="button" className={videoStyles.quickPreviewPlay}
+                aria-label={previewPlaying?approved.previewPause:activeFilm?approved.previewPlay:approved.previewFallback}
+                aria-pressed={previewPlaying} disabled={recording||preparing}
+                onClick={()=>{
+                  if(!activeFilm){
+                    // Canvas-backed themes use the same original real renderer.
+                    setPreviewPlaying(current=>!current);
+                    if(!previewPlaying)openQuickDetailed("video-hero");
+                    return;
+                  }
+                  if(!previewPlaying){
+                    const video=premiumVideoRef.current;
+                    if(video){video.muted=true;void video.play().catch(()=>setNotice(ui.videoUnavailable));}
+                  }else{
+                    premiumVideoRef.current?.pause();
+                  }
+                  setPreviewPlaying(current=>!current);
+                }}>
+                {previewPlaying?<Pause size={28} fill="currentColor" aria-hidden="true"/>:
+                  <Play size={28} fill="currentColor" aria-hidden="true"/>}
+              </button>
+              <span className={videoStyles.quickPreviewMeta}>{duration}{quick.seconds} ·
+                {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"}</span>
             </div>
-            <div data-video-tier="pro" aria-disabled="true">
-              <Film size={25} aria-hidden="true"/><strong>{approved.pro}</strong>
-              <small>{approved.proDetail}</small><em>{approved.unavailable}</em>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/videos/holistic-house/film-collection-v2/gentle-falls.jpg" alt="" loading="lazy"/>
+            <div className={videoStyles.quickFormatStack} data-video-practice-accordion>
+              {formatPracticeOrder.map(format=>{
+                const Icon=format==="video"?Film:format==="meditation"?AudioLines:BarChart3;
+                const price=draftFormatPrices[format][practiceLevels[format]];
+                const selected=practiceType===format;
+                const lowestPrice=draftFormatPrices[format].basic;
+                return <article key={format} className={videoStyles.quickFormatCard}
+                  data-video-practice-card={format} data-selected={selected}>
+                  <button type="button" className={videoStyles.quickFormatTitle}
+                    data-video-practice-pick={format} aria-pressed={selected}
+                    aria-expanded={selected} aria-controls={"video-practice-details-"+format}
+                    disabled={recording||preparing}
+                    onClick={()=>{
+                      if(selected)return;
+                      premiumVideoRef.current?.pause();
+                      setPracticeType(format);
+                      setPreviewPlaying(false);
+                    }}>
+                    <Icon size={18} aria-hidden="true"/>
+                    <span className={videoStyles.quickFormatTitleLabel}>
+                      <strong>{practiceCopy.names[format]}</strong>
+                      {selected?<small>{practiceCopy.durations[format]}</small>:null}
+                    </span>
+                    {!selected?<span className={videoStyles.quickFormatFrom}>
+                      {practiceCopy.from} {lowestPrice===null?practiceCopy.noQuote:lowestPrice===0?"$0":"$"+lowestPrice.toFixed(2)}
+                    </span>:null}
+                    <ChevronDown className={videoStyles.quickFormatChevron} size={16} aria-hidden="true"/>
+                  </button>
+                  <div className={videoStyles.quickFormatDetails}
+                    id={"video-practice-details-"+format} data-video-practice-details={format}
+                    hidden={!selected}>
+                    <ul className={videoStyles.quickFormatBenefits}>
+                      {practiceCopy.features[format].map(feature=><li key={feature}>{feature}</li>)}
+                    </ul>
+                    <div className={videoStyles.quickFormatControls}>
+                      <div className={videoStyles.quickFormatQuality} role="group"
+                        aria-label={practiceCopy.names[format]}>
+                        {formatQualityOrder.map(level=><button type="button" key={level}
+                          data-video-quality-option={format+"-"+level}
+                          aria-pressed={selected&&practiceLevels[format]===level}
+                          disabled={recording||preparing||draftFormatPrices[format][level]===null}
+                          onClick={()=>{
+                            setPracticeType(format);
+                            setPracticeLevels(previous=>({...previous,[format]:level}));
+                          }}>{practiceCopy.quality[level]}</button>)}
+                      </div>
+                      <div className={videoStyles.quickFormatPrice} data-video-practice-price={format}
+                        aria-live="polite">
+                        <strong>{price===null?practiceCopy.noQuote:price===0?
+                          "$0":"$"+price.toFixed(2)}</strong>
+                        <small>{price===0?practiceCopy.free:practiceCopy.draft}</small>
+                      </div>
+                    </div>
+                  </div>
+                </article>;
+              })}
             </div>
           </div>
-          <p className={videoStyles.quickTierNote} role="note">{approved.creditsNote}</p>
+          <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
 
-        <section className={videoStyles.quickSection} data-video-quick-section="2"
+        <section className={videoStyles.quickSection} data-video-quick-section="4"
+          aria-labelledby="quick-visual-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{practiceCopy.stylesTitle}</h3>
+              <p>{quick.visualHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
+            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
+              data-video-quick-style={index} data-video-quick-scene={quickStyleSceneIds[theme][index]}
+              aria-pressed={quickStyleIndex===index}
+              disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
+              {/* Curated first-party film artwork; no remote image requests. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={"/videos/holistic-house/film-collection-v2/"+poster+".jpg"}
+                loading="lazy" alt=""/>
+              <span>{quick.styles[index]}</span>
+            </button>)}
+          </div>
+          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
+        </section>
+
+
+        <section className={videoStyles.quickSection} data-video-quick-personal aria-labelledby="quick-personal-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
+          </div>
+          <label className={videoStyles.quickWish}>
+            <span className={videoStyles.srOnly}>{quick.wish}</span>
+            <Target size={18} aria-hidden="true"/>
+            <input data-video-quick-wish type="text" maxLength={160} value={wish}
+              disabled={recording||preparing} placeholder={quick.wish}
+              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
+          </label>
+          <div className={videoStyles.quickPersonalActions}>
+            <button type="button" data-video-personal-affirmations disabled={recording||preparing}
+              aria-pressed={affirmations.enabled}
+              onClick={()=>setAffirmations(current=>({...current,enabled:!current.enabled,
+                selected:current.selected.length?current.selected:[0,1,2]}))}>
+              <Sparkles size={21} aria-hidden="true"/>{approved.affirmations}
+            </button>
+            <button type="button" data-video-personal-photo disabled={recording||preparing}
+              onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
+              <Camera size={21} aria-hidden="true"/>{approved.photo}
+            </button>
+            <button type="button" data-video-personal-voice onClick={()=>openQuickDetailed("video-audio")}>
+              <AudioLines size={21} aria-hidden="true"/>{approved.voice}
+            </button>
+            <button type="button" data-video-personal-music onClick={()=>openQuickDetailed("video-audio")}>
+              <Music2 size={21} aria-hidden="true"/>{approved.music}
+            </button>
+          </div>
+        </section>
+
+        {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
+        <div className={videoStyles.quickOrderBar} data-video-order-bar>
+          <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
+            <small>{practiceCopy.total}</small>
+            <strong>{selectedDraftPrice===null?practiceCopy.noQuote:
+              selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
+            <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
+              {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
+          </div>
+          <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
+            disabled={recording||preparing||!freeVideoSelected} onClick={createQuickVideo}>
+            {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
+            {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
+          </button>
+        </div>
+        {recording?<div className={videoStyles.quickProgress} role="progressbar"
+          aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+          <span style={{width:progress+"%"}}/></div>:null}
+        {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
+        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
+        <button type="button" className={videoStyles.quickTherapy}
+          data-video-quick-therapy disabled={recording||preparing}
+          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setQuickDetailedOpen(true);
+            setTherapyJumpRequested(true);}}>
+          <HandHeart size={18} aria-hidden="true"/>{practiceType==="video"?quick.therapy:quick.therapy}
+        </button>
+      </section>
+
+      <details className={videoStyles.quickLegacy} data-video-quick-legacy
+        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
+        <summary><SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
+        <section className={videoStyles.quickSection} data-video-quick-section="7"
           aria-labelledby="quick-image-title">
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{approved.preview}</h3>
@@ -1789,49 +2026,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing} className={videoStyles.quickEdit}>
               <Camera size={15} aria-hidden="true"/>{quick.pick}
             </button>
-          </div>
-
-          <div className={videoStyles.quickVideoPreview} data-video-quick-live-preview>
-            {activeFilm ? <video
-              key={activeFilm.src} ref={premiumVideoRef}
-              src={activeFilm.src} poster={activeFilm.poster}
-              muted playsInline loop preload="auto"
-              data-mandala-master-mp4={activeFilm.src}
-              onLoadedData={event=>{
-                if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
-                  setPremiumReady(true);
-              }}
-              onCanPlay={()=>setPremiumReady(true)}
-              onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
-              aria-hidden="true"
-            /> : <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={theme==="money"?getRealMoneyFilm(moneyScene||"golden-rain").poster:
-                getThemedRealFilm(theme,otherScene)?.poster||quickCanvasPoster(otherScene)} alt=""/>
-            </>}
-            <span className={videoStyles.quickPreviewTag}><Film size={15} aria-hidden="true"/>{activeFilm?approved.previewBadge:approved.previewFallback}</span>
-            <button type="button" className={videoStyles.quickPreviewPlay}
-              aria-label={previewPlaying?approved.previewPause:activeFilm?approved.previewPlay:approved.previewFallback}
-              aria-pressed={previewPlaying} disabled={recording||preparing}
-              onClick={()=>{
-                if(!activeFilm){
-                  // Canvas-backed themes have genuine motion in the full editor.
-                  // One tap opens that renderer and begins preview; a second pauses.
-                  setPreviewPlaying(current=>!current);
-                  if(!previewPlaying)openQuickDetailed("video-hero");
-                  return;
-                }
-                if(!previewPlaying){
-                  const video=premiumVideoRef.current;
-                  if(video){video.muted=true;void video.play().catch(()=>setNotice(ui.videoUnavailable));}
-                }
-                setPreviewPlaying(current=>!current);
-              }}>
-              {previewPlaying?<Pause size={28} fill="currentColor" aria-hidden="true"/>:
-                <Play size={28} fill="currentColor" aria-hidden="true"/>}
-            </button>
-            <span className={videoStyles.quickPreviewMeta}>{duration}{quick.seconds} ·
-              {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"}</span>
           </div>
 
           <div className={videoStyles.quickImageRail}>
@@ -1880,82 +2074,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>
 
-        <section className={videoStyles.quickSection} data-video-quick-section="4"
-          aria-labelledby="quick-visual-title">
-          <div className={videoStyles.quickSectionHeading}>
-            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{quick.visual}</h3>
-              <p>{quick.visualHelp}</p></div>
-            <button type="button" className={videoStyles.quickEdit}
-              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
-          </div>
-          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
-            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
-              data-video-quick-style={index} aria-pressed={quickStyleIndex===index}
-              disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
-              {/* Curated first-party film artwork; no remote image requests. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={"/videos/holistic-house/film-collection-v2/"+poster+".jpg"}
-                loading="lazy" alt=""/>
-              <span>{quick.styles[index]}</span>
-            </button>)}
-          </div>
-          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
-        </section>
 
-
-        <section className={videoStyles.quickSection} data-video-quick-personal aria-labelledby="quick-personal-title">
-          <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
-          </div>
-          <label className={videoStyles.quickWish}>
-            <span className={videoStyles.srOnly}>{quick.wish}</span>
-            <Target size={18} aria-hidden="true"/>
-            <input data-video-quick-wish type="text" maxLength={160} value={wish}
-              disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
-          </label>
-          <div className={videoStyles.quickPersonalActions}>
-            <button type="button" data-video-personal-affirmations disabled={recording||preparing}
-              aria-pressed={affirmations.enabled}
-              onClick={()=>setAffirmations(current=>({...current,enabled:!current.enabled,
-                selected:current.selected.length?current.selected:[0,1,2]}))}>
-              <Sparkles size={21} aria-hidden="true"/>{approved.affirmations}
-            </button>
-            <button type="button" data-video-personal-photo disabled={recording||preparing}
-              onClick={()=>{setBackgroundOnly(false);onPickPhoto();}}>
-              <Camera size={21} aria-hidden="true"/>{approved.photo}
-            </button>
-            <button type="button" data-video-personal-voice onClick={()=>openQuickDetailed("video-audio")}>
-              <AudioLines size={21} aria-hidden="true"/>{approved.voice}
-            </button>
-            <button type="button" data-video-personal-music onClick={()=>openQuickDetailed("video-audio")}>
-              <Music2 size={21} aria-hidden="true"/>{approved.music}
-            </button>
-          </div>
-        </section>
-
-        {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
-        <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-          disabled={recording||preparing} onClick={createQuickVideo}>
-          {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-          {recording||preparing?quick.creating:quick.create}<ArrowRight size={20} aria-hidden="true"/>
-        </button>
-        {recording?<div className={videoStyles.quickProgress} role="progressbar"
-          aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-          <span style={{width:progress+"%"}}/></div>:null}
-        {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
-        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
-        <button type="button" className={videoStyles.quickTherapy}
-          data-video-quick-therapy disabled={recording||preparing}
-          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setQuickDetailedOpen(true);
-            setTherapyJumpRequested(true);}}>
-          <HandHeart size={18} aria-hidden="true"/>{quick.therapy}
-        </button>
-      </section>
-
-      <details className={videoStyles.quickLegacy} data-video-quick-legacy
-        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
-        <summary><SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
         <section className={videoStyles.quickSection} data-video-quick-section="3"
           aria-labelledby="quick-hypno-title">
           <div className={videoStyles.quickSectionHeading}>
