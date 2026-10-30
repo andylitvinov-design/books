@@ -129,9 +129,14 @@ async function verify(engine, locale, width) {
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
     await energy.tap();
-    await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
-      timeout: 30000,
-    });
+    try {
+      await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
+        waitUntil: "domcontentloaded", timeout: 30000,
+      });
+    } catch (error) {
+      console.error(JSON.stringify({ phase: "energy-handoff", locale, pathname: new URL(page.url()).pathname }));
+      throw error;
+    }
     assert.ok(!page.url().includes(encodeURIComponent(copy[locale].intention)),
       label + ": personal goal not embedded in URL");
     const nextScreen = page.locator("[data-remote-support-intent-first]");

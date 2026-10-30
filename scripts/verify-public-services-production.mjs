@@ -67,7 +67,8 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      const response = await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "domcontentloaded" });
+      assert.equal(response?.status(), 200, "Spanish Alchemy route must return HTTP 200");
       const main = page.locator('main[data-core-service-detail="alchemy"]');
       await visible(main.locator("h1"));
       await expect(main).toHaveAttribute("lang", "es");

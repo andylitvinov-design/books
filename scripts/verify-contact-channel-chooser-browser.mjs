@@ -177,7 +177,7 @@ async function runEngine(name, engine) {
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
@@ -191,9 +191,22 @@ async function runEngine(name, engine) {
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
             const count = await items.count();
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
-            const indexes = count > 2 ? [0,count-1] : [0];
-            for (const i of indexes) {
-              await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+            if (item.path.endsWith("/tantra-reiki/free-initiation")) {
+              assert.equal(count, 1, "One chooser serves all Tantra request types");
+              const select = page.locator('[data-tantra-whatsapp-capture] select');
+              const intents = await select.locator('option').evaluateAll(nodes => nodes.map(node => node.value));
+              assert.deepEqual(intents, ["free", "personal", "session", "answers", "feedback"],
+                "All original request types remain available through one chooser");
+              for (const intent of intents) {
+                await select.selectOption(intent);
+                await verifyChooser(page,items.first(),locale,
+                  [name,locale,width,slug(item.path),intent].join("-"),width===390,submissions);
+              }
+            } else {
+              const indexes = count > 2 ? [0,count-1] : [0];
+              for (const i of indexes) {
+                await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+              }
             }
             if (item.path.endsWith("/yggdrasil/free-initiation")) {
               const form = page.locator("[data-yggdrasil-form]");
