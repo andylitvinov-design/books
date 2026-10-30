@@ -266,12 +266,16 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // On public client pages the Cabinet is a direct link; on Home
-        // the separate My Space control opens a dialog instead.
-        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
-        await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
+        // The shared My Space entry opens the guest dialog on public pages.
+        const accountEntry = page.locator('.site-navigation button.site-cabinet-entry');
+        await expect(accountEntry).toHaveCount(1);
+        await expect(accountEntry).toBeVisible();
+        await expect(accountEntry).toHaveAttribute('aria-haspopup','dialog');
+        await click(accountEntry);
+        const accountDialog = page.locator('#home-personal-space-dialog');
+        await expect(accountDialog).toBeVisible();
+        const accountLink = accountDialog.locator('[data-space-link="profile"]');
+        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
