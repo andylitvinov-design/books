@@ -148,8 +148,9 @@ try {
       // ordinary click; never force or silently retry a missed interaction.
       async function stableAdvance(page, button) {
         await button.evaluate(node=>{
-          window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false
+          window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false;window.__hhAdvanceDiagnostic=null
           node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
+          document.addEventListener('click',event=>{const rect=node.getBoundingClientRect();window.__hhAdvanceDiagnostic={same:event.target===node||node.contains(event.target),connected:node.isConnected,targetTag:event.target?.tagName,x:Math.round(rect.x),y:Math.round(rect.y),width:Math.round(rect.width),height:Math.round(rect.height),viewportWidth:innerWidth,viewportHeight:innerHeight}},{capture:true,once:true})
           node.addEventListener('click',()=>{window.__hhAdvanceReceived=true},{capture:true,once:true})
         })
         await page.waitForFunction(node=>{
@@ -160,7 +161,9 @@ try {
           return y>60&&y<innerHeight-60&&hit&&(hit===node||node.contains(hit))&&window.__hhAdvanceStable.count>=6
         },await button.elementHandle())
         await button.click()
-        assert.equal(await page.evaluate(()=>window.__hhAdvanceReceived),true,'format advance click must reach its button')
+        const reached=await page.evaluate(()=>window.__hhAdvanceReceived)
+        if (!reached) console.log(JSON.stringify({phase:'advance-click-diagnostic',diagnostic:await page.evaluate(()=>window.__hhAdvanceDiagnostic)}))
+        assert.equal(reached,true,'format advance click must reach its button')
       }
       for (const [locale,width,topic,next,continueCourse,no,skip,start,setup] of [
         ['en',390,'energy','Continue','Continue my active course','No','Skip','Start','Finish setting up'],
