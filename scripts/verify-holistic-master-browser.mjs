@@ -100,13 +100,18 @@ async function verify(engine, locale, width) {
       label + ": meditation section does not overflow");
 
     const insight = engineCard.locator("[data-ideas-tao]");
-    const energy = engineCard.locator("[data-ideas-energy-support]");
     const diagnostic = engineCard.locator("[data-ideas-free-diagnostic]");
-    const choices = [insight, energy, diagnostic];
+    // The dedicated holistic-dao panel intentionally has just the symbolic
+    // Dao action and the reviewed free-consultation path. It must not claim
+    // that an unrelated remote-energy request is present.
+    const choices = [insight, diagnostic];
     assert.equal(await engineCard.locator("[data-ideas-hero-actions] > button, [data-ideas-hero-actions] > a").count(),
-      3, label + ": exactly three Dao actions");
-    assert.equal(await energy.getAttribute("href"),
-      "/" + locale + "/services/remote-energy-support", label + ": existing energy route");
+      2, label + ": exactly the two approved Dao actions");
+    assert.equal(await diagnostic.getAttribute("href"),
+      "/" + locale + "/services/free-consultation#free-diagnosis-options",
+      label + ": Dao diagnosis uses the approved free-consultation route");
+    assert.equal(await engineCard.locator("[data-ideas-energy-support]").count(), 0,
+      label + ": Dao panel does not duplicate the remote-energy request");
     const heading = await root.boundingBox();
     assert.ok(heading && heading.x >= -1 && heading.x + heading.width <= width + 1,
       label + ": scenic first screen fits the mobile viewport");
@@ -132,69 +137,21 @@ async function verify(engine, locale, width) {
     await question.fill(copy[locale].intention);
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
-    await energy.tap();
+    await diagnostic.tap();
     try {
-      await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
+      await page.waitForURL(url => url.pathname === "/" + locale + "/services/free-consultation", {
         waitUntil: "domcontentloaded", timeout: 30000,
       });
     } catch (error) {
-      console.error(JSON.stringify({ phase: "energy-handoff", locale, pathname: new URL(page.url()).pathname }));
+      console.error(JSON.stringify({ phase: "free-consultation", locale, pathname: new URL(page.url()).pathname }));
       throw error;
     }
     assert.ok(!page.url().includes(encodeURIComponent(copy[locale].intention)),
-      label + ": personal goal not embedded in URL");
-    const nextScreen = page.locator("[data-remote-support-intent-first]");
+      label + ": personal Dao question not embedded in the consultation URL");
+    const nextScreen = page.locator("[data-free-consultation-hub]");
     await nextScreen.waitFor({state:"visible", timeout:30000});
-    const handoff = nextScreen.locator("#remote-intention");
-    await handoff.waitFor({state:"visible"});
-    // The server-rendered textarea can be visible before the one-use in-memory
-    // handoff is consumed by the mounted client effect. Wait for the exact value.
-    await page.waitForFunction(expected => document.querySelector('#remote-intention')?.value === expected,
-      copy[locale].intention, {timeout: 10000});
-    assert.equal(await handoff.inputValue(), copy[locale].intention,
-      label + ": private same-tab goal preserved for the user's review");
     assert.equal(await nextScreen.locator("[data-lead-saved]").count(), 0,
-      label + ": navigating to a request form never creates a CRM lead");
-
-    const focusChoices = nextScreen.locator("[data-remote-focus-chip]");
-    const findOptions = nextScreen.locator("[data-remote-find-options]");
-    const offers = nextScreen.locator("#remote-results");
-    assert.equal(await focusChoices.count(), 5, label + ": only five usable focus sectors");
-    assert.equal(await offers.isVisible(), false, label + ": practitioner options wait for Find options");
-    assert.equal(await findOptions.isVisible(), true, label + ": find CTA is visible");
-    const firstChipBox = await focusChoices.first().boundingBox();
-    const noteBox = await handoff.boundingBox();
-    assert.ok(firstChipBox && noteBox && firstChipBox.y < noteBox.y,
-      label + ": focus chips precede optional wishes");
-    const findBox = await findOptions.boundingBox();
-    const bottomNav = await page.locator(".mobile-bottom-navigation").first().boundingBox();
-    assert.ok(findBox && bottomNav && findBox.y + findBox.height <= bottomNav.y + 2,
-      label + ": complete finder CTA is above fixed mobile navigation at " + width + "px");
-    await focusChoices.first().tap();
-    assert.equal(await focusChoices.first().getAttribute("aria-pressed"), "true",
-      label + ": sector selection is interactive");
-    await findOptions.tap();
-    await offers.waitFor({state: "visible", timeout: 10000});
-    assert.equal(await findOptions.getAttribute("aria-expanded"), "true",
-      label + ": Find options reveals the practitioner stage");
-    assert.ok(await offers.locator("[data-remote-support-specialist]").count() > 0 ||
-      await offers.locator('[role="status"]').count() > 0,
-      label + ": only published practitioners or an honest empty state appear");
-    await page.reload({waitUntil:"domcontentloaded"});
-    await nextScreen.waitFor({state:"visible"});
-    // Prove the reloaded client is hydrated before checking the one-use value.
-    await page.waitForFunction(() => {
-      const button = document.querySelector('[data-remote-focus-chip]');
-      return Boolean(button && Object.keys(button).some(key => key.startsWith('__reactProps$')));
-    }, null, {timeout: 30000});
-    const selectedBeforeReloadCheck = await focusChoices.first().getAttribute('aria-pressed');
-    await focusChoices.first().tap();
-    await page.waitForFunction(previous => {
-      const button = document.querySelector('[data-remote-focus-chip]');
-      return button?.getAttribute('aria-pressed') === (previous === 'true' ? 'false' : 'true');
-    }, selectedBeforeReloadCheck, {timeout: 10000});
-    assert.equal(await handoff.inputValue(), "",
-      label + ": one-use free-text goal not restored from cookie or storage");
+      label + ": navigating to the consultation hub never creates a CRM lead");
 
     const geometry = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
