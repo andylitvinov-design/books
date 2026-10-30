@@ -264,3 +264,6 @@
   .slimDiagnostic>a{gap:3px;padding:6px 7px;font-size:10px}
   .slimDiagnostic>strong{font-size:9.6px}
 }
+
+/* Approved native mobile video app: the single compact local app header replaces the promo bar. */
+@media(max-width:759px){.slimDiagnostic{display:none}}
