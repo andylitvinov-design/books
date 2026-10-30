@@ -88,10 +88,30 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.match(browser,/await click\(accountCabinet\)/);
   assert.match(browser,/const accountDialog = page\.locator\('#home-personal-space-dialog'\)/);
   assert.match(browser,/expect\(accountDialog\)\.toBeVisible\(\)/);
-  assert.match(browser,/const accountLink = accountDialog\.locator\('a\[data-space-link="profile"\]'\)/);
-  assert.match(browser,/expect\(accountLink\)\.toHaveAttribute\('href','\/en\/app\/portrait'\)/);
+  assert.match(browser,/accountDialog\.locator\('a\[data-space-link="profile"\]'\)/);
+  assert.match(browser,/expect\(accountLink\)\.toHaveAttribute\('href', entry\.href\)/);
+  assert.match(browser,/spanishCabinetEntryExpectation\(observedCabinetResponses\.at\(-1\), cabinetResponseSnapshot\.length > cabinetResponsesBeforeOpen, !live\)/);
+  assert.match(browser,/No se pudo abrir tu espacio ahora\./);
+  assert.match(browser,/name: 'Reintentar', exact: true/);
+  assert.match(browser,/name: 'Entrar a mi espacio', exact: true/);
+  assert.match(browser,/\.or\(accountDialog\.getByRole\('status'\)\.filter/);
+  assert.ok(browser.indexOf(".or(accountDialog.getByRole('status').filter") < browser.indexOf('const cabinetResponseSnapshot = [...cabinetResponses]'));
   assert.match(browser,/await click\(accountLink\)/);
   assert.match(browser,/expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\)/);
   assert.doesNotMatch(browser,/toHaveAttribute\('href','\/en\/app'\)/);
+});
+
+test('Spanish Cabinet entry fails closed on unknown bootstrap states', () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const helper = browser.match(/function spanishCabinetEntryExpectation\(observation, freshResponse, isolatedLocal\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(helper, 'Browser acceptance must discriminate actual bootstrap evidence');
+  const decide = new Function('assert', helper + '; return spanishCabinetEntryExpectation;')(assert);
+  assert.deepEqual(decide({ status: 401 }, false), { state: 'guest', href: '/en/app/portrait' });
+  assert.deepEqual(decide({ status: 503, error: 'APP_UNAVAILABLE' }, true, true), { state: 'unavailable', href: '/en/app' });
+  assert.throws(() => decide({ status: 503, error: 'APP_UNAVAILABLE' }, true, false));
+  assert.throws(() => decide({ status: 503, error: 'APP_UNAVAILABLE' }, true));
+  for (const [observation, fresh] of [[undefined, true], [{ status: 200 }, true], [{ status: 403 }, true], [{ status: 500 }, true], [{ status: 503, error: 'SERVICE_UNAVAILABLE' }, true], [{ status: 503, error: 'INVALID_ERROR_RESPONSE' }, true], [{ status: 503, error: 'APP_UNAVAILABLE' }, false]]) {
+    assert.throws(() => decide(observation, fresh, true));
+  }
 });
 

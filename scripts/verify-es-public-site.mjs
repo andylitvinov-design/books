@@ -155,6 +155,15 @@ import { chromium, webkit, expect } from '@playwright/test';
 import { getSpanishRemedySlugs } from '../data/remedies-es.js';
 import { getCompactNavigation, getSiteNavigation } from '../lib/site-navigation-model.js';
 import { assertUnsupportedSpanishPrivateLocale } from './helpers/es-private-denial-verifier.mjs';
+function spanishCabinetEntryExpectation(observation, freshResponse, isolatedLocal) {
+  assert.ok(observation, 'Cabinet bootstrap response must be observed, not inferred from missing links');
+  if (observation.status === 401) return { state: 'guest', href: '/en/app/portrait' };
+  assert.equal(observation.status, 503, 'Unexpected Cabinet bootstrap status');
+  assert.equal(isolatedLocal, true, 'Live acceptance must not accept an unavailable Cabinet');
+  assert.equal(observation.error, 'APP_UNAVAILABLE', 'Only explicitly unavailable Cabinet permits the error entry');
+  assert.equal(freshResponse, true, 'Unavailable Cabinet must be confirmed by the current open attempt');
+  return { state: 'unavailable', href: '/en/app' };
+}
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:3443';
 const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
@@ -194,6 +203,20 @@ try {
         });
         await context.addInitScript(installPublicLifecycle);
         const page = await context.newPage(); const errors = [];
+        // Record only status and the allowlisted unavailable code, never account data.
+        const cabinetResponses = [];
+        page.on('response', response => {
+          const url = new URL(response.url());
+          if (url.origin !== origin || url.pathname !== '/api/app/bootstrap' || url.search !== '?view=portrait' || response.request().method() !== 'GET') return;
+          cabinetResponses.push((async () => {
+            const status = response.status();
+            if (status !== 503) return { status };
+            try {
+              const value = await response.json();
+              return { status, error: value?.error === 'APP_UNAVAILABLE' ? 'APP_UNAVAILABLE' : 'UNEXPECTED_ERROR' };
+            } catch { return { status, error: 'INVALID_ERROR_RESPONSE' }; }
+          })());
+        });
         diagnostics.observePage(page, () => stage);
         const unselectedClientRequests = [];
         let watchingUnselectedClients = true;
@@ -304,13 +327,31 @@ try {
         await expect(accountCabinet).toBeVisible();
         await expect(accountCabinet).toHaveAttribute('aria-haspopup','dialog');
         await expect(accountCabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+        const cabinetResponsesBeforeOpen = cabinetResponses.length;
         await click(accountCabinet);
         const accountDialog = page.locator('#home-personal-space-dialog');
         await expect(accountDialog).toBeVisible();
-        const accountLink = accountDialog.locator('a[data-space-link="profile"]');
+        // An open dialog may still be loading. Wait for the actual settled state
+        // before snapshotting response metadata; do not infer a state from absent links.
+        await expect(accountDialog.getByText('Elige tu camino. Empieza gratis.', { exact: true })
+          .or(accountDialog.getByRole('status').filter({ hasText: /^No se pudo abrir tu espacio ahora\.$/ }))).toBeVisible();
+        const cabinetResponseSnapshot = [...cabinetResponses];
+        const observedCabinetResponses = await Promise.all(cabinetResponseSnapshot);
+        const entry = spanishCabinetEntryExpectation(observedCabinetResponses.at(-1), cabinetResponseSnapshot.length > cabinetResponsesBeforeOpen, !live);
+        if (entry.state === 'unavailable') {
+          await expect(accountDialog.getByRole('status')).toHaveText('No se pudo abrir tu espacio ahora.');
+          await expect(accountDialog.getByRole('button', { name: 'Reintentar', exact: true })).toBeVisible();
+          await expect(accountDialog.locator('a[data-space-link="profile"]')).toHaveCount(0);
+          await expect(accountDialog.getByRole('link')).toHaveCount(1);
+        } else {
+          await expect(accountDialog.getByText('Elige tu camino. Empieza gratis.', { exact: true })).toBeVisible();
+        }
+        const accountLink = entry.state === 'unavailable'
+          ? accountDialog.getByRole('link', { name: 'Entrar a mi espacio', exact: true })
+          : accountDialog.locator('a[data-space-link="profile"]');
         await expect(accountLink).toHaveCount(1);
         await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
+        await expect(accountLink).toHaveAttribute('href', entry.href);
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
