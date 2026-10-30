@@ -137,11 +137,15 @@ async function verify(engine, locale, width) {
     await question.fill(copy[locale].intention);
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
-    await diagnostic.tap();
+    // Register the URL waiter before activating the real Link: Next can finish
+    // this local navigation in the same interaction turn on a mobile browser.
+    const consultationNavigation = page.waitForURL(
+      url => url.pathname === "/" + locale + "/services/free-consultation",
+      {waitUntil: "domcontentloaded", timeout: 30000},
+    );
+    await diagnostic.click();
     try {
-      await page.waitForURL(url => url.pathname === "/" + locale + "/services/free-consultation", {
-        waitUntil: "domcontentloaded", timeout: 30000,
-      });
+      await consultationNavigation;
     } catch (error) {
       console.error(JSON.stringify({ phase: "free-consultation", locale, pathname: new URL(page.url()).pathname }));
       throw error;
