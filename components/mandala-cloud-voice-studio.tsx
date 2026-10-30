@@ -23,7 +23,7 @@ const text = {
     consent:"Я разрешаю отправить именно этот текст в Google для генерации голоса. Я понимаю, что данные бесплатного тарифа могут использоваться Google для улучшения продуктов. Не отправляю личные и медицинские сведения.",
     register:"Для озвучки собственного текста необходим вход в личный кабинет. Бесплатные образцы можно прослушивать без входа.",
     background:"Природный фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
-    generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать с природным фоном · WAV",mixing:"Смешиваем дорожки…",
+    generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать WAV с природой",prepareMix:"Подготовить WAV с природой",mixing:"Смешиваем дорожки…",
     unavailable:"Облачная генерация пока не активирована: нужен отдельный ключ Google AI Studio из проекта без биллинга.",
     ready:"Бесплатный API подключён. Создайте короткий образец.",error:"Не удалось создать запись. Попробуйте другой голос.",quota:"Бесплатная квота исчерпана. Платный рендер не запускается.",signIn:"Для своего текста войдите в кабинет.",privacy:"Превью образца не отправляет личные данные. Свой текст передаётся Google только после отдельного согласия и нажатия кнопки.",
     mixedError:"Невозможно создать звуковую смесь в этом браузере. Скачайте голос отдельно.",audio:"Прослушивание с выбранным фоном",notice:"Голоса — выбранные профили; итоговое звучание требует прослушивания на обоих языках.",
@@ -39,7 +39,7 @@ const text = {
     consent:"I explicitly consent to sending this exact text to Google for voice generation. I understand free-tier data may be used to improve Google's products. I will not send medical or identifying information.",
     register:"Sign in to your account for your own text. Public voice samples do not require an account.",
     background:"Nature background",none:"No background",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
-    generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download with nature · WAV",mixing:"Mixing audio…",
+    generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download nature WAV",prepareMix:"Prepare nature WAV",mixing:"Mixing audio…",
     unavailable:"Cloud generation is not enabled yet: a separate Google AI Studio key from a billing-disabled project is required.",
     ready:"Free API is connected. Generate a short sample.",error:"Could not generate audio. Please try another voice.",quota:"Free quota is exhausted. No paid rendering will be used.",signIn:"Sign in to generate your own script.",privacy:"Public samples never transmit personal text. Your script is sent to Google only after separate consent and a button click.",
     mixedError:"Could not mix audio in this browser. You can still download voice-only WAV.",audio:"Preview with selected background",notice:"Voices are curated profiles, pending real listening checks in both languages.",
@@ -55,7 +55,7 @@ const text = {
     consent:"Autorizo enviar exactamente este texto a Google. Sé que el nivel gratuito puede usar datos para mejorar sus productos. No enviaré datos médicos ni personales.",
     register:"Debes iniciar sesión para generar tu propio texto. Las pruebas públicas no lo requieren.",
     background:"Sonido natural",none:"Sin sonido",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
-    generate:"Generar voz por API",loading:"Generando audio…",voice:"Descargar voz · WAV",mixed:"Descargar con naturaleza · WAV",mixing:"Mezclando audio…",
+    generate:"Generar voz por API",loading:"Generando audio…",voice:"Descargar voz · WAV",mixed:"Descargar WAV con naturaleza",prepareMix:"Preparar WAV con naturaleza",mixing:"Mezclando audio…",
     unavailable:"La generación aún no está habilitada; hace falta una clave independiente de Google AI Studio sin facturación.",
     ready:"El API gratuito está conectado. Genera una prueba.",error:"No se pudo generar audio. Prueba otra voz.",quota:"Cuota gratuita agotada. No se ejecutarán renders de pago.",signIn:"Inicia sesión para usar texto propio.",privacy:"Las muestras públicas no envían datos personales. Tu texto solo se envía con consentimiento explícito.",
     mixedError:"No se pudo mezclar en este navegador. Descarga la voz por separado.",audio:"Escuchar con sonido natural",notice:"Los perfiles deben verificarse auditivamente en ambos idiomas.",
@@ -79,10 +79,12 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
   const [audioUrl,setAudioUrl]=useState("");
+  const [mixedUrl,setMixedUrl]=useState("");
   const [wav,setWav]=useState<Blob|null>(null);
   const [notice,setNotice]=useState("");
   const latestRef=useRef(0);
   const urlRef=useRef("");
+  const mixedRef=useRef("");
   const natureRef=useRef<HTMLAudioElement|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const controllerRef=useRef<AbortController|null>(null);
@@ -102,6 +104,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     natureRef.current?.pause();
     audioRef.current?.pause();
     if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
   },[]);
   function resetAudio(){
     latestRef.current++;
@@ -109,7 +112,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     audioRef.current?.pause();
     natureRef.current?.pause();
     if(urlRef.current){URL.revokeObjectURL(urlRef.current);urlRef.current="";}
-    setAudioUrl("");setWav(null);setNotice("");
+    if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
+    setMixedUrl("");setAudioUrl("");setWav(null);setNotice("");
     setBusy(false);
   }
   function sourceToText(){
@@ -173,17 +177,25 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     document.body.append(link);link.click();link.remove();
   }
   async function downloadMixed(){
-    if(!wav||background==="none")return;
+    if(!wav||background==="none"||mixing)return;
     setMixing(true);setNotice("");
+    const token=latestRef.current;
     try{
       const mixed=await mixVoiceWithNature(wav,background);
+      if(token!==latestRef.current)return;
       const uri=URL.createObjectURL(mixed);
-      const anchor=document.createElement("a");
-      anchor.href=uri;anchor.download="holistic-house-"+language+"-"+voiceId+"-"+background+".wav";
-      document.body.append(anchor);anchor.click();anchor.remove();
-      window.setTimeout(()=>URL.revokeObjectURL(uri),15000);
-    }catch{setNotice(t.mixedError);}
-    finally{setMixing(false);}
+      if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
+      mixedRef.current=uri;
+      setMixedUrl(uri);
+      // Safari needs a genuine second tap on an <a download> element; an
+      // asynchronous synthetic click after OfflineAudioContext is unreliable.
+    }catch{if(token===latestRef.current)setNotice(t.mixedError);}
+    finally{if(token===latestRef.current)setMixing(false);}
+  }
+  function chooseBackground(value:Background) {
+    audioRef.current?.pause();stopNature();
+    if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
+    setMixedUrl("");setBackground(value);
   }
   const groups=["male","female"] as const;
   return (
@@ -244,7 +256,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
         <div className={css.language} role="group" aria-label={t.background}>
           {(["none","ocean","rain","breeze"] as const).map(value=>
             <button key={value} type="button" aria-pressed={background===value}
-              onClick={()=>{audioRef.current?.pause();stopNature();setBackground(value);}}>
+              onClick={()=>chooseBackground(value)}>
               {t[value]}
             </button>)}
         </div>
@@ -261,13 +273,16 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
       </button>
       {audioUrl?<div className={css.result} data-voice-studio-audio>
         <strong>{t.audio}</strong>
-        <audio ref={audioRef} controls preload="none" src={audioUrl} onPlay={playNature}
+        <audio ref={audioRef} controls preload="none" src={mixedUrl||audioUrl} onPlay={mixedUrl?undefined:playNature}
           onPause={stopNature} onEnded={stopNature} aria-label={t.audio}/>
         <div className={css.downloads}>
           <button type="button" onClick={downloadVoice}><Download size={16} aria-hidden="true"/>{t.voice}</button>
-          {background!=="none"?<button type="button" disabled={mixing} onClick={()=>void downloadMixed()}>
-            <Download size={16} aria-hidden="true"/>{mixing?t.mixing:t.mixed}
-          </button>:null}
+          {background!=="none"?(mixedUrl?<a className={css.downloadLink} href={mixedUrl}
+            download={"holistic-house-"+language+"-"+voiceId+"-"+background+".wav"}>
+            <Download size={16} aria-hidden="true"/>{t.mixed}
+          </a>:<button type="button" disabled={mixing} onClick={()=>void downloadMixed()}>
+            <Download size={16} aria-hidden="true"/>{mixing?t.mixing:t.prepareMix}
+          </button>):null}
         </div>
       </div>:null}
       {notice?<p role="status" aria-live="polite" className={css.error}>{notice}</p>:null}
