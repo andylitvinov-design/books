@@ -42,6 +42,10 @@ function compile(source, react, modules = {}, browser = {}) {
       if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
       if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }
       if (name === './test-scale-guide') return { TestScaleGuide: 'TestScaleGuide' }
+      // The real optional ResearchDirectory renders only when the visitor explicitly
+      // selects the full catalog. This guest/simple picker harness deliberately
+      // cannot launch external research questionnaires.
+      if (name === './research-directory') return { ResearchDirectory: 'ResearchDirectory' }
       throw new Error('Unexpected dependency: ' + name)
     },
   })
@@ -424,3 +428,16 @@ test('collection heading stays accessible offscreen; visible chip rows and real 
   assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'assert.deepEqual(shown,expected', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
 })
+
+
+test('the optional scientific reference directory cannot silently start questionnaires',()=>{
+ const explorer=read('components/app/test-explorer.jsx');
+ const directory=read('components/app/research-directory.jsx');
+ assert.match(explorer,/availability === 'full' && <ResearchDirectory locale={locale} search={query} \/>/);
+ assert.match(directory,/export function ResearchDirectory\(/);
+ assert.match(directory,/data-research-directory/);
+ assert.match(directory,/These entries are not cleared for online administration/);
+ assert.match(directory,/target="_blank" rel="noopener noreferrer"/);
+ assert.match(directory,/read only|research-only|Research-only|Reference records indexed|Science|Scientific test reference library/i);
+ assert.doesNotMatch(directory,/data-test-action|onStart\(|createAssessment\(|startQuestionnaire\(/);
+});
