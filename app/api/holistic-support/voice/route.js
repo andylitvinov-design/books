@@ -20,12 +20,13 @@ const fail = (error, auth) => {
   return auth ? auth.apply(response) : response
 }
 export async function GET() {
+  const configured = voiceStudioReady(process.env)
   return NextResponse.json({
-    enabled:voiceStudioReady(process.env),
+    enabled:configured,
     model:VOICE_STUDIO_MODEL,
     mode:'free-tier-only',
     customRequiresSignIn:true,
-    publicAffirmationsEnabled:true,
+    publicAffirmationsEnabled:configured,
   },{headers:PRIVATE_HEADERS})
 }
 async function limitedJson(response) {
