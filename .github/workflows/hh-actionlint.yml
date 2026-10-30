@@ -76,7 +76,7 @@ jobs:
               deleted_only=true
               while IFS= read -r -d '' status && IFS= read -r -d '' filename; do
                 saw_deletion=true
-                [[ "$status" == D ]] || deleted_only=false
+                [[ -n "$filename" && "$status" == D ]] || deleted_only=false
               done < <(git diff --no-renames --name-status -z "$BASE_SHA" HEAD -- '.github/workflows/')
               [[ "$saw_deletion" == true ]] || deleted_only=false
             fi
