@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   VOICE_STUDIO_VOICES,VOICE_STUDIO_MODEL,VOICE_STUDIO_MAX_CHARS,VOICE_STUDIO_SAMPLE,
-  voiceStudioReady,findStudioVoice,validateStudioRequest,buildStudioPayload,studioExcerpt,
+  voiceStudioReady,voiceStudioKey,findStudioVoice,validateStudioRequest,buildStudioPayload,studioExcerpt,
 } from '../lib/mandala/voice-studio.mjs';
 
 const get=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -26,6 +26,14 @@ test('free tier cannot activate on an unrelated Gemini key or billable defaults'
   assert.equal(voiceStudioReady({HH_VOICE_STUDIO_ENABLED:'true',HH_VOICE_STUDIO_GEMINI_API_KEY:'super-secret-is-present'}),false);
   assert.equal(voiceStudioReady({HH_VOICE_STUDIO_ENABLED:'true',HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:'true'}),false);
   assert.equal(voiceStudioReady({HH_VOICE_STUDIO_ENABLED:'true',HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:'true',HH_VOICE_STUDIO_GEMINI_API_KEY:'super-secret-is-present'}),true);
+  const approved={HH_VOICE_STUDIO_ENABLED:'true',HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:'true',HH_VOICE_STUDIO_USE_EXISTING_COUNCIL_KEY:'true',HH_COUNCIL_GEMINI_API_KEY:'already-stored-server-key'};
+  assert.equal(voiceStudioReady(approved),true);
+  assert.equal(voiceStudioKey(approved),'already-stored-server-key');
+  assert.equal(voiceStudioKey({...approved,HH_VOICE_STUDIO_USE_EXISTING_COUNCIL_KEY:'false'}),null);
+  assert.equal(voiceStudioKey({...approved,HH_VOICE_STUDIO_FREE_TIER_CONFIRMED:'false'}),null);
+  assert.equal(voiceStudioKey({...approved,HH_VOICE_STUDIO_ENABLED:'false'}),null);
+  assert.equal(voiceStudioKey({...approved,HH_VOICE_STUDIO_GEMINI_API_KEY:'dedicated-valid-key'}),'dedicated-valid-key');
+
 });
 test('sample is server-owned; ignores attempts to inject personal text',()=>{
   for(const language of ['ru','en']) {
@@ -80,6 +88,7 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/TTS_FREE_QUOTA_EXHAUSTED/);
   assert.match(code,/new NextResponse\(wav/);
   assert.match(code,/RIFF/);
+  assert.match(code,/voiceStudioKey\(process\.env\)/);
   assert.doesNotMatch(code,/process\.env\.HH_COUNCIL_GEMINI_API_KEY/);
 });
 test('editor has a real cloud voice component and public route linked in all locales',()=>{
