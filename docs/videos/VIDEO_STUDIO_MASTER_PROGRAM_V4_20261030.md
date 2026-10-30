@@ -1,6 +1,8 @@
 # Holistic House · Video Studio — ЕДИНАЯ программа и техническое задание v4.0
 
 **Google Docs — удобная копия для чтения:** https://docs.google.com/document/d/1890GgLvnVy0SC1eTdhLjQc2fU1G6izhwavM34wGJkKk/edit
+**Отдельный исполняемый промпт Codex:** [VIDEO_STUDIO_CODEX_EXECUTION_V4_20261030.md](./VIDEO_STUDIO_CODEX_EXECUTION_V4_20261030.md) — поэтапная работа с кодом, QA, безопасными gates и отчетом.
+
 
 **Дата:** 30 октября 2026 · **Статус:** единая инженерная спецификация, проверенный аудит и последовательная программа выполнения для Codex. **Код из этого документа ещё не внедрён автоматически.**
 **Репозиторий:** andylitvinov-design/books · **Production:** codex/public-book-library (GitHub default codex/bootstrap-books — НЕ production) · **Сайт:** https://holistichouse.vercel.app · **Маршрут студии:** /{ru,en,es}/holistic-support/mandala.
@@ -154,6 +156,9 @@ PR #2629: server-only Gemini TTS, explicit consent, лимит 650 символ�
 **Other candidates** (Runway/Higgsfield/Seedance/ComfyUI self-hosted) — только сравнительные research items: подписка/ChatGPT plugin не равна доступу backend API, own GPU бесплатно не предполагать. Самостоятельный GPU-render только после read-only hardware+license+benchmark proof. Никаких непроверенных free video APIs и смешения источников разных продуктов в одном маркетинговом описании.
 
 **PILOT DECISION:** После QA бесплатно созданного ролика и без платного вызова реализовать LTX 2.3 Fast v2 *stub с mock/contract tests*; затем один реальный owner-sanctioned safe synthetic non-client clip в одном провайдере при отдельном подтверждении максимального расхода. Если API/ключ/деньги не разрешены — готовый mock adapter, реальные paid buttons OFF; Free не блокируется.
+
+
+**Уточнение по ценам/API (30.10.2026):** прямой LTX API публикует для ltx-2-3-fast $0.03/сек 720p и $0.06/сек 1080p (https://docs.ltx.io/pricing/), тогда как отдельный reseller fal.ai показывает иной тариф $0.04/сек 1080p в текстовой таблице, а его playground — $0.06/сек. Это не единая price-card: supplier route, date, модель и currency должны фиксироваться на сервере, а при расхождении quote unavailable до подтверждения конкретного счёта. Direct v1 retired 2026-10-26, использовать v2 async (https://docs.ltx.io/migrate-v1-to-v2). Никакого расхода по приблизительной цене.
 
 ## 9. Серверный калькулятор стоимости и коммерческая модель
 
