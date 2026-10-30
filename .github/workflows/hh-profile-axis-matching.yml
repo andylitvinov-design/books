@@ -102,7 +102,7 @@ jobs:
   writer-practical-focused:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -112,6 +112,12 @@ jobs:
           node-version: '22'
       - name: Practical director and prior writer regressions
         run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs
+      - name: Install locked dependencies for writer-only lint and types
+        run: npm ci --no-audit --no-fund
+      - name: Lint writer API, UI and contracts
+        run: npx --no-install eslint 'app/[locale]/holistic-support/mandala/page.tsx' app/api/holistic-support/meditation-writer/brief/route.js components/meditation-writer-preview.tsx components/meditation-writer-device-voice.tsx lib/holistic-support/meditation-writer/*.mjs tests/meditation-writer-*.test.mjs
+      - name: TypeScript contract check
+        run: npx --no-install tsc --noEmit --pretty false
   axis-unit-types-build:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030') }}
     runs-on: ubuntu-24.04
