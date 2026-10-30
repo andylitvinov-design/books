@@ -3,6 +3,7 @@
  * credentials, provider billing or customer data. NOT a provider E2E claim.
  */
 import assert from "node:assert/strict";
+import {spawnSync} from "node:child_process";
 import {chromium,webkit} from "@playwright/test";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
@@ -39,6 +40,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       await page.locator('[data-video-quick-phrases="ready"]').click();
+      await page.locator('[data-video-quick-duration="10"]').click();
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
       assert.equal(await page.locator("[data-video-affirmation-voice-select] option").count(),6);
@@ -57,6 +59,34 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       const attached=await page.locator("[data-video-audio-attached]").innerText();
       assert.match(attached,/holistic-house-affirmations/);
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
+      if(engine==="chromium") {
+        // Real locally encoded file: not a mere blob preview or a silent fake.
+        await page.waitForFunction(()=>{
+          const v=document.querySelector("[data-mandala-master-mp4]");
+          return !v || v.readyState>=2;
+        },undefined,{timeout:25000});
+        await page.locator("[data-video-quick-generate]").click();
+        const output=page.locator("[data-mandala-video-download]");
+        await output.waitFor({state:"visible",timeout:45000});
+        const [download]=await Promise.all([
+          page.waitForEvent("download",{timeout:20000}),output.click(),
+        ]);
+        const parts=[];
+        for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
+        const bytes=Buffer.concat(parts);
+        assert.ok(bytes.length>10000,"real video must be recorded");
+        const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
+          "-of","json","-"],{input:bytes,encoding:"utf8"});
+        assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
+        const tracks=JSON.parse(probe.stdout).streams.map(row=>row.codec_type);
+        assert.ok(tracks.includes("video"),"real video stream present");
+        assert.ok(tracks.includes("audio"),"generated affirmation WAV survived into exported video");
+        const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
+          "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
+          {input:bytes,maxBuffer:1024*1024});
+        assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
+        assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
+      }
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
