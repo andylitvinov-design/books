@@ -909,7 +909,7 @@ const formatPracticeCopy = {
       meditation:["Личная медитация 3–5 минут","Голос, музыка и паузы","Персональный текст практики"],
       course:["8 последовательных видеосессий","Упражнения и личные задания","Отслеживание прогресса"],
     },
-    quality:{basic:"Базовое",smart:"Smart",pro:"Pro"},
+    quality:{basic:"Лёгкий",smart:"Smart",pro:"Pro"},
     from:"от",free:"Бесплатно",noQuote:"По расчёту",draft:"План",total:"Итоговая стоимость",noCredits:"Без списания кредитов",sample:"Посмотреть пример видеоряда",
     note:"Стоимость платных форматов предварительная. Оплата и платная генерация пока не подключены.",
     pending:"Пока недоступно",
@@ -923,7 +923,7 @@ const formatPracticeCopy = {
       meditation:["Personal 3–5-minute meditation","Voice, music and pauses","Personal practice script"],
       course:["8 guided video sessions","Practice tasks and exercises","Progress check-ins"],
     },
-    quality:{basic:"Basic",smart:"Smart",pro:"Pro"},
+    quality:{basic:"Light",smart:"Smart",pro:"Pro"},
     from:"from",free:"Free",noQuote:"Quote needed",draft:"Planned",total:"Estimated total",noCredits:"No credits charged",sample:"Watch visual sample",
     note:"Paid prices are proposals only. Paid checkout and AI rendering are not enabled yet.",
     pending:"Not available yet",
@@ -937,7 +937,7 @@ const formatPracticeCopy = {
       meditation:["Meditación personal de 3–5 minutos","Voz, música y pausas","Guion personalizado"],
       course:["8 sesiones de vídeo guiadas","Ejercicios y tareas personales","Seguimiento del progreso"],
     },
-    quality:{basic:"Básico",smart:"Smart",pro:"Pro"},
+    quality:{basic:"Ligero",smart:"Smart",pro:"Pro"},
     from:"desde",free:"Gratis",noQuote:"Por calcular",draft:"Previsto",total:"Total estimado",noCredits:"Sin gastar créditos",sample:"Ver ejemplo visual",
     note:"Los precios de pago son propuestas. El cobro y la generación IA no están activos.",
     pending:"Aún no disponible",
@@ -1875,7 +1875,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const Icon=format==="video"?Film:format==="meditation"?AudioLines:BarChart3;
                 const price=draftFormatPrices[format][practiceLevels[format]];
                 const selected=practiceType===format;
-                const lowestPrice=draftFormatPrices[format].basic;
                 return <article key={format} className={videoStyles.quickFormatCard}
                   data-video-practice-card={format} data-selected={selected}>
                   <button type="button" className={videoStyles.quickFormatTitle}
@@ -1894,7 +1893,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       {selected?<small>{practiceCopy.durations[format]}</small>:null}
                     </span>
                     {!selected?<span className={videoStyles.quickFormatFrom}>
-                      {practiceCopy.from} {lowestPrice===null?practiceCopy.noQuote:lowestPrice===0?"$0":"$"+lowestPrice.toFixed(2)}
+                      {price===null?practiceCopy.noQuote:price===0?"$0":"$"+price.toFixed(2)}
                     </span>:null}
                     <ChevronDown className={videoStyles.quickFormatChevron} size={16} aria-hidden="true"/>
                   </button>
