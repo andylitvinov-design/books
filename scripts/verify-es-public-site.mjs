@@ -31,14 +31,19 @@ async function assertSpanishNavigation(page, path) {
   // Keep the three visible visitor needs and free written review in the header.
   const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
-  if (path !== '/es') first.push('/en/app');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  if (path === '/es') {
-    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-    await expect(cabinet).toHaveAccessibleName('Mi espacio');
-  } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+  await expect(cabinet).toHaveAccessibleName('Mi espacio');
+  if (page.viewportSize().width > 1140) {
+    await cabinet.click();
+    const dialog=page.locator('#home-personal-space-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('a[href^="/en/app"]').first()).toBeAttached();
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+  }
   const destinations = [
     '/es/services/free-situation-review', '/es', '/es/services/free-situation-review',
     '/es/academy', '/es/personality-profiles', '/es/services/alchemy-of-soul',
@@ -195,16 +200,8 @@ try {
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
           if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
-          // Original RU/EN client testimonial titles retain their provenance.
-          // Verify Spanish editorial copy strictly while excluding ONLY that
-          // original-audio testimonial component from the language oracle.
-          const editorial=await page.locator('main').evaluate(main=>{
-            const copy=main.cloneNode(true);
-            copy.querySelector('[data-personal-testimonials="about"]')?.remove();
-            return copy.textContent||'';
-          });
-          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(editorial),
-            'No untranslated Spanish editorial labels: '+path);
+          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),
+            'No untranslated Spanish labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {

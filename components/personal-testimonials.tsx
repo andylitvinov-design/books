@@ -47,6 +47,16 @@ export const testimonialVideos = {
   ],
 } as const;
 
+// Spanish descriptions identify the same source videos; their audio remains Russian.
+const spanishRussianVideoTitles: Record<string, string> = {
+  m9RfDgK76PU: "Anton Korchinsky — testimonio sobre su experiencia",
+  MIVLm1GUTtM: "Yuri Goncharenko — testimonio de cliente",
+  ttQxUHopaUM: "Constelaciones empresariales — testimonio",
+  VABgpmn4ZYA: "Tatiana Razumovskaya — testimonio de consultoría empresarial",
+  muOnIHllI7E: "Diagnóstico breve — testimonio",
+  "5oj0BIbLT4w": "Elena Bakhtina — testimonio de cliente",
+};
+
 const copy = {
   ru: {
     eyebrow: "Реальные истории",
@@ -121,7 +131,10 @@ export function PersonalTestimonials({
     ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
     : videos;
   // On About, use only genuine, matching local video stills. Never render a blank archived photo.
-  const visibleVideos = isAbout ? presentedVideos.filter((item) => locallyArchivedVideoPosterIds.has(item.id)) : presentedVideos;
+  const visibleVideos = (isAbout ? presentedVideos.filter((item) => locallyArchivedVideoPosterIds.has(item.id)) : presentedVideos)
+    .map(item => locale === "es" && item.language === "ru"
+      ? { ...item, title: spanishRussianVideoTitles[item.id] ?? item.title }
+      : item);
   // Home shows four matching-audio originals, with every other archived clip available in-place.
   const remainingHomeVideos = isHome ? testimonialVideos[locale].slice(4) : [];
   const otherLanguageVideos = isHome ? testimonialVideos[locale === "ru" ? "en" : "ru"] : [];
