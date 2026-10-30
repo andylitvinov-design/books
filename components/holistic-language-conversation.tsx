@@ -204,8 +204,8 @@ export function HolisticLanguageConversation({
       !["safety_handoff","safety_check_required","stopped"].includes(result.status)
       ?proposeAgentMemoryPreference(value):null);
     setEntries(prev=>[...prev,
-      {role:"visitor",text:value.slice(0,4000)},
-      {role:"agent",text:result.text,suggestions:result.suggestions as Suggestion[],
+      {role:"visitor" as const,text:value.slice(0,4000)},
+      {role:"agent" as const,text:result.text,suggestions:result.suggestions as Suggestion[],
         requestId:localRequestId},
     ].slice(-36));
     setDraft("");
