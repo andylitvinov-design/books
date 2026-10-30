@@ -136,7 +136,12 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
           "the source MP4 sample is a small secondary player beneath the main screen");
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
-          "the same unified library includes the 24 existing 4-MP4 film presets");
+          "the same unified library includes the existing 4-MP4 film presets");
+        const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
+        await expandAllFilms.click();
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
+          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
           "source-video example must fit beneath the large preview");
@@ -186,14 +191,15 @@ const runEngine = async ([engine, browserType]) => {
           "preview play activates actual native video");
         await tapPlay.click();
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"false");
-        assert.equal(await quick.locator("[data-video-quick-scene]").count(),6);
         const coverOptions=quick.locator("[data-video-cover-options]");
+        assert.equal(await coverOptions.locator("[data-video-quick-scene]").count(),6,
+          "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
         assert.equal(await coverOptions.evaluate(el=>el.open),true,
           "photo cover and user-owned image choices must open on user request");
-        await quick.locator("[data-video-quick-scene]").nth(1).click();
+        await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
         await quick.locator('[data-video-quick-theme="money"]').click();
