@@ -302,7 +302,7 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   const ocean='.github/workflows/holistic-house-ocean-audio.yml';
   const opora='.github/workflows/opora-module-ci.yml';
   const app='.github/workflows/hh-app-r1.yml';
-  const workflow=paths=>"on:\\n  pull_request:\\n    paths:\\n"+paths.map(x=>"      - '"+x+"'\\n").join('');
+  const workflow=paths=>"on:\n  pull_request:\n    paths:\n"+paths.map(x=>"      - '"+x+"'\n").join('');
   const sources=new Map([
     [owner,workflow(['package.json','lib/billing/**'])],
     [ocean,workflow(['package.json','lib/audio/**'])],
@@ -312,17 +312,17 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   const base=new Map(sources), current=new Map(sources);
   const selected=expectedWorkflows({base,current,changed,packageImpact:impact});
   assert.deepEqual(selected,[owner], 'unrelated package-triggered suites are not REQUIRED by safe script-only update');
-  assert.deepEqual(expectedWorkflows({base,current,changed}),[ocean,opora,owner],
+  assert.deepEqual(expectedWorkflows({base,current,changed}),[owner,ocean,opora],
     'until trusted classifier is deployed, the original full trigger scope remains intact');
   const dependencies=structuredClone(after);
   dependencies.dependencies.next='16.0.0';
   const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
   assert.equal(unsafe.mode,'full');
-  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[ocean,opora,owner]);
+  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
   const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
   assert.equal(lockImpact.mode,'full');
   assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
-    [ocean,opora,owner], 'unknown transitive lockfile changes fail closed');
+    [owner,ocean,opora], 'unknown transitive lockfile changes fail closed');
   const deleted=structuredClone(after);
   deleted.scripts['test:monetization']='echo success';
   assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(deleted)}).mode,'full');
