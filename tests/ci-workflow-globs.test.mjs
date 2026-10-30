@@ -104,7 +104,7 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.ok(source.includes('scrollIntoView({block:"center"'), 'real user-like scroll must make full card visible');
   assert.ok(source.includes('document.elementFromPoint(x,y)'), 'fixed toolbar must not intercept tap');
   assert.ok(source.includes('assert.ok(targetHit.hittable'), 'do not silently click blocked card');
-  assert.ok(source.includes('await card.click()'), 'one full-card tap, no retry');
+  assert.ok(source.includes('await card.tap()'), 'one native touch tap on the full card, no retry');
   assert.match(source, /radio instanceof HTMLInputElement && radio.checked/);
   assert.match(source, /getAttribute\("data-selected"\) === "true"/);
   assert.match(source, /Single-tap focus was not committed/);

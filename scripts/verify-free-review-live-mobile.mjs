@@ -18,7 +18,7 @@ async function tapFocusAndVerify(page, enquiry, focus) {
   // The mobile bottom nav is fixed. When expanded content changes height,
   // WebKit may leave the large label behind that toolbar. A user would scroll
   // the card into a visible touch position first: do the same, and ASSERT the
-  // real card receives a hit before making exactly ONE click.
+  // real card receives a hit before making exactly ONE native touch tap.
   await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
   const targetHit = await card.evaluate(node => {
     const rect = node.getBoundingClientRect();
@@ -31,7 +31,7 @@ async function tapFocusAndVerify(page, enquiry, focus) {
     };
   });
   assert.ok(targetHit.hittable, "One-tap focus card remains behind navigation after scroll: " + JSON.stringify(targetHit));
-  await card.click();
+  await card.tap();
   // WebKit can briefly delay React's selected-card paint while the mobile
   // anchor settles. Still require BOTH native radio.checked and the real
   // rendered selected card after a SINGLE user tap (never retry a lost tap).
