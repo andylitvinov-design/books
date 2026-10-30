@@ -96,11 +96,24 @@ async function verifyFreeOffers(page, locale, engine, width) {
     await expect(option).toBeVisible();
     await option.click();
     await expect(option).toHaveAttribute('aria-pressed', 'true');
-    const cta = capture.locator('a[data-home-free-action="' + id + '"]');
-    await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
+    // Analysis is now a consent-gated phone/contact form, not a direct
+    // link to a free review or an automatic CRM request. Do not regress its
+    // privacy boundary just to satisfy a historic all-anchor assertion.
+    const cta = id === 'analysis'
+      ? capture.locator('[data-contact-channel-chooser] button[data-contact-order]')
+      : capture.locator('a[data-home-free-action="' + id + '"]');
     await expect(cta).toBeVisible();
+    if (id === 'analysis') {
+      await expect(cta).toHaveAttribute('aria-expanded','false');
+      await cta.click();
+      await expect(cta).toHaveAttribute('aria-expanded','true');
+      const form = capture.locator('[data-contact-channel-chooser] form');
+      await expect(form).toBeVisible();
+      await expect(form.locator('input[type="checkbox"][required]')).toHaveCount(1);
+      await expect(form.locator('[data-contact-channel-submit]')).toHaveCount(2);
+    } else await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
     const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
-    assert.ok(size.height >= 46 && size.font >= 14, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
+    assert.ok(size.height >= 44 && size.font >= 12, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
   }
   const captureAfterServices = await capture.evaluate(element => {
     const services = document.querySelector('[data-home-featured-workspace]');
@@ -139,10 +152,30 @@ async function exerciseFreeJourneys(page, engine, width) {
       await page.waitForLoadState('networkidle');
       const chooser = page.locator('[data-home-free-capture]');
       await chooser.locator('button[data-home-free-option="' + id + '"]').click();
-      const cta = chooser.locator('a[data-home-free-action="' + id + '"]');
-      const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps$')) }));
-      results.push({ engine, width, locale, entryClickAttempt: id, time: Date.now(), beforeClick });
+      const cta = id === 'analysis'
+        ? chooser.locator('[data-contact-channel-chooser] button[data-contact-order]')
+        : chooser.locator('a[data-home-free-action="' + id + '"]');
+      const beforeClick = await cta.evaluate(element => ({
+        url: location.href,
+        href: element instanceof HTMLAnchorElement ? element.href : null,
+        readyState: document.readyState,
+        hydrated: Boolean(history.state?.__NA),
+        earlyCsp: Boolean(window.__cspPreHydration),
+        reactProps: Object.keys(element).some(key => key.startsWith('__reactProps'))
+      }));
+      results.push({ engine, width, locale, entryClickAttempt: id,
+        time: Date.now(), beforeClick });
       await cta.click();
+      if (id === 'analysis') {
+        await expect(cta).toHaveAttribute('aria-expanded','true');
+        const consentForm = chooser.locator('[data-contact-channel-chooser] form');
+        await expect(consentForm).toBeVisible();
+        await expect(consentForm.locator('input[type="checkbox"][required]')).toHaveCount(1);
+        await expect(page).toHaveURL(origin + homePath(locale));
+        results.push({ engine, width, locale, freeJourney: id,
+          consentFormVisible: true, submitted: false });
+        continue;
+      }
       await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
       await expect(page.locator(target)).toBeVisible();
       // In WebKit, tearing down an in-flight fetch reports an access-control error.

@@ -420,6 +420,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     });
   }, [started, step]);
   const [focuses, setFocuses] = useState<Focus[]>([]);
+  // The user explicitly clicked one of the public profile cards or the
+  // profile creation CTA; avoid a second intro click. Never import guest
+  // ratings or private data from a query string.
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("start") !== "1") return;
+    const focus = query.get("focus");
+    const options: Focus[] = ["wellbeing", "relationships", "work", "identity", "goal"];
+    if (focus && options.includes(focus as Focus)) setFocuses([focus as Focus]);
+    setStarted(true);
+  }, []);
   const [selectedResearchIds, setSelectedResearchIds] = useState<string[]>([]);
   const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
   const [batteryMode, setBatteryMode] = useState<TestMode>("questionnaires");

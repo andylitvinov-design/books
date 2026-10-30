@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
+  Menu, Search,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
   Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import { HolisticSupportInlineGuide, type SupportGuideTest } from "@/components/
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
+import { HolisticSupportOnboarding } from "@/components/holistic-support-onboarding";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -670,24 +672,45 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   };
   // Courses reuse the published video player; the four check-in profiles belong to Tests.
   const scene = choice === "meditation" || choice === "pump";
+  const headerLabels = {
+    ru: { tagline: "восстановление · практика · поддержка", my: "Моё", search: "Найти тесты", menu: "Меню" },
+    en: { tagline: "restore · practice · support", my: "Mine", search: "Find tests", menu: "Menu" },
+    es: { tagline: "bienestar · práctica · apoyo", my: "Mi casa", search: "Buscar tests", menu: "Menú" },
+  }[locale];
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
       <div className={styles.container}>
         <header className={styles.compactAppHeader} data-support-app-header>
-          <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false} className={styles.compactBrand}>
-            <strong>Holistic House</strong>
-            <span>{t.newUi}</span>
+          <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}
+            className={styles.compactBrand} aria-label="Holistic House">
+            <Leaf size={26} className={styles.brandLeaf} aria-hidden="true" />
+            <span className={styles.brandCopy}>
+              <strong>Holistic House</strong>
+              <small>{headerLabels.tagline}</small>
+            </span>
           </Link>
-          <button type="button" className={styles.compactLocale} aria-label={t.settings}
-            aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
-            onClick={() => setSettingsOpen(open => !open)}>
-            {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
-          </button>
+          <nav className={styles.headerActions} aria-label={t.newUi}>
+            <Link className={styles.headerSearch} href={"/" + locale + "/client/tests"}
+              prefetch={false} aria-label={headerLabels.search}><Search size={20} aria-hidden="true" /></Link>
+            <Link className={styles.headerMy} href={"/" + locale + "/client"}
+              prefetch={false}>{headerLabels.my}</Link>
+            <button type="button" className={styles.compactLocale} aria-label={t.language}
+              aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
+              onClick={() => setSettingsOpen(open => !open)}>
+              {locale.toUpperCase()}<ChevronDown size={13} aria-hidden="true" />
+            </button>
+            <button type="button" className={styles.headerMenu} aria-label={headerLabels.menu}
+              aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
+              onClick={() => setSettingsOpen(open => !open)}>
+              <Menu size={21} aria-hidden="true" />
+            </button>
+          </nav>
         </header>
+        <HolisticSupportOnboarding locale={locale} />
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
-            <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
+            <h2 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h2>
             <p className={styles.subText}>{t.scoreGuide}</p>
             <div className={styles.scaleList}>
               {checkinOrder.map(id => {

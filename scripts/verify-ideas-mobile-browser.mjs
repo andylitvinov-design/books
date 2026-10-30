@@ -188,7 +188,8 @@ async function verify(browserType, locale, width) {
       await page.screenshot({ path: output + "/aphorism-preview-order-" + label.replace(/:/g, "-") + ".png", fullPage: false });
       throw new Error(label + ": preview must show three rows, Dao, offers; layout=" + JSON.stringify(previewLayout));
     }
-    if (!previewRects.every(rect => rect.width >= width * .72)) {
+    const previewAvailableWidth = await hub.locator('[data-ideas-preview] [data-ideas-aphorisms]').evaluate(el => el.getBoundingClientRect().width);
+    if (!previewRects.every(rect => rect.width >= previewAvailableWidth * .88)) {
       await page.screenshot({ path: output + "/aphorism-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
       throw new Error(label + ": each quote gets full line width; measured=" +
         JSON.stringify(previewRects.map(rect => ({ width: rect.width, x: rect.left }))) + ", viewport=" + width);
@@ -250,7 +251,8 @@ async function verify(browserType, locale, width) {
       throw new Error(label + ": real answer order is three full-width rows, Dao and two offers; layout=" +
         JSON.stringify(responseLayout));
     }
-    if (!responseRects.every(rect => rect.width >= width * .72)) {
+    const responseAvailableWidth = await daoResult.locator('[data-ideas-aphorisms]').evaluate(el => el.getBoundingClientRect().width);
+    if (!responseRects.every(rect => rect.width >= responseAvailableWidth * .88)) {
       await page.screenshot({ path: output + "/aphorism-real-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
       throw new Error(label + ": real quote rows are readable; measured=" +
         JSON.stringify(responseRects.map(rect => ({ width: rect?.width, x: rect?.left }))) + ", viewport=" + width);

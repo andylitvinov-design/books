@@ -18,7 +18,7 @@
 .topGrid { display: grid; grid-template-columns: 1.09fr .76fr 1.11fr; align-items: stretch; gap: 12px; margin-bottom: 13px; }
 .assessment, .tools { min-width: 0; padding: 20px 19px; border: 1px solid #e4dfd5; border-radius: 24px; background: rgb(255 253 249 / 90%); box-shadow: 0 8px 20px rgb(54 63 51 / 6%); }
 .assessment, .tools { display: flex; flex-direction: column; }
-.assessment h1, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
+.assessment h2, .tools h2 { margin: 0 0 5px; color: #1f2c25; font-size: clamp(20px, 2.05vw, 26px); font-weight: 800; line-height: 1.18; letter-spacing: -.02em; }
 .subText { margin: 0 0 12px; color: #5e645a; font-size: 16px; line-height: 1.4; }
 .scaleList { display: grid; gap: 11px; margin-top: 10px; }
 .scaleRow { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 61px; }
@@ -240,7 +240,7 @@
 @media (min-width: 641px) and (max-width: 900px) {
   .topGrid { grid-template-columns: minmax(0,1.05fr) minmax(0,.77fr) minmax(0,1.05fr); gap: 10px; }
   .assessment,.tools { padding: 15px 12px; }
-  .assessment h1,.tools h2 { font-size: 20px; }
+  .assessment h2,.tools h2 { font-size: 20px; }
   .toolGrid { gap: 8px; min-height: 260px; }
   .toolButton { min-height: 96px; font-size: 16px; }
   .photo { width: min(100%,150px); height: auto; aspect-ratio: 1; }
@@ -249,7 +249,7 @@
 @media (max-width: 640px) {
   .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
   .container { width: calc(100% - 12px); padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
-  .compactAppHeader { display: none; }
+  .compactAppHeader { display: flex; }
   .topGrid { display: grid; grid-template-areas: "assessment profile tools";
     grid-template-columns: minmax(0,1.14fr) minmax(0,.85fr) minmax(0,1.13fr);
     align-items: stretch; gap: 5px; min-width: 0; margin: 0 0 9px; }
@@ -257,7 +257,7 @@
     border-radius: 16px; background: #fffcf6ed; box-shadow: 0 5px 15px #29493613; }
   .assessment { grid-area: assessment; }
   .tools { grid-area: tools; }
-  .assessment h1,.tools h2 { min-height: 25px; margin: 0 0 3px; color: #243b30;
+  .assessment h2,.tools h2 { min-height: 25px; margin: 0 0 3px; color: #243b30;
     font-size: clamp(12px,3.5vw,15px); line-height: 1.1; font-weight: 850;
     letter-spacing: -.03em; text-wrap: balance; }
   .subText { display: block; margin: 0 0 3px; color: #607467; font-size: clamp(9.5px,2.7vw,11px); line-height: 1.13; }
@@ -459,7 +459,7 @@
 @media (max-width: 350px) {
   .topGrid { grid-template-columns: minmax(0,1.16fr) minmax(0,.83fr) minmax(0,1.15fr); gap: 4px; }
   .assessment,.tools { padding: 7px 4px 6px; border-radius: 13px; }
-  .assessment h1,.tools h2 { font-size: 11.5px; min-height: 24px; margin-bottom: 2px; }
+  .assessment h2,.tools h2 { font-size: 11.5px; min-height: 24px; margin-bottom: 2px; }
   .subText { font-size: 9px; margin-bottom: 2px; }
   .scaleList { gap: 2px; }
   .scaleRow { grid-template-columns: 18px minmax(0,1fr) 20px; grid-template-rows: 15px 18px;
@@ -585,7 +585,7 @@
    285px first-fold budget. Keep readable text while reclaiming vertical space. */
 @media (min-width: 391px) and (max-width: 640px) {
   .assessment, .tools { padding-top: 7px; padding-bottom: 5px; }
-  .assessment h1, .tools h2 { min-height: 22px; margin-bottom: 2px; }
+  .assessment h2, .tools h2 { min-height: 22px; margin-bottom: 2px; }
   .scaleList { gap: 1px; }
   .scaleRow { min-height: 31px; grid-template-rows: 14px 17px; }
   .scaleRow input { height: 17px; }
@@ -1073,4 +1073,38 @@
    meditation mock posters (which otherwise hide the original on iPhone). */
 @media (max-width:640px) {
   .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
+}
+
+/* Approved profile-first intro; keep the original single app shell. */
+.compactAppHeader { align-items: center; gap: 10px; min-height: 66px; padding: 8px 3px 12px; }
+.compactBrand { display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; min-width: 0; }
+.brandLeaf { flex: none; color: #15654d; }
+.compactBrand .brandCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.compactBrand .brandCopy strong { color: #172f25; font: 500 clamp(22px,2.55vw,30px)/1.06 Georgia,serif; white-space: nowrap; }
+.compactBrand .brandCopy small { color: #777c72; font: 12px/1.1 Arial,Helvetica,sans-serif; letter-spacing: .04em; white-space: nowrap; }
+.headerActions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex: none; }
+.headerActions :is(a,button) { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; border: 1px solid #e0cbb9; border-radius: 14px;
+  background: #fffdf7e8; color: #685040; text-decoration: none; padding: 7px 9px; }
+.headerActions .headerMy { color: #75513f; background: #efe8dd; font: 800 14px/1.2 Arial,Helvetica,sans-serif; }
+.headerActions .compactLocale { min-width: 52px; font: 800 14px/1.2 Arial,Helvetica,sans-serif; }
+.headerActions .headerMenu { min-width: 44px; }
+@media (max-width: 640px) {
+  .compactAppHeader { display: flex; gap: 4px; min-height: 60px; padding: 7px 1px 9px; }
+  .compactBrand { gap: 6px; }
+  .brandLeaf { width: 22px; height: 22px; }
+  .compactBrand .brandCopy strong { font-size: clamp(18px,4.9vw,23px); }
+  .compactBrand .brandCopy small { font-size: 8px; letter-spacing: .01em; }
+  .headerActions { gap: 4px; }
+  .headerActions :is(a,button) { min-width: 36px; min-height: 44px; border-radius: 12px; padding: 6px; }
+  .headerActions .compactLocale { min-width: 43px; font-size: 11px; gap: 0; }
+  .headerActions .headerMy { font-size: 11px; padding: 6px 7px; }
+  .headerActions .headerMenu { min-width: 37px; }
+}
+@media (max-width: 350px) {
+  .headerSearch { display: none !important; }
+  .compactBrand .brandCopy strong { font-size: 17px; }
+  .compactBrand .brandCopy small { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+  .headerActions { gap: 3px; }
+  .headerActions .compactLocale { min-width: 40px; }
 }
