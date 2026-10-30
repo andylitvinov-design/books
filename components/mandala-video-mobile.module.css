@@ -1529,3 +1529,17 @@
     grid-template-columns:27px minmax(0,1fr) 48px}
   .videoSummaryRow[data-video-summary-row="format"] .videoSummaryFormats button{font-size:10px}
 }
+
+
+/* Visual QA: genuine WebKit iPhone 320px screenshot showed tiny preview
+   captions colliding with the edit link. Keep the meaningful selection in the
+   description and remove miniature decorative artwork only at narrow widths. */
+@media(max-width:350px){
+  .videoSummaryRow[data-video-summary-row="visual"] .videoSummaryThumbnails,
+  .videoSummaryRow[data-video-summary-row="affirmations"] .videoSummaryHighlight,
+  .videoSummaryRow[data-video-summary-row="effect"] .videoSummaryHighlight{display:none!important}
+  .videoSummaryRow[data-video-summary-row="visual"] .videoSummaryText,
+  .videoSummaryRow[data-video-summary-row="affirmations"] .videoSummaryText,
+  .videoSummaryRow[data-video-summary-row="effect"] .videoSummaryText{grid-column:2 / 4}
+  .videoSummaryRow>button:last-child{grid-column:4;position:relative;z-index:1}
+}
