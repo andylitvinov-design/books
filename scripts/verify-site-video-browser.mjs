@@ -214,9 +214,15 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // The approved About experience now exposes 10 original archived video
+  // testimonials rather than the previous three. Keep exact source-backed
+  // count, matching provenance IDs and all players poster-first until Play.
+  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
+  await expect(aboutReviews).toHaveCount(10)
+  assert.equal(await aboutReviews.locator('.site-video-player').count(),10)
+  assert.equal(await page.locator('.site-video-player').count(), 10)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, 10 original testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
