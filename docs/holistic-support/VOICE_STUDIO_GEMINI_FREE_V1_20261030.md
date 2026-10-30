@@ -1,0 +1,61 @@
+# Holistic House · Voice Studio 1.0 — бесплатный пилот (30.10.2026)
+
+## Задача
+Предлагать клиенту шесть постоянных голосовых профилей в RU/EN (3 мужских и 3 женских: низкий/средний/высокий), генерировать настоящий WAV через Google Gemini 3.8 Flash-Lite TTS **только на бесплатном тарифе**, накладывать собственные звуки природы и экспортировать файл. Никаких автоматически платных вызовов.
+
+## Где встроено
+- Независимая страница /{ru,en,es}/holistic-support/voice-studio с текущей шапкой сайта и возможностью сравнить голоса.
+- Видимая ссылка в существующем редакторе /{locale}/holistic-support/mandala.
+- После формирования персональной медитации внутри существующего MandalaPersonalMeditation: отдельная необязательная карточка облачной озвучки. Локальный Web Speech API остаётся бесплатной альтернативой.
+- Существующий видеоредактор принимает локальную WAV-дорожку через загрузку пользовательского аудиофайла. В пилоте пользователь прикрепляет экспортированный файл вручную; автоматическая вставка в MP4 — отдельный, не заявленный выполненным этап.
+
+## Наши 6 голосов
+| ID | Голос HH | Провайдер Google | Пол | Желаемая высота |
+| --- | --- | --- | --- | --- |
+| mark | Марк / Mark | Enceladus | М | низкий |
+| alexander | Александр / Alexander | Charon | М | средний |
+| leon | Леон / Leon | Puck | М | высокий |
+| sofia | София / Sofia | Gacrux | Ж | низкий |
+| maya | Майя / Maya | Sulafat | Ж | средний |
+| alisa | Алиса / Alice | Zephyr | Ж | высокий |
+
+Это **редакторские гипотезы** о тембре, не аудиометрически подтверждённые диапазоны. Отобрать шесть финальных голосов после прослушивания всех 12 сочетаний (6 голосов × 2 языка) на одинаковом тексте и на iOS/Android. Не используем имитацию известных людей или клонирование.
+
+## Free-only activation — действия владельца
+1. Открыть https://aistudio.google.com/api-keys и создать отдельный проект Google AI Studio **без Cloud Billing / Pay-as-you-go**. В AI Studio Usage/Billing проверить статус Free tier и бесплатные лимиты.
+2. Создать новый серверный API key. Не использовать HH_COUNCIL_GEMINI_API_KEY (другая функция сайта, может быть связан с платным проектом).
+3. Открыть Vercel проекта codex-public-book-library → Settings → Environment Variables. Добавить только для Production (Preview — по отдельному решению):
+   - HH_VOICE_STUDIO_GEMINI_API_KEY = новый секретный ключ из бесплатного проекта (Sensitive)
+   - HH_VOICE_STUDIO_FREE_TIER_CONFIRMED = true только после проверки отсутствия биллинга
+   - HH_VOICE_STUDIO_ENABLED = true
+4. Сделать redeploy после безопасного merge. До появления **всех** трёх переменных UI покажет отключённую генерацию; POST возвращает VOICE_STUDIO_NOT_CONFIGURED. Нельзя активировать флаг в платном Google-проекте.
+5. Проверить, что бесплатная квота не исчерпана и настоящие WAV создаются. При Google 429 вернуть TTS_FREE_QUOTA_EXHAUSTED; никогда не переключаться на платный сервис. Если условия тарифа изменятся, выключить HH_VOICE_STUDIO_ENABLED.
+
+## API и формат
+GET /api/holistic-support/voice — публичный технический status, без секретов.
+POST /api/holistic-support/voice — JSON:
+- Образец: режим sample, voiceId mark, language ru. Фактический текст берётся с сервера; пользовательский текст **отвергается**.
+- Свой текст: режим custom, voiceId maya, language en, text с оригинальной короткой медитацией, consent=true. Требуется authenticated session и отдельное согласие; не более 650 символов.
+- Ответ audio/wav — настоящая RIFF/WAVE дорожка 24 kHz mono 16-bit, до 8 MiB. Cache-Control private/no-store. Никаких публичных URL персональных медитаций.
+- Server-only x-goog-api-key; модель строго gemini-3.8-flash-lite-tts; modality AUDIO, allowlist шести голосов и metadata с медитативным стилем. Provider endpoint фиксирован.
+- Durable Postgres rate: 12 образцов / IP / час, 8 персональных записей / verified user / час, общий глобальный потолок 120 / час. 45-секундный upstream timeout, ограниченный размер тела и ответа, RIFF-проверка.
+- Same-origin проверяется через существующий конфиг, нет публичной генерации произвольного текста, нет сохранения в CRM/Supabase.
+
+## Приватность
+Google явно сообщает, что содержимое **бесплатного** API тарифа может использоваться для улучшения продуктов. Клиент выбирает публичный образец без личных данных или вводит свой текст с отдельным **явным согласием** и входом в кабинет. Не передавать профили, тесты, диагнозы и контакты автоматически. Редактор готовит лишь короткий речевой отрывок локально; клиент проверяет его перед отправкой. Необходимо пересмотреть policy privacy перед массовым коммерческим запуском.
+
+## Сведение и выгрузка
+После генерации получаем WAV без фоновой дорожки. Клиент может переключить «Море», «Дождь», «Ветер» и слушать авторский фон. Кнопка «Скачать с природным фоном» смешивает речь с first-party WAV из public/audio/mandala/ через OfflineAudioContext в браузере, приглушает фон до ~0.11, добавляет плавные переходы, экспортирует моно WAV. Фоновое аудио никогда не загружается в Google. До 180 секунд; пилот ограничен 650 символами. Таймкоды видео и длинные 20-минутные рендеры в этот release не входят.
+
+## Release gate
+- node --test tests/voice-studio.test.mjs
+- npx tsc --noEmit, targeted ESLint, Next build и relevant existing mandala tests на точном HEAD.
+- GitHub Actions release-ready и специализированные проверки без обхода безопасности; mobile DOM 320/390/430, iOS Safari playback, Blob URL, mixing, saving.
+- После ключа — реальное Google API: 6 RU + 6 EN, WAV decode/playback, free quota отказ, signed-in custom consent.
+- Merge только в **codex/public-book-library**; GitHub default — не production. Проверить Git SHA, Vercel READY и алиас holistichouse.vercel.app.
+- Future: прослушивание и окончательное утверждение тембров, длинные сегментированные тексты с паузами, дашборд лимитов, автоматическое соединение с MP4, приватный архив.
+
+## Источники
+- https://ai.google.dev/gemini-api/docs/generate-content/speech-generation
+- https://ai.google.dev/gemini-api/docs/pricing
+- https://ai.google.dev/gemini-api/docs/api-key
