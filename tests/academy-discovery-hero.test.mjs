@@ -232,6 +232,7 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  const css=read("components/academy-discovery.module.css");
  const lounge=read("components/public-coaching-discovery.jsx");
  const art=read("lib/coaching/public-session-art.js");
+ const photoCache=read("scripts/cache-ancient-coaching-photos.mjs");
  assert.ok(hub.includes("const coachingItem: AcademyCourseItem = "));
  assert.ok(hub.includes("coachingItem={coachingItem}"));
  assert.ok(discovery.includes("data-academy-coaching-session"));
@@ -241,6 +242,8 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- assert.match(art,/Egypt_bookofthedead.jpg/);
- assert.match(art,/Marble_statue_of_Athena/);
+ assert.match(art,/coaching-ancient\/egyptian-cover\.jpg/);
+ assert.match(art,/coaching-ancient\/greek-cover\.jpg/);
+ assert.match(photoCache,/Egypt_bookofthedead\.jpg/);
+ assert.match(photoCache,/Marble statue of Athena, Louvre\.jpg/);
 });
