@@ -4,7 +4,7 @@ import {getAppConfig,requireSameOrigin} from "@/lib/app/config";
 import {createRequestAuth} from "@/lib/app/session";
 import {readBody,PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {AppError,onlyKeys} from "@/lib/assessments/contracts";
-import {videoAiEnabled} from "@/lib/mandala/video-ai-openrouter.mjs";
+import {videoAiEnabled} from "@/lib/mandala/video-ai-heygen.mjs";
 import {issueVideoCode} from "@/lib/mandala/video-ai-repository";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
