@@ -219,11 +219,13 @@ test('expensive scoped Library, Portrait and SEO suites cancel only stale PR run
   assert.match(library,/run: npm run build/);
   assert.match(library,/node --conditions=react-server --test/);
   assert.match(library,/verify-ideas-mobile-browser\.mjs/);
+  assert.ok(library.includes('for ((i=1; i<=65; i++)); do'), 'Library readiness retry loop stays bounded and ShellCheck-clean');
   const portrait=read('hh-portrait-mobile-browser.yml');
   assert.match(portrait,/^  synthetic-mobile:\s*\n    if: \${\{ github.event_name != 'pull_request' \|\| github.event.pull_request.draft == false \}\}/m);
   assert.match(portrait,/browser: \[chromium, webkit\]/);
   assert.match(portrait,/postgres:17-alpine/);
   assert.match(portrait,/verify-portrait-mobile\.mjs/);
+  assert.ok(portrait.includes('for ((i=1; i<=110; i++)); do'), 'Portrait browser readiness stays bounded and ShellCheck-clean');
   const seo=read('hh-live-seo-audit.yml');
   assert.match(seo,/^  push:/m);
   assert.match(seo,/^  workflow_dispatch:/m);
