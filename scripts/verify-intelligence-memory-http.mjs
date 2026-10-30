@@ -184,8 +184,18 @@ try {
         await goalCard.locator('select').selectOption('goals')
         await goalCard.getByRole('button',{name:next,exact:true}).click()
         await goalCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
-        await goalCard.getByRole('button',{name:next,exact:true}).click()
-        await goalCard.getByRole('button',{name:choose,exact:true}).click()
+        const advance=goalCard.getByRole('button',{name:next,exact:true})
+        await advance.evaluate(button=>{window.__hhGoalAdvance='none';document.addEventListener('click',event=>{
+          window.__hhGoalAdvance=event.target===button||button.contains(event.target)?'expected':'other'
+        },{capture:true,once:true})})
+        await advance.click()
+        try { await goalCard.getByRole('button',{name:choose,exact:true}).click() }
+        catch(error) {
+          console.log(JSON.stringify({phase:'development-course-choice',locale,path:new URL(goalPage.url()).pathname,
+            clicked:await goalPage.evaluate(()=>window.__hhGoalAdvance),buttons:await goalCard.locator('button').allTextContents(),
+            selects:await goalCard.locator('select').evaluateAll(nodes=>nodes.map(node=>({id:node.id,value:node.value}))) }))
+          throw error
+        }
         await goalCard.getByRole('button',{name:no,exact:true}).click()
         await goalCard.getByRole('button',{name:no,exact:true}).click()
         const planRequest=goalPage.waitForRequest(request=>request.url().endsWith('/api/app/intelligence/plan')&&request.method()==='POST')
