@@ -111,8 +111,9 @@ jobs:
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
-          node scripts/verify-holistic-mandala-browser.mjs
+          # Fail fast on the new API-voice + iPhone audio path before the existing 10-view matrix.
           node scripts/verify-affirmation-voice-browser.mjs
+          node scripts/verify-holistic-mandala-browser.mjs
       - name: Upload synthetic audio-only iPhone screenshots
         if: always()
         uses: actions/upload-artifact@v4
