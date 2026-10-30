@@ -33,16 +33,16 @@ export default async function MemberMessages({params,searchParams}:{
       </Link>
     </header>
     <nav className="hh-messages-context-nav" aria-label={locale==='ru'?'Дополнительные разделы':locale==='es'?'Secciones adicionales':'Additional sections'}>
-      <Link className="hh-messages-context-link" prefetch={false}
-        href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}>
-        <Bell size={16} aria-hidden="true"/>
-        <span>{locale==='ru'?'Уведомления':locale==='es'?'Avisos':'Notifications'}</span>
-      </Link>
       <Link prefetch={false} href={'/'+locale+'/app/messages?'+(showOrders?'tab=chats':'section=orders')}
         className="hh-messages-context-link">
         {showOrders?<MessageCircle size={17} aria-hidden="true"/>:<ShoppingBag size={17} aria-hidden="true"/>}
         <span>{showOrders?(locale==='ru'?'К переписке':locale==='es'?'Conversaciones':'Conversations'):
           (locale==='ru'?'Мои заказы':locale==='es'?'Mis pedidos':'My orders')}</span>
+      </Link>
+      <Link prefetch={false} className="hh-messages-context-link"
+        href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}>
+        <Bell size={17} aria-hidden="true"/>
+        <span>{locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}</span>
       </Link>
     </nav>
     {showOrders?<MessagesOrdersClients locale={locale}><MessagesHub locale={locale}/></MessagesOrdersClients>:

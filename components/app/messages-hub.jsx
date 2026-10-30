@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
+import MessengerSignIn from './messenger-sign-in'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
 import MessagesSimpleInbox from './messages-simple-inbox'
@@ -13,17 +14,17 @@ const COPY={
     telegramShare:'Telegram link',telegramCopy:'Copy',telegramCopied:'Copied',chats:'Conversations',requests:'Client requests',crm:'Telegram & other connected channels',direct:'Private conversations inside Holistic House',openCrm:'View Telegram conversations',
     crmHint:'Owner-only CRM conversations. Replies depend on verified provider delivery.',
     refresh:'Refresh requests',loading:'Loading requests…',failure:'Could not load client requests. Please retry.',
-    ownerLead:'New Telegram & messenger requests',ownerUnread:'unread messages',otherLoading:'Loading other requests…',sessionRequired:'This browser is not signed in to the Holistic House cabinet. Log in to see your messages.',signIn:'Sign in to view client enquiries',privacy:'Only you and the assigned practitioner can see private request conversations.'},
+    ownerLead:'New Telegram & messenger requests',ownerUnread:'unread messages',otherLoading:'Loading other requests…',sessionRequired:'This browser is not signed in to the Holistic House cabinet. Log in to see your messages.',signIn:'Sign in to view client enquiries',masterSignIn:'Sign in and message this practitioner',masterAuth:'Sign in to start your private conversation with this practitioner.',privacy:'Only you and the assigned practitioner can see private request conversations.'},
   ru:{title:'Сообщения',subtitle:'Переписка и заявки клиентов — в одном удобном месте.',sources:'Источник сообщений',crmSource:'Мессенджеры',directSource:'На сайте',
     telegramShare:'Ссылка Telegram',telegramCopy:'Копировать',telegramCopied:'Скопировано',chats:'Переписка',requests:'Заявки',crm:'Telegram и другие подключённые каналы',direct:'Личная переписка внутри Holistic House',openCrm:'Открыть Telegram-переписки',
     crmHint:'Переписки владельца в CRM. Доставка ответа зависит от подтверждения провайдера.',
     refresh:'Обновить заявки',loading:'Загружаю заявки…',failure:'Не удалось загрузить заявки. Повторите попытку.',
-    ownerLead:'Новые обращения Telegram и мессенджеров',ownerUnread:'непрочитанных сообщений',otherLoading:'Загружаем остальные заявки…',sessionRequired:'В этом браузере не выполнен вход в кабинет Holistic House. Войдите в аккаунт владельца, чтобы увидеть и открыть сообщения.',signIn:'Войдите, чтобы посмотреть заявки',privacy:'Личные ответы видят только клиент и назначенный мастер.'},
+    ownerLead:'Новые обращения Telegram и мессенджеров',ownerUnread:'непрочитанных сообщений',otherLoading:'Загружаем остальные заявки…',sessionRequired:'В этом браузере не выполнен вход в кабинет Holistic House. Войдите в аккаунт владельца, чтобы увидеть и открыть сообщения.',signIn:'Войдите, чтобы посмотреть заявки',masterSignIn:'Войти и написать мастеру',masterAuth:'Войдите, чтобы начать личную переписку с этим мастером.',privacy:'Личные ответы видят только клиент и назначенный мастер.'},
   es:{title:'Mensajes',subtitle:'Conversaciones privadas y solicitudes de clientes en un lugar.',sources:'Origen de mensajes',crmSource:'Mensajería',directSource:'En el sitio',
     telegramShare:'Enlace Telegram',telegramCopy:'Copiar',telegramCopied:'Copiado',chats:'Conversaciones',requests:'Solicitudes',crm:'Telegram y otros canales conectados',direct:'Mensajes privados dentro de Holistic House',openCrm:'Abrir conversaciones de Telegram',
     crmHint:'Mensajes del CRM del propietario. La entrega depende de la confirmación del proveedor.',
     refresh:'Actualizar solicitudes',loading:'Cargando solicitudes…',failure:'No se pudieron cargar las solicitudes.',
-    ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
+    ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',masterSignIn:'Entrar y escribir al profesional',masterAuth:'Inicia sesión para iniciar una conversación privada con este profesional.',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
 }
 const VALID_TABS=new Set(['chats','requests'])
 export default function MessagesHub({locale='en'}){
@@ -178,8 +179,8 @@ export default function MessagesHub({locale='en'}){
       <ArrowRight size={19} aria-hidden="true"/>
     </button>}
     {(unauthenticated||bootstrapSignInRequired)&&!ownerAccountId&&!data&&<p className={styles.authNotice} role="alert">
-      {t.sessionRequired}{' '}
-      <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>
+      {directDestination?t.masterAuth:t.sessionRequired}{' '}
+      <MessengerSignIn locale={locale} recipientSlug={directDestination} label={directDestination?t.masterSignIn:t.signIn}/>
     </p>}
     <div className={styles.tabs} role="tablist" aria-label={t.title}>
       {[['chats',MessageCircle,t.chats],['requests',ClipboardList,t.requests]].map(([id,Icon,label])=>
@@ -237,7 +238,7 @@ export default function MessagesHub({locale='en'}){
           crmState={safeCrmSummary||{loading:Boolean(ownerAccountId),error:false,threads:[],partial:false}}/>
       </>:loading?<p className={styles.note} role="status">{t.loading}</p>:error?
         <p className={styles.note} role="alert">{unauthenticated?
-          <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>:error}</p>:null}
+          <MessengerSignIn locale={locale} recipientSlug={directDestination} label={directDestination?t.masterSignIn:t.signIn}/>:error}</p>:null}
     </section>
   </div>
 }
