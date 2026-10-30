@@ -11,7 +11,7 @@ type Segment = { id:string; text:string; optionalSilenceSeconds:number };
 type Preview = {status:string;title:string;segments:Segment[];
   plannedDurationSeconds:number;generationMode:string;modelUsed:boolean;};
 const lang={
-  ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика. Сейчас доступен проверенный текстовый шаблон, а не новая AI-озвучка.",
+  ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика. Сейчас доступен текстовый шаблон. Художественные стили заработают после подключения AI-писателя.",
     focus:"Тема",style:"Стиль текста",duration:"Длительность",motif:"Образ",
     phrase:"Необязательная личная фраза",phraseHelp:"Можно оставить пустым",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
@@ -22,7 +22,7 @@ const lang={
     pause:"Необязательная тишина",optionsFocus:["Повседневный стресс","Отношения и границы","Самооценка","Ценности и смысл"],
     optionsStyle:["Мягкий","Практичный","Поэтичный","Созерцательный"],
     optionsMotif:["Спокойная природа","Предмет опоры","Уютное место","Мягкий свет"]},
-  en:{title:"Personal meditation — text preview",subtitle:"A gentle optional resource practice. This is a reviewed template preview, not newly generated AI audio.",
+  en:{title:"Personal meditation — text preview",subtitle:"A gentle optional practice. This is a template preview; literary styles will apply when the AI writer is connected.",
     focus:"Focus",style:"Writing style",duration:"Duration",motif:"Image",
     phrase:"Optional personal phrase",phraseHelp:"You can leave this empty",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
@@ -33,7 +33,7 @@ const lang={
     pause:"Optional silence",optionsFocus:["Daily stress","Relationships and boundaries","Self-worth","Values and meaning"],
     optionsStyle:["Gentle","Practical","Poetic","Contemplative"],
     optionsMotif:["Gentle nature","Supportive object","Comfortable corner","Soft light"]},
-  es:{title:"Meditación personal — vista previa",subtitle:"Una práctica opcional y suave. Este es un texto de plantilla revisado, no un nuevo audio generado por IA.",
+  es:{title:"Meditación personal — vista previa",subtitle:"Una práctica opcional y suave. Esta es una plantilla; los estilos literarios se aplicarán cuando se conecte el escritor de IA.",
     focus:"Tema",style:"Estilo",duration:"Duración",motif:"Imagen",
     phrase:"Frase personal opcional",phraseHelp:"Puedes dejarla vacía",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
@@ -49,7 +49,7 @@ const foci:Focus[]=["stress","relationships","self_worth","meaning"];
 const stylistics:Style[]=["gentle_simple","grounded_practical","poetic_contained","contemplative"];
 const motifs:Motif[]=["gentle_nature","supportive_object","comfortable_corner","small_light"];
 export function MeditationWriterPreview({locale}:{locale:string}) {
-  const l=(locale==="ru"||locale==="es"?"ru"===locale?"ru":"es":"en") as Locale;
+  const l:Locale=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=lang[l];
   const [focus,setFocus]=useState<Focus>("stress");
   const [style,setStyle]=useState<Style>("gentle_simple");
