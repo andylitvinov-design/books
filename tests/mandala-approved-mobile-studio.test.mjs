@@ -18,7 +18,7 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-live-stage","data-video-mandala-hero","data-video-mini-source",
     "data-video-quick-live-preview","data-video-scene-library",
     'id="video-templates"',"data-free-film-compilation-catalog",
-    "data-video-cover-options","data-video-quick-section=\"7\"",
+    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-section=\"4\"",
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
