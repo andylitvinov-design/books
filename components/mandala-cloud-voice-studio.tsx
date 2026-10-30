@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Headphones, Leaf, LoaderCircle, Play, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { presetAudioUrl } from "@/lib/mandala/local-video-music";
+import { isSupportedLocalAudio, presetAudioUrl } from "@/lib/mandala/local-video-music";
 import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
 import type { NatureBed } from "@/lib/mandala/voice-audio-mix";
@@ -64,6 +64,11 @@ const text = {
     sourceAdded:"Se copió un fragmento de tu meditación. Revísalo antes de enviar."
   }
 } as const;
+const offlineCopy={
+  ru:{title:"Или используйте свой голос бесплатно",lead:"Загрузите готовую запись медитации. Файл останется на устройстве, вызов Google не нужен.",ready:"Собственная запись добавлена. Настройте фон и громкость, затем подготовьте WAV.",invalid:"Выберите WAV, MP3, M4A, AAC или WebM до 15 МБ.",import:"Загрузить запись голоса"},
+  en:{title:"Or use your own voice for free",lead:"Upload a recorded meditation. The file stays on your device; no Google call is needed.",ready:"Your recording is ready. Choose music and volumes, then prepare the WAV.",invalid:"Select a WAV, MP3, M4A, AAC or WebM file up to 15 MB.",import:"Upload voice recording"},
+  es:{title:"O usa tu propia voz gratis",lead:"Sube tu meditación grabada. El archivo permanece en tu dispositivo; no se usa Google.",ready:"La grabación está lista. Elige música y volúmenes, luego prepara el WAV.",invalid:"Elige un archivo WAV, MP3, M4A, AAC o WebM de hasta 15 MB.",import:"Subir grabación de voz"}
+} as const;
 const balanceCopy={
   ru:{voice:"Громкость голоса",music:"Громкость музыки",mix:"Подготовить WAV с выбранным балансом",save:"Скачать сведённый WAV",other:"Другие авторские фоны",note:"Для видеоредактора используйте «Добавить в видео»; на отдельной странице скачайте WAV и прикрепите его через «Добавить аудиофайл»."},
   en:{voice:"Voice volume",music:"Music volume",mix:"Prepare balanced WAV",save:"Download balanced WAV",other:"More original soundtracks",note:"In the video editor use Add to video; on the standalone page download this WAV and attach it with Add audio file."},
@@ -90,6 +95,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
 }) {
   const t=text[locale];
   const b=balanceCopy[locale];
+  const o=offlineCopy[locale];
   const attachLabel=locale==="ru"?"Добавить озвучку в видео":locale==="es"?"Añadir narración al vídeo":"Add narration to video";
   const attachedLabel=locale==="ru"?"Звуковая дорожка передана в видеоредактор.":locale==="es"?"Audio añadido al editor de vídeo.":"Audio attached to the video editor.";
   const attachError=locale==="ru"?"Не удалось прикрепить дорожку: проверьте длину речи и настройки видео.":locale==="es"?"No se pudo añadir: revisa la duración y el vídeo.":"Could not attach this narration: check speech length and video settings.";
@@ -110,6 +116,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
   const [mixedBlob,setMixedBlob]=useState<Blob|null>(null);
   const [attaching,setAttaching]=useState(false);
   const [wav,setWav]=useState<Blob|null>(null);
+  const [localVoiceName,setLocalVoiceName]=useState("");
   const [notice,setNotice]=useState("");
   const latestRef=useRef(0);
   const mixJobRef=useRef(0);
@@ -165,8 +172,17 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     natureRef.current?.pause();
     if(urlRef.current){URL.revokeObjectURL(urlRef.current);urlRef.current="";}
     if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
-    setMixedUrl("");setMixedBlob(null);setAttaching(false);setAudioUrl("");setWav(null);setNotice("");
+    setMixedUrl("");setMixedBlob(null);setAttaching(false);setAudioUrl("");setWav(null);setLocalVoiceName("");setNotice("");
     setBusy(false);
+  }
+  function chooseLocalVoice(file:File|undefined){
+    if(!file)return;
+    if(!isSupportedLocalAudio(file)){setNotice(o.invalid);return;}
+    resetAudio();
+    // Upload stays in local browser memory; never sent to Gemini or storage.
+    const uri=URL.createObjectURL(file);
+    urlRef.current=uri;
+    setWav(file);setAudioUrl(uri);setLocalVoiceName(file.name);setNotice(o.ready);
   }
   function sourceToText(){
     resetAudio();
@@ -225,7 +241,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
   function downloadVoice(){
     if(!audioUrl)return;
     const link=document.createElement("a");
-    link.href=audioUrl;link.download="holistic-house-"+language+"-"+voiceId+".wav";
+    link.href=audioUrl;link.download=localVoiceName||"holistic-house-"+language+"-"+voiceId+".wav";
     document.body.append(link);link.click();link.remove();
   }
   async function downloadMixed(){
@@ -249,7 +265,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     setAttaching(true);setNotice("");
     try {
       // This file remains local; it is the exact WAV heard/downloaded by the visitor.
-      const file=new File([mixedBlob],"holistic-house-meditation-"+language+"-"+voiceId+".wav",{type:"audio/wav"});
+      const name=localVoiceName?"holistic-house-own-voice.wav":"holistic-house-meditation-"+language+"-"+voiceId+".wav";
+      const file=new File([mixedBlob],name,{type:"audio/wav"});
       const success=await onAudioReady(file);
       if(success)attachedRef.current=true;
       setNotice(success?attachedLabel:attachError);
@@ -361,6 +378,19 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
         {busy?<LoaderCircle size={19} aria-hidden="true"/>:<Play size={19} aria-hidden="true"/>}
         {busy?t.loading:t.generate}
       </button>
+      <div className={css.offline}>
+        <strong>{o.title}</strong>
+        <p>{o.lead}</p>
+        <label>{o.import}
+          <input data-voice-upload-local type="file" disabled={busy||mixing}
+            accept=".wav,.mp3,.m4a,.aac,.mp4,.webm,audio/*"
+            onChange={event=>{
+              const file=event.currentTarget.files?.[0];
+              event.currentTarget.value="";
+              chooseLocalVoice(file);
+            }}/>
+        </label>
+      </div>
       {audioUrl?<div className={css.result} data-voice-studio-audio>
         <strong>{t.audio}</strong>
         <audio ref={audioRef} controls preload="none" src={mixedUrl||audioUrl} onPlay={mixedUrl?undefined:playNature}
