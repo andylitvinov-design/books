@@ -274,20 +274,24 @@ try {
         await click(accountEntry);
         const accountDialog = page.locator('#home-personal-space-dialog');
         await expect(accountDialog).toBeVisible();
-        const accountLink = accountDialog.locator('[data-space-link="profile"]');
-        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
+        // An unavailable account backend exposes a safe cabinet fallback;
+        // a genuine guest session exposes the profile action directly.
+        const accountLink = accountDialog.locator('[data-space-link="profile"], a[href="/en/app"]').first();
+        await expect(accountLink).toBeVisible({timeout:20000});
+        assert.ok(['/en/app/portrait','/en/app'].includes(await accountLink.getAttribute('href')));
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
-        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
-        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        const guestOverview = page.locator('[data-cabinet-guest-overview="true"]');
+        await expect(guestOverview).toBeVisible();
+        await expect(guestOverview.locator('#cabinet-guest-title')).toHaveText('Discover where you are. Grow into what comes next.');
+        await expect(guestOverview.locator('a[href="/en/client"]')).toHaveCount(1);
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(guestOverview).toBeVisible();
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
