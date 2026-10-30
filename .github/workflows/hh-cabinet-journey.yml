@@ -46,4 +46,6 @@ jobs:
       - name: Scoped ESLint
         run: npx --no-install eslint components/app/cabinet-today.jsx components/app/cabinet-journey.jsx components/app/profile-domains.jsx components/app/app-workspace.jsx lib/app/learning-journey.mjs lib/app/learning-journey-repository.js app/api/app/'[...path]'/route.js tests/cabinet-learning-journey.test.mjs components/app/my-progress.jsx components/app/academy-video-progress.jsx lib/app/my-progress.mjs lib/app/video-progress.js app/api/app/video-progress/route.js tests/my-progress.test.mjs
       - name: TypeScript
+        # Source-only specialist: one required global tsc in production Core.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
