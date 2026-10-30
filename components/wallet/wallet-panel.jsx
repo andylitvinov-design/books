@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CreditCard, Gift, RefreshCw, ShieldCheck, Wallet } from 'lucide-react'
 import { WALLET_PRESETS_MINOR, walletSafePaymentUrl } from '@/lib/wallet/model'
 import styles from './wallet-panel.module.css'
+import WalletConfirmation from './wallet-confirmation'
 
 const COPY = {
   ru: {
@@ -72,6 +73,8 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   const [receipts, setReceipts] = useState({})
   const [success, setSuccess] = useState('')
   const [readyPayment, setReadyPayment] = useState(null)
+  const [confirmationId, setConfirmationId] = useState(null)
+  const [returnChecking, setReturnChecking] = useState(false)
   const operation = useRef(null)
   const isMounted = useRef(true)
   const fetchWallet = useCallback(async () => {
@@ -106,12 +109,24 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   }, [accountId])
   useEffect(() => {
     isMounted.current = true
-    setState(null); setError(''); setSuccess(''); setReadyPayment(null); operation.current = null
-    reload().then(() => {
+    setState(null); setError(''); setSuccess(''); setReadyPayment(null)
+    setConfirmationId(null); setReturnChecking(false); operation.current = null
+    reload().then(async () => {
       if (!isMounted.current) return
       const order = new URLSearchParams(window.location.search).get('squareTopup')
       if (order && /^[0-9a-f-]{36}$/i.test(order)) {
-        post('refresh', { topupId: order }).then(reload).catch(() => reload())
+        // The return URL is never proof of payment. A signed-in owner-scoped
+        // server request reads Square's actual payment status first.
+        setConfirmationId(order)
+        setReturnChecking(true)
+        try { await post('refresh', { topupId: order }) }
+        catch { /* A pending/unknown status is shown, never a false paid receipt. */ }
+        finally {
+          if (isMounted.current) {
+            await reload()
+            if (isMounted.current) setReturnChecking(false)
+          }
+        }
       }
     })
     return () => { isMounted.current = false }
@@ -120,7 +135,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   const selectedProvider = providers.includes(provider) ? provider : providers[0] || null
   async function createTopup() {
     if (busy || !selectedProvider || !validAmount(amount)) return
-    setBusy('create'); setError(''); setSuccess(''); setReadyPayment(null)
+    setBusy('create'); setError(''); setSuccess(''); setReadyPayment(null); setConfirmationId(null)
     const key = amount + ':' + selectedProvider
     if (operation.current?.key !== key) operation.current = { key, id: crypto.randomUUID() }
     try {
@@ -128,8 +143,9 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
         operationId: operation.current.id, amount, provider: selectedProvider, locale,
       })
       await reload()
-      if (result.topup?.status === 'reported' || result.topup?.status === 'credited') {
-        setSuccess(t.reportDone)
+      if (['reported', 'credited', 'reversed'].includes(result.topup?.status)) {
+        setConfirmationId(result.topup.id)
+        if (result.topup.status === 'reported') setSuccess(t.reportDone)
         return
       }
       const url = walletSafePaymentUrl(selectedProvider, result.redirectUrl)
@@ -144,6 +160,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
     setBusy(topupId); setError(''); setSuccess('')
     try {
       await post('report', { topupId, transactionId: receipts[topupId] || '' })
+      setConfirmationId(topupId)
       setReceipts(current => ({ ...current, [topupId]: '' }))
       setSuccess(t.reportDone)
       await reload()
@@ -153,10 +170,16 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   async function refreshSquare(topupId) {
     if (busy) return
     setBusy(topupId); setError(''); setSuccess('')
-    try { await post('refresh', { topupId }); await reload() }
+    try {
+      setConfirmationId(topupId)
+      setReturnChecking(true)
+      await post('refresh', { topupId })
+      await reload()
+    }
     catch (e) { setError(e.message || t.error) }
-    finally { setBusy('') }
+    finally { setBusy(''); setReturnChecking(false) }
   }
+  const confirmationOrder = state?.topups?.find(order => order.id === confirmationId)
   return <section className={styles.shell} data-wallet-account={accountId}>
     <div className={styles.heading}><div>
       <p className={styles.eyebrow}><Wallet size={17}/> {t.eyebrow}</p>
@@ -216,6 +239,8 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
           <p className={styles.small}>{t.successHint}</p>
         </div>}
       </div>
+      <WalletConfirmation locale={locale} order={confirmationOrder}
+        verifying={returnChecking} requested={Boolean(confirmationId)} />
       <p className={styles.notice}><ShieldCheck size={18} aria-hidden="true"/> {t.notice}</p>
       <div className={styles.historyHeading}><h2>{t.orderTitle}</h2><button type="button"
         className={styles.secondary} onClick={reload} disabled={Boolean(busy)}><RefreshCw size={15}/>{t.check}</button></div>
@@ -244,6 +269,11 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
           {order.provider === 'square_api' && order.status === 'checkout_ready' &&
             <button type="button" className={styles.secondary} onClick={() => refreshSquare(order.id)}
               disabled={Boolean(busy)}>{busy === order.id ? t.processing : t.checkSquare}</button>}
+          {(order.status === 'credited' || order.status === 'reversed') &&
+            <details className={styles.receiptDetails} data-wallet-verified-receipt>
+              <summary>{locale === 'ru' ? 'Подтверждение зачисления' : 'View account credit confirmation'}</summary>
+              <WalletConfirmation locale={locale} order={order} requested />
+            </details>}
         </article>)}
       </div>
     </>}

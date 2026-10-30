@@ -61,3 +61,18 @@
 .reviewField{display:grid;gap:7px;flex:1 1 240px;font-size:12px;font-weight:650;color:#345162}
 .reviewField input{width:100%;min-height:42px;border:1px solid #bdd1d5;border-radius:9px;padding:9px 10px;font-size:15px;color:#143b4a}
 .reviewField input:focus-visible{outline:2px solid #0a8591;outline-offset:2px}
+
+/* Verified, owner-scoped top-up confirmation; not a tax invoice. */
+.confirmation{border:1px solid #cfdbdf;border-radius:17px;background:#f6fafb;padding:18px 20px;margin:22px 0;max-width:800px;color:#214258;overflow-wrap:anywhere}
+.confirmation[data-wallet-confirmation="confirmed"]{border-color:#a6d5c4;background:#f2fbf7}
+.confirmation[data-wallet-confirmation="reversed"]{border-color:#e1c4b9;background:#fcf8f4}
+.confirmationTitle{display:flex;align-items:center;gap:11px;font-size:17px;line-height:1.35}
+.confirmationTitle svg{flex:none}
+.confirmationDetails{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 20px;margin:16px 0}
+.confirmationDetails>div{min-width:0}
+.confirmationDetails dt{color:#617582;font-size:12px;font-weight:650}
+.confirmationDetails dd{margin:5px 0 0;font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.receiptDetails{width:100%;padding-top:8px;font-size:13px;color:#246974}
+.receiptDetails summary{cursor:pointer;font-weight:700;min-height:38px;display:flex;align-items:center}
+.receiptDetails .confirmation{margin:8px 0 0}
+@media(max-width:520px){.confirmation{padding:14px 15px}.confirmationDetails{grid-template-columns:1fr;gap:10px}}

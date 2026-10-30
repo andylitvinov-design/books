@@ -44,6 +44,8 @@ const copy = {
     orderAction: "Place an order", orderSaved: "Request saved",
     orderTopic: "I would like to order the selected personal consultation services. Please confirm the time and payment details.",
     paymentTitle: "Payment", paymentIntro: "Your request is registered. Choose a secure payment option; receipt and appointment are confirmed separately.",
+    receiptTitle: "3 · Payment verified", receiptBody: "Square has verified this payment. Keep this order number; the appointment is arranged separately.",
+    receiptId: "Payment order ID", walletTitle: "Add balance for future services", walletNote: "Prepaid credit is a separate purchase and does not pay for the consultations currently in this cart.", walletAction: "Top up account", 
   },
   ru: {
     back: "Магазин", title: "Корзина", subtitle: "Выберите услуги, оставьте контакт и переходите к оплате.",
@@ -66,6 +68,8 @@ const copy = {
     orderAction: "Заказать", orderSaved: "Заявка сохранена",
     orderTopic: "Хочу заказать выбранные личные консультации. Прошу подтвердить время и условия оплаты.",
     paymentTitle: "Оплата", paymentIntro: "Заявка зарегистрирована. Выберите способ оплаты; поступление и время сеанса подтверждаются отдельно.",
+    receiptTitle: "3 · Оплата подтверждена", receiptBody: "Square подтвердил оплату. Сохраните номер заказа; время сеанса согласуется отдельно.",
+    receiptId: "Номер оплаченного заказа", walletTitle: "Пополнить баланс для будущих услуг", walletNote: "Пополнение — отдельная покупка. Оно не оплачивает консультации в этой корзине.", walletAction: "Пополнить баланс", 
   },
   es: {
     back: "Tienda", title: "Tu carrito", subtitle: "Elige los servicios, deja tus datos y continúa al pago.",
@@ -88,10 +92,13 @@ const copy = {
     orderAction: "Realizar pedido", orderSaved: "Solicitud guardada",
     orderTopic: "Quiero pedir las consultas personales seleccionadas. Confirmemos la hora y el pago.",
     paymentTitle: "Pago", paymentIntro: "Solicitud registrada. Elige cómo pagar; recepción y cita se confirman por separado.",
+    receiptTitle: "3 · Pago verificado", receiptBody: "Square ha verificado el pago. Guarda el ID; el horario se confirma aparte.",
+    receiptId: "ID del pedido pagado", walletTitle: "Recargar saldo para servicios futuros", walletNote: "Esta recarga es una compra independiente y no paga los artículos de este carrito.", walletAction: "Recargar saldo", 
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks }: {
+export function PersonalCart({ locale, walletTopupEnabled, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks }: {
+  walletTopupEnabled: boolean;
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
@@ -430,7 +437,23 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </> : null}
           {(activeMethod === "paypal" || activeMethod === "wise" || activeMethod === "interac" || (activeMethod === "square" && Boolean(squarePayment) && !squareApiEnabled)) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
         </div>}
-
+        {squareApiEnabled && squareStatus === "paid" && squareOrderId &&
+          <section className={styles.orderStep} data-service-cart-confirmed>
+            <div className={styles.stepHeading}>
+              <span className={styles.stepNumber}>3</span>
+              <div><strong>{t.receiptTitle}</strong><p>{t.receiptBody}</p></div>
+            </div>
+            <p className={styles.orderDone} role="status">
+              <Check size={18} aria-hidden="true" />{t.receiptId}: {squareOrderId}
+            </p>
+          </section>}
+        {walletTopupEnabled && <section className={styles.orderStep} data-service-cart-wallet-link>
+          <strong>{t.walletTitle}</strong>
+          <p className={styles.hint}>{t.walletNote}</p>
+          <Link className={styles.booking} href={"/" + (locale === "es" ? "en" : locale) + "/app/wallet"}>
+            {t.walletAction}<ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </section>}
       </>}
     <Link href={`/${locale}/services/free-situation-review`} className={styles.free}>{t.free} <ArrowRight size={16} aria-hidden="true" /></Link>
   </section>;
