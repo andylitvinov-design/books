@@ -850,7 +850,7 @@ const quickVideoCopy = {
  * only on-device Free is enabled; no unverified wallet or paid entitlement. */
 const approvedMobileCopy = {
   ru: {
-    introTitle:"Персональный видеоролик",
+    introTitle:"Создать персональное видео",
     intro:"Образы и аффирмации для поддержки энергии, мотивации и уверенности. Вы выбираете цель, видео и звук.",
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
@@ -861,11 +861,11 @@ const approvedMobileCopy = {
     unavailable:"Не подключён",creditsNote:"Smart и Pro откроются после проверенной оплаты и учёта кредитов. Сейчас доступен реальный бесплатный экспорт.",
     preview:"3. Видеопревью и заставка",previewPlay:"Воспроизвести видеофон",previewPause:"Приостановить видеофон",
     previewBadge:"Видео с оригинальным движением",previewFallback:"Полный предпросмотр",
-    covers:"Выберите видеозаставку",personal:"5. Настройте содержание",
-    affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"Дополнительные настройки",
+    covers:"Выберите видеозаставку",personal:"4. Настройте содержание",
+    affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"5. Дополнительные параметры",
   },
   en: {
-    introTitle:"Your personal video",
+    introTitle:"Create your personal video",
     intro:"Support for energy, motivation and confidence with personal imagery and optional affirmations. Choose your goal, visuals and sound.",
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
@@ -876,11 +876,11 @@ const approvedMobileCopy = {
     unavailable:"Not enabled",creditsNote:"Smart and Pro require verified payments and credit entitlements. Real free export works locally now.",
     preview:"3. Video preview & cover",previewPlay:"Play video background",previewPause:"Pause video background",
     previewBadge:"Genuine moving footage",previewFallback:"Full preview",
-    covers:"Choose a video cover",personal:"5. Customize the content",
-    affirmations:"Affirmations",photo:"My photo",voice:"Voice",music:"Music",extra:"Additional settings",
+    covers:"Choose a video cover",personal:"4. Customize the content",
+    affirmations:"Affirmations",photo:"My photo",voice:"Voice",music:"Music",extra:"5. Additional settings",
   },
   es: {
-    introTitle:"Tu vídeo personal",
+    introTitle:"Crea tu vídeo personal",
     intro:"Imágenes y afirmaciones opcionales para apoyar la energía, la motivación y la confianza. Elige tu objetivo, imagen y sonido.",
     disclosure:"Los fotogramas breves y las hipnoafirmaciones son experimentales; no hay pruebas de que cambien las creencias.",
     benefits:["Según tus objetivos","Intenciones personales","Afirmaciones opcionales","Naturaleza y sonidos"],
@@ -891,8 +891,8 @@ const approvedMobileCopy = {
     unavailable:"No habilitado",creditsNote:"Smart y Pro requieren pagos y créditos verificados. La exportación gratuita local ya funciona.",
     preview:"3. Vista previa y portada",previewPlay:"Reproducir vídeo de fondo",previewPause:"Pausar vídeo de fondo",
     previewBadge:"Vídeo real en movimiento",previewFallback:"Vista previa completa",
-    covers:"Elige una portada",personal:"5. Personaliza el contenido",
-    affirmations:"Afirmaciones",photo:"Mi foto",voice:"Voz",music:"Música",extra:"Ajustes adicionales",
+    covers:"Elige una portada",personal:"4. Personaliza el contenido",
+    affirmations:"Afirmaciones",photo:"Mi foto",voice:"Voz",music:"Música",extra:"5. Ajustes adicionales",
   },
 } as const;
 
@@ -901,7 +901,7 @@ const approvedMobileCopy = {
    Prices are draft comparisons only: paid execution remains server-gated/off. */
 const formatPracticeCopy = {
   ru: {
-    formats:"2. Выберите формат и качество",
+    formats:"2. Выберите формат и качество",stylesTitle:"3. Стиль видео",
     names:{video:"Видео",meditation:"Видео + медитация",course:"Курс"},
     durations:{video:"30–60 секунд",meditation:"3–5 минут",course:"8 занятий"},
     features:{
@@ -915,7 +915,7 @@ const formatPracticeCopy = {
     pending:"Пока недоступно",
   },
   en: {
-    formats:"2. Choose format & quality",
+    formats:"2. Choose format & quality",stylesTitle:"3. Video styles",
     names:{video:"Video",meditation:"Video + meditation",course:"Course"},
     durations:{video:"30–60 seconds",meditation:"3–5 minutes",course:"8 sessions"},
     features:{
@@ -929,7 +929,7 @@ const formatPracticeCopy = {
     pending:"Not available yet",
   },
   es: {
-    formats:"2. Elige formato y calidad",
+    formats:"2. Elige formato y calidad",stylesTitle:"3. Estilos de vídeo",
     names:{video:"Vídeo",meditation:"Vídeo + meditación",course:"Curso"},
     durations:{video:"30–60 segundos",meditation:"3–5 minutos",course:"8 sesiones"},
     features:{
@@ -1644,7 +1644,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
-      document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      // Consent remains in the original advanced photo panel; reveal it first.
+      setQuickDetailedOpen(true);
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-photo-consent]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return;
     }
     if(audioNeedsAttachment){
@@ -1936,7 +1939,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="4"
           aria-labelledby="quick-visual-title">
           <div className={videoStyles.quickSectionHeading}>
-            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{quick.visual}</h3>
+            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{practiceCopy.stylesTitle}</h3>
               <p>{quick.visualHelp}</p></div>
             <button type="button" className={videoStyles.quickEdit}
               onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
