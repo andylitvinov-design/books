@@ -2,6 +2,64 @@ name: Holistic House public services production acceptance
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'components/academy-course-video-playlist.tsx'
+      - 'lib/practitioners/taoist-talisman-cart.js'
+      - 'scripts/fixtures/holistic-support-directory.mjs'
+      - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'scripts/verify-alchemy-one-screen.mjs'
+      - 'scripts/verify-business-quiz-mobile.mjs'
+      - 'scripts/verify-contact-channel-chooser-browser.mjs'
+      - 'scripts/verify-direction-focus-mobile.mjs'
+      - 'scripts/verify-home-consultation-first-screen.mjs'
+      - 'scripts/verify-ideas-mobile-browser.mjs'
+      - 'scripts/verify-reiki-mobile-order-browser.mjs'
+      - 'scripts/verify-service-cart-browser.mjs'
+      - 'scripts/verify-storefront-shop-browser.mjs'
+      - 'scripts/verify-talisman-google-checkout-browser.mjs'
+      - 'tests/goal-support-offers.test.mjs'
+      - 'tests/practitioner-homeopathy-canonical-route.test.mjs'
+      - 'tests/practitioner-remote-energy-support.test.mjs'
+      - 'tests/service-alchemy-one-screen-story.test.mjs'
+      - 'tests/talisman-google-checkout.test.mjs'
+      - 'tests/temple-insights-compact-cta.test.mjs'
+      - 'tests/temple-support-hub.test.mjs'
+      - 'app/**/holistic-support/**'
+      - 'app/**/services/**'
+      - 'app/**/toronto/**'
+      - 'app/**/alchemy/**'
+      - 'app/**/business/**'
+      - 'app/api/public/**'
+      - 'app/api/payments/**'
+      - 'app/api/app/**'
+      - 'components/holistic-*'
+      - 'components/mandala-*'
+      - 'components/remote-energy-*'
+      - 'components/taoist-*'
+      - 'components/*service*'
+      - 'components/practice-showcase*'
+      - 'lib/holistic-support/**'
+      - 'lib/practitioners/public-*'
+      - 'lib/commerce/**'
+      - 'lib/checkout/**'
+      - 'tests/holistic-*.mjs'
+      - 'tests/alchemy-*.mjs'
+      - 'tests/remote-*.mjs'
+      - 'tests/direction-*.mjs'
+      - 'tests/public-service*.mjs'
+      - 'scripts/verify-holistic-*.mjs'
+      - 'scripts/verify-public-services*.mjs'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      # Director-only art planning and its encoded-video browser test are fully
+      # covered by holistic-support-mandala.yml. They do not modify service
+      # discovery, checkout, Alchemy or master-catalog journeys tested here.
+      # Keep the broad shared mandala-* patterns for other Mandala components.
+      - '!components/mandala-cinematic-director.tsx'
+      - '!components/mandala-cinematic-director.module.css'
+      - '!scripts/verify-holistic-mandala-browser.mjs'
 permissions:
   contents: read
 concurrency:
@@ -49,6 +107,7 @@ jobs:
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 90); do
+            echo "Public services readiness attempt ${i}/90"
             if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
             sleep 2
           done
