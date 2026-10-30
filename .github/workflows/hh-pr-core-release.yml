@@ -1,0 +1,113 @@
+name: HH PR core release gate
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  scope:
+    name: classify-change
+    runs-on: ubuntu-24.04
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify strictly documentation-only PRs
+        id: diff
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          docs_only=false
+          if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+            git diff --no-renames --name-only -z "$BASE_SHA" HEAD > /tmp/hh-pr-changed-files.z
+            docs_only=true
+            count=0
+            while IFS= read -r -d '' f; do
+              [[ -z "$f" ]] && continue
+              count=$((count + 1))
+              case "$f" in
+                docs/*.md|README.md) ;;
+                *) docs_only=false ;;
+              esac
+            done < /tmp/hh-pr-changed-files.z
+            [[ "$count" -gt 0 ]] || docs_only=false
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only" >> "$GITHUB_STEP_SUMMARY"
+  code:
+    name: core-lint-types-build
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Assert fast-lane workflow contracts
+        run: node --test tests/pr-fast-lane.test.mjs
+      - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" != pull_request || -z "$BASE_SHA" ]]; then
+            npm run lint
+            exit 0
+          fi
+          files=()
+          while IFS= read -r -d '' f; do
+            if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
+          done < <(git diff --name-only -z "$BASE_SHA" HEAD)
+          if (( ${#files[@]} > 0 )); then
+            npx --no-install eslint "${files[@]}"
+          else
+            echo 'No changed JS/TS files to lint'
+          fi
+      - name: Full TypeScript check
+        run: npx --no-install tsc --noEmit --pretty false
+      - name: Exact proposed release production build
+        run: npm run build
+  release-ready:
+    name: release-ready
+    needs: [scope, code]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail closed on missing, cancelled or failing required core jobs
+        shell: bash
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CODE_RESULT: ${{ needs.code.result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+        run: |
+          set -euo pipefail
+          [[ "$SCOPE_RESULT" == success ]] || exit 1
+          if [[ "$DOCS_ONLY" == true ]]; then
+            [[ "$CODE_RESULT" == skipped ]] || exit 1
+          else
+            [[ "$CODE_RESULT" == success ]] || exit 1
+          fi
+          echo 'Core release gate passed. Check applicable specialist CI, reviews, and production impact separately.' >> "$GITHUB_STEP_SUMMARY"

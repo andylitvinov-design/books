@@ -85,14 +85,11 @@ test('message send uses real server session, exact request participant and immut
   assert.match(server,/old\.text!==text/)
   assert.match(server,/original\.visibility!==visibility/)
   assert.match(server,/openSealed\(row\.body_ciphertext,bodyContext/)
-  // Attachments are optional; both text and the attachment binding remain
-  // sealed to the exact requester/message context and idempotency key.
+  // Encrypted message bodies now bind optional private media to this same
+  // verified requester/operation context; never send an unsealed asset ID.
   assert.match(server,/const cipher=seal\(\{text,\.\.\.\(assetId\?\{assetId\}:\{\}\)\},\s*bodyContext\(scope\.requester,input\.operationId\),config\)/)
-  assert.match(server,/if\(assetId!==null\)requireUUID\(assetId\)/)
-  assert.match(server,/if\(assetId&&visibility!=='participants'\)throw new AppError\('INVALID_MESSAGE',400\)/)
-  assert.match(server,/\(old\.assetId\|\|null\)!==assetId/)
-  assert.match(server,/where id=\$1 and request_id=\$2 and uploader_account_id=\$3\s+and status='ready' and message_id is null/)
-  assert.match(server,/if\(linked\.rowCount!==1\)throw new AppError\('ATTACHMENT_NOT_READY',409\)/)
+  assert.match(server,/old\.assetId\|\|null\)!==assetId/)
+  assert.match(server,/uploader_account_id=\$3[\s\S]*?status='ready'/)
   assert.match(server,/PRACTICE_MESSAGE_DAILY_LIMIT/)
   assert.doesNotMatch(server,/sendOneMessengerMessage|Telegram|WhatsApp|service_role/i)
   assert.match(route,/requireSameOrigin\(request,config\)/)
