@@ -80,7 +80,7 @@ async function assertSpanishNavigation(page, path) {
     ['energy', 'Cuerpo y energía'],
     ['love', 'Estrés y relaciones'],
     ['business', 'Dinero y negocios'],
-  ]) await expect(links.locator('[data-nav-item="' + id + '"]')).toHaveAccessibleName(expectedLabel);
+  ]) await expect(menu.locator('.site-main-menu-panel a[data-nav-item="' + id + '"]')).toHaveAccessibleName(expectedLabel);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
