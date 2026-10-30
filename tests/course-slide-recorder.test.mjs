@@ -77,6 +77,9 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(builder,/do not send private client videos/i)
  assert.match(materials,/onOpenYoutube=\{isOwner\?onOpenYoutube:null\}/)
  assert.match(practice,/onOpenYoutube=\{\(\)=>openOwner\('youtube'\)\}/)
- assert.match(middleware,/reikiIntroAudioManager\|\|practitionerCourseEditor\) \? ' blob:'/)
+ const mediaCsp=middleware.split("\n").find(line=>line.includes("media-src 'self'")&&line.includes("practitionerCourseEditor")) || ''
+ assert.match(mediaCsp,/reikiIntroAudioManager\|\|coachingOwnerAudioManager\|\|practitionerCourseEditor/)
+ assert.match(mediaCsp,/\) \? ' blob:' : ''\)/)
+ assert.doesNotMatch(mediaCsp,/media-src 'self' blob:/)
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
 })
