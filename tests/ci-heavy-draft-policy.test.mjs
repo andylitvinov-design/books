@@ -411,7 +411,10 @@ for (const [name, jobs] of heavyDraftStage) {
 
 test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
   const ia = read('ia-v2.yml');
-  assert.match(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  // YAML-only edits belong to the exact-head Core/actionlint gates, not IA's product suite.
+  assert.doesNotMatch(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  assert.match(read('hh-actionlint.yml'), /^      - '\.github\/workflows\/\*\*'$/m);
+  assert.match(read('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/);
   assert.match(ia, /verify:ia-v2/);
   assert.match(ia, /redis:7-alpine/);
   assert.match(ia, /^  workflow_dispatch:/m);
