@@ -154,10 +154,11 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
-  const expected=['home','analysis','courses','profile','coaching','pro','temple']
+  const expected=['home','analysis','courses','profile','alchemy','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
+    assert.equal(nav[4].href,'/'+locale+'/services/alchemy-of-soul')
     assert.equal(nav.at(-2).href,'/'+locale+'/pro')
     assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
@@ -302,7 +303,10 @@ test('Master offer choices are localized, non-medical, and backed by approved se
 })
 
 test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
-  assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
+  // Native explicit deep links preserve scoped editor intents; browser OAuth
+  // returns to reviewed Practice without an automatic draft or publication.
+  assert.match(app,/\(page === 'practice'\s*\?\s*native\s*\?\s*\{ continueTo: 'my-practice', \.\.\.\(proIntent \? \{ profi: proIntent \} : \{\}\) \}\s*:\s*\{ continueTo: 'practice-preview' \}/)
+  assert.match(auth,/const failedPracticeDestination = continueTo === 'practice-preview'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
   assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
   assert.equal((auth.match(/validPracticeContinuation\(continueTo,profi\)/g)||[]).length,2)
@@ -318,7 +322,7 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
+  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal','reiki'\]\.includes/)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
   for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
@@ -377,8 +381,8 @@ test('Pro includes the same consented express-written-review CTA as other direct
 test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
-  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
-  assert.match(switcher,/initialView \?\? \(hasArticles \|\| hasServices \? "articles" : "mentors"\)/)
+  assert.match(masters,/initialView=\{requestedView === "articles" \? "articles" : "mentors"\}/)
+  assert.match(switcher,/useState<View>\(initialView \?\? "mentors"\)/)
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){
