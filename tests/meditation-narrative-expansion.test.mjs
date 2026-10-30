@@ -192,6 +192,17 @@ test("requested practical style yields no auto metaphor, poetic style changes ac
   const explicit=script({metaphorId:"bookmark"},{style:"practical"});
   assert.equal(explicit.metaphorId,"bookmark");
 });
+test("malformed optional composer data does not crash or bypass imagery consent",()=>{
+  const empty=composePersonalMeditation(program,{locale:"ru",
+    intent:null,preferences:null,consent:null});
+  assert.equal(empty.status,"imagery_consent_required");
+  const valid=composePersonalMeditation(program,{locale:"ru",
+    intent:null,preferences:null,consent:{resourceImagery:true}});
+  assert.equal(valid.status,"script_ready");
+  const series=composePersonalMeditationSeries(program,{locale:"ru",
+    intent:null,preferences:null,consent:{resourceImagery:true}});
+  assert.equal(series.status,"series_draft_ready");
+});
 test("the atlas is available through the shared parent Holistic Intelligence module",()=>{
   assert.equal(coreImages.length,MEDITATION_IMAGE_ATLAS.length);
   assert.equal(coreMetaphors.length,MEDITATION_METAPHORS.length);
