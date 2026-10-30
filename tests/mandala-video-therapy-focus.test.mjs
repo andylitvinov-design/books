@@ -16,7 +16,8 @@ test("therapy mode is a dedicated programme immediately after the real video pla
     "guided programme must follow the preview and precede the six-card editor");
   assert.equal((studio.match(/data-video-mandala-hero/g)||[]).length,1,"exactly one moving video");
   assert.equal((studio.match(/data-video-quick-therapy data-video-therapy-start/g)||[]).length,1);
-  assert.doesNotMatch(studio,/data-video-mode-switch|data-video-quick-legacy/);
+  assert.match(studio,/data-video-mode-switch/);
+  assert.doesNotMatch(studio,/data-video-quick-legacy/);
   assert.match(studio,/studioMode==="therapy" \? <div className=\{videoStyles\.therapyCourse\}/);
   assert.match(studio,/data-video-studio-mode=\{studioMode\}/);
   assert.match(studio,/data-video-affirmations-feature checked=\{affirmations\.enabled\}/);

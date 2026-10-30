@@ -73,7 +73,11 @@ test("approved mobile video design is the one canonical Mandala editor with six 
   assert.match(ui,/\.templateArt\{/);
   assert.match(ui,/\.download\{/);
   assert.match(ui,/\.previewChoices\{/);
-  assert.doesNotMatch(studio,/data-video-mode-switch/);
+  assert.match(studio,/data-video-mode-switch/);
+  assert.match(studio,/data-video-editor-lead/);
+  assert.match(studio,/data-video-compact-summary/);
+  assert.match(ui,/\.videoSummaryRow\{/);
+  assert.match(ui,/\.videoLeadThemes\{/);
   assert.match(studio,/data-video-therapy-toggle/);
   assert.match(studio,/aria-pressed=\{studioMode==="therapy"\}/);
   assert.match(studio,/data-video-photo-enabled/);
@@ -266,12 +270,22 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
 });
 
 
-test("mandala player precedes one six-step editor, with accessible in-place disclosures", () => {
+test("approved compact mode, goal and opt-ins precede a single video preview and six summary rows", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const labels=["Личная видео-подкачка или видеотерапия","Personal video boost or video therapy","Vídeo de impulso personal o videoterapia"];
   for(const label of labels)assert.ok(studio.includes(label),label);
-  assert.ok(studio.indexOf("data-video-mandala-hero")<studio.indexOf("data-video-quick-builder"));
+  const landmarks=["data-video-editor-lead","data-video-mandala-hero",
+    "data-video-editor-tabs","data-video-compact-summary","data-video-quick-builder"];
+  const idx=landmarks.map(t=>studio.indexOf(t));
+  assert.ok(idx.every((v,i)=>v>=0&&(i===0||v>idx[i-1])),
+    "mode and wish, real preview, tabs, compact summaries, and only then detailed editing");
+  assert.equal((studio.match(/data-video-summary-row="/g)||[]).length,6);
+  assert.match(studio,/data-video-summary-duration=\{v\}/);
+  assert.match(studio,/data-video-summary-aspect=\{v\}/);
+  assert.match(studio,/data-video-summary-listen/);
+  assert.match(studio,/data-video-affirmations-feature checked=\{affirmations\.enabled\}/);
+  assert.match(studio,/data-video-photo-consent checked=\{photoConsent\}/);
   assert.equal((studio.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.equal((studio.match(/data-video-quick-generate/g)||[]).length,1);
   for(let n=1;n<=6;n++){
@@ -286,6 +300,8 @@ test("mandala player precedes one six-step editor, with accessible in-place disc
   assert.match(studio,/expand:"Abrir",collapse:"Cerrar"/);
   assert.match(css,/\.quickPanelBody\[hidden\]\s*\{\s*display:\s*none/);
   assert.match(css,/\.quickSection\[data-expanded="true"\]/);
+  assert.match(css,/\.quickBuilder>\.quickSection\[data-expanded="false"\]\{display:none!important\}/);
+  assert.match(css,/\.studio > \.catalogShell \.hero\{/);
 });
 
 test("each original advanced editor tool lives within the relevant single step", () => {

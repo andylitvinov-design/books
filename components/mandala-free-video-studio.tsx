@@ -892,6 +892,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [expandedStep,setExpandedStep] = useState<number | null>(null);
   const [showExtraThemes,setShowExtraThemes] = useState(false);
+  // Summary Edit opens the original underlying renderer controls, with no
+  // second editor or fake settings sheet.
+  useEffect(()=>{
+    if(expandedStep===null)return;
+    document.querySelector('[data-video-quick-section="'+expandedStep+'"]')
+      ?.scrollIntoView({behavior:"auto",block:"nearest"});
+  },[expandedStep]);
   const [summaryPlaying,setSummaryPlaying] = useState(false);
   const summaryAudioRef=useRef<HTMLAudioElement>(null);
   // Tapping the card's heading has the same result as tapping "Expand".
